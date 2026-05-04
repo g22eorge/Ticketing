@@ -154,7 +154,11 @@ export default async function NotificationTemplatesPage({
     }
 
     const vars = extractTemplateVariables(`${parsed.data.subject ?? ""}\n${parsed.data.body}`);
+    const metaName = parsed.data.metaTemplateName ?? null;
+    const metaLang = metaName ? (parsed.data.metaLanguageCode || "en") : null;
 
+    // Try full update first; if meta columns are missing in DB, fall back to updating without them.
+    let saved = false;
     try {
       await prisma.communicationTemplate.update({
         where: { id: parsed.data.id },
@@ -165,21 +169,81 @@ export default async function NotificationTemplatesPage({
           subject: parsed.data.subject ? parsed.data.subject : null,
           body: parsed.data.body,
           variables: vars.length ? JSON.stringify(vars) : null,
-          metaTemplateName: parsed.data.metaTemplateName ?? null,
-          metaLanguageCode: parsed.data.metaTemplateName ? (parsed.data.metaLanguageCode || "en") : null,
+          metaTemplateName: metaName,
+          metaLanguageCode: metaLang,
           isActive: Boolean(parsed.data.isActive),
         },
       });
+      saved = true;
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
+      const isMissingColumn = msg.includes("no such column") || msg.includes("unknown column") || msg.includes("has no column");
+      if (isMissingColumn) {
+        // Schema not migrated yet — update without meta fields, flag that migration is needed.
+        try {
+          await prisma.communicationTemplate.update({
+            where: { id: parsed.data.id },
+            data: {
+              key: parsed.data.key,
+              channel: parsed.data.channel,
+              label: parsed.data.label,
+              subject: parsed.data.subject ? parsed.data.subject : null,
+              body: parsed.data.body,
+              variables: vars.length ? JSON.stringify(vars) : null,
+              isActive: Boolean(parsed.data.isActive),
+            },
+          });
+        } catch {
+          redirect("/settings/notifications/templates?error=Failed+to+update+template");
+        }
+        revalidatePath("/settings/notifications/templates");
+        redirect("/settings/notifications/templates?error=Template+saved+but+meta+fields+need+DB+migration+-+click+Apply+Migration");
+      }
       if (msg.includes("Unique constraint") || msg.includes("P2002")) {
         redirect("/settings/notifications/templates?error=Template+key+already+exists+for+that+channel");
       }
-      redirect("/settings/notifications/templates?error=Failed+to+update+template");
+      redirect(`/settings/notifications/templates?error=${encodeURIComponent("Failed to update: " + msg.slice(0, 120))}`);
+    }
+
+    if (saved) {
+      revalidatePath("/settings/notifications/templates");
+      redirect("/settings/notifications/templates?saved=template");
+    }
+  }
+
+  async function applyMetaMigration() {
+    "use server";
+    const { user: actor } = await getCurrentUserRole();
+    if (actor.role !== "ADMIN") redirect("/dashboard");
+
+    const statements = [
+      `ALTER TABLE "CommunicationTemplate" ADD COLUMN "metaTemplateName" TEXT`,
+      `ALTER TABLE "CommunicationTemplate" ADD COLUMN "metaLanguageCode" TEXT`,
+      `ALTER TABLE "OutboundMessage" ADD COLUMN "metaTemplateName" TEXT`,
+      `ALTER TABLE "OutboundMessage" ADD COLUMN "metaTemplateLanguage" TEXT`,
+      `ALTER TABLE "OutboundMessage" ADD COLUMN "metaTemplateVars" TEXT`,
+    ];
+
+    let applied = 0;
+    const errors: string[] = [];
+    for (const sql of statements) {
+      try {
+        await prisma.$executeRawUnsafe(sql);
+        applied++;
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        // "duplicate column" means it already exists — that's fine.
+        if (!msg.includes("duplicate column") && !msg.includes("already exists")) {
+          errors.push(msg.slice(0, 80));
+        }
+      }
     }
 
     revalidatePath("/settings/notifications/templates");
-    redirect("/settings/notifications/templates?saved=template");
+    if (errors.length > 0) {
+      redirect(`/settings/notifications/templates?error=${encodeURIComponent("Migration partial: " + errors.join("; "))}`);
+    }
+    redirect(`/settings/notifications/templates?saved=Migration+applied+(${applied}+columns+added)`);
   }
 
   async function deleteTemplate(formData: FormData) {
@@ -386,6 +450,13 @@ export default async function NotificationTemplatesPage({
             <form action={deduplicateTemplates}>
               <button className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-100">
                 Remove Duplicates
+              </button>
+            </form>
+          ) : null}
+          {user.role === "ADMIN" ? (
+            <form action={applyMetaMigration}>
+              <button className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700 hover:bg-blue-100">
+                Apply Migration
               </button>
             </form>
           ) : null}
