@@ -17,12 +17,16 @@ export function getDefaultCommunicationTemplates(): Array<{
   label: string;
   subject?: string | null;
   body: string;
+  metaTemplateName?: string;
+  metaLanguageCode?: string;
 }> {
   return [
     {
       key: "REPAIR_REQUEST_CONFIRMATION",
       channel: "WHATSAPP",
       label: "Repair request confirmation",
+      metaTemplateName: "repair_request_confirmation",
+      metaLanguageCode: "en",
       body: [
         "Hello {customerName},",
         "",
@@ -38,6 +42,8 @@ export function getDefaultCommunicationTemplates(): Array<{
       key: "FRONT_DESK_APPROVED",
       channel: "WHATSAPP",
       label: "Intake approved",
+      metaTemplateName: "front_desk_approved",
+      metaLanguageCode: "en",
       body: [
         "Hello {customerName},",
         "",
@@ -53,6 +59,8 @@ export function getDefaultCommunicationTemplates(): Array<{
       key: "FRONT_DESK_REJECTED",
       channel: "WHATSAPP",
       label: "Intake rejected",
+      metaTemplateName: "front_desk_rejected",
+      metaLanguageCode: "en",
       body: [
         "Hello {customerName},",
         "",
@@ -68,6 +76,8 @@ export function getDefaultCommunicationTemplates(): Array<{
       key: "JOB_CREATED",
       channel: "WHATSAPP",
       label: "Job created",
+      metaTemplateName: "job_created",
+      metaLanguageCode: "en",
       body: [
         "Hello {customerName},",
         "",
@@ -83,6 +93,8 @@ export function getDefaultCommunicationTemplates(): Array<{
       key: "JOB_COMPLETED",
       channel: "WHATSAPP",
       label: "Job completed",
+      metaTemplateName: "job_completed",
+      metaLanguageCode: "en",
       body: [
         "Hello {customerName},",
         "",
@@ -98,6 +110,8 @@ export function getDefaultCommunicationTemplates(): Array<{
       key: "JOB_STATUS_UPDATE",
       channel: "WHATSAPP",
       label: "Generic job status update (WhatsApp)",
+      metaTemplateName: "job_status_update",
+      metaLanguageCode: "en",
       body: [
         "Hello {customerName},",
         "",
@@ -127,6 +141,8 @@ export function getDefaultCommunicationTemplates(): Array<{
       key: "READY_FOR_PICKUP_NUDGE_1",
       channel: "WHATSAPP",
       label: "Ready for pickup (nudge 1)",
+      metaTemplateName: "ready_for_pickup_nudge_1",
+      metaLanguageCode: "en",
       body: [
         "Hello {customerName},",
         "",
@@ -156,6 +172,8 @@ export function getDefaultCommunicationTemplates(): Array<{
       key: "READY_FOR_PICKUP_NUDGE_2",
       channel: "WHATSAPP",
       label: "Ready for pickup (nudge 2)",
+      metaTemplateName: "ready_for_pickup_nudge_2",
+      metaLanguageCode: "en",
       body: [
         "Hello {customerName},",
         "",
@@ -205,6 +223,8 @@ export async function upsertDefaultCommunicationTemplates() {
           subject: t.subject ?? null,
           body: t.body,
           variables: variables.length ? JSON.stringify(variables) : null,
+          metaTemplateName: t.metaTemplateName ?? null,
+          metaLanguageCode: t.metaTemplateName ? (t.metaLanguageCode ?? "en") : null,
           isActive: true,
         },
         create: {
@@ -214,6 +234,8 @@ export async function upsertDefaultCommunicationTemplates() {
           subject: t.subject ?? null,
           body: t.body,
           variables: variables.length ? JSON.stringify(variables) : null,
+          metaTemplateName: t.metaTemplateName ?? null,
+          metaLanguageCode: t.metaTemplateName ? (t.metaLanguageCode ?? "en") : null,
           isActive: true,
         },
       });
