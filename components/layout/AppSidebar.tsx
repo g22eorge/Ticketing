@@ -250,6 +250,7 @@ export function AppSidebar({
     receivedJobs?: number;
     inventory?: number;
     paymentFollowups?: number;
+    pendingRequests?: number;
   };
 }) {
   const pathname = usePathname();
@@ -292,7 +293,9 @@ export function AppSidebar({
                       ? badges?.inventory
                       : item.href === "/payout-followups"
                         ? badges?.paymentFollowups
-                        : undefined;
+                        : item.href === "/intake"
+                          ? badges?.pendingRequests
+                          : undefined;
                 const newBadge = item.href === "/jobs" ? badges?.receivedJobs : undefined;
                 return (
                   <Link

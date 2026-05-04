@@ -43,7 +43,7 @@ export default async function AppLayout({
       ? { status: "RECEIVED" as JobStatus, assignedToId: session.user.id }
       : { status: "RECEIVED" as JobStatus };
 
-  const [activeJobsCount, partsForReorder, paymentFollowupCount, receivedJobsCount] = await Promise.all([
+  const [activeJobsCount, partsForReorder, paymentFollowupCount, receivedJobsCount, pendingRequestsCount] = await Promise.all([
     prisma.job.count({ where: jobsWhere }),
     prisma.part.findMany({
       where: { isActive: true, reorderLevel: { gt: 0 } },
@@ -51,6 +51,9 @@ export default async function AppLayout({
     }).catch(() => []),
     (can.reviewExternalBills(user) || can.approveInvoices(user)) ? prisma.job.count({ where: paymentWhere }) : Promise.resolve(0),
     prisma.job.count({ where: receivedWhere }),
+    can.viewIntake(user)
+      ? prisma.repairRequest.count({ where: { requestStatus: { in: ["PENDING_FRONT_DESK", "PENDING_INTAKE"] } } }).catch(() => 0)
+      : Promise.resolve(0),
   ]);
 
   const lowStockCount = partsForReorder.filter((part) => part.qtyOnHand <= part.reorderLevel).length;
@@ -65,6 +68,7 @@ export default async function AppLayout({
           receivedJobs: receivedJobsCount,
           inventory: lowStockCount,
           paymentFollowups: paymentFollowupCount,
+          pendingRequests: pendingRequestsCount,
         }}
       />
       <div className="relative flex min-h-screen min-w-0 flex-1 flex-col overflow-x-clip md:h-full md:min-h-0">
@@ -85,6 +89,7 @@ export default async function AppLayout({
           receivedJobs: receivedJobsCount,
           inventory: lowStockCount,
           paymentFollowups: paymentFollowupCount,
+          pendingRequests: pendingRequestsCount,
         }}
       />
     </div>

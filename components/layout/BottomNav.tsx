@@ -187,6 +187,7 @@ export function BottomNav({
     receivedJobs?: number;
     inventory?: number;
     paymentFollowups?: number;
+    pendingRequests?: number;
   };
 }) {
   const pathname = usePathname();
@@ -209,7 +210,12 @@ export function BottomNav({
         <div className="mx-auto flex max-w-lg items-center justify-around px-1 pt-1 pb-[max(env(safe-area-inset-bottom),0.375rem)]">
           {primaryItems.map((item) => {
             const active = isActive(item.href);
-            const jobsCount = item.href === "/jobs" ? (badges?.receivedJobs ?? badges?.jobs) : undefined;
+            const jobsCount =
+              item.href === "/jobs"
+                ? (badges?.receivedJobs ?? badges?.jobs)
+                : item.href === "/intake"
+                  ? badges?.pendingRequests
+                  : undefined;
             return (
               <Link
                 key={item.href}
