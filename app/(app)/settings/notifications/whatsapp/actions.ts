@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { getCurrentUserRole } from "@/lib/session";
-import { sendCustomWhatsAppMessage, whatsappIsConfigured } from "@/lib/notifications/whatsapp";
+import { sendWhatsAppTemplateMessage, whatsappIsConfigured } from "@/lib/notifications/whatsapp";
 import { prisma } from "@/lib/prisma";
 
 export type SendTestResult =
@@ -20,15 +20,14 @@ export async function sendTestWhatsAppAction(
   if (!whatsappIsConfigured()) return { ok: false, error: "WhatsApp is not configured on this server." };
 
   const to = (formData.get("to") as string | null)?.trim() ?? "";
-  const message = (formData.get("message") as string | null)?.trim() ?? "";
 
   if (!to) return { ok: false, error: "Recipient number is required." };
-  if (!message) return { ok: false, error: "Message body is required." };
-  if (message.length > 1500) return { ok: false, error: "Message must be under 1500 characters." };
 
   const from = process.env.WHATSAPP_BUSINESS_NUMBER ?? "Unknown";
 
-  const result = await sendCustomWhatsAppMessage(to, message);
+  // Use the approved hello_world template — free-form text is silently dropped
+  // by Meta for business-initiated conversations outside the 24-hour window.
+  const result = await sendWhatsAppTemplateMessage(to, "hello_world", "en_US", []);
 
   await prisma.outboundMessage.create({
     data: {
@@ -36,7 +35,7 @@ export async function sendTestWhatsAppAction(
       status: result.success ? "SENT" : "FAILED",
       type: "ADMIN_TEST",
       to,
-      body: message,
+      body: "hello_world template",
       provider: "meta",
       providerMessageId: result.messageId ?? null,
       sentAt: result.success ? new Date() : null,

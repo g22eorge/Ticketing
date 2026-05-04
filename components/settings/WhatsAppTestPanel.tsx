@@ -52,6 +52,13 @@ export function WhatsAppTestPanel({ from, verifiedName }: Props) {
         </div>
       </div>
 
+      {/* Template notice */}
+      <div className="rounded-lg border border-[#25D366]/20 bg-[#25D366]/5 px-3 py-2.5">
+        <p className="text-[11px] text-[var(--ink-muted)]">
+          Sends the approved <span className="font-mono font-semibold text-[var(--ink)]">hello_world</span> template — the only message type Meta delivers for business-initiated conversations.
+        </p>
+      </div>
+
       {/* Form */}
       <form ref={formRef} action={action} className="space-y-3">
         <div>
@@ -66,21 +73,8 @@ export function WhatsAppTestPanel({ from, verifiedName }: Props) {
             className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm text-[var(--ink)] outline-none placeholder:text-[var(--ink-muted)] focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14"
           />
           <p className="mt-1 text-[11px] text-[var(--ink-muted)]">
-            Use the real phone number of the WhatsApp account you want to send to.
+            Use the real phone number of the WhatsApp account you want to test delivery to.
           </p>
-        </div>
-
-        <div>
-          <label className="mb-1 block text-xs font-semibold text-[var(--ink)]">
-            Message
-          </label>
-          <textarea
-            name="message"
-            rows={4}
-            required
-            defaultValue="Hello! This is a test message sent from the Eagle Info Solutions repair management system via WhatsApp Business API."
-            className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm text-[var(--ink)] outline-none placeholder:text-[var(--ink-muted)] focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14"
-          />
         </div>
 
         <button
