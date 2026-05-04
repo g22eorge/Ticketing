@@ -175,7 +175,20 @@ function getMoreGroups(role: Role, permissions: string[]): NavGroup[] {
     .filter((group) => group.items.length > 0);
 }
 
-export function BottomNav({ role, permissions = [] }: { role: Role; permissions: string[] }) {
+export function BottomNav({
+  role,
+  permissions = [],
+  badges,
+}: {
+  role: Role;
+  permissions: string[];
+  badges?: {
+    jobs?: number;
+    receivedJobs?: number;
+    inventory?: number;
+    paymentFollowups?: number;
+  };
+}) {
   const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -196,6 +209,7 @@ export function BottomNav({ role, permissions = [] }: { role: Role; permissions:
         <div className="mx-auto flex max-w-lg items-center justify-around px-1 pt-1 pb-[max(env(safe-area-inset-bottom),0.375rem)]">
           {primaryItems.map((item) => {
             const active = isActive(item.href);
+            const jobsCount = item.href === "/jobs" ? (badges?.receivedJobs ?? badges?.jobs) : undefined;
             return (
               <Link
                 key={item.href}
@@ -205,12 +219,17 @@ export function BottomNav({ role, permissions = [] }: { role: Role; permissions:
                   active ? "text-[var(--accent)]" : "text-[var(--ink-muted)] hover:text-[var(--ink)]"
                 }`}
               >
-                <span className={`flex items-center justify-center rounded-xl px-4 py-1 transition-all duration-200 ${
+                <span className={`relative flex items-center justify-center rounded-xl px-4 py-1 transition-all duration-200 ${
                   active
                     ? "bg-[var(--accent)]/12 shadow-[0_1px_3px_rgba(212,175,55,0.15)]"
                     : "bg-transparent"
                 }`}>
                   {item.icon}
+                  {typeof jobsCount === "number" && jobsCount > 0 ? (
+                    <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--accent)] px-1 text-[9px] font-bold leading-none text-black">
+                      {jobsCount > 99 ? "99+" : jobsCount}
+                    </span>
+                  ) : null}
                 </span>
                 <span className={`tracking-wide ${active ? "font-bold" : ""}`}>{item.label}</span>
               </Link>
@@ -290,6 +309,12 @@ export function BottomNav({ role, permissions = [] }: { role: Role; permissions:
                   <div className="grid grid-cols-2 gap-2">
                     {group.items.map((item) => {
                       const active = isActive(item.href);
+                      const moreBadge =
+                        item.href === "/inventory"
+                          ? badges?.inventory
+                          : item.href === "/payout-followups"
+                            ? badges?.paymentFollowups
+                            : undefined;
                       return (
                         <Link
                           key={item.href}
@@ -303,6 +328,11 @@ export function BottomNav({ role, permissions = [] }: { role: Role; permissions:
                         >
                           <span className={`shrink-0 ${active ? "text-[var(--accent)]" : "text-[var(--ink-muted)]"}`}>{item.icon}</span>
                           <span className="truncate">{item.label}</span>
+                          {typeof moreBadge === "number" && moreBadge > 0 ? (
+                            <span className="ml-auto rounded-full border border-[var(--line)] bg-[var(--panel)] px-1.5 py-0.5 text-[10px] font-semibold text-[var(--ink-muted)]">
+                              {moreBadge > 99 ? "99+" : moreBadge}
+                            </span>
+                          ) : null}
                         </Link>
                       );
                     })}

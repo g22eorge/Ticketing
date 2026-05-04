@@ -247,6 +247,7 @@ export function AppSidebar({
   permissions?: string[];
   badges?: {
     jobs?: number;
+    receivedJobs?: number;
     inventory?: number;
     paymentFollowups?: number;
   };
@@ -292,6 +293,7 @@ export function AppSidebar({
                       : item.href === "/payout-followups"
                         ? badges?.paymentFollowups
                         : undefined;
+                const newBadge = item.href === "/jobs" ? badges?.receivedJobs : undefined;
                 return (
                   <Link
                     key={item.href}
@@ -320,11 +322,18 @@ export function AppSidebar({
                     </span>
                     {/* Label */}
                     <span className="truncate">{item.label}</span>
-                    {typeof badge === "number" && badge > 0 ? (
-                      <span className="ml-auto rounded-full border border-[var(--line)] bg-[var(--panel)] px-1.5 py-0.5 text-[10px] font-semibold text-[var(--ink-muted)]">
-                        {badge > 99 ? "99+" : badge}
-                      </span>
-                    ) : null}
+                    <span className="ml-auto flex items-center gap-1">
+                      {typeof newBadge === "number" && newBadge > 0 ? (
+                        <span className="rounded-full bg-[var(--accent)] px-1.5 py-0.5 text-[10px] font-bold text-black">
+                          {newBadge > 99 ? "99+" : newBadge} new
+                        </span>
+                      ) : null}
+                      {typeof badge === "number" && badge > 0 ? (
+                        <span className="rounded-full border border-[var(--line)] bg-[var(--panel)] px-1.5 py-0.5 text-[10px] font-semibold text-[var(--ink-muted)]">
+                          {badge > 99 ? "99+" : badge}
+                        </span>
+                      ) : null}
+                    </span>
                   </Link>
                 );
               })}

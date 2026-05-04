@@ -38,13 +38,19 @@ export default async function AppLayout({
     status: { in: ["DELIVERED", "COMPLETED"] },
   };
 
-  const [activeJobsCount, partsForReorder, paymentFollowupCount] = await Promise.all([
+  const receivedWhere: Prisma.JobWhereInput =
+    user.role === "TECHNICIAN_EXTERNAL" || user.role === "TECHNICIAN_INTERNAL"
+      ? { status: "RECEIVED" as JobStatus, assignedToId: session.user.id }
+      : { status: "RECEIVED" as JobStatus };
+
+  const [activeJobsCount, partsForReorder, paymentFollowupCount, receivedJobsCount] = await Promise.all([
     prisma.job.count({ where: jobsWhere }),
     prisma.part.findMany({
       where: { isActive: true, reorderLevel: { gt: 0 } },
       select: { qtyOnHand: true, reorderLevel: true },
     }).catch(() => []),
     (can.reviewExternalBills(user) || can.approveInvoices(user)) ? prisma.job.count({ where: paymentWhere }) : Promise.resolve(0),
+    prisma.job.count({ where: receivedWhere }),
   ]);
 
   const lowStockCount = partsForReorder.filter((part) => part.qtyOnHand <= part.reorderLevel).length;
@@ -56,6 +62,7 @@ export default async function AppLayout({
         permissions={user.permissions}
         badges={{
           jobs: activeJobsCount,
+          receivedJobs: receivedJobsCount,
           inventory: lowStockCount,
           paymentFollowups: paymentFollowupCount,
         }}
@@ -70,7 +77,16 @@ export default async function AppLayout({
           </div>
         </main>
       </div>
-      <BottomNav role={user.role} permissions={user.permissions} />
+      <BottomNav
+        role={user.role}
+        permissions={user.permissions}
+        badges={{
+          jobs: activeJobsCount,
+          receivedJobs: receivedJobsCount,
+          inventory: lowStockCount,
+          paymentFollowups: paymentFollowupCount,
+        }}
+      />
     </div>
   );
 }
