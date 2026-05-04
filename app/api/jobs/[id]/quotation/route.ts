@@ -9,7 +9,7 @@ import { formatMoney, getAppCurrency } from "@/lib/currency";
 import { getDocumentBrandingSettings } from "@/lib/document-branding";
 import { canGenerateQuotationForStatus, formatQuotationNumber } from "@/lib/documents";
 import { can } from "@/lib/permissions";
-import { InvoiceDocument } from "@/lib/pdf/InvoiceDocument";
+import { QuotationDocument } from "@/lib/pdf/QuotationDocument";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserRole } from "@/lib/session";
 
@@ -178,7 +178,7 @@ export async function GET(
     });
   }
 
-  const docElement = createElement(InvoiceDocument, {
+  const docElement = createElement(QuotationDocument, {
     companyName: branding.companyName,
     companyTagline: branding.companyTagline ?? "",
     companyAddressLine1: branding.companyAddressLine1,
@@ -187,7 +187,6 @@ export async function GET(
     companyEmail: branding.companyEmail ?? "",
     companyWebsite: branding.companyWebsite ?? "",
     companyLogoUrl: logoUrl,
-    documentTitle: "Quotation",
     quotationNumber,
     dateIssued: formatDocDate(issuedAtDate),
     validUntil: formatDocDate(dueDate),

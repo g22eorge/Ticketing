@@ -7,7 +7,7 @@ import path from "node:path";
 import { formatMoney, getAppCurrency } from "@/lib/currency";
 import { getDocumentBrandingSettings } from "@/lib/document-branding";
 import { can } from "@/lib/permissions";
-import { InvoiceDocument } from "@/lib/pdf/InvoiceDocument";
+import { JobCardDocument } from "@/lib/pdf/JobCardDocument";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserRole } from "@/lib/session";
 
@@ -144,7 +144,7 @@ export async function GET(
     },
   });
 
-  const docElement = createElement(InvoiceDocument, {
+  const docElement = createElement(JobCardDocument, {
     companyName: branding.companyName,
     companyTagline: branding.companyTagline ?? "",
     companyAddressLine1: branding.companyAddressLine1,
@@ -153,10 +153,8 @@ export async function GET(
     companyEmail: branding.companyEmail ?? "",
     companyWebsite: branding.companyWebsite ?? "",
     companyLogoUrl: logoUrl,
-    documentTitle: "Job Card",
-    quotationNumber: documentNumber,
+    documentNumber,
     dateIssued: formatDocDate(job.receivedAt),
-    validUntil: formatDocDate(job.receivedAt),
     repairId: job.jobNumber,
     preparedByName: user.name,
     preparedByRole: user.role,
@@ -171,22 +169,9 @@ export async function GET(
     physicalCondition: compactText(job.physicalNotes, 45),
     customerIssue: compactText(job.issueDescription, 85),
     diagnosisSummary: compactListText(job.diagnosisNotes ?? job.externalDiagnosis, 180),
-    scopeOfWork: compactListText(
-      [job.partsNeeded, job.workDone, job.technicianNotes].filter(Boolean).join("\n") || "Pending diagnosis",
-      260,
-    ),
-    repairCost: formatMoney(0, currency),
-    vatApplicable: false,
-    vatLabel: `${branding.vatLabel} (${branding.vatRatePercent}%)`,
-    vatAmount: formatMoney(0, currency),
-    totalAmountPayable: formatMoney(0, currency),
-    estimatedDuration: compactText(job.repairTimeline, 35),
-    approvalStatus: "Intake Record",
-    recommendation: job.recommendationOption ? compactListText(prettyEnum(job.recommendationOption), 120) : "",
-    notes: "This card records intake and diagnostic details.",
+    partsNeeded: compactListText(job.partsNeeded, 180),
+    technicianNotes: compactListText(job.technicianNotes, 180),
     status: prettyEnum(job.status),
-    currency,
-    termsText: "This job card confirms receipt of device and reported issue.",
     footerText: branding.footerText,
     signatureCompanyLabel: branding.signatureCompanyLabel,
     signatureClientLabel: branding.signatureClientLabel,

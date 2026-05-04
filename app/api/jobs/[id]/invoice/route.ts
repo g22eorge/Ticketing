@@ -9,7 +9,7 @@ import { formatMoney, getAppCurrency } from "@/lib/currency";
 import { getDocumentBrandingSettings } from "@/lib/document-branding";
 import { canGenerateInvoiceForStatus, formatQuotationNumber } from "@/lib/documents";
 import { can } from "@/lib/permissions";
-import { InvoiceDocument } from "@/lib/pdf/InvoiceDocument";
+import { InvoiceDocumentV2 } from "@/lib/pdf/InvoiceDocumentV2";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserRole } from "@/lib/session";
 
@@ -225,7 +225,7 @@ export async function GET(
     },
   });
 
-  const invoiceElement = createElement(InvoiceDocument, {
+  const invoiceElement = createElement(InvoiceDocumentV2, {
     companyName: branding.companyName,
     companyTagline: branding.companyTagline ?? "",
     companyAddressLine1: branding.companyAddressLine1,
@@ -234,10 +234,8 @@ export async function GET(
     companyEmail: branding.companyEmail ?? "",
     companyWebsite: branding.companyWebsite ?? "",
     companyLogoUrl: logoUrl,
-    documentTitle: branding.documentTitle,
-    quotationNumber,
+    invoiceNumber,
     dateIssued: formatInvoiceDate(issuedAtDate),
-    validUntil: formatInvoiceDate(dueDate),
     repairId: job.jobNumber,
     preparedByName: user.name,
     preparedByRole: user.role,
@@ -248,32 +246,15 @@ export async function GET(
     deviceType: prettyEnum(job.deviceType),
     deviceLabel: compactText(`${job.brand} ${job.model}`, 45),
     serialOrImei: compactText(job.serialOrImei, 30),
-    accessories: compactText(job.accessories, 45),
-    physicalCondition: compactText(job.physicalNotes, 45),
-    customerIssue: compactText(job.issueDescription, 85),
     diagnosisSummary: compactListText(job.diagnosisNotes ?? job.externalDiagnosis, 180),
-    scopeOfWork: compactListText(
-      [job.recommendedRepair, job.partsNeeded, job.workDone]
-        .filter(Boolean)
-        .join("\n") || "To be confirmed after approval",
-      260,
-    ),
+    workDone: compactListText(job.workDone, 180),
+    partsReplaced: compactListText(job.partsReplaced, 180),
     repairCost: formatMoney(repairCost, currency),
     vatApplicable,
     vatLabel: `${branding.vatLabel} (${branding.vatRatePercent}%)`,
     vatAmount: formatMoney(vatAmount, currency),
     totalAmountPayable: formatMoney(clientBill, currency),
-    estimatedDuration: compactText(job.repairTimeline, 35),
-    approvalStatus:
-      job.clientApproved === true
-        ? "Approved"
-        : job.clientApproved === false
-          ? "Declined"
-          : "Awaiting Approval",
-    recommendation: job.recommendationOption
-      ? compactListText(prettyEnum(job.recommendationOption), 120)
-      : "",
-    notes: compactListText(job.clientConversationNote, 180),
+    isPaid: job.clientApproved === true,
     status: prettyEnum(job.status),
     currency,
     termsText: branding.termsText,
