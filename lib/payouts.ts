@@ -1,0 +1,74 @@
+import { Prisma } from "@prisma/client";
+
+import { prisma } from "@/lib/prisma";
+
+export type JobPayoutSnapshot = {
+  id: string;
+  externalTechFee: number | null;
+  externalPaid: boolean;
+  externalPaidAt: Date | null;
+  externalPaymentRef: string | null;
+};
+
+let payoutColumnsPresentCache: boolean | null = null;
+
+export async function hasJobPayoutColumns() {
+  if (payoutColumnsPresentCache !== null) {
+    return payoutColumnsPresentCache;
+  }
+
+  try {
+    const columns = await prisma.$queryRaw<Array<{ name: string }>>`
+      PRAGMA table_info("Job")
+    `;
+    const names = new Set(columns.map((column) => column.name));
+    payoutColumnsPresentCache =
+      names.has("externalTechFee") &&
+      names.has("externalPaid") &&
+      names.has("externalPaidAt") &&
+      names.has("externalPaymentRef");
+  } catch {
+    payoutColumnsPresentCache = false;
+  }
+
+  return payoutColumnsPresentCache;
+}
+
+export async function getJobPayoutsByIds(jobIds: string[]) {
+  if (jobIds.length === 0 || !(await hasJobPayoutColumns())) {
+    return new Map<string, JobPayoutSnapshot>();
+  }
+
+  const ids = [...new Set(jobIds)];
+  const rows = await prisma.$queryRaw<Array<{
+    id: string;
+    externalTechFee: number | null;
+    externalPaid: boolean | number | null;
+    externalPaidAt: Date | string | null;
+    externalPaymentRef: string | null;
+  }>>(
+    Prisma.sql`
+      SELECT
+        id,
+        externalTechFee,
+        externalPaid,
+        externalPaidAt,
+        externalPaymentRef
+      FROM "Job"
+      WHERE id IN (${Prisma.join(ids.map((id) => Prisma.sql`${id}`))})
+    `,
+  );
+
+  const map = new Map<string, JobPayoutSnapshot>();
+  for (const row of rows) {
+    map.set(row.id, {
+      id: row.id,
+      externalTechFee: row.externalTechFee,
+      externalPaid: Boolean(row.externalPaid),
+      externalPaidAt: row.externalPaidAt ? new Date(row.externalPaidAt) : null,
+      externalPaymentRef: row.externalPaymentRef,
+    });
+  }
+
+  return map;
+}

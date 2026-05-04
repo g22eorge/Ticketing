@@ -1,0 +1,151 @@
+"use client";
+
+import { Role } from "@prisma/client";
+import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
+
+function pageMeta(pathname: string, role: Role) {
+  const parts = pathname.split("/").filter(Boolean);
+
+  if (pathname === "/dashboard") {
+    if (role === "TECHNICIAN_EXTERNAL") {
+      return { title: "Dashboard", description: "Track your assigned jobs and payout status in one view." };
+    }
+    if (role === "TECHNICIAN_INTERNAL") {
+      return { title: "Dashboard", description: "Focus on your active queue: diagnosing, repair, and completed jobs." };
+    }
+    if (role === "OPS") {
+      return { title: "Dashboard", description: "Manage referrals, billing visibility, client approvals, and handoff into active repair." };
+    }
+    if (role === "FRONT_DESK") {
+      return { title: "Dashboard", description: "Capture new intake jobs and respond to client updates with read-only progress visibility." };
+    }
+    if (role === "ADMIN") {
+      return { title: "Dashboard", description: "Unified operations and financial control for repair performance." };
+    }
+    return { title: "Dashboard", description: "Keep intake, diagnostics, approvals, and closure in one live queue." };
+  }
+  if (pathname === "/jobs") return { title: "Jobs", description: "Track intake, repair progress, and completion at a glance." };
+  if (pathname === "/jobs/new") return { title: "New Job Intake", description: "Capture client, device, issue, and submission details." };
+  if (parts[0] === "jobs" && parts[1] && parts[2] === "edit") {
+    return { title: "Edit Job", subtitle: `Ref ${parts[1].slice(0, 8)}`, description: "Update job details and technician notes." };
+  }
+  if (parts[0] === "jobs" && parts[1]) {
+    return { title: "Job Details", subtitle: `Ref ${parts[1].slice(0, 8)}`, description: "Review status, diagnosis, repair log, financials, and timeline." };
+  }
+  if (pathname === "/clients") return { title: "Clients", description: "Directory, engagement level, and quick access to client history." };
+  if (parts[0] === "clients" && parts[1]) {
+    return { title: "Client Details", subtitle: `Ref ${parts[1].slice(0, 8)}`, description: "View client profile, job history, and notes timeline." };
+  }
+  if (pathname === "/reports") return { title: "Reports", description: "Operational and financial insights for repair performance." };
+  if (pathname === "/inventory") return { title: "Inventory", description: "Track parts stock, reservations, and reorder risk." };
+  if (pathname === "/payout-followups") return { title: "Payment Follow-up", description: "Collected external jobs pending technician payout." };
+  if (pathname === "/technicians") return { title: "Technician Portal", description: "Prioritized queue for assigned repair work." };
+  if (pathname === "/technicians/payouts") return { title: "Technician Payouts", description: "Track paid and unpaid fees across your external assignments." };
+  if (pathname === "/settings/users") return { title: "User Management", description: "Create users, assign roles, and manage active access." };
+  if (pathname === "/settings/branding") return { title: "Branding", description: "Manage invoice logo, company details, VAT defaults, and document colours." };
+  if (pathname === "/settings/profile") return { title: "Profile", description: "Update your personal account details and contact info." };
+  if (pathname === "/settings/notifications") return { title: "Notifications", description: "Choose which job events trigger alerts for your account." };
+  if (pathname === "/settings/notifications/templates") return { title: "Comms Templates", description: "Manage message templates, nudge sequencing, and status-channel policy rules." };
+  if (pathname === "/settings/notifications/outbox") return { title: "Outbox", description: "Delivery queue for outbound WhatsApp and email notifications." };
+  if (pathname === "/intake") return { title: "Repair Requests", description: "Incoming website requests awaiting intake conversion." };
+  return { title: "Workspace" };
+}
+
+async function fetchJobNumber(id: string) {
+  const res = await fetch(`/api/meta/job/${id}`, { cache: "no-store" });
+  if (!res.ok) return null;
+  const contentType = res.headers.get("content-type") || "";
+  if (!contentType.includes("application/json")) return null;
+  const data = (await res.json()) as { jobNumber?: string };
+  return data.jobNumber ?? null;
+}
+
+async function fetchClientName(id: string) {
+  const res = await fetch(`/api/meta/client/${id}`, { cache: "no-store" });
+  if (!res.ok) return null;
+  const contentType = res.headers.get("content-type") || "";
+  if (!contentType.includes("application/json")) return null;
+  const data = (await res.json()) as { fullName?: string };
+  return data.fullName ?? null;
+}
+
+function roleTag(role: Role) {
+  if (role === "ADMIN") return "Admin";
+  if (role === "TECHNICIAN_INTERNAL") return "Internal Tech";
+  if (role === "TECHNICIAN_EXTERNAL") return "External Tech";
+  if (role === "OPS") return "Operations";
+  if (role === "FRONT_DESK") return "Front Desk";
+  return "Operations";
+}
+
+function roleTagStyle(role: Role) {
+  // Don't use --ink as a background: in dark theme it's near-white.
+  if (role === "ADMIN") return "bg-[var(--accent)] text-black border border-[var(--accent)]/35";
+  if (role === "OPS") return "bg-[var(--accent)]/15 text-[#9A7A00] border border-[var(--accent)]/30";
+  if (role === "TECHNICIAN_INTERNAL") return "bg-blue-50 text-blue-700 border border-blue-200";
+  if (role === "TECHNICIAN_EXTERNAL") return "bg-purple-50 text-purple-700 border border-purple-200";
+  if (role === "FRONT_DESK") return "bg-emerald-50 text-emerald-700 border border-emerald-200";
+  return "bg-[var(--panel-strong)] text-[var(--ink-muted)]";
+}
+
+export function PageThemeHeader({ role }: { role: Role }) {
+  const pathname = usePathname();
+  const meta = pageMeta(pathname, role);
+  const [resolvedSubtitle, setResolvedSubtitle] = useState<{ path: string; text: string } | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const parts = pathname.split("/").filter(Boolean);
+
+    const load = async () => {
+      if (parts[0] === "jobs" && parts[1]) {
+        const jobNumber = await fetchJobNumber(parts[1]);
+        if (!cancelled && jobNumber) {
+          setResolvedSubtitle({ path: pathname, text: jobNumber });
+        }
+        return;
+      }
+      if (parts[0] === "clients" && parts[1]) {
+        const clientName = await fetchClientName(parts[1]);
+        if (!cancelled && clientName) {
+          setResolvedSubtitle({ path: pathname, text: clientName });
+        }
+      }
+    };
+
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, [pathname]);
+
+  const subtitle = resolvedSubtitle?.path === pathname ? resolvedSubtitle.text : meta.subtitle;
+
+  return (
+    <section className="flex items-start gap-3 rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3 panel-shadow">
+      {/* Gold left accent bar */}
+      <div className="mt-0.5 h-8 w-1 shrink-0 rounded-full bg-gradient-to-b from-[var(--accent)] to-[var(--accent)]/40" />
+
+      {/* Content */}
+      <div className="flex min-w-0 flex-1 flex-wrap items-center justify-between gap-2">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-baseline gap-2">
+            <h1 className="text-base font-bold tracking-tight text-[var(--ink)] md:text-lg">{meta.title}</h1>
+            {subtitle ? (
+              <span className="rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-1.5 py-0.5 text-[11px] font-mono font-medium text-[var(--ink-muted)]">
+                {subtitle}
+              </span>
+            ) : null}
+          </div>
+          {meta.description ? (
+            <p className="mt-0.5 hidden text-[12px] leading-snug text-[var(--ink-muted)] sm:block">{meta.description}</p>
+          ) : null}
+        </div>
+        <span className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.1em] ${roleTagStyle(role)}`}>
+          {roleTag(role)}
+        </span>
+      </div>
+    </section>
+  );
+}

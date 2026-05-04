@@ -1,0 +1,8 @@
+<svg width="720" height="220" viewBox="0 0 720 220" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="720" height="220" rx="8" fill="#05070B"/>
+  <circle cx="72" cy="110" r="42" fill="#0F172A" stroke="#E2E8F0" stroke-width="6"/>
+  <path d="M72 80L77.5 95.5H94L80.5 105.5L86 121L72 111.5L58 121L63.5 105.5L50 95.5H66.5L72 80Z" fill="#E2E8F0"/>
+  <text x="136" y="104" fill="#F8FAFC" font-family="Arial, Helvetica, sans-serif" font-size="56" font-weight="700">Eagle Info Solutions</text>
+  <text x="136" y="144" fill="#CBD5E1" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="600">SMC LIMITED</text>
+  <line x1="342" y1="142" x2="664" y2="142" stroke="#CBD5E1" stroke-width="4"/>
+</svg>

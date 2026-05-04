@@ -1,0 +1,240 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: file:${{ github.workspace }}/prisma/dev.db
+      BETTER_AUTH_SECRET: test-only-not-a-real-secret-for-ci-builds-only
+      NEXT_PUBLIC_APP_URL: http://127.0.0.1:3000
+      BETTER_AUTH_URL: http://127.0.0.1:3000
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Start timer
+        id: timer
+        run: echo "started_at=$(date +%s)" >> "$GITHUB_OUTPUT"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Cache Bun dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.bun/install/cache
+            node_modules
+          key: ${{ runner.os }}-bun-quality-${{ hashFiles('bun.lock', 'package.json') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-quality-
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Prisma generate
+        run: bun run prisma:generate
+
+      - name: Lint
+        run: bun run lint
+
+      - name: Typecheck
+        run: bunx tsc --noEmit
+
+      - name: Build
+        run: bun run build
+
+      - name: Job summary
+        if: always()
+        run: |
+          ended_at=$(date +%s)
+          elapsed=$((ended_at - ${{ steps.timer.outputs.started_at }}))
+          {
+            echo "## quality"
+            echo "- status: ${{ job.status }}"
+            echo "- duration_seconds: ${elapsed}"
+            echo "- checks: lint, typecheck, build"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  qa-backend:
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: file:${{ github.workspace }}/prisma/dev.db
+      BETTER_AUTH_SECRET: test-only-not-a-real-secret-for-ci-builds-only
+      NEXT_PUBLIC_APP_URL: http://127.0.0.1:3000
+      BETTER_AUTH_URL: http://127.0.0.1:3000
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Start timer
+        id: timer
+        run: echo "started_at=$(date +%s)" >> "$GITHUB_OUTPUT"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Cache Bun dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.bun/install/cache
+            node_modules
+          key: ${{ runner.os }}-bun-backend-${{ hashFiles('bun.lock', 'package.json') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-backend-
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Prisma generate
+        run: bun run prisma:generate
+
+      - name: Prisma migrate deploy
+        run: bunx prisma migrate deploy
+
+      - name: Seed data
+        run: bun run seed
+
+      - name: Build
+        run: bun run build
+
+      - name: QA data integrity
+        run: bun run qa:data-integrity
+
+      - name: QA concurrency
+        run: bun run qa:concurrency
+
+      - name: QA performance
+        run: bun run qa:perf
+
+      - name: QA HTTP security
+        run: |
+          PORT=3000 bun run start >/tmp/mrms-ci-start.log 2>&1 &
+          SERVER_PID=$!
+          for i in {1..30}; do
+            if curl -sSf http://127.0.0.1:3000/login >/dev/null; then
+              break
+            fi
+            sleep 1
+          done
+          QA_BASE_URL=http://127.0.0.1:3000 bun run qa:http-security
+          kill "$SERVER_PID"
+          wait "$SERVER_PID" 2>/dev/null || true
+
+      - name: Job summary
+        if: always()
+        run: |
+          ended_at=$(date +%s)
+          elapsed=$((ended_at - ${{ steps.timer.outputs.started_at }}))
+          {
+            echo "## qa-backend"
+            echo "- status: ${{ job.status }}"
+            echo "- duration_seconds: ${elapsed}"
+            echo "- checks: data-integrity, concurrency, perf, http-security"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  qa-e2e:
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: file:${{ github.workspace }}/prisma/dev.db
+      BETTER_AUTH_SECRET: test-only-not-a-real-secret-for-ci-builds-only
+      NEXT_PUBLIC_APP_URL: http://127.0.0.1:4173
+      BETTER_AUTH_URL: http://127.0.0.1:4173
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Start timer
+        id: timer
+        run: echo "started_at=$(date +%s)" >> "$GITHUB_OUTPUT"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Cache Bun dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.bun/install/cache
+            node_modules
+          key: ${{ runner.os }}-bun-e2e-${{ hashFiles('bun.lock', 'package.json') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-e2e-
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('bun.lock', 'package.json') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Install Playwright Chromium
+        run: bunx playwright install --with-deps chromium
+
+      - name: Prisma generate
+        run: bun run prisma:generate
+
+      - name: Prisma migrate deploy
+        run: bunx prisma migrate deploy
+
+      - name: Seed data
+        run: bun run seed
+
+      - name: Build
+        run: bun run build
+
+      - name: QA E2E role smoke
+        env:
+          E2E_BASE_URL: http://127.0.0.1:4173
+          E2E_SKIP_BUILD: "1"
+          NEXT_PUBLIC_APP_URL: http://127.0.0.1:4173
+          BETTER_AUTH_URL: http://127.0.0.1:4173
+        run: bun run qa:e2e
+
+      - name: Job summary
+        if: always()
+        run: |
+          ended_at=$(date +%s)
+          elapsed=$((ended_at - ${{ steps.timer.outputs.started_at }}))
+          {
+            echo "## qa-e2e"
+            echo "- status: ${{ job.status }}"
+            echo "- duration_seconds: ${elapsed}"
+            echo "- checks: playwright role smoke"
+          } >> "$GITHUB_STEP_SUMMARY"

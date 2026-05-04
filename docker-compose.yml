@@ -1,0 +1,16 @@
+version: "3.9"
+
+services:
+  mrms:
+    build: .
+    container_name: mrms
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: "file:./prisma/dev.db"
+      NEXT_PUBLIC_APP_URL: "http://localhost:3000"
+      BETTER_AUTH_URL: "http://localhost:3000"
+      BETTER_AUTH_SECRET: "change-me-for-production"
+    volumes:
+      - ./prisma:/app/prisma
+      - ./public/uploads:/app/public/uploads

@@ -1,0 +1,765 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String   @id @default(cuid())
+  name          String
+  email         String   @unique
+  phone         String?
+  emailVerified Boolean  @default(false)
+  image         String?
+  role          Role     @default(OPS)
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  sessions     Session[]
+  accounts     Account[]
+  permissionGrants UserPermission[]
+  jobsCreated  Job[]      @relation("CreatedBy")
+  jobsAssigned Job[]      @relation("AssignedTo")
+  payoutsMarked Job[]     @relation("PayoutMarkedBy")
+  clientPaymentsMarked Job[] @relation("ClientPaymentMarkedBy")
+  auditLogs    AuditLog[]
+  clientNotes  ClientNote[]
+  notifications Notification[]
+  notificationPreferences NotificationPreferences?
+  partReservations PartReservation[] @relation("PartReservedBy")
+  stockTransactions PartStockTransaction[] @relation("StockTxnBy")
+  accessAuditEntries UserAccessAudit[] @relation("AccessAuditTarget")
+  accessAuditChanges UserAccessAudit[] @relation("AccessAuditActor")
+}
+
+model UserPermission {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  permission String
+  createdAt  DateTime @default(now())
+
+  @@unique([userId, permission])
+  @@index([permission])
+}
+
+model UserAccessAudit {
+  id           String   @id @default(cuid())
+  targetUserId String
+  targetUser   User     @relation("AccessAuditTarget", fields: [targetUserId], references: [id], onDelete: Cascade)
+  actorUserId  String
+  actorUser    User     @relation("AccessAuditActor", fields: [actorUserId], references: [id], onDelete: Cascade)
+  action       String
+  detail       String?
+  createdAt    DateTime @default(now())
+
+  @@index([targetUserId, createdAt])
+  @@index([actorUserId, createdAt])
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  expiresAt DateTime
+  token     String   @unique
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Account {
+  id                    String    @id @default(cuid())
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+}
+
+model Verification {
+  id         String   @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+enum Role {
+  ADMIN
+  OPS
+  TECHNICIAN_INTERNAL
+  TECHNICIAN_EXTERNAL
+  FRONT_DESK
+  // Legacy: kept for existing production rows.
+  // The app normalizes this to FRONT_DESK at runtime.
+  INTAKE
+}
+
+enum JobStatus {
+  RECEIVED
+  DIAGNOSING
+  REFERRED
+  PENDING_EXTERNAL_ASSIGNMENT
+  ASSIGNED_ONE_TIME_EXTERNAL
+  IN_EXTERNAL_REPAIR
+  WAITING_FOR_PARTS
+  RETURNED_FROM_EXTERNAL
+  AWAITING_APPROVAL
+  IN_REPAIR
+  READY_FOR_PICKUP
+  DELIVERED
+  COMPLETED
+  CLOSED
+}
+
+enum RecommendationOption {
+  PROCEED_REPAIR
+  REPLACE_DEVICE
+  RETURN_UNREPAIRED
+}
+
+enum CommunicationStatus {
+  NONE
+  AWAITING_RESPONSE
+  APPROVED
+  DECLINED
+}
+
+enum RepairPath {
+  IN_HOUSE
+  EXTERNAL
+}
+
+enum ServiceType {
+  HARDWARE
+  SOFTWARE
+  BOTH
+}
+
+enum SoftwareInstallerSource {
+  CLIENT_PROVIDED_INSTALLER
+  CLIENT_ACCOUNT_LOGIN
+  COMPANY_LICENSE
+  OPEN_SOURCE
+  OTHER
+}
+
+enum DeliveryMethod {
+  PICKUP
+  DELIVERY
+  COURIER
+}
+
+enum DeviceType {
+  PHONE_ANDROID
+  PHONE_IPHONE
+  TABLET
+  WINDOWS_PC
+  MAC
+  OTHER
+}
+
+enum TimelineConfidence {
+  FIRM
+  ESTIMATED
+  PARTS_DEPENDENT
+}
+
+enum WorkflowReason {
+  NONE
+  PARTS_PENDING
+  SPECIALIST_ESCALATION
+  CLIENT_DECLINED
+  UNREPAIRABLE
+  CUSTOMER_CANCELLED
+  OTHER
+}
+
+enum PartReservationStatus {
+  RESERVED
+  CONSUMED
+  RELEASED
+}
+
+enum StockTransactionType {
+  IN
+  OUT
+  ADJUST
+}
+
+model Client {
+  id           String   @id @default(cuid())
+  fullName     String
+  phone        String   @unique
+  email        String?
+  organization String?
+  notes        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  jobs         Job[]
+  devices      Device[]
+  notesEntries ClientNote[]
+}
+
+model Device {
+  id           String     @id @default(cuid())
+  clientId     String
+  client       Client     @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  deviceType   DeviceType
+  brand        String
+  model        String
+  serialOrImei String?
+  accessories  String?
+  physicalNotes String?
+
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  jobs         Job[]
+
+  @@index([clientId])
+  @@index([serialOrImei])
+}
+
+model ClientNote {
+  id        String   @id @default(cuid())
+  clientId  String
+  client    Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id])
+  body      String
+  createdAt DateTime @default(now())
+}
+
+model Job {
+  id            String     @id @default(cuid())
+  jobNumber     String     @unique
+  status        JobStatus  @default(RECEIVED)
+  repairPath    RepairPath?
+  clientId      String
+  client        Client     @relation(fields: [clientId], references: [id])
+  deviceId      String?
+  device        Device?    @relation(fields: [deviceId], references: [id], onDelete: SetNull)
+  createdById   String
+  createdBy     User       @relation("CreatedBy", fields: [createdById], references: [id])
+  assignedToId  String?
+  assignedTo    User?      @relation("AssignedTo", fields: [assignedToId], references: [id])
+  deviceType    DeviceType
+  brand         String
+  model         String
+  serialOrImei  String?
+  accessories   String?
+  physicalNotes String?
+
+  // Business line: hardware repair vs software-only services.
+  serviceType   ServiceType @default(HARDWARE)
+
+  // Software service scope (no app catalog; client must provide valid licenses).
+  softwareOsInstall          Boolean @default(false)
+  softwareDriversUpdates     Boolean @default(false)
+  softwareDataBackupRestore  Boolean @default(false)
+  softwareAccountSetup       Boolean @default(false)
+  softwarePerformanceTune    Boolean @default(false)
+  softwareThirdPartyApps     Boolean @default(false)
+  softwareRequestedNotes     String?
+  softwareLicenseAttested    Boolean @default(false)
+  softwareInstallerSource    SoftwareInstallerSource?
+  softwareInstallerSourceNote String?
+
+  issueDescription  String
+  workflowReason    WorkflowReason @default(NONE)
+  statusNote        String?
+  diagnosisNotes    String?
+  externalDiagnosis String?
+  recommendedRepair String?
+  recommendationOption RecommendationOption?
+  communicationStatus CommunicationStatus @default(NONE)
+  clientConversationNote String?
+  lastClientContactAt DateTime?
+  partsNeeded       String?
+
+  externalTechBill Float? @map("costEstimate")
+  clientBill       Float? @map("finalCost")
+  vatApplicable    Boolean @default(true)
+  externalTechFee Float?
+  externalPaid    Boolean   @default(false)
+  externalPaidAt  DateTime?
+  externalPaidById String?
+  externalPaidBy  User?     @relation("PayoutMarkedBy", fields: [externalPaidById], references: [id])
+  externalPaymentRef String?
+  clientPaid      Boolean   @default(false)
+  clientPaidAt    DateTime?
+  clientPaidById  String?
+  clientPaidBy    User?     @relation("ClientPaymentMarkedBy", fields: [clientPaidById], references: [id])
+  clientPaymentRef String?
+  invoiceNumber   String?   @unique
+  invoiceIssuedAt DateTime?
+  clientApproved Boolean?
+  approvalDate   DateTime?
+  quotedAt       DateTime?
+
+  repairTimeline  String?
+  timelineMinMinutes Int?
+  timelineMaxMinutes Int?
+  timelineConfidence TimelineConfidence?
+  timelineNote String?
+  technicianNotes String?
+  workDone        String?
+  partsReplaced   String?
+
+  receivedAt  DateTime  @default(now())
+  completedAt DateTime?
+  deliveredAt DateTime?
+  deliveryMethod DeliveryMethod? // PICKUP, DELIVERY, COURIER
+  deliveredTo String? // name of person who received
+  closedAt    DateTime?
+  updatedAt   DateTime  @updatedAt
+
+  photos    Photo[]
+  auditLogs AuditLog[]
+  notifications Notification[]
+  oneTimeExternalAssignment OneTimeExternalTechAssignment?
+  outboundMessages OutboundMessage[]
+  partReservations PartReservation[]
+  stockTransactions PartStockTransaction[]
+
+  @@index([deviceId])
+  @@index([clientId])
+  @@index([createdById])
+  @@index([status, updatedAt])
+  @@index([status, receivedAt])
+  @@index([assignedToId, status])
+  @@index([completedAt])
+  @@index([repairPath])
+}
+
+model Part {
+  id             String   @id @default(cuid())
+  sku            String   @unique
+  name           String
+  manufacturer   String?
+  unitCost       Float?
+  qtyOnHand      Int      @default(0)
+  reorderLevel   Int      @default(0)
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  reservations   PartReservation[]
+  transactions   PartStockTransaction[]
+
+  @@index([isActive])
+}
+
+model PartReservation {
+  id             String                @id @default(cuid())
+  jobId           String
+  job             Job                   @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  partId          String
+  part            Part                  @relation(fields: [partId], references: [id], onDelete: Restrict)
+  quantity        Int
+  status          PartReservationStatus @default(RESERVED)
+  unitCostSnapshot Float?
+  reservedById    String?
+  reservedBy      User?                 @relation("PartReservedBy", fields: [reservedById], references: [id], onDelete: SetNull)
+  reservedAt      DateTime              @default(now())
+  consumedAt      DateTime?
+  releasedAt      DateTime?
+  note            String?
+
+  @@index([jobId, status])
+  @@index([partId, status])
+}
+
+model PartStockTransaction {
+  id             String               @id @default(cuid())
+  partId          String
+  part            Part                 @relation(fields: [partId], references: [id], onDelete: Cascade)
+  type            StockTransactionType
+  quantity        Int
+  reason          String?
+  jobId           String?
+  job             Job?                 @relation(fields: [jobId], references: [id], onDelete: SetNull)
+  createdById     String?
+  createdBy       User?                @relation("StockTxnBy", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt       DateTime             @default(now())
+
+  @@index([partId, createdAt])
+  @@index([jobId])
+}
+
+model OneTimeExternalTechAssignment {
+  id                String   @id @default(cuid())
+  jobId             String   @unique
+  job               Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  technicianName    String
+  phone             String
+  specialization    String?
+
+  agreedRepairCost  Float?
+  partsNotes        String?
+  expectedPartsCost Float?
+
+  assignedAt        DateTime
+  expectedReturnAt  DateTime?
+  returnedAt        DateTime?
+
+  instructions      String?
+  progressNotes     String?
+  finalOutcome      String?
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([assignedAt])
+}
+
+model Photo {
+  id         String   @id @default(cuid())
+  jobId       String
+  job         Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  url         String
+  label       String?
+  uploadedAt DateTime @default(now())
+
+  @@index([jobId, uploadedAt])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  jobId     String
+  job       Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  action    String
+  detail    String?
+  createdAt DateTime @default(now())
+
+  @@index([jobId, createdAt])
+  @@index([userId, createdAt])
+}
+
+enum NotificationType {
+  STATUS_CHANGE
+  APPROVAL_NEEDED
+  JOB_ASSIGNED
+  ESTIMATE_SUBMITTED
+  PAYMENT_RECEIVED
+  PAYOUT_GENERATED
+  TIMELINE_UPDATED
+  DELAY_NOTE_ADDED
+}
+
+enum NotificationChannel {
+  DASHBOARD
+  WHATSAPP
+  EMAIL
+}
+
+enum OutboundMessageChannel {
+  WHATSAPP
+  EMAIL
+}
+
+enum OutboundMessageStatus {
+  PENDING
+  SENT
+  FAILED
+  DEAD
+}
+
+enum OutboundMessageType {
+  REPAIR_REQUEST_CONFIRMATION
+  FRONT_DESK_APPROVED
+  FRONT_DESK_REJECTED
+  // Legacy: kept for existing production rows.
+  // The app treats these as FRONT_DESK_*.
+  INTAKE_APPROVED
+  INTAKE_REJECTED
+  JOB_CREATED
+  JOB_COMPLETED
+  JOB_STATUS_UPDATE
+  READY_FOR_PICKUP_NUDGE_1
+  READY_FOR_PICKUP_NUDGE_2
+  REPAIR_REQUEST_EMAIL_ALERT
+  ADMIN_TEST
+}
+
+model Notification {
+  id          String            @id @default(cuid())
+  type        NotificationType
+  title       String
+  message     String
+  jobId       String?
+  job         Job?             @relation(fields: [jobId], references: [id], onDelete: SetNull)
+  userId      String?
+  user        User?            @relation(fields: [userId], references: [id], onDelete: SetNull)
+  channel     NotificationChannel @default(DASHBOARD)
+  isRead      Boolean          @default(false)
+  readAt      DateTime?
+  createdAt   DateTime         @default(now())
+  
+  @@index([userId, isRead])
+  @@index([jobId])
+}
+
+model OutboundMessage {
+  id               String               @id @default(cuid())
+  channel          OutboundMessageChannel
+  status           OutboundMessageStatus @default(PENDING)
+  type             OutboundMessageType
+
+  to               String
+  // EMAIL only. (Legacy rows may store the subject on the first line of `body`.)
+  subject          String?
+  body             String
+
+  // Optional template metadata for observability/debugging.
+  templateKey      String?
+  // JSON string of the variables used to render the template at enqueue time.
+  templateVars     String?
+  // When set, this message is sent as a Meta-approved template message instead of free-form text.
+  metaTemplateName     String?  // approved template name, e.g. "repair_status_update"
+  metaTemplateLanguage String?  // language code, e.g. "en"
+  // JSON array of parameter VALUES in positional order matching {{1}}, {{2}}… in the template body.
+  metaTemplateVars     String?
+
+  provider         String?
+  providerMessageId String?
+
+  // Provider delivery statuses (webhook callbacks). This does not affect outbox retry.
+  providerDeliveryStatus String?
+  providerDeliveryAt     DateTime?
+  providerDeliveryErrorCode String?
+  providerDeliveryError     String?
+
+  attemptCount     Int                  @default(0)
+  lastAttemptAt    DateTime?
+  nextAttemptAt    DateTime             @default(now())
+  sentAt           DateTime?
+
+  lastErrorCode    String?
+  lastError        String?
+
+  lockedAt         DateTime?
+
+  repairRequestId  String?
+  repairRequest    RepairRequest?       @relation(fields: [repairRequestId], references: [id], onDelete: SetNull)
+  jobId            String?
+  job              Job?                 @relation(fields: [jobId], references: [id], onDelete: SetNull)
+
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+
+  @@index([channel, status, nextAttemptAt])
+  @@index([providerMessageId])
+  @@index([repairRequestId])
+  @@index([jobId])
+  @@index([templateKey])
+}
+
+model NotificationPreferences {
+  id                  String   @id @default(cuid())
+  userId              String   @unique
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  notifyStatusChange  Boolean  @default(true)
+  notifyApprovalNeeded Boolean @default(true)
+  notifyJobAssigned   Boolean  @default(true)
+  notifyEstimateSubmitted Boolean @default(true)
+  notifyPaymentReceived Boolean @default(true)
+  notifyPayoutGenerated Boolean @default(true)
+  notifyTimelineUpdated Boolean @default(true)
+  notifyDelayNote    Boolean  @default(true)
+  
+  whatsappEnabled     Boolean  @default(true)
+  emailEnabled        Boolean  @default(false)
+  
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
+model CommunicationTemplate {
+  id          String   @id @default(cuid())
+  key         String
+  channel     OutboundMessageChannel
+  label       String
+  subject     String?
+  body        String
+  // JSON array of placeholder keys in the ORDER they map to Meta template {{1}}, {{2}}…
+  variables         String?
+  // Meta / WhatsApp Business API template fields. Set these once the template is approved.
+  metaTemplateName  String?  // approved template name in Meta, e.g. "repair_status_update"
+  metaLanguageCode  String?  // e.g. "en" — defaults to "en" when metaTemplateName is set
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([key, channel])
+  @@index([channel, isActive])
+}
+
+model CommunicationPolicy {
+  id               String    @id @default(cuid())
+  status           JobStatus @unique
+  dashboardEnabled Boolean   @default(true)
+  whatsappEnabled  Boolean   @default(false)
+  emailEnabled     Boolean   @default(false)
+  // Shared key; can map to channel-specific templates with the same key.
+  templateKey      String?
+  nudge1Hours      Int?
+  nudge2Hours      Int?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([templateKey])
+}
+
+model DocumentBrandingSettings {
+  id                   String   @id @default("singleton")
+  companyName          String   @default("Eagle Info Solutions")
+  companyTagline       String?
+  companyAddressLine1  String   @default("Nalubega Complex, 1st Floor")
+  companyAddressLine2  String   @default("Shop L28, Bombo Road Opposite Watoto Church")
+  companyContacts      String   @default("+256772 006 344 | +256754 006 344")
+  companyEmail         String?
+  companyWebsite       String?
+  documentTitle        String   @default("Job Card")
+  quotePrefix          String   @default("EIS")
+  quoteFormat          String   @default("{PREFIX} {M}/{YYYY}/{SEQ}")
+  quoteValidityDays    Int      @default(30)
+  sequencePadLength    Int      @default(4)
+  vatDefaultApplicable Boolean  @default(true)
+  vatRatePercent       Float    @default(18)
+  vatLabel             String   @default("VAT")
+  termsText            String   @default("Quotation valid for 30 days from date issued.\nRepair work begins only after approval is recorded.\nParts availability may affect final timeline.\nHidden pre-existing faults may affect final outcome.\nUncollected devices may attract storage fees after notice.")
+  footerText           String   @default("System built by Almeida @ 2026 all rights reserved.")
+  signatureCompanyLabel String  @default("Signed by: Eagle Info Solutions")
+  signatureClientLabel String   @default("Signed by: Client")
+  primaryColor         String   @default("#000000")
+  secondaryColor       String   @default("#D4AF37")
+  accentColor          String   @default("#D4AF37")
+  backgroundColor      String   @default("#FFFFFF")
+  surfaceColor         String   @default("#F5F5F5")
+  borderColor          String   @default("#E5E5E5")
+  updatedAt            DateTime @updatedAt
+}
+
+// REPAIR REQUEST FRONT_DESK MODELS
+model RepairRequest {
+  id            String   @id @default(cuid())
+  requestNumber String   @unique
+  requestStatus RepairRequestStatus @default(PENDING_FRONT_DESK)
+  handoverStatus RepairHandoverStatus @default(PENDING)
+  
+  // Customer info
+  customerName String
+  phone        String
+  email        String?
+  preferredContactMethod ContactMethod @default(WHATSAPP)
+  
+  // Device info
+  deviceType   DeviceType
+  brand       String
+  model       String?
+  serialNumber String?
+  
+  // Problem description
+  problemDescription String
+  
+  // Handover method specific fields
+  handoverMethod    HandoverMethod
+  preferredDropoffDate String?
+  preferredDropoffTime String?
+  dropoffNotes        String?
+  
+  deliveryPersonName  String?
+  deliveryPersonPhone String?
+  deliveryCompany     String?
+  dispatchDate        String?
+  expectedArrivalTime String?
+  deliveryTrackingReference String?
+  deliveryFeeResponsibility String?
+  deliveryNotes       String?
+  
+  pickupAddress     String?
+  pickupLandmark    String?
+  preferredPickupDate String?
+  preferredPickupTime String?
+  alternateContactPerson String?
+  alternateContactPhone String?
+  pickupNotes       String?
+  
+  // Linked job (set when converted to a job)
+  linkedJobId String?
+
+  // Anti-spam
+  submissionIp String?
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  outboundMessages OutboundMessage[]
+
+  @@index([requestStatus, createdAt])
+  @@index([phone])
+}
+
+// Allocates human-friendly repair request numbers safely under concurrency.
+model RepairRequestSequence {
+  year      Int      @id
+  value     Int      @default(0) // last allocated sequence value
+  updatedAt DateTime @updatedAt
+}
+
+enum RepairRequestStatus {
+  // Legacy: kept for existing production rows.
+  PENDING_INTAKE
+  PENDING_FRONT_DESK
+  APPROVED
+  REJECTED
+  CONVERTED_TO_JOB
+}
+
+enum RepairHandoverStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+enum ContactMethod {
+  WHATSAPP
+  PHONE
+  EMAIL
+  SMS
+}
+
+enum HandoverMethod {
+  SELF_DROPOFF
+  SEND_WITH_DELIVERY_PERSON
+  REQUEST_PICKUP
+}

@@ -1,0 +1,344 @@
+import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
+
+import { Prisma, OutboundMessageChannel, OutboundMessageStatus, OutboundMessageType } from "@prisma/client";
+
+import { prisma } from "@/lib/prisma";
+import { getCurrentUserRole } from "@/lib/session";
+import { deliverOutboundMessage, getOutboxRetryLimit, retryDueOutboundMessages } from "@/lib/notifications/whatsapp-outbox";
+
+export const dynamic = "force-dynamic";
+
+type SearchParams = {
+  channel?: string;
+  status?: string;
+  type?: string;
+  q?: string;
+};
+
+const CHANNELS = Object.values(OutboundMessageChannel);
+const STATUSES = Object.values(OutboundMessageStatus);
+const TYPES = Object.values(OutboundMessageType);
+
+const STATUS_STYLES: Record<string, string> = {
+  SENT: "border-emerald-200 bg-emerald-50 text-emerald-700",
+  PENDING: "border-amber-200 bg-amber-50 text-amber-700",
+  FAILED: "border-red-200 bg-red-50 text-red-700",
+  DEAD: "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]",
+};
+
+const CHANNEL_STYLES: Record<string, string> = {
+  WHATSAPP: "border-[#25D366]/30 bg-[#25D366]/8 text-[#128C42]",
+  EMAIL: "border-blue-200 bg-blue-50 text-blue-700",
+};
+
+function shortId(id: string) {
+  return id.slice(0, 8) + "…";
+}
+
+function shortWamid(wamid: string | null) {
+  if (!wamid) return null;
+  return wamid.slice(0, 20) + "…";
+}
+
+function fmtDate(d: Date | null | undefined) {
+  if (!d) return null;
+  return new Intl.DateTimeFormat("en-UG", {
+    month: "short", day: "numeric",
+    hour: "2-digit", minute: "2-digit",
+  }).format(new Date(d));
+}
+
+export default async function OutboxPage({
+  searchParams,
+}: {
+  searchParams: Promise<SearchParams>;
+}) {
+  const { user } = await getCurrentUserRole();
+  if (!(user.role === "ADMIN" || user.role === "OPS")) {
+    redirect("/dashboard");
+  }
+
+  const filters = await searchParams;
+  const channel = CHANNELS.includes(filters.channel as OutboundMessageChannel)
+    ? (filters.channel as OutboundMessageChannel)
+    : null;
+  const status = STATUSES.includes(filters.status as OutboundMessageStatus)
+    ? (filters.status as OutboundMessageStatus)
+    : null;
+  const type = TYPES.includes(filters.type as OutboundMessageType)
+    ? (filters.type as OutboundMessageType)
+    : null;
+  const q = typeof filters.q === "string" ? filters.q.trim() : "";
+
+  const where: Prisma.OutboundMessageWhereInput = {
+    ...(channel ? { channel } : {}),
+    ...(status ? { status } : {}),
+    ...(type ? { type } : {}),
+    ...(q
+      ? {
+          OR: [
+            { id: { contains: q } },
+            { to: { contains: q } },
+            { providerMessageId: { contains: q } },
+            { lastError: { contains: q } },
+          ],
+        }
+      : {}),
+  };
+
+  const [rows, counts] = await Promise.all([
+    prisma.outboundMessage.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      take: 200,
+      select: {
+        id: true,
+        channel: true,
+        type: true,
+        status: true,
+        to: true,
+        attemptCount: true,
+        lastAttemptAt: true,
+        nextAttemptAt: true,
+        sentAt: true,
+        createdAt: true,
+        provider: true,
+        providerMessageId: true,
+        providerDeliveryStatus: true,
+        providerDeliveryAt: true,
+        providerDeliveryErrorCode: true,
+        providerDeliveryError: true,
+        lastErrorCode: true,
+        lastError: true,
+        metaTemplateName: true,
+      },
+    }),
+    prisma.outboundMessage.groupBy({
+      by: ["status"],
+      _count: { status: true },
+    }),
+  ]);
+
+  const byStatus = Object.fromEntries(counts.map((c) => [c.status, c._count.status]));
+
+  async function retryNowAction() {
+    "use server";
+    const { user } = await getCurrentUserRole();
+    if (!(user.role === "ADMIN" || user.role === "OPS")) return;
+    await retryDueOutboundMessages(getOutboxRetryLimit(25));
+    revalidatePath("/settings/notifications/outbox");
+  }
+
+  async function retryOneAction(formData: FormData) {
+    "use server";
+    const { user } = await getCurrentUserRole();
+    if (!(user.role === "ADMIN" || user.role === "OPS")) return;
+    const id = String(formData.get("id") ?? "");
+    if (!id) return;
+    await deliverOutboundMessage(id);
+    revalidatePath("/settings/notifications/outbox");
+  }
+
+  async function markDeadAction(formData: FormData) {
+    "use server";
+    const { user } = await getCurrentUserRole();
+    if (!(user.role === "ADMIN" || user.role === "OPS")) return;
+    const id = String(formData.get("id") ?? "");
+    if (!id) return;
+    await prisma.outboundMessage.update({
+      where: { id },
+      data: { status: "DEAD", nextAttemptAt: new Date(0), lockedAt: null },
+    });
+    revalidatePath("/settings/notifications/outbox");
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Summary bar */}
+      <div className="panel-shadow flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
+        <div className="flex flex-wrap items-center gap-2">
+          {[
+            { label: "sent", key: "SENT", style: "border-emerald-200 bg-emerald-50 text-emerald-700" },
+            { label: "pending", key: "PENDING", style: "border-amber-200 bg-amber-50 text-amber-700" },
+            { label: "failed", key: "FAILED", style: "border-red-200 bg-red-50 text-red-700" },
+            { label: "dead", key: "DEAD", style: "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]" },
+          ].map(({ label, key, style }) => (
+            <span key={key} className={`rounded-full border px-2.5 py-0.5 text-[11px] font-semibold tabular-nums ${style}`}>
+              {byStatus[key] ?? 0} {label}
+            </span>
+          ))}
+          <span className="text-[11px] text-[var(--ink-muted)]">· showing {rows.length} of 200</span>
+        </div>
+        <form action={retryNowAction}>
+          <button className="btn-premium rounded-lg px-3 py-1.5 text-sm">
+            Run Retry
+          </button>
+        </form>
+      </div>
+
+      {/* Filters */}
+      <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
+        <form className="flex flex-wrap items-end gap-2" method="GET">
+          <select
+            name="channel"
+            defaultValue={channel ?? ""}
+            className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-sm outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14"
+          >
+            <option value="">All channels</option>
+            {CHANNELS.map((c) => <option key={c} value={c}>{c}</option>)}
+          </select>
+          <select
+            name="status"
+            defaultValue={status ?? ""}
+            className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-sm outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14"
+          >
+            <option value="">All statuses</option>
+            {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+          </select>
+          <input
+            name="q"
+            defaultValue={q}
+            placeholder="Search recipient / error / ID"
+            className="min-w-[200px] flex-1 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-sm outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14"
+          />
+          <button className="btn-premium-secondary rounded-lg px-3 py-1.5 text-sm">Filter</button>
+          {(channel || status || q) ? (
+            <a href="/settings/notifications/outbox" className="rounded-lg px-3 py-1.5 text-sm text-[var(--ink-muted)] hover:text-[var(--ink)]">
+              Clear
+            </a>
+          ) : null}
+        </form>
+      </div>
+
+      {/* Table */}
+      <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
+        {rows.length === 0 ? (
+          <div className="px-6 py-12 text-center text-sm text-[var(--ink-muted)]">
+            No messages match these filters.
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[720px] text-left">
+              <thead>
+                <tr className="border-b border-[var(--line)] bg-[var(--panel-strong)]/60">
+                  {["Status", "Channel / Type", "Recipient", "Sent / Scheduled", "Delivery", "Error", "Actions"].map((h) => (
+                    <th key={h} className="px-4 py-2.5 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[var(--line)]">
+                {rows.map((r) => (
+                  <tr key={r.id} className="group align-top transition-colors hover:bg-[var(--panel-strong)]/40">
+
+                    {/* Status */}
+                    <td className="px-4 py-3">
+                      <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${STATUS_STYLES[r.status] ?? STATUS_STYLES.DEAD}`}>
+                        {r.status}
+                      </span>
+                    </td>
+
+                    {/* Channel + Type */}
+                    <td className="px-4 py-3">
+                      <span className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${CHANNEL_STYLES[r.channel] ?? ""}`}>
+                        {r.channel}
+                      </span>
+                      <p className="mt-1 text-[11px] text-[var(--ink-muted)]">
+                        {r.type.replaceAll("_", " ").toLowerCase()}
+                      </p>
+                      {r.metaTemplateName ? (
+                        <p className="mt-0.5 font-mono text-[10px] text-[var(--accent)]/70">
+                          tpl: {r.metaTemplateName}
+                        </p>
+                      ) : null}
+                    </td>
+
+                    {/* Recipient */}
+                    <td className="px-4 py-3">
+                      <p className="font-mono text-sm font-medium text-[var(--ink)]">{r.to}</p>
+                      <p className="mt-0.5 text-[10px] text-[var(--ink-muted)]">{shortId(r.id)}</p>
+                    </td>
+
+                    {/* Sent / Scheduled */}
+                    <td className="px-4 py-3">
+                      {r.sentAt ? (
+                        <p className="text-xs font-medium text-[var(--ink)]">{fmtDate(r.sentAt)}</p>
+                      ) : r.nextAttemptAt && r.nextAttemptAt > new Date() ? (
+                        <p className="text-[11px] text-amber-600">Due {fmtDate(r.nextAttemptAt)}</p>
+                      ) : (
+                        <p className="text-[11px] text-[var(--ink-muted)]">—</p>
+                      )}
+                      <p className="mt-0.5 text-[10px] text-[var(--ink-muted)]">
+                        {r.attemptCount} attempt{r.attemptCount !== 1 ? "s" : ""}
+                      </p>
+                    </td>
+
+                    {/* Delivery */}
+                    <td className="px-4 py-3">
+                      {r.providerDeliveryStatus ? (
+                        <>
+                          <span className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${r.providerDeliveryStatus === "delivered" || r.providerDeliveryStatus === "read" ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]"}`}>
+                            {r.providerDeliveryStatus}
+                          </span>
+                          {r.providerDeliveryAt ? (
+                            <p className="mt-0.5 text-[10px] text-[var(--ink-muted)]">{fmtDate(r.providerDeliveryAt)}</p>
+                          ) : null}
+                        </>
+                      ) : r.providerMessageId ? (
+                        <p className="font-mono text-[10px] text-[var(--ink-muted)]" title={r.providerMessageId}>
+                          {shortWamid(r.providerMessageId)}
+                        </p>
+                      ) : (
+                        <span className="text-[11px] text-[var(--ink-muted)]">—</span>
+                      )}
+                    </td>
+
+                    {/* Error */}
+                    <td className="px-4 py-3 max-w-[200px]">
+                      {r.lastError ? (
+                        <>
+                          {r.lastErrorCode ? (
+                            <span className="font-mono text-[10px] font-semibold text-red-600">{r.lastErrorCode}</span>
+                          ) : null}
+                          <p className="mt-0.5 line-clamp-3 text-[11px] text-[var(--ink-muted)]" title={r.lastError}>
+                            {r.lastError}
+                          </p>
+                        </>
+                      ) : (
+                        <span className="text-[11px] text-[var(--ink-muted)]">—</span>
+                      )}
+                    </td>
+
+                    {/* Actions */}
+                    <td className="px-4 py-3">
+                      <div className="flex flex-col gap-1.5">
+                        {r.status !== "SENT" ? (
+                          <form action={retryOneAction}>
+                            <input type="hidden" name="id" value={r.id} />
+                            <button className="btn-premium-secondary w-full rounded-lg px-3 py-1.5 text-xs">
+                              Retry
+                            </button>
+                          </form>
+                        ) : null}
+                        {r.status !== "DEAD" && r.status !== "SENT" ? (
+                          <form action={markDeadAction}>
+                            <input type="hidden" name="id" value={r.id} />
+                            <button className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-xs font-medium text-[var(--ink-muted)] transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-700">
+                              Discard
+                            </button>
+                          </form>
+                        ) : null}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

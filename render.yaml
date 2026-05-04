@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: mrms
+    runtime: node
+    plan: starter
+    buildCommand: bun install --frozen-lockfile && bunx prisma generate && bun run build
+    startCommand: bunx prisma migrate deploy && bun run start
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+      - key: NEXT_PUBLIC_APP_URL
+        sync: false
+      - key: BETTER_AUTH_URL
+        sync: false
+      - key: BETTER_AUTH_SECRET
+        sync: false
+      - key: DATABASE_URL
+        value: file:/var/data/dev.db
+      - key: UPLOADS_DIR
+        value: /var/data/uploads
+    disk:
+      name: mrms-data
+      mountPath: /var/data
+      sizeGB: 5

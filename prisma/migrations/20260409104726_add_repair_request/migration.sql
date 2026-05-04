@@ -1,0 +1,40 @@
+-- CreateTable
+CREATE TABLE "RepairRequest" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "requestNumber" TEXT NOT NULL,
+    "requestStatus" TEXT NOT NULL DEFAULT 'PENDING_INTAKE',
+    "handoverStatus" TEXT NOT NULL DEFAULT 'PENDING',
+    "customerName" TEXT NOT NULL,
+    "phone" TEXT NOT NULL,
+    "email" TEXT,
+    "preferredContactMethod" TEXT NOT NULL DEFAULT 'WHATSAPP',
+    "deviceType" TEXT NOT NULL,
+    "brand" TEXT NOT NULL,
+    "model" TEXT,
+    "serialNumber" TEXT,
+    "problemDescription" TEXT NOT NULL,
+    "handoverMethod" TEXT NOT NULL,
+    "preferredDropoffDate" TEXT,
+    "preferredDropoffTime" TEXT,
+    "dropoffNotes" TEXT,
+    "deliveryPersonName" TEXT,
+    "deliveryPersonPhone" TEXT,
+    "deliveryCompany" TEXT,
+    "dispatchDate" TEXT,
+    "expectedArrivalTime" TEXT,
+    "deliveryTrackingReference" TEXT,
+    "deliveryFeeResponsibility" TEXT,
+    "deliveryNotes" TEXT,
+    "pickupAddress" TEXT,
+    "pickupLandmark" TEXT,
+    "preferredPickupDate" TEXT,
+    "preferredPickupTime" TEXT,
+    "alternateContactPerson" TEXT,
+    "alternateContactPhone" TEXT,
+    "pickupNotes" TEXT,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL
+);
+
+-- CreateIndex
+CREATE UNIQUE INDEX "RepairRequest_requestNumber_key" ON "RepairRequest"("requestNumber");

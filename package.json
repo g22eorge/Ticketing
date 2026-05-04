@@ -1,0 +1,71 @@
+{
+  "name": "mrms",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "export DATABASE_URL=\"file:./dev.db\"; bunx prisma db push --skip-generate && bunx prisma generate && next dev --webpack",
+    "build": "export DATABASE_URL=\"file:./dev.db\"; bunx prisma db push --skip-generate && bunx prisma generate && next build",
+    "vercel-build": "bunx prisma db push --skip-generate || true && export DATABASE_URL=\"file:./dev.db\" && bunx prisma db push --skip-generate && bunx prisma generate && next build",
+    "start": "PORT=${PORT:-3000} BIND_HOST=${BIND_HOST:-0.0.0.0}; if [ -f .next/standalone/server.js ]; then HOSTNAME=$BIND_HOST PORT=$PORT bun .next/standalone/server.js; else next start -p $PORT -H $BIND_HOST; fi",
+    "lint": "eslint",
+    "check:links": "node scripts/check-links.mjs",
+    "report:revenue": "node scripts/revenue-report.mjs",
+    "qa:data-integrity": "TURSO_DATABASE_URL= TURSO_AUTH_TOKEN= DATABASE_URL=\"${DATABASE_URL:-file:./dev.db}\" bunx prisma db push --skip-generate && TURSO_DATABASE_URL= TURSO_AUTH_TOKEN= DATABASE_URL=\"${DATABASE_URL:-file:./dev.db}\" bunx prisma generate && TURSO_DATABASE_URL= TURSO_AUTH_TOKEN= DATABASE_URL=\"${DATABASE_URL:-file:./dev.db}\" bun scripts/qa-data-integrity.mjs",
+    "qa:concurrency": "TURSO_DATABASE_URL= TURSO_AUTH_TOKEN= DATABASE_URL=\"${DATABASE_URL:-file:./dev.db}\" bunx prisma db push --skip-generate && TURSO_DATABASE_URL= TURSO_AUTH_TOKEN= DATABASE_URL=\"${DATABASE_URL:-file:./dev.db}\" bunx prisma generate && TURSO_DATABASE_URL= TURSO_AUTH_TOKEN= DATABASE_URL=\"${DATABASE_URL:-file:./dev.db}\" bun scripts/qa-concurrency.mjs",
+    "qa:perf": "node scripts/qa-perf.mjs",
+    "qa:http-security": "node scripts/qa-http-security.mjs",
+    "qa:e2e": "playwright test",
+    "qa:repair-requests": "TURSO_DATABASE_URL= TURSO_AUTH_TOKEN= DATABASE_URL=\"${DATABASE_URL:-file:./dev.db}\" bunx prisma db push --skip-generate && TURSO_DATABASE_URL= TURSO_AUTH_TOKEN= DATABASE_URL=\"${DATABASE_URL:-file:./dev.db}\" bunx prisma generate && TURSO_DATABASE_URL= TURSO_AUTH_TOKEN= DATABASE_URL=\"${DATABASE_URL:-file:./dev.db}\" bun scripts/qa-repair-request-numbers.mjs",
+    "db:prod-job-safety": "bun scripts/prod-job-column-safety.mjs",
+    "smoke:prod": "node scripts/smoke-prod.mjs",
+    "qa:all": "bun run qa:data-integrity && bun run qa:concurrency && bun run qa:perf",
+    "data:backfill-final-cost": "node scripts/backfill-final-cost.mjs",
+    "predeploy:check": "node scripts/predeploy-check.mjs",
+    "predeploy:ci": "REQUIRE_HTTPS=1 REQUIRE_QA_HTTP=1 REQUIRE_E2E=1 node scripts/predeploy-check.mjs",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "bunx prisma migrate dev",
+    "seed": "TURSO_DATABASE_URL= TURSO_AUTH_TOKEN= DATABASE_URL=\"${DATABASE_URL:-file:./dev.db}\" bunx prisma db push --skip-generate && TURSO_DATABASE_URL= TURSO_AUTH_TOKEN= DATABASE_URL=\"${DATABASE_URL:-file:./dev.db}\" bunx prisma generate && TURSO_DATABASE_URL= TURSO_AUTH_TOKEN= DATABASE_URL=\"${DATABASE_URL:-file:./dev.db}\" bun run prisma/seed.ts",
+    "seed:base": "TURSO_DATABASE_URL= TURSO_AUTH_TOKEN= DATABASE_URL=\"${DATABASE_URL:-file:./dev.db}\" bunx prisma db push --skip-generate && TURSO_DATABASE_URL= TURSO_AUTH_TOKEN= DATABASE_URL=\"${DATABASE_URL:-file:./dev.db}\" bunx prisma generate && TURSO_DATABASE_URL= TURSO_AUTH_TOKEN= DATABASE_URL=\"${DATABASE_URL:-file:./dev.db}\" bun run prisma/seed-base.ts",
+    "seed:demo": "TURSO_DATABASE_URL= TURSO_AUTH_TOKEN= DATABASE_URL=\"${DATABASE_URL:-file:./dev.db}\" bunx prisma db push --skip-generate && TURSO_DATABASE_URL= TURSO_AUTH_TOKEN= DATABASE_URL=\"${DATABASE_URL:-file:./dev.db}\" bunx prisma generate && TURSO_DATABASE_URL= TURSO_AUTH_TOKEN= DATABASE_URL=\"${DATABASE_URL:-file:./dev.db}\" bun run prisma/seed.ts"
+  },
+  "dependencies": {
+    "@hookform/resolvers": "^5.2.2",
+    "@libsql/client": "^0.17.2",
+    "@prisma/adapter-libsql": "^7.6.0",
+    "@prisma/client": "6.19.0",
+    "@react-email/components": "^1.0.12",
+    "@react-pdf/renderer": "^4.3.2",
+    "better-auth": "^1.5.6",
+    "clsx": "^2.1.1",
+    "date-fns": "^4.1.0",
+    "install": "^0.13.0",
+    "next": "16.2.2",
+    "prisma": "6.19.0",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "react-hook-form": "^7.72.0",
+    "recharts": "^3.8.1",
+    "resend": "^4.0.0",
+    "sonner": "^2.0.7",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.59.1",
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.2",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  },
+  "ignoreScripts": [
+    "sharp",
+    "unrs-resolver"
+  ],
+  "trustedDependencies": [
+    "sharp",
+    "unrs-resolver"
+  ]
+}
