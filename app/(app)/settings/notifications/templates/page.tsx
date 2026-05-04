@@ -189,13 +189,38 @@ export default async function NotificationTemplatesPage({
     const id = String(formData.get("id") ?? "").trim();
     if (!id) redirect("/settings/notifications/templates?error=Missing+template+id");
 
-    try {
-      await prisma.communicationTemplate.delete({ where: { id } });
-    } catch {
-      redirect("/settings/notifications/templates?error=Failed+to+delete+template");
-    }
+    await prisma.communicationTemplate.delete({ where: { id } }).catch(() => null);
     revalidatePath("/settings/notifications/templates");
     redirect("/settings/notifications/templates?saved=deleted");
+  }
+
+  async function deduplicateTemplates() {
+    "use server";
+    const { user: actor } = await getCurrentUserRole();
+    if (actor.role !== "ADMIN") redirect("/dashboard");
+
+    const all = await prisma.communicationTemplate.findMany({
+      orderBy: { updatedAt: "desc" },
+      select: { id: true, key: true, channel: true },
+    });
+
+    const seen = new Set<string>();
+    const toDelete: string[] = [];
+    for (const t of all) {
+      const k = `${t.key}::${t.channel}`;
+      if (seen.has(k)) {
+        toDelete.push(t.id);
+      } else {
+        seen.add(k);
+      }
+    }
+
+    if (toDelete.length > 0) {
+      await prisma.communicationTemplate.deleteMany({ where: { id: { in: toDelete } } });
+    }
+
+    revalidatePath("/settings/notifications/templates");
+    redirect(`/settings/notifications/templates?saved=Removed+${toDelete.length}+duplicate${toDelete.length !== 1 ? "s" : ""}`);
   }
 
   async function upsertPolicy(formData: FormData) {
@@ -354,6 +379,13 @@ export default async function NotificationTemplatesPage({
             <form action={seedDefaults}>
               <button className="btn-premium rounded-lg px-3 py-2 text-sm">
                 {templates.length === 0 ? "Create Default Templates" : "Re-seed Defaults"}
+              </button>
+            </form>
+          ) : null}
+          {user.role === "ADMIN" ? (
+            <form action={deduplicateTemplates}>
+              <button className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-100">
+                Remove Duplicates
               </button>
             </form>
           ) : null}
