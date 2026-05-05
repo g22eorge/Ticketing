@@ -90,34 +90,8 @@ export default async function JobDetailPage({
     photos: true,
     auditLogs: {
       include: { user: { select: { name: true } } },
-      orderBy: { createdAt: "desc" },
+      orderBy: { createdAt: "desc" as const },
     },
-    ...(canSeeMessages ? {
-      inboundMessages: {
-        orderBy: { timestamp: "asc" as const },
-        select: {
-          id: true,
-          from: true,
-          body: true,
-          mediaType: true,
-          mediaCaption: true,
-          timestamp: true,
-          isRead: true,
-        },
-      },
-      outboundMessages: {
-        orderBy: { createdAt: "asc" as const },
-        select: {
-          id: true,
-          to: true,
-          body: true,
-          type: true,
-          sentAt: true,
-          createdAt: true,
-          providerDeliveryStatus: true,
-        },
-      },
-    } : {}),
   } as const;
 
   const includeWithOneTime = supportsOneTimeExternal
@@ -188,58 +162,67 @@ export default async function JobDetailPage({
     deviceHistory = [];
   }
 
-  // Merge outbound messages from the linked repair request (sent before job was created)
-  let extraOutbound: Array<{
-    id: string;
-    to: string;
-    body: string;
-    type: string;
-    sentAt: Date | null;
-    createdAt: Date;
-    providerDeliveryStatus: string | null;
-  }> = [];
+  type OutboundRow = {
+    id: string; to: string; body: string; type: string;
+    sentAt: Date | null; createdAt: Date; providerDeliveryStatus: string | null;
+  };
+  type InboundRow = {
+    id: string; from: string; body: string | null; mediaType: string | null;
+    mediaCaption: string | null; timestamp: Date; isRead: boolean;
+  };
+
+  let outboundMessages: OutboundRow[] = [];
+  let inboundMessages: InboundRow[] = [];
 
   if (canSeeMessages) {
-    try {
-      const linkedRequest = await prisma.repairRequest.findFirst({
+    const msgSelect = {
+      id: true, to: true, body: true, type: true,
+      sentAt: true, createdAt: true, providerDeliveryStatus: true,
+    } as const;
+
+    // Messages linked directly to the job
+    const [jobOutbound, linkedRequest] = await Promise.all([
+      prisma.outboundMessage.findMany({
+        where: { jobId: job.id },
+        orderBy: { createdAt: "asc" },
+        select: msgSelect,
+      }),
+      prisma.repairRequest.findFirst({
         where: { linkedJobId: job.id },
         select: { id: true },
-      });
-      if (linkedRequest) {
-        extraOutbound = await prisma.outboundMessage.findMany({
+      }).catch(() => null),
+    ]);
+
+    // Messages sent during the repair request phase (before job creation)
+    const requestOutbound = linkedRequest
+      ? await prisma.outboundMessage.findMany({
           where: { repairRequestId: linkedRequest.id },
           orderBy: { createdAt: "asc" },
-          select: {
-            id: true,
-            to: true,
-            body: true,
-            type: true,
-            sentAt: true,
-            createdAt: true,
-            providerDeliveryStatus: true,
-          },
-        });
-      }
-    } catch {
-      // repair request lookup is best-effort
-    }
-  }
+          select: msgSelect,
+        })
+      : [];
 
-  const jobWithMessages = canSeeMessages
-    ? {
-        ...jobWithBilling,
-        outboundMessages: [
-          ...((jobWithBilling as typeof jobWithBilling & { outboundMessages?: typeof extraOutbound }).outboundMessages ?? []),
-          ...extraOutbound,
-        ].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()),
-      }
-    : jobWithBilling;
+    // Deduplicate by id and sort chronologically
+    const seen = new Set<string>();
+    outboundMessages = [...jobOutbound, ...requestOutbound]
+      .filter((m) => { if (seen.has(m.id)) return false; seen.add(m.id); return true; })
+      .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+
+    inboundMessages = await prisma.inboundMessage.findMany({
+      where: { jobId: job.id },
+      orderBy: { timestamp: "asc" },
+      select: {
+        id: true, from: true, body: true, mediaType: true,
+        mediaCaption: true, timestamp: true, isRead: true,
+      },
+    }).catch(() => []);
+  }
 
   return (
     <JobDetailTabs
       role={user.role}
       permissions={user.permissions}
-      job={jobWithMessages}
+      job={{ ...jobWithBilling, outboundMessages, inboundMessages }}
       technicians={technicians}
       deviceHistory={deviceHistory}
     />
