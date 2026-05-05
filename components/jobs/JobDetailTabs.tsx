@@ -390,6 +390,7 @@ type Props = {
   role: Role;
   permissions?: string[];
   returnTo?: string;
+  initialTab?: string;
   technicians: Array<{
     id: string;
     name: string;
@@ -515,12 +516,17 @@ type Props = {
   };
 };
 
-export function JobDetailTabs({ role, permissions = [], job, technicians, deviceHistory = [], returnTo = "/jobs" }: Props) {
+export function JobDetailTabs({ role, permissions = [], job, technicians, deviceHistory = [], returnTo = "/jobs", initialTab }: Props) {
   const inboundMessages = job.inboundMessages ?? [];
   const outboundMessages = job.outboundMessages ?? [];
   const unreadCount = inboundMessages.filter((m) => !m.isRead).length;
   const router = useRouter();
-  const [active, setActive] = useState<(typeof tabs)[number]>("overview");
+  const [active, setActive] = useState<(typeof tabs)[number]>(() => {
+    if (initialTab && (tabs as readonly string[]).includes(initialTab)) {
+      return initialTab as (typeof tabs)[number];
+    }
+    return "overview";
+  });
   const [savedSection, setSavedSection] = useState<string | null>(null);
   const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
   const [showOneTimeForm, setShowOneTimeForm] = useState(false);
