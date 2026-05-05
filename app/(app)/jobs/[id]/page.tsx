@@ -225,6 +225,7 @@ export default async function JobDetailPage({
       job={{ ...jobWithBilling, outboundMessages, inboundMessages }}
       technicians={technicians}
       deviceHistory={deviceHistory}
+      returnTo={safeReturnTo}
     />
   );
 }

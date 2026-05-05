@@ -164,7 +164,7 @@ export default async function PayoutFollowupsPage({
                       <td className="px-4 py-2.5 font-semibold text-amber-700">{formatMoneyCompact(payoutDue, currency)}</td>
                       <td className="px-4 py-2.5 text-xs text-[var(--ink-muted)]">{doneAt ? new Date(doneAt).toLocaleDateString() : "-"}</td>
                       <td className="px-4 py-2.5">
-                        <Link href={`/jobs/${job.id}`} className="btn-premium-secondary rounded-lg px-3 py-1.5 text-sm">Open</Link>
+                        <Link href={`/jobs/${job.id}?returnTo=/payout-followups`} className="btn-premium-secondary rounded-lg px-3 py-1.5 text-sm">Open</Link>
                       </td>
                     </tr>
                   );

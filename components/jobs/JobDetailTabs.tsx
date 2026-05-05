@@ -389,6 +389,7 @@ function MessagesTab({
 type Props = {
   role: Role;
   permissions?: string[];
+  returnTo?: string;
   technicians: Array<{
     id: string;
     name: string;
@@ -514,7 +515,7 @@ type Props = {
   };
 };
 
-export function JobDetailTabs({ role, permissions = [], job, technicians, deviceHistory = [] }: Props) {
+export function JobDetailTabs({ role, permissions = [], job, technicians, deviceHistory = [], returnTo = "/jobs" }: Props) {
   const inboundMessages = job.inboundMessages ?? [];
   const outboundMessages = job.outboundMessages ?? [];
   const unreadCount = inboundMessages.filter((m) => !m.isRead).length;
@@ -803,9 +804,9 @@ export function JobDetailTabs({ role, permissions = [], job, technicians, device
   return (
     <div className="min-w-0 space-y-4">
       <div>
-        <Link href="/jobs" className="inline-flex items-center gap-1.5 text-xs font-medium text-[var(--ink-muted)] transition hover:text-[var(--ink)]">
+        <Link href={returnTo} className="inline-flex items-center gap-1.5 text-xs font-medium text-[var(--ink-muted)] transition hover:text-[var(--ink)]">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
-          All jobs
+          {returnTo.startsWith("/payout-followups") ? "Payment follow-up" : "All jobs"}
         </Link>
       </div>
       <div className={panelShellClass}>
