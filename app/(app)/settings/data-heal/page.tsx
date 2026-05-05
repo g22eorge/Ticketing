@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { runDataHeal } from "@/lib/data-heal";
@@ -104,7 +105,9 @@ export default async function DataHealPage({
               <tbody>
                 {preview.changes.map((change) => (
                   <tr key={change.id} className="border-t border-[var(--line)]">
-                    <td className="px-4 py-2 font-medium text-[var(--ink)]">{change.jobNumber}</td>
+                    <td className="px-4 py-2">
+                      <Link href={`/jobs/${change.id}`} className="mono font-bold text-[var(--ink)] transition-colors hover:text-[var(--accent)]">{change.jobNumber}</Link>
+                    </td>
                     <td className="px-4 py-2 text-[var(--ink-muted)]">{change.from.brand} / {change.from.model} / {change.from.deviceType}</td>
                     <td className="px-4 py-2 text-[var(--ink)]">{change.to.brand} / {change.to.model} / {change.to.deviceType}</td>
                   </tr>

@@ -306,7 +306,7 @@ export default async function ClientDetailPage({
                   <details key={job.id} className="rounded-xl border border-[var(--line)] bg-[var(--panel-strong)] p-3 max-[360px]:p-2.5">
                   <summary className="list-none">
                     <div className="flex items-center justify-between gap-2">
-                      <p className="mono min-w-0 truncate text-sm font-semibold">{job.jobNumber}</p>
+                      <p className="mono min-w-0 truncate text-sm font-semibold text-[var(--accent)]">{job.jobNumber}</p>
                       <span className="rounded-full bg-[var(--panel-strong)] px-2 py-0.5 text-xs text-[var(--ink-muted)]">
                         {statusOptionLabel[job.status as keyof typeof statusOptionLabel] ?? job.status}
                       </span>

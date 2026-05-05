@@ -196,7 +196,7 @@ export default async function TechnicianPayoutsPage({
                   <summary className="list-none cursor-pointer">
                     <div className="flex items-center justify-between gap-2">
                       <div className="min-w-0">
-                        <p className="truncate text-xs font-medium sm:text-sm">{job.jobNumber} — {[job.brand, job.model].filter(v => v && v !== "Unknown").join(" ") || "Device"}</p>
+                        <p className="truncate text-xs font-medium sm:text-sm"><span className="mono font-bold text-[var(--accent)]">{job.jobNumber}</span> — {[job.brand, job.model].filter(v => v && v !== "Unknown").join(" ") || "Device"}</p>
                         <p className="text-[10px] text-[var(--ink-muted)] sm:text-xs">
                           {(statusOptionLabel as Record<string, string>)[job.status] ?? job.status}{" "}
                           {job.completedAt ? `• completed ${formatEATDate(job.completedAt)}` : ""}

@@ -939,7 +939,7 @@ export default async function ReportsPage({
               {approvalDelays.map((job) => (
                 <Link key={job.id} href={`/jobs/${job.id}`} className="flex items-center justify-between rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm hover:border-[var(--accent)]/30">
                   <div className="min-w-0">
-                    <p className="truncate font-semibold">{job.jobNumber}</p>
+                    <p className="mono truncate font-bold text-[var(--accent)]">{job.jobNumber}</p>
                     <p className="truncate text-xs text-[var(--ink-muted)]">{[job.brand, job.model].filter(v => v && v !== "Unknown").join(" ") || "Device"}</p>
                   </div>
                   <span className={`ml-2 shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${job.daysPending >= 3 ? "bg-amber-50 text-amber-700" : "bg-[var(--panel-strong)] text-[var(--ink-muted)]"}`}>

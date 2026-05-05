@@ -456,7 +456,7 @@ export default async function DashboardPage({
               {jobs.slice(0, 6).map((job) => (
                 <li key={job.id} className="flex flex-col items-start justify-between gap-2 border-b border-[var(--line)] py-2">
                   <div className="min-w-0">
-                    <p className="truncate font-medium">{job.jobNumber}</p>
+                    <p className="mono truncate font-bold text-[var(--accent)]">{job.jobNumber}</p>
                     <p className="text-xs text-[var(--ink-muted)]">
                       {statusLabel[job.status as keyof typeof statusLabel] ?? job.status}
                     </p>
@@ -988,7 +988,7 @@ export default async function DashboardPage({
                     className="flex items-center justify-between rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 transition hover:border-amber-200"
                   >
                     <div className="min-w-0">
-                      <p className="truncate text-xs font-semibold">{job.jobNumber}</p>
+                      <p className="mono truncate text-xs font-bold text-[var(--accent)]">{job.jobNumber}</p>
                       <p className="truncate text-[10px] text-[var(--ink-muted)]">
                         {[job.device?.brand, job.device?.model].filter(v => v && v !== "Unknown").join(" ") || "Device"}
                         <span className="mx-1 text-[var(--line)]">·</span>

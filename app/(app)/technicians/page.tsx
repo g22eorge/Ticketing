@@ -359,7 +359,7 @@ export default async function TechniciansPage({
                   {/* Header row */}
                   <div className="flex items-start justify-between gap-2 pl-2">
                     <div className="min-w-0">
-                      <span className="mono block text-[11px] font-bold text-[var(--ink-muted)]">{job.jobNumber}</span>
+                      <Link href={`/jobs/${job.id}`} className="mono block text-[11px] font-bold text-[var(--ink-muted)] transition-colors hover:text-[var(--accent)]">{job.jobNumber}</Link>
                       <p className="truncate text-[15px] font-semibold text-[var(--ink)]">{deviceName(job.brand, job.model) ?? deviceLabel[job.deviceType as keyof typeof deviceLabel] ?? job.deviceType}</p>
                     </div>
                     <span className={`inline-flex shrink-0 items-center rounded-md border px-2 py-0.5 text-[10px] font-semibold ${job.priority.tone}`}>
@@ -456,7 +456,7 @@ export default async function TechniciansPage({
                       <div className="flex items-start justify-between gap-3 pl-2">
                         <div className="min-w-0 flex-1 space-y-1">
                           <div className="flex flex-wrap items-center gap-2">
-                            <span className="mono text-[13px] font-bold text-[var(--ink)]">{job.jobNumber}</span>
+                            <Link href={`/jobs/${job.id}`} className="mono text-[13px] font-bold text-[var(--ink)] transition-colors hover:text-[var(--accent)]">{job.jobNumber}</Link>
                             <JobStatusBadge status={job.status} />
                             <span className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${job.priority.tone}`}>
                               {job.priority.label}
