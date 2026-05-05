@@ -382,7 +382,7 @@ export async function uploadWhatsAppMedia(
   form.append("type", mimeType);
   form.append(
     "file",
-    new Blob([fileBuffer], { type: mimeType }),
+    new Blob([new Uint8Array(fileBuffer)], { type: mimeType }),
     filename,
   );
 

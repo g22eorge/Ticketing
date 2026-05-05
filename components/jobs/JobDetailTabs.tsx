@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
 
-import { markMessagesReadAction, sendManualReplyAction, sendQuotationViaWhatsAppAction, updateJobAction, updateOneTimeExternalAssignmentAction } from "@/app/(app)/jobs/[id]/actions";
+import { markMessagesReadAction, sendManualReplyAction, sendQuotationViaWhatsAppAction, sendInvoiceViaWhatsAppAction, sendJobCardViaWhatsAppAction, updateJobAction, updateOneTimeExternalAssignmentAction } from "@/app/(app)/jobs/[id]/actions";
 import { JobStatusBadge } from "@/components/jobs/JobStatusBadge";
 import { AuditTimeline } from "@/components/shared/AuditTimeline";
 import { PhotoUploader } from "@/components/shared/PhotoUploader";
@@ -134,12 +134,16 @@ function MessagesTab({
   jobId,
   clientPhone,
   canSendQuote,
+  canSendInvoice,
+  canSendJobCard,
   inbound,
   outbound,
 }: {
   jobId: string;
   clientPhone: string | null | undefined;
   canSendQuote: boolean;
+  canSendInvoice: boolean;
+  canSendJobCard: boolean;
   inbound: InboundMsg[];
   outbound: OutboundMsg[];
 }) {
@@ -147,9 +151,13 @@ function MessagesTab({
   const [isMarkingRead, startMarkReadTransition] = useTransition();
   const [isSending, startSendTransition] = useTransition();
   const [isSendingQuote, startSendQuoteTransition] = useTransition();
+  const [isSendingInvoice, startSendInvoiceTransition] = useTransition();
+  const [isSendingJobCard, startSendJobCardTransition] = useTransition();
   const [replyText, setReplyText] = useState("");
   const [sendError, setSendError] = useState<string | null>(null);
   const [quoteError, setQuoteError] = useState<string | null>(null);
+  const [invoiceError, setInvoiceError] = useState<string | null>(null);
+  const [jobCardError, setJobCardError] = useState<string | null>(null);
 
   const thread: ThreadEntry[] = [
     ...inbound.map((msg) => ({ kind: "inbound" as const, msg, sortAt: new Date(msg.timestamp) })),
@@ -187,6 +195,30 @@ function MessagesTab({
         router.refresh();
       } else {
         setQuoteError(res.error ?? "Failed to send quotation");
+      }
+    });
+  }
+
+  function handleSendInvoice() {
+    setInvoiceError(null);
+    startSendInvoiceTransition(async () => {
+      const res = await sendInvoiceViaWhatsAppAction(jobId);
+      if (res.success) {
+        router.refresh();
+      } else {
+        setInvoiceError(res.error ?? "Failed to send invoice");
+      }
+    });
+  }
+
+  function handleSendJobCard() {
+    setJobCardError(null);
+    startSendJobCardTransition(async () => {
+      const res = await sendJobCardViaWhatsAppAction(jobId);
+      if (res.success) {
+        router.refresh();
+      } else {
+        setJobCardError(res.error ?? "Failed to send job card");
       }
     });
   }
@@ -267,18 +299,52 @@ function MessagesTab({
 
       {clientPhone ? (
         <div className="border-t border-[var(--line)] p-3 space-y-2">
-          {canSendQuote ? (
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={handleSendQuote}
-                disabled={isSendingQuote}
-                className="btn-premium-secondary rounded-xl px-3 py-1.5 text-sm disabled:opacity-50"
-              >
-                {isSendingQuote ? "Sending quote…" : "Send Quote PDF"}
-              </button>
-              {quoteError ? (
-                <p className="text-xs text-red-600">{quoteError}</p>
+          {(canSendQuote || canSendInvoice || canSendJobCard) ? (
+            <div className="flex flex-wrap items-center gap-2">
+              {canSendQuote ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={handleSendQuote}
+                    disabled={isSendingQuote}
+                    className="btn-premium-secondary rounded-xl px-3 py-1.5 text-sm disabled:opacity-50"
+                  >
+                    {isSendingQuote ? "Sending…" : "Send Quote PDF"}
+                  </button>
+                  {quoteError ? (
+                    <p className="text-xs text-red-600">{quoteError}</p>
+                  ) : null}
+                </>
+              ) : null}
+              {canSendInvoice ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={handleSendInvoice}
+                    disabled={isSendingInvoice}
+                    className="btn-premium-secondary rounded-xl px-3 py-1.5 text-sm disabled:opacity-50"
+                  >
+                    {isSendingInvoice ? "Sending…" : "Send Invoice PDF"}
+                  </button>
+                  {invoiceError ? (
+                    <p className="text-xs text-red-600">{invoiceError}</p>
+                  ) : null}
+                </>
+              ) : null}
+              {canSendJobCard ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={handleSendJobCard}
+                    disabled={isSendingJobCard}
+                    className="btn-premium-secondary rounded-xl px-3 py-1.5 text-sm disabled:opacity-50"
+                  >
+                    {isSendingJobCard ? "Sending…" : "Send Job Card PDF"}
+                  </button>
+                  {jobCardError ? (
+                    <p className="text-xs text-red-600">{jobCardError}</p>
+                  ) : null}
+                </>
               ) : null}
             </div>
           ) : null}
@@ -1575,6 +1641,8 @@ export function JobDetailTabs({ role, permissions = [], job, technicians, device
           jobId={job.id}
           clientPhone={job.client?.phone ?? null}
           canSendQuote={canGenerateQuotation && !isIntake}
+          canSendInvoice={canGenerateInvoice && invoiceEligibleByStatus && !isIntake}
+          canSendJobCard={canGenerateJobCard && !isIntake}
           inbound={inboundMessages}
           outbound={outboundMessages}
         />
