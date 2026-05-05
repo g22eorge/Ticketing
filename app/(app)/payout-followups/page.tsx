@@ -153,7 +153,9 @@ export default async function PayoutFollowupsPage({
                   const doneAt = job.deliveredAt ?? job.completedAt;
                   return (
                     <tr key={job.id} className="border-t border-[var(--line)]">
-                      <td className="px-4 py-2.5 font-semibold">{job.jobNumber}</td>
+                      <td className="px-4 py-2.5 font-semibold">
+                        <Link href={`/jobs/${job.id}?tab=financials&returnTo=/payout-followups`} className="hover:text-[var(--accent)] transition-colors">{job.jobNumber}</Link>
+                      </td>
                       <td className="px-4 py-2.5">
                         <p className="font-medium">{job.client?.fullName ?? "-"}</p>
                         <p className="text-xs text-[var(--ink-muted)]">{job.client?.phone ?? "-"}</p>
