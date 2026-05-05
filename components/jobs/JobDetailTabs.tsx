@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
 
-import { markMessagesReadAction, updateJobAction, updateOneTimeExternalAssignmentAction } from "@/app/(app)/jobs/[id]/actions";
+import { markMessagesReadAction, sendManualReplyAction, updateJobAction, updateOneTimeExternalAssignmentAction } from "@/app/(app)/jobs/[id]/actions";
 import { JobStatusBadge } from "@/components/jobs/JobStatusBadge";
 import { AuditTimeline } from "@/components/shared/AuditTimeline";
 import { PhotoUploader } from "@/components/shared/PhotoUploader";
@@ -132,15 +132,20 @@ function DeliveryDot({ status }: { status: string | null }) {
 
 function MessagesTab({
   jobId,
+  clientPhone,
   inbound,
   outbound,
 }: {
   jobId: string;
+  clientPhone: string | null | undefined;
   inbound: InboundMsg[];
   outbound: OutboundMsg[];
 }) {
   const router = useRouter();
   const [isMarkingRead, startMarkReadTransition] = useTransition();
+  const [isSending, startSendTransition] = useTransition();
+  const [replyText, setReplyText] = useState("");
+  const [sendError, setSendError] = useState<string | null>(null);
 
   const thread: ThreadEntry[] = [
     ...inbound.map((msg) => ({ kind: "inbound" as const, msg, sortAt: new Date(msg.timestamp) })),
@@ -153,6 +158,20 @@ function MessagesTab({
     startMarkReadTransition(async () => {
       await markMessagesReadAction(jobId);
       router.refresh();
+    });
+  }
+
+  function handleSend() {
+    if (!replyText.trim()) return;
+    setSendError(null);
+    startSendTransition(async () => {
+      const res = await sendManualReplyAction(jobId, replyText);
+      if (res.success) {
+        setReplyText("");
+        router.refresh();
+      } else {
+        setSendError(res.error ?? "Failed to send");
+      }
     });
   }
 
@@ -190,9 +209,13 @@ function MessagesTab({
                   </div>
                   <div className="mt-1 flex items-center gap-2 text-[10px] text-[var(--ink-muted)]">
                     <span>{formatMsgTime(m.sentAt ?? m.createdAt)}</span>
-                    <span className="capitalize text-[var(--ink-muted)]">
-                      {m.type.replaceAll("_", " ").toLowerCase()}
-                    </span>
+                    {m.type === "STAFF_REPLY" ? (
+                      <span className="text-[var(--ink-muted)]">staff reply</span>
+                    ) : (
+                      <span className="capitalize text-[var(--ink-muted)]">
+                        {m.type.replaceAll("_", " ").toLowerCase()}
+                      </span>
+                    )}
                     <DeliveryDot status={m.providerDeliveryStatus} />
                   </div>
                 </div>
@@ -223,6 +246,43 @@ function MessagesTab({
               );
             }
           })}
+        </div>
+      )}
+
+      {clientPhone ? (
+        <div className="border-t border-[var(--line)] p-3">
+          <div className="flex gap-2 items-end">
+            <textarea
+              value={replyText}
+              onChange={(e) => setReplyText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSend();
+                }
+              }}
+              placeholder="Type a reply… (Enter to send, Shift+Enter for new line)"
+              rows={2}
+              disabled={isSending}
+              className="min-h-[60px] flex-1 resize-none rounded-xl border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm outline-none transition focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14 disabled:opacity-50"
+            />
+            <button
+              type="button"
+              onClick={handleSend}
+              disabled={isSending || !replyText.trim()}
+              className="btn-premium shrink-0 rounded-xl px-4 py-2 text-sm disabled:opacity-50"
+            >
+              {isSending ? "Sending…" : "Send"}
+            </button>
+          </div>
+          {sendError ? (
+            <p className="mt-1.5 text-xs text-red-600">{sendError}</p>
+          ) : null}
+          <p className="mt-1.5 text-[10px] text-[var(--ink-muted)]">Sending to {clientPhone}</p>
+        </div>
+      ) : (
+        <div className="border-t border-[var(--line)] px-4 py-3 text-xs text-[var(--ink-muted)]">
+          No client phone number — cannot send reply.
         </div>
       )}
     </div>
@@ -1482,6 +1542,7 @@ export function JobDetailTabs({ role, permissions = [], job, technicians, device
       {active === "messages" && ["ADMIN", "OPS", "FRONT_DESK"].includes(role) ? (
         <MessagesTab
           jobId={job.id}
+          clientPhone={job.client?.phone ?? null}
           inbound={inboundMessages}
           outbound={outboundMessages}
         />

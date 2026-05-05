@@ -508,6 +508,7 @@ enum OutboundMessageType {
   READY_FOR_PICKUP_NUDGE_2
   REPAIR_REQUEST_EMAIL_ALERT
   ADMIN_TEST
+  STAFF_REPLY
 }
 
 model Notification {

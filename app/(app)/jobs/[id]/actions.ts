@@ -22,6 +22,7 @@ import {
   notifyTimelineUpdate,
   notifyDelayNote,
 } from "@/lib/notifications";
+import { deliverOutboundMessage, enqueueWhatsAppMessage } from "@/lib/notifications/whatsapp-outbox";
 
 const workflowReasonValues = [
   "NONE",
@@ -776,4 +777,42 @@ export async function markMessagesReadAction(jobId: string): Promise<void> {
   }
 
   revalidatePath(`/jobs/${jobId}`);
+}
+
+export async function sendManualReplyAction(
+  jobId: string,
+  message: string
+): Promise<{ success: boolean; error?: string }> {
+  const { user } = await getCurrentUserRole();
+  if (!["ADMIN", "OPS", "FRONT_DESK"].includes(user.role)) {
+    return { success: false, error: "Not authorised" };
+  }
+
+  const trimmed = message.trim();
+  if (!trimmed || trimmed.length > 4000) {
+    return { success: false, error: "Message must be between 1 and 4000 characters" };
+  }
+
+  const job = await prisma.job.findUnique({
+    where: { id: jobId },
+    select: { client: { select: { phone: true } } },
+  });
+
+  if (!job?.client?.phone) {
+    return { success: false, error: "No client phone number on this job" };
+  }
+
+  const result = await enqueueWhatsAppMessage({
+    to: job.client.phone,
+    body: trimmed,
+    type: "STAFF_REPLY",
+    jobId,
+  });
+
+  if ("outboxId" in result && result.outboxId) {
+    await deliverOutboundMessage(result.outboxId);
+  }
+
+  revalidatePath(`/jobs/${jobId}`);
+  return { success: true };
 }
