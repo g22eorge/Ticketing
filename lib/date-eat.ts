@@ -13,6 +13,14 @@ export function formatEATDateTime(value: Date | string) {
   return date.toLocaleString(EAT_LOCALE, { timeZone: EAT_TIMEZONE });
 }
 
+/** Short document date: "12 Jan 25" — used in PDF headers. */
+export function formatEATDocDate(value: Date): string {
+  return value.toLocaleDateString(EAT_LOCALE, {
+    day: "2-digit", month: "short", year: "2-digit",
+    timeZone: EAT_TIMEZONE,
+  });
+}
+
 export function formatEATMonthLabel(year: number, month: number) {
   const date = new Date(year, month - 1, 1);
   return date.toLocaleDateString(EAT_LOCALE, {

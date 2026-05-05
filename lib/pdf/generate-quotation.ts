@@ -1,77 +1,14 @@
 import { createElement } from "react";
 import { renderToBuffer } from "@react-pdf/renderer";
-import { readFile } from "node:fs/promises";
-import path from "node:path";
 
 import { getClientBill } from "@/lib/billing";
+import { formatEATDocDate } from "@/lib/date-eat";
 import { formatMoney, getAppCurrency } from "@/lib/currency";
 import { getDocumentBrandingSettings } from "@/lib/document-branding";
 import { canGenerateQuotationForStatus, formatQuotationNumber } from "@/lib/documents";
+import { compactText, compactListText, prettyEnum, resolvePdfLogo } from "@/lib/pdf/pdf-utils";
 import { QuotationDocument } from "@/lib/pdf/QuotationDocument";
 import { prisma } from "@/lib/prisma";
-
-function formatDocDate(value: Date) {
-  return value.toLocaleDateString("en-GB", {
-    day: "2-digit", month: "short", year: "2-digit",
-    timeZone: "Africa/Nairobi",
-  });
-}
-
-function prettyEnum(value: string | null | undefined) {
-  if (!value) return "N/A";
-  return value.replaceAll("_", " ");
-}
-
-function compactText(value: string | null | undefined, max = 90) {
-  if (!value) return "N/A";
-  const flat = value.replace(/\s+/g, " ").trim();
-  if (flat.length <= max) return flat;
-  return `${flat.slice(0, max - 1)}...`;
-}
-
-function compactListText(value: string | null | undefined, max = 220) {
-  if (!value) return "N/A";
-  const normalized = value
-    .split(/\r?\n/)
-    .map((line) => line.replace(/\s+/g, " ").trim())
-    .filter(Boolean)
-    .join("\n");
-  if (normalized.length <= max) return normalized;
-  return `${normalized.slice(0, max - 1)}...`;
-}
-
-async function toDataUriFromRemote(url: string) {
-  const res = await fetch(url, { cache: "no-store" });
-  if (!res.ok) return null;
-  const contentType = res.headers.get("content-type") || "image/png";
-  const bytes = new Uint8Array(await res.arrayBuffer());
-  return `data:${contentType};base64,${Buffer.from(bytes).toString("base64")}`;
-}
-
-async function toDataUriFromLocal(filePath: string, contentType: string) {
-  const bytes = await readFile(filePath);
-  return `data:${contentType};base64,${bytes.toString("base64")}`;
-}
-
-async function resolveLogo() {
-  const localCandidates = [
-    { file: path.join(process.cwd(), "public", "eagle-info-logo.png"), type: "image/png" },
-    { file: path.join(process.cwd(), "public", "eagle-info-logo.jpg"), type: "image/jpeg" },
-    { file: path.join(process.cwd(), "public", "eagle-info-logo.jpeg"), type: "image/jpeg" },
-    { file: path.join(process.cwd(), "public", "eagle-info-logo.webp"), type: "image/webp" },
-  ];
-  for (const c of localCandidates) {
-    try { return await toDataUriFromLocal(c.file, c.type); } catch { /* try next */ }
-  }
-  const baseUrl = process.env.BETTER_AUTH_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? "";
-  if (baseUrl) {
-    for (const url of [`${baseUrl}/eagle-info-logo.png`, `${baseUrl}/eagle-info-logo.jpg`]) {
-      const remote = await toDataUriFromRemote(url);
-      if (remote) return remote;
-    }
-  }
-  return undefined;
-}
 
 export type GenerateQuotationResult =
   | { ok: true; buffer: Buffer; filename: string; quotationNumber: string; clientPhone: string }
@@ -106,14 +43,14 @@ export async function generateQuotationBuffer(
   const currency = getAppCurrency();
   const branding = await getDocumentBrandingSettings();
   const bill = getClientBill(job) ?? 0;
-  const vatApplicable = (job as { vatApplicable?: boolean }).vatApplicable ?? true;
+  const vatApplicable = job.vatApplicable ?? true;
   const vatRate = Math.max(0, branding.vatRatePercent) / 100;
   const repairCost = vatApplicable && bill > 0 ? bill / (1 + vatRate) : bill;
   const vatAmount = vatApplicable ? Math.max(bill - repairCost, 0) : 0;
   const issuedAtDate = job.quotedAt ?? new Date();
   const dueDate = new Date(issuedAtDate);
   dueDate.setDate(dueDate.getDate() + branding.quoteValidityDays);
-  const logoUrl = await resolveLogo();
+  const logoUrl = await resolvePdfLogo();
   const quotationNumber = formatQuotationNumber(
     job.jobNumber, issuedAtDate, branding.quotePrefix,
     branding.quoteFormat, branding.sequencePadLength,
@@ -142,8 +79,8 @@ export async function generateQuotationBuffer(
     companyWebsite: branding.companyWebsite ?? "",
     companyLogoUrl: logoUrl,
     quotationNumber,
-    dateIssued: formatDocDate(issuedAtDate),
-    validUntil: formatDocDate(dueDate),
+    dateIssued: formatEATDocDate(issuedAtDate),
+    validUntil: formatEATDocDate(dueDate),
     repairId: job.jobNumber,
     preparedByName: staffName,
     preparedByRole: staffRole,

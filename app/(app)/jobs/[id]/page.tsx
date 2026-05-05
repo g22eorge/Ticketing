@@ -14,10 +14,10 @@ export default async function JobDetailPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ returnTo?: string; tab?: string }>;
+  searchParams: Promise<{ returnTo?: string; returnLabel?: string; tab?: string }>;
 }) {
   const { id } = await params;
-  const { returnTo, tab } = await searchParams;
+  const { returnTo, returnLabel, tab } = await searchParams;
   const { session, user } = await getCurrentUserRole();
   const safeReturnTo =
     returnTo && returnTo.startsWith("/") && !returnTo.startsWith("//")
@@ -226,6 +226,7 @@ export default async function JobDetailPage({
       technicians={technicians}
       deviceHistory={deviceHistory}
       returnTo={safeReturnTo}
+      returnLabel={returnLabel}
       initialTab={tab}
     />
   );

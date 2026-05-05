@@ -821,6 +821,44 @@ export async function sendManualReplyAction(
   return { success: true };
 }
 
+async function sendPdfViaWhatsApp(opts: {
+  jobId: string;
+  userId: string;
+  buffer: Buffer;
+  filename: string;
+  clientPhone: string;
+  caption: string;
+  outboxBody: string;
+  auditAction: string;
+  auditDetail: Record<string, string>;
+}): Promise<{ success: boolean; error?: string }> {
+  const upload = await uploadWhatsAppMedia(opts.buffer, opts.filename, "application/pdf");
+  if (!upload.ok) return { success: false, error: upload.error };
+
+  const send = await sendWhatsAppDocument(opts.clientPhone, upload.mediaId, opts.filename, opts.caption);
+  if (!send.success) return { success: false, error: send.error };
+
+  await Promise.allSettled([
+    enqueueWhatsAppMessage({
+      to: opts.clientPhone,
+      body: opts.outboxBody,
+      type: "STAFF_REPLY",
+      jobId: opts.jobId,
+    }).catch(() => null),
+    prisma.auditLog.create({
+      data: {
+        jobId: opts.jobId,
+        userId: opts.userId,
+        action: opts.auditAction,
+        detail: JSON.stringify({ ...opts.auditDetail, messageId: send.messageId }),
+      },
+    }).catch(() => null),
+  ]);
+
+  revalidatePath(`/jobs/${opts.jobId}`);
+  return { success: true };
+}
+
 export async function sendQuotationViaWhatsAppAction(
   jobId: string,
 ): Promise<{ success: boolean; error?: string }> {
@@ -828,41 +866,16 @@ export async function sendQuotationViaWhatsAppAction(
   if (!["ADMIN", "OPS", "FRONT_DESK"].includes(user.role)) {
     return { success: false, error: "Not authorised" };
   }
-
   const result = await generateQuotationBuffer(jobId, user.name, user.role, true, user.id);
   if (!result.ok) return { success: false, error: result.error };
-
-  const upload = await uploadWhatsAppMedia(result.buffer, result.filename, "application/pdf");
-  if (!upload.ok) return { success: false, error: upload.error };
-
-  const send = await sendWhatsAppDocument(
-    result.clientPhone,
-    upload.mediaId,
-    result.filename,
-    `Please find your quotation (${result.quotationNumber}) attached. — Eagle Info Solutions`,
-  );
-
-  if (!send.success) return { success: false, error: send.error };
-
-  // Record in outbox for visibility
-  await enqueueWhatsAppMessage({
-    to: result.clientPhone,
-    body: `[Quotation PDF] ${result.quotationNumber}`,
-    type: "STAFF_REPLY",
-    jobId,
-  }).catch(() => null);
-
-  await prisma.auditLog.create({
-    data: {
-      jobId,
-      userId: user.id,
-      action: "QUOTATION_SENT_WHATSAPP",
-      detail: JSON.stringify({ quotationNumber: result.quotationNumber, messageId: send.messageId }),
-    },
-  }).catch(() => null);
-
-  revalidatePath(`/jobs/${jobId}`);
-  return { success: true };
+  return sendPdfViaWhatsApp({
+    jobId, userId: user.id,
+    buffer: result.buffer, filename: result.filename, clientPhone: result.clientPhone,
+    caption: `Please find your quotation (${result.quotationNumber}) attached. — Eagle Info Solutions`,
+    outboxBody: `[Quotation PDF] ${result.quotationNumber}`,
+    auditAction: "QUOTATION_SENT_WHATSAPP",
+    auditDetail: { quotationNumber: result.quotationNumber },
+  });
 }
 
 export async function sendInvoiceViaWhatsAppAction(
@@ -872,40 +885,16 @@ export async function sendInvoiceViaWhatsAppAction(
   if (!["ADMIN", "OPS"].includes(user.role) && !can.approveInvoices({ role: user.role, permissions: user.permissions })) {
     return { success: false, error: "Not authorised" };
   }
-
   const result = await generateInvoiceBuffer(jobId, user.name, user.role, user.id);
   if (!result.ok) return { success: false, error: result.error };
-
-  const upload = await uploadWhatsAppMedia(result.buffer, result.filename, "application/pdf");
-  if (!upload.ok) return { success: false, error: upload.error };
-
-  const send = await sendWhatsAppDocument(
-    result.clientPhone,
-    upload.mediaId,
-    result.filename,
-    `Please find your invoice (${result.invoiceNumber}) attached. — Eagle Info Solutions`,
-  );
-
-  if (!send.success) return { success: false, error: send.error };
-
-  await enqueueWhatsAppMessage({
-    to: result.clientPhone,
-    body: `[Invoice PDF] ${result.invoiceNumber}`,
-    type: "STAFF_REPLY",
-    jobId,
-  }).catch(() => null);
-
-  await prisma.auditLog.create({
-    data: {
-      jobId,
-      userId: user.id,
-      action: "INVOICE_SENT_WHATSAPP",
-      detail: JSON.stringify({ invoiceNumber: result.invoiceNumber, messageId: send.messageId }),
-    },
-  }).catch(() => null);
-
-  revalidatePath(`/jobs/${jobId}`);
-  return { success: true };
+  return sendPdfViaWhatsApp({
+    jobId, userId: user.id,
+    buffer: result.buffer, filename: result.filename, clientPhone: result.clientPhone,
+    caption: `Please find your invoice (${result.invoiceNumber}) attached. — Eagle Info Solutions`,
+    outboxBody: `[Invoice PDF] ${result.invoiceNumber}`,
+    auditAction: "INVOICE_SENT_WHATSAPP",
+    auditDetail: { invoiceNumber: result.invoiceNumber },
+  });
 }
 
 export async function sendJobCardViaWhatsAppAction(
@@ -915,38 +904,14 @@ export async function sendJobCardViaWhatsAppAction(
   if (!["ADMIN", "OPS"].includes(user.role) && !can.generateJobCards({ role: user.role, permissions: user.permissions })) {
     return { success: false, error: "Not authorised" };
   }
-
   const result = await generateJobCardBuffer(jobId, user.name, user.role, user.id);
   if (!result.ok) return { success: false, error: result.error };
-
-  const upload = await uploadWhatsAppMedia(result.buffer, result.filename, "application/pdf");
-  if (!upload.ok) return { success: false, error: upload.error };
-
-  const send = await sendWhatsAppDocument(
-    result.clientPhone,
-    upload.mediaId,
-    result.filename,
-    `Please find your job card (${result.documentNumber}) attached. — Eagle Info Solutions`,
-  );
-
-  if (!send.success) return { success: false, error: send.error };
-
-  await enqueueWhatsAppMessage({
-    to: result.clientPhone,
-    body: `[Job Card PDF] ${result.documentNumber}`,
-    type: "STAFF_REPLY",
-    jobId,
-  }).catch(() => null);
-
-  await prisma.auditLog.create({
-    data: {
-      jobId,
-      userId: user.id,
-      action: "JOB_CARD_SENT_WHATSAPP",
-      detail: JSON.stringify({ documentNumber: result.documentNumber, messageId: send.messageId }),
-    },
-  }).catch(() => null);
-
-  revalidatePath(`/jobs/${jobId}`);
-  return { success: true };
+  return sendPdfViaWhatsApp({
+    jobId, userId: user.id,
+    buffer: result.buffer, filename: result.filename, clientPhone: result.clientPhone,
+    caption: `Please find your job card (${result.documentNumber}) attached. — Eagle Info Solutions`,
+    outboxBody: `[Job Card PDF] ${result.documentNumber}`,
+    auditAction: "JOB_CARD_SENT_WHATSAPP",
+    auditDetail: { documentNumber: result.documentNumber },
+  });
 }

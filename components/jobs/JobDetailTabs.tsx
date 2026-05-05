@@ -390,6 +390,7 @@ type Props = {
   role: Role;
   permissions?: string[];
   returnTo?: string;
+  returnLabel?: string;
   initialTab?: string;
   technicians: Array<{
     id: string;
@@ -516,7 +517,7 @@ type Props = {
   };
 };
 
-export function JobDetailTabs({ role, permissions = [], job, technicians, deviceHistory = [], returnTo = "/jobs", initialTab }: Props) {
+export function JobDetailTabs({ role, permissions = [], job, technicians, deviceHistory = [], returnTo = "/jobs", returnLabel = "All jobs", initialTab }: Props) {
   const inboundMessages = job.inboundMessages ?? [];
   const outboundMessages = job.outboundMessages ?? [];
   const unreadCount = inboundMessages.filter((m) => !m.isRead).length;
@@ -812,7 +813,7 @@ export function JobDetailTabs({ role, permissions = [], job, technicians, device
       <div>
         <Link href={returnTo} className="inline-flex items-center gap-1.5 text-xs font-medium text-[var(--ink-muted)] transition hover:text-[var(--ink)]">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
-          {returnTo.startsWith("/payout-followups") ? "Payment follow-up" : "All jobs"}
+          {returnLabel}
         </Link>
       </div>
       <div className={panelShellClass}>

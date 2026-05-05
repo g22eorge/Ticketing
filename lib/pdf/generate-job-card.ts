@@ -1,74 +1,11 @@
 import { createElement } from "react";
 import { renderToBuffer } from "@react-pdf/renderer";
-import { readFile } from "node:fs/promises";
-import path from "node:path";
 
+import { formatEATDocDate } from "@/lib/date-eat";
 import { getDocumentBrandingSettings } from "@/lib/document-branding";
+import { compactText, compactListText, prettyEnum, resolvePdfLogo } from "@/lib/pdf/pdf-utils";
 import { JobCardDocument } from "@/lib/pdf/JobCardDocument";
 import { prisma } from "@/lib/prisma";
-
-function formatDocDate(value: Date) {
-  return value.toLocaleDateString("en-GB", {
-    day: "2-digit", month: "short", year: "2-digit",
-    timeZone: "Africa/Nairobi",
-  });
-}
-
-function prettyEnum(value: string | null | undefined) {
-  if (!value) return "N/A";
-  return value.replaceAll("_", " ");
-}
-
-function compactText(value: string | null | undefined, max = 90) {
-  if (!value) return "N/A";
-  const flat = value.replace(/\s+/g, " ").trim();
-  if (flat.length <= max) return flat;
-  return `${flat.slice(0, max - 1)}...`;
-}
-
-function compactListText(value: string | null | undefined, max = 220) {
-  if (!value) return "N/A";
-  const normalized = value
-    .split(/\r?\n/)
-    .map((line) => line.replace(/\s+/g, " ").trim())
-    .filter(Boolean)
-    .join("\n");
-  if (normalized.length <= max) return normalized;
-  return `${normalized.slice(0, max - 1)}...`;
-}
-
-async function toDataUriFromRemote(url: string) {
-  const res = await fetch(url, { cache: "no-store" });
-  if (!res.ok) return null;
-  const contentType = res.headers.get("content-type") || "image/png";
-  const bytes = new Uint8Array(await res.arrayBuffer());
-  return `data:${contentType};base64,${Buffer.from(bytes).toString("base64")}`;
-}
-
-async function toDataUriFromLocal(filePath: string, contentType: string) {
-  const bytes = await readFile(filePath);
-  return `data:${contentType};base64,${bytes.toString("base64")}`;
-}
-
-async function resolveLogo() {
-  const localCandidates = [
-    { file: path.join(process.cwd(), "public", "eagle-info-logo.png"), type: "image/png" },
-    { file: path.join(process.cwd(), "public", "eagle-info-logo.jpg"), type: "image/jpeg" },
-    { file: path.join(process.cwd(), "public", "eagle-info-logo.jpeg"), type: "image/jpeg" },
-    { file: path.join(process.cwd(), "public", "eagle-info-logo.webp"), type: "image/webp" },
-  ];
-  for (const c of localCandidates) {
-    try { return await toDataUriFromLocal(c.file, c.type); } catch { /* try next */ }
-  }
-  const baseUrl = process.env.BETTER_AUTH_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? "";
-  if (baseUrl) {
-    for (const url of [`${baseUrl}/eagle-info-logo.png`, `${baseUrl}/eagle-info-logo.jpg`]) {
-      const remote = await toDataUriFromRemote(url);
-      if (remote) return remote;
-    }
-  }
-  return undefined;
-}
 
 export type GenerateJobCardResult =
   | { ok: true; buffer: Buffer; filename: string; documentNumber: string; clientPhone: string }
@@ -97,7 +34,7 @@ export async function generateJobCardBuffer(
   if (!job) return { ok: false, error: "Job not found" };
 
   const branding = await getDocumentBrandingSettings();
-  const logoUrl = await resolveLogo();
+  const logoUrl = await resolvePdfLogo();
   const documentNumber = `JC-${job.jobNumber}`;
 
   if (staffUserId) {
@@ -120,7 +57,7 @@ export async function generateJobCardBuffer(
     companyWebsite: branding.companyWebsite ?? "",
     companyLogoUrl: logoUrl,
     documentNumber,
-    dateIssued: formatDocDate(job.receivedAt),
+    dateIssued: formatEATDocDate(job.receivedAt),
     repairId: job.jobNumber,
     preparedByName: staffName,
     preparedByRole: staffRole,

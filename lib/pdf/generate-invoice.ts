@@ -1,93 +1,14 @@
 import { createElement } from "react";
 import { renderToBuffer } from "@react-pdf/renderer";
-import { readFile } from "node:fs/promises";
-import path from "node:path";
 
 import { getClientBill } from "@/lib/billing";
+import { formatEATDocDate } from "@/lib/date-eat";
 import { formatMoney, getAppCurrency } from "@/lib/currency";
 import { getDocumentBrandingSettings } from "@/lib/document-branding";
 import { canGenerateInvoiceForStatus, formatQuotationNumber } from "@/lib/documents";
+import { compactText, compactListText, prettyEnum, resolveInvoiceLogo } from "@/lib/pdf/pdf-utils";
 import { InvoiceDocumentV2 } from "@/lib/pdf/InvoiceDocumentV2";
 import { prisma } from "@/lib/prisma";
-
-function formatInvoiceDate(value: Date) {
-  return value.toLocaleDateString("en-GB", {
-    day: "2-digit", month: "short", year: "2-digit",
-    timeZone: "Africa/Nairobi",
-  });
-}
-
-function prettyEnum(value: string | null | undefined) {
-  if (!value) return "N/A";
-  return value.replaceAll("_", " ");
-}
-
-function compactText(value: string | null | undefined, max = 90) {
-  if (!value) return "N/A";
-  const flat = value.replace(/\s+/g, " ").trim();
-  if (flat.length <= max) return flat;
-  return `${flat.slice(0, max - 1)}...`;
-}
-
-function compactListText(value: string | null | undefined, max = 220) {
-  if (!value) return "N/A";
-  const normalized = value
-    .split(/\r?\n/)
-    .map((line) => line.replace(/\s+/g, " ").trim())
-    .filter(Boolean)
-    .join("\n");
-  if (normalized.length <= max) return normalized;
-  return `${normalized.slice(0, max - 1)}...`;
-}
-
-async function toDataUriFromRemote(url: string) {
-  const res = await fetch(url, { cache: "no-store" });
-  if (!res.ok) return null;
-  const contentType = res.headers.get("content-type") || "image/png";
-  const bytes = new Uint8Array(await res.arrayBuffer());
-  return `data:${contentType};base64,${Buffer.from(bytes).toString("base64")}`;
-}
-
-async function toDataUriFromLocal(filePath: string, contentType: string) {
-  const bytes = await readFile(filePath);
-  return `data:${contentType};base64,${bytes.toString("base64")}`;
-}
-
-async function resolveInvoiceLogo() {
-  const localCandidates = [
-    { file: path.join(process.cwd(), "public", "eagle-info-logo.png"), type: "image/png" },
-    { file: path.join(process.cwd(), "public", "eagle-info-logo.jpg"), type: "image/jpeg" },
-    { file: path.join(process.cwd(), "public", "eagle-info-logo.jpeg"), type: "image/jpeg" },
-    { file: path.join(process.cwd(), "public", "eagle-info-logo.webp"), type: "image/webp" },
-    { file: path.join(process.cwd(), "public", "invoice-logo.png"), type: "image/png" },
-    { file: path.join(process.cwd(), "public", "invoice-logo.jpg"), type: "image/jpeg" },
-    { file: path.join(process.cwd(), "public", "invoice-logo.jpeg"), type: "image/jpeg" },
-    { file: path.join(process.cwd(), "public", "invoice-logo.webp"), type: "image/webp" },
-  ];
-  for (const c of localCandidates) {
-    try { return await toDataUriFromLocal(c.file, c.type); } catch { /* try next */ }
-  }
-  const explicit = process.env.INVOICE_LOGO_URL;
-  if (explicit) {
-    if (explicit.startsWith("data:")) return explicit;
-    if (explicit.startsWith("http://") || explicit.startsWith("https://")) {
-      const remote = await toDataUriFromRemote(explicit);
-      if (remote) return remote;
-    }
-  }
-  const baseUrl = process.env.BETTER_AUTH_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? "";
-  if (baseUrl) {
-    for (const url of [
-      `${baseUrl}/eagle-info-logo.png`,
-      `${baseUrl}/eagle-info-logo.jpg`,
-      `${baseUrl}/invoice-logo.png`,
-    ]) {
-      const remote = await toDataUriFromRemote(url);
-      if (remote) return remote;
-    }
-  }
-  return undefined;
-}
 
 export type GenerateInvoiceResult =
   | { ok: true; buffer: Buffer; filename: string; invoiceNumber: string; clientPhone: string }
@@ -124,7 +45,7 @@ export async function generateInvoiceBuffer(
   const currency = getAppCurrency();
   const branding = await getDocumentBrandingSettings();
   const clientBill = getClientBill(job) ?? 0;
-  const vatApplicable = (job as { vatApplicable?: boolean }).vatApplicable ?? true;
+  const vatApplicable = job.vatApplicable ?? true;
   const vatRate = Math.max(0, branding.vatRatePercent) / 100;
   const repairCost = vatApplicable && clientBill > 0 ? clientBill / (1 + vatRate) : clientBill;
   const vatAmount = vatApplicable ? Math.max(clientBill - repairCost, 0) : 0;
@@ -138,20 +59,21 @@ export async function generateInvoiceBuffer(
   );
   const invoiceNumber = `INV-${quotationNumber.replace(/\s+/g, "-")}`;
 
-  await prisma.job.update({
-    where: { id: job.id },
-    data: { invoiceIssuedAt: issuedAtDate, invoiceNumber },
-  }).catch(() => null);
-
-  if (staffUserId) {
-    await prisma.auditLog.create({
+  // Stamp the invoice number and log generation in a single transaction
+  await prisma.$transaction([
+    prisma.job.update({
+      where: { id: job.id },
+      data: { invoiceIssuedAt: issuedAtDate, invoiceNumber },
+    }),
+    ...(staffUserId ? [prisma.auditLog.create({
       data: {
-        jobId: job.id, userId: staffUserId,
+        jobId: job.id,
+        userId: staffUserId,
         action: "INVOICE_GENERATED",
         detail: JSON.stringify({ invoiceNumber }),
       },
-    }).catch(() => null);
-  }
+    })] : []),
+  ]).catch(() => null);
 
   const docElement = createElement(InvoiceDocumentV2, {
     companyName: branding.companyName,
@@ -163,7 +85,7 @@ export async function generateInvoiceBuffer(
     companyWebsite: branding.companyWebsite ?? "",
     companyLogoUrl: logoUrl,
     invoiceNumber,
-    dateIssued: formatInvoiceDate(issuedAtDate),
+    dateIssued: formatEATDocDate(issuedAtDate),
     repairId: job.jobNumber,
     preparedByName: staffName,
     preparedByRole: staffRole,

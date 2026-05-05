@@ -154,7 +154,7 @@ export default async function PayoutFollowupsPage({
                   return (
                     <tr key={job.id} className="border-t border-[var(--line)]">
                       <td className="px-4 py-2.5 font-semibold">
-                        <Link href={`/jobs/${job.id}?tab=financials&returnTo=/payout-followups`} className="hover:text-[var(--accent)] transition-colors">{job.jobNumber}</Link>
+                        <Link href={`/jobs/${job.id}?tab=financials&returnTo=/payout-followups&returnLabel=Payment+follow-up`} className="hover:text-[var(--accent)] transition-colors">{job.jobNumber}</Link>
                       </td>
                       <td className="px-4 py-2.5">
                         <p className="font-medium">{job.client?.fullName ?? "-"}</p>
@@ -166,7 +166,7 @@ export default async function PayoutFollowupsPage({
                       <td className="px-4 py-2.5 font-semibold text-amber-700">{formatMoneyCompact(payoutDue, currency)}</td>
                       <td className="px-4 py-2.5 text-xs text-[var(--ink-muted)]">{doneAt ? new Date(doneAt).toLocaleDateString() : "-"}</td>
                       <td className="px-4 py-2.5">
-                        <Link href={`/jobs/${job.id}?tab=financials&returnTo=/payout-followups`} className="btn-premium-secondary rounded-lg px-3 py-1.5 text-sm">Open</Link>
+                        <Link href={`/jobs/${job.id}?tab=financials&returnTo=/payout-followups&returnLabel=Payment+follow-up`} className="btn-premium-secondary rounded-lg px-3 py-1.5 text-sm">Open</Link>
                       </td>
                     </tr>
                   );
