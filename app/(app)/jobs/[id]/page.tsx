@@ -188,11 +188,58 @@ export default async function JobDetailPage({
     deviceHistory = [];
   }
 
+  // Merge outbound messages from the linked repair request (sent before job was created)
+  let extraOutbound: Array<{
+    id: string;
+    to: string;
+    body: string;
+    type: string;
+    sentAt: Date | null;
+    createdAt: Date;
+    providerDeliveryStatus: string | null;
+  }> = [];
+
+  if (canSeeMessages) {
+    try {
+      const linkedRequest = await prisma.repairRequest.findFirst({
+        where: { linkedJobId: job.id },
+        select: { id: true },
+      });
+      if (linkedRequest) {
+        extraOutbound = await prisma.outboundMessage.findMany({
+          where: { repairRequestId: linkedRequest.id },
+          orderBy: { createdAt: "asc" },
+          select: {
+            id: true,
+            to: true,
+            body: true,
+            type: true,
+            sentAt: true,
+            createdAt: true,
+            providerDeliveryStatus: true,
+          },
+        });
+      }
+    } catch {
+      // repair request lookup is best-effort
+    }
+  }
+
+  const jobWithMessages = canSeeMessages
+    ? {
+        ...jobWithBilling,
+        outboundMessages: [
+          ...((jobWithBilling as typeof jobWithBilling & { outboundMessages?: typeof extraOutbound }).outboundMessages ?? []),
+          ...extraOutbound,
+        ].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()),
+      }
+    : jobWithBilling;
+
   return (
     <JobDetailTabs
       role={user.role}
       permissions={user.permissions}
-      job={jobWithBilling}
+      job={jobWithMessages}
       technicians={technicians}
       deviceHistory={deviceHistory}
     />
