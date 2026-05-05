@@ -368,3 +368,78 @@ function normalizeWhatsAppRecipient(input: string): string {
 
   return digits;
 }
+
+export async function uploadWhatsAppMedia(
+  fileBuffer: Buffer,
+  filename: string,
+  mimeType: string,
+): Promise<{ ok: true; mediaId: string } | { ok: false; error: string }> {
+  const config = getConfig();
+  if (!config) return { ok: false, error: "WhatsApp not configured" };
+
+  const form = new FormData();
+  form.append("messaging_product", "whatsapp");
+  form.append("type", mimeType);
+  form.append(
+    "file",
+    new Blob([fileBuffer], { type: mimeType }),
+    filename,
+  );
+
+  try {
+    const res = await fetch(
+      `https://graph.facebook.com/v21.0/${config.phoneNumberId}/media`,
+      { method: "POST", headers: { Authorization: `Bearer ${config.accessToken}` }, body: form },
+    );
+    if (!res.ok) {
+      const text = await res.text();
+      return { ok: false, error: `Media upload failed: ${res.status} ${text.slice(0, 200)}` };
+    }
+    const data = await res.json();
+    if (!data.id) return { ok: false, error: "No media ID returned" };
+    return { ok: true, mediaId: String(data.id) };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : String(err) };
+  }
+}
+
+export async function sendWhatsAppDocument(
+  to: string,
+  mediaId: string,
+  filename: string,
+  caption?: string,
+): Promise<{ success: boolean; messageId?: string; error?: string }> {
+  const config = getConfig();
+  if (!config) return { success: false, error: "WhatsApp not configured" };
+
+  const normalizedPhone = normalizeWhatsAppRecipient(to);
+
+  try {
+    const res = await fetch(
+      `https://graph.facebook.com/v21.0/${config.phoneNumberId}/messages`,
+      {
+        method: "POST",
+        headers: { Authorization: `Bearer ${config.accessToken}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messaging_product: "whatsapp",
+          to: normalizedPhone,
+          type: "document",
+          document: {
+            id: mediaId,
+            filename,
+            ...(caption ? { caption } : {}),
+          },
+        }),
+      },
+    );
+    if (!res.ok) {
+      const text = await res.text();
+      return { success: false, error: `Document send failed: ${res.status} ${text.slice(0, 200)}` };
+    }
+    const data = await res.json();
+    const messageId = data.messages?.[0]?.id;
+    return messageId ? { success: true, messageId } : { success: false, error: "No message ID returned" };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : String(err) };
+  }
+}

@@ -23,6 +23,8 @@ import {
   notifyDelayNote,
 } from "@/lib/notifications";
 import { deliverOutboundMessage, enqueueWhatsAppMessage } from "@/lib/notifications/whatsapp-outbox";
+import { uploadWhatsAppMedia, sendWhatsAppDocument } from "@/lib/notifications/whatsapp";
+import { generateQuotationBuffer } from "@/lib/pdf/generate-quotation";
 
 const workflowReasonValues = [
   "NONE",
@@ -812,6 +814,50 @@ export async function sendManualReplyAction(
   if ("outboxId" in result && result.outboxId) {
     await deliverOutboundMessage(result.outboxId);
   }
+
+  revalidatePath(`/jobs/${jobId}`);
+  return { success: true };
+}
+
+export async function sendQuotationViaWhatsAppAction(
+  jobId: string,
+): Promise<{ success: boolean; error?: string }> {
+  const { user } = await getCurrentUserRole();
+  if (!["ADMIN", "OPS", "FRONT_DESK"].includes(user.role)) {
+    return { success: false, error: "Not authorised" };
+  }
+
+  const result = await generateQuotationBuffer(jobId, user.name, user.role, true, user.id);
+  if (!result.ok) return { success: false, error: result.error };
+
+  const upload = await uploadWhatsAppMedia(result.buffer, result.filename, "application/pdf");
+  if (!upload.ok) return { success: false, error: upload.error };
+
+  const send = await sendWhatsAppDocument(
+    result.clientPhone,
+    upload.mediaId,
+    result.filename,
+    `Please find your quotation (${result.quotationNumber}) attached. — Eagle Info Solutions`,
+  );
+
+  if (!send.success) return { success: false, error: send.error };
+
+  // Record in outbox for visibility
+  await enqueueWhatsAppMessage({
+    to: result.clientPhone,
+    body: `[Quotation PDF] ${result.quotationNumber}`,
+    type: "STAFF_REPLY",
+    jobId,
+  }).catch(() => null);
+
+  await prisma.auditLog.create({
+    data: {
+      jobId,
+      userId: user.id,
+      action: "QUOTATION_SENT_WHATSAPP",
+      detail: JSON.stringify({ quotationNumber: result.quotationNumber, messageId: send.messageId }),
+    },
+  }).catch(() => null);
 
   revalidatePath(`/jobs/${jobId}`);
   return { success: true };

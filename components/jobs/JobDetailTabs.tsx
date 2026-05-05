@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
 
-import { markMessagesReadAction, sendManualReplyAction, updateJobAction, updateOneTimeExternalAssignmentAction } from "@/app/(app)/jobs/[id]/actions";
+import { markMessagesReadAction, sendManualReplyAction, sendQuotationViaWhatsAppAction, updateJobAction, updateOneTimeExternalAssignmentAction } from "@/app/(app)/jobs/[id]/actions";
 import { JobStatusBadge } from "@/components/jobs/JobStatusBadge";
 import { AuditTimeline } from "@/components/shared/AuditTimeline";
 import { PhotoUploader } from "@/components/shared/PhotoUploader";
@@ -133,19 +133,23 @@ function DeliveryDot({ status }: { status: string | null }) {
 function MessagesTab({
   jobId,
   clientPhone,
+  canSendQuote,
   inbound,
   outbound,
 }: {
   jobId: string;
   clientPhone: string | null | undefined;
+  canSendQuote: boolean;
   inbound: InboundMsg[];
   outbound: OutboundMsg[];
 }) {
   const router = useRouter();
   const [isMarkingRead, startMarkReadTransition] = useTransition();
   const [isSending, startSendTransition] = useTransition();
+  const [isSendingQuote, startSendQuoteTransition] = useTransition();
   const [replyText, setReplyText] = useState("");
   const [sendError, setSendError] = useState<string | null>(null);
+  const [quoteError, setQuoteError] = useState<string | null>(null);
 
   const thread: ThreadEntry[] = [
     ...inbound.map((msg) => ({ kind: "inbound" as const, msg, sortAt: new Date(msg.timestamp) })),
@@ -171,6 +175,18 @@ function MessagesTab({
         router.refresh();
       } else {
         setSendError(res.error ?? "Failed to send");
+      }
+    });
+  }
+
+  function handleSendQuote() {
+    setQuoteError(null);
+    startSendQuoteTransition(async () => {
+      const res = await sendQuotationViaWhatsAppAction(jobId);
+      if (res.success) {
+        router.refresh();
+      } else {
+        setQuoteError(res.error ?? "Failed to send quotation");
       }
     });
   }
@@ -250,7 +266,22 @@ function MessagesTab({
       )}
 
       {clientPhone ? (
-        <div className="border-t border-[var(--line)] p-3">
+        <div className="border-t border-[var(--line)] p-3 space-y-2">
+          {canSendQuote ? (
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleSendQuote}
+                disabled={isSendingQuote}
+                className="btn-premium-secondary rounded-xl px-3 py-1.5 text-sm disabled:opacity-50"
+              >
+                {isSendingQuote ? "Sending quote…" : "Send Quote PDF"}
+              </button>
+              {quoteError ? (
+                <p className="text-xs text-red-600">{quoteError}</p>
+              ) : null}
+            </div>
+          ) : null}
           <div className="flex gap-2 items-end">
             <textarea
               value={replyText}
@@ -276,9 +307,9 @@ function MessagesTab({
             </button>
           </div>
           {sendError ? (
-            <p className="mt-1.5 text-xs text-red-600">{sendError}</p>
+            <p className="text-xs text-red-600">{sendError}</p>
           ) : null}
-          <p className="mt-1.5 text-[10px] text-[var(--ink-muted)]">Sending to {clientPhone}</p>
+          <p className="text-[10px] text-[var(--ink-muted)]">Sending to {clientPhone}</p>
         </div>
       ) : (
         <div className="border-t border-[var(--line)] px-4 py-3 text-xs text-[var(--ink-muted)]">
@@ -1543,6 +1574,7 @@ export function JobDetailTabs({ role, permissions = [], job, technicians, device
         <MessagesTab
           jobId={job.id}
           clientPhone={job.client?.phone ?? null}
+          canSendQuote={canGenerateQuotation && !isIntake}
           inbound={inboundMessages}
           outbound={outboundMessages}
         />
