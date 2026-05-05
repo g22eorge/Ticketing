@@ -82,6 +82,8 @@ export default async function JobDetailPage({
       ?.fields.some((field) => field.name === "oneTimeExternalAssignment"),
   );
 
+  const canSeeMessages = ["ADMIN", "OPS", "FRONT_DESK"].includes(user.role);
+
   const includeBase = {
     client: true,
     assignedTo: true,
@@ -90,6 +92,32 @@ export default async function JobDetailPage({
       include: { user: { select: { name: true } } },
       orderBy: { createdAt: "desc" },
     },
+    ...(canSeeMessages ? {
+      inboundMessages: {
+        orderBy: { timestamp: "asc" as const },
+        select: {
+          id: true,
+          from: true,
+          body: true,
+          mediaType: true,
+          mediaCaption: true,
+          timestamp: true,
+          isRead: true,
+        },
+      },
+      outboundMessages: {
+        orderBy: { createdAt: "asc" as const },
+        select: {
+          id: true,
+          to: true,
+          body: true,
+          type: true,
+          sentAt: true,
+          createdAt: true,
+          providerDeliveryStatus: true,
+        },
+      },
+    } : {}),
   } as const;
 
   const includeWithOneTime = supportsOneTimeExternal

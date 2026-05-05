@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
 
-import { updateJobAction, updateOneTimeExternalAssignmentAction } from "@/app/(app)/jobs/[id]/actions";
+import { markMessagesReadAction, updateJobAction, updateOneTimeExternalAssignmentAction } from "@/app/(app)/jobs/[id]/actions";
 import { JobStatusBadge } from "@/components/jobs/JobStatusBadge";
 import { AuditTimeline } from "@/components/shared/AuditTimeline";
 import { PhotoUploader } from "@/components/shared/PhotoUploader";
@@ -15,7 +15,7 @@ import { canGenerateInvoiceForStatus, canGenerateQuotationForStatus } from "@/li
 import { JobStatus, normalizeJobStatus } from "@/lib/job-status";
 import { can } from "@/lib/permissions";
 
-const tabs = ["overview", "client", "diagnosis", "repair", "financials", "timeline", "photos"] as const;
+const tabs = ["overview", "client", "diagnosis", "repair", "financials", "timeline", "photos", "messages"] as const;
 
 function formatUtcDateTime(value: Date | string) {
   return formatEATDateTime(value);
@@ -81,6 +81,153 @@ const fieldClass =
   "w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-sm outline-none transition focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14";
 const areaClass =
   "min-h-24 w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-sm outline-none transition focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14";
+
+type InboundMsg = {
+  id: string;
+  from: string;
+  body: string | null;
+  mediaType: string | null;
+  mediaCaption: string | null;
+  timestamp: Date;
+  isRead: boolean;
+};
+
+type OutboundMsg = {
+  id: string;
+  to: string;
+  body: string;
+  type: string;
+  sentAt: Date | null;
+  createdAt: Date;
+  providerDeliveryStatus: string | null;
+};
+
+type ThreadEntry =
+  | { kind: "inbound"; msg: InboundMsg; sortAt: Date }
+  | { kind: "outbound"; msg: OutboundMsg; sortAt: Date };
+
+function formatMsgTime(d: Date) {
+  return new Intl.DateTimeFormat("en-UG", {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(d));
+}
+
+function DeliveryDot({ status }: { status: string | null }) {
+  if (!status) return null;
+  const color =
+    status === "read" ? "text-blue-500"
+    : status === "delivered" ? "text-emerald-500"
+    : status === "sent" ? "text-[var(--ink-muted)]"
+    : status === "failed" ? "text-red-500"
+    : "text-[var(--ink-muted)]";
+  return (
+    <span className={`text-[10px] font-medium ${color}`} title={status}>
+      {status === "read" ? "Read" : status === "delivered" ? "Delivered" : status === "sent" ? "Sent" : status === "failed" ? "Failed" : status}
+    </span>
+  );
+}
+
+function MessagesTab({
+  jobId,
+  inbound,
+  outbound,
+}: {
+  jobId: string;
+  inbound: InboundMsg[];
+  outbound: OutboundMsg[];
+}) {
+  const router = useRouter();
+  const [isMarkingRead, startMarkReadTransition] = useTransition();
+
+  const thread: ThreadEntry[] = [
+    ...inbound.map((msg) => ({ kind: "inbound" as const, msg, sortAt: new Date(msg.timestamp) })),
+    ...outbound.map((msg) => ({ kind: "outbound" as const, msg, sortAt: new Date(msg.sentAt ?? msg.createdAt) })),
+  ].sort((a, b) => a.sortAt.getTime() - b.sortAt.getTime());
+
+  const unread = inbound.filter((m) => !m.isRead);
+
+  function handleMarkRead() {
+    startMarkReadTransition(async () => {
+      await markMessagesReadAction(jobId);
+      router.refresh();
+    });
+  }
+
+  return (
+    <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
+      <div className="flex items-center justify-between border-b border-[var(--line)] px-4 py-3">
+        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--ink-muted)]">
+          WhatsApp Thread
+        </p>
+        {unread.length > 0 ? (
+          <button
+            type="button"
+            disabled={isMarkingRead}
+            onClick={handleMarkRead}
+            className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1 text-xs font-medium text-[var(--ink)] transition hover:border-[var(--accent)]/50 disabled:opacity-50"
+          >
+            Mark {unread.length} as read
+          </button>
+        ) : null}
+      </div>
+
+      {thread.length === 0 ? (
+        <div className="px-6 py-10 text-center text-sm text-[var(--ink-muted)]">
+          No messages yet. Outbound notifications and client replies will appear here.
+        </div>
+      ) : (
+        <div className="flex flex-col gap-2 p-4">
+          {thread.map((entry) => {
+            if (entry.kind === "outbound") {
+              const m = entry.msg;
+              return (
+                <div key={m.id} className="flex flex-col items-end">
+                  <div className="max-w-[80%] rounded-2xl rounded-br-sm bg-[var(--accent)] px-3.5 py-2.5 text-sm text-white shadow-sm">
+                    <p className="whitespace-pre-wrap leading-relaxed">{m.body}</p>
+                  </div>
+                  <div className="mt-1 flex items-center gap-2 text-[10px] text-[var(--ink-muted)]">
+                    <span>{formatMsgTime(m.sentAt ?? m.createdAt)}</span>
+                    <span className="capitalize text-[var(--ink-muted)]">
+                      {m.type.replaceAll("_", " ").toLowerCase()}
+                    </span>
+                    <DeliveryDot status={m.providerDeliveryStatus} />
+                  </div>
+                </div>
+              );
+            } else {
+              const m = entry.msg;
+              return (
+                <div key={m.id} className="flex flex-col items-start">
+                  <div className={`max-w-[80%] rounded-2xl rounded-bl-sm px-3.5 py-2.5 text-sm shadow-sm ${m.isRead ? "bg-[var(--panel-strong)] text-[var(--ink)]" : "bg-[var(--panel-strong)] text-[var(--ink)] ring-2 ring-[var(--accent)]/30"}`}>
+                    {m.body ? (
+                      <p className="whitespace-pre-wrap leading-relaxed">{m.body}</p>
+                    ) : m.mediaType ? (
+                      <p className="italic text-[var(--ink-muted)]">
+                        [{m.mediaType}]{m.mediaCaption ? `: ${m.mediaCaption}` : ""}
+                      </p>
+                    ) : (
+                      <p className="italic text-[var(--ink-muted)]">[message]</p>
+                    )}
+                  </div>
+                  <div className="mt-1 flex items-center gap-2 text-[10px] text-[var(--ink-muted)]">
+                    <span>{m.from}</span>
+                    <span>{formatMsgTime(m.timestamp)}</span>
+                    {!m.isRead ? (
+                      <span className="font-semibold text-[var(--accent)]">unread</span>
+                    ) : null}
+                  </div>
+                </div>
+              );
+            }
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
 
 type Props = {
   role: Role;
@@ -175,6 +322,24 @@ type Props = {
       user: { name: string };
     }>;
     photos: Array<{ id: string; url: string; label: string | null }>;
+    inboundMessages?: Array<{
+      id: string;
+      from: string;
+      body: string | null;
+      mediaType: string | null;
+      mediaCaption: string | null;
+      timestamp: Date;
+      isRead: boolean;
+    }>;
+    outboundMessages?: Array<{
+      id: string;
+      to: string;
+      body: string;
+      type: string;
+      sentAt: Date | null;
+      createdAt: Date;
+      providerDeliveryStatus: string | null;
+    }>;
     oneTimeExternalAssignment?: {
       technicianName: string;
       phone: string;
@@ -193,6 +358,9 @@ type Props = {
 };
 
 export function JobDetailTabs({ role, permissions = [], job, technicians, deviceHistory = [] }: Props) {
+  const inboundMessages = job.inboundMessages ?? [];
+  const outboundMessages = job.outboundMessages ?? [];
+  const unreadCount = inboundMessages.filter((m) => !m.isRead).length;
   const router = useRouter();
   const [active, setActive] = useState<(typeof tabs)[number]>("overview");
   const [savedSection, setSavedSection] = useState<string | null>(null);
@@ -231,6 +399,7 @@ export function JobDetailTabs({ role, permissions = [], job, technicians, device
     if (tab === "financials") return canViewFinancials;
     if (tab === "timeline") return ["ADMIN", "OPS", "FRONT_DESK"].includes(role) || can.viewClientInfo(permissionUser);
     if ((tab === "diagnosis" || tab === "repair") && isIntake) return false;
+    if (tab === "messages") return ["ADMIN", "OPS", "FRONT_DESK"].includes(role);
     return true;
   });
 
@@ -506,7 +675,14 @@ export function JobDetailTabs({ role, permissions = [], job, technicians, device
                 : "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink)] hover:border-[var(--accent)]/50"
             }`}
           >
-            {tab}
+            {tab === "messages" && unreadCount > 0 ? (
+              <span className="inline-flex items-center gap-1.5">
+                messages
+                <span className="inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
+                  {unreadCount}
+                </span>
+              </span>
+            ) : tab}
           </button>
         ))}
       </div>
@@ -1301,6 +1477,14 @@ export function JobDetailTabs({ role, permissions = [], job, technicians, device
           <p className="mb-3 text-xs font-semibold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Photo Evidence</p>
           <PhotoUploader jobId={job.id} photos={job.photos} canDelete={role === "ADMIN"} />
         </div>
+      ) : null}
+
+      {active === "messages" && ["ADMIN", "OPS", "FRONT_DESK"].includes(role) ? (
+        <MessagesTab
+          jobId={job.id}
+          inbound={inboundMessages}
+          outbound={outboundMessages}
+        />
       ) : null}
 
       {statusActions.length > 0 && !isTerminal && !isIntake ? (

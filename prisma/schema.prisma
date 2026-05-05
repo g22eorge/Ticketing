@@ -217,9 +217,10 @@ model Client {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  jobs         Job[]
-  devices      Device[]
-  notesEntries ClientNote[]
+  jobs            Job[]
+  devices         Device[]
+  notesEntries    ClientNote[]
+  inboundMessages InboundMessage[]
 }
 
 model Device {
@@ -342,6 +343,7 @@ model Job {
   notifications Notification[]
   oneTimeExternalAssignment OneTimeExternalTechAssignment?
   outboundMessages OutboundMessage[]
+  inboundMessages  InboundMessage[]
   partReservations PartReservation[]
   stockTransactions PartStockTransaction[]
 
@@ -666,6 +668,32 @@ model DocumentBrandingSettings {
   surfaceColor         String   @default("#F5F5F5")
   borderColor          String   @default("#E5E5E5")
   updatedAt            DateTime @updatedAt
+}
+
+model InboundMessage {
+  id         String   @id @default(cuid())
+  wamid      String   @unique
+  from       String
+  body       String?
+  mediaType  String?
+  mediaId    String?
+  mediaCaption String?
+  timestamp  DateTime
+
+  clientId   String?
+  client     Client?  @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  jobId      String?
+  job        Job?     @relation(fields: [jobId], references: [id], onDelete: SetNull)
+
+  isRead     Boolean  @default(false)
+  readAt     DateTime?
+
+  createdAt  DateTime @default(now())
+
+  @@index([from, timestamp])
+  @@index([jobId, timestamp])
+  @@index([clientId, isRead])
+  @@index([isRead, createdAt])
 }
 
 // REPAIR REQUEST FRONT_DESK MODELS

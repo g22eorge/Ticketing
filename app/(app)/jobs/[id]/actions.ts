@@ -761,3 +761,19 @@ export async function updateOneTimeExternalAssignmentAction(formData: FormData) 
 
   return { success: true };
 }
+
+export async function markMessagesReadAction(jobId: string): Promise<void> {
+  const { user } = await getCurrentUserRole();
+  if (!["ADMIN", "OPS", "FRONT_DESK"].includes(user.role)) return;
+
+  try {
+    await prisma.inboundMessage.updateMany({
+      where: { jobId, isRead: false },
+      data: { isRead: true, readAt: new Date() },
+    });
+  } catch {
+    // inboundMessage table may not exist yet on older deployments — safe to ignore
+  }
+
+  revalidatePath(`/jobs/${jobId}`);
+}
