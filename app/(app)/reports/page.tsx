@@ -975,7 +975,9 @@ export default async function ReportsPage({
                 <tbody>
                   {approvalDelays.map((job) => (
                     <tr key={job.id} className="border-t border-[var(--line)] hover:bg-[var(--panel-strong)]/50">
-                      <td className="px-4 py-2.5 font-medium">{job.jobNumber}</td>
+                      <td className="px-4 py-2.5">
+                        <Link href={`/jobs/${job.id}`} className="mono font-bold text-[var(--ink)] transition-colors hover:text-[var(--accent)]">{job.jobNumber}</Link>
+                      </td>
                       <td className="px-4 py-2.5 text-[var(--ink-muted)]">{[job.brand, job.model].filter(v => v && v !== "Unknown").join(" ") || "—"}</td>
                       <td className="px-4 py-2.5 text-[var(--ink-muted)]">{job.receivedAt.toLocaleDateString()}</td>
                       <td className="px-4 py-2.5 text-[var(--ink-muted)]">{job.updatedAt.toLocaleDateString()}</td>

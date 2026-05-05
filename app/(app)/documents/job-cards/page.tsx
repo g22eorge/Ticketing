@@ -47,8 +47,8 @@ export default async function JobCardsPage() {
           <tbody>
             {jobs.map((job) => (
               <tr key={job.id} className="border-t border-[var(--line)]">
-                <td className="px-3 py-2 font-medium text-[var(--ink)]">
-                  <Link className="hover:underline" href={`/jobs/${job.id}`}>
+                <td className="px-3 py-2">
+                  <Link className="mono font-bold text-[var(--ink)] transition-colors hover:text-[var(--accent)]" href={`/jobs/${job.id}`}>
                     {job.jobNumber}
                   </Link>
                 </td>
