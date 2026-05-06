@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 
-import { ProgressiveList } from "@/components/mobile/ProgressiveList";
+
 import { can } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { sanitizeOptionalText, sanitizeText } from "@/lib/sanitize";
@@ -344,15 +344,13 @@ export default async function ClientsPage({
 
           {/* ── Mobile cards ── */}
           <div className="lg:hidden">
-            <ProgressiveList initialCount={5} step={5}>
               {(clients as ClientRow[]).map((client) => (
                 <div
                   key={client.id}
-                  className="relative border-b border-[var(--line)] px-4 py-3.5 transition-colors last:border-b-0 hover:bg-[var(--panel-strong)]/30"
+                  className="relative border-b border-[var(--line)] bg-[var(--panel)] last:border-b-0 transition-colors hover:bg-[var(--panel-strong)]/40"
                 >
-                  {/* Activity indicator strip */}
                   <span
-                    className={`absolute inset-y-0 left-0 w-[3px] rounded-r ${
+                    className={`absolute inset-y-0 left-0 w-[5px] ${
                       client._count.jobs >= 3
                         ? "bg-[var(--accent)]"
                         : client._count.jobs > 0
@@ -361,48 +359,40 @@ export default async function ClientsPage({
                     }`}
                     aria-hidden="true"
                   />
-                  <div className="flex items-start justify-between gap-3 pl-2">
-                    <div className="min-w-0 flex-1 space-y-0.5">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <p className="font-semibold text-[var(--ink)]">{client.fullName}</p>
-                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
-                          client._count.jobs >= 3
-                            ? "border border-[var(--accent)]/30 bg-[var(--accent)]/10 text-[#9A7A00]"
-                            : client._count.jobs > 0
-                              ? "border border-blue-200 bg-blue-50 text-blue-700"
-                              : "border border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]"
-                        }`}>
-                          {client._count.jobs} {client._count.jobs === 1 ? "job" : "jobs"}
-                        </span>
-                      </div>
-                      <p className="text-[12px] text-[var(--ink-muted)]">{client.phone}</p>
-                      {client.organization ? (
-                        <p className="text-[11px] text-[var(--ink-muted)]">{client.organization}</p>
-                      ) : null}
-                    </div>
-                    <div className="flex shrink-0 gap-1.5 pt-0.5">
-                      <Link
-                        href={`/clients/${client.id}`}
-                        className="rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 py-2 text-[12px] font-semibold text-[var(--ink)] transition hover:border-[var(--accent)]/50 hover:bg-[var(--accent)]/6 hover:text-[var(--accent)]"
-                      >
-                        Open
-                      </Link>
-                      {user.role === "ADMIN" ? (
-                        <form action={deleteClientAction}>
+                  {/* Full-bleed tap target */}
+                  <Link href={`/clients/${client.id}`} className="absolute inset-0 z-0" aria-label={`Open ${client.fullName}`} />
+
+                  <div className="pointer-events-none relative z-10 px-4 py-3 pl-6">
+                    <div className="mb-1 flex items-center justify-between gap-2">
+                      <span className="text-[10px] font-medium tracking-wide text-[var(--ink-muted)]/50">
+                        {client._count.jobs} {client._count.jobs === 1 ? "job" : "jobs"}
+                      </span>
+                      {user.role === "ADMIN" && client._count.jobs === 0 ? (
+                        <form action={deleteClientAction} className="pointer-events-auto">
                           <input type="hidden" name="id" value={client.id} />
-                          <button
-                            disabled={client._count.jobs > 0}
-                            className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-[12px] font-medium text-red-600 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-40"
-                          >
-                            Del
+                          <button className="text-[10px] font-medium uppercase tracking-wide text-[var(--ink-muted)]/50 transition hover:text-red-500">
+                            ✕
                           </button>
                         </form>
+                      ) : (
+                        <svg viewBox="0 0 6 10" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="h-2.5 w-1.5 shrink-0 text-[var(--ink-muted)]/25" aria-hidden="true">
+                          <path d="M1 1l4 4-4 4"/>
+                        </svg>
+                      )}
+                    </div>
+                    <p className="text-[15px] font-bold leading-snug tracking-tight text-[var(--ink)]">{client.fullName}</p>
+                    <div className="mt-1 flex items-center gap-1 text-[11px] text-[var(--ink-muted)]">
+                      <span>{client.phone}</span>
+                      {client.organization ? (
+                        <>
+                          <span className="opacity-40">·</span>
+                          <span className="truncate">{client.organization}</span>
+                        </>
                       ) : null}
                     </div>
                   </div>
                 </div>
               ))}
-            </ProgressiveList>
 
             {totalPages > 1 ? (
               <div className="flex items-center justify-between border-t border-[var(--line)] px-4 py-3">

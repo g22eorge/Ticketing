@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { notFound, redirect } from "next/navigation";
 import { z } from "zod";
 
-import { ProgressiveList } from "@/components/mobile/ProgressiveList";
+import { JobStatusBadge, statusStripClass } from "@/components/jobs/JobStatusBadge";
 import { UI_JOB_STATUSES, JobStatus, normalizeJobStatus } from "@/lib/job-status";
 import { can } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
@@ -299,29 +299,29 @@ export default async function ClientDetailPage({
         {client.jobs.length === 0 ? (
           <p className="text-sm text-[var(--ink-muted)]">No jobs match this filter.</p>
         ) : (
-          <>
-            <div className="space-y-2">
-              <ProgressiveList initialCount={4} step={4}>
-                {client.jobs.map((job: ClientDetail["jobs"][number]) => (
-                  <details key={job.id} className="rounded-xl border border-[var(--line)] bg-[var(--panel-strong)] p-3 max-[360px]:p-2.5">
-                  <summary className="list-none">
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="mono min-w-0 truncate text-sm font-semibold text-[var(--accent)]">{job.jobNumber}</p>
-                      <span className="rounded-full bg-[var(--panel-strong)] px-2 py-0.5 text-xs text-[var(--ink-muted)]">
-                        {statusOptionLabel[job.status as keyof typeof statusOptionLabel] ?? job.status}
-                      </span>
+          <div className="overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
+            {client.jobs.map((job: ClientDetail["jobs"][number]) => {
+              const strip = statusStripClass(job.status);
+              const device = [job.brand, job.model].filter(v => v && v !== "Unknown").join(" ") || "Device";
+              return (
+                <div key={job.id} className="relative border-b border-[var(--line)] bg-[var(--panel)] last:border-b-0 transition-colors hover:bg-[var(--panel-strong)]/40">
+                  <span className={`absolute inset-y-0 left-0 w-[5px] ${strip}`} aria-hidden="true" />
+                  <Link href={`/jobs/${job.id}?returnTo=/clients/${client.id}&returnLabel=Client`} className="absolute inset-0 z-0" aria-label={`Open ${job.jobNumber}`} />
+                  <div className="pointer-events-none relative z-10 px-4 py-3 pl-6">
+                    <div className="mb-1 flex items-center justify-between gap-2">
+                      <span className="mono text-[10px] font-medium tracking-wide text-[var(--ink-muted)]/50">{job.jobNumber}</span>
+                      <svg viewBox="0 0 6 10" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="h-2.5 w-1.5 shrink-0 text-[var(--ink-muted)]/25" aria-hidden="true"><path d="M1 1l4 4-4 4"/></svg>
                     </div>
-                    <p className="mt-1 truncate text-sm font-medium">{[job.brand, job.model].filter(v => v && v !== "Unknown").join(" ") || "—"}</p>
-                    <p className="text-xs text-[var(--ink-muted)]">Received {formatEATDate(job.receivedAt)}</p>
-                  </summary>
-                  <Link href={`/jobs/${job.id}`} className="btn-premium mt-2 inline-block rounded-lg px-3 py-2 text-sm font-medium text-white max-[360px]:w-full max-[360px]:text-center">
-                    Open
-                  </Link>
-                  </details>
-                ))}
-              </ProgressiveList>
-            </div>
-          </>
+                    <p className="text-[15px] font-bold leading-snug tracking-tight text-[var(--ink)]">{device}</p>
+                    <div className="mt-1.5 flex items-center gap-1.5">
+                      <JobStatusBadge status={job.status} />
+                      <span className="text-[11px] text-[var(--ink-muted)]">· {formatEATDate(job.receivedAt)}</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         )}
       </div>
 

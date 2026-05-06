@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { ProgressiveList } from "@/components/mobile/ProgressiveList";
+
 import { StickyKpiRow } from "@/components/mobile/StickyKpiRow";
 import { JobStatusBadge, statusStripClass } from "@/components/jobs/JobStatusBadge";
 import { JOB_STATUSES, UI_JOB_STATUSES, JobStatus, normalizeJobStatus } from "@/lib/job-status";
@@ -444,7 +444,6 @@ export default async function TechniciansPage({
           <>
             {/* Mobile cards */}
             <div className="lg:hidden">
-              <ProgressiveList initialCount={6} step={5}>
                 {sortedJobs.map((job) => {
                   const strip = statusStripClass(job.status);
                   return (
@@ -501,7 +500,6 @@ export default async function TechniciansPage({
                     </div>
                   );
                 })}
-              </ProgressiveList>
             </div>
 
             {/* Desktop table */}

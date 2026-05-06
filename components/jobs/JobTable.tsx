@@ -7,7 +7,7 @@ function deviceName(brand?: string | null, model?: string | null) {
   return [b, m].filter(Boolean).join(" ") || null;
 }
 
-import { ProgressiveList } from "@/components/mobile/ProgressiveList";
+
 import { JobStatusBadge, statusStripClass } from "@/components/jobs/JobStatusBadge";
 import { formatMoney } from "@/lib/currency";
 import { formatEATDate } from "@/lib/date-eat";
@@ -188,8 +188,7 @@ export function JobTable({
 
       {/* ── Mobile list ── */}
       <div className="lg:hidden">
-        <ProgressiveList initialCount={5} step={6}>
-          {jobs.map((job) => {
+        {jobs.map((job) => {
             const strip = statusStripClass(job.status);
             const hasFlag = job.workflowReason && job.workflowReason !== "NONE";
             const flagCfg = hasFlag ? workflowReasonConfig[job.workflowReason as HighlightReason] : null;
@@ -314,7 +313,6 @@ export function JobTable({
               </div>
             );
           })}
-        </ProgressiveList>
 
         {/* Mobile pagination */}
         {hasPagination && (totalPages ?? 0) > 1 ? (

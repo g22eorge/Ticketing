@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { ProgressiveList } from "@/components/mobile/ProgressiveList";
+
 import { formatMoney, getAppCurrency } from "@/lib/currency";
 import { formatEATDate } from "@/lib/date-eat";
 import { getJobPayoutsByIds, hasJobPayoutColumns } from "@/lib/payouts";
@@ -184,50 +184,39 @@ export default async function TechnicianPayoutsPage({
         </div>
       </div>
 
-      <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-3 sm:p-4">
+      <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
         {jobs.length === 0 ? (
-          <p className="text-sm text-[var(--ink-muted)]">No payout records found for these filters.</p>
+          <p className="px-4 py-6 text-sm text-[var(--ink-muted)]">No payout records found for these filters.</p>
         ) : (
-          <ul className="space-y-2 text-sm">
-            <ProgressiveList initialCount={5} step={5}>
-              {jobs.map((job) => (
-                <li key={job.id} className="border-b border-[var(--line)] py-2 last:border-0 last:pb-0">
-                <details>
-                  <summary className="list-none cursor-pointer">
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="min-w-0">
-                        <p className="truncate text-xs font-medium sm:text-sm"><span className="mono font-bold text-[var(--accent)]">{job.jobNumber}</span> — {[job.brand, job.model].filter(v => v && v !== "Unknown").join(" ") || "Device"}</p>
-                        <p className="text-[10px] text-[var(--ink-muted)] sm:text-xs">
-                          {(statusOptionLabel as Record<string, string>)[job.status] ?? job.status}{" "}
-                          {job.completedAt ? `• completed ${formatEATDate(job.completedAt)}` : ""}
-                        </p>
-                        {payouts.get(job.id)?.externalPaymentRef ? (
-                          <p className="text-[10px] text-[var(--ink-muted)]">Ref: {payouts.get(job.id)?.externalPaymentRef}</p>
-                        ) : null}
-                      </div>
-                      <div className="text-right shrink-0">
-                        <p className="text-sm font-semibold">{formatMoney(payouts.get(job.id)?.externalTechFee ?? job.externalTechBill ?? 0, currency)}</p>
-                        <p className={`text-[10px] ${payouts.get(job.id)?.externalPaid ? "text-[var(--accent)]" : "text-[var(--accent)]"}`}>
-                          {payouts.get(job.id)?.externalPaid ? "Paid" : "Unpaid"}
-                        </p>
-                      </div>
-                    </div>
-                  </summary>
-                  <div className="mt-2 text-xs text-[var(--ink-muted)]">
-                    {payouts.get(job.id)?.externalPaidAt ? (
-                      <p>Paid on {formatEATDate(new Date(payouts.get(job.id)!.externalPaidAt!))}</p>
-                    ) : (
-                      <p>Pending payment</p>
-                    )}
-                    {payouts.get(job.id)?.externalPaymentRef ? (
-                      <p>Ref: {payouts.get(job.id)?.externalPaymentRef}</p>
-                    ) : null}
+          jobs.map((job) => {
+            const payout = payouts.get(job.id);
+            const isPaid = payout?.externalPaid ?? false;
+            const fee = formatMoney(payout?.externalTechFee ?? job.externalTechBill ?? 0, currency);
+            const device = [job.brand, job.model].filter(v => v && v !== "Unknown").join(" ") || "Device";
+            return (
+              <div key={job.id} className="relative border-b border-[var(--line)] bg-[var(--panel)] last:border-b-0 transition-colors hover:bg-[var(--panel-strong)]/40">
+                <span className={`absolute inset-y-0 left-0 w-[5px] ${isPaid ? "bg-emerald-400" : "bg-amber-400"}`} aria-hidden="true" />
+                <Link href={`/jobs/${job.id}?returnTo=/technicians/payouts&returnLabel=Payouts`} className="absolute inset-0 z-0" aria-label={`Open ${job.jobNumber}`} />
+                <div className="pointer-events-none relative z-10 px-4 py-3 pl-6">
+                  <div className="mb-1 flex items-center justify-between gap-2">
+                    <span className="mono text-[10px] font-medium tracking-wide text-[var(--ink-muted)]/50">{job.jobNumber}</span>
+                    <span className={`text-[11px] font-semibold ${isPaid ? "text-emerald-600" : "text-amber-600"}`}>
+                      {isPaid ? "Paid" : "Unpaid"}
+                    </span>
                   </div>
-                </details>
-                </li>
-              ))}
-            </ProgressiveList>
-          </ul>
+                  <p className="text-[15px] font-bold leading-snug tracking-tight text-[var(--ink)]">{device}</p>
+                  <div className="mt-1 flex items-center justify-between gap-2">
+                    <span className="text-[11px] text-[var(--ink-muted)]">
+                      {(statusOptionLabel as Record<string, string>)[job.status] ?? job.status}
+                      {job.completedAt ? ` · ${formatEATDate(job.completedAt)}` : ""}
+                      {payout?.externalPaymentRef ? ` · Ref: ${payout.externalPaymentRef}` : ""}
+                    </span>
+                    <span className="text-[13px] font-bold text-[var(--ink)]">{fee}</span>
+                  </div>
+                </div>
+              </div>
+            );
+          })
         )}
       </div>
     </div>
