@@ -685,6 +685,7 @@ export default async function DashboardPage({
       statusGroup,
       completedMtd,
       externalCompleted,
+      clientUnpaidCount,
       receivedToday,
       completedToday,
       pendingRequests,
@@ -704,6 +705,9 @@ export default async function DashboardPage({
         },
         select: { id: true, externalTechBill: true },
       }),
+      prisma.job.count({
+        where: { clientBill: { gt: 0 }, clientPaid: false, status: { in: ["COMPLETED", "DELIVERED"] } },
+      }).catch(() => 0),
       prisma.job.count({ where: { receivedAt: { gte: todayStart } } }),
       prisma.job.count({ where: { completedAt: { gte: todayStart } } }),
       prisma.repairRequest.count({ where: { requestStatus: { in: ["PENDING_FRONT_DESK", "PENDING_INTAKE"] } } }).catch(() => 0),
@@ -860,12 +864,12 @@ export default async function DashboardPage({
               <Link
                 href="/payout-followups"
                 className={`rounded-lg border px-2.5 py-1.5 text-[11px] font-semibold transition ${
-                  payoutOutstanding > 0
+                  payoutOutstanding > 0 || clientUnpaidCount > 0
                     ? "border-[var(--accent)]/40 bg-[var(--accent)]/10 text-[#9A7A00] hover:border-[var(--accent)]/60"
                     : "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)] hover:border-[var(--accent)]/30"
                 }`}
               >
-                Payouts {formatMoney(payoutOutstanding, currency)}
+                Finance · {clientUnpaidCount} unpaid
               </Link>
               <Link
                 href="/jobs?status=AWAITING_APPROVAL"
@@ -943,9 +947,9 @@ export default async function DashboardPage({
                 <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Revenue MTD</p>
                 <p className="mt-0.5 text-sm font-semibold text-emerald-700">{formatMoney(revenueMtd, currency)}</p>
               </Link>
-              <Link href="/payout-followups" className={`rounded-lg border px-3 py-2 transition ${payoutOutstanding > 0 ? "border-[var(--accent)]/35 bg-[var(--accent)]/10 hover:border-[var(--accent)]/60" : "border-[var(--line)] bg-[var(--panel)] hover:border-[var(--accent)]/35"}`}>
-                <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Payouts Due</p>
-                <p className={`mt-0.5 text-sm font-semibold ${payoutOutstanding > 0 ? "text-[#9A7A00]" : "text-[var(--ink)]"}`}>{formatMoney(payoutOutstanding, currency)}</p>
+              <Link href="/payout-followups" className={`rounded-lg border px-3 py-2 transition ${clientUnpaidCount > 0 || payoutOutstanding > 0 ? "border-[var(--accent)]/35 bg-[var(--accent)]/10 hover:border-[var(--accent)]/60" : "border-[var(--line)] bg-[var(--panel)] hover:border-[var(--accent)]/35"}`}>
+                <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Unpaid Bills</p>
+                <p className={`mt-0.5 text-sm font-semibold ${clientUnpaidCount > 0 ? "text-[#9A7A00]" : "text-[var(--ink)]"}`}>{clientUnpaidCount} client{clientUnpaidCount !== 1 ? "s" : ""}</p>
               </Link>
               <Link href={`/jobs?status=COMPLETED&from=${asDateInputValue(mtdStart)}&to=${asDateInputValue(today)}`} className="col-span-2 rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 py-2 transition hover:border-[var(--accent)]/35 sm:col-span-1">
                 <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Completed MTD</p>

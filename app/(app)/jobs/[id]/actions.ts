@@ -479,6 +479,21 @@ export async function updateJobAction(formData: FormData) {
       data.approvalDate = new Date();
     }
     data.completedAt = payload.nextStatus === JobStatus.COMPLETED ? new Date() : undefined;
+    if (payload.nextStatus === JobStatus.COMPLETED) {
+      // Determine the bill that will be in effect after this update.
+      const incomingBill = typeof data.clientBill === "number" ? data.clientBill : undefined;
+      const priorBill =
+        typeof (existing as { clientBill?: number | null }).clientBill === "number"
+          ? (existing as { clientBill?: number | null }).clientBill
+          : null;
+      const finalBill = incomingBill !== undefined ? incomingBill : priorBill;
+      // No charge — mark client payment settled so the job is excluded from collection queues.
+      if (finalBill === null || finalBill === 0) {
+        data.clientPaid = true;
+        data.clientPaidAt = new Date();
+        data.clientPaidById = session.user.id;
+      }
+    }
     // Delivery fields should only be captured at the end of the workflow.
     // DELIVERED status is deprecated in UI; keep deliveredAt only when staff set it explicitly.
     data.deliveredAt = undefined;
@@ -519,6 +534,7 @@ export async function updateJobAction(formData: FormData) {
       || message.includes("Unknown argument `vatApplicable`")
       || message.includes("Unknown argument `statusNote`")
       || message.includes("Unknown argument `workflowReason`")
+      || message.includes("Unknown argument `clientPaid`")
     ) {
       const fallbackData = { ...data } as Record<string, unknown>;
       delete fallbackData.timelineMinMinutes;
@@ -544,6 +560,9 @@ export async function updateJobAction(formData: FormData) {
       delete fallbackData.deliveredAt;
       delete fallbackData.deliveryMethod;
       delete fallbackData.deliveredTo;
+      delete fallbackData.clientPaid;
+      delete fallbackData.clientPaidAt;
+      delete fallbackData.clientPaidById;
 
       updated = await (prisma.job as unknown as {
         update: (args: { where: { id: string }; data: Record<string, unknown> }) => Promise<{
