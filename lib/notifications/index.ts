@@ -281,7 +281,8 @@ function isOutboundMessageType(value: string): value is OutboundMessageType {
 }
 
 function defaultTemplateKeyForStatus(status: JobStatus): OutboundMessageType {
-  if (status === JobStatus.READY_FOR_PICKUP) return OutboundMessageType.READY_FOR_PICKUP_NUDGE_1;
+  // READY_FOR_PICKUP nudges are scheduled separately; the status-change notice should be a single message.
+  if (status === JobStatus.READY_FOR_PICKUP) return OutboundMessageType.JOB_STATUS_UPDATE;
   if (status === JobStatus.COMPLETED) return OutboundMessageType.JOB_COMPLETED;
   return OutboundMessageType.JOB_STATUS_UPDATE;
 }
@@ -391,9 +392,9 @@ async function scheduleReadyForPickupNudges(input: {
   // De-dupe: remove any existing pending/failed nudges for this job.
   await cancelReadyForPickupNudges(input.jobId, "WHATSAPP");
 
-  const baseKey = input.templateKey ?? OutboundMessageType.READY_FOR_PICKUP_NUDGE_1;
-  const key1 = baseKey;
-  const key2 = input.templateKey ? nudge2KeyFrom(baseKey) : OutboundMessageType.READY_FOR_PICKUP_NUDGE_2;
+  // Nudges always use the dedicated nudge templates.
+  const key1 = input.templateKey ? input.templateKey : OutboundMessageType.READY_FOR_PICKUP_NUDGE_1;
+  const key2 = input.templateKey ? nudge2KeyFrom(input.templateKey) : OutboundMessageType.READY_FOR_PICKUP_NUDGE_2;
 
   const nudgeVars = { customerName: client.fullName, jobNumber: input.jobNumber };
 
