@@ -53,6 +53,7 @@ function initials(name: string) {
 export function Header({ userName, role, permissions = [] }: HeaderProps) {
   const router = useRouter();
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   return (
     <header className="sticky top-0 z-30 border-b border-[var(--line)] bg-[var(--panel)]/95 backdrop-blur-md px-4 py-2.5">
@@ -81,50 +82,76 @@ export function Header({ userName, role, permissions = [] }: HeaderProps) {
           <ThemeToggle />
           {can.viewNotifications({ role: role as never, permissions }) ? <NotificationBell /> : null}
 
-          {/* User pill */}
-          <div className="hidden sm:flex items-center gap-2 rounded-full border border-[var(--line)] bg-[var(--panel-strong)]/60 pl-1.5 pr-3 py-1">
-            {/* Avatar */}
-            <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--accent)] text-[10px] font-bold text-black select-none">
-              {initials(userName)}
-            </div>
-            {/* Name */}
-            <span className="text-[12px] font-semibold text-[var(--ink)] leading-none truncate max-w-[120px]">
-              {userName.split(" ")[0]}
-            </span>
-            {/* Role badge */}
-            <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold leading-none ${roleAccent(role)}`}>
-              {roleDisplay(role)}
-            </span>
-          </div>
+          {/* User menu */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setMenuOpen((v) => !v)}
+              aria-haspopup="menu"
+              aria-expanded={menuOpen}
+              className="flex items-center gap-2 rounded-full border border-[var(--line)] bg-[var(--panel-strong)]/60 pl-1.5 pr-3 py-1 transition hover:border-[var(--accent)]/30"
+              title="Account menu"
+            >
+              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--accent)] text-[10px] font-bold text-black select-none">
+                {initials(userName)}
+              </div>
+              <span className="hidden sm:inline text-[12px] font-semibold text-[var(--ink)] leading-none truncate max-w-[140px]">
+                {userName.split(" ")[0]}
+              </span>
+              <span className={`hidden sm:inline rounded-full px-2 py-0.5 text-[10px] font-semibold leading-none ${roleAccent(role)}`}>
+                {roleDisplay(role)}
+              </span>
+              <svg className="ml-0.5 h-4 w-4 text-[var(--ink-muted)]" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 10.94l3.71-3.71a.75.75 0 1 1 1.06 1.06l-4.24 4.24a.75.75 0 0 1-1.06 0L5.21 8.29a.75.75 0 0 1 .02-1.08Z" clipRule="evenodd" />
+              </svg>
+            </button>
 
-          {/* Mobile user avatar only */}
-          <div className="sm:hidden flex h-7 w-7 items-center justify-center rounded-full bg-[var(--accent)] text-[10px] font-bold text-black select-none">
-            {initials(userName)}
+            {menuOpen ? (
+              <div
+                role="menu"
+                className="absolute right-0 mt-2 w-52 overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)] shadow-xl"
+                onMouseLeave={() => setMenuOpen(false)}
+              >
+                <Link
+                  role="menuitem"
+                  href="/settings/profile"
+                  className="flex w-full items-center px-3 py-2 text-left text-sm text-[var(--ink)] hover:bg-[var(--panel-strong)]"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  Profile
+                </Link>
+                {role === "ADMIN" ? (
+                  <Link
+                    role="menuitem"
+                    href="/settings/users"
+                    className="flex w-full items-center px-3 py-2 text-left text-sm text-[var(--ink)] hover:bg-[var(--panel-strong)]"
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    Users
+                  </Link>
+                ) : null}
+                <button
+                  role="menuitem"
+                  type="button"
+                  disabled={isSigningOut}
+                  onClick={async () => {
+                    setIsSigningOut(true);
+                    const result = await authClient.signOut();
+                    if (result.error) {
+                      toast.error(result.error.message || "Sign out failed");
+                      setIsSigningOut(false);
+                      return;
+                    }
+                    router.push("/login");
+                    router.refresh();
+                  }}
+                  className="flex w-full items-center px-3 py-2 text-left text-sm text-red-700 hover:bg-red-50 disabled:opacity-50"
+                >
+                  {isSigningOut ? "Signing out…" : "Sign out"}
+                </button>
+              </div>
+            ) : null}
           </div>
-
-          {/* Sign out */}
-          <button
-            disabled={isSigningOut}
-            onClick={async () => {
-              setIsSigningOut(true);
-              const result = await authClient.signOut();
-              if (result.error) {
-                toast.error(result.error.message || "Sign out failed");
-                setIsSigningOut(false);
-                return;
-              }
-              router.push("/login");
-              router.refresh();
-            }}
-            className="hidden sm:flex items-center gap-1.5 rounded-lg border border-[var(--line)] bg-[var(--panel)] px-2.5 py-1.5 text-[12px] font-medium text-[var(--ink-muted)] transition-colors hover:border-[var(--ink)]/20 hover:text-[var(--ink)] disabled:opacity-50"
-            aria-label="Sign out"
-          >
-            <svg viewBox="0 0 20 20" fill="currentColor" className="h-3.5 w-3.5 shrink-0" aria-hidden="true">
-              <path fillRule="evenodd" d="M3 4.25A2.25 2.25 0 0 1 5.25 2h5.5A2.25 2.25 0 0 1 13 4.25v2a.75.75 0 0 1-1.5 0v-2a.75.75 0 0 0-.75-.75h-5.5a.75.75 0 0 0-.75.75v11.5c0 .414.336.75.75.75h5.5a.75.75 0 0 0 .75-.75v-2a.75.75 0 0 1 1.5 0v2A2.25 2.25 0 0 1 10.75 18h-5.5A2.25 2.25 0 0 1 3 15.75V4.25Z" clipRule="evenodd" />
-              <path fillRule="evenodd" d="M19 10a.75.75 0 0 0-.75-.75H8.704l1.048-1.08a.75.75 0 1 0-1.08-1.04l-2.25 2.33a.75.75 0 0 0 0 1.04l2.25 2.33a.75.75 0 1 0 1.08-1.04l-1.048-1.08h9.546A.75.75 0 0 0 19 10Z" clipRule="evenodd" />
-            </svg>
-            <span className="hidden sm:block">{isSigningOut ? "Signing out…" : "Sign out"}</span>
-          </button>
         </div>
       </div>
     </header>

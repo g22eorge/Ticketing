@@ -341,7 +341,7 @@ export default async function JobsPage({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 pb-[calc(env(safe-area-inset-bottom)+7.5rem)] sm:pb-4">
 
       {/* Minimal top actions (no status bar) */}
       {can.createJob(user) ? (
