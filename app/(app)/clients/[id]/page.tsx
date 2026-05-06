@@ -171,8 +171,9 @@ export default async function ClientDetailPage({
   }
 
   const totalJobs = client.jobs.length;
-  const openJobs = client.jobs.filter((job: ClientDetail["jobs"][number]) => !["COMPLETED", "CLOSED"].includes(job.status)).length;
-  const completedJobs = client.jobs.filter((job: ClientDetail["jobs"][number]) => job.status === "COMPLETED").length;
+  const DONE_STATUSES = ["COMPLETED", "CLOSED", "DELIVERED"];
+  const openJobs = client.jobs.filter((job: ClientDetail["jobs"][number]) => !DONE_STATUSES.includes(job.status)).length;
+  const completedJobs = client.jobs.filter((job: ClientDetail["jobs"][number]) => DONE_STATUSES.includes(job.status)).length;
   const completionRate = totalJobs > 0 ? (completedJobs / totalJobs) * 100 : 0;
   const latestActivity = client.jobs[0]?.updatedAt ?? client.updatedAt;
   const hasHistoryFilters = Boolean(filters.q || filters.status);

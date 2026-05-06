@@ -89,13 +89,16 @@ async function loadRevenueMarginTrend(trendMonths: { key: string; start: Date; e
       status: "COMPLETED",
       completedAt: { gte: trendMonths[0].start, lte: trendMonths[trendMonths.length - 1].end },
     },
-    select: { clientBill: true, externalTechBill: true, completedAt: true },
+    select: { id: true, clientBill: true, externalTechBill: true, completedAt: true },
   });
+
+  // Load admin-overridden payout fees so margin uses the actual amount paid out, not just what the tech billed
+  const payoutMap = await getJobPayoutsByIds(completed.map((j) => j.id)).catch(() => new Map());
 
   return trendMonths.map((m) => {
     const monthJobs = completed.filter((j) => j.completedAt && j.completedAt >= m.start && j.completedAt <= m.end);
     const revenue = monthJobs.reduce((sum, j) => sum + (getClientBill(j) ?? 0), 0);
-    const cost = monthJobs.reduce((sum, j) => sum + (j.externalTechBill ?? 0), 0);
+    const cost = monthJobs.reduce((sum, j) => sum + resolveTechCost(payoutMap.get(j.id)?.externalTechFee, j.externalTechBill), 0);
     return { key: m.key, revenue, margin: revenue - cost };
   });
 }
@@ -1059,7 +1062,7 @@ export default async function DashboardPage({
     const [completedThisMonth, pendingBilling, externalCompleted] = await Promise.all([
       prisma.job.findMany({
         where: { status: "COMPLETED", completedAt: { gte: selectedRange.start, lte: selectedRange.end } },
-        select: { id: true, jobNumber: true, completedAt: true },
+        select: { id: true, jobNumber: true, completedAt: true, clientBill: true, finalCost: true },
       }),
       prisma.job.count({
         where: {
@@ -1076,11 +1079,7 @@ export default async function DashboardPage({
       }),
     ]);
 
-
-    const completedRows = await prisma.job.findMany({
-      where: { id: { in: completedThisMonth.map((job) => job.id) } },
-    });
-    const monthRevenue = completedRows.reduce((sum, job) => sum + (getClientBill(job) ?? 0), 0);
+    const monthRevenue = completedThisMonth.reduce((sum, job) => sum + (getClientBill(job) ?? 0), 0);
 
     const revenueTrend = await loadRevenueMarginTrend(trendMonths);
 

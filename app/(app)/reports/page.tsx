@@ -5,7 +5,7 @@ import { PersistedDisclosure } from "@/components/mobile/PersistedDisclosure";
 import { StickyKpiRow } from "@/components/mobile/StickyKpiRow";
 import { TechnicianBarChart } from "@/components/reports/ReportsCharts";
 import { MonthSelectForm } from "@/components/shared/MonthSelectForm";
-import { getClientBill, getExternalTechBill } from "@/lib/billing";
+import { getClientBill, getExternalTechBill, resolveTechCost } from "@/lib/billing";
 import { formatMoney, formatMoneyCompact, getAppCurrency } from "@/lib/currency";
 import { formatEATMonthLabel } from "@/lib/date-eat";
 import { UI_JOB_STATUSES, JobStatus, normalizeJobStatus } from "@/lib/job-status";
@@ -163,8 +163,8 @@ export default async function ReportsPage({
       },
       select: { jobNumber: true, status: true, receivedAt: true, updatedAt: true },
     }),
-    prisma.job.count({ where: { repairPath: "EXTERNAL", receivedAt: { gte: selectedRange.start, lte: selectedRange.end } } }),
-    prisma.job.count({ where: { repairPath: "IN_HOUSE", receivedAt: { gte: selectedRange.start, lte: selectedRange.end } } }),
+    prisma.job.count({ where: { repairPath: "EXTERNAL", status: "COMPLETED", completedAt: { gte: selectedRange.start, lte: selectedRange.end } } }),
+    prisma.job.count({ where: { repairPath: "IN_HOUSE", status: "COMPLETED", completedAt: { gte: selectedRange.start, lte: selectedRange.end } } }),
     prisma.job.findMany({
       where: {
         repairPath: "EXTERNAL",
@@ -179,7 +179,7 @@ export default async function ReportsPage({
   const unpaidPayouts = externalPayoutOutstandingJobs
     .filter((job) => !externalPayoutMap.get(job.id)?.externalPaid)
     .map((job) => ({
-      amount: externalPayoutMap.get(job.id)?.externalTechFee ?? job.externalTechBill ?? 0,
+      amount: resolveTechCost(externalPayoutMap.get(job.id)?.externalTechFee, job.externalTechBill),
     }));
 
   const externalPayoutOutstandingTotal = unpaidPayouts.reduce((sum, payout) => sum + payout.amount, 0);
