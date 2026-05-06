@@ -463,6 +463,9 @@ type Props = {
     partsReplaced: string | null;
     externalTechBill: number | null;
     clientBill: number | null;
+    clientPaid?: boolean;
+    clientPaidAt?: Date | null;
+    clientPaymentRef?: string | null;
     vatApplicable?: boolean;
     externalTechFee?: number | null;
     externalPaid?: boolean;
@@ -1429,6 +1432,70 @@ export function JobDetailTabs({ role, permissions = [], job, technicians, device
                 Repair margin: {existingMargin === null ? "Set external tech bill and client bill" : `${existingMargin >= 0 ? "+" : ""}${formatBillAmount(existingMargin)}`}
               </p>
           ) : null}
+
+          {/* ── Client payment section ──────────────────────────────────── */}
+          {canManageFinancials && typeof job.clientBill === "number" && job.clientBill > 0 ? (
+            <div className={softSectionClass}>
+              <p className="text-xs font-semibold uppercase tracking-wide text-[var(--ink-muted)]">Client Payment</p>
+              <div className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] p-2">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-xs text-[var(--ink-muted)]">Payment status</p>
+                  <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${job.clientPaid ? "bg-emerald-500 text-white" : "bg-amber-400/20 text-amber-700"}`}>
+                    {job.clientPaid ? "Paid" : "Unpaid"}
+                  </span>
+                </div>
+                <p className="mt-1 text-xs text-[var(--ink-muted)]">
+                  Amount: {formatBillAmount(clientBillValue)}
+                </p>
+                <p className="mt-0.5 text-xs text-[var(--ink-muted)]">
+                  {job.clientPaidAt
+                    ? `Collected on ${formatUtcDateTime(job.clientPaidAt)}`
+                    : "Payment not yet recorded"}
+                  {job.clientPaymentRef ? ` · Ref: ${job.clientPaymentRef}` : ""}
+                </p>
+              </div>
+              <input
+                name="clientPaymentRef"
+                defaultValue={job.clientPaymentRef ?? ""}
+                placeholder="Payment reference / receipt # (optional)"
+                className={fieldClass}
+              />
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="submit"
+                  name="clientPaid"
+                  value="true"
+                  disabled={isFinancialPending || job.clientPaid === true}
+                  className="btn-premium-success w-full rounded-lg px-3 py-1.5 text-[13px] disabled:opacity-60 sm:w-auto sm:py-2 sm:text-sm"
+                >
+                  Mark Client Paid
+                </button>
+                <button
+                  type="submit"
+                  name="clientPaid"
+                  value="false"
+                  disabled={isFinancialPending || job.clientPaid === false}
+                  className="btn-premium-warning w-full rounded-lg px-3 py-1.5 text-[13px] disabled:opacity-60 sm:w-auto sm:py-2 sm:text-sm"
+                >
+                  Mark Unpaid
+                </button>
+              </div>
+            </div>
+          ) : null}
+
+          {/* Show unpaid indicator even when not managing financials */}
+          {!canManageFinancials && typeof job.clientBill === "number" && job.clientBill > 0 ? (
+            <div className={softSectionClass}>
+              <p className="text-xs font-semibold uppercase tracking-wide text-[var(--ink-muted)]">Client Payment</p>
+              <div className="flex items-center justify-between rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] p-2">
+                <p className="text-xs text-[var(--ink-muted)]">Amount: {formatBillAmount(clientBillValue)}</p>
+                <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${job.clientPaid ? "bg-emerald-500 text-white" : "bg-amber-400/20 text-amber-700"}`}>
+                  {job.clientPaid ? "Paid" : "Unpaid"}
+                </span>
+              </div>
+            </div>
+          ) : null}
+
           {hasPayoutControls ? (
             <div className={softSectionClass}>
               <p className="text-xs font-semibold uppercase tracking-wide text-[var(--ink-muted)]">External Technician Payout</p>

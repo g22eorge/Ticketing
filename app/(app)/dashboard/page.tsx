@@ -706,7 +706,7 @@ export default async function DashboardPage({
         select: { id: true, externalTechBill: true },
       }),
       prisma.job.count({
-        where: { clientBill: { gt: 0 }, clientPaid: false, status: { in: ["COMPLETED", "DELIVERED"] } },
+        where: { clientBill: { gt: 0 }, clientPaid: false, status: { in: ["READY_FOR_PICKUP", "COMPLETED", "DELIVERED"] } },
       }).catch(() => 0),
       prisma.job.count({ where: { receivedAt: { gte: todayStart } } }),
       prisma.job.count({ where: { completedAt: { gte: todayStart } } }),

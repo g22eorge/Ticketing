@@ -51,6 +51,8 @@ const updateSchema = z.object({
   vatApplicable: z.enum(["true", "false"]).optional(),
   externalPaid: z.enum(["true", "false"]).optional(),
   externalPaymentRef: z.string().optional(),
+  clientPaid: z.enum(["true", "false"]).optional(),
+  clientPaymentRef: z.string().optional(),
   recommendationOption: z.nativeEnum(RecommendationOption).optional(),
   communicationStatus: z.nativeEnum(CommunicationStatus).optional(),
   clientConversationNote: z.string().optional(),
@@ -160,6 +162,7 @@ export async function updateJobAction(formData: FormData) {
     repairPath: true,
     // billing + payouts
     clientBill: true,
+    clientPaid: true,
     vatApplicable: true,
     externalTechFee: true,
     externalPaid: true,
@@ -328,11 +331,18 @@ export async function updateJobAction(formData: FormData) {
     payload.externalPaymentRef !== undefined;
   const canManagePayouts = user.role === "ADMIN" || can.reviewExternalBills(permissionUser);
 
+  const clientPaymentChangeRequested =
+    payload.clientPaid !== undefined || payload.clientPaymentRef !== undefined;
+
   const adminFinancialChangeRequested =
     payload.clientBill !== undefined || payload.vatApplicable !== undefined;
 
   if (adminFinancialChangeRequested && !can.approveInvoices(permissionUser)) {
     return { error: "Only authorized invoice approvers can update client billing controls." };
+  }
+
+  if (clientPaymentChangeRequested && !can.approveInvoices(permissionUser)) {
+    return { error: "Only authorized users can record client payment status." };
   }
 
   if (payoutChangeRequested && !canManagePayouts) {
@@ -446,6 +456,17 @@ export async function updateJobAction(formData: FormData) {
         }
       }
     }
+    if (clientPaymentChangeRequested && can.approveInvoices(permissionUser)) {
+      if (payload.clientPaid !== undefined) {
+        const isPaid = payload.clientPaid === "true";
+        data.clientPaid = isPaid;
+        data.clientPaidAt = isPaid ? new Date() : null;
+        data.clientPaidById = isPaid ? session.user.id : null;
+      }
+      if (payload.clientPaymentRef !== undefined) {
+        data.clientPaymentRef = sanitizeOptionalText(payload.clientPaymentRef) || null;
+      }
+    }
     if (user.role === "ADMIN" || user.role === "OPS" || can.assignJobs(permissionUser)) {
       if (payload.recommendationOption !== undefined) {
         data.recommendationOption = payload.recommendationOption;
@@ -535,6 +556,7 @@ export async function updateJobAction(formData: FormData) {
       || message.includes("Unknown argument `statusNote`")
       || message.includes("Unknown argument `workflowReason`")
       || message.includes("Unknown argument `clientPaid`")
+      || message.includes("Unknown argument `clientPaymentRef`")
     ) {
       const fallbackData = { ...data } as Record<string, unknown>;
       delete fallbackData.timelineMinMinutes;
@@ -563,6 +585,7 @@ export async function updateJobAction(formData: FormData) {
       delete fallbackData.clientPaid;
       delete fallbackData.clientPaidAt;
       delete fallbackData.clientPaidById;
+      delete fallbackData.clientPaymentRef;
 
       updated = await (prisma.job as unknown as {
         update: (args: { where: { id: string }; data: Record<string, unknown> }) => Promise<{

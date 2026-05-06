@@ -14,7 +14,7 @@ type SearchParams = {
 };
 
 const PAGE_SIZE = 25;
-const TERMINAL = ["COMPLETED", "DELIVERED"] as JobStatus[];
+const TERMINAL = ["READY_FOR_PICKUP", "COMPLETED", "DELIVERED"] as JobStatus[];
 
 function buildSearch(q?: string): Prisma.JobWhereInput {
   if (!q) return {};
