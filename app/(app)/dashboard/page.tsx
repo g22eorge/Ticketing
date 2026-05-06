@@ -370,6 +370,7 @@ export default async function DashboardPage({
         jobNumber: true,
         status: true,
         repairPath: true,
+        externalTechBill: true,
       },
     });
 
