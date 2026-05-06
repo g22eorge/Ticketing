@@ -8,6 +8,7 @@ import { toast } from "sonner";
 
 import { markMessagesReadAction, sendManualReplyAction, sendQuotationViaWhatsAppAction, sendInvoiceViaWhatsAppAction, sendJobCardViaWhatsAppAction, updateJobAction, updateOneTimeExternalAssignmentAction } from "@/app/(app)/jobs/[id]/actions";
 import { JobStatusBadge } from "@/components/jobs/JobStatusBadge";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { AuditTimeline } from "@/components/shared/AuditTimeline";
 import { PhotoUploader } from "@/components/shared/PhotoUploader";
 import { formatEATDateTime } from "@/lib/date-eat";
@@ -537,6 +538,7 @@ export function JobDetailTabs({ role, permissions = [], job, technicians, device
   const [isFinancialPending, startFinancialTransition] = useTransition();
   const [isCommunicationPending, startCommunicationTransition] = useTransition();
   const [isStatusPending, startStatusTransition] = useTransition();
+  const [confirmClose, setConfirmClose] = useState(false);
 
   useEffect(() => {
     if (!savedSection) return;
@@ -1657,6 +1659,32 @@ export function JobDetailTabs({ role, permissions = [], job, technicians, device
       ) : null}
 
       {statusActions.length > 0 && !isTerminal && !isIntake ? (
+        <>
+        <ConfirmDialog
+          open={confirmClose}
+          title="Close this job?"
+          description="This will mark the job as non-repairable or client-declined. This action cannot be undone."
+          confirmLabel="Close job"
+          variant="danger"
+          onCancel={() => setConfirmClose(false)}
+          onConfirm={() => {
+            setConfirmClose(false);
+            const formData = new FormData();
+            formData.set("jobId", job.id);
+            formData.set("expectedUpdatedAt", expectedUpdatedAt);
+            formData.set("nextStatus", "CLOSED");
+            startStatusTransition(async () => {
+              const res = await updateJobAction(formData);
+              if (res.error) {
+                toast.error(res.error);
+                return;
+              }
+              toast.success("Status updated");
+              setSavedSection("status");
+              router.refresh();
+            });
+          }}
+        />
         <form
           action={(formData) => {
             formData.set("jobId", job.id);
@@ -1684,18 +1712,11 @@ export function JobDetailTabs({ role, permissions = [], job, technicians, device
             {statusActions.map((status) => (
               <button
                 key={status}
-                type="submit"
-                name="nextStatus"
-                value={status}
+                type={status === "CLOSED" ? "button" : "submit"}
+                name={status === "CLOSED" ? undefined : "nextStatus"}
+                value={status === "CLOSED" ? undefined : status}
                 disabled={isStatusPending}
-                onClick={(event) => {
-                  if (
-                    status === "CLOSED" &&
-                    !window.confirm("Close this job? This will mark it as non-repairable/declined.")
-                  ) {
-                    event.preventDefault();
-                  }
-                }}
+                onClick={status === "CLOSED" ? () => setConfirmClose(true) : undefined}
                 className="btn-premium-dark rounded-lg px-3 py-1.5 text-[13px]"
               >
                 Set {prettyEnum(status)}
@@ -1726,7 +1747,7 @@ export function JobDetailTabs({ role, permissions = [], job, technicians, device
           ) : null}
           {savedSection === "status" ? <p className="text-xs text-[var(--accent)]">Saved</p> : null}
         </form>
-      ) : null}
+        </> ) : null}
 
       <div className="pointer-events-none fixed inset-x-0 bottom-[calc(var(--mobile-shell-bottom)+0.2rem)] z-30 px-3 lg:hidden">
         <div className="pointer-events-auto mx-auto flex max-w-lg items-center gap-2 rounded-2xl border border-[var(--line)] bg-[var(--panel)]/96 p-2 shadow-[0_8px_32px_rgba(0,0,0,0.14)] backdrop-blur-md">

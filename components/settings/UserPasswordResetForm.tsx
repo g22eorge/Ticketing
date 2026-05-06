@@ -2,6 +2,8 @@
 
 import { useActionState, useRef, useState } from "react";
 
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
+
 type UserPasswordResetState = {
   error?: string;
   success?: string;
@@ -16,6 +18,8 @@ export function UserPasswordResetForm({
 }) {
   const [state, formAction] = useActionState(action, {});
   const [isGenerating, setIsGenerating] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const formRef = useRef<HTMLFormElement | null>(null);
   const passwordRef = useRef<HTMLInputElement | null>(null);
   const confirmRef = useRef<HTMLInputElement | null>(null);
 
@@ -43,55 +47,72 @@ export function UserPasswordResetForm({
   }
 
   return (
-    <form
-      action={formAction}
-      className="grid gap-2 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] p-3 md:grid-cols-[1fr_1fr_auto]"
-      onSubmit={(event) => {
-        const ok = window.confirm("Reset this user's password? This will sign them out on all devices.");
-        if (!ok) event.preventDefault();
-      }}
-    >
-      <input type="hidden" name="userId" value={userId} />
-      <input
-        ref={passwordRef}
-        required
-        minLength={8}
-        type="password"
-        name="password"
-        placeholder="New password (min 8 chars)"
-        className="rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 py-1.5 text-sm outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14"
+    <>
+      <ConfirmDialog
+        open={confirmOpen}
+        title="Reset password?"
+        description="This will update the user's password and sign them out on all devices."
+        confirmLabel="Reset Password"
+        variant="danger"
+        onCancel={() => setConfirmOpen(false)}
+        onConfirm={() => {
+          setConfirmOpen(false);
+          formRef.current?.requestSubmit();
+        }}
       />
-      <input
-        ref={confirmRef}
-        required
-        minLength={8}
-        type="password"
-        name="confirm"
-        placeholder="Confirm password"
-        className="rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 py-1.5 text-sm outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14"
-      />
-      <div className="flex items-center justify-end gap-2">
-        <button
-          type="button"
-          disabled={isGenerating}
-          onClick={() => {
-            void generateAndCopy();
-          }}
-          className="btn-premium-secondary rounded-lg px-3 py-1.5 text-sm"
-          title="Generates a temporary password and copies it"
-        >
-          {isGenerating ? "Generating..." : "Generate & Copy"}
-        </button>
-        <button className="btn-premium rounded-lg px-3 py-1.5 text-sm text-white">
-          Reset Password
-        </button>
-      </div>
+      <form
+        ref={formRef}
+        action={formAction}
+        className="grid gap-2 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] p-3 md:grid-cols-[1fr_1fr_auto]"
+        onSubmit={(event) => {
+          if (!confirmOpen) {
+            event.preventDefault();
+            setConfirmOpen(true);
+          }
+        }}
+      >
+        <input type="hidden" name="userId" value={userId} />
+        <input
+          ref={passwordRef}
+          required
+          minLength={8}
+          type="password"
+          name="password"
+          placeholder="New password (min 8 chars)"
+          className="rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 py-1.5 text-sm outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14"
+        />
+        <input
+          ref={confirmRef}
+          required
+          minLength={8}
+          type="password"
+          name="confirm"
+          placeholder="Confirm password"
+          className="rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 py-1.5 text-sm outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14"
+        />
+        <div className="flex items-center justify-end gap-2">
+          <button
+            type="button"
+            disabled={isGenerating}
+            onClick={() => {
+              void generateAndCopy();
+            }}
+            className="btn-premium-secondary rounded-lg px-3 py-1.5 text-sm"
+            title="Generates a temporary password and copies it"
+          >
+            {isGenerating ? "Generating..." : "Generate & Copy"}
+          </button>
+          <button className="btn-premium rounded-lg px-3 py-1.5 text-sm text-white">
+            Reset Password
+          </button>
+        </div>
 
-      {state.error ? <p className="text-sm text-[var(--ink)] md:col-span-3">{state.error}</p> : null}
-      {state.success ? <p className="text-sm text-[var(--accent)] md:col-span-3">{state.success}</p> : null}
-      <p className="text-[11px] text-[var(--ink-muted)] md:col-span-3">
-        Tip: use Generate & Copy, then paste the temporary password to the staff member over WhatsApp.
-      </p>
-    </form>
+        {state.error ? <p className="text-sm text-[var(--ink)] md:col-span-3">{state.error}</p> : null}
+        {state.success ? <p className="text-sm text-[var(--accent)] md:col-span-3">{state.success}</p> : null}
+        <p className="text-[11px] text-[var(--ink-muted)] md:col-span-3">
+          Tip: use Generate & Copy, then paste the temporary password to the staff member over WhatsApp.
+        </p>
+      </form>
+    </>
   );
 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sanitizeText, sanitizeOptionalText } from "@/lib/sanitize";
 import { createRepairRequest } from "@/lib/repairs/request";
+import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
 import { prisma } from "@/lib/prisma";
 import { deliverOutboundMessage, enqueueEmailMessage, enqueueWhatsAppMessage } from "@/lib/notifications/whatsapp-outbox";
 
@@ -154,6 +155,15 @@ async function deliverInline(outboxId: string) {
 export async function POST(request: NextRequest) {
   const origin = request.headers.get("origin");
   const corsHeaders = getCorsHeaders(origin);
+
+  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+  const rl = checkRateLimit(`repair-request:${ip}`, { limit: 5, windowMs: 60 * 60_000 });
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: "Too many submissions. Please try again later." },
+      { status: 429, headers: { ...corsHeaders, ...rateLimitHeaders(rl.retryAfterMs) } },
+    );
+  }
 
   try {
     const body = await request.json();

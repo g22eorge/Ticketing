@@ -1,7 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
+
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 
 type RoleOption = {
   value: string;
@@ -59,6 +61,8 @@ export function UserAccessControlPanel({
   const [selectedPermissions, setSelectedPermissions] = useState<Set<string>>(
     () => new Set(initialPermissions),
   );
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const formRef = useRef<HTMLFormElement | null>(null);
 
   const defaultsForRole = useMemo(() => roleDefaultPermissions[role] ?? [], [role, roleDefaultPermissions]);
   const capabilitiesForRole = useMemo(() => roleDefaultCapabilities[role] ?? [], [role, roleDefaultCapabilities]);
@@ -105,7 +109,20 @@ export function UserAccessControlPanel({
   }, [permissions, effectiveKeys]);
 
   return (
+    <>
+    <ConfirmDialog
+      open={confirmOpen}
+      title="Apply access changes?"
+      description="This will update the user's role and permissions. Changes take effect on their next action."
+      confirmLabel="Save Changes"
+      onCancel={() => setConfirmOpen(false)}
+      onConfirm={() => {
+        setConfirmOpen(false);
+        formRef.current?.requestSubmit();
+      }}
+    />
     <form
+      ref={formRef}
       action={saveAction}
       className="space-y-4"
       onSubmit={(event) => {
@@ -113,9 +130,9 @@ export function UserAccessControlPanel({
         const next = Array.from(selectedPermissions).sort().join("|");
         const prev = [...initialPermissions].sort().join("|");
         const changedPermissions = next !== prev;
-        if (changedRole || changedPermissions) {
-          const confirmed = window.confirm("Apply these role and permission changes for this user?");
-          if (!confirmed) event.preventDefault();
+        if ((changedRole || changedPermissions) && !confirmOpen) {
+          event.preventDefault();
+          setConfirmOpen(true);
         }
       }}
     >
@@ -222,5 +239,6 @@ export function UserAccessControlPanel({
         <SaveButton />
       </div>
     </form>
+    </>
   );
 }

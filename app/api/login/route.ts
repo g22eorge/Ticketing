@@ -1,6 +1,7 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 import { prisma } from "@/lib/prisma";
+import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
 
 type LoginPayload = {
   email?: string;
@@ -21,7 +22,16 @@ function toHostOnlyCookie(cookie: string) {
   return cookie.replace(/;\s*Domain=[^;]*/gi, "");
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+  const rl = checkRateLimit(`login:${ip}`, { limit: 10, windowMs: 60_000 });
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { message: "Too many login attempts. Please wait a minute.", code: "RATE_LIMITED" },
+      { status: 429, headers: rateLimitHeaders(rl.retryAfterMs) },
+    );
+  }
+
   try {
     const body = (await request.json()) as LoginPayload;
     const email = String(body.email ?? "").trim();

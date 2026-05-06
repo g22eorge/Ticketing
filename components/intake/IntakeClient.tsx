@@ -11,6 +11,7 @@ import {
   setRepairRequestStatusAction,
   updateRepairRequestDetailsAction,
 } from "@/app/(app)/intake/actions";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 
 /* ── helpers ── */
 const STATUS_META: Record<string, { label: string; cls: string }> = {
@@ -109,6 +110,7 @@ function RequestDrawer({
   const [pending, startTransition] = useTransition();
   const [localStatus, setLocalStatus] = useState(req.requestStatus);
   const [editMode, setEditMode] = useState(defaultEditMode);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const router = useRouter();
 
   function act(status: string) {
@@ -146,7 +148,6 @@ function RequestDrawer({
   }
 
   function remove() {
-    if (!window.confirm(`Delete ${req.requestNumber}? This cannot be undone.`)) return;
     startTransition(async () => {
       const fd = new FormData();
       fd.set("id", req.id);
@@ -170,6 +171,15 @@ function RequestDrawer({
 
   return (
     <>
+      <ConfirmDialog
+        open={confirmDelete}
+        title={`Delete ${req.requestNumber}?`}
+        description="This repair request will be permanently removed. This cannot be undone."
+        confirmLabel="Delete"
+        variant="danger"
+        onCancel={() => setConfirmDelete(false)}
+        onConfirm={() => { setConfirmDelete(false); remove(); }}
+      />
       {/* backdrop */}
       <div className="fixed inset-0 bg-black/30 z-40 backdrop-blur-sm" onClick={onClose} />
 
@@ -195,7 +205,7 @@ function RequestDrawer({
             {isAdmin ? (
               <button
                 type="button"
-                onClick={remove}
+                onClick={() => setConfirmDelete(true)}
                 className="rounded-lg px-2.5 py-1.5 text-xs font-semibold border border-red-200 bg-red-50 text-red-700 hover:bg-red-100 transition-colors"
               >
                 Delete
@@ -717,6 +727,7 @@ export function IntakeClient({
   const [filter, setFilter]       = useState<string>("ALL");
   const [loading, startLoading] = useTransition();
   const [drawerMode, setDrawerMode] = useState<"view" | "edit">("view");
+  const [pendingDelete, setPendingDelete] = useState<RepairRequest | null>(null);
 
   function handleStatusChange(id: string, status: string) {
     if (status === "__deleted__") {
@@ -739,7 +750,6 @@ export function IntakeClient({
   }
 
   function deleteRequest(req: RepairRequest) {
-    if (!window.confirm(`Delete ${req.requestNumber}? This cannot be undone.`)) return;
     startLoading(async () => {
       const fd = new FormData();
       fd.set("id", req.id);
@@ -794,6 +804,18 @@ export function IntakeClient({
 
   return (
     <>
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        title={`Delete ${pendingDelete?.requestNumber ?? "request"}?`}
+        description="This repair request will be permanently removed. This cannot be undone."
+        confirmLabel="Delete"
+        variant="danger"
+        onCancel={() => setPendingDelete(null)}
+        onConfirm={() => {
+          if (pendingDelete) deleteRequest(pendingDelete);
+          setPendingDelete(null);
+        }}
+      />
       {/* brief */}
       <details className="panel-shadow mb-4 rounded-xl border border-[var(--line)] bg-[var(--panel)] p-3" open={pendingCount > 0}>
         <summary className="list-none">
@@ -868,7 +890,7 @@ export function IntakeClient({
                   setDrawerMode("edit");
                   setSelected(req);
                 }}
-                onDelete={() => deleteRequest(req)}
+                onDelete={() => setPendingDelete(req)}
                 canManageIntake={canManageIntake}
                 isAdmin={isAdmin}
               />
@@ -924,7 +946,7 @@ export function IntakeClient({
                           setDrawerMode("edit");
                           setSelected(req);
                         }}
-                        onDelete={() => deleteRequest(req)}
+                        onDelete={() => setPendingDelete(req)}
                         canManageIntake={canManageIntake}
                         isAdmin={isAdmin}
                       />

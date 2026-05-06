@@ -2,8 +2,10 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useRef, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
+
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 
 type Photo = {
   id: string;
@@ -23,9 +25,34 @@ export function PhotoUploader({
   const router = useRouter();
   const formRef = useRef<HTMLFormElement | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+
+  function handleDelete(photoId: string) {
+    startTransition(async () => {
+      const res = await fetch(`/api/upload?id=${photoId}`, { method: "DELETE" });
+      if (!res.ok) {
+        toast.error("Delete failed");
+        return;
+      }
+      router.refresh();
+    });
+  }
 
   return (
     <div className="space-y-4">
+      <ConfirmDialog
+        open={confirmDeleteId !== null}
+        title="Delete photo?"
+        description="This photo will be permanently removed from the job record. This cannot be undone."
+        confirmLabel="Delete"
+        variant="danger"
+        onCancel={() => setConfirmDeleteId(null)}
+        onConfirm={() => {
+          if (confirmDeleteId) handleDelete(confirmDeleteId);
+          setConfirmDeleteId(null);
+        }}
+      />
+
       <form
         ref={formRef}
         action={(formData) => {
@@ -62,28 +89,14 @@ export function PhotoUploader({
             <div className="mt-2 flex items-center justify-between">
               <span className="text-xs text-[var(--ink-muted)]">{photo.label ?? "-"}</span>
               {canDelete ? (
-                <form
-                  action={async () => {
-                    const res = await fetch(`/api/upload?id=${photo.id}`, { method: "DELETE" });
-                    if (!res.ok) {
-                      toast.error("Delete failed");
-                      return;
-                    }
-                    router.refresh();
-                  }}
+                <button
+                  type="button"
+                  disabled={isPending}
+                  onClick={() => setConfirmDeleteId(photo.id)}
+                  className="text-xs text-red-600 hover:text-red-800 transition-colors disabled:opacity-50"
                 >
-                  <button
-                    type="submit"
-                    onClick={(event) => {
-                      if (!window.confirm("Delete this photo?")) {
-                        event.preventDefault();
-                      }
-                    }}
-                    className="text-xs text-[var(--ink)] underline"
-                  >
-                    Delete
-                  </button>
-                </form>
+                  Delete
+                </button>
               ) : null}
             </div>
           </div>
