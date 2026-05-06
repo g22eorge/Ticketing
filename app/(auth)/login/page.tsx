@@ -19,70 +19,86 @@ export default async function LoginPage() {
   }
 
   return (
-    <main className="theme-blackgold min-h-dvh bg-[var(--panel)]">
-      <div className="grid min-h-dvh grid-cols-1 lg:grid-cols-[1.05fr_1fr]">
-        <section className="order-2 relative hidden overflow-hidden bg-[linear-gradient(140deg,#000000_0%,#1a1a1a_40%,#D4AF37_100%)] px-5 py-7 text-white sm:px-8 sm:py-10 lg:order-1 lg:flex lg:px-12 lg:py-14">
-          <div className="pointer-events-none absolute -left-20 -top-20 h-60 w-60 rounded-full bg-white/10 blur-3xl" />
-          <div className="pointer-events-none absolute -bottom-24 -right-20 h-72 w-72 rounded-full bg-[var(--accent)]/20 blur-3xl" />
+    <main className="theme-blackgold min-h-dvh bg-[#0a0a0a]">
+      {/* Subtle ambient glow */}
+      <div className="pointer-events-none fixed inset-0 overflow-hidden">
+        <div className="absolute left-1/2 top-0 h-[500px] w-[700px] -translate-x-1/2 rounded-full bg-[#D4AF37]/8 blur-[120px]" />
+      </div>
 
-          <div className="relative mx-auto max-w-xl space-y-6">
+      <div className="grid min-h-dvh grid-cols-1 lg:grid-cols-[1fr_1fr]">
+
+        {/* ── Left: branding panel (desktop only) ── */}
+        <section className="relative hidden flex-col justify-between overflow-hidden bg-[linear-gradient(150deg,#0d0d0d_0%,#161616_50%,#1a1500_100%)] p-12 lg:flex">
+          <div className="pointer-events-none absolute -left-16 top-1/3 h-80 w-80 rounded-full bg-[#D4AF37]/10 blur-[80px]" />
+          <div className="pointer-events-none absolute -right-10 bottom-20 h-60 w-60 rounded-full bg-[#D4AF37]/6 blur-[60px]" />
+
+          <div className="relative">
+            <div className="flex items-center gap-3">
+              <div className="overflow-hidden rounded-xl border border-white/10">
+                <Image src="/eagle-info-logo.png" alt="Eagle Info" width={36} height={36} className="h-9 w-9 object-cover" priority />
+              </div>
+              <span className="text-xs font-semibold uppercase tracking-[0.22em] text-white/50">Eagle Info Solutions</span>
+            </div>
+          </div>
+
+          <div className="relative space-y-8">
             <div>
-              <p className="text-xs uppercase tracking-[0.2em] text-white/80">Eagle Info Solutions</p>
-              <h1 className="mt-3 text-2xl font-semibold leading-tight sm:text-3xl lg:text-4xl">
-                Repair jobs, without the chaos
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#D4AF37]/70">Repair Management</p>
+              <h1 className="mt-3 text-3xl font-semibold leading-snug text-white xl:text-4xl">
+                Repair jobs,<br />without the chaos
               </h1>
-              <p className="mt-4 max-w-prose text-sm leading-6 text-white/90">
+              <p className="mt-4 max-w-sm text-sm leading-relaxed text-white/55">
                 Staff access for intake, technicians, and operations. Clear status, clear accountability.
               </p>
             </div>
 
-            <div className="grid gap-2.5 sm:grid-cols-2">
+            <div className="space-y-3">
               {[
-                "Role-based access keeps client data protected",
-                "Statuses, approvals, and timelines stay auditable",
+                { icon: "◈", text: "Role-based access keeps client data protected" },
+                { icon: "◈", text: "Every status change and handoff is fully auditable" },
               ].map((item) => (
-                <div key={item} className="rounded-xl border border-white/25 bg-white/10 p-3 backdrop-blur-sm">
-                  <p className="text-sm text-white/95">{item}</p>
+                <div key={item.text} className="flex items-start gap-3">
+                  <span className="mt-0.5 text-[#D4AF37]/60 text-xs">{item.icon}</span>
+                  <p className="text-sm text-white/55">{item.text}</p>
                 </div>
               ))}
             </div>
+          </div>
 
-            <div className="rounded-xl border border-white/25 bg-white/10 p-4 backdrop-blur-sm">
-              <p className="text-sm font-semibold">Workflow promise</p>
-              <p className="mt-1 text-sm text-white/90">Every change is logged. Every handoff is traceable.</p>
-            </div>
+          <div className="relative">
+            <p className="text-[11px] text-white/25">© {new Date().getFullYear()} Eagle Info Solutions</p>
           </div>
         </section>
 
-        <section className="order-1 flex min-h-dvh items-center justify-center bg-[var(--panel)] px-4 py-8 sm:px-6 sm:py-10 lg:order-2 lg:min-h-0 lg:px-10">
-          <div className="w-full max-w-md rounded-2xl border border-[var(--line)] bg-[var(--panel)] p-5 shadow-[0_22px_70px_rgba(0,0,0,0.45)] sm:p-6">
-            <div className="mb-3 flex items-center gap-3">
-              <div className="overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)] shadow-sm">
-                <Image
-                  src="/eagle-info-logo.png"
-                  alt="Eagle Info logo"
-                  width={40}
-                  height={40}
-                  className="h-10 w-10 object-cover"
-                  priority
-                />
-              </div>
-              <div>
-                <p className="text-xs uppercase tracking-[0.2em] text-[var(--ink-muted)]">MRMS</p>
-                <p className="text-sm font-semibold text-[var(--ink)]">Eagle Info Solutions</p>
-              </div>
-            </div>
-            <h2 className="mt-2 text-xl font-semibold text-[var(--ink)] sm:text-2xl">
-              <span className="lg:hidden">Staff Login</span>
-              <span className="hidden lg:inline">Machine Repair Management System</span>
-            </h2>
-            <p className="mt-1 hidden text-sm text-[var(--ink-muted)] sm:block">Staff login to manage jobs, approvals, and updates.</p>
+        {/* ── Right: login form ── */}
+        <section className="flex min-h-dvh items-center justify-center px-5 py-10 lg:min-h-0 lg:bg-[#0d0d0d] lg:px-12">
+          <div className="w-full max-w-sm">
 
-            <div className="mt-6">
+            {/* Mobile-only logo */}
+            <div className="mb-8 flex flex-col items-center lg:hidden">
+              <div className="overflow-hidden rounded-2xl border border-white/10 shadow-lg shadow-black/40">
+                <Image src="/eagle-info-logo.png" alt="Eagle Info" width={56} height={56} className="h-14 w-14 object-cover" priority />
+              </div>
+              <p className="mt-3 text-xs font-semibold uppercase tracking-[0.22em] text-white/40">Eagle Info Solutions</p>
+            </div>
+
+            {/* Desktop logo row */}
+            <div className="mb-8 hidden items-center gap-3 lg:flex">
+              <div className="overflow-hidden rounded-xl border border-white/10">
+                <Image src="/eagle-info-logo.png" alt="Eagle Info" width={36} height={36} className="h-9 w-9 object-cover" priority />
+              </div>
+              <span className="text-xs font-semibold uppercase tracking-[0.22em] text-white/40">Eagle Info Solutions</span>
+            </div>
+
+            <h2 className="text-2xl font-semibold text-white">Sign in</h2>
+            <p className="mt-1.5 text-sm text-white/40">Enter your credentials to continue</p>
+
+            <div className="mt-8">
               <LoginForm />
             </div>
           </div>
         </section>
+
       </div>
     </main>
   );
