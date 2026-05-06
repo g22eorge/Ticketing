@@ -646,15 +646,19 @@ function MobileRequestActions({
   );
 }
 
-/* ── mobile card ── */
+/* ── status strip colour per request status ── */
+function requestStripClass(status: string): string {
+  if (status === "PENDING_INTAKE" || status === "PENDING_FRONT_DESK") return "bg-amber-400";
+  if (status === "APPROVED") return "bg-[var(--accent)]";
+  if (status === "CONVERTED_TO_JOB") return "bg-emerald-400";
+  if (status === "REJECTED") return "bg-slate-400";
+  return "bg-slate-200";
+}
+
+/* ── mobile card — Jobs flat-row pattern ── */
 function MobileCard({
   req,
-  onStatusChange,
   onSelect,
-  onEdit,
-  onDelete,
-  canManageIntake,
-  isAdmin,
 }: {
   req: RepairRequest;
   onStatusChange: (id: string, status: string) => void;
@@ -664,46 +668,29 @@ function MobileCard({
   canManageIntake: boolean;
   isAdmin: boolean;
 }) {
+  const device = [req.brand, req.model].filter(Boolean).join(" ") || DEVICE_LABEL[req.deviceType] ?? req.deviceType;
   return (
     <div
+      role="button"
+      tabIndex={0}
       onClick={onSelect}
-      className="rounded-xl border border-[var(--line)] bg-[var(--panel)] shadow-sm cursor-pointer transition-colors hover:border-[var(--line)] hover:bg-[var(--panel-strong)]/40 active:bg-[var(--panel-strong)]/55 overflow-visible"
+      onKeyDown={(e) => e.key === "Enter" && onSelect()}
+      className="relative border-b border-[var(--line)] bg-[var(--panel)] last:border-b-0 transition-colors hover:bg-[var(--panel-strong)]/40 active:bg-[var(--panel-strong)]/55 cursor-pointer"
     >
-      {/* header: req # + status */}
-      <div className="flex items-center justify-between px-4 pt-3 pb-2">
-        <span className="font-mono text-[11px] font-semibold text-[var(--ink-muted)] tracking-wide">{req.requestNumber}</span>
-        <StatusBadge status={req.requestStatus} />
-      </div>
-
-      {/* body: customer + device info */}
-      <div className="px-4 pb-3">
-        <p className="text-sm font-semibold text-[var(--ink)] truncate">{req.customerName}</p>
-        <p className="text-xs text-[var(--ink-muted)] mb-1.5">{req.phone}</p>
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-[var(--ink-muted)]">
-          <span className="font-medium">{req.brand}{req.model ? ` ${req.model}` : ""}</span>
-          <span className="text-[var(--line)]">·</span>
-          <span>{DEVICE_LABEL[req.deviceType] ?? req.deviceType}</span>
-          <span className="text-[var(--line)]">·</span>
-          <span>{HANDOVER_LABEL[req.handoverMethod] ?? req.handoverMethod}</span>
-          <span className="text-[var(--line)]">·</span>
-          <span>{fmt(req.createdAt)}</span>
+      <span className={`absolute inset-y-0 left-0 w-[5px] ${requestStripClass(req.requestStatus)}`} aria-hidden="true" />
+      <div className="px-4 py-3 pl-6">
+        <div className="mb-1 flex items-center justify-between gap-2">
+          <span className="mono text-[10px] font-medium tracking-wide text-[var(--ink-muted)]/50">{req.requestNumber}</span>
+          <StatusBadge status={req.requestStatus} />
         </div>
-      </div>
-
-      {/* footer: action buttons */}
-      <div
-        className="border-t border-[var(--line)] bg-[var(--panel)]/60 px-4 py-2"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <MobileRequestActions
-          req={req}
-          onStatusChange={onStatusChange}
-          onSelect={onSelect}
-          onEdit={onEdit}
-          onDelete={onDelete}
-          canManageIntake={canManageIntake}
-          isAdmin={isAdmin}
-        />
+        <p className="truncate text-[15px] font-bold leading-snug tracking-tight text-[var(--ink)]">{req.customerName}</p>
+        <div className="mt-1 flex items-center gap-1 text-[11px] text-[var(--ink-muted)]">
+          <span className="truncate font-medium">{device}</span>
+          <span className="shrink-0 opacity-40">·</span>
+          <span className="shrink-0">{HANDOVER_LABEL[req.handoverMethod] ?? req.handoverMethod}</span>
+          <span className="shrink-0 opacity-40">·</span>
+          <span className="shrink-0">{fmt(req.createdAt)}</span>
+        </div>
       </div>
     </div>
   );
@@ -876,7 +863,7 @@ export function IntakeClient({
       ) : (
         <>
           {/* ── MOBILE CARD VIEW ── */}
-          <div className="space-y-3 lg:hidden">
+          <div className="overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)] panel-shadow lg:hidden">
             {filtered.map((req) => (
               <MobileCard
                 key={req.id}

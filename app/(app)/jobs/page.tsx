@@ -356,7 +356,7 @@ export default async function JobsPage({
       {can.createJob(user) ? (
         <Link
           href="/jobs/new"
-          className="jobs-fab fixed bottom-[calc(env(safe-area-inset-bottom)+5.25rem)] right-4 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-[var(--accent)] text-white shadow-[0_4px_20px_rgba(212,175,55,0.45)] transition-transform sm:hidden"
+          className="jobs-fab fixed bottom-[calc(env(safe-area-inset-bottom)+5rem)] right-4 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-[var(--accent)] text-white shadow-[0_4px_20px_rgba(212,175,55,0.45)] transition-transform sm:hidden"
           aria-label="New Job"
         >
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
