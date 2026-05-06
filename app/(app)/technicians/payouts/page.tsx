@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-
 import { formatMoney, getAppCurrency } from "@/lib/currency";
 import { formatEATDate } from "@/lib/date-eat";
 import { getJobPayoutsByIds, hasJobPayoutColumns } from "@/lib/payouts";
@@ -85,13 +84,21 @@ export default async function TechnicianPayoutsPage({
   const payouts = await getJobPayoutsByIds(jobs.map((job) => job.id));
 
   const currency = getAppCurrency();
-  const total = jobs.reduce((sum, job) => sum + (payouts.get(job.id)?.externalTechFee ?? job.externalTechBill ?? 0), 0);
+
+  function resolveJobFee(job: typeof jobs[number]) {
+    const fee = payouts.get(job.id)?.externalTechFee;
+    if (typeof fee === "number" && fee > 0) return fee;
+    if (typeof job.externalTechBill === "number" && job.externalTechBill > 0) return job.externalTechBill;
+    return 0;
+  }
+
+  const total = jobs.reduce((sum, job) => sum + resolveJobFee(job), 0);
   const paid = jobs
     .filter((job) => payouts.get(job.id)?.externalPaid)
-    .reduce((sum, job) => sum + (payouts.get(job.id)?.externalTechFee ?? job.externalTechBill ?? 0), 0);
+    .reduce((sum, job) => sum + resolveJobFee(job), 0);
   const unpaid = jobs
     .filter((job) => !payouts.get(job.id)?.externalPaid)
-    .reduce((sum, job) => sum + (payouts.get(job.id)?.externalTechFee ?? job.externalTechBill ?? 0), 0);
+    .reduce((sum, job) => sum + resolveJobFee(job), 0);
   const hasPayoutFilters = Boolean(filters.q || filters.paid || filters.month);
   const payoutBrief = hasPayoutFilters
     ? "Filtered payout view is active. Use the amount cards below for live totals and reset filters to return to the complete payout queue."
@@ -191,7 +198,7 @@ export default async function TechnicianPayoutsPage({
           jobs.map((job) => {
             const payout = payouts.get(job.id);
             const isPaid = payout?.externalPaid ?? false;
-            const fee = formatMoney(payout?.externalTechFee ?? job.externalTechBill ?? 0, currency);
+            const fee = formatMoney(resolveJobFee(job), currency);
             const device = [job.brand, job.model].filter(v => v && v !== "Unknown").join(" ") || "Device";
             return (
               <div key={job.id} className="relative border-b border-[var(--line)] bg-[var(--panel)] last:border-b-0 transition-colors hover:bg-[var(--panel-strong)]/40">

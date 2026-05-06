@@ -16,6 +16,16 @@ type SearchParams = {
 const PAGE_SIZE = 25;
 const TERMINAL = ["READY_FOR_PICKUP", "COMPLETED", "DELIVERED"] as JobStatus[];
 
+/** Resolve the effective tech payout amount.
+ *  externalTechFee (manually overridden amount) takes priority when > 0.
+ *  Falls back to externalTechBill (what the tech submitted).
+ *  The ?? operator alone is not enough — an explicit 0 fee would mask a real bill. */
+function resolveTechCost(fee?: number | null, bill?: number | null): number {
+  if (typeof fee === "number" && fee > 0) return fee;
+  if (typeof bill === "number" && bill > 0) return bill;
+  return 0;
+}
+
 function buildSearch(q?: string): Prisma.JobWhereInput {
   if (!q) return {};
   return {
@@ -73,6 +83,8 @@ export default async function PayoutFollowupsPage({
         status: true,
         repairPath: true,
         clientBill: true,
+        externalTechFee: true,
+        externalTechBill: true,
         completedAt: true,
         deliveredAt: true,
         client: { select: { fullName: true, phone: true } },
@@ -117,7 +129,7 @@ export default async function PayoutFollowupsPage({
   ) as Record<string, string>;
 
   const clientOutstanding = clientRows.reduce((s, j) => s + (j.clientBill ?? 0), 0);
-  const techOwed = techRows.reduce((s, j) => s + (j.externalTechFee ?? j.externalTechBill ?? 0), 0);
+  const techOwed = techRows.reduce((s, j) => s + resolveTechCost(j.externalTechFee, j.externalTechBill), 0);
 
   const thClass = "px-4 py-2.5 text-left text-[10px] font-bold uppercase tracking-[0.15em] text-[var(--ink-muted)]";
   const tdClass = "px-4 py-2.5";
@@ -179,21 +191,23 @@ export default async function PayoutFollowupsPage({
             </p>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[700px] text-sm">
+              <table className="w-full min-w-[820px] text-sm">
                 <thead className="bg-[var(--panel-strong)]/50">
                   <tr>
                     <th className={thClass}>Job</th>
                     <th className={thClass}>Client</th>
                     <th className={thClass}>Assigned To</th>
                     <th className={thClass}>Type</th>
-                    <th className={thClass}>Amount Due</th>
-                    <th className={thClass}>Completed</th>
+                    <th className={thClass}>Repair Cost</th>
+                    <th className={thClass}>Client Bill</th>
+                    <th className={thClass}>Done At</th>
                     <th className={thClass}>Action</th>
                   </tr>
                 </thead>
                 <tbody>
                   {clientRows.map((job) => {
                     const doneAt = job.deliveredAt ?? job.completedAt;
+                    const repairCost = resolveTechCost(job.externalTechFee, job.externalTechBill);
                     return (
                       <tr key={job.id} className="border-t border-[var(--line)] transition-colors hover:bg-[var(--panel-strong)]/30">
                         <td className={`${tdClass} font-semibold`}>
@@ -210,6 +224,9 @@ export default async function PayoutFollowupsPage({
                           <span className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold ${job.repairPath === "EXTERNAL" ? "bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400" : "bg-[var(--accent)]/10 text-[var(--accent)]"}`}>
                             {job.repairPath === "EXTERNAL" ? "External" : "In-house"}
                           </span>
+                        </td>
+                        <td className={tdClass}>
+                          {repairCost > 0 ? formatMoneyCompact(repairCost, currency) : <span className="text-[var(--ink-muted)]">—</span>}
                         </td>
                         <td className={`${tdClass} font-semibold text-amber-700 dark:text-amber-400`}>
                           {formatMoneyCompact(job.clientBill ?? 0, currency)}
@@ -261,7 +278,7 @@ export default async function PayoutFollowupsPage({
                 </thead>
                 <tbody>
                   {techRows.map((job) => {
-                    const payoutDue = job.externalTechFee ?? job.externalTechBill ?? 0;
+                    const payoutDue = resolveTechCost(job.externalTechFee, job.externalTechBill);
                     const doneAt = job.deliveredAt ?? job.completedAt;
                     return (
                       <tr key={job.id} className="border-t border-[var(--line)] transition-colors hover:bg-[var(--panel-strong)]/30">
