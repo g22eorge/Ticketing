@@ -139,13 +139,23 @@ function RevenueMarginTrendSection({
       <RevenueLineChart data={revenueTrend} currency={currency} />
       <div className="-mx-1 mt-3 overflow-x-auto px-1 pb-1 [scrollbar-width:none]">
         <div className="flex w-max gap-2">
-          {revenueTrend.map((m) => (
-            <div key={m.key} className="w-[92px] rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] p-2 text-center">
-              <p className="text-[9px] uppercase tracking-[0.1em] text-[var(--ink-muted)]">{m.key.slice(5)}</p>
-              <p className="mt-0.5 text-xs font-semibold text-[var(--accent)]">{formatMoneyCompact(m.revenue, currency)}</p>
-              <p className={`text-[10px] ${m.margin >= 0 ? "text-emerald-600" : "text-[var(--ink)]"}`}>{formatMoneyCompact(m.margin, currency)}</p>
-            </div>
-          ))}
+          {revenueTrend.map((m) => {
+            const range = trendMonths.find((t) => t.key === m.key);
+            const href = range
+              ? `/jobs?status=COMPLETED&from=${asDateInputValue(range.start)}&to=${asDateInputValue(range.end)}`
+              : "/jobs?status=COMPLETED";
+            return (
+              <Link
+                key={m.key}
+                href={href}
+                className="w-[92px] rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] p-2 text-center transition hover:border-[var(--accent)]/40 hover:bg-[var(--accent)]/5"
+              >
+                <p className="text-[9px] uppercase tracking-[0.1em] text-[var(--ink-muted)]">{m.key.slice(5)}</p>
+                <p className="mt-0.5 text-xs font-semibold text-[var(--accent)]">{formatMoneyCompact(m.revenue, currency)}</p>
+                <p className={`text-[10px] ${m.margin >= 0 ? "text-emerald-600" : "text-[var(--ink)]"}`}>{formatMoneyCompact(m.margin, currency)}</p>
+              </Link>
+            );
+          })}
         </div>
       </div>
     </section>
