@@ -20,6 +20,7 @@ type SearchParams = {
   q?: string;
   from?: string;
   to?: string;
+  dateField?: "receivedAt" | "completedAt";
   page?: string;
   sort?: string;
 };
@@ -138,7 +139,7 @@ export default async function JobsPage({
     ...(filters.repairPath ? { repairPath: filters.repairPath as never } : {}),
     ...(filters.from || filters.to
       ? {
-          receivedAt: {
+          [filters.dateField === "completedAt" ? "completedAt" : "receivedAt"]: {
             ...(filters.from ? { gte: new Date(filters.from) } : {}),
             ...(filters.to ? { lte: new Date(filters.to) } : {}),
           },
@@ -506,7 +507,15 @@ export default async function JobsPage({
             </select>
             <input type="date" name="from" defaultValue={filters.from} className={ctrlClass} />
             <input type="date" name="to" defaultValue={filters.to} className={ctrlClass} />
+            {filters.dateField ? (
+              <input type="hidden" name="dateField" value={filters.dateField} />
+            ) : null}
           </div>
+          {filters.dateField === "completedAt" && (filters.from || filters.to) ? (
+            <p className="border-t border-[var(--line)] bg-[var(--accent)]/5 px-3 py-1.5 text-[11px] text-[var(--accent)]">
+              Date range is filtering by <strong>completion date</strong> — showing jobs completed in this period.
+            </p>
+          ) : null}
         </details>
       </form>
 

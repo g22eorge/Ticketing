@@ -142,7 +142,7 @@ function RevenueMarginTrendSection({
           {revenueTrend.map((m) => {
             const range = trendMonths.find((t) => t.key === m.key);
             const href = range
-              ? `/jobs?status=COMPLETED&from=${asDateInputValue(range.start)}&to=${asDateInputValue(range.end)}`
+              ? `/jobs?status=COMPLETED&dateField=completedAt&from=${asDateInputValue(range.start)}&to=${asDateInputValue(range.end)}`
               : "/jobs?status=COMPLETED";
             return (
               <Link
@@ -957,7 +957,7 @@ export default async function DashboardPage({
                 <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Unpaid Bills</p>
                 <p className={`mt-0.5 text-sm font-semibold ${clientUnpaidCount > 0 ? "text-[#9A7A00]" : "text-[var(--ink)]"}`}>{clientUnpaidCount} client{clientUnpaidCount !== 1 ? "s" : ""}</p>
               </Link>
-              <Link href={`/jobs?status=COMPLETED&from=${asDateInputValue(mtdStart)}&to=${asDateInputValue(today)}`} className="col-span-2 rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 py-2 transition hover:border-[var(--accent)]/35 sm:col-span-1">
+              <Link href={`/jobs?status=COMPLETED&dateField=completedAt&from=${asDateInputValue(mtdStart)}&to=${asDateInputValue(today)}`} className="col-span-2 rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 py-2 transition hover:border-[var(--accent)]/35 sm:col-span-1">
                 <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Completed MTD</p>
                 <p className="mt-0.5 text-sm font-semibold text-[var(--ink)]">{completedMtd.length}</p>
               </Link>
