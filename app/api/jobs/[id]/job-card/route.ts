@@ -4,7 +4,6 @@ import { createElement } from "react";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 
-import { formatMoney, getAppCurrency } from "@/lib/currency";
 import { getDocumentBrandingSettings } from "@/lib/document-branding";
 import { can } from "@/lib/permissions";
 import { JobCardDocument } from "@/lib/pdf/JobCardDocument";
@@ -130,7 +129,6 @@ export async function GET(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  const currency = getAppCurrency();
   const branding = await getDocumentBrandingSettings();
   const logoUrl = await resolveLogo();
   const documentNumber = `JC-${job.jobNumber}`;

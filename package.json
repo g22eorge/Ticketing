@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "export DATABASE_URL=\"file:./dev.db\"; bunx prisma db push --skip-generate && bunx prisma generate && next dev --webpack",
     "build": "export DATABASE_URL=\"file:./dev.db\"; bunx prisma db push --skip-generate && bunx prisma generate && next build",
-    "vercel-build": "bunx prisma db push --skip-generate || true && export DATABASE_URL=\"file:./dev.db\" && bunx prisma db push --skip-generate && bunx prisma generate && next build",
+    "vercel-build": "export DATABASE_URL=\"file:./dev.db\" && bunx prisma db push --skip-generate && bunx prisma generate && next build",
     "start": "PORT=${PORT:-3000} BIND_HOST=${BIND_HOST:-0.0.0.0}; if [ -f .next/standalone/server.js ]; then HOSTNAME=$BIND_HOST PORT=$PORT bun .next/standalone/server.js; else next start -p $PORT -H $BIND_HOST; fi",
     "lint": "eslint",
     "check:links": "node scripts/check-links.mjs",
