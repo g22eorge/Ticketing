@@ -4,7 +4,7 @@ import { PersistedDisclosure } from "@/components/mobile/PersistedDisclosure";
 import { StickyKpiRow } from "@/components/mobile/StickyKpiRow";
 import { MonthSelectForm } from "@/components/shared/MonthSelectForm";
 import { RevenueLineChart } from "@/components/reports/ReportsCharts";
-import { getClientBill } from "@/lib/billing";
+import { getClientBill, resolveTechCost } from "@/lib/billing";
 import { formatMoney, formatMoneyCompact, getAppCurrency } from "@/lib/currency";
 import { formatEATMonthLabel } from "@/lib/date-eat";
 import { UI_JOB_STATUSES, JobStatus, normalizeJobStatus } from "@/lib/job-status";
@@ -377,16 +377,11 @@ export default async function DashboardPage({
     ].includes(job.status)).length;
     const completedCount = jobs.filter((job) => job.status === "COMPLETED").length;
     const paidTotal = jobs
-      .filter((job) => payouts.get(job.id)?.externalPaid && typeof payouts.get(job.id)?.externalTechFee === "number")
-      .reduce((sum, job) => sum + (payouts.get(job.id)?.externalTechFee ?? 0), 0);
+      .filter((job) => payouts.get(job.id)?.externalPaid)
+      .reduce((sum, job) => sum + resolveTechCost(payouts.get(job.id)?.externalTechFee, job.externalTechBill), 0);
     const outstandingTotal = jobs
-      .filter(
-        (job) =>
-          job.status === "COMPLETED" &&
-          !payouts.get(job.id)?.externalPaid &&
-          typeof payouts.get(job.id)?.externalTechFee === "number",
-      )
-      .reduce((sum, job) => sum + (payouts.get(job.id)?.externalTechFee ?? 0), 0);
+      .filter((job) => job.status === "COMPLETED" && !payouts.get(job.id)?.externalPaid)
+      .reduce((sum, job) => sum + resolveTechCost(payouts.get(job.id)?.externalTechFee, job.externalTechBill), 0);
 
     return (
       <div className="space-y-4">
@@ -463,7 +458,7 @@ export default async function DashboardPage({
                   </div>
                   <div>
                     <p className="text-xs text-[var(--ink-muted)]">Fee</p>
-                    <p className="font-medium">{formatMoney(payouts.get(job.id)?.externalTechFee ?? 0, currency)}</p>
+                    <p className="font-medium">{formatMoney(resolveTechCost(payouts.get(job.id)?.externalTechFee, job.externalTechBill), currency)}</p>
                     <p className={`text-xs ${payouts.get(job.id)?.externalPaid ? "text-[var(--accent)]" : "text-[var(--accent)]"}`}>
                       {payouts.get(job.id)?.externalPaid ? "Paid" : "Unpaid"}
                     </p>
@@ -750,7 +745,7 @@ export default async function DashboardPage({
     const payoutMap = await getJobPayoutsByIds(externalCompleted.map((job) => job.id)).catch(() => new Map());
     const payoutOutstanding = externalCompleted
       .filter((job) => !payoutMap.get(job.id)?.externalPaid)
-      .reduce((sum, job) => sum + (payoutMap.get(job.id)?.externalTechFee ?? job.externalTechBill ?? 0), 0);
+      .reduce((sum, job) => sum + resolveTechCost(payoutMap.get(job.id)?.externalTechFee, job.externalTechBill), 0);
 
     const revenueMtd = completedMtd
       .filter((job) => getClientBill(job) !== null)
@@ -1081,7 +1076,7 @@ export default async function DashboardPage({
     const payoutMap = await getJobPayoutsByIds(externalCompleted.map((job) => job.id)).catch(() => new Map());
     const payoutOutstanding = externalCompleted
       .filter((job) => !payoutMap.get(job.id)?.externalPaid)
-      .reduce((sum, job) => sum + (payoutMap.get(job.id)?.externalTechFee ?? job.externalTechBill ?? 0), 0);
+      .reduce((sum, job) => sum + resolveTechCost(payoutMap.get(job.id)?.externalTechFee, job.externalTechBill), 0);
 
     return (
       <div className="space-y-4">

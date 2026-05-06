@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Prisma, JobStatus } from "@prisma/client";
 
+import { resolveTechCost } from "@/lib/billing";
 import { formatMoneyCompact, getAppCurrency } from "@/lib/currency";
 import { can } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
@@ -15,16 +16,6 @@ type SearchParams = {
 
 const PAGE_SIZE = 25;
 const TERMINAL = ["READY_FOR_PICKUP", "COMPLETED", "DELIVERED"] as JobStatus[];
-
-/** Resolve the effective tech payout amount.
- *  externalTechFee (manually overridden amount) takes priority when > 0.
- *  Falls back to externalTechBill (what the tech submitted).
- *  The ?? operator alone is not enough — an explicit 0 fee would mask a real bill. */
-function resolveTechCost(fee?: number | null, bill?: number | null): number {
-  if (typeof fee === "number" && fee > 0) return fee;
-  if (typeof bill === "number" && bill > 0) return bill;
-  return 0;
-}
 
 function buildSearch(q?: string): Prisma.JobWhereInput {
   if (!q) return {};
