@@ -123,29 +123,39 @@ export function PageThemeHeader({ role }: { role: Role }) {
   const subtitle = resolvedSubtitle?.path === pathname ? resolvedSubtitle.text : meta.subtitle;
 
   return (
-    <section className="flex items-start gap-3 rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3 panel-shadow">
-      {/* Gold left accent bar */}
-      <div className="mt-0.5 h-8 w-1 shrink-0 rounded-full bg-gradient-to-b from-[var(--accent)] to-[var(--accent)]/40" />
+    <>
+      {/* Mobile: minimal text — no card, no role badge */}
+      <div className="flex items-baseline gap-2 sm:hidden">
+        <h1 className="text-[15px] font-bold tracking-tight text-[var(--ink)]">{meta.title}</h1>
+        {subtitle ? (
+          <span className="rounded border border-[var(--line)] bg-[var(--panel-strong)] px-1.5 py-0.5 font-mono text-[10px] font-medium text-[var(--ink-muted)]">
+            {subtitle}
+          </span>
+        ) : null}
+      </div>
 
-      {/* Content */}
-      <div className="flex min-w-0 flex-1 flex-wrap items-center justify-between gap-2">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-baseline gap-2">
-            <h1 className="text-base font-bold tracking-tight text-[var(--ink)] md:text-lg">{meta.title}</h1>
-            {subtitle ? (
-              <span className="rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-1.5 py-0.5 text-[11px] font-mono font-medium text-[var(--ink-muted)]">
-                {subtitle}
-              </span>
+      {/* sm+: full card with accent bar and role badge */}
+      <section className="hidden sm:flex items-start gap-3 rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3 panel-shadow">
+        <div className="mt-0.5 h-8 w-1 shrink-0 rounded-full bg-gradient-to-b from-[var(--accent)] to-[var(--accent)]/40" />
+        <div className="flex min-w-0 flex-1 flex-wrap items-center justify-between gap-2">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-baseline gap-2">
+              <h1 className="text-base font-bold tracking-tight text-[var(--ink)] md:text-lg">{meta.title}</h1>
+              {subtitle ? (
+                <span className="rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-1.5 py-0.5 text-[11px] font-mono font-medium text-[var(--ink-muted)]">
+                  {subtitle}
+                </span>
+              ) : null}
+            </div>
+            {meta.description ? (
+              <p className="mt-0.5 text-[12px] leading-snug text-[var(--ink-muted)]">{meta.description}</p>
             ) : null}
           </div>
-          {meta.description ? (
-            <p className="mt-0.5 hidden text-[12px] leading-snug text-[var(--ink-muted)] sm:block">{meta.description}</p>
-          ) : null}
+          <span className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.1em] ${roleTagStyle(role)}`}>
+            {roleTag(role)}
+          </span>
         </div>
-        <span className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.1em] ${roleTagStyle(role)}`}>
-          {roleTag(role)}
-        </span>
-      </div>
-    </section>
+      </section>
+    </>
   );
 }

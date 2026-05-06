@@ -308,43 +308,40 @@ export function BottomNav({
               </button>
             </div>
 
-            <div className="max-h-[calc(76vh-64px)] space-y-4 overflow-y-auto px-4 pb-6">
-              {moreGroups.map((group) => (
-                <div key={group.title}>
-                  <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">{group.title}</p>
-                  <div className="grid grid-cols-2 gap-2">
-                    {group.items.map((item) => {
-                      const active = isActive(item.href);
-                      const moreBadge =
-                        item.href === "/inventory"
-                          ? badges?.inventory
-                          : item.href === "/payout-followups"
-                            ? badges?.paymentFollowups
-                            : undefined;
-                      return (
-                        <Link
-                          key={item.href}
-                          href={item.href}
-                          onClick={() => setOpen(false)}
-                          className={`flex items-center gap-2.5 rounded-xl border px-3 py-3 text-[12px] font-semibold transition-all ${
-                            active
-                              ? "border-[var(--accent)]/40 bg-[var(--accent)]/10 text-[#9A7A00] shadow-[0_1px_4px_rgba(212,175,55,0.12)]"
-                              : "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink)] hover:border-[var(--accent)]/25 hover:bg-[var(--panel-strong)] active:scale-[0.97]"
-                          }`}
-                        >
-                          <span className={`shrink-0 ${active ? "text-[var(--accent)]" : "text-[var(--ink-muted)]"}`}>{item.icon}</span>
-                          <span className="truncate">{item.label}</span>
-                          {typeof moreBadge === "number" && moreBadge > 0 ? (
-                            <span className="ml-auto rounded-full border border-[var(--line)] bg-[var(--panel)] px-1.5 py-0.5 text-[10px] font-semibold text-[var(--ink-muted)]">
-                              {moreBadge > 99 ? "99+" : moreBadge}
-                            </span>
-                          ) : null}
-                        </Link>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
+            <div className="max-h-[calc(76vh-64px)] overflow-y-auto px-4 pb-6">
+              <div className="grid grid-cols-2 gap-2">
+                {moreGroups.flatMap((group) =>
+                  group.items.map((item) => {
+                    const active = isActive(item.href);
+                    const moreBadge =
+                      item.href === "/inventory"
+                        ? badges?.inventory
+                        : item.href === "/payout-followups"
+                          ? badges?.paymentFollowups
+                          : undefined;
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        onClick={() => setOpen(false)}
+                        className={`flex items-center gap-2.5 rounded-xl border px-3 py-3 text-[12px] font-semibold transition-all ${
+                          active
+                            ? "border-[var(--accent)]/40 bg-[var(--accent)]/10 text-[#9A7A00] shadow-[0_1px_4px_rgba(212,175,55,0.12)]"
+                            : "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink)] hover:border-[var(--accent)]/25 active:scale-[0.97]"
+                        }`}
+                      >
+                        <span className={`shrink-0 ${active ? "text-[var(--accent)]" : "text-[var(--ink-muted)]"}`}>{item.icon}</span>
+                        <span className="truncate">{item.label}</span>
+                        {typeof moreBadge === "number" && moreBadge > 0 ? (
+                          <span className="ml-auto shrink-0 rounded-full border border-[var(--line)] bg-[var(--panel)] px-1.5 py-0.5 text-[10px] font-semibold text-[var(--ink-muted)]">
+                            {moreBadge > 99 ? "99+" : moreBadge}
+                          </span>
+                        ) : null}
+                      </Link>
+                    );
+                  })
+                )}
+              </div>
 
               <button
                 type="button"
@@ -361,7 +358,7 @@ export function BottomNav({
                   router.push("/login");
                   router.refresh();
                 }}
-                className="flex w-full items-center gap-2.5 rounded-xl border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-3 text-[12px] font-semibold text-[var(--ink-muted)] transition hover:border-red-200 hover:bg-red-50 hover:text-red-600 disabled:opacity-50 active:scale-[0.98]"
+                className="mt-3 flex w-full items-center gap-2.5 rounded-xl border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-3 text-[12px] font-semibold text-[var(--ink-muted)] transition hover:border-red-200 hover:bg-red-50 hover:text-red-600 disabled:opacity-50 active:scale-[0.98]"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/>

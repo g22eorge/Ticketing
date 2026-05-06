@@ -150,7 +150,7 @@ function ThemeToggle() {
       title={isDark ? "Switch to light mode" : "Switch to dark mode"}
       aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
       aria-pressed={isDark}
-      className="relative inline-flex items-center gap-2 rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-[12px] font-semibold text-[var(--ink)] transition-all hover:border-[var(--accent)]/40 hover:text-[var(--accent)]"
+      className="relative inline-flex items-center gap-2 rounded-md border border-[var(--line)] bg-[var(--panel-strong)] p-2 sm:px-3 sm:py-2 text-[12px] font-semibold text-[var(--ink)] transition-all hover:border-[var(--accent)]/40 hover:text-[var(--accent)]"
     >
       {isDark ? (
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">

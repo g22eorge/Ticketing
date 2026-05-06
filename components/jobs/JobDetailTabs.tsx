@@ -818,7 +818,18 @@ export function JobDetailTabs({ role, permissions = [], job, technicians, device
           {returnLabel}
         </Link>
       </div>
-      <div className={panelShellClass}>
+      {/* Mobile job header — compact, no card */}
+      <div className="flex items-center justify-between gap-2 sm:hidden">
+        <div className="min-w-0">
+          <h1 className="mono text-base font-bold text-[var(--ink)]">{job.jobNumber}</h1>
+          <p className="truncate text-xs text-[var(--ink-muted)]">
+            {[job.deviceType, job.brand, job.model].filter(v => v && v !== "Unknown").join(" / ")}
+          </p>
+        </div>
+        <JobStatusBadge status={job.status} />
+      </div>
+      {/* Desktop job header — full card */}
+      <div className={`hidden sm:block ${panelShellClass}`}>
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h1 className="text-xl font-semibold">{job.jobNumber}</h1>
@@ -836,7 +847,7 @@ export function JobDetailTabs({ role, permissions = [], job, technicians, device
             type="button"
             key={tab}
             onClick={() => setActive(tab)}
-            className={`shrink-0 whitespace-nowrap rounded-lg border px-3 py-2 text-sm capitalize transition active:opacity-80 ${
+            className={`shrink-0 whitespace-nowrap rounded-lg border px-2.5 py-1.5 text-xs capitalize transition active:opacity-80 sm:px-3 sm:py-2 sm:text-sm ${
               active === tab
                 ? "border-[var(--accent)] bg-[var(--accent)] font-semibold text-white"
                 : "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink)] hover:border-[var(--accent)]/50"
