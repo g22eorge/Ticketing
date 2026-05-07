@@ -217,15 +217,16 @@ export default async function ReportsPage({
   const commonFaults = (() => {
     // Generic repair-shop words that are not fault keywords
     const STOP_WORDS = new Set([
-      // Articles / pronouns / conjunctions
+      // Articles / pronouns / conjunctions / connectives
       "about", "above", "after", "again", "also", "although", "always", "another",
-      "before", "being", "below", "between", "both", "could", "during", "either",
-      "every", "found", "given", "having", "hence", "itself", "large", "later",
-      "least", "might", "needs", "never", "often", "other", "otherwise", "place",
-      "please", "quite", "rather", "since", "small", "still", "their", "there",
-      "these", "thing", "think", "those", "three", "through", "under", "until",
-      "using", "very", "which", "while", "whose", "will", "within", "without",
-      "would", "where", "when", "then", "them", "than", "should", "shall",
+      "because", "before", "being", "below", "between", "both", "could", "during",
+      "either", "every", "found", "given", "having", "hence", "itself", "large",
+      "later", "least", "might", "needs", "never", "often", "other", "otherwise",
+      "place", "please", "quite", "rather", "since", "small", "still", "their",
+      "there", "therefore", "these", "thing", "think", "those", "three", "through",
+      "under", "until", "using", "very", "which", "while", "whose", "will",
+      "within", "without", "would", "where", "when", "then", "them", "than",
+      "should", "shall", "however", "despite", "though", "whereas", "whereby",
       // Generic repair nouns
       "machine", "device", "phone", "client", "customer", "repair", "technician",
       "laptop", "computer", "tablet", "unit", "issue", "problem", "complaint",
