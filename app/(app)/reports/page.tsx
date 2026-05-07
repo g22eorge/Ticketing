@@ -215,18 +215,39 @@ export default async function ReportsPage({
   })();
 
   const commonFaults = (() => {
+    // Generic repair-shop words that are not fault keywords
+    const STOP_WORDS = new Set([
+      // Articles / pronouns / conjunctions
+      "about", "above", "after", "again", "also", "although", "always", "another",
+      "before", "being", "below", "between", "both", "could", "during", "either",
+      "every", "found", "given", "having", "hence", "itself", "large", "later",
+      "least", "might", "needs", "never", "often", "other", "otherwise", "place",
+      "please", "quite", "rather", "since", "small", "still", "their", "there",
+      "these", "thing", "think", "those", "three", "through", "under", "until",
+      "using", "very", "which", "while", "whose", "will", "within", "without",
+      "would", "where", "when", "then", "them", "than", "should", "shall",
+      // Generic repair nouns
+      "machine", "device", "phone", "client", "customer", "repair", "technician",
+      "laptop", "computer", "tablet", "unit", "issue", "problem", "complaint",
+      "service", "parts", "spare", "component", "item", "order", "ticket",
+      "check", "checked", "checking", "tested", "testing", "working", "noted",
+      "replace", "replaced", "repaired", "repairing", "found", "fixing", "fixed",
+      "update", "updated", "reset", "setup", "install", "installed",
+      "confirmed", "reported", "returned", "advised", "informed", "seems",
+      "appears", "recommend", "recommended", "suggested", "completed", "received",
+    ]);
     const source = completedAll
       .map((job) => `${job.diagnosisNotes ?? ""} ${job.externalDiagnosis ?? ""}`.toLowerCase())
       .join(" ");
     const tokens = source
       .replace(/[^a-z0-9\s]/g, " ")
       .split(/\s+/)
-      .filter((word) => word.length > 4 && !["there", "about", "their", "after", "before", "issue"].includes(word));
+      .filter((word) => word.length > 4 && !STOP_WORDS.has(word));
     const freq = new Map<string, number>();
     for (const token of tokens) {
       freq.set(token, (freq.get(token) ?? 0) + 1);
     }
-    return [...freq.entries()].sort((a, b) => b[1] - a[1]).slice(0, 6);
+    return [...freq.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8);
   })();
 
   const totalPath = inHouseCount + externalCount;
