@@ -3,6 +3,7 @@ import Link from "next/link";
 import { PersistedDisclosure } from "@/components/mobile/PersistedDisclosure";
 import { StickyKpiRow } from "@/components/mobile/StickyKpiRow";
 import { MonthSelectForm } from "@/components/shared/MonthSelectForm";
+import { OnboardingChecklist, OnboardingComplete } from "@/components/shared/OnboardingChecklist";
 import { RevenueLineChart } from "@/components/reports/ReportsCharts";
 import { getClientBill, resolveTechCost } from "@/lib/billing";
 import { formatMoney, formatMoneyCompact, getAppCurrency } from "@/lib/currency";
@@ -13,6 +14,7 @@ import { can } from "@/lib/permissions";
 import { getJobPayoutsByIds } from "@/lib/payouts";
 import { prisma } from "@/lib/prisma";
 import { requireOrgSession } from "@/lib/org-context";
+import { getOnboardingStatus } from "@/lib/onboarding-checklist";
 
 type SearchParams = {
   month?: string;
@@ -351,6 +353,9 @@ export default async function DashboardPage({
   const permissionUser = { role: user.role, permissions: user.permissions };
   const filters = await searchParams;
   const period: "month" | "year" = filters.period === "year" ? "year" : "month";
+
+  // Only fetch onboarding status for ADMIN users (they're the ones who act on it).
+  const onboarding = user.role === "ADMIN" ? await getOnboardingStatus(orgId) : null;
 
   if (user.role === "TECHNICIAN_EXTERNAL") {
     const selectedMonth = parseMonth(filters.month);
@@ -817,6 +822,21 @@ export default async function DashboardPage({
 
     return (
       <div className="space-y-4">
+        {/* Onboarding checklist — shown to ADMIN on new workspaces */}
+        {onboarding?.show && (
+          <OnboardingChecklist
+            orgId={orgId}
+            steps={onboarding.steps}
+            doneCount={onboarding.doneCount}
+            totalCount={onboarding.totalCount}
+          />
+        )}
+        {/* All steps done — one-time celebration */}
+        {onboarding && !onboarding.show &&
+          onboarding.doneCount === onboarding.totalCount && (
+          <OnboardingComplete orgId={orgId} />
+        )}
+
         {/* Alert Banner */}
         {hasAlerts ? (
           <section className="panel-shadow rounded-xl border border-[var(--accent)]/25 bg-[var(--panel)] px-4 py-3">
