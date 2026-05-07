@@ -1062,7 +1062,7 @@ export default async function DashboardPage({
     const [completedThisMonth, pendingBilling, externalCompleted] = await Promise.all([
       prisma.job.findMany({
         where: { status: "COMPLETED", completedAt: { gte: selectedRange.start, lte: selectedRange.end } },
-        select: { id: true, jobNumber: true, completedAt: true, clientBill: true, finalCost: true },
+        select: { id: true, jobNumber: true, completedAt: true, clientBill: true },
       }),
       prisma.job.count({
         where: {
