@@ -18,12 +18,29 @@ enum OrgPlan {
   ENTERPRISE
 }
 
+enum OrgBillingStatus {
+  TRIALING      // free trial, no payment yet
+  ACTIVE        // paid and current
+  PAST_DUE      // payment failed, grace period
+  CANCELLED     // subscription cancelled, reverts to STARTER at period end
+}
+
 model Organization {
   id        String   @id @default(cuid())
   name      String
-  slug      String   @unique // URL-safe identifier, e.g. "eagle-info"
+  slug      String   @unique
   plan      OrgPlan  @default(STARTER)
   isActive  Boolean  @default(true)
+
+  // Flutterwave subscription tracking
+  billingStatus       OrgBillingStatus @default(TRIALING)
+  flwCustomerId       String?          // Flutterwave customer ID
+  flwSubscriptionId   String?          // active FLW subscription ID
+  flwPlanId           String?          // FLW payment plan ID in use
+  trialEndsAt         DateTime?        // null = no trial
+  planRenewsAt        DateTime?        // next renewal date
+  planCancelledAt     DateTime?        // set when cancelled
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
