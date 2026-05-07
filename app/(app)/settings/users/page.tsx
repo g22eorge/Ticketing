@@ -15,6 +15,7 @@ import { inviteSchema, INVITE_TTL_DAYS, type InviteState } from "@/lib/invites";
 import { InvitePanel } from "@/components/settings/InvitePanel";
 import { checkUserLimit, getLimitsForOrg, PLAN_LIMITS } from "@/lib/plan-limits";
 import { PlanBanner } from "@/components/shared/PlanBanner";
+import { rateLimit } from "@/lib/rate-limit";
 
 type SearchParams = {
   q?: string;
@@ -473,6 +474,9 @@ export default async function UsersPage({
 
     const { user: actor, orgId: actorOrgId } = await requireOrgSession();
     if (actor.role !== "ADMIN") return { error: "Only admins can invite users." };
+
+    const rl = rateLimit.invite(actorOrgId);
+    if (!rl.allowed) return { error: "Too many invites sent recently. Please wait before generating more." };
 
     const parsed = inviteSchema.safeParse({
       email: String(formData.get("email") ?? "").trim().toLowerCase(),

@@ -5,7 +5,7 @@ import path from "path";
 import { NextRequest, NextResponse } from "next/server";
 
 import { prisma } from "@/lib/prisma";
-import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
+import { rateLimit, rateLimitHeaders } from "@/lib/rate-limit";
 import { sanitizeText } from "@/lib/sanitize";
 import { getCurrentUserRoleOptional } from "@/lib/session";
 import { getUploadsRoot } from "@/lib/storage";
@@ -14,16 +14,21 @@ const MAX_SIZE = 5 * 1024 * 1024;
 const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
 export async function POST(req: NextRequest) {
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
-  const rl = checkRateLimit(`upload:${ip}`, { limit: 20, windowMs: 60_000 });
-  if (!rl.allowed) {
-    return NextResponse.json({ error: "Too many uploads. Please wait." }, { status: 429, headers: rateLimitHeaders(rl.retryAfterMs) });
-  }
-
   const { session, user } = await getCurrentUserRoleOptional();
+
   if (!session?.user || !user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  // Per-user upload rate limit (30 uploads / 10 min).
+  const rl = rateLimit.upload(user.id);
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: "Too many uploads. Please wait a moment." },
+      { status: 429, headers: rateLimitHeaders(rl.retryAfterMs) },
+    );
+  }
+
   const formData = await req.formData();
   const jobId = String(formData.get("jobId") ?? "");
   const label = sanitizeText(String(formData.get("label") ?? "other"));

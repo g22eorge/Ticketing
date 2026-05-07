@@ -14,6 +14,7 @@ import { sanitizeOptionalText, sanitizeText } from "@/lib/sanitize";
 import { requireOrgSession } from "@/lib/org-context";
 import { getUploadsRoot } from "@/lib/storage";
 import { checkJobLimit } from "@/lib/plan-limits";
+import { rateLimit } from "@/lib/rate-limit";
 
 const deviceSchema = z
   .object({
@@ -113,6 +114,11 @@ export async function createJobAction(
 
     if (!can.createJob(user)) {
       return { error: "You cannot create jobs." };
+    }
+
+    const rl = rateLimit.jobCreate(orgId);
+    if (!rl.allowed) {
+      return { error: "Too many jobs created in a short period. Please wait a moment and try again." };
     }
 
     const jobLimit = await checkJobLimit(orgId);
