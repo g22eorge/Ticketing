@@ -3,6 +3,7 @@ import { getSessionCookie } from "better-auth/cookies";
 
 const PUBLIC_PATHS = [
   "/login",
+  "/register",
   "/api/auth",
   "/api/webhooks",
   "/repair-request",  // public intake form

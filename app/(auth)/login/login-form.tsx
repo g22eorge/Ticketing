@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -115,8 +116,11 @@ export function LoginForm() {
         {isPending ? "Signing in…" : "Sign in"}
       </button>
 
-      <p className="text-center text-[11px] text-white/20">
-        Need access? Contact your system administrator.
+      <p className="text-center text-xs text-white/30">
+        New here?{" "}
+        <Link href="/register" className="text-[#D4AF37]/70 transition hover:text-[#D4AF37]">
+          Create a free account
+        </Link>
       </p>
     </form>
   );
