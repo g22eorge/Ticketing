@@ -1210,7 +1210,7 @@ export function JobDetailTabs({ role, permissions = [], job, technicians, device
             />
 
             <button
-              disabled={isTerminal || !can.editDiagnosis(permissionUser) || isDiagnosisPending}
+              disabled={(isTerminal && !canAssignJobs) || !can.editDiagnosis(permissionUser) || isDiagnosisPending}
               className="btn-premium w-full rounded-lg px-3 py-1.5 text-[13px] disabled:opacity-60 sm:w-auto sm:py-2 sm:text-sm"
             >
               Save
