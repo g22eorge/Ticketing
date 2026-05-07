@@ -4,6 +4,7 @@ import { getSessionCookie } from "better-auth/cookies";
 const PUBLIC_PATHS = [
   "/login",
   "/register",
+  "/invite",          // invite accept pages are public (unauthenticated users join via token)
   "/api/auth",
   "/api/webhooks",
   "/repair-request",  // public intake form

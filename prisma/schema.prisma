@@ -42,8 +42,28 @@ model Organization {
   inboundMessages          InboundMessage[]
   auditLogs                AuditLog[]
 
+  invites  UserInvite[]
+
   @@index([slug])
   @@index([isActive])
+}
+
+model UserInvite {
+  id          String    @id @default(cuid())
+  token       String    @unique @default(cuid())
+  email       String
+  role        Role      @default(OPS)
+  orgId       String
+  org         Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  invitedById String
+  invitedBy   User      @relation("InvitedBy", fields: [invitedById], references: [id], onDelete: Cascade)
+  expiresAt   DateTime
+  usedAt      DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([token])
+  @@index([orgId])
+  @@index([email, orgId])
 }
 
 model User {
@@ -75,6 +95,7 @@ model User {
   stockTransactions PartStockTransaction[] @relation("StockTxnBy")
   accessAuditEntries UserAccessAudit[] @relation("AccessAuditTarget")
   accessAuditChanges UserAccessAudit[] @relation("AccessAuditActor")
+  invitesSent        UserInvite[]      @relation("InvitedBy")
 
   @@index([orgId])
 }

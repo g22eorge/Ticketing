@@ -11,6 +11,8 @@ import { UserPasswordResetForm } from "@/components/settings/UserPasswordResetFo
 import { EXTRA_PERMISSIONS } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { requireOrgSession } from "@/lib/org-context";
+import { inviteSchema, INVITE_TTL_DAYS, type InviteState } from "@/lib/invites";
+import { InvitePanel } from "@/components/settings/InvitePanel";
 
 type SearchParams = {
   q?: string;
@@ -463,6 +465,46 @@ export default async function UsersPage({
     redirect(`/settings/users?${new URLSearchParams({ q, userId: targetUserId }).toString()}`);
   }
 
+  async function inviteUser(_prev: InviteState, formData: FormData): Promise<InviteState> {
+    "use server";
+
+    const { user: actor, orgId: actorOrgId } = await requireOrgSession();
+    if (actor.role !== "ADMIN") return { error: "Only admins can invite users." };
+
+    const parsed = inviteSchema.safeParse({
+      email: String(formData.get("email") ?? "").trim().toLowerCase(),
+      role: String(formData.get("role") ?? "OPS"),
+    });
+    if (!parsed.success) return { fieldErrors: parsed.error.flatten().fieldErrors };
+
+    const { email, role } = parsed.data;
+
+    // Block if email already belongs to this org.
+    const existing = await prisma.user.findFirst({
+      where: { email, orgId: actorOrgId },
+      select: { id: true },
+    });
+    if (existing) return { error: "That email already has an account in this workspace." };
+
+    // Expire any previous pending invites for this email in this org.
+    await prisma.userInvite.updateMany({
+      where: { email, orgId: actorOrgId, usedAt: null },
+      data: { expiresAt: new Date() },
+    });
+
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + INVITE_TTL_DAYS);
+
+    const invite = await prisma.userInvite.create({
+      data: { email, role, orgId: actorOrgId, invitedById: actor.id, expiresAt },
+    });
+
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+    const inviteUrl = `${baseUrl}/invite/${invite.token}`;
+
+    return { inviteUrl };
+  }
+
   async function createUser(formData: FormData) {
     "use server";
 
@@ -609,6 +651,9 @@ export default async function UsersPage({
 
   return (
     <div className="space-y-4">
+      {/* Invite panel — generates a shareable link */}
+      <InvitePanel inviteAction={inviteUser} roleOptions={roleOptions} />
+
       <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
         <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Create User</p>
         <form action={createUser} className="mt-2 grid gap-2 md:grid-cols-2 xl:grid-cols-5">
