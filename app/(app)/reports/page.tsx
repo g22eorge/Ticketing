@@ -2,7 +2,6 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { PersistedDisclosure } from "@/components/mobile/PersistedDisclosure";
-import { StickyKpiRow } from "@/components/mobile/StickyKpiRow";
 import { TechnicianBarChart } from "@/components/reports/ReportsCharts";
 import { MonthSelectForm } from "@/components/shared/MonthSelectForm";
 import { getClientBill, getExternalTechBill, resolveTechCost } from "@/lib/billing";
@@ -584,20 +583,13 @@ export default async function ReportsPage({
         </div>
       </section>
 
-      {/* Mobile sticky KPI strip */}
-      <StickyKpiRow
-        items={[
-          { label: "Revenue", value: formatMoneyCompact(revenueSelected, currency), tone: "brand" },
-          { label: "Margin", value: formatMoneyCompact(marginSelected, currency), tone: marginSelected >= 0 ? "success" : "warning" },
-          { label: "Completed", value: String(completedSelected.length), tone: "success" },
-          { label: "Payouts", value: formatMoneyCompact(externalPayoutOutstandingTotal, currency), tone: "warning" },
-        ]}
-      />
-
-      {/* 2. FINANCIAL COMMAND CENTER — 4 premium KPI tiles */}
+      {/* 2. FINANCIAL COMMAND CENTER — 4 premium KPI tiles (clickable) */}
       <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {/* Revenue */}
-        <div className="panel-shadow relative overflow-hidden rounded-xl border border-[var(--accent)]/30 bg-[var(--panel)] p-4">
+        <Link
+          href={`/jobs?status=COMPLETED&dateField=completedAt&from=${selectedRange.start.toISOString().slice(0,10)}&to=${selectedRange.end.toISOString().slice(0,10)}`}
+          className="panel-shadow relative overflow-hidden rounded-xl border border-[var(--accent)]/30 bg-[var(--panel)] p-4 transition hover:-translate-y-[2px] hover:border-[var(--accent)]/60"
+        >
           <div className="absolute inset-0 bg-gradient-to-br from-[var(--accent)]/5 to-transparent" />
           <div className="relative">
             <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Revenue</p>
@@ -609,10 +601,13 @@ export default async function ReportsPage({
               <span className="text-[10px] text-[var(--ink-muted)]">vs {prevMonthString}</span>
             </div>
           </div>
-        </div>
+        </Link>
 
         {/* Margin */}
-        <div className={`panel-shadow relative overflow-hidden rounded-xl border bg-[var(--panel)] p-4 ${marginSelected >= 0 ? "border-emerald-200/60" : "border-red-200/60"}`}>
+        <Link
+          href={`/api/reports/export?type=revenue-variance&month=${monthlyExportMonth}`}
+          className={`panel-shadow relative overflow-hidden rounded-xl border bg-[var(--panel)] p-4 transition hover:-translate-y-[2px] ${marginSelected >= 0 ? "border-emerald-200/60 hover:border-emerald-400/60" : "border-red-200/60 hover:border-red-400/60"}`}
+        >
           <div className={`absolute inset-0 bg-gradient-to-br ${marginSelected >= 0 ? "from-emerald-50/40" : "from-red-50/40"} to-transparent`} />
           <div className="relative">
             <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Margin</p>
@@ -625,10 +620,13 @@ export default async function ReportsPage({
                 : "No completed jobs"}
             </p>
           </div>
-        </div>
+        </Link>
 
         {/* Completed */}
-        <div className="panel-shadow relative overflow-hidden rounded-xl border border-blue-200/60 bg-[var(--panel)] p-4">
+        <Link
+          href={`/jobs?status=COMPLETED&dateField=completedAt&from=${selectedRange.start.toISOString().slice(0,10)}&to=${selectedRange.end.toISOString().slice(0,10)}`}
+          className="panel-shadow relative overflow-hidden rounded-xl border border-blue-200/60 bg-[var(--panel)] p-4 transition hover:-translate-y-[2px] hover:border-blue-400/60"
+        >
           <div className="absolute inset-0 bg-gradient-to-br from-blue-50/30 to-transparent" />
           <div className="relative">
             <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Completed</p>
@@ -637,10 +635,13 @@ export default async function ReportsPage({
               {completionMomentum >= 0 ? "+" : ""}{completionMomentum} vs {prevMonthString}
             </p>
           </div>
-        </div>
+        </Link>
 
         {/* Payouts Due */}
-        <div className="panel-shadow relative overflow-hidden rounded-xl border border-amber-200/60 bg-[var(--panel)] p-4">
+        <Link
+          href="/payout-followups"
+          className="panel-shadow relative overflow-hidden rounded-xl border border-amber-200/60 bg-[var(--panel)] p-4 transition hover:-translate-y-[2px] hover:border-amber-400/60"
+        >
           <div className="absolute inset-0 bg-gradient-to-br from-amber-50/30 to-transparent" />
           <div className="relative">
             <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Payouts Due</p>
@@ -649,7 +650,7 @@ export default async function ReportsPage({
               {unpaidPayouts.length} unpaid external {unpaidPayouts.length === 1 ? "job" : "jobs"}
             </p>
           </div>
-        </div>
+        </Link>
       </section>
 
       {/* 3. OPERATIONS INTELLIGENCE STRIP */}
@@ -658,42 +659,42 @@ export default async function ReportsPage({
           Operations Intelligence — {selectedMonthString}
         </p>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
-          <div className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2.5">
+          <Link href={`/jobs?status=COMPLETED&dateField=completedAt&from=${selectedRange.start.toISOString().slice(0,10)}&to=${selectedRange.end.toISOString().slice(0,10)}`} className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2.5 transition hover:border-[var(--accent)]/40">
             <p className="text-[10px] uppercase tracking-[0.1em] text-[var(--ink-muted)]">Revenue Δ</p>
             <p className={`mt-0.5 text-sm font-bold ${revenueDelta >= 0 ? "text-[var(--accent)]" : "text-red-500"}`}>
               {revenueDelta >= 0 ? "+" : ""}{formatMoneyCompact(Math.abs(revenueDelta), currency)}
             </p>
             <p className="text-[9px] text-[var(--ink-muted)]">vs {prevMonthString}</p>
-          </div>
-          <div className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2.5">
+          </Link>
+          <Link href="/jobs?status=COMPLETED" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2.5 transition hover:border-[var(--accent)]/40">
             <p className="text-[10px] uppercase tracking-[0.1em] text-[var(--ink-muted)]">Avg Repair Time</p>
             <p className="mt-0.5 text-sm font-bold text-[var(--ink)]">{averageRepairTimeHours.toFixed(1)}h</p>
             <p className="text-[9px] text-[var(--ink-muted)]">all completed</p>
-          </div>
-          <div className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2.5">
+          </Link>
+          <Link href="/jobs?repairPath=EXTERNAL&status=COMPLETED" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2.5 transition hover:border-[var(--accent)]/40">
             <p className="text-[10px] uppercase tracking-[0.1em] text-[var(--ink-muted)]">External Ratio</p>
             <p className="mt-0.5 text-sm font-bold text-[var(--ink)]">{externalRatio.toFixed(0)}%</p>
             <p className="text-[9px] text-[var(--ink-muted)]">{externalCount} ext / {inHouseCount} in-house</p>
-          </div>
-          <div className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2.5">
+          </Link>
+          <Link href={`/jobs?status=COMPLETED&dateField=completedAt&from=${selectedRange.start.toISOString().slice(0,10)}&to=${selectedRange.end.toISOString().slice(0,10)}`} className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2.5 transition hover:border-[var(--accent)]/40">
             <p className="text-[10px] uppercase tracking-[0.1em] text-[var(--ink-muted)]">Momentum</p>
             <p className={`mt-0.5 text-sm font-bold ${completionMomentum >= 0 ? "text-emerald-600" : "text-red-500"}`}>
               {completionMomentum >= 0 ? "+" : ""}{completionMomentum}
             </p>
             <p className="text-[9px] text-[var(--ink-muted)]">completed vs prev period</p>
-          </div>
-          <div className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2.5">
+          </Link>
+          <Link href="/jobs?status=DIAGNOSING,AWAITING_APPROVAL,IN_REPAIR" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2.5 transition hover:border-[var(--accent)]/40">
             <p className="text-[10px] uppercase tracking-[0.1em] text-[var(--ink-muted)]">Queue Pressure</p>
             <p className="mt-0.5 text-sm font-bold text-[var(--accent)]">{queuePressure}</p>
             <p className="text-[9px] text-[var(--ink-muted)]">diagn + approval + repair</p>
-          </div>
-          <div className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2.5">
+          </Link>
+          <Link href="/jobs?status=DIAGNOSING,REFERRED,AWAITING_APPROVAL,IN_REPAIR" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2.5 transition hover:border-[var(--accent)]/40">
             <p className="text-[10px] uppercase tracking-[0.1em] text-[var(--ink-muted)]">Aging Risk</p>
             <p className={`mt-0.5 text-sm font-bold ${delayedJobs.length > 3 ? "text-amber-600" : delayedJobs.length > 0 ? "text-[var(--ink)]" : "text-emerald-600"}`}>
               {delayedJobs.length}
             </p>
             <p className="text-[9px] text-[var(--ink-muted)]">open jobs &gt;3 days</p>
-          </div>
+          </Link>
         </div>
       </section>
 
