@@ -639,8 +639,10 @@ export function JobDetailTabs({ role, permissions = [], job, technicians, device
       ? "EXTERNAL (from assigned technician)"
       : "IN_HOUSE (from assigned technician)"
     : job.repairPath === "EXTERNAL"
-      ? "EXTERNAL"
-      : "IN_HOUSE";
+      ? "EXTERNAL — no technician assigned"
+      : job.repairPath === "IN_HOUSE"
+        ? "IN_HOUSE — no technician assigned"
+        : "Not set";
   const repairCostLabel = diagnosisMode === "external" ? "External technician bill" : "Internal repair cost";
   const stageLabels = ["Intake", "Diagnosis", "Approval", "Repair", "Complete"] as const;
   const currentStageIndex =
@@ -980,7 +982,12 @@ export function JobDetailTabs({ role, permissions = [], job, technicians, device
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wide text-[var(--ink-muted)]">Diagnosis Snapshot</p>
                 <p className="mt-1 text-sm text-[var(--ink-muted)]">
-                  Assigned: <span className="font-medium text-[var(--ink)]">{job.assignedTo?.name ?? job.oneTimeExternalAssignment?.technicianName ?? "Unassigned"}</span>
+                  Assigned:{" "}
+                  {job.assignedTo?.name ?? job.oneTimeExternalAssignment?.technicianName ? (
+                    <span className="font-medium text-[var(--ink)]">{job.assignedTo?.name ?? job.oneTimeExternalAssignment?.technicianName}</span>
+                  ) : (
+                    <span className="font-medium text-amber-600 dark:text-amber-400">Unassigned — assign a technician in Diagnosis tab</span>
+                  )}
                 </p>
                 <p className="text-sm text-[var(--ink-muted)]">Repair path: {derivedRepairPath}</p>
               </div>

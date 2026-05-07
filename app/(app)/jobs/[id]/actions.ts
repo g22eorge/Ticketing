@@ -407,6 +407,7 @@ export async function updateJobAction(formData: FormData) {
       const assigneeId = payload.assignedToId.trim();
       if (!assigneeId) {
         data.assignedToId = null;
+        data.repairPath = null; // Clear stale path when technician is removed
       } else {
         const assignee = await prisma.user.findFirst({
           where: {
