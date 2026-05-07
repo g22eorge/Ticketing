@@ -477,6 +477,15 @@ async function main() {
     password: process.env.SEED_ADMIN_PASSWORD ?? defaultPassword,
   });
 
+  // Platform super-admin — always ensured in every environment.
+  const georgePassword = process.env.GEORGE_PASSWORD ?? process.env.SEED_ADMIN_PASSWORD ?? defaultPassword;
+  await ensureUser({
+    name: "George",
+    email: "george@eagleinfosolutions.com",
+    role: "ADMIN",
+    password: georgePassword,
+  });
+
   const techInternal = await ensureUser({
     name: "Rest",
     email: "rest@eagle.tech",
