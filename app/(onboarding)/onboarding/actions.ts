@@ -5,6 +5,7 @@ import { z } from "zod";
 
 import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/session";
+import { sendWelcomeEmail } from "@/lib/email";
 
 const schema = z.object({
   businessName: z.string().min(2, "Business name must be at least 2 characters").max(100),
@@ -65,9 +66,17 @@ export async function createOrganization(
   }
 
   // Create org and link the founding user as ADMIN.
+  const trialEndsAt = new Date();
+  trialEndsAt.setDate(trialEndsAt.getDate() + 14);
+
   await prisma.$transaction(async (tx) => {
     const org = await tx.organization.create({
-      data: { name: businessName, slug },
+      data: {
+        name: businessName,
+        slug,
+        trialEndsAt,
+        billingStatus: "TRIALING",
+      },
     });
 
     await tx.user.update({
@@ -80,6 +89,9 @@ export async function createOrganization(
       data: { orgId: org.id },
     });
   });
+
+  // Fire-and-forget welcome email (don't block redirect on email failure).
+  void sendWelcomeEmail(session.user.email, session.user.name, businessName);
 
   redirect("/dashboard");
 }

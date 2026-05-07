@@ -9,6 +9,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyTransaction } from "@/lib/flutterwave";
 import { OrgPlan } from "@prisma/client";
+import { sendPaymentConfirmation } from "@/lib/email";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
@@ -38,7 +39,7 @@ export async function GET(req: NextRequest) {
     const renewsAt = new Date();
     renewsAt.setMonth(renewsAt.getMonth() + 1);
 
-    await prisma.organization.update({
+    const updatedOrg = await prisma.organization.update({
       where: { id: orgId },
       data: {
         plan: targetPlan,
@@ -47,7 +48,23 @@ export async function GET(req: NextRequest) {
         planRenewsAt: renewsAt,
         planCancelledAt: null,
       },
+      select: { name: true },
     });
+
+    // Fire-and-forget payment confirmation email.
+    const admin = await prisma.user.findFirst({
+      where: { orgId, role: "ADMIN" },
+      select: { email: true, name: true },
+    });
+    if (admin) {
+      void sendPaymentConfirmation(
+        admin.email,
+        admin.name,
+        updatedOrg.name,
+        targetPlan,
+        tx.amount,
+      );
+    }
 
     return NextResponse.redirect(`${base}/settings/billing?payment=success`);
   } catch (err) {

@@ -83,7 +83,13 @@ async function cancelPlan(formData: FormData) {
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
-export default async function BillingPage() {
+export default async function BillingPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ suspended?: string; payment?: string }>;
+}) {
+  const params = await searchParams;
+  const isSuspended = params.suspended === "1";
   const { user, orgId } = await requireOrgSession();
   const isAdmin = can.manageUsers(user);
 
@@ -153,6 +159,16 @@ export default async function BillingPage() {
 
   return (
     <div className="space-y-6">
+      {/* Suspension banner */}
+      {isSuspended && (
+        <div className="rounded-xl border border-red-500/40 bg-red-500/10 px-5 py-4">
+          <p className="font-semibold text-red-400">Access suspended</p>
+          <p className="mt-1 text-sm text-red-300/80">
+            Your trial has ended or payment is overdue. Upgrade your plan below to restore full access to your workspace.
+          </p>
+        </div>
+      )}
+
       {/* Header */}
       <div>
         <h1 className="text-xl font-bold text-[var(--ink)]">Billing & Plan</h1>

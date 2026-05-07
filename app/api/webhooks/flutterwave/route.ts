@@ -13,6 +13,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyWebhookSignature } from "@/lib/flutterwave";
 import { OrgPlan } from "@prisma/client";
+import { sendPaymentFailedAlert } from "@/lib/email";
 
 type FlwWebhookPayload = {
   event: string;
@@ -67,6 +68,24 @@ export async function POST(req: NextRequest) {
           flwSubscriptionId: data.payment_plan ? String(data.payment_plan) : undefined,
         },
       });
+    }
+
+    if (event === "charge.completed" && data.status !== "successful") {
+      // Payment failed — notify the org admin.
+      const orgId = data.meta?.orgId ?? extractOrgFromTxRef(data.tx_ref);
+      if (orgId) {
+        const org = await prisma.organization.findUnique({
+          where: { id: orgId },
+          select: { name: true },
+        });
+        const admin = await prisma.user.findFirst({
+          where: { orgId, role: "ADMIN" },
+          select: { email: true, name: true },
+        });
+        if (org && admin) {
+          void sendPaymentFailedAlert(admin.email, admin.name, org.name);
+        }
+      }
     }
 
     if (event === "subscription.cancelled") {

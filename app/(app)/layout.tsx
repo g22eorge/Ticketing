@@ -7,6 +7,12 @@ import { can } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { requireOrgSession } from "@/lib/org-context";
 import { filterSupportedJobStatuses } from "@/lib/job-status-server";
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
+import { sendTrialExpiryWarning } from "@/lib/email";
+
+// Module-level dedup: only send trial warning email once per server instance per org.
+const trialWarningSent = new Set<string>();
 
 export default async function AppLayout({
   children,
@@ -14,6 +20,51 @@ export default async function AppLayout({
   children: React.ReactNode;
 }) {
   const { session, user, orgId } = await requireOrgSession();
+
+  // ── Billing enforcement ───────────────────────────────────────────────────
+  const org = await prisma.organization.findUnique({
+    where: { id: orgId },
+    select: { billingStatus: true, trialEndsAt: true, plan: true, name: true },
+  });
+
+  const now = new Date();
+  const trialExpired =
+    org?.billingStatus === "TRIALING" &&
+    org.trialEndsAt != null &&
+    org.trialEndsAt < now;
+  const isPastDue = org?.billingStatus === "PAST_DUE";
+  const isSuspended = trialExpired || isPastDue;
+
+  if (isSuspended) {
+    const h = await headers();
+    const pathname = h.get("x-pathname") ?? h.get("next-url") ?? "";
+    const onBillingPage = pathname.includes("/settings/billing");
+    if (!onBillingPage) {
+      redirect("/settings/billing?suspended=1");
+    }
+  }
+
+  // ── Trial expiry warning email (fire-and-forget, once per server instance) ─
+  if (org?.billingStatus === "TRIALING" && org.trialEndsAt) {
+    const daysLeft = Math.ceil((org.trialEndsAt.getTime() - Date.now()) / 86_400_000);
+    if (daysLeft <= 3 && daysLeft > 0 && !trialWarningSent.has(orgId)) {
+      trialWarningSent.add(orgId);
+      prisma.user
+        .findFirst({ where: { orgId, role: "ADMIN" }, select: { email: true, name: true } })
+        .then((admin) => {
+          if (admin) {
+            void sendTrialExpiryWarning(
+              admin.email,
+              admin.name,
+              org.name,
+              daysLeft,
+            );
+          }
+        })
+        .catch(() => {});
+    }
+  }
+  // ─────────────────────────────────────────────────────────────────────────
 
   const openStatuses = filterSupportedJobStatuses([
     "RECEIVED",
