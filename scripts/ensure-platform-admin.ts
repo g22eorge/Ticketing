@@ -8,9 +8,7 @@
  */
 
 import { hashPassword } from "better-auth/crypto";
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import { prisma } from "@/lib/prisma";
 
 async function main() {
   const email = "george@eagleinfosolutions.com";
