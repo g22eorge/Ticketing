@@ -13,10 +13,13 @@ import { prisma } from "@/lib/prisma";
 import { requireOrgSession } from "@/lib/org-context";
 import { inviteSchema, INVITE_TTL_DAYS, type InviteState } from "@/lib/invites";
 import { InvitePanel } from "@/components/settings/InvitePanel";
+import { checkUserLimit, getLimitsForOrg, PLAN_LIMITS } from "@/lib/plan-limits";
+import { PlanBanner } from "@/components/shared/PlanBanner";
 
 type SearchParams = {
   q?: string;
   userId?: string;
+  limitError?: string;
 };
 
 type UserDetailsState = {
@@ -486,6 +489,10 @@ export default async function UsersPage({
     });
     if (existing) return { error: "That email already has an account in this workspace." };
 
+    // Enforce plan user limit.
+    const userLimit = await checkUserLimit(actorOrgId);
+    if (!userLimit.allowed) return { error: userLimit.reason };
+
     // Expire any previous pending invites for this email in this org.
     await prisma.userInvite.updateMany({
       where: { email, orgId: actorOrgId, usedAt: null },
@@ -524,6 +531,12 @@ export default async function UsersPage({
       redirect("/settings/users");
     }
 
+    const userLimit = await checkUserLimit(actorOrgId);
+    if (!userLimit.allowed) {
+      // Can't return from a void server action — redirect with error param
+      redirect(`/settings/users?limitError=${encodeURIComponent(userLimit.reason)}`);
+    }
+
     const created = await prisma.user.create({
       data: {
         orgId: actorOrgId,
@@ -547,6 +560,16 @@ export default async function UsersPage({
     revalidatePath("/settings/users");
     redirect(`/settings/users?${new URLSearchParams({ userId: created.id }).toString()}`);
   }
+
+  // Fetch plan limits and current usage for the banner.
+  const planInfo = await getLimitsForOrg(orgId);
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const [activeUserCount, jobsThisMonth, partCount] = await Promise.all([
+    prisma.user.count({ where: { orgId, isActive: true } }),
+    prisma.job.count({ where: { orgId, receivedAt: { gte: monthStart } } }),
+    prisma.part.count({ where: { orgId, isActive: true } }),
+  ]);
 
   let q = "";
   let filteredUsers: Array<{
@@ -649,8 +672,24 @@ export default async function UsersPage({
     );
   }
 
+  const params = await searchParams;
+  const limitError = typeof params.limitError === "string" ? params.limitError : null;
+
   return (
     <div className="space-y-4">
+      {/* Plan usage banner */}
+      <PlanBanner
+        plan={planInfo.plan}
+        limits={planInfo}
+        usage={{ users: activeUserCount, jobsThisMonth, parts: partCount }}
+      />
+
+      {limitError && (
+        <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600 dark:border-red-900 dark:bg-red-900/20 dark:text-red-400">
+          {limitError}
+        </p>
+      )}
+
       {/* Invite panel — generates a shareable link */}
       <InvitePanel inviteAction={inviteUser} roleOptions={roleOptions} />
 

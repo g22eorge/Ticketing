@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { formatMoney } from "@/lib/currency";
 import { prisma } from "@/lib/prisma";
 import { requireOrgSession } from "@/lib/org-context";
+import { checkPartLimit } from "@/lib/plan-limits";
 
 type StockTxnType = "IN" | "OUT" | "ADJUST";
 
@@ -48,6 +49,11 @@ export default async function InventoryPage({
     if (!sku || !name) return;
     const unitCost = unitCostRaw ? Number(unitCostRaw) : null;
     const reorderLevel = reorderRaw ? Math.max(0, Math.floor(Number(reorderRaw))) : 0;
+
+    const partLimit = await checkPartLimit(createOrgId);
+    if (!partLimit.allowed) {
+      redirect(`/inventory?error=${encodeURIComponent(partLimit.reason)}`);
+    }
 
     try {
       await prisma.part.create({

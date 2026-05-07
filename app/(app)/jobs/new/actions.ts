@@ -13,6 +13,7 @@ import { filterSupportedJobStatuses } from "@/lib/job-status-server";
 import { sanitizeOptionalText, sanitizeText } from "@/lib/sanitize";
 import { requireOrgSession } from "@/lib/org-context";
 import { getUploadsRoot } from "@/lib/storage";
+import { checkJobLimit } from "@/lib/plan-limits";
 
 const deviceSchema = z
   .object({
@@ -112,6 +113,11 @@ export async function createJobAction(
 
     if (!can.createJob(user)) {
       return { error: "You cannot create jobs." };
+    }
+
+    const jobLimit = await checkJobLimit(orgId);
+    if (!jobLimit.allowed) {
+      return { error: jobLimit.reason };
     }
 
     const raw = Object.fromEntries(formData.entries());
