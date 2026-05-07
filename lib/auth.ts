@@ -56,6 +56,11 @@ export const auth = betterAuth({
         defaultValue: true,
         input: false,
       },
+      orgId: {
+        type: "string",
+        required: false,
+        input: false,
+      },
     },
   },
   session: {

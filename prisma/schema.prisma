@@ -1,8 +1,6 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,6 +8,42 @@ generator client {
 datasource db {
   provider = "sqlite"
   url      = env("DATABASE_URL")
+}
+
+// ── MULTI-TENANCY ────────────────────────────────────────────────────────────
+
+enum OrgPlan {
+  STARTER
+  GROWTH
+  ENTERPRISE
+}
+
+model Organization {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique // URL-safe identifier, e.g. "eagle-info"
+  plan      OrgPlan  @default(STARTER)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users                    User[]
+  clients                  Client[]
+  devices                  Device[]
+  jobs                     Job[]
+  parts                    Part[]
+  repairRequests           RepairRequest[]
+  repairRequestSequences   RepairRequestSequence[]
+  brandingSettings         DocumentBrandingSettings?
+  commTemplates            CommunicationTemplate[]
+  commPolicies             CommunicationPolicy[]
+  notifications            Notification[]
+  outboundMessages         OutboundMessage[]
+  inboundMessages          InboundMessage[]
+  auditLogs                AuditLog[]
+
+  @@index([slug])
+  @@index([isActive])
 }
 
 model User {
@@ -21,6 +55,8 @@ model User {
   image         String?
   role          Role     @default(OPS)
   isActive      Boolean  @default(true)
+  orgId         String?
+  org           Organization? @relation(fields: [orgId], references: [id], onDelete: SetNull)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -39,6 +75,8 @@ model User {
   stockTransactions PartStockTransaction[] @relation("StockTxnBy")
   accessAuditEntries UserAccessAudit[] @relation("AccessAuditTarget")
   accessAuditChanges UserAccessAudit[] @relation("AccessAuditActor")
+
+  @@index([orgId])
 }
 
 model UserPermission {
@@ -210,10 +248,12 @@ enum StockTransactionType {
 model Client {
   id           String   @id @default(cuid())
   fullName     String
-  phone        String   @unique
+  phone        String
   email        String?
   organization String?
   notes        String?
+  orgId        String?
+  org          Organization? @relation(fields: [orgId], references: [id], onDelete: SetNull)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -221,12 +261,17 @@ model Client {
   devices         Device[]
   notesEntries    ClientNote[]
   inboundMessages InboundMessage[]
+
+  @@unique([phone, orgId])
+  @@index([orgId])
 }
 
 model Device {
   id           String     @id @default(cuid())
   clientId     String
   client       Client     @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  orgId        String?
+  org          Organization? @relation(fields: [orgId], references: [id], onDelete: SetNull)
 
   deviceType   DeviceType
   brand        String
@@ -241,6 +286,7 @@ model Device {
   jobs         Job[]
 
   @@index([clientId])
+  @@index([orgId])
   @@index([serialOrImei])
 }
 
@@ -259,6 +305,8 @@ model Job {
   jobNumber     String     @unique
   status        JobStatus  @default(RECEIVED)
   repairPath    RepairPath?
+  orgId         String?
+  org           Organization? @relation(fields: [orgId], references: [id], onDelete: SetNull)
   clientId      String
   client        Client     @relation(fields: [clientId], references: [id])
   deviceId      String?
@@ -347,6 +395,8 @@ model Job {
   partReservations PartReservation[]
   stockTransactions PartStockTransaction[]
 
+  @@index([orgId])
+  @@index([orgId, status])
   @@index([deviceId])
   @@index([clientId])
   @@index([createdById])
@@ -359,20 +409,23 @@ model Job {
 
 model Part {
   id             String   @id @default(cuid())
-  sku            String   @unique
+  sku            String
   name           String
   manufacturer   String?
   unitCost       Float?
   qtyOnHand      Int      @default(0)
   reorderLevel   Int      @default(0)
   isActive       Boolean  @default(true)
+  orgId          String?
+  org            Organization? @relation(fields: [orgId], references: [id], onDelete: SetNull)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
   reservations   PartReservation[]
   transactions   PartStockTransaction[]
 
-  @@index([isActive])
+  @@unique([sku, orgId])
+  @@index([orgId, isActive])
 }
 
 model PartReservation {
@@ -458,8 +511,11 @@ model AuditLog {
   user      User     @relation(fields: [userId], references: [id])
   action    String
   detail    String?
+  orgId     String?
+  org       Organization? @relation(fields: [orgId], references: [id], onDelete: SetNull)
   createdAt DateTime @default(now())
 
+  @@index([orgId, createdAt])
   @@index([jobId, createdAt])
   @@index([userId, createdAt])
 }
@@ -523,8 +579,11 @@ model Notification {
   channel     NotificationChannel @default(DASHBOARD)
   isRead      Boolean          @default(false)
   readAt      DateTime?
+  orgId       String?
+  org         Organization?    @relation(fields: [orgId], references: [id], onDelete: SetNull)
   createdAt   DateTime         @default(now())
-  
+
+  @@index([orgId, isRead, createdAt])
   @@index([userId, isRead])
   @@index([jobId])
 }
@@ -573,10 +632,13 @@ model OutboundMessage {
   repairRequest    RepairRequest?       @relation(fields: [repairRequestId], references: [id], onDelete: SetNull)
   jobId            String?
   job              Job?                 @relation(fields: [jobId], references: [id], onDelete: SetNull)
+  orgId            String?
+  org              Organization?        @relation(fields: [orgId], references: [id], onDelete: SetNull)
 
   createdAt        DateTime             @default(now())
   updatedAt        DateTime             @updatedAt
 
+  @@index([orgId, channel, status, nextAttemptAt])
   @@index([channel, status, nextAttemptAt])
   @@index([providerMessageId])
   @@index([repairRequestId])
@@ -615,34 +677,40 @@ model CommunicationTemplate {
   // JSON array of placeholder keys in the ORDER they map to Meta template {{1}}, {{2}}…
   variables         String?
   // Meta / WhatsApp Business API template fields. Set these once the template is approved.
-  metaTemplateName  String?  // approved template name in Meta, e.g. "repair_status_update"
-  metaLanguageCode  String?  // e.g. "en" — defaults to "en" when metaTemplateName is set
+  metaTemplateName  String?
+  metaLanguageCode  String?
   isActive    Boolean  @default(true)
+  orgId       String?
+  org         Organization? @relation(fields: [orgId], references: [id], onDelete: SetNull)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  @@unique([key, channel])
-  @@index([channel, isActive])
+  @@unique([key, channel, orgId])
+  @@index([orgId, channel, isActive])
 }
 
 model CommunicationPolicy {
   id               String    @id @default(cuid())
-  status           JobStatus @unique
+  status           JobStatus
   dashboardEnabled Boolean   @default(true)
   whatsappEnabled  Boolean   @default(false)
   emailEnabled     Boolean   @default(false)
-  // Shared key; can map to channel-specific templates with the same key.
   templateKey      String?
   nudge1Hours      Int?
   nudge2Hours      Int?
+  orgId            String?
+  org              Organization? @relation(fields: [orgId], references: [id], onDelete: SetNull)
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 
-  @@index([templateKey])
+  @@unique([status, orgId])
+  @@index([orgId, templateKey])
 }
 
 model DocumentBrandingSettings {
-  id                   String   @id @default("singleton")
+  id                   String   @id @default(cuid())
+  orgId                String?  @unique
+  org                  Organization? @relation(fields: [orgId], references: [id], onDelete: SetNull)
   companyName          String   @default("Eagle Info Solutions")
   companyTagline       String?
   companyAddressLine1  String   @default("Nalubega Complex, 1st Floor")
@@ -685,12 +753,15 @@ model InboundMessage {
   client     Client?  @relation(fields: [clientId], references: [id], onDelete: SetNull)
   jobId      String?
   job        Job?     @relation(fields: [jobId], references: [id], onDelete: SetNull)
+  orgId      String?
+  org        Organization? @relation(fields: [orgId], references: [id], onDelete: SetNull)
 
   isRead     Boolean  @default(false)
   readAt     DateTime?
 
   createdAt  DateTime @default(now())
 
+  @@index([orgId, isRead, createdAt])
   @@index([from, timestamp])
   @@index([jobId, timestamp])
   @@index([clientId, isRead])
@@ -703,6 +774,8 @@ model RepairRequest {
   requestNumber String   @unique
   requestStatus RepairRequestStatus @default(PENDING_FRONT_DESK)
   handoverStatus RepairHandoverStatus @default(PENDING)
+  orgId         String?
+  org           Organization? @relation(fields: [orgId], references: [id], onDelete: SetNull)
   
   // Customer info
   customerName String
@@ -760,9 +833,14 @@ model RepairRequest {
 
 // Allocates human-friendly repair request numbers safely under concurrency.
 model RepairRequestSequence {
-  year      Int      @id
-  value     Int      @default(0) // last allocated sequence value
+  id        String   @id @default(cuid())
+  orgId     String?
+  org       Organization? @relation(fields: [orgId], references: [id], onDelete: SetNull)
+  year      Int
+  value     Int      @default(0)
   updatedAt DateTime @updatedAt
+
+  @@unique([orgId, year])
 }
 
 enum RepairRequestStatus {

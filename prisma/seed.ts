@@ -188,25 +188,22 @@ async function seedDefaultCommsTemplates() {
       .map((v) => v.replaceAll("{", "").replaceAll("}", ""))
       .sort();
 
-    await prisma.communicationTemplate.upsert({
-      where: { key_channel: { key: t.key, channel: t.channel } },
-      update: {
-        label: t.label,
-        subject: t.subject ?? null,
-        body: t.body,
-        variables: variables.length ? JSON.stringify(variables) : null,
-        isActive: true,
-      },
-      create: {
-        key: t.key,
-        channel: t.channel,
-        label: t.label,
-        subject: t.subject ?? null,
-        body: t.body,
-        variables: variables.length ? JSON.stringify(variables) : null,
-        isActive: true,
-      },
+    const existing = await prisma.communicationTemplate.findFirst({
+      where: { key: t.key, channel: t.channel, orgId: null },
+      select: { id: true },
     });
+    const tData = {
+      label: t.label,
+      subject: t.subject ?? null,
+      body: t.body,
+      variables: variables.length ? JSON.stringify(variables) : null,
+      isActive: true,
+    };
+    if (existing) {
+      await prisma.communicationTemplate.update({ where: { id: existing.id }, data: tData });
+    } else {
+      await prisma.communicationTemplate.create({ data: { key: t.key, channel: t.channel, ...tData } });
+    }
   }
 }
 
@@ -297,10 +294,15 @@ async function ensureClient({
   email?: string;
   organization?: string;
 }) {
-  return prisma.client.upsert({
-    where: { phone },
-    update: { fullName, email: email ?? null, organization: organization ?? null },
-    create: { fullName, phone, email: email ?? null, organization: organization ?? null },
+  const existing = await prisma.client.findFirst({ where: { phone, orgId: null }, select: { id: true } });
+  if (existing) {
+    return prisma.client.update({
+      where: { id: existing.id },
+      data: { fullName, email: email ?? null, organization: organization ?? null },
+    });
+  }
+  return prisma.client.create({
+    data: { fullName, phone, email: email ?? null, organization: organization ?? null },
   });
 }
 

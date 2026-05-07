@@ -7,7 +7,7 @@ import { z } from "zod";
 
 import { defaultBranding, getDocumentBrandingSettings, saveDocumentBrandingSettings } from "@/lib/document-branding";
 import { sanitizeOptionalText, sanitizeText } from "@/lib/sanitize";
-import { getCurrentUserRole } from "@/lib/session";
+import { requireOrgSession } from "@/lib/org-context";
 import { can } from "@/lib/permissions";
 
 type SearchParams = {
@@ -101,14 +101,14 @@ export default async function BrandingPage({
 }: {
   searchParams: Promise<SearchParams>;
 }) {
-  const { user } = await getCurrentUserRole();
+  const { user, orgId } = await requireOrgSession();
   if (!can.manageUsers(user)) {
     redirect("/dashboard");
   }
 
   const params = await searchParams;
   const preview = await resolveLogoPreview();
-  const settings = await getDocumentBrandingSettings();
+  const settings = await getDocumentBrandingSettings(orgId);
   const quotePreview = renderQuotePreview(
     settings.quotePrefix,
     settings.quoteFormat,
@@ -118,7 +118,7 @@ export default async function BrandingPage({
   async function uploadLogoAction(formData: FormData) {
     "use server";
 
-    const { user: currentUser } = await getCurrentUserRole();
+    const { user: currentUser } = await requireOrgSession();
     if (currentUser.role !== "ADMIN") {
       redirect("/dashboard");
     }
@@ -160,7 +160,7 @@ export default async function BrandingPage({
   async function saveBrandingAction(formData: FormData) {
     "use server";
 
-    const { user: currentUser } = await getCurrentUserRole();
+    const { user: currentUser, orgId: saveOrgId } = await requireOrgSession();
     if (currentUser.role !== "ADMIN") {
       redirect("/dashboard");
     }
@@ -197,7 +197,7 @@ export default async function BrandingPage({
       redirect("/settings/branding?error=Invalid+branding+input");
     }
 
-    await saveDocumentBrandingSettings({
+    await saveDocumentBrandingSettings(saveOrgId, {
       ...defaultBranding,
       id: "singleton",
       companyName: sanitizeText(parsed.data.companyName),

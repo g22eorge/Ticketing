@@ -12,7 +12,7 @@ import { filterSupportedJobStatuses } from "@/lib/job-status-server";
 import { can } from "@/lib/permissions";
 import { getJobPayoutsByIds } from "@/lib/payouts";
 import { prisma } from "@/lib/prisma";
-import { getCurrentUserRole } from "@/lib/session";
+import { requireOrgSession } from "@/lib/org-context";
 
 type SearchParams = {
   month?: string;
@@ -105,7 +105,7 @@ export default async function ReportsPage({
   searchParams: Promise<SearchParams>;
 }) {
   const filters = await searchParams;
-  const { user } = await getCurrentUserRole();
+  const { user, orgId } = await requireOrgSession();
   const period: "month" | "year" = filters.period === "year" ? "year" : "month";
   if (!can.viewAccountsSummary(user)) {
     redirect("/dashboard");
@@ -129,26 +129,29 @@ export default async function ReportsPage({
     inHouseCount,
     externalPayoutOutstandingJobs,
   ] = await Promise.all([
-    prisma.job.groupBy({ by: ["status"], _count: { status: true } }),
+    prisma.job.groupBy({ by: ["status"], where: { orgId }, _count: { status: true } }),
     // Bug fix #2: narrow select to only fields we actually use
     prisma.job.findMany({
-      where: { status: "COMPLETED" },
+      where: { orgId, status: "COMPLETED" },
       select: { completedAt: true, receivedAt: true, diagnosisNotes: true, externalDiagnosis: true },
     }),
     prisma.job.findMany({
       where: {
+        orgId,
         status: "COMPLETED",
         completedAt: { gte: selectedRange.start, lte: selectedRange.end },
       },
     }),
     prisma.job.findMany({
       where: {
+        orgId,
         status: "COMPLETED",
         completedAt: { gte: prevRange.start, lte: prevRange.end },
       },
     }),
     prisma.job.findMany({
       where: {
+        orgId,
         status: {
           in: filterSupportedJobStatuses([
             "RECEIVED",
@@ -166,11 +169,12 @@ export default async function ReportsPage({
       },
       select: { jobNumber: true, status: true, receivedAt: true, updatedAt: true },
     }),
-    prisma.job.count({ where: { repairPath: "EXTERNAL", status: "COMPLETED", completedAt: { gte: selectedRange.start, lte: selectedRange.end } } }),
-    prisma.job.count({ where: { repairPath: "IN_HOUSE", status: "COMPLETED", completedAt: { gte: selectedRange.start, lte: selectedRange.end } } }),
+    prisma.job.count({ where: { orgId, repairPath: "EXTERNAL", status: "COMPLETED", completedAt: { gte: selectedRange.start, lte: selectedRange.end } } }),
+    prisma.job.count({ where: { orgId, repairPath: "IN_HOUSE", status: "COMPLETED", completedAt: { gte: selectedRange.start, lte: selectedRange.end } } }),
     // Bug fix #1: remove assignedTo filter, add READY_FOR_PICKUP and DELIVERED statuses
     prisma.job.findMany({
       where: {
+        orgId,
         repairPath: "EXTERNAL",
         status: { in: ["READY_FOR_PICKUP", "COMPLETED", "DELIVERED"] as JobStatus[] },
       },

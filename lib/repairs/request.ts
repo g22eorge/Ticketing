@@ -33,7 +33,7 @@ interface CreateRepairRequestInput {
   submissionIp?: string;
 }
 
-async function allocateRequestNumber(): Promise<string> {
+async function allocateRequestNumber(orgId?: string | null): Promise<string> {
   const year = new Date().getFullYear();
   const prefix = `REQ-${year}-`;
 
@@ -64,15 +64,18 @@ async function allocateRequestNumber(): Promise<string> {
   // Always ensure the table exists before touching it (CREATE TABLE IF NOT EXISTS is a no-op when present).
   await ensureSequenceTable();
 
-  const existingSeq = await prisma.repairRequestSequence.findUnique({
-    where: { year },
+  const seqWhere = orgId ? { orgId_year: { orgId, year } } : { orgId_year: { orgId: null as unknown as string, year } };
+  const seqFindWhere = orgId ? { orgId, year } : { orgId: null, year };
+
+  const existingSeq = await prisma.repairRequestSequence.findFirst({
+    where: seqFindWhere,
     select: { value: true },
   });
 
   if (!existingSeq) {
     const maxExisting = await getMaxExisting();
     try {
-      await prisma.repairRequestSequence.create({ data: { year, value: maxExisting } });
+      await prisma.repairRequestSequence.create({ data: { ...(orgId ? { orgId } : {}), year, value: maxExisting } });
     } catch {
       // Another request likely created it concurrently.
     }
@@ -81,14 +84,14 @@ async function allocateRequestNumber(): Promise<string> {
     if (existingSeq.value < maxExisting) {
       // Monotonic catch-up under concurrency (never move the counter backwards).
       await prisma.repairRequestSequence.updateMany({
-        where: { year, value: { lt: maxExisting } },
+        where: { ...seqFindWhere, value: { lt: maxExisting } },
         data: { value: maxExisting },
       });
     }
   }
 
   const seq = await prisma.repairRequestSequence.update({
-    where: { year },
+    where: seqWhere,
     data: { value: { increment: 1 } },
     select: { value: true },
   });

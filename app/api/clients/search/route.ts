@@ -2,10 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { can } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
-import { getCurrentUserRoleOptional } from "@/lib/session";
+import { getOrgSessionOptional } from "@/lib/org-context";
 
 export async function GET(req: NextRequest) {
-  const { user } = await getCurrentUserRoleOptional();
+  const { user, orgId } = await getOrgSessionOptional();
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -18,8 +18,8 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ client: null });
   }
 
-  const client = await prisma.client.findUnique({
-    where: { phone },
+  const client = await prisma.client.findFirst({
+    where: { phone, ...(orgId ? { orgId } : {}) },
     select: { id: true, fullName: true, phone: true, email: true, organization: true },
   });
 

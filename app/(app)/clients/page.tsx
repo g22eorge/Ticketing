@@ -8,7 +8,7 @@ import { z } from "zod";
 import { can } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { sanitizeOptionalText, sanitizeText } from "@/lib/sanitize";
-import { getCurrentUserRole } from "@/lib/session";
+import { requireOrgSession } from "@/lib/org-context";
 import { formatEATDate } from "@/lib/date-eat";
 
 const createClientSchema = z.object({
@@ -31,7 +31,7 @@ export default async function ClientsPage({
 }: {
   searchParams: Promise<SearchParams>;
 }) {
-  const { user } = await getCurrentUserRole();
+  const { user, orgId } = await requireOrgSession();
   if (!can.viewClientInfo(user)) {
     redirect("/dashboard");
   }
@@ -42,6 +42,7 @@ export default async function ClientsPage({
   const segment = filters.segment ?? "all";
 
   const where: Prisma.ClientWhereInput = {
+    orgId,
     ...(filters.q
       ? {
           OR: [
@@ -60,7 +61,7 @@ export default async function ClientsPage({
       include: { _count: { select: { jobs: true } } },
       orderBy: { updatedAt: "desc" },
     }),
-    prisma.client.findMany({ include: { _count: { select: { jobs: true } } } }),
+    prisma.client.findMany({ where: { orgId }, include: { _count: { select: { jobs: true } } } }),
   ]);
 
   type ClientRow = Prisma.ClientGetPayload<{
@@ -91,7 +92,7 @@ export default async function ClientsPage({
   async function createClientAction(formData: FormData) {
     "use server";
 
-    const { user: currentUser } = await getCurrentUserRole();
+    const { user: currentUser, orgId: createOrgId } = await requireOrgSession();
     if (!(currentUser.role === "ADMIN" || currentUser.role === "OPS")) return;
 
     const parsed = createClientSchema.safeParse({
@@ -112,7 +113,7 @@ export default async function ClientsPage({
 
     const normalizedPhone = sanitizeText(parsed.data.phone);
     const existingByPhone = await prisma.client.findFirst({
-      where: { phone: normalizedPhone },
+      where: { orgId: createOrgId, phone: normalizedPhone },
       select: { id: true },
     });
 
@@ -122,6 +123,7 @@ export default async function ClientsPage({
 
     await prisma.client.create({
       data: {
+        orgId: createOrgId,
         fullName: sanitizeText(parsed.data.fullName),
         phone: normalizedPhone,
         email: sanitizeOptionalText(parsed.data.email),
@@ -138,19 +140,19 @@ export default async function ClientsPage({
   async function deleteClientAction(formData: FormData) {
     "use server";
 
-    const { user: currentUser } = await getCurrentUserRole();
+    const { user: currentUser, orgId: deleteOrgId } = await requireOrgSession();
     if (currentUser.role !== "ADMIN") return;
 
     const id = String(formData.get("id") ?? "");
     if (!id) return;
 
     const clientWithJobs = await prisma.client.findUnique({
-      where: { id },
+      where: { id, orgId: deleteOrgId },
       include: { _count: { select: { jobs: true } } },
     });
 
     if (!clientWithJobs || clientWithJobs._count.jobs > 0) return;
-    await prisma.client.delete({ where: { id } });
+    await prisma.client.delete({ where: { id, orgId: deleteOrgId } });
     revalidatePath("/clients");
   }
 

@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { formatMoney } from "@/lib/currency";
 import { prisma } from "@/lib/prisma";
-import { getCurrentUserRole } from "@/lib/session";
+import { requireOrgSession } from "@/lib/org-context";
 
 type StockTxnType = "IN" | "OUT" | "ADJUST";
 
@@ -23,7 +23,7 @@ export default async function InventoryPage({
 }: {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const { user } = await getCurrentUserRole();
+  const { user, orgId } = await requireOrgSession();
   if (!["ADMIN", "OPS", "TECHNICIAN_INTERNAL"].includes(user.role)) {
     redirect("/dashboard");
   }
@@ -36,7 +36,7 @@ export default async function InventoryPage({
 
   async function createPartAction(formData: FormData) {
     "use server";
-    const { user } = await getCurrentUserRole();
+    const { user, orgId: createOrgId } = await requireOrgSession();
     if (!(user.role === "ADMIN" || user.role === "OPS")) return;
 
     const sku = String(formData.get("sku") ?? "").trim();
@@ -52,6 +52,7 @@ export default async function InventoryPage({
     try {
       await prisma.part.create({
         data: {
+          orgId: createOrgId,
           sku,
           name,
           manufacturer: manufacturer || null,
@@ -72,7 +73,7 @@ export default async function InventoryPage({
 
   async function adjustStockAction(formData: FormData) {
     "use server";
-    const { session, user } = await getCurrentUserRole();
+    const { session, user, orgId: adjustOrgId } = await requireOrgSession();
     if (!(user.role === "ADMIN" || user.role === "OPS")) return;
 
     const partId = String(formData.get("partId") ?? "").trim();
@@ -85,7 +86,7 @@ export default async function InventoryPage({
     if (!Number.isFinite(qty) || qty === 0) return;
 
     await prisma.$transaction(async (tx) => {
-      const part = await tx.part.findUnique({ where: { id: partId }, select: { qtyOnHand: true, unitCost: true } });
+      const part = await tx.part.findUnique({ where: { id: partId, orgId: adjustOrgId }, select: { qtyOnHand: true, unitCost: true } });
       if (!part) return;
 
       const nextQty =
@@ -113,21 +114,21 @@ export default async function InventoryPage({
 
   async function togglePartActiveAction(formData: FormData) {
     "use server";
-    const { user } = await getCurrentUserRole();
+    const { user, orgId: toggleOrgId } = await requireOrgSession();
     if (!(user.role === "ADMIN" || user.role === "OPS")) return;
 
     const partId = String(formData.get("partId") ?? "").trim();
     const next = String(formData.get("next") ?? "").trim();
     if (!partId) return;
 
-    await prisma.part.update({ where: { id: partId }, data: { isActive: next === "1" } });
+    await prisma.part.update({ where: { id: partId, orgId: toggleOrgId }, data: { isActive: next === "1" } });
     revalidatePath("/inventory");
   }
 
   const [parts, reservationStats, reservedByPart] = await Promise.all([
     prisma.part
       .findMany({
-        where: { isActive: true },
+        where: { orgId, isActive: true },
         select: {
           id: true,
           sku: true,

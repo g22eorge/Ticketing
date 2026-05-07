@@ -9,7 +9,7 @@ import { UI_JOB_STATUSES, JobStatus, normalizeJobStatus } from "@/lib/job-status
 import { can } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { sanitizeOptionalText, sanitizeText } from "@/lib/sanitize";
-import { getCurrentUserRole } from "@/lib/session";
+import { requireOrgSession } from "@/lib/org-context";
 import { formatEATDate, formatEATDateTime } from "@/lib/date-eat";
 
 const updateClientSchema = z.object({
@@ -43,7 +43,7 @@ export default async function ClientDetailPage({
 }) {
   const { id } = await params;
   const filters = await searchParams;
-  const { user } = await getCurrentUserRole();
+  const { user, orgId } = await requireOrgSession();
   const canEdit = user.role === "ADMIN" || user.role === "OPS";
 
   if (!can.viewClientInfo(user)) {
@@ -55,7 +55,7 @@ export default async function ClientDetailPage({
 
   try {
     clientData = await prisma.client.findUnique({
-      where: { id },
+      where: { id, orgId },
       include: {
         jobs: {
           where: {
@@ -81,7 +81,7 @@ export default async function ClientDetailPage({
   } catch {
     notesFeatureAvailable = false;
     clientData = await prisma.client.findUnique({
-      where: { id },
+      where: { id, orgId },
       include: {
         jobs: {
           where: {
@@ -120,7 +120,7 @@ export default async function ClientDetailPage({
 
   async function updateClient(formData: FormData) {
     "use server";
-    const { user: currentUser } = await getCurrentUserRole();
+    const { user: currentUser, orgId: updateOrgId } = await requireOrgSession();
     if (!(currentUser.role === "ADMIN" || currentUser.role === "OPS")) {
       return;
     }
@@ -134,7 +134,7 @@ export default async function ClientDetailPage({
     if (!parsed.success) return;
 
     await prisma.client.update({
-      where: { id },
+      where: { id, orgId: updateOrgId },
       data: {
         fullName: sanitizeText(parsed.data.fullName),
         email: sanitizeOptionalText(parsed.data.email),
@@ -148,7 +148,7 @@ export default async function ClientDetailPage({
 
   async function addClientNote(formData: FormData) {
     "use server";
-    const { session, user: currentUser } = await getCurrentUserRole();
+    const { session, user: currentUser } = await requireOrgSession();
     if (!(currentUser.role === "ADMIN" || currentUser.role === "OPS")) {
       return;
     }

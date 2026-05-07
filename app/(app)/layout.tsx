@@ -5,7 +5,7 @@ import { PageThemeHeader } from "@/components/layout/PageThemeHeader";
 import { JobStatus, Prisma } from "@prisma/client";
 import { can } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
-import { getCurrentUserRole } from "@/lib/session";
+import { requireOrgSession } from "@/lib/org-context";
 import { filterSupportedJobStatuses } from "@/lib/job-status-server";
 
 export default async function AppLayout({
@@ -13,7 +13,7 @@ export default async function AppLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { session, user } = await getCurrentUserRole();
+  const { session, user, orgId } = await requireOrgSession();
 
   const openStatuses = filterSupportedJobStatuses([
     "RECEIVED",
@@ -28,10 +28,11 @@ export default async function AppLayout({
 
   const jobsWhere: Prisma.JobWhereInput =
     user.role === "TECHNICIAN_EXTERNAL" || user.role === "TECHNICIAN_INTERNAL"
-      ? { status: { in: openStatuses }, assignedToId: session.user.id }
-      : { status: { in: openStatuses } };
+      ? { orgId, status: { in: openStatuses }, assignedToId: session.user.id }
+      : { orgId, status: { in: openStatuses } };
 
   const paymentWhere: Prisma.JobWhereInput = {
+    orgId,
     repairPath: "EXTERNAL" as const,
     clientBill: { not: null },
     externalPaid: false,
@@ -40,19 +41,19 @@ export default async function AppLayout({
 
   const receivedWhere: Prisma.JobWhereInput =
     user.role === "TECHNICIAN_EXTERNAL" || user.role === "TECHNICIAN_INTERNAL"
-      ? { status: "RECEIVED" as JobStatus, assignedToId: session.user.id }
-      : { status: "RECEIVED" as JobStatus };
+      ? { orgId, status: "RECEIVED" as JobStatus, assignedToId: session.user.id }
+      : { orgId, status: "RECEIVED" as JobStatus };
 
   const [activeJobsCount, partsForReorder, paymentFollowupCount, receivedJobsCount, pendingRequestsCount] = await Promise.all([
     prisma.job.count({ where: jobsWhere }),
     prisma.part.findMany({
-      where: { isActive: true, reorderLevel: { gt: 0 } },
+      where: { orgId, isActive: true, reorderLevel: { gt: 0 } },
       select: { qtyOnHand: true, reorderLevel: true },
     }).catch(() => []),
     (can.reviewExternalBills(user) || can.approveInvoices(user)) ? prisma.job.count({ where: paymentWhere }) : Promise.resolve(0),
     prisma.job.count({ where: receivedWhere }),
     can.viewIntake(user)
-      ? prisma.repairRequest.count({ where: { requestStatus: { in: ["PENDING_FRONT_DESK", "PENDING_INTAKE"] } } }).catch(() => 0)
+      ? prisma.repairRequest.count({ where: { orgId, requestStatus: { in: ["PENDING_FRONT_DESK", "PENDING_INTAKE"] } } }).catch(() => 0)
       : Promise.resolve(0),
   ]);
 

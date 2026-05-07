@@ -12,7 +12,7 @@ import { filterSupportedJobStatuses } from "@/lib/job-status-server";
 import { can } from "@/lib/permissions";
 import { getJobPayoutsByIds } from "@/lib/payouts";
 import { prisma } from "@/lib/prisma";
-import { getCurrentUserRole } from "@/lib/session";
+import { requireOrgSession } from "@/lib/org-context";
 
 type SearchParams = {
   month?: string;
@@ -83,9 +83,10 @@ function trendMonthsForYear(year: number, endMonth: number) {
   return monthSequence(year, safeMonth, count);
 }
 
-async function loadRevenueMarginTrend(trendMonths: { key: string; start: Date; end: Date }[]) {
+async function loadRevenueMarginTrend(trendMonths: { key: string; start: Date; end: Date }[], orgId: string) {
   const completed = await prisma.job.findMany({
     where: {
+      orgId,
       status: "COMPLETED",
       completedAt: { gte: trendMonths[0].start, lte: trendMonths[trendMonths.length - 1].end },
     },
@@ -346,7 +347,7 @@ export default async function DashboardPage({
 }: {
   searchParams: Promise<SearchParams>;
 }) {
-  const { session, user } = await getCurrentUserRole();
+  const { session, user, orgId } = await requireOrgSession();
   const permissionUser = { role: user.role, permissions: user.permissions };
   const filters = await searchParams;
   const period: "month" | "year" = filters.period === "year" ? "year" : "month";
@@ -360,6 +361,7 @@ export default async function DashboardPage({
 
     const jobs = await prisma.job.findMany({
       where: {
+        orgId,
         assignedToId: session.user.id,
         OR: [
           { receivedAt: { gte: selectedRange.start, lte: selectedRange.end } },
@@ -495,6 +497,7 @@ export default async function DashboardPage({
 
     const assignedJobs = await prisma.job.findMany({
       where: {
+        orgId,
         assignedToId: session.user.id,
         OR: [
           { receivedAt: { gte: selectedRange.start, lte: selectedRange.end } },
@@ -507,6 +510,7 @@ export default async function DashboardPage({
     }).catch(async () => {
       const fallback = await prisma.job.findMany({
         where: {
+          orgId,
           assignedToId: session.user.id,
           OR: [
             { receivedAt: { gte: selectedRange.start, lte: selectedRange.end } },
@@ -526,6 +530,7 @@ export default async function DashboardPage({
     const completed = assignedJobs.filter((job) => job.status === "COMPLETED").length;
     const canUpdatePricing = can.approveInvoices(permissionUser);
     const pricingScopeWhere = {
+      orgId,
       ...(canUpdatePricing ? {} : { assignedToId: session.user.id }),
     };
     const [pricingPendingCount, pricedCount, assignedFinancials] = canUpdatePricing
@@ -702,13 +707,14 @@ export default async function DashboardPage({
       techWorkloadJobs,
       unassignedActiveCount,
     ] = await Promise.all([
-      prisma.job.groupBy({ by: ["status"], _count: { status: true } }),
+      prisma.job.groupBy({ by: ["status"], where: { orgId }, _count: { status: true } }),
       prisma.job.findMany({
-        where: { status: "COMPLETED", completedAt: { gte: mtdStart, lte: today } },
+        where: { orgId, status: "COMPLETED", completedAt: { gte: mtdStart, lte: today } },
         select: { clientBill: true },
       }),
       prisma.job.findMany({
         where: {
+          orgId,
           repairPath: "EXTERNAL",
           externalPaid: false,
           status: { in: ["READY_FOR_PICKUP", "COMPLETED", "DELIVERED"] },
@@ -716,13 +722,14 @@ export default async function DashboardPage({
         select: { id: true, externalTechBill: true },
       }),
       prisma.job.count({
-        where: { clientBill: { gt: 0 }, clientPaid: false, status: { in: ["READY_FOR_PICKUP", "COMPLETED", "DELIVERED"] } },
+        where: { orgId, clientBill: { gt: 0 }, clientPaid: false, status: { in: ["READY_FOR_PICKUP", "COMPLETED", "DELIVERED"] } },
       }).catch(() => 0),
-      prisma.job.count({ where: { receivedAt: { gte: todayStart } } }),
-      prisma.job.count({ where: { completedAt: { gte: todayStart } } }),
-      prisma.repairRequest.count({ where: { requestStatus: { in: ["PENDING_FRONT_DESK", "PENDING_INTAKE"] } } }).catch(() => 0),
+      prisma.job.count({ where: { orgId, receivedAt: { gte: todayStart } } }),
+      prisma.job.count({ where: { orgId, completedAt: { gte: todayStart } } }),
+      prisma.repairRequest.count({ where: { orgId, requestStatus: { in: ["PENDING_FRONT_DESK", "PENDING_INTAKE"] } } }).catch(() => 0),
       prisma.job.findMany({
         where: {
+          orgId,
           status: { in: filterSupportedJobStatuses(["RECEIVED", "DIAGNOSING", "REFERRED", "AWAITING_APPROVAL", "IN_REPAIR", "IN_EXTERNAL_REPAIR", "WAITING_FOR_PARTS", "RETURNED_FROM_EXTERNAL"]) as JobStatus[] },
           receivedAt: { lt: threeDaysAgo },
         },
@@ -732,6 +739,7 @@ export default async function DashboardPage({
       }).catch(async () => {
         const fallback = await prisma.job.findMany({
           where: {
+            orgId,
             status: { in: filterSupportedJobStatuses(["RECEIVED", "DIAGNOSING", "REFERRED", "AWAITING_APPROVAL", "IN_REPAIR", "IN_EXTERNAL_REPAIR", "WAITING_FOR_PARTS", "RETURNED_FROM_EXTERNAL"]) as JobStatus[] },
             receivedAt: { lt: threeDaysAgo },
           },
@@ -744,6 +752,7 @@ export default async function DashboardPage({
       }),
       prisma.job.findMany({
         where: {
+          orgId,
           status: { in: filterSupportedJobStatuses(["RECEIVED", "DIAGNOSING", "REFERRED", "IN_EXTERNAL_REPAIR", "WAITING_FOR_PARTS", "RETURNED_FROM_EXTERNAL", "AWAITING_APPROVAL", "IN_REPAIR", "READY_FOR_PICKUP"]) as JobStatus[] },
           assignedToId: { not: null },
         },
@@ -751,6 +760,7 @@ export default async function DashboardPage({
       }),
       prisma.job.count({
         where: {
+          orgId,
           status: { in: filterSupportedJobStatuses(["RECEIVED", "DIAGNOSING", "REFERRED", "IN_REPAIR", "IN_EXTERNAL_REPAIR", "WAITING_FOR_PARTS", "RETURNED_FROM_EXTERNAL"]) as JobStatus[] },
           assignedToId: null,
         },
@@ -803,7 +813,7 @@ export default async function DashboardPage({
     const mtdLabel = monthLabel(today.getFullYear(), today.getMonth() + 1);
 
     const trendMonths = trendMonthsSinceStartOfYear(today);
-    const revenueTrend = await loadRevenueMarginTrend(trendMonths);
+    const revenueTrend = await loadRevenueMarginTrend(trendMonths, orgId);
 
     return (
       <div className="space-y-4">
@@ -1063,16 +1073,18 @@ export default async function DashboardPage({
 
     const [completedThisMonth, pendingBilling, externalCompleted] = await Promise.all([
       prisma.job.findMany({
-        where: { status: "COMPLETED", completedAt: { gte: selectedRange.start, lte: selectedRange.end } },
+        where: { orgId, status: "COMPLETED", completedAt: { gte: selectedRange.start, lte: selectedRange.end } },
         select: { id: true, jobNumber: true, completedAt: true, clientBill: true },
       }),
       prisma.job.count({
         where: {
+          orgId,
           status: { in: ["IN_REPAIR", "READY_FOR_PICKUP", "AWAITING_APPROVAL"] },
         },
       }),
       prisma.job.findMany({
         where: {
+          orgId,
           repairPath: "EXTERNAL",
           externalPaid: false,
           status: { in: ["READY_FOR_PICKUP", "COMPLETED", "DELIVERED"] },
@@ -1083,7 +1095,7 @@ export default async function DashboardPage({
 
     const monthRevenue = completedThisMonth.reduce((sum, job) => sum + (getClientBill(job) ?? 0), 0);
 
-    const revenueTrend = await loadRevenueMarginTrend(trendMonths);
+    const revenueTrend = await loadRevenueMarginTrend(trendMonths, orgId);
 
     const payoutMap = await getJobPayoutsByIds(externalCompleted.map((job) => job.id)).catch(() => new Map());
     // externalCompleted already pre-filtered to externalPaid=false in the DB query
@@ -1156,18 +1168,20 @@ export default async function DashboardPage({
     const [capturedThisMonth, openFromIntake, awaitingApproval, readyForPickup] = await Promise.all([
       prisma.job.count({
         where: {
+          orgId,
           createdById: session.user.id,
           receivedAt: { gte: selectedRange.start, lte: selectedRange.end },
         },
       }),
       prisma.job.count({
         where: {
+          orgId,
           createdById: session.user.id,
           status: { in: filterSupportedJobStatuses(["RECEIVED", "DIAGNOSING", "REFERRED", "IN_EXTERNAL_REPAIR", "AWAITING_APPROVAL", "IN_REPAIR", "READY_FOR_PICKUP"]) as JobStatus[] },
         },
       }),
-      prisma.job.count({ where: { status: "AWAITING_APPROVAL" } }),
-      prisma.job.count({ where: { status: "READY_FOR_PICKUP" } }),
+      prisma.job.count({ where: { orgId, status: "AWAITING_APPROVAL" } }),
+      prisma.job.count({ where: { orgId, status: "READY_FOR_PICKUP" } }),
     ]);
 
     return (
@@ -1247,13 +1261,14 @@ export default async function DashboardPage({
   }
 
   const [totalJobs, openJobs, completedJobs] = await Promise.all([
-    prisma.job.count(),
+    prisma.job.count({ where: { orgId } }),
     prisma.job.count({
       where: {
+        orgId,
         status: { in: filterSupportedJobStatuses(["RECEIVED", "DIAGNOSING", "REFERRED", "IN_EXTERNAL_REPAIR", "IN_REPAIR", "READY_FOR_PICKUP", "AWAITING_APPROVAL"]) as JobStatus[] },
       },
     }),
-    prisma.job.count({ where: { status: "COMPLETED" } }),
+    prisma.job.count({ where: { orgId, status: "COMPLETED" } }),
   ]);
 
 

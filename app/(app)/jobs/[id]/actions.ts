@@ -15,7 +15,7 @@ import { prisma } from "@/lib/prisma";
 import { can } from "@/lib/permissions";
 import { hasJobPayoutColumns } from "@/lib/payouts";
 import { sanitizeOptionalText } from "@/lib/sanitize";
-import { getCurrentUserRole } from "@/lib/session";
+import { requireOrgSession } from "@/lib/org-context";
 import {
   notifyStatusChange,
   notifyJobAssigned,
@@ -128,7 +128,7 @@ function buildTimeline(payload: z.infer<typeof updateSchema>) {
 }
 
 export async function updateJobAction(formData: FormData) {
-  const { session, user } = await getCurrentUserRole();
+  const { session, user, orgId } = await requireOrgSession();
   const permissionUser = { role: user.role, permissions: user.permissions };
   // FRONT_DESK users are read-only by default (they create jobs, not edit them).
   // Exception: users who have been granted specific elevated permissions
@@ -188,7 +188,7 @@ export async function updateJobAction(formData: FormData) {
 
   const existing = await prisma.job
     .findUnique({
-      where: { id: payload.jobId },
+      where: { id: payload.jobId, orgId },
       select: {
         ...selectExistingBase,
         serviceType: true,
@@ -198,7 +198,7 @@ export async function updateJobAction(formData: FormData) {
       const message = error instanceof Error ? error.message : "";
       if (message.includes("serviceType")) {
         return prisma.job.findUnique({
-          where: { id: payload.jobId },
+          where: { id: payload.jobId, orgId },
           select: selectExistingBase,
         }) as unknown as Promise<(typeof selectExistingBase & { id: string }) | null>;
       }
@@ -412,6 +412,7 @@ export async function updateJobAction(formData: FormData) {
         const assignee = await prisma.user.findFirst({
           where: {
             id: assigneeId,
+            orgId,
             isActive: true,
             role: { in: [Role.TECHNICIAN_INTERNAL, Role.TECHNICIAN_EXTERNAL] },
           },
@@ -535,7 +536,7 @@ export async function updateJobAction(formData: FormData) {
   let updated;
   try {
     updated = await prisma.job.update({
-      where: { id: payload.jobId },
+      where: { id: payload.jobId, orgId },
       data,
     });
   } catch (error) {
@@ -603,6 +604,7 @@ export async function updateJobAction(formData: FormData) {
 
   await prisma.auditLog.create({
     data: {
+      orgId,
       jobId: updated.id,
       userId: session.user.id,
       action: payload.nextStatus ? "STATUS_CHANGED" : "JOB_UPDATED",
@@ -611,7 +613,7 @@ export async function updateJobAction(formData: FormData) {
   });
 
   const job = await prisma.job.findUnique({
-    where: { id: payload.jobId },
+    where: { id: payload.jobId, orgId },
     select: {
       id: true,
       jobNumber: true,
@@ -660,7 +662,7 @@ export async function updateJobAction(formData: FormData) {
 }
 
 export async function updateOneTimeExternalAssignmentAction(formData: FormData) {
-  const { session, user } = await getCurrentUserRole();
+  const { session, user, orgId } = await requireOrgSession();
   const permissionUser = { role: user.role, permissions: user.permissions };
   const isRest = user.email?.toLowerCase() === "rest@eagle.tech";
 
@@ -688,14 +690,14 @@ export async function updateOneTimeExternalAssignmentAction(formData: FormData) 
 
   const existing = await prisma.job
     .findUnique({
-      where: { id: payload.jobId },
+      where: { id: payload.jobId, orgId },
       select: { id: true, updatedAt: true, status: true, serviceType: true },
     })
     .catch((error) => {
       const message = error instanceof Error ? error.message : "";
       if (message.includes("serviceType")) {
         return prisma.job.findUnique({
-          where: { id: payload.jobId },
+          where: { id: payload.jobId, orgId },
           select: { id: true, updatedAt: true, status: true },
         }) as unknown as Promise<({ id: string; updatedAt: Date; status: JobStatus } & { serviceType?: string }) | null>;
       }
@@ -785,9 +787,10 @@ export async function updateOneTimeExternalAssignmentAction(formData: FormData) 
         create: { jobId: payload.jobId, ...createAssignmentData },
         update: updateAssignmentData,
       }),
-      prisma.job.update({ where: { id: payload.jobId }, data: jobUpdate }),
+      prisma.job.update({ where: { id: payload.jobId, orgId }, data: jobUpdate }),
       prisma.auditLog.create({
         data: {
+          orgId,
           jobId: payload.jobId,
           userId: session.user.id,
           action: "ONE_TIME_EXTERNAL_UPDATED",
@@ -811,7 +814,7 @@ export async function updateOneTimeExternalAssignmentAction(formData: FormData) 
 }
 
 export async function markMessagesReadAction(jobId: string): Promise<void> {
-  const { user } = await getCurrentUserRole();
+  const { user } = await requireOrgSession();
   if (!["ADMIN", "OPS", "FRONT_DESK"].includes(user.role)) return;
 
   try {
@@ -830,7 +833,7 @@ export async function sendManualReplyAction(
   jobId: string,
   message: string
 ): Promise<{ success: boolean; error?: string }> {
-  const { user } = await getCurrentUserRole();
+  const { user } = await requireOrgSession();
   if (!["ADMIN", "OPS", "FRONT_DESK"].includes(user.role)) {
     return { success: false, error: "Not authorised" };
   }
@@ -905,7 +908,7 @@ async function sendPdfViaWhatsApp(opts: {
 export async function sendQuotationViaWhatsAppAction(
   jobId: string,
 ): Promise<{ success: boolean; error?: string }> {
-  const { user } = await getCurrentUserRole();
+  const { user } = await requireOrgSession();
   if (!["ADMIN", "OPS", "FRONT_DESK"].includes(user.role)) {
     return { success: false, error: "Not authorised" };
   }
@@ -924,7 +927,7 @@ export async function sendQuotationViaWhatsAppAction(
 export async function sendInvoiceViaWhatsAppAction(
   jobId: string,
 ): Promise<{ success: boolean; error?: string }> {
-  const { user } = await getCurrentUserRole();
+  const { user } = await requireOrgSession();
   if (!["ADMIN", "OPS"].includes(user.role) && !can.approveInvoices({ role: user.role, permissions: user.permissions })) {
     return { success: false, error: "Not authorised" };
   }
@@ -943,7 +946,7 @@ export async function sendInvoiceViaWhatsAppAction(
 export async function sendJobCardViaWhatsAppAction(
   jobId: string,
 ): Promise<{ success: boolean; error?: string }> {
-  const { user } = await getCurrentUserRole();
+  const { user } = await requireOrgSession();
   if (!["ADMIN", "OPS"].includes(user.role) && !can.generateJobCards({ role: user.role, permissions: user.permissions })) {
     return { success: false, error: "Not authorised" };
   }

@@ -8,7 +8,7 @@ import { filterSupportedJobStatuses } from "@/lib/job-status-server";
 import { getClientBill, getExternalTechBill } from "@/lib/billing";
 import { can } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
-import { getCurrentUserRole } from "@/lib/session";
+import { requireOrgSession } from "@/lib/org-context";
 
 type SearchParams = {
   status?: string;
@@ -69,7 +69,7 @@ export default async function JobsPage({
 }: {
   searchParams: Promise<SearchParams>;
 }) {
-  const { session, user } = await getCurrentUserRole();
+  const { session, user, orgId } = await requireOrgSession();
   const filters = await searchParams;
   const q = (filters.q ?? "").trim();
   const statusValueRaw = (filters.status ?? "").split(",")[0]?.trim() ?? "";
@@ -112,6 +112,7 @@ export default async function JobsPage({
       : {};
 
   const whereBase = {
+    orgId,
     ...(dbStatuses.length > 0 ? { status: { in: dbStatuses } } : {}),
     ...(pricingFilter === "needs"
       ? {
@@ -289,11 +290,11 @@ export default async function JobsPage({
 
   async function deleteJobAction(formData: FormData) {
     "use server";
-    const { user } = await getCurrentUserRole();
+    const { user, orgId: deleteOrgId } = await requireOrgSession();
     if (user.role !== "ADMIN") return;
     const id = String(formData.get("id") ?? "");
     if (!id) return;
-    await prisma.job.delete({ where: { id } });
+    await prisma.job.delete({ where: { id, orgId: deleteOrgId } });
     revalidatePath("/jobs");
   }
 

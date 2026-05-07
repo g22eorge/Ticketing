@@ -50,6 +50,7 @@ export async function getCurrentUserRole() {
         name: string;
         email: string;
         phone: string | null;
+        orgId: string | null;
         permissions: string[];
       }
     | null = null;
@@ -64,6 +65,7 @@ export async function getCurrentUserRole() {
         name: true,
         email: true,
         phone: true,
+        orgId: true,
         permissionGrants: { select: { permission: true } },
       },
     });
@@ -76,6 +78,7 @@ export async function getCurrentUserRole() {
           name: row.name,
           email: row.email,
           phone: row.phone ?? null,
+          orgId: row.orgId ?? null,
           permissions: row.permissionGrants
             .map((p) => p.permission)
             .filter((permission): permission is string => typeof permission === "string" && permission.length > 0),
@@ -85,25 +88,23 @@ export async function getCurrentUserRole() {
     // Fallback for partially migrated DBs (older deployments).
     const baseUser = await prisma.user.findUnique({
       where: { id: session.user.id },
-      select: {
-        id: true,
-        role: true,
-        isActive: true,
-        name: true,
-        email: true,
-      },
+      select: { id: true, role: true, isActive: true, name: true, email: true },
     });
 
     let phone: string | null = null;
+    let orgId: string | null = null;
     let permissions: string[] = [];
+
     if (baseUser) {
       try {
-        const phoneRows = await prisma.$queryRaw<Array<{ phone: string | null }>>`
-          SELECT phone FROM "User" WHERE id = ${session.user.id} LIMIT 1
+        const rows = await prisma.$queryRaw<Array<{ phone: string | null; orgId: string | null }>>`
+          SELECT phone, orgId FROM "User" WHERE id = ${session.user.id} LIMIT 1
         `;
-        phone = phoneRows[0]?.phone ?? null;
+        phone = rows[0]?.phone ?? null;
+        orgId = rows[0]?.orgId ?? null;
       } catch {
         phone = null;
+        orgId = null;
       }
 
       try {
@@ -112,19 +113,14 @@ export async function getCurrentUserRole() {
         `;
         permissions = permissionRows
           .map((row) => row.permission)
-          .filter((permission): permission is string => typeof permission === "string" && permission.length > 0);
+          .filter((p): p is string => typeof p === "string" && p.length > 0);
       } catch {
         permissions = [];
       }
     }
 
     user = baseUser
-      ? {
-        ...baseUser,
-        role: normalizeRole(baseUser.role),
-        phone,
-        permissions,
-      }
+      ? { ...baseUser, role: normalizeRole(baseUser.role), phone, orgId, permissions }
       : null;
   }
 
@@ -152,6 +148,7 @@ export async function getCurrentUserRoleOptional() {
         name: true,
         email: true,
         phone: true,
+        orgId: true,
         permissionGrants: { select: { permission: true } },
       },
     });
@@ -169,13 +166,13 @@ export async function getCurrentUserRoleOptional() {
         name: row.name,
         email: row.email,
         phone: row.phone ?? null,
+        orgId: row.orgId ?? null,
         permissions: row.permissionGrants
           .map((p) => p.permission)
-          .filter((permission): permission is string => typeof permission === "string" && permission.length > 0),
+          .filter((p): p is string => typeof p === "string" && p.length > 0),
       },
     };
   } catch {
-    // Older DB fallback
     const baseUser = await prisma.user.findUnique({
       where: { id: session.user.id },
       select: { id: true, role: true, isActive: true, name: true, email: true },
@@ -191,6 +188,7 @@ export async function getCurrentUserRoleOptional() {
         ...baseUser,
         role: normalizeRole(baseUser.role),
         phone: null,
+        orgId: null,
         permissions: [],
       },
     };

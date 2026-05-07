@@ -6,7 +6,7 @@ import { JobStatusBadge, statusStripClass } from "@/components/jobs/JobStatusBad
 import { JOB_STATUSES, UI_JOB_STATUSES, JobStatus, normalizeJobStatus } from "@/lib/job-status";
 import { formatEATDate } from "@/lib/date-eat";
 import { prisma } from "@/lib/prisma";
-import { getCurrentUserRole } from "@/lib/session";
+import { requireOrgSession } from "@/lib/org-context";
 import { Role } from "@prisma/client";
 
 function deviceName(brand?: string | null, model?: string | null) {
@@ -96,7 +96,7 @@ export default async function TechniciansPage({
 }: {
   searchParams: Promise<SearchParams>;
 }) {
-  const { session, user } = await getCurrentUserRole();
+  const { session, user, orgId } = await requireOrgSession();
   const filters = await searchParams;
   const validStatuses = new Set<string>(JOB_STATUSES);
   const statusFilter = filters.status && validStatuses.has(filters.status as JobStatus)
@@ -137,6 +137,7 @@ export default async function TechniciansPage({
 
   const jobs = await prisma.job.findMany({
     where: {
+      orgId,
       ...where,
       ...(filters.q
         ? {

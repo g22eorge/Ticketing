@@ -138,21 +138,21 @@ async function getViaRaw() {
   }
 }
 
-export async function saveDocumentBrandingSettings(data: BrandingSettings) {
+export async function saveDocumentBrandingSettings(orgId: string, data: BrandingSettings) {
   if (hasDelegate()) {
     const delegate = (prisma as unknown as {
       documentBrandingSettings: {
         upsert: (args: {
-          where: { id: string };
-          create: BrandingSettings;
+          where: { orgId: string } | { id: string };
+          create: BrandingSettings & { orgId?: string };
           update: BrandingSettings;
         }) => Promise<unknown>;
       };
     }).documentBrandingSettings;
 
     await delegate.upsert({
-      where: { id: "singleton" },
-      create: data,
+      where: { orgId },
+      create: { ...data, orgId },
       update: data,
     });
     return;
@@ -201,21 +201,21 @@ export async function saveDocumentBrandingSettings(data: BrandingSettings) {
   `;
 }
 
-export async function getDocumentBrandingSettings() {
+export async function getDocumentBrandingSettings(orgId?: string) {
   if (hasDelegate()) {
     const delegate = (prisma as unknown as {
       documentBrandingSettings: {
-        findUnique: (args: { where: { id: string } }) => Promise<Record<string, unknown> | null>;
-        create: (args: { data: BrandingSettings }) => Promise<Record<string, unknown>>;
+        findFirst: (args: { where: { orgId?: string } | { id: string } }) => Promise<Record<string, unknown> | null>;
+        create: (args: { data: BrandingSettings & { orgId?: string } }) => Promise<Record<string, unknown>>;
       };
     }).documentBrandingSettings;
 
-    const existing = await delegate.findUnique({ where: { id: "singleton" } });
+    const existing = await delegate.findFirst({ where: orgId ? { orgId } : { id: "singleton" } });
     if (existing) {
       return coerceRow(existing);
     }
 
-    const created = await delegate.create({ data: defaultBranding });
+    const created = await delegate.create({ data: orgId ? { ...defaultBranding, orgId } : defaultBranding });
     return coerceRow(created);
   }
 

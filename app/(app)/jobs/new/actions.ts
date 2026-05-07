@@ -11,7 +11,7 @@ import { can } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { filterSupportedJobStatuses } from "@/lib/job-status-server";
 import { sanitizeOptionalText, sanitizeText } from "@/lib/sanitize";
-import { getCurrentUserRole } from "@/lib/session";
+import { requireOrgSession } from "@/lib/org-context";
 import { getUploadsRoot } from "@/lib/storage";
 
 const deviceSchema = z
@@ -86,13 +86,13 @@ function parseDevices(devicesJson: string) {
   return { ok: true as const, devices: parsed.data };
 }
 
-export async function generateJobNumber() {
+export async function generateJobNumber(orgId?: string) {
   const now = new Date();
   const month = now.getMonth() + 1;
   const year = now.getFullYear();
   const prefix = `EIS-${month}/${year}/`;
   const latest = await prisma.job.findFirst({
-    where: { jobNumber: { startsWith: prefix } },
+    where: { jobNumber: { startsWith: prefix }, ...(orgId ? { orgId } : {}) },
     orderBy: { jobNumber: "desc" },
     select: { jobNumber: true },
   });
@@ -108,7 +108,7 @@ export async function createJobAction(
   formData: FormData,
 ): Promise<{ error: string | null }> {
   try {
-    const { session, user } = await getCurrentUserRole();
+    const { session, user, orgId } = await requireOrgSession();
 
     if (!can.createJob(user)) {
       return { error: "You cannot create jobs." };
@@ -122,8 +122,9 @@ export async function createJobAction(
     }
 
     const client = await prisma.client.upsert({
-      where: { phone: parsed.data.phone },
+      where: { phone_orgId: { orgId, phone: sanitizeText(parsed.data.phone) } },
       create: {
+        orgId,
         fullName: sanitizeText(parsed.data.fullName),
         phone: sanitizeText(parsed.data.phone),
         email: sanitizeOptionalText(parsed.data.email),
@@ -165,6 +166,7 @@ export async function createJobAction(
       if (serial) {
         const dup = await prisma.job.findFirst({
           where: {
+            orgId,
             clientId: client.id,
             serialOrImei: serial,
             status: { in: openStatuses },
@@ -180,6 +182,7 @@ export async function createJobAction(
     try {
       const createdDevice = await prisma.device.create({
         data: {
+          orgId,
           clientId: client.id,
           deviceType: device.deviceType,
           brand: sanitizeText(device.brand),
@@ -206,7 +209,7 @@ export async function createJobAction(
     let job: { id: string } | null = null;
     let includeSoftwareFields = true;
     for (let attempt = 0; attempt < 5; attempt += 1) {
-      const jobNumber = await generateJobNumber();
+      const jobNumber = await generateJobNumber(orgId);
       try {
         const serviceType = device.serviceType ?? "HARDWARE";
         const softwareRequestedNotes = sanitizeOptionalText(device.softwareRequestedNotes);
@@ -241,6 +244,7 @@ export async function createJobAction(
 
         job = await prisma.job.create({
           data: {
+            orgId,
             jobNumber,
             clientId: client.id,
             createdById: session.user.id,
@@ -301,6 +305,7 @@ export async function createJobAction(
 
     await prisma.auditLog.create({
       data: {
+        orgId,
         jobId: job.id,
         userId: session.user.id,
         action: "JOB_CREATED",

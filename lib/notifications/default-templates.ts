@@ -202,7 +202,7 @@ export function getDefaultCommunicationTemplates(): Array<{
   ];
 }
 
-export async function upsertDefaultCommunicationTemplates() {
+export async function upsertDefaultCommunicationTemplates(orgId?: string) {
   if (!supportsCommsTemplates()) {
     return { ok: false as const, reason: "CommunicationTemplate model not available" };
   }
@@ -216,29 +216,33 @@ export async function upsertDefaultCommunicationTemplates() {
         .map((v) => v.replaceAll("{", "").replaceAll("}", ""))
         .sort();
 
-      await prisma.communicationTemplate.upsert({
-        where: { key_channel: { key: t.key, channel: t.channel } },
-        update: {
-          label: t.label,
-          subject: t.subject ?? null,
-          body: t.body,
-          variables: variables.length ? JSON.stringify(variables) : null,
-          metaTemplateName: t.metaTemplateName ?? null,
-          metaLanguageCode: t.metaTemplateName ? (t.metaLanguageCode ?? "en") : null,
-          isActive: true,
-        },
-        create: {
-          key: t.key,
-          channel: t.channel,
-          label: t.label,
-          subject: t.subject ?? null,
-          body: t.body,
-          variables: variables.length ? JSON.stringify(variables) : null,
-          metaTemplateName: t.metaTemplateName ?? null,
-          metaLanguageCode: t.metaTemplateName ? (t.metaLanguageCode ?? "en") : null,
-          isActive: true,
-        },
-      });
+      const updateData = {
+        label: t.label,
+        subject: t.subject ?? null,
+        body: t.body,
+        variables: variables.length ? JSON.stringify(variables) : null,
+        metaTemplateName: t.metaTemplateName ?? null,
+        metaLanguageCode: t.metaTemplateName ? (t.metaLanguageCode ?? "en") : null,
+        isActive: true,
+      };
+
+      if (orgId) {
+        await prisma.communicationTemplate.upsert({
+          where: { key_channel_orgId: { key: t.key, channel: t.channel, orgId } },
+          update: updateData,
+          create: { orgId, key: t.key, channel: t.channel, ...updateData },
+        });
+      } else {
+        const existing = await prisma.communicationTemplate.findFirst({
+          where: { key: t.key, channel: t.channel, orgId: null },
+          select: { id: true },
+        });
+        if (existing) {
+          await prisma.communicationTemplate.update({ where: { id: existing.id }, data: updateData });
+        } else {
+          await prisma.communicationTemplate.create({ data: { key: t.key, channel: t.channel, ...updateData } });
+        }
+      }
       upserted += 1;
     }
 
@@ -257,7 +261,7 @@ export async function upsertDefaultCommunicationTemplates() {
   }
 }
 
-export async function upsertDefaultCommunicationPolicies() {
+export async function upsertDefaultCommunicationPolicies(orgId?: string) {
   if (!supportsCommunicationPolicy()) {
     return { ok: false as const, reason: "CommunicationPolicy model not available" };
   }
@@ -283,26 +287,32 @@ export async function upsertDefaultCommunicationPolicies() {
       // Extra safety: ensure we only ever seed normalized/UI statuses.
       const normalized = normalizeJobStatus(status);
       const defaults = defaultsForStatus(normalized);
-      await prisma.communicationPolicy.upsert({
-        where: { status: normalized as unknown as PrismaJobStatus },
-        update: {
-          dashboardEnabled: true,
-          whatsappEnabled: false,
-          emailEnabled: false,
-          templateKey: defaults.templateKey,
-          nudge1Hours: defaults.nudge1Hours,
-          nudge2Hours: defaults.nudge2Hours,
-        },
-        create: {
-          status: normalized as unknown as PrismaJobStatus,
-          dashboardEnabled: true,
-          whatsappEnabled: false,
-          emailEnabled: false,
-          templateKey: defaults.templateKey,
-          nudge1Hours: defaults.nudge1Hours,
-          nudge2Hours: defaults.nudge2Hours,
-        },
-      });
+      const policyUpdateData = {
+        dashboardEnabled: true,
+        whatsappEnabled: false,
+        emailEnabled: false,
+        templateKey: defaults.templateKey,
+        nudge1Hours: defaults.nudge1Hours,
+        nudge2Hours: defaults.nudge2Hours,
+      };
+
+      if (orgId) {
+        await prisma.communicationPolicy.upsert({
+          where: { status_orgId: { status: normalized as unknown as PrismaJobStatus, orgId } },
+          update: policyUpdateData,
+          create: { orgId, status: normalized as unknown as PrismaJobStatus, ...policyUpdateData },
+        });
+      } else {
+        const existingPolicy = await prisma.communicationPolicy.findFirst({
+          where: { status: normalized as unknown as PrismaJobStatus, orgId: null },
+          select: { id: true },
+        });
+        if (existingPolicy) {
+          await prisma.communicationPolicy.update({ where: { id: existingPolicy.id }, data: policyUpdateData });
+        } else {
+          await prisma.communicationPolicy.create({ data: { status: normalized as unknown as PrismaJobStatus, ...policyUpdateData } });
+        }
+      }
       upserted += 1;
     }
     return { ok: true as const, upserted };

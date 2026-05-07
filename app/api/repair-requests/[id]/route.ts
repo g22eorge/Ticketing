@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { getCurrentUserRole } from "@/lib/session";
+import { getOrgSessionOptional } from "@/lib/org-context";
 import { can } from "@/lib/permissions";
 import { sanitizeOptionalText, sanitizeText } from "@/lib/sanitize";
 import { generateJobNumber } from "@/app/(app)/jobs/new/actions";
@@ -14,8 +14,8 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { session, user } = await getCurrentUserRole();
-  if (!can.viewClientInfo(user)) {
+  const { session, user, orgId } = await getOrgSessionOptional();
+  if (!user || !can.viewClientInfo(user)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
 
@@ -30,7 +30,7 @@ export async function PATCH(
     );
   }
 
-  const req = await prisma.repairRequest.findUnique({ where: { id } });
+  const req = await prisma.repairRequest.findFirst({ where: { id, ...(orgId ? { orgId } : {}) } });
   if (!req) {
     return NextResponse.json({ error: "Request not found" }, { status: 404 });
   }
@@ -38,29 +38,44 @@ export async function PATCH(
   /* ── Convert to Job ── */
   if (status === "CONVERTED_TO_JOB") {
     // 1. Upsert client by phone
-    const client = await prisma.client.upsert({
-      where: { phone: req.phone },
-      create: {
-        fullName: sanitizeText(req.customerName),
-        phone: req.phone,
-        email: sanitizeOptionalText(req.email) ?? undefined,
-      },
-      update: {
-        fullName: sanitizeText(req.customerName),
-        email: sanitizeOptionalText(req.email) ?? undefined,
-      },
-    });
+    const client = orgId
+      ? await prisma.client.upsert({
+          where: { phone_orgId: { orgId, phone: req.phone } },
+          create: {
+            orgId,
+            fullName: sanitizeText(req.customerName),
+            phone: req.phone,
+            email: sanitizeOptionalText(req.email) ?? undefined,
+          },
+          update: {
+            fullName: sanitizeText(req.customerName),
+            email: sanitizeOptionalText(req.email) ?? undefined,
+          },
+        })
+      : await prisma.client.upsert({
+          where: { id: (await prisma.client.findFirst({ where: { phone: req.phone } }))?.id ?? "" },
+          create: {
+            fullName: sanitizeText(req.customerName),
+            phone: req.phone,
+            email: sanitizeOptionalText(req.email) ?? undefined,
+          },
+          update: {
+            fullName: sanitizeText(req.customerName),
+            email: sanitizeOptionalText(req.email) ?? undefined,
+          },
+        });
 
     // 2. Create job (retry on duplicate job number)
     let job: { id: string; jobNumber: string } | null = null;
     for (let attempt = 0; attempt < 5; attempt++) {
-      const jobNumber = await generateJobNumber();
+      const jobNumber = await generateJobNumber(orgId ?? undefined);
       try {
         job = await prisma.job.create({
           data: {
+            ...(orgId ? { orgId } : {}),
             jobNumber,
             clientId: client.id,
-            createdById: session.user.id,
+            createdById: session!.user.id,
             deviceType: req.deviceType,
             brand: sanitizeText(req.brand),
             model: sanitizeText(req.model ?? ""),
@@ -86,7 +101,7 @@ export async function PATCH(
     await prisma.auditLog.create({
       data: {
         jobId: job.id,
-        userId: session.user.id,
+        userId: session!.user.id,
         action: "JOB_CREATED",
         detail: JSON.stringify({ status: "RECEIVED", sourceRequest: req.requestNumber }),
       },

@@ -6,7 +6,7 @@ import { z } from "zod";
 
 import { prisma } from "@/lib/prisma";
 import { can } from "@/lib/permissions";
-import { getCurrentUserRole } from "@/lib/session";
+import { requireOrgSession } from "@/lib/org-context";
 import { sanitizeOptionalText, sanitizeText } from "@/lib/sanitize";
 import { generateJobNumber } from "@/app/(app)/jobs/new/actions";
 import {
@@ -20,13 +20,14 @@ const listSchema = z.object({
 });
 
 export async function listRepairRequestsAction(input?: { take?: number }) {
-  const { user } = await getCurrentUserRole();
+  const { user, orgId } = await requireOrgSession();
   if (!can.viewIntake(user)) return { error: "Forbidden" } as const;
 
   const parsed = listSchema.safeParse(input ?? {});
   const take = parsed.success ? parsed.data.take ?? 200 : 200;
 
   const requests = await prisma.repairRequest.findMany({
+    where: { orgId },
     orderBy: { createdAt: "desc" },
     take,
   });
@@ -35,10 +36,10 @@ export async function listRepairRequestsAction(input?: { take?: number }) {
 }
 
 export async function readRepairRequestAction(id: string) {
-  const { user } = await getCurrentUserRole();
+  const { user, orgId } = await requireOrgSession();
   if (!can.viewIntake(user)) return { error: "Forbidden" } as const;
 
-  const req = await prisma.repairRequest.findUnique({ where: { id } });
+  const req = await prisma.repairRequest.findFirst({ where: { id, orgId } });
   if (!req) return { error: "Not found" } as const;
   return { success: true as const, request: req };
 }
@@ -57,7 +58,7 @@ const updateDetailsSchema = z.object({
 });
 
 export async function updateRepairRequestDetailsAction(formData: FormData) {
-  const { user } = await getCurrentUserRole();
+  const { user, orgId } = await requireOrgSession();
   if (!can.manageIntake(user)) return { error: "Forbidden" } as const;
 
   // FormData.get returns null when missing; Zod optional() expects undefined.
@@ -91,8 +92,8 @@ export async function updateRepairRequestDetailsAction(formData: FormData) {
   if (payload.data.handoverMethod !== undefined) data.handoverMethod = payload.data.handoverMethod;
   if (payload.data.problemDescription !== undefined) data.problemDescription = sanitizeText(payload.data.problemDescription);
 
-  const existing = await prisma.repairRequest.findUnique({
-    where: { id: payload.data.id },
+  const existing = await prisma.repairRequest.findFirst({
+    where: { id: payload.data.id, orgId },
     select: { id: true, requestStatus: true, linkedJobId: true },
   });
 
@@ -140,20 +141,21 @@ const statusSchema = z.object({
 });
 
 export async function setRepairRequestStatusAction(input: { id: string; status: RepairRequestStatus }) {
-  const { session, user } = await getCurrentUserRole();
+  const { session, user, orgId } = await requireOrgSession();
   if (!can.manageIntake(user)) return { error: "Forbidden" } as const;
 
   const parsed = statusSchema.safeParse(input);
   if (!parsed.success) return { error: "Invalid status" } as const;
 
-  const req = await prisma.repairRequest.findUnique({ where: { id: parsed.data.id } });
+  const req = await prisma.repairRequest.findFirst({ where: { id: parsed.data.id, orgId } });
   if (!req) return { error: "Request not found" } as const;
 
   // Convert to Job
   if (parsed.data.status === "CONVERTED_TO_JOB") {
     const client = await prisma.client.upsert({
-      where: { phone: req.phone },
+      where: { phone_orgId: { orgId, phone: req.phone } },
       create: {
+        orgId,
         fullName: sanitizeText(req.customerName),
         phone: req.phone,
         email: sanitizeOptionalText(req.email) ?? undefined,
@@ -166,10 +168,11 @@ export async function setRepairRequestStatusAction(input: { id: string; status: 
 
     let job: { id: string; jobNumber: string } | null = null;
     for (let attempt = 0; attempt < 5; attempt++) {
-      const jobNumber = await generateJobNumber();
+      const jobNumber = await generateJobNumber(orgId);
       try {
         job = await prisma.job.create({
           data: {
+            orgId,
             jobNumber,
             clientId: client.id,
             createdById: session.user.id,
@@ -248,20 +251,20 @@ const deleteSchema = z.object({
 });
 
 export async function deleteRepairRequestAction(formData: FormData) {
-  const { user } = await getCurrentUserRole();
+  const { user, orgId } = await requireOrgSession();
   if (user.role !== Role.ADMIN) return { error: "Forbidden" } as const;
 
   const parsed = deleteSchema.safeParse({ id: formData.get("id") });
   if (!parsed.success) return { error: "Invalid request" } as const;
 
-  const existing = await prisma.repairRequest.findUnique({ where: { id: parsed.data.id } });
+  const existing = await prisma.repairRequest.findFirst({ where: { id: parsed.data.id, orgId } });
   if (!existing) return { success: true as const };
 
   if (existing.requestStatus === "CONVERTED_TO_JOB") {
     return { error: "Cannot delete: request is already converted to a job." } as const;
   }
 
-  await prisma.repairRequest.delete({ where: { id: parsed.data.id } });
+  await prisma.repairRequest.deleteMany({ where: { id: parsed.data.id, orgId } });
   revalidatePath("/intake");
   return { success: true as const };
 }

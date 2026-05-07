@@ -10,7 +10,7 @@ import { UserDetailsForm } from "@/components/settings/UserDetailsForm";
 import { UserPasswordResetForm } from "@/components/settings/UserPasswordResetForm";
 import { EXTRA_PERMISSIONS } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
-import { getCurrentUserRole } from "@/lib/session";
+import { requireOrgSession } from "@/lib/org-context";
 
 type SearchParams = {
   q?: string;
@@ -244,7 +244,7 @@ export default async function UsersPage({
 }: {
   searchParams: Promise<SearchParams>;
 }) {
-  const { user } = await getCurrentUserRole();
+  const { user, orgId } = await requireOrgSession();
   if (user.role !== "ADMIN") {
     redirect("/dashboard");
   }
@@ -252,7 +252,7 @@ export default async function UsersPage({
   async function updateUserDetails(state: UserDetailsState, formData: FormData): Promise<UserDetailsState> {
     "use server";
 
-    const { session, user: actor } = await getCurrentUserRole();
+    const { session, user: actor, orgId: actorOrgId } = await requireOrgSession();
     if (actor.role !== "ADMIN") return { error: "Not authorized" };
 
     const parsed = updateUserDetailsSchema.safeParse({
@@ -264,8 +264,8 @@ export default async function UsersPage({
 
     if (!parsed.success) return { error: "Invalid user details" };
 
-    const existing = await prisma.user.findUnique({
-      where: { id: parsed.data.id },
+    const existing = await prisma.user.findFirst({
+      where: { id: parsed.data.id, orgId: actorOrgId },
       select: { id: true, name: true, email: true, phone: true },
     });
     if (!existing) return { error: "User not found" };
@@ -319,7 +319,7 @@ export default async function UsersPage({
   async function resetUserPassword(state: UserPasswordResetState, formData: FormData): Promise<UserPasswordResetState> {
     "use server";
 
-    const { session, user: actor } = await getCurrentUserRole();
+    const { session, user: actor } = await requireOrgSession();
     if (actor.role !== "ADMIN") return { error: "Not authorized" };
 
     const parsed = resetPasswordSchema.safeParse({
@@ -376,7 +376,7 @@ export default async function UsersPage({
   async function saveAccessChanges(formData: FormData) {
     "use server";
 
-    const { session, user: actor } = await getCurrentUserRole();
+    const { session, user: actor } = await requireOrgSession();
     if (actor.role !== "ADMIN") return;
 
     const targetUserId = String(formData.get("userId") ?? "").trim();
@@ -466,7 +466,7 @@ export default async function UsersPage({
   async function createUser(formData: FormData) {
     "use server";
 
-    const { user: actor } = await getCurrentUserRole();
+    const { user: actor, orgId: actorOrgId } = await requireOrgSession();
     if (actor.role !== "ADMIN") return;
 
     const parsed = createUserSchema.safeParse({
@@ -484,6 +484,7 @@ export default async function UsersPage({
 
     const created = await prisma.user.create({
       data: {
+        orgId: actorOrgId,
         name: parsed.data.name,
         email: parsed.data.email,
         phone: parsed.data.phone || null,
@@ -533,6 +534,7 @@ export default async function UsersPage({
     q = typeof params.q === "string" ? params.q.trim() : "";
 
     const users = await prisma.user.findMany({
+      where: { orgId },
       orderBy: [{ isActive: "desc" }, { name: "asc" }],
       select: {
         id: true,

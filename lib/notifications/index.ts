@@ -269,7 +269,7 @@ async function getCommunicationPolicyForStatus(status: JobStatus) {
   if (!supportsCommunicationPolicy()) return null;
   try {
     const normalized = normalizeJobStatus(status as unknown as LegacyJobStatus);
-    return await prisma.communicationPolicy.findUnique({ where: { status: normalized as JobStatus } });
+    return await prisma.communicationPolicy.findFirst({ where: { status: normalized as JobStatus } });
   } catch {
     // If the table isn't migrated yet, silently fall back.
     return null;

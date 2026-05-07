@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { JobStatus, OutboundMessageChannel, OutboundMessageType, Prisma } from "@prisma/client";
 
-import { getCurrentUserRole } from "@/lib/session";
+import { requireOrgSession } from "@/lib/org-context";
 import { prisma } from "@/lib/prisma";
 import { extractTemplateVariables } from "@/lib/notifications/templates";
 import { upsertDefaultCommunicationPolicies, upsertDefaultCommunicationTemplates } from "@/lib/notifications/default-templates";
@@ -51,7 +51,7 @@ export default async function NotificationTemplatesPage({
 }: {
   searchParams: Promise<{ saved?: string; error?: string }>;
 }) {
-  const { user } = await getCurrentUserRole();
+  const { user, orgId } = await requireOrgSession();
   if (!["ADMIN", "OPS"].includes(user.role)) {
     redirect("/dashboard");
   }
@@ -74,11 +74,11 @@ export default async function NotificationTemplatesPage({
 
   async function seedDefaults() {
     "use server";
-    const { user: actor } = await getCurrentUserRole();
+    const { user: actor, orgId: seedOrgId } = await requireOrgSession();
     if (actor.role !== "ADMIN") return;
     await Promise.all([
-      upsertDefaultCommunicationTemplates(),
-      upsertDefaultCommunicationPolicies(),
+      upsertDefaultCommunicationTemplates(seedOrgId),
+      upsertDefaultCommunicationPolicies(seedOrgId),
     ]);
     revalidatePath("/settings/notifications/templates");
     redirect("/settings/notifications/templates?saved=defaults+seeded");
@@ -86,7 +86,7 @@ export default async function NotificationTemplatesPage({
 
   async function createTemplate(formData: FormData) {
     "use server";
-    const { user: actor } = await getCurrentUserRole();
+    const { user: actor, orgId: createOrgId } = await requireOrgSession();
     if (!["ADMIN", "OPS"].includes(actor.role)) redirect("/dashboard");
 
     const parsed = templateSchema.safeParse({
@@ -109,6 +109,7 @@ export default async function NotificationTemplatesPage({
     try {
       await prisma.communicationTemplate.create({
         data: {
+          orgId: createOrgId,
           key: parsed.data.key,
           channel: parsed.data.channel,
           label: parsed.data.label,
@@ -134,7 +135,7 @@ export default async function NotificationTemplatesPage({
 
   async function updateTemplate(formData: FormData) {
     "use server";
-    const { user: actor } = await getCurrentUserRole();
+    const { user: actor, orgId: updateOrgId } = await requireOrgSession();
     if (!["ADMIN", "OPS"].includes(actor.role)) redirect("/dashboard");
 
     const parsed = templateSchema.safeParse({
@@ -156,6 +157,15 @@ export default async function NotificationTemplatesPage({
     const vars = extractTemplateVariables(`${parsed.data.subject ?? ""}\n${parsed.data.body}`);
     const metaName = parsed.data.metaTemplateName ?? null;
     const metaLang = metaName ? (parsed.data.metaLanguageCode || "en") : null;
+
+    // Verify template belongs to this org
+    const existing = await prisma.communicationTemplate.findFirst({
+      where: { id: parsed.data.id, orgId: updateOrgId },
+      select: { id: true },
+    }).catch(() => null);
+    if (!existing) {
+      redirect("/settings/notifications/templates?error=Template+not+found");
+    }
 
     // Try full update first; if meta columns are missing in DB, fall back to updating without them.
     let saved = false;
@@ -213,7 +223,7 @@ export default async function NotificationTemplatesPage({
 
   async function applyMetaMigration() {
     "use server";
-    const { user: actor } = await getCurrentUserRole();
+    const { user: actor } = await requireOrgSession();
     if (actor.role !== "ADMIN") redirect("/dashboard");
 
     const statements = [
@@ -248,22 +258,23 @@ export default async function NotificationTemplatesPage({
 
   async function deleteTemplate(formData: FormData) {
     "use server";
-    const { user: actor } = await getCurrentUserRole();
+    const { user: actor, orgId: deleteOrgId } = await requireOrgSession();
     if (actor.role !== "ADMIN") redirect("/dashboard");
     const id = String(formData.get("id") ?? "").trim();
     if (!id) redirect("/settings/notifications/templates?error=Missing+template+id");
 
-    await prisma.communicationTemplate.delete({ where: { id } }).catch(() => null);
+    await prisma.communicationTemplate.deleteMany({ where: { id, orgId: deleteOrgId } }).catch(() => null);
     revalidatePath("/settings/notifications/templates");
     redirect("/settings/notifications/templates?saved=deleted");
   }
 
   async function deduplicateTemplates() {
     "use server";
-    const { user: actor } = await getCurrentUserRole();
+    const { user: actor, orgId: dedupeOrgId } = await requireOrgSession();
     if (actor.role !== "ADMIN") redirect("/dashboard");
 
     const all = await prisma.communicationTemplate.findMany({
+      where: { orgId: dedupeOrgId },
       orderBy: { updatedAt: "desc" },
       select: { id: true, key: true, channel: true },
     });
@@ -280,7 +291,7 @@ export default async function NotificationTemplatesPage({
     }
 
     if (toDelete.length > 0) {
-      await prisma.communicationTemplate.deleteMany({ where: { id: { in: toDelete } } });
+      await prisma.communicationTemplate.deleteMany({ where: { id: { in: toDelete }, orgId: dedupeOrgId } });
     }
 
     revalidatePath("/settings/notifications/templates");
@@ -289,7 +300,7 @@ export default async function NotificationTemplatesPage({
 
   async function upsertPolicy(formData: FormData) {
     "use server";
-    const { user: actor } = await getCurrentUserRole();
+    const { user: actor, orgId: policyOrgId } = await requireOrgSession();
     if (!["ADMIN", "OPS"].includes(actor.role)) redirect("/dashboard");
 
     const parsed = policySchema.safeParse({
@@ -315,8 +326,9 @@ export default async function NotificationTemplatesPage({
     const normalizedStatus = normalizeJobStatus(parsed.data.status as unknown as LegacyJobStatus) as unknown as JobStatus;
 
     await prisma.communicationPolicy.upsert({
-      where: { status: normalizedStatus },
+      where: { status_orgId: { status: normalizedStatus, orgId: policyOrgId } },
       create: {
+        orgId: policyOrgId,
         status: normalizedStatus,
         dashboardEnabled: Boolean(parsed.data.dashboardEnabled),
         whatsappEnabled: Boolean(parsed.data.whatsappEnabled),
@@ -365,6 +377,7 @@ export default async function NotificationTemplatesPage({
 
   try {
     templates = await prisma.communicationTemplate.findMany({
+      where: { orgId },
       orderBy: [{ isActive: "desc" }, { updatedAt: "desc" }],
       select: {
         id: true,
@@ -384,6 +397,7 @@ export default async function NotificationTemplatesPage({
     // Production DB may not have the new meta columns yet — fall back without them.
     try {
       const rows = await prisma.communicationTemplate.findMany({
+        where: { orgId },
         orderBy: [{ isActive: "desc" }, { updatedAt: "desc" }],
         select: {
           id: true,
@@ -405,6 +419,7 @@ export default async function NotificationTemplatesPage({
 
   try {
     policies = await prisma.communicationPolicy.findMany({
+      where: { orgId },
       select: {
         status: true,
         dashboardEnabled: true,

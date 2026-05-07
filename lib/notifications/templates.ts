@@ -27,8 +27,8 @@ export function renderTemplateText(text: string, variables: Record<string, strin
 export async function getCommunicationTemplate(key: string, channel: OutboundMessageChannel): Promise<CommunicationTemplate | null> {
   if (!supportsTemplates()) return null;
   try {
-    return await prisma.communicationTemplate.findUnique({
-      where: { key_channel: { key, channel } },
+    return await prisma.communicationTemplate.findFirst({
+      where: { key, channel },
     });
   } catch {
     // If the table isn't migrated yet, silently fall back.
