@@ -28,17 +28,27 @@ const PUBLIC_PATHS = [
 ];
 
 export function proxy(req: NextRequest) {
-  if (req.nextUrl.pathname === "/") {
-    return NextResponse.next();
-  }
-  if (PUBLIC_PATHS.some((p) => req.nextUrl.pathname.startsWith(p))) {
+  const { pathname } = req.nextUrl;
+
+  if (pathname === "/") {
     return NextResponse.next();
   }
 
   const session = getSessionCookie(req);
 
+  // Redirect authenticated users away from the login page.
+  if (pathname === "/login" && session) {
+    return NextResponse.redirect(new URL("/dashboard", req.url));
+  }
+
+  if (PUBLIC_PATHS.some((p) => pathname.startsWith(p))) {
+    return NextResponse.next();
+  }
+
   if (!session) {
-    return NextResponse.redirect(new URL("/login", req.url));
+    const loginUrl = new URL("/login", req.url);
+    loginUrl.searchParams.set("callbackURL", pathname);
+    return NextResponse.redirect(loginUrl);
   }
 
   return NextResponse.next();
