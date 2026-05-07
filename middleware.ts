@@ -10,6 +10,8 @@ const PUBLIC_PATHS = [
   "/api/auth",
   "/api/webhooks",
   "/repair-request",  // public intake form
+  "/terms",           // public legal pages
+  "/privacy",
 ];
 
 const ONBOARDING_PATH = "/onboarding";
