@@ -705,12 +705,13 @@ export default async function DashboardPage({
       prisma.job.groupBy({ by: ["status"], _count: { status: true } }),
       prisma.job.findMany({
         where: { status: "COMPLETED", completedAt: { gte: mtdStart, lte: today } },
+        select: { clientBill: true },
       }),
       prisma.job.findMany({
         where: {
           repairPath: "EXTERNAL",
-          assignedTo: { is: { role: "TECHNICIAN_EXTERNAL" } },
-          status: "COMPLETED",
+          externalPaid: false,
+          status: { in: ["READY_FOR_PICKUP", "COMPLETED", "DELIVERED"] },
         },
         select: { id: true, externalTechBill: true },
       }),
@@ -722,7 +723,7 @@ export default async function DashboardPage({
       prisma.repairRequest.count({ where: { requestStatus: { in: ["PENDING_FRONT_DESK", "PENDING_INTAKE"] } } }).catch(() => 0),
       prisma.job.findMany({
         where: {
-          status: { in: filterSupportedJobStatuses(["DIAGNOSING", "REFERRED", "AWAITING_APPROVAL", "IN_REPAIR", "IN_EXTERNAL_REPAIR", "WAITING_FOR_PARTS", "RETURNED_FROM_EXTERNAL"]) as JobStatus[] },
+          status: { in: filterSupportedJobStatuses(["RECEIVED", "DIAGNOSING", "REFERRED", "AWAITING_APPROVAL", "IN_REPAIR", "IN_EXTERNAL_REPAIR", "WAITING_FOR_PARTS", "RETURNED_FROM_EXTERNAL"]) as JobStatus[] },
           receivedAt: { lt: threeDaysAgo },
         },
         select: { id: true, jobNumber: true, status: true, receivedAt: true, device: { select: { brand: true, model: true } } },
@@ -731,7 +732,7 @@ export default async function DashboardPage({
       }).catch(async () => {
         const fallback = await prisma.job.findMany({
           where: {
-          status: { in: filterSupportedJobStatuses(["DIAGNOSING", "REFERRED", "AWAITING_APPROVAL", "IN_REPAIR", "IN_EXTERNAL_REPAIR", "WAITING_FOR_PARTS", "RETURNED_FROM_EXTERNAL"]) as JobStatus[] },
+            status: { in: filterSupportedJobStatuses(["RECEIVED", "DIAGNOSING", "REFERRED", "AWAITING_APPROVAL", "IN_REPAIR", "IN_EXTERNAL_REPAIR", "WAITING_FOR_PARTS", "RETURNED_FROM_EXTERNAL"]) as JobStatus[] },
             receivedAt: { lt: threeDaysAgo },
           },
           select: { id: true, jobNumber: true, status: true, receivedAt: true },
@@ -757,9 +758,10 @@ export default async function DashboardPage({
     ]);
 
     const payoutMap = await getJobPayoutsByIds(externalCompleted.map((job) => job.id)).catch(() => new Map());
+    // externalCompleted already pre-filtered to externalPaid=false in the DB query
     const payoutOutstanding = externalCompleted
-      .filter((job) => !payoutMap.get(job.id)?.externalPaid)
       .reduce((sum, job) => sum + resolveTechCost(payoutMap.get(job.id)?.externalTechFee, job.externalTechBill), 0);
+    const techPayoutCount = externalCompleted.length;
 
     const revenueMtd = completedMtd
       .filter((job) => getClientBill(job) !== null)
@@ -873,12 +875,12 @@ export default async function DashboardPage({
               <Link
                 href="/payout-followups"
                 className={`rounded-lg border px-2.5 py-1.5 text-[11px] font-semibold transition ${
-                  payoutOutstanding > 0 || clientUnpaidCount > 0
+                  clientUnpaidCount > 0 || techPayoutCount > 0
                     ? "border-[var(--accent)]/40 bg-[var(--accent)]/10 text-[#9A7A00] hover:border-[var(--accent)]/60"
                     : "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)] hover:border-[var(--accent)]/30"
                 }`}
               >
-                Finance · {clientUnpaidCount} unpaid
+                Finance · {clientUnpaidCount + techPayoutCount}
               </Link>
               <Link
                 href="/jobs?status=AWAITING_APPROVAL"
@@ -1071,9 +1073,9 @@ export default async function DashboardPage({
       }),
       prisma.job.findMany({
         where: {
-          status: "COMPLETED",
           repairPath: "EXTERNAL",
-          assignedTo: { is: { role: "TECHNICIAN_EXTERNAL" } },
+          externalPaid: false,
+          status: { in: ["READY_FOR_PICKUP", "COMPLETED", "DELIVERED"] },
         },
         select: { id: true, externalTechBill: true },
       }),
@@ -1084,8 +1086,8 @@ export default async function DashboardPage({
     const revenueTrend = await loadRevenueMarginTrend(trendMonths);
 
     const payoutMap = await getJobPayoutsByIds(externalCompleted.map((job) => job.id)).catch(() => new Map());
+    // externalCompleted already pre-filtered to externalPaid=false in the DB query
     const payoutOutstanding = externalCompleted
-      .filter((job) => !payoutMap.get(job.id)?.externalPaid)
       .reduce((sum, job) => sum + resolveTechCost(payoutMap.get(job.id)?.externalTechFee, job.externalTechBill), 0);
 
     return (
