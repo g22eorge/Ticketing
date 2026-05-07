@@ -16,7 +16,8 @@ function normalizeOrigin(value: string | undefined) {
 
 function collectTrustedOrigins() {
   const hardcoded = [
-    "https://care.eagleinfosolutions.com",
+    "https://care.eagleinfosolutions.com",   // main (single-tenant)
+    "https://app.eagleinfosolutions.com",    // commercial (multi-tenant)
     "https://mrms-eight.vercel.app",
   ];
 
