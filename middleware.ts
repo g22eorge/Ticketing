@@ -16,6 +16,12 @@ const PUBLIC_PATHS = [
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const session = getSessionCookie(request);
+
+  // Redirect authenticated users away from the login page.
+  if (pathname === "/login" && session) {
+    return NextResponse.redirect(new URL("/dashboard", request.url));
+  }
 
   const isPublic = PUBLIC_PATHS.some(
     (p) => pathname === p || pathname.startsWith(`${p}/`),
@@ -23,13 +29,9 @@ export function middleware(request: NextRequest) {
 
   if (isPublic) return NextResponse.next();
 
-  const session = getSessionCookie(request);
   if (!session) {
     const loginUrl = new URL("/login", request.url);
-    // Preserve the intended destination so the login page can redirect back.
-    if (pathname !== "/login") {
-      loginUrl.searchParams.set("callbackURL", pathname);
-    }
+    loginUrl.searchParams.set("callbackURL", pathname);
     return NextResponse.redirect(loginUrl);
   }
 
