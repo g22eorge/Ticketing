@@ -238,6 +238,13 @@ export default async function ReportsPage({
       "appears", "recommend", "recommended", "suggested", "completed", "received",
       "failed", "failure", "faulty", "damaged", "broken", "affecting", "caused",
       "causing", "result", "resulting", "unable", "cannot", "could", "found",
+      // Informal / misspelling variants common in technician notes
+      "bicoz", "becoz", "becos", "becaus",
+      // Generic action verbs
+      "enters", "enter", "doing", "makes", "takes", "turns", "comes", "goes",
+      "gives", "shows", "brings", "needs", "wants", "tries", "tried", "start",
+      "starts", "stops", "works", "works", "opens", "close", "closes", "power",
+      "powers", "press", "click", "touch", "swipe", "boots", "boots",
     ]);
     const source = completedAll
       .map((job) => `${job.diagnosisNotes ?? ""} ${job.externalDiagnosis ?? ""}`.toLowerCase())
@@ -245,7 +252,7 @@ export default async function ReportsPage({
     const tokens = source
       .replace(/[^a-z0-9\s]/g, " ")
       .split(/\s+/)
-      .filter((word) => word.length > 4 && !STOP_WORDS.has(word));
+      .filter((word) => word.length > 5 && !STOP_WORDS.has(word));
     const freq = new Map<string, number>();
     for (const token of tokens) {
       freq.set(token, (freq.get(token) ?? 0) + 1);
