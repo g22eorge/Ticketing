@@ -236,6 +236,8 @@ export default async function ReportsPage({
       "update", "updated", "reset", "setup", "install", "installed",
       "confirmed", "reported", "returned", "advised", "informed", "seems",
       "appears", "recommend", "recommended", "suggested", "completed", "received",
+      "failed", "failure", "faulty", "damaged", "broken", "affecting", "caused",
+      "causing", "result", "resulting", "unable", "cannot", "could", "found",
     ]);
     const source = completedAll
       .map((job) => `${job.diagnosisNotes ?? ""} ${job.externalDiagnosis ?? ""}`.toLowerCase())
