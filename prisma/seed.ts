@@ -250,16 +250,18 @@ async function ensureUser({
   email,
   role,
   password,
+  orgId,
 }: {
   name: string;
   email: string;
   role: Role;
   password: string;
+  orgId?: string;
 }) {
   const user = await prisma.user.upsert({
     where: { email },
-    update: { name, role, isActive: true, emailVerified: true },
-    create: { name, email, role, isActive: true, emailVerified: true },
+    update: { name, role, isActive: true, emailVerified: true, ...(orgId ? { orgId } : {}) },
+    create: { name, email, role, isActive: true, emailVerified: true, ...(orgId ? { orgId } : {}) },
   });
 
   await ensureCredentialAccount(user.id, password);
@@ -470,11 +472,30 @@ function formatJobNumber(date: Date, sequence: number) {
 async function main() {
   const defaultPassword = process.env.SEED_PASSWORD ?? "Admin123!";
 
+  // Ensure a seed org exists so users can access the app (multi-tenant requirement).
+  const seedOrg = await prisma.organization.upsert({
+    where: { slug: "eagle-info-seed" },
+    update: {},
+    create: {
+      name: "Eagle Info Solutions",
+      slug: "eagle-info-seed",
+      billingStatus: "ACTIVE",
+      plan: "STARTER",
+    },
+  });
+  await prisma.documentBrandingSettings.upsert({
+    where: { orgId: seedOrg.id },
+    update: {},
+    create: { orgId: seedOrg.id },
+  });
+  const orgId = seedOrg.id;
+
   const admin = await ensureUser({
     name: "System Admin",
     email: process.env.SEED_ADMIN_EMAIL ?? "admin@eagle.local",
     role: "ADMIN",
     password: process.env.SEED_ADMIN_PASSWORD ?? defaultPassword,
+    orgId,
   });
 
   const techInternal = await ensureUser({
@@ -482,6 +503,7 @@ async function main() {
     email: "rest@eagle.tech",
     role: "TECHNICIAN_INTERNAL",
     password: defaultPassword,
+    orgId,
   });
   await ensureUserPermissions(techInternal.id, ["can_approve_invoices"]);
 
@@ -490,6 +512,7 @@ async function main() {
     email: "abdu@eagle.tech",
     role: "TECHNICIAN_EXTERNAL",
     password: defaultPassword,
+    orgId,
   });
 
   const ops = await ensureUser({
@@ -497,6 +520,7 @@ async function main() {
     email: "ops@eagle.tech",
     role: "FRONT_DESK",
     password: defaultPassword,
+    orgId,
   });
   await ensureUserPermissions(ops.id, []);
 
@@ -505,6 +529,7 @@ async function main() {
     email: "ops.extended@eagle.tech",
     role: "OPS",
     password: defaultPassword,
+    orgId,
   });
   await ensureUserPermissions(opsExtended.id, restExtendedPermissions);
 
@@ -513,6 +538,7 @@ async function main() {
     email: "ryan@eagle.tech",
     role: "TECHNICIAN_EXTERNAL",
     password: defaultPassword,
+    orgId,
   });
 
   const dan = await ensureUser({
@@ -520,6 +546,7 @@ async function main() {
     email: "dan@eagle.tech",
     role: "TECHNICIAN_EXTERNAL",
     password: defaultPassword,
+    orgId,
   });
 
   await deactivateUsersByEmail([
