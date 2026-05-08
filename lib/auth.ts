@@ -18,6 +18,7 @@ function collectTrustedOrigins() {
   const hardcoded = [
     "https://care.eagleinfosolutions.com",   // main (single-tenant)
     "https://app.eagleinfosolutions.com",    // commercial (multi-tenant)
+    "https://mrms-f8wt.vercel.app",         // commercial Vercel deployment
     "https://mrms-eight.vercel.app",
   ];
 
