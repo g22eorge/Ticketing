@@ -48,25 +48,11 @@ export function proxy(req: NextRequest) {
   const ip = clientIp(req);
 
   // ── Rate limiting ───────────────────────────────────────────────────────────
-  // Skip in CI so performance/smoke tests don't trip the brute-force limits.
-  const skipRateLimit = process.env.CI === "true";
-
-  // Auth endpoints: brute-force protection (10 req / 15 min per IP).
-  if (!skipRateLimit && (pathname.startsWith("/api/auth") || pathname === "/login" || pathname === "/register")) {
-    const { allowed, retryAfterMs } = checkRateLimit(`auth:${ip}`, {
-      limit: 10,
-      windowMs: 15 * 60 * 1000,
-    });
-    if (!allowed) {
-      return NextResponse.json(
-        { error: "Too many requests. Please wait before trying again." },
-        { status: 429, headers: rateLimitHeaders(retryAfterMs) },
-      );
-    }
-  }
+  // Auth rate limiting is handled in /api/login where the email is known,
+  // so the platform super admin can be exempted by identity rather than IP.
 
   // Webhook endpoints: allow bursts but cap runaway callers (200 / min per IP).
-  if (!skipRateLimit && pathname.startsWith("/api/webhooks")) {
+  if (pathname.startsWith("/api/webhooks")) {
     const { allowed, retryAfterMs } = checkRateLimit(`webhook:${ip}`, {
       limit: 200,
       windowMs: 60 * 1000,
@@ -80,7 +66,7 @@ export function proxy(req: NextRequest) {
   }
 
   // Public intake form: 5 submissions per hour per IP.
-  if (!skipRateLimit && pathname.startsWith("/repair-request")) {
+  if (pathname.startsWith("/repair-request")) {
     const { allowed, retryAfterMs } = checkRateLimit(`form:${ip}`, {
       limit: 5,
       windowMs: 60 * 60 * 1000,
@@ -95,7 +81,6 @@ export function proxy(req: NextRequest) {
 
   // General API: 100 req / min per IP (catches scrapers and runaway clients).
   if (
-    !skipRateLimit &&
     pathname.startsWith("/api/") &&
     !pathname.startsWith("/api/auth") &&
     !pathname.startsWith("/api/webhooks")

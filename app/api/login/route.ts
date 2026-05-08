@@ -24,17 +24,24 @@ function toHostOnlyCookie(cookie: string) {
 
 export async function POST(request: NextRequest) {
   const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
-  const rl = checkRateLimit(`login:${ip}`, { limit: 10, windowMs: 60_000 });
-  if (!rl.allowed) {
-    return NextResponse.json(
-      { message: "Too many login attempts. Please wait a minute.", code: "RATE_LIMITED" },
-      { status: 429, headers: rateLimitHeaders(rl.retryAfterMs) },
-    );
-  }
 
   try {
     const body = (await request.json()) as LoginPayload;
     const email = String(body.email ?? "").trim();
+
+    // Platform super admin is never rate-limited.
+    const platformAdmin = process.env.PLATFORM_ADMIN_EMAIL?.toLowerCase();
+    const isSuperAdmin = platformAdmin && email.toLowerCase() === platformAdmin;
+
+    if (!isSuperAdmin) {
+      const rl = checkRateLimit(`login:${ip}`, { limit: 10, windowMs: 60_000 });
+      if (!rl.allowed) {
+        return NextResponse.json(
+          { message: "Too many login attempts. Please wait a minute.", code: "RATE_LIMITED" },
+          { status: 429, headers: rateLimitHeaders(rl.retryAfterMs) },
+        );
+      }
+    }
     const password = String(body.password ?? "");
     const callbackURL = typeof body.callbackURL === "string" && body.callbackURL.length > 0 ? body.callbackURL : "/dashboard";
     const rememberMe = Boolean(body.rememberMe);
