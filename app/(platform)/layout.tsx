@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { getCurrentUserRole } from "@/lib/session";
+import { SignOutButton } from "@/components/shared/SignOutButton";
 
 export default async function PlatformLayout({ children }: { children: React.ReactNode }) {
   const { user } = await getCurrentUserRole();
@@ -12,7 +13,10 @@ export default async function PlatformLayout({ children }: { children: React.Rea
     <div className="min-h-dvh bg-[var(--bg)] text-[var(--ink)]">
       <div className="border-b border-[var(--line)] bg-[var(--panel)] px-6 py-3 flex items-center justify-between">
         <p className="font-semibold text-[var(--ink)]">Platform Admin</p>
-        <a href="/dashboard" className="text-sm text-[var(--ink-muted)] hover:text-[var(--ink)]">← Back to app</a>
+        <div className="flex items-center gap-4">
+          <span className="text-xs text-[var(--ink-muted)]">{user!.email}</span>
+          <SignOutButton />
+        </div>
       </div>
       <div className="mx-auto max-w-6xl px-6 py-8">{children}</div>
     </div>
