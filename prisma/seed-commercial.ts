@@ -192,7 +192,7 @@ async function createJob({
 
 // ── main ─────────────────────────────────────────────────────────────────────
 
-async function main() {
+export async function seedCommercialData() {
   console.log("Seeding commercial demo organisations...\n");
 
   const now = new Date();
@@ -440,9 +440,12 @@ async function main() {
   console.log("═══════════════════════════════════════════════════════");
 }
 
-main()
-  .catch((err) => {
-    console.error("Commercial seed failed:", err instanceof Error ? err.message : err);
-    process.exit(1);
-  })
-  .finally(() => prisma.$disconnect());
+// Only run directly when invoked as a script (not when imported)
+if (require.main === module || process.argv[1]?.endsWith("seed-commercial.ts")) {
+  seedCommercialData()
+    .catch((err) => {
+      console.error("Commercial seed failed:", err instanceof Error ? err.message : err);
+      process.exit(1);
+    })
+    .finally(() => prisma.$disconnect());
+}
