@@ -37,9 +37,10 @@ export default async function AppLayout({
 
   // If a paid plan was cancelled and the billing period ended, revert to free Starter limits.
   if (org?.billingStatus === "CANCELLED" && org.planRenewsAt && org.planRenewsAt < now) {
-    try {
-      // Avoid touching optional legacy columns during downgrade; some deployed DBs may not have them yet.
-      await prisma.organization.update({
+    // Best-effort downgrade; don't take down the whole app shell.
+    // Avoid touching optional legacy columns during downgrade; some deployed DBs may not have them yet.
+    await prisma.organization
+      .update({
         where: { id: orgId },
         data: {
           plan: "STARTER",
@@ -48,10 +49,8 @@ export default async function AppLayout({
           planRenewsAt: null,
           planCancelledAt: null,
         },
-      });
-    } catch {
-      // Best-effort downgrade; don't take down the whole app shell.
-    }
+      })
+      .catch(() => {});
   }
 
   const trialExpired =
