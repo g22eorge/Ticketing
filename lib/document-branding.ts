@@ -2,11 +2,11 @@ import { prisma } from "@/lib/prisma";
 
 export const defaultBranding = {
   id: "singleton",
-  companyName: "Eagle Info Solutions",
-  companyTagline: "SMC LIMITED",
-  companyAddressLine1: "Nalubega Complex, 1st Floor",
-  companyAddressLine2: "Shop L28, Bombo Road Opposite Watoto Church",
-  companyContacts: "+256772 006 344 | +256754 006 344",
+  companyName: "",
+  companyTagline: "",
+  companyAddressLine1: "",
+  companyAddressLine2: "",
+  companyContacts: "",
   companyEmail: "",
   companyWebsite: "",
   documentTitle: "Job Card",
@@ -14,13 +14,13 @@ export const defaultBranding = {
   quoteFormat: "{PREFIX} {M}/{YYYY}/{SEQ}",
   quoteValidityDays: 30,
   sequencePadLength: 4,
-  vatDefaultApplicable: true,
+  vatDefaultApplicable: false,
   vatRatePercent: 18,
   vatLabel: "VAT",
   termsText:
     "Quotation valid for 30 days from date issued.\nRepair work begins only after approval is recorded.\nParts availability may affect final timeline.\nHidden pre-existing faults may affect final outcome.\nUncollected devices may attract storage fees after notice.",
-  footerText: "System built by Almeida @ 2026 all rights reserved.",
-  signatureCompanyLabel: "Signed by: Eagle Info Solutions",
+  footerText: "",
+  signatureCompanyLabel: "Signed by: Company",
   signatureClientLabel: "Signed by: Client",
   // Color scheme - Black, Gold & White
   primaryColor: "#000000",
