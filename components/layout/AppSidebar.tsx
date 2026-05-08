@@ -15,6 +15,8 @@ const nav = [
   { href: "/intake", label: "Requests", group: "work", roles: ["ADMIN", "OPS", "FRONT_DESK", "TECHNICIAN_INTERNAL"] },
   { href: "/technicians", label: "Technicians", group: "work", roles: "all" },
   { href: "/inventory", label: "Inventory", group: "work", roles: ["ADMIN", "OPS", "TECHNICIAN_INTERNAL"] },
+  { href: "/inventory/suppliers", label: "Suppliers", group: "work", roles: ["ADMIN", "OPS"] },
+  { href: "/inventory/purchase-orders", label: "Purchase Orders", group: "work", roles: ["ADMIN", "OPS"] },
   { href: "/clients", label: "Clients", group: "work", roles: ["ADMIN", "OPS", "FRONT_DESK"] },
   { href: "/documents/job-cards", label: "Job Cards", group: "documents", roles: ["ADMIN", "OPS", "FRONT_DESK", "TECHNICIAN_INTERNAL"] },
   { href: "/documents/quotations", label: "Quotations", group: "documents", roles: ["ADMIN", "OPS", "TECHNICIAN_INTERNAL"] },
@@ -48,6 +50,8 @@ const roleOrder: Partial<Record<Role, readonly string[]>> = {
     "/clients",
     "/technicians",
     "/inventory",
+    "/inventory/suppliers",
+    "/inventory/purchase-orders",
     "/documents/job-cards",
     "/documents/quotations",
     "/documents/invoices",
@@ -62,7 +66,7 @@ const roleOrder: Partial<Record<Role, readonly string[]>> = {
     "/settings/profile",
     "/settings/notifications",
   ],
-  OPS: ["/dashboard", "/jobs", "/intake", "/clients", "/technicians", "/inventory", "/documents/job-cards", "/documents/quotations", "/documents/invoices", "/reports", "/payout-followups", "/settings/notifications/templates", "/settings/profile", "/settings/notifications"],
+  OPS: ["/dashboard", "/jobs", "/intake", "/clients", "/technicians", "/inventory", "/inventory/suppliers", "/inventory/purchase-orders", "/documents/job-cards", "/documents/quotations", "/documents/invoices", "/reports", "/payout-followups", "/settings/notifications/templates", "/settings/profile", "/settings/notifications"],
   TECHNICIAN_INTERNAL: ["/dashboard", "/jobs", "/intake", "/technicians", "/inventory", "/documents/job-cards", "/documents/quotations", "/settings/profile", "/settings/notifications"],
   TECHNICIAN_EXTERNAL: ["/dashboard", "/jobs", "/technicians/payouts", "/technicians", "/settings/profile", "/settings/notifications"],
   FRONT_DESK: ["/dashboard", "/jobs", "/intake", "/clients", "/technicians", "/documents/job-cards", "/settings/profile"],
@@ -157,6 +161,20 @@ function navIcon(href: string) {
     return (
       <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
         <path fillRule="evenodd" d="M2.5 5.75a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v8.5a2 2 0 0 1-2 2h-11a2 2 0 0 1-2-2v-8.5Zm2-.5a.5.5 0 0 0-.5.5v2.75h12V5.75a.5.5 0 0 0-.5-.5h-11ZM16 10H4v4.25c0 .276.224.5.5.5h11a.5.5 0 0 0 .5-.5V10Z" clipRule="evenodd" />
+      </svg>
+    );
+  }
+  if (href === "/inventory/suppliers") {
+    return (
+      <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+        <path d="M9 6a3 3 0 1 1-6 0 3 3 0 0 1 6 0ZM17.555 16.604a.75.75 0 0 1-.61.396H3.055a.75.75 0 0 1-.61-.396.75.75 0 0 1 .004-.75 7.125 7.125 0 0 1 2.844-2.715A5.5 5.5 0 0 0 8.5 14a5.5 5.5 0 0 0 3.207-1.028 7.125 7.125 0 0 1 2.844 2.715.75.75 0 0 1 .004.75ZM15.5 9a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0Z" />
+      </svg>
+    );
+  }
+  if (href === "/inventory/purchase-orders") {
+    return (
+      <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+        <path fillRule="evenodd" d="M6 5v1H4.667a1.75 1.75 0 0 0-1.743 1.598l-.826 9.5A1.75 1.75 0 0 0 3.84 19H16.16a1.75 1.75 0 0 0 1.743-1.902l-.826-9.5A1.75 1.75 0 0 0 15.333 6H14V5a4 4 0 0 0-8 0Zm4-2.5A2.5 2.5 0 0 0 7.5 5v1h5V5A2.5 2.5 0 0 0 10 2.5ZM7.5 10a2.5 2.5 0 0 0 5 0V8.75a.75.75 0 0 1 1.5 0V10a4 4 0 0 1-8 0V8.75a.75.75 0 0 1 1.5 0V10Z" clipRule="evenodd" />
       </svg>
     );
   }
