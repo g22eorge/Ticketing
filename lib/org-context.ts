@@ -20,6 +20,9 @@ export async function requireOrgSession() {
   const { session, user } = await getCurrentUserRole();
 
   if (!user!.orgId) {
+    if (process.env.PLATFORM_ADMIN_EMAIL && user!.email === process.env.PLATFORM_ADMIN_EMAIL) {
+      redirect("/platform");
+    }
     redirect("/onboarding");
   }
 
