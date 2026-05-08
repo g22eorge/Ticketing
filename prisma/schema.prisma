@@ -58,8 +58,10 @@ model Organization {
   outboundMessages         OutboundMessage[]
   inboundMessages          InboundMessage[]
   auditLogs                AuditLog[]
-
-  invites  UserInvite[]
+  invites                  UserInvite[]
+  branches                 Branch[]
+  suppliers                Supplier[]
+  purchaseOrders           PurchaseOrder[]
 
   @@index([slug])
   @@index([isActive])
@@ -94,6 +96,8 @@ model User {
   isActive      Boolean  @default(true)
   orgId         String?
   org           Organization? @relation(fields: [orgId], references: [id], onDelete: SetNull)
+  branchId      String?
+  branch        Branch?       @relation(fields: [branchId], references: [id], onDelete: SetNull)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -345,6 +349,8 @@ model Job {
   repairPath    RepairPath?
   orgId         String?
   org           Organization? @relation(fields: [orgId], references: [id], onDelete: SetNull)
+  branchId      String?
+  branch        Branch?       @relation(fields: [branchId], references: [id], onDelete: SetNull)
   clientId      String
   client        Client     @relation(fields: [clientId], references: [id])
   deviceId      String?
@@ -459,8 +465,9 @@ model Part {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  reservations   PartReservation[]
-  transactions   PartStockTransaction[]
+  reservations         PartReservation[]
+  transactions         PartStockTransaction[]
+  purchaseOrderItems   PurchaseOrderItem[]
 
   @@unique([sku, orgId])
   @@index([orgId, isActive])
@@ -907,4 +914,92 @@ enum HandoverMethod {
   SELF_DROPOFF
   SEND_WITH_DELIVERY_PERSON
   REQUEST_PICKUP
+}
+
+// ── Branch ────────────────────────────────────────────────────────────────────
+
+model Branch {
+  id        String       @id @default(cuid())
+  orgId     String
+  org       Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  name      String
+  address   String?
+  phone     String?
+  isDefault Boolean      @default(false)
+  isActive  Boolean      @default(true)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  users User[]
+  jobs  Job[]
+
+  @@index([orgId])
+}
+
+// ── Supplier ──────────────────────────────────────────────────────────────────
+
+model Supplier {
+  id          String       @id @default(cuid())
+  orgId       String
+  org         Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  name        String
+  contactName String?
+  email       String?
+  phone       String?
+  address     String?
+  notes       String?
+  isActive    Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  purchaseOrders PurchaseOrder[]
+
+  @@index([orgId])
+}
+
+// ── Purchase Orders ───────────────────────────────────────────────────────────
+
+enum PurchaseOrderStatus {
+  DRAFT
+  ORDERED
+  PARTIAL
+  RECEIVED
+  CANCELLED
+}
+
+model PurchaseOrder {
+  id         String              @id @default(cuid())
+  orgId      String
+  org        Organization        @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  supplierId String
+  supplier   Supplier            @relation(fields: [supplierId], references: [id])
+  status     PurchaseOrderStatus @default(DRAFT)
+  reference  String?
+  orderedAt  DateTime?
+  expectedAt DateTime?
+  receivedAt DateTime?
+  notes      String?
+  createdAt  DateTime            @default(now())
+  updatedAt  DateTime            @updatedAt
+
+  items PurchaseOrderItem[]
+
+  @@index([orgId])
+  @@index([supplierId])
+}
+
+model PurchaseOrderItem {
+  id          String        @id @default(cuid())
+  poId        String
+  po          PurchaseOrder @relation(fields: [poId], references: [id], onDelete: Cascade)
+  partId      String?
+  part        Part?         @relation(fields: [partId], references: [id])
+  description String
+  qtyOrdered  Int
+  qtyReceived Int           @default(0)
+  unitCost    Float
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([poId])
 }

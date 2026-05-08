@@ -27,7 +27,7 @@
     "seed": "TURSO_DATABASE_URL= TURSO_AUTH_TOKEN= DATABASE_URL=\"${DATABASE_URL:-file:./dev.db}\" bunx prisma db push --skip-generate && TURSO_DATABASE_URL= TURSO_AUTH_TOKEN= DATABASE_URL=\"${DATABASE_URL:-file:./dev.db}\" bunx prisma generate && TURSO_DATABASE_URL= TURSO_AUTH_TOKEN= DATABASE_URL=\"${DATABASE_URL:-file:./dev.db}\" bun run prisma/seed.ts",
     "seed:base": "TURSO_DATABASE_URL= TURSO_AUTH_TOKEN= DATABASE_URL=\"${DATABASE_URL:-file:./dev.db}\" bunx prisma db push --skip-generate && TURSO_DATABASE_URL= TURSO_AUTH_TOKEN= DATABASE_URL=\"${DATABASE_URL:-file:./dev.db}\" bunx prisma generate && TURSO_DATABASE_URL= TURSO_AUTH_TOKEN= DATABASE_URL=\"${DATABASE_URL:-file:./dev.db}\" bun run prisma/seed-base.ts",
     "seed:demo": "TURSO_DATABASE_URL= TURSO_AUTH_TOKEN= DATABASE_URL=\"${DATABASE_URL:-file:./dev.db}\" bunx prisma db push --skip-generate && TURSO_DATABASE_URL= TURSO_AUTH_TOKEN= DATABASE_URL=\"${DATABASE_URL:-file:./dev.db}\" bunx prisma generate && TURSO_DATABASE_URL= TURSO_AUTH_TOKEN= DATABASE_URL=\"${DATABASE_URL:-file:./dev.db}\" bun run prisma/seed.ts",
-  "seed:commercial": "TURSO_DATABASE_URL= TURSO_AUTH_TOKEN= DATABASE_URL=\"${DATABASE_URL:-file:./dev.db}\" bunx prisma db push --skip-generate && TURSO_DATABASE_URL= TURSO_AUTH_TOKEN= DATABASE_URL=\"${DATABASE_URL:-file:./dev.db}\" bunx prisma generate && TURSO_DATABASE_URL= TURSO_AUTH_TOKEN= DATABASE_URL=\"${DATABASE_URL:-file:./dev.db}\" bun run prisma/seed-commercial.ts"
+    "seed:commercial": "TURSO_DATABASE_URL= TURSO_AUTH_TOKEN= DATABASE_URL=\"${DATABASE_URL:-file:./dev.db}\" bunx prisma db push --skip-generate && TURSO_DATABASE_URL= TURSO_AUTH_TOKEN= DATABASE_URL=\"${DATABASE_URL:-file:./dev.db}\" bunx prisma generate && TURSO_DATABASE_URL= TURSO_AUTH_TOKEN= DATABASE_URL=\"${DATABASE_URL:-file:./dev.db}\" bun run prisma/seed-commercial.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -42,6 +42,7 @@
     "install": "^0.13.0",
     "next": "16.2.2",
     "prisma": "6.19.0",
+    "qrcode": "^1.5.4",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "react-hook-form": "^7.72.0",
@@ -54,6 +55,7 @@
     "@playwright/test": "^1.59.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
+    "@types/qrcode": "^1.5.6",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",

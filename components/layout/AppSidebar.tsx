@@ -24,6 +24,7 @@ const nav = [
   { href: "/technicians/payouts", label: "Payouts", group: "finance", roles: ["TECHNICIAN_EXTERNAL"] },
   { href: "/settings/billing", label: "Billing & Plan", group: "admin", roles: ["ADMIN"] },
   { href: "/settings/users", label: "Users", group: "admin", roles: ["ADMIN"] },
+  { href: "/settings/branches", label: "Branches", group: "admin", roles: ["ADMIN"] },
   { href: "/settings/branding", label: "Branding", group: "admin", roles: ["ADMIN"] },
   { href: "/settings/notifications/templates", label: "Comms Templates", group: "admin", roles: ["ADMIN", "OPS"] },
   { href: "/settings/notifications/whatsapp", label: "WhatsApp Channel", group: "admin", roles: ["ADMIN"] },
@@ -54,6 +55,7 @@ const roleOrder: Partial<Record<Role, readonly string[]>> = {
     "/payout-followups",
     "/settings/billing",
     "/settings/users",
+    "/settings/branches",
     "/settings/branding",
     "/settings/notifications/templates",
     "/settings/notifications/whatsapp",
@@ -162,6 +164,13 @@ function navIcon(href: string) {
     return (
       <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
         <path d="M11 5a3 3 0 1 1-6 0 3 3 0 0 1 6 0ZM2.046 15.253c-.18.01-.34-.092-.382-.266a6.5 6.5 0 0 1 11.672 0c-.042.174-.202.276-.382.266a34.816 34.816 0 0 0-10.908 0ZM16.75 9.5a.75.75 0 0 0-1.5 0v1.25H14a.75.75 0 0 0 0 1.5h1.25V13.5a.75.75 0 0 0 1.5 0v-1.25H18a.75.75 0 0 0 0-1.5h-1.25V9.5Z" />
+      </svg>
+    );
+  }
+  if (href === "/settings/branches") {
+    return (
+      <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+        <path fillRule="evenodd" d="M1 2.75A.75.75 0 0 1 1.75 2h16.5a.75.75 0 0 1 0 1.5H15v12.75a.25.25 0 0 1-.25.25H13.5v-2.5a.5.5 0 0 0-.5-.5h-3a.5.5 0 0 0-.5.5v2.5H8.25A.25.25 0 0 1 8 16.25V3.5H1.75A.75.75 0 0 1 1 2.75ZM4 5a.5.5 0 0 1 .5-.5H6a.5.5 0 0 1 0 1H4.5A.5.5 0 0 1 4 5Zm0 3a.5.5 0 0 1 .5-.5H6a.5.5 0 0 1 0 1H4.5A.5.5 0 0 1 4 8Zm8.5-.5a.5.5 0 0 0 0 1H14a.5.5 0 0 0 0-1h-1.5Zm0-3a.5.5 0 0 0 0 1H14a.5.5 0 0 0 0-1h-1.5Z" clipRule="evenodd" />
       </svg>
     );
   }

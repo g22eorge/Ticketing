@@ -27,6 +27,7 @@ const PUBLIC_PATHS = [
   "/profile",
   "/terms",
   "/privacy",
+  "/status",
 
   // Public metadata assets
   "/opengraph-image",

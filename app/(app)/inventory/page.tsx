@@ -182,6 +182,16 @@ export default async function InventoryPage({
           Part added.
         </div>
       ) : null}
+      {canManage && (
+        <div className="flex gap-2 flex-wrap">
+          <Link href="/inventory/suppliers" className="rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 py-1.5 text-xs font-semibold text-[var(--ink)] hover:bg-[var(--gold)]/5">
+            Suppliers →
+          </Link>
+          <Link href="/inventory/purchase-orders" className="rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 py-1.5 text-xs font-semibold text-[var(--ink)] hover:bg-[var(--gold)]/5">
+            Purchase Orders →
+          </Link>
+        </div>
+      )}
       <section className="grid grid-cols-2 gap-2 md:grid-cols-4">
         <article className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2">
           <div className="flex items-center justify-between gap-2">

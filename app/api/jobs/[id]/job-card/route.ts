@@ -3,6 +3,7 @@ import { renderToBuffer } from "@react-pdf/renderer";
 import { createElement } from "react";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
+import QRCode from "qrcode";
 
 import { getDocumentBrandingSettings } from "@/lib/document-branding";
 import { can } from "@/lib/permissions";
@@ -133,6 +134,11 @@ export async function GET(
   const logoUrl = await resolveLogo();
   const documentNumber = `JC-${job.jobNumber}`;
 
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "";
+  const statusQrDataUrl = baseUrl
+    ? await QRCode.toDataURL(`${baseUrl}/status/${job.jobNumber}`, { width: 120, margin: 1 }).catch(() => undefined)
+    : undefined;
+
   await prisma.auditLog.create({
     data: {
       jobId: job.id,
@@ -173,6 +179,7 @@ export async function GET(
     footerText: branding.footerText,
     signatureCompanyLabel: branding.signatureCompanyLabel,
     signatureClientLabel: branding.signatureClientLabel,
+    statusQrDataUrl,
   });
 
   try {

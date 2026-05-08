@@ -190,6 +190,7 @@ type Props = {
   footerText: string;
   signatureCompanyLabel: string;
   signatureClientLabel: string;
+  statusQrDataUrl?: string;
 };
 
 function BulletField({ value }: { value: string }) {
@@ -258,6 +259,13 @@ export function JobCardDocument(props: Props) {
                 <Text style={s.bannerMetaLabel}>Received By</Text>
                 <Text style={s.bannerMetaValue}>{props.preparedByName}</Text>
               </View>
+              {props.statusQrDataUrl ? (
+                <View style={{ marginTop: 4, alignItems: "flex-end" }}>
+                  {/* eslint-disable-next-line jsx-a11y/alt-text */}
+                  <Image style={{ width: 42, height: 42 }} src={props.statusQrDataUrl} />
+                  <Text style={{ fontSize: 5.5, color: LIGHT, marginTop: 1 }}>Scan to track</Text>
+                </View>
+              ) : null}
             </View>
           </View>
         </View>
