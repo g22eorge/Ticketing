@@ -85,12 +85,17 @@ export async function saveWhatsAppConfigAction(
   }
 
   try {
+    const existing = await getOrgWhatsAppConfig(orgId);
     await saveOrgWhatsAppConfig(orgId, {
       businessNumber,
       phoneNumberId,
       accessToken,
       businessAccountId,
       provider: "meta",
+      atApiKey: existing?.atApiKey ?? null,
+      atUsername: existing?.atUsername ?? null,
+      atSenderId: existing?.atSenderId ?? null,
+      smsFallback: existing?.smsFallback ?? false,
     });
     revalidatePath("/settings/notifications/whatsapp");
     return { ok: true };
@@ -109,5 +114,44 @@ export async function deleteWhatsAppConfigAction(): Promise<{ ok: boolean; error
     return { ok: true };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : "Delete failed" };
+  }
+}
+
+export async function saveATConfigAction(
+  _prev: { ok: boolean; error?: string } | null,
+  formData: FormData,
+): Promise<{ ok: boolean; error?: string }> {
+  const { user, orgId } = await requireOrgSession();
+  if (user.role !== "ADMIN") return { ok: false, error: "Forbidden" };
+
+  const atApiKeyInput = (formData.get("atApiKey") as string | null)?.trim() ?? "";
+  const atUsername = (formData.get("atUsername") as string | null)?.trim() ?? "";
+  const atSenderId = (formData.get("atSenderId") as string | null)?.trim() ?? "";
+  const smsFallback = formData.get("smsFallback") === "on";
+
+  if (!atUsername) return { ok: false, error: "Username is required." };
+
+  const existing = await getOrgWhatsAppConfig(orgId);
+
+  // Keep existing API key if left blank
+  const atApiKey = atApiKeyInput || existing?.atApiKey || "";
+  if (!atApiKey) return { ok: false, error: "API Key is required." };
+
+  try {
+    await saveOrgWhatsAppConfig(orgId, {
+      businessNumber: existing?.businessNumber ?? "",
+      phoneNumberId: existing?.phoneNumberId ?? "",
+      accessToken: existing?.accessToken ?? "",
+      businessAccountId: existing?.businessAccountId ?? "",
+      provider: existing?.provider ?? "meta",
+      atApiKey,
+      atUsername,
+      atSenderId: atSenderId || null,
+      smsFallback,
+    });
+    revalidatePath("/settings/notifications/whatsapp");
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "Save failed" };
   }
 }

@@ -6,6 +6,7 @@ import { getOrgWhatsAppConfig } from "@/lib/org-whatsapp-config";
 import { whatsappHealthCheckForOrg } from "@/lib/notifications/whatsapp";
 import { WhatsAppTestPanel } from "@/components/settings/WhatsAppTestPanel";
 import { WhatsAppConfigForm } from "@/components/settings/WhatsAppConfigForm";
+import { ATSmsConfigForm } from "@/components/settings/ATSmsConfigForm";
 
 export const dynamic = "force-dynamic";
 
@@ -122,6 +123,9 @@ export default async function WhatsAppSettingsPage() {
           verifiedName={healthData?.verified_name ?? null}
         />
       ) : null}
+
+      {/* Africa's Talking SMS */}
+      <ATSmsConfigForm orgId={orgId} current={orgConfig} />
 
       {/* Links */}
       <div className="flex flex-wrap gap-3">

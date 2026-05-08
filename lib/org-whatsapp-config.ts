@@ -7,6 +7,11 @@ export interface OrgWhatsAppConfig {
   accessToken: string;
   businessAccountId: string;
   provider: string;
+  // Africa's Talking SMS
+  atApiKey: string | null;
+  atUsername: string | null;
+  atSenderId: string | null;
+  smsFallback: boolean;
 }
 
 let tableEnsured = false;
@@ -25,6 +30,18 @@ async function ensureTable() {
       updatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
     )
   `);
+  // Safely add AT columns to existing tables
+  const atCols: [string, string][] = [
+    ["atApiKey", "TEXT"],
+    ["atUsername", "TEXT"],
+    ["atSenderId", "TEXT"],
+    ["smsFallback", "INTEGER NOT NULL DEFAULT 0"],
+  ];
+  for (const [col, def] of atCols) {
+    try {
+      await prisma.$executeRawUnsafe(`ALTER TABLE "OrgWhatsAppConfig" ADD COLUMN ${col} ${def}`);
+    } catch { /* column already exists */ }
+  }
   tableEnsured = true;
 }
 
@@ -42,6 +59,10 @@ export async function getOrgWhatsAppConfig(orgId: string): Promise<OrgWhatsAppCo
       accessToken: String(rows[0].accessToken),
       businessAccountId: rows[0].businessAccountId ? String(rows[0].businessAccountId) : "",
       provider: String(rows[0].provider ?? "meta"),
+      atApiKey: rows[0].atApiKey ? String(rows[0].atApiKey) : null,
+      atUsername: rows[0].atUsername ? String(rows[0].atUsername) : null,
+      atSenderId: rows[0].atSenderId ? String(rows[0].atSenderId) : null,
+      smsFallback: Boolean(rows[0].smsFallback),
     };
   } catch {
     return null;
@@ -54,14 +75,18 @@ export async function saveOrgWhatsAppConfig(
 ): Promise<void> {
   await ensureTable();
   await prisma.$executeRaw`
-    INSERT INTO "OrgWhatsAppConfig" (orgId, businessNumber, phoneNumberId, accessToken, businessAccountId, provider, updatedAt)
-    VALUES (${orgId}, ${config.businessNumber}, ${config.phoneNumberId}, ${config.accessToken}, ${config.businessAccountId || null}, ${config.provider}, CURRENT_TIMESTAMP)
+    INSERT INTO "OrgWhatsAppConfig" (orgId, businessNumber, phoneNumberId, accessToken, businessAccountId, provider, atApiKey, atUsername, atSenderId, smsFallback, updatedAt)
+    VALUES (${orgId}, ${config.businessNumber}, ${config.phoneNumberId}, ${config.accessToken}, ${config.businessAccountId || null}, ${config.provider}, ${config.atApiKey ?? null}, ${config.atUsername ?? null}, ${config.atSenderId ?? null}, ${config.smsFallback ? 1 : 0}, CURRENT_TIMESTAMP)
     ON CONFLICT(orgId) DO UPDATE SET
       businessNumber = excluded.businessNumber,
       phoneNumberId = excluded.phoneNumberId,
       accessToken = excluded.accessToken,
       businessAccountId = excluded.businessAccountId,
       provider = excluded.provider,
+      atApiKey = excluded.atApiKey,
+      atUsername = excluded.atUsername,
+      atSenderId = excluded.atSenderId,
+      smsFallback = excluded.smsFallback,
       updatedAt = CURRENT_TIMESTAMP
   `;
 }

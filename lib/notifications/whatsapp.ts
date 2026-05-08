@@ -1,15 +1,35 @@
 import { renderCommunicationTemplate } from "@/lib/notifications/templates";
 import { getOrgWhatsAppConfig } from "@/lib/org-whatsapp-config";
+import { getAtConfig, sendSms } from "@/lib/notifications/sms";
 
 async function sendRenderedWhatsApp(
   phone: string,
   rendered: { body: string; metaTemplateName: string | null; metaLanguageCode: string; metaParamValues: string[] },
-  cfg?: WhatsAppConfig
+  cfg?: WhatsAppConfig,
+  orgId?: string,
 ): Promise<{ success: boolean; messageId?: string; error?: string; errorCode?: string }> {
+  let result: { success: boolean; messageId?: string; error?: string; errorCode?: string };
+
   if (rendered.metaTemplateName) {
-    return sendWhatsAppTemplateMessage(phone, rendered.metaTemplateName, rendered.metaLanguageCode, rendered.metaParamValues, cfg);
+    result = await sendWhatsAppTemplateMessage(phone, rendered.metaTemplateName, rendered.metaLanguageCode, rendered.metaParamValues, cfg);
+  } else {
+    result = await sendWhatsAppMessageInternal({ to: phone, message: rendered.body, cfg });
   }
-  return sendWhatsAppMessageInternal({ to: phone, message: rendered.body, cfg });
+
+  // SMS fallback via Africa's Talking when WhatsApp fails
+  if (!result.success && orgId) {
+    const orgCfg = await getOrgWhatsAppConfig(orgId);
+    if (orgCfg?.smsFallback) {
+      const atCfg = getAtConfig(orgCfg);
+      if (atCfg) {
+        console.log("[WhatsApp→SMS] Falling back to Africa's Talking SMS for", phone);
+        const smsResult = await sendSms(phone, rendered.body, atCfg);
+        if (smsResult.success) return { success: true, messageId: smsResult.messageId };
+      }
+    }
+  }
+
+  return result;
 }
 
 interface WhatsAppConfig {
@@ -126,7 +146,7 @@ export async function sendRepairRequestConfirmation(
     variables: { customerName, requestNumber },
     fallback: { body: fallback },
   });
-  return sendRenderedWhatsApp(phone, rendered, cfg);
+  return sendRenderedWhatsApp(phone, rendered, cfg, orgId);
 }
 
 export async function sendIntakeApprovalNotification(
@@ -147,7 +167,7 @@ export async function sendIntakeApprovalNotification(
     variables: { customerName, requestNumber, preferredDropoffDateLine },
     fallback: { body: fallback },
   });
-  return sendRenderedWhatsApp(phone, rendered, cfg);
+  return sendRenderedWhatsApp(phone, rendered, cfg, orgId);
 }
 
 export async function sendIntakeRejectionNotification(
@@ -166,7 +186,7 @@ export async function sendIntakeRejectionNotification(
     variables: { customerName, requestNumber },
     fallback: { body: fallback },
   });
-  return sendRenderedWhatsApp(phone, rendered, cfg);
+  return sendRenderedWhatsApp(phone, rendered, cfg, orgId);
 }
 
 export async function sendJobCreatedNotification(
@@ -185,7 +205,7 @@ export async function sendJobCreatedNotification(
     variables: { customerName, jobNumber },
     fallback: { body: fallback },
   });
-  return sendRenderedWhatsApp(phone, rendered, cfg);
+  return sendRenderedWhatsApp(phone, rendered, cfg, orgId);
 }
 
 export async function sendJobCompletionNotification(
@@ -204,7 +224,7 @@ export async function sendJobCompletionNotification(
     variables: { customerName, jobNumber },
     fallback: { body: fallback },
   });
-  return sendRenderedWhatsApp(phone, rendered, cfg);
+  return sendRenderedWhatsApp(phone, rendered, cfg, orgId);
 }
 
 export async function sendCustomWhatsAppMessage(
