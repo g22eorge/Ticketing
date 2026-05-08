@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { OrgPlan } from "@prisma/client";
 
-import { PLAN_LABELS, PLAN_LIMITS, UPGRADE_PLAN, type PlanLimits } from "@/lib/plan-limits";
+import { PLAN_LABELS, UPGRADE_PLAN, type PlanLimits } from "@/lib/plan-limits";
 
 type Props = {
   plan: OrgPlan;

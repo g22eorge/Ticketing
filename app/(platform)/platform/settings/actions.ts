@@ -50,10 +50,7 @@ export async function clearPesapalKeyAction(
   }
 }
 
-export async function registerIpnAction(
-  _prev: { ok: boolean; ipnId?: string; error?: string } | null,
-  _formData: FormData,
-): Promise<{ ok: boolean; ipnId?: string; error?: string }> {
+export async function registerIpnAction(): Promise<{ ok: boolean; ipnId?: string; error?: string }> {
   await requirePlatformAdmin();
   try {
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";

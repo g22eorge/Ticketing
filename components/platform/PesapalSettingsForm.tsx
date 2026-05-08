@@ -32,7 +32,7 @@ const FIELDS: { key: "PESAPAL_CONSUMER_KEY" | "PESAPAL_CONSUMER_SECRET"; label: 
 export function PesapalSettingsForm({ configured, webhookUrl, ipnId }: Props) {
   const [saveState, saveAction, saving] = useActionState<{ ok: boolean; error?: string } | null, FormData>(savePesapalSettingsAction, null);
   const [, clearAction] = useActionState<{ ok: boolean; error?: string } | null, FormData>(clearPesapalKeyAction, null);
-  const [ipnState, ipnAction, registering] = useActionState<{ ok: boolean; ipnId?: string; error?: string } | null, FormData>(registerIpnAction, null);
+  const [ipnState, ipnAction, registering] = useActionState<{ ok: boolean; ipnId?: string; error?: string } | null, void>(registerIpnAction, null);
 
   return (
     <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] p-5 space-y-5">
@@ -128,7 +128,7 @@ export function PesapalSettingsForm({ configured, webhookUrl, ipnId }: Props) {
         {ipnState?.ok && <p className="text-xs text-emerald-600">IPN registered. ID: {ipnState.ipnId}</p>}
 
         <p className="text-[10px] text-[var(--ink-muted)]">
-          Register this URL in your Pesapal dashboard, or click "Register IPN" above to do it automatically via the API.
+          Register this URL in your Pesapal dashboard, or click &quot;Register IPN&quot; above to do it automatically via the API.
           Set <code className="font-mono">PESAPAL_ENV=production</code> in env vars for live payments.
         </p>
       </div>

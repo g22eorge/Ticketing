@@ -112,9 +112,7 @@ export function WhatsAppConfigForm({ orgId, current }: Props) {
               onClick={() => {
                 if (!confirm("Remove your WhatsApp configuration? Notifications will stop working.")) return;
                 startDelete(async () => {
-                  const fd = new FormData();
-                  fd.append("orgId", orgId);
-                  await deleteWhatsAppConfigAction(null, fd);
+                  await deleteWhatsAppConfigAction();
                 });
               }}
               className="text-xs text-red-600 hover:underline"

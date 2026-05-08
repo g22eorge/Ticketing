@@ -99,10 +99,7 @@ export async function saveWhatsAppConfigAction(
   }
 }
 
-export async function deleteWhatsAppConfigAction(
-  _prev: { ok: boolean } | null,
-  formData: FormData
-): Promise<{ ok: boolean; error?: string }> {
+export async function deleteWhatsAppConfigAction(): Promise<{ ok: boolean; error?: string }> {
   const { user, orgId } = await requireOrgSession();
   if (user.role !== "ADMIN") return { ok: false, error: "Forbidden" };
 

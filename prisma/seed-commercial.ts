@@ -210,7 +210,7 @@ export async function seedCommercialData() {
     planRenewsAt: daysFromNow(18),
   });
 
-  const [tfAdmin, tfOps, tfTech, tfExt] = await Promise.all([
+  const [, tfOps, tfTech] = await Promise.all([
     upsertUser({ orgId: techfix.id, name: "Sarah Nakato",    email: "admin@techfix.ug",  role: "ADMIN" }),
     upsertUser({ orgId: techfix.id, name: "Moses Ssemakula", email: "ops@techfix.ug",    role: "OPS" }),
     upsertUser({ orgId: techfix.id, name: "David Ochieng",   email: "tech@techfix.ug",   role: "TECHNICIAN_INTERNAL" }),
@@ -347,7 +347,7 @@ export async function seedCommercialData() {
     planRenewsAt: daysFromNow(22),
   });
 
-  const [ffAdmin, ffOps, ffOps2, ffTech, ffExt] = await Promise.all([
+  const [, ffOps, , ffTech, ffExt] = await Promise.all([
     upsertUser({ orgId: fixitfast.id, name: "Kwame Asante",    email: "admin@fixitfast.gh",  role: "ADMIN" }),
     upsertUser({ orgId: fixitfast.id, name: "Abena Mensah",    email: "ops@fixitfast.gh",    role: "OPS" }),
     upsertUser({ orgId: fixitfast.id, name: "Kofi Boateng",    email: "ops2@fixitfast.gh",   role: "OPS" }),

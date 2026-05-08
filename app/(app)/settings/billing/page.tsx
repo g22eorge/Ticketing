@@ -4,13 +4,13 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireOrgSession } from "@/lib/org-context";
 import { can } from "@/lib/permissions";
-import { getLimitsForOrg, PLAN_LIMITS, PLAN_LABELS } from "@/lib/plan-limits";
+import { PLAN_LIMITS, PLAN_LABELS } from "@/lib/plan-limits";
 import { submitOrder, getOrCreateIpnId, buildMerchantRef, PLAN_PRICES, CURRENCY } from "@/lib/pesapal";
 import { formatMoney } from "@/lib/currency";
 
 // ── Server actions ────────────────────────────────────────────────────────────
 
-async function startGrowthTrial(_formData: FormData) {
+async function startGrowthTrial() {
   "use server";
 
   const { user, orgId } = await requireOrgSession();
@@ -63,7 +63,7 @@ async function subscribeToPlan(formData: FormData) {
   redirect(result.redirect_url);
 }
 
-async function cancelPlan(_formData: FormData) {
+async function cancelPlan() {
   "use server";
 
   const { user, orgId } = await requireOrgSession();
@@ -89,7 +89,7 @@ export default async function BillingPage({
   const { user, orgId } = await requireOrgSession();
   const isAdmin = can.manageUsers(user);
 
-  const [org, planInfo] = await Promise.all([
+  const [org] = await Promise.all([
     prisma.organization.findUnique({
       where: { id: orgId },
       select: {
@@ -101,7 +101,6 @@ export default async function BillingPage({
         planCancelledAt: true,
       },
     }),
-    getLimitsForOrg(orgId),
   ]);
 
   if (!org) redirect("/dashboard");

@@ -13,7 +13,7 @@ import { prisma } from "@/lib/prisma";
 import { requireOrgSession } from "@/lib/org-context";
 import { inviteSchema, INVITE_TTL_DAYS, type InviteState } from "@/lib/invites";
 import { InvitePanel } from "@/components/settings/InvitePanel";
-import { checkUserLimit, getLimitsForOrg, PLAN_LIMITS } from "@/lib/plan-limits";
+import { checkUserLimit, getLimitsForOrg } from "@/lib/plan-limits";
 import { PlanBanner } from "@/components/shared/PlanBanner";
 import { rateLimit } from "@/lib/rate-limit";
 
