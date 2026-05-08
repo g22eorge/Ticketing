@@ -1,21 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { prisma } from "@/lib/prisma";
-import { getCurrentUserRole } from "@/lib/session";
+import { requireOrgSession } from "@/lib/org-context";
 
 export async function GET(
   _req: NextRequest,
   context: { params: Promise<{ id: string }> },
 ) {
   const { id } = await context.params;
-  const { session, user } = await getCurrentUserRole();
+  const { session, user, orgId } = await requireOrgSession();
 
   const where =
     user.role === "TECHNICIAN_EXTERNAL"
-      ? { id, assignedToId: session.user.id }
+      ? { id, orgId, assignedToId: session.user.id }
       : user.role === "TECHNICIAN_INTERNAL"
-        ? { id, assignedToId: session.user.id }
-        : { id };
+        ? { id, orgId, assignedToId: session.user.id }
+        : { id, orgId };
 
   const job =
     user.role === "TECHNICIAN_EXTERNAL"

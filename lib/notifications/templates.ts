@@ -24,12 +24,18 @@ export function renderTemplateText(text: string, variables: Record<string, strin
   });
 }
 
-export async function getCommunicationTemplate(key: string, channel: OutboundMessageChannel): Promise<CommunicationTemplate | null> {
+export async function getCommunicationTemplate(
+  orgId: string,
+  key: string,
+  channel: OutboundMessageChannel,
+): Promise<CommunicationTemplate | null> {
   if (!supportsTemplates()) return null;
   try {
-    return await prisma.communicationTemplate.findFirst({
-      where: { key, channel },
-    });
+    // Prefer org-scoped templates; fall back to global defaults (orgId = null).
+    return (
+      (await prisma.communicationTemplate.findFirst({ where: { orgId, key, channel } })) ??
+      (await prisma.communicationTemplate.findFirst({ where: { orgId: null, key, channel } }))
+    );
   } catch {
     // If the table isn't migrated yet, silently fall back.
     return null;
@@ -37,6 +43,7 @@ export async function getCommunicationTemplate(key: string, channel: OutboundMes
 }
 
 export async function renderCommunicationTemplate(input: {
+  orgId: string;
   key: string;
   channel: OutboundMessageChannel;
   variables: Record<string, string | number | null | undefined>;
@@ -49,7 +56,7 @@ export async function renderCommunicationTemplate(input: {
   metaLanguageCode: string;
   metaParamValues: string[];
 }> {
-  const template = await getCommunicationTemplate(input.key, input.channel);
+  const template = await getCommunicationTemplate(input.orgId, input.key, input.channel);
   if (!template || !template.isActive) {
     return {
       subject: input.fallback?.subject,

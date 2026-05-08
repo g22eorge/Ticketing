@@ -3,10 +3,10 @@ import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
-import { getCurrentUserRole } from "@/lib/session";
+import { requireOrgSession } from "@/lib/org-context";
 
 export async function GET() {
-  const { session, user } = await getCurrentUserRole();
+  const { session, user, orgId } = await requireOrgSession();
 
   const supportsOneTimeExternal = Boolean(
     Prisma.dmmf.datamodel.models
@@ -16,10 +16,10 @@ export async function GET() {
 
   const where =
     user.role === "TECHNICIAN_EXTERNAL"
-      ? { assignedToId: session.user.id }
+      ? { orgId, assignedToId: session.user.id }
       : user.role === "TECHNICIAN_INTERNAL"
-        ? { assignedToId: session.user.id }
-        : {};
+        ? { orgId, assignedToId: session.user.id }
+        : { orgId };
 
   const jobs = await (async () => {
     if (user.role === "TECHNICIAN_EXTERNAL") {

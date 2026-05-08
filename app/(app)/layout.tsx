@@ -30,10 +30,27 @@ export default async function AppLayout({
   // ── Billing enforcement ───────────────────────────────────────────────────
   const org = await prisma.organization.findUnique({
     where: { id: orgId },
-    select: { billingStatus: true, trialEndsAt: true, plan: true, name: true },
+    select: { billingStatus: true, trialEndsAt: true, plan: true, name: true, planRenewsAt: true },
   });
 
   const now = new Date();
+
+  // If a paid plan was cancelled and the billing period ended, revert to free Starter limits.
+  if (org?.billingStatus === "CANCELLED" && org.planRenewsAt && org.planRenewsAt < now) {
+    await prisma.organization.update({
+      where: { id: orgId },
+      data: {
+        plan: "STARTER",
+        billingStatus: "TRIALING",
+        trialEndsAt: null,
+        planRenewsAt: null,
+        planCancelledAt: null,
+        flwSubscriptionId: null,
+        flwPlanId: null,
+      },
+    });
+  }
+
   const trialExpired =
     org?.billingStatus === "TRIALING" &&
     org.trialEndsAt != null &&

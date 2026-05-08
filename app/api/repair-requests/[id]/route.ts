@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { getOrgSessionOptional } from "@/lib/org-context";
+import { requireOrgSession } from "@/lib/org-context";
 import { can } from "@/lib/permissions";
 import { sanitizeOptionalText, sanitizeText } from "@/lib/sanitize";
 import { generateJobNumber } from "@/app/(app)/jobs/new/actions";
 import { sendIntakeApprovalNotification, sendIntakeRejectionNotification, sendJobCreatedNotification } from "@/lib/notifications/whatsapp";
+import { checkJobLimit } from "@/lib/plan-limits";
 
 const ALLOWED_STATUSES = ["APPROVED", "REJECTED", "CONVERTED_TO_JOB"] as const;
 type AllowedStatus = (typeof ALLOWED_STATUSES)[number];
@@ -14,8 +15,8 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { session, user, orgId } = await getOrgSessionOptional();
-  if (!user || !can.viewClientInfo(user)) {
+  const { session, user, orgId } = await requireOrgSession();
+  if (!can.viewClientInfo(user)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
 
@@ -30,40 +31,32 @@ export async function PATCH(
     );
   }
 
-  const req = await prisma.repairRequest.findFirst({ where: { id, ...(orgId ? { orgId } : {}) } });
+  const req = await prisma.repairRequest.findFirst({ where: { id, orgId } });
   if (!req) {
     return NextResponse.json({ error: "Request not found" }, { status: 404 });
   }
 
   /* ── Convert to Job ── */
   if (status === "CONVERTED_TO_JOB") {
+    const limit = await checkJobLimit(orgId);
+    if (!limit.allowed) {
+      return NextResponse.json({ error: limit.reason }, { status: 402 });
+    }
+
     // 1. Upsert client by phone
-    const client = orgId
-      ? await prisma.client.upsert({
-          where: { phone_orgId: { orgId, phone: req.phone } },
-          create: {
-            orgId,
-            fullName: sanitizeText(req.customerName),
-            phone: req.phone,
-            email: sanitizeOptionalText(req.email) ?? undefined,
-          },
-          update: {
-            fullName: sanitizeText(req.customerName),
-            email: sanitizeOptionalText(req.email) ?? undefined,
-          },
-        })
-      : await prisma.client.upsert({
-          where: { id: (await prisma.client.findFirst({ where: { phone: req.phone } }))?.id ?? "" },
-          create: {
-            fullName: sanitizeText(req.customerName),
-            phone: req.phone,
-            email: sanitizeOptionalText(req.email) ?? undefined,
-          },
-          update: {
-            fullName: sanitizeText(req.customerName),
-            email: sanitizeOptionalText(req.email) ?? undefined,
-          },
-        });
+    const client = await prisma.client.upsert({
+      where: { phone_orgId: { orgId, phone: req.phone } },
+      create: {
+        orgId,
+        fullName: sanitizeText(req.customerName),
+        phone: req.phone,
+        email: sanitizeOptionalText(req.email) ?? undefined,
+      },
+      update: {
+        fullName: sanitizeText(req.customerName),
+        email: sanitizeOptionalText(req.email) ?? undefined,
+      },
+    });
 
     // 2. Create job (retry on duplicate job number)
     let job: { id: string; jobNumber: string } | null = null;
@@ -72,7 +65,7 @@ export async function PATCH(
       try {
         job = await prisma.job.create({
           data: {
-            ...(orgId ? { orgId } : {}),
+            orgId,
             jobNumber,
             clientId: client.id,
             createdById: session!.user.id,
@@ -104,6 +97,7 @@ export async function PATCH(
         userId: session!.user.id,
         action: "JOB_CREATED",
         detail: JSON.stringify({ status: "RECEIVED", sourceRequest: req.requestNumber }),
+        orgId,
       },
     });
 
@@ -114,7 +108,7 @@ export async function PATCH(
     });
 
     // Send WhatsApp notification (non-blocking)
-    sendJobCreatedNotification(req.phone, req.customerName, job.jobNumber).catch((err) =>
+    sendJobCreatedNotification(req.phone, req.customerName, job.jobNumber, orgId).catch((err) =>
       console.error("[Intake] WhatsApp notification failed:", err)
     );
 
@@ -138,13 +132,15 @@ export async function PATCH(
       updated.phone,
       updated.customerName,
       updated.requestNumber,
-      updated.preferredDropoffDate
+      updated.preferredDropoffDate,
+      orgId,
     ).catch((err) => console.error("[Intake] WhatsApp notification failed:", err));
   } else if (status === "REJECTED") {
     sendIntakeRejectionNotification(
       updated.phone,
       updated.customerName,
-      updated.requestNumber
+      updated.requestNumber,
+      orgId,
     ).catch((err) => console.error("[Intake] WhatsApp notification failed:", err));
   }
 

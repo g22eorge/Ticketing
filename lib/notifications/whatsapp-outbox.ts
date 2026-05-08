@@ -44,6 +44,7 @@ function supportsOutbox() {
 }
 
 export async function enqueueWhatsAppMessage(input: {
+  orgId?: string;
   to: string;
   body: string;
   type: OutboundMessageType;
@@ -91,6 +92,7 @@ export async function enqueueWhatsAppMessage(input: {
         provider: input.provider,
         repairRequestId: input.repairRequestId,
         jobId: input.jobId,
+        orgId: input.orgId ?? null,
         nextAttemptAt: input.nextAttemptAt ?? new Date(),
       },
       select: { id: true },
@@ -127,6 +129,7 @@ export async function enqueueWhatsAppMessage(input: {
 }
 
 export async function enqueueEmailMessage(input: {
+  orgId?: string;
   to: string | string[];
   subject: string;
   body: string;
@@ -164,6 +167,7 @@ export async function enqueueEmailMessage(input: {
       nextAttemptAt: input.nextAttemptAt ?? new Date(),
       repairRequestId: input.repairRequestId,
       jobId: input.jobId,
+      orgId: input.orgId ?? null,
       provider: "resend",
     },
     select: { id: true },

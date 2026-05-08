@@ -110,6 +110,8 @@ export default async function BillingPage({
     ? Math.max(0, Math.ceil((org.trialEndsAt.getTime() - now.getTime()) / 86_400_000))
     : null;
 
+  const isFreeStarter = org.billingStatus === "TRIALING" && org.trialEndsAt == null;
+
   const isStarterTrialExpired =
     org.plan === "STARTER" &&
     org.billingStatus === "TRIALING" &&
@@ -316,15 +318,15 @@ export default async function BillingPage({
             <p className="mt-1 text-2xl font-bold text-[var(--ink)]">{PLAN_LABELS[org.plan]}</p>
           </div>
           <span className={`rounded-full px-3 py-1 text-xs font-semibold ${
-            org.billingStatus === "ACTIVE"    ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" :
-            org.billingStatus === "TRIALING"  ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" :
-            org.billingStatus === "PAST_DUE"  ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400" :
-                                                "bg-[var(--border)] text-[var(--ink-muted)]"
-          }`}>
-            {org.billingStatus === "TRIALING" ? "Free trial" :
+             org.billingStatus === "ACTIVE"    ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" :
+             org.billingStatus === "TRIALING"  ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" :
+             org.billingStatus === "PAST_DUE"  ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400" :
+                                                 "bg-[var(--border)] text-[var(--ink-muted)]"
+           }`}>
+            {org.billingStatus === "TRIALING" ? (isFreeStarter ? "Free" : "Free trial") :
              org.billingStatus === "ACTIVE"   ? "Active" :
              org.billingStatus === "PAST_DUE" ? "Payment overdue" :
-                                                "Cancelled"}
+                                                 "Cancelled"}
           </span>
         </div>
 

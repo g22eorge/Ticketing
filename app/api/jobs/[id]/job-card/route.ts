@@ -9,7 +9,7 @@ import { getDocumentBrandingSettings } from "@/lib/document-branding";
 import { can } from "@/lib/permissions";
 import { JobCardDocument } from "@/lib/pdf/JobCardDocument";
 import { prisma } from "@/lib/prisma";
-import { getCurrentUserRole } from "@/lib/session";
+import { requireOrgSession } from "@/lib/org-context";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -94,7 +94,7 @@ export async function GET(
   context: { params: Promise<{ id: string }> },
 ) {
   const { id } = await context.params;
-  const { session, user } = await getCurrentUserRole();
+  const { session, user, orgId } = await requireOrgSession();
   const permissionUser = { role: user.role, permissions: user.permissions };
 
   if (!can.generateJobCards(permissionUser)) {
@@ -102,7 +102,7 @@ export async function GET(
   }
 
   const job = await prisma.job.findUnique({
-    where: { id },
+    where: { id, orgId },
     select: {
       id: true,
       jobNumber: true,
@@ -145,6 +145,7 @@ export async function GET(
       userId: session.user.id,
       action: "JOB_CARD_GENERATED",
       detail: JSON.stringify({ documentNumber }),
+      orgId,
     },
   });
 

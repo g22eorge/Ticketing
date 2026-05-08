@@ -635,21 +635,21 @@ export async function updateJobAction(formData: FormData) {
   // Notifications must compare against the pre-update snapshot.
   // `job` is fetched after the update, so compare to `existing`.
   if (existing.status !== job.status) {
-    await notifyStatusChange(job.id, existing.status, job.status, job.jobNumber, job.client.fullName);
+    await notifyStatusChange(orgId, job.id, existing.status, job.status, job.jobNumber, job.client.fullName);
   }
 
   if (existing.assignedToId !== job.assignedToId && job.assignedToId) {
-    await notifyJobAssigned(job.id, job.jobNumber, `${job.brand} ${job.model}`, job.assignedToId);
+    await notifyJobAssigned(orgId, job.id, job.jobNumber, `${job.brand} ${job.model}`, job.assignedToId);
   }
 
   if (existing.repairTimeline !== job.repairTimeline && job.repairTimeline) {
-    await notifyTimelineUpdate(job.id, job.jobNumber, `${job.brand} ${job.model}`, job.repairTimeline);
+    await notifyTimelineUpdate(orgId, job.id, job.jobNumber, `${job.brand} ${job.model}`, job.repairTimeline);
   }
 
   if (existing.timelineNote !== (job as typeof job & { timelineNote?: string | null }).timelineNote) {
     const nextNote = (job as typeof job & { timelineNote?: string | null }).timelineNote;
     if (nextNote) {
-      await notifyDelayNote(job.id, job.jobNumber, `${job.brand} ${job.model}`, nextNote);
+      await notifyDelayNote(orgId, job.id, job.jobNumber, `${job.brand} ${job.model}`, nextNote);
     }
   }
 

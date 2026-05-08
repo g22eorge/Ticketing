@@ -9,6 +9,7 @@ import { can } from "@/lib/permissions";
 import { requireOrgSession } from "@/lib/org-context";
 import { sanitizeOptionalText, sanitizeText } from "@/lib/sanitize";
 import { generateJobNumber } from "@/app/(app)/jobs/new/actions";
+import { checkJobLimit } from "@/lib/plan-limits";
 import {
   sendIntakeApprovalNotification,
   sendIntakeRejectionNotification,
@@ -116,13 +117,14 @@ export async function updateRepairRequestDetailsAction(formData: FormData) {
 
     if (Object.keys(jobData).length > 0) {
       await prisma.$transaction([
-        prisma.job.update({ where: { id: existing.linkedJobId }, data: jobData }),
+        prisma.job.update({ where: { id: existing.linkedJobId, orgId }, data: jobData }),
         prisma.auditLog.create({
           data: {
             jobId: existing.linkedJobId,
             userId: user.id,
             action: "JOB_SYNCED_FROM_REQUEST",
             detail: JSON.stringify({ requestId: existing.id, fields: Object.keys(jobData) }),
+            orgId,
           },
         }),
       ]);
@@ -152,6 +154,9 @@ export async function setRepairRequestStatusAction(input: { id: string; status: 
 
   // Convert to Job
   if (parsed.data.status === "CONVERTED_TO_JOB") {
+    const limit = await checkJobLimit(orgId);
+    if (!limit.allowed) return { error: limit.reason } as const;
+
     const client = await prisma.client.upsert({
       where: { phone_orgId: { orgId, phone: req.phone } },
       create: {
@@ -199,6 +204,7 @@ export async function setRepairRequestStatusAction(input: { id: string; status: 
         userId: session.user.id,
         action: "JOB_CREATED",
         detail: JSON.stringify({ status: "RECEIVED", sourceRequest: req.requestNumber }),
+        orgId,
       },
     });
 
@@ -208,7 +214,7 @@ export async function setRepairRequestStatusAction(input: { id: string; status: 
     });
 
     // Non-blocking WhatsApp
-    sendJobCreatedNotification(req.phone, req.customerName, job.jobNumber).catch((err) =>
+    sendJobCreatedNotification(req.phone, req.customerName, job.jobNumber, orgId).catch((err) =>
       console.error("[Intake] WhatsApp notification failed:", err),
     );
 
@@ -233,11 +239,12 @@ export async function setRepairRequestStatusAction(input: { id: string; status: 
       updated.customerName,
       updated.requestNumber,
       updated.preferredDropoffDate,
+      orgId,
     ).catch((err) => console.error("[Intake] WhatsApp notification failed:", err));
   }
 
   if (parsed.data.status === "REJECTED") {
-    sendIntakeRejectionNotification(updated.phone, updated.customerName, updated.requestNumber).catch((err) =>
+    sendIntakeRejectionNotification(updated.phone, updated.customerName, updated.requestNumber, orgId).catch((err) =>
       console.error("[Intake] WhatsApp notification failed:", err),
     );
   }

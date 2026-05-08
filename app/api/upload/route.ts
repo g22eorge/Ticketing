@@ -7,18 +7,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { rateLimit, rateLimitHeaders } from "@/lib/rate-limit";
 import { sanitizeText } from "@/lib/sanitize";
-import { getCurrentUserRoleOptional } from "@/lib/session";
 import { getUploadsRoot } from "@/lib/storage";
+import { requireOrgSession } from "@/lib/org-context";
 
 const MAX_SIZE = 5 * 1024 * 1024;
 const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
 export async function POST(req: NextRequest) {
-  const { session, user } = await getCurrentUserRoleOptional();
-
-  if (!session?.user || !user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const { session, user, orgId } = await requireOrgSession();
 
   // Per-user upload rate limit (30 uploads / 10 min).
   const rl = rateLimit.upload(user.id);
@@ -38,8 +34,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid upload payload" }, { status: 400 });
   }
 
-  const job = await prisma.job.findUnique({
-    where: { id: jobId },
+  const job = await prisma.job.findFirst({
+    where: { id: jobId, orgId },
     select: { id: true, assignedToId: true },
   });
   if (!job) {
@@ -93,10 +89,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-  const { user } = await getCurrentUserRoleOptional();
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const { user, orgId } = await requireOrgSession();
   if (user.role !== "ADMIN") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
@@ -108,6 +101,12 @@ export async function DELETE(req: NextRequest) {
 
   const photo = await prisma.photo.findUnique({ where: { id } });
   if (!photo) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  // Tenant isolation: ensure the photo belongs to a job in this org.
+  const job = await prisma.job.findFirst({ where: { id: photo.jobId, orgId }, select: { id: true } });
+  if (!job) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 

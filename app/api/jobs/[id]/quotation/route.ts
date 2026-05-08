@@ -11,7 +11,7 @@ import { canGenerateQuotationForStatus, formatQuotationNumber } from "@/lib/docu
 import { can } from "@/lib/permissions";
 import { QuotationDocument } from "@/lib/pdf/QuotationDocument";
 import { prisma } from "@/lib/prisma";
-import { getCurrentUserRole } from "@/lib/session";
+import { requireOrgSession } from "@/lib/org-context";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -96,7 +96,7 @@ export async function GET(
   context: { params: Promise<{ id: string }> },
 ) {
   const { id } = await context.params;
-  const { session, user } = await getCurrentUserRole();
+  const { session, user, orgId } = await requireOrgSession();
   const permissionUser = { role: user.role, permissions: user.permissions };
 
   if (
@@ -110,7 +110,7 @@ export async function GET(
   }
 
   const job = await prisma.job.findUnique({
-    where: { id },
+    where: { id, orgId },
     select: {
       id: true,
       jobNumber: true,
@@ -167,13 +167,14 @@ export async function GET(
   );
 
   if (!job.quotedAt) {
-    await prisma.job.update({ where: { id: job.id }, data: { quotedAt: issuedAtDate } });
+    await prisma.job.update({ where: { id: job.id, orgId }, data: { quotedAt: issuedAtDate } });
     await prisma.auditLog.create({
       data: {
         jobId: job.id,
         userId: session.user.id,
         action: "QUOTATION_GENERATED",
         detail: JSON.stringify({ quotationNumber }),
+        orgId,
       },
     });
   }

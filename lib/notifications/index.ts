@@ -8,6 +8,7 @@ import { deliverOutboundMessage, enqueueEmailMessage, enqueueWhatsAppMessage } f
 import { sendCustomWhatsAppMessage } from "@/lib/notifications/whatsapp";
 
 interface CreateNotificationParams {
+  orgId: string;
   type: NotificationType;
   title: string;
   message: string;
@@ -17,6 +18,7 @@ interface CreateNotificationParams {
 }
 
 export async function createNotification({
+  orgId,
   type,
   title,
   message,
@@ -32,17 +34,20 @@ export async function createNotification({
       jobId,
       userId,
       channel,
+      orgId,
     },
   });
 }
 
 export async function createNotificationsForRole({
+  orgId,
   type,
   title,
   message,
   jobId,
   roles,
 }: {
+  orgId: string;
   type: NotificationType;
   title: string;
   message: string;
@@ -51,6 +56,7 @@ export async function createNotificationsForRole({
 }) {
   const users = await prisma.user.findMany({
     where: {
+      orgId,
       role: { in: roles },
       isActive: true,
     },
@@ -67,11 +73,13 @@ export async function createNotificationsForRole({
       jobId,
       userId: user.id,
       channel: NotificationChannel.DASHBOARD,
+      orgId,
     })),
   });
 }
 
-export async function getUnreadNotifications(userId: string, limit = 20) {
+export async function getUnreadNotifications(userId: string, limit = 20, opts?: { includeClient?: boolean }) {
+  const includeClient = opts?.includeClient ?? false;
   return prisma.notification.findMany({
     where: {
       userId,
@@ -84,19 +92,15 @@ export async function getUnreadNotifications(userId: string, limit = 20) {
         select: {
           id: true,
           jobNumber: true,
-          client: {
-            select: {
-              fullName: true,
-              phone: true,
-            },
-          },
+          ...(includeClient ? { client: { select: { fullName: true, phone: true } } } : {}),
         },
       },
     },
   });
 }
 
-export async function getAllNotifications(userId: string, limit = 50) {
+export async function getAllNotifications(userId: string, limit = 50, opts?: { includeClient?: boolean }) {
+  const includeClient = opts?.includeClient ?? false;
   return prisma.notification.findMany({
     where: { userId },
     orderBy: { createdAt: "desc" },
@@ -106,21 +110,16 @@ export async function getAllNotifications(userId: string, limit = 50) {
         select: {
           id: true,
           jobNumber: true,
-          client: {
-            select: {
-              fullName: true,
-              phone: true,
-            },
-          },
+          ...(includeClient ? { client: { select: { fullName: true, phone: true } } } : {}),
         },
       },
     },
   });
 }
 
-export async function markNotificationAsRead(notificationId: string) {
-  return prisma.notification.update({
-    where: { id: notificationId },
+export async function markNotificationAsRead(userId: string, notificationId: string) {
+  return prisma.notification.updateMany({
+    where: { id: notificationId, userId },
     data: {
       isRead: true,
       readAt: new Date(),
@@ -187,6 +186,7 @@ export async function updateUserPreferences(
 }
 
 export async function notifyStatusChange(
+  orgId: string,
   jobId: string,
   oldStatus: JobStatus,
   newStatus: JobStatus,
@@ -198,12 +198,12 @@ export async function notifyStatusChange(
     await cancelReadyForPickupNudges(jobId, "BOTH");
   }
 
-  const prefs = await getUserPreferencesForRoles(["ADMIN", "OPS"]);
+  const prefs = await getUserPreferencesForRoles(orgId, ["ADMIN", "OPS"]);
   const targetRoles = prefs.filter((p) => p.notifyStatusChange).map((p) => p.userId);
   const title = "Status Changed";
   const message = `Job ${jobNumber} (${clientName}) status changed from ${oldStatus.replaceAll("_", " ")} to ${newStatus.replaceAll("_", " ")}`;
 
-  const policy = await getCommunicationPolicyForStatus(newStatus);
+  const policy = await getCommunicationPolicyForStatus(orgId, newStatus);
   const dashboardEnabled = policy?.dashboardEnabled ?? true;
 
   if (dashboardEnabled && targetRoles.length > 0) {
@@ -215,6 +215,7 @@ export async function notifyStatusChange(
         jobId,
         userId,
         channel: NotificationChannel.DASHBOARD,
+        orgId,
       })),
     });
   }
@@ -222,9 +223,10 @@ export async function notifyStatusChange(
   // If policies are enabled and WhatsApp is configured for this status, send via template/outbox.
   // Otherwise, preserve legacy behavior (READY_FOR_PICKUP only, preference-gated).
   if (policy?.whatsappEnabled) {
-    await sendClientWhatsAppForStatusChange({ jobId, jobNumber, oldStatus, newStatus, templateKey: policy.templateKey ?? null });
+    await sendClientWhatsAppForStatusChange({ orgId, jobId, jobNumber, oldStatus, newStatus, templateKey: policy.templateKey ?? null });
     if (newStatus === JobStatus.READY_FOR_PICKUP) {
       await scheduleReadyForPickupNudges({
+        orgId,
         jobId,
         jobNumber,
         nudge1Hours: policy.nudge1Hours,
@@ -234,7 +236,7 @@ export async function notifyStatusChange(
     }
   } else if (newStatus === JobStatus.READY_FOR_PICKUP) {
     const client = await prisma.client.findFirst({
-      where: { jobs: { some: { id: jobId } } },
+      where: { orgId, jobs: { some: { id: jobId } } },
       select: { phone: true, fullName: true },
     });
 
@@ -248,9 +250,10 @@ export async function notifyStatusChange(
 
   // Email: status-change messages and optional nudges.
   if (policy?.emailEnabled) {
-    await sendClientEmailForStatusChange({ jobId, jobNumber, oldStatus, newStatus, templateKey: policy.templateKey ?? null });
+    await sendClientEmailForStatusChange({ orgId, jobId, jobNumber, oldStatus, newStatus, templateKey: policy.templateKey ?? null });
     if (newStatus === JobStatus.READY_FOR_PICKUP) {
       await scheduleReadyForPickupEmailNudges({
+        orgId,
         jobId,
         jobNumber,
         nudge1Hours: policy.nudge1Hours,
@@ -265,11 +268,14 @@ function supportsCommunicationPolicy() {
   return Boolean(Prisma.dmmf.datamodel.models.find((m) => m.name === "CommunicationPolicy"));
 }
 
-async function getCommunicationPolicyForStatus(status: JobStatus) {
+async function getCommunicationPolicyForStatus(orgId: string, status: JobStatus) {
   if (!supportsCommunicationPolicy()) return null;
   try {
     const normalized = normalizeJobStatus(status as unknown as LegacyJobStatus);
-    return await prisma.communicationPolicy.findFirst({ where: { status: normalized as JobStatus } });
+    return (
+      (await prisma.communicationPolicy.findFirst({ where: { orgId, status: normalized as JobStatus } })) ??
+      (await prisma.communicationPolicy.findFirst({ where: { orgId: null, status: normalized as JobStatus } }))
+    );
   } catch {
     // If the table isn't migrated yet, silently fall back.
     return null;
@@ -293,6 +299,7 @@ function nudge2KeyFrom(nudge1Key: string): string {
 }
 
 async function sendClientWhatsAppForStatusChange(input: {
+  orgId: string;
   jobId: string;
   jobNumber: string;
   oldStatus: JobStatus;
@@ -301,7 +308,7 @@ async function sendClientWhatsAppForStatusChange(input: {
 }) {
   const client = await prisma.client
     .findFirst({
-      where: { jobs: { some: { id: input.jobId } } },
+      where: { orgId: input.orgId, jobs: { some: { id: input.jobId } } },
       select: { phone: true, fullName: true },
     })
     .catch(() => null);
@@ -325,6 +332,7 @@ async function sendClientWhatsAppForStatusChange(input: {
   };
 
   const rendered = await renderCommunicationTemplate({
+    orgId: input.orgId,
     key: templateKey,
     channel: "WHATSAPP",
     variables: templateVars,
@@ -332,6 +340,7 @@ async function sendClientWhatsAppForStatusChange(input: {
   });
 
   const enqueueResult = await enqueueWhatsAppMessage({
+    orgId: input.orgId,
     to: client.phone,
     body: rendered.body,
     type,
@@ -370,6 +379,7 @@ async function cancelReadyForPickupNudges(jobId: string, scope: "WHATSAPP" | "EM
 }
 
 async function scheduleReadyForPickupNudges(input: {
+  orgId: string;
   jobId: string;
   jobNumber: string;
   nudge1Hours: number | null;
@@ -382,7 +392,7 @@ async function scheduleReadyForPickupNudges(input: {
 
   const client = await prisma.client
     .findFirst({
-      where: { jobs: { some: { id: input.jobId } } },
+      where: { orgId: input.orgId, jobs: { some: { id: input.jobId } } },
       select: { phone: true, fullName: true },
     })
     .catch(() => null);
@@ -401,6 +411,7 @@ async function scheduleReadyForPickupNudges(input: {
   const makeRendered = async (key: string) => {
     const fallback = `Hi ${client.fullName}, your device for job ${input.jobNumber} is ready for pickup. Please visit us to collect it. - Your Repair Team`;
     return renderCommunicationTemplate({
+      orgId: input.orgId,
       key,
       channel: "WHATSAPP",
       variables: nudgeVars,
@@ -411,6 +422,7 @@ async function scheduleReadyForPickupNudges(input: {
   if (n1) {
     const rendered = await makeRendered(key1);
     await enqueueWhatsAppMessage({
+      orgId: input.orgId,
       to: client.phone,
       body: rendered.body,
       type: OutboundMessageType.READY_FOR_PICKUP_NUDGE_1,
@@ -428,6 +440,7 @@ async function scheduleReadyForPickupNudges(input: {
   if (n2) {
     const rendered = await makeRendered(key2);
     await enqueueWhatsAppMessage({
+      orgId: input.orgId,
       to: client.phone,
       body: rendered.body,
       type: OutboundMessageType.READY_FOR_PICKUP_NUDGE_2,
@@ -444,6 +457,7 @@ async function scheduleReadyForPickupNudges(input: {
 }
 
 async function sendClientEmailForStatusChange(input: {
+  orgId: string;
   jobId: string;
   jobNumber: string;
   oldStatus: JobStatus;
@@ -452,7 +466,7 @@ async function sendClientEmailForStatusChange(input: {
 }) {
   const client = await prisma.client
     .findFirst({
-      where: { jobs: { some: { id: input.jobId } } },
+      where: { orgId: input.orgId, jobs: { some: { id: input.jobId } } },
       select: { email: true, fullName: true },
     })
     .catch(() => null);
@@ -477,6 +491,7 @@ async function sendClientEmailForStatusChange(input: {
   const fallbackBody = `Hello ${client.fullName},\n\nUpdate on Job #${input.jobNumber}: status is now ${vars.newStatusLabel}.\n\nYour Repair Team`;
 
   const rendered = await renderCommunicationTemplate({
+    orgId: input.orgId,
     key: templateKey,
     channel: "EMAIL",
     variables: vars,
@@ -484,6 +499,7 @@ async function sendClientEmailForStatusChange(input: {
   });
 
   const enqueueResult = await enqueueEmailMessage({
+    orgId: input.orgId,
     to: client.email,
     subject: rendered.subject ?? fallbackSubject,
     body: rendered.body,
@@ -499,6 +515,7 @@ async function sendClientEmailForStatusChange(input: {
 }
 
 async function scheduleReadyForPickupEmailNudges(input: {
+  orgId: string;
   jobId: string;
   jobNumber: string;
   nudge1Hours: number | null;
@@ -511,7 +528,7 @@ async function scheduleReadyForPickupEmailNudges(input: {
 
   const client = await prisma.client
     .findFirst({
-      where: { jobs: { some: { id: input.jobId } } },
+      where: { orgId: input.orgId, jobs: { some: { id: input.jobId } } },
       select: { email: true, fullName: true },
     })
     .catch(() => null);
@@ -529,6 +546,7 @@ async function scheduleReadyForPickupEmailNudges(input: {
     const fallbackSubject = `Pickup Reminder: Job #${input.jobNumber}`;
     const fallbackBody = `Hello ${client.fullName},\n\nReminder: your device for job ${input.jobNumber} is ready for pickup.\n\nYour Repair Team`;
     const rendered = await renderCommunicationTemplate({
+      orgId: input.orgId,
       key,
       channel: "EMAIL",
       variables: { customerName: client.fullName, jobNumber: input.jobNumber },
@@ -540,6 +558,7 @@ async function scheduleReadyForPickupEmailNudges(input: {
   if (n1) {
     const msg = await makeEmail(key1);
     await enqueueEmailMessage({
+      orgId: input.orgId,
       to: client.email,
       subject: msg.subject,
       body: msg.body,
@@ -554,6 +573,7 @@ async function scheduleReadyForPickupEmailNudges(input: {
   if (n2) {
     const msg = await makeEmail(key2);
     await enqueueEmailMessage({
+      orgId: input.orgId,
       to: client.email,
       subject: msg.subject,
       body: msg.body,
@@ -567,12 +587,13 @@ async function scheduleReadyForPickupEmailNudges(input: {
 }
 
 export async function notifyApprovalNeeded(
+  orgId: string,
   jobId: string,
   jobNumber: string,
   clientName: string,
   costEstimate: number
 ) {
-  const prefs = await getUserPreferencesForRoles(["ADMIN", "OPS"]);
+  const prefs = await getUserPreferencesForRoles(orgId, ["ADMIN", "OPS"]);
   const targetRoles = prefs.filter((p) => p.notifyApprovalNeeded).map((p) => p.userId);
   const title = "Approval Needed";
   const message = `Job ${jobNumber} (${clientName}) requires approval. Estimated cost: ${formatMoney(costEstimate)}`;
@@ -586,12 +607,13 @@ export async function notifyApprovalNeeded(
         jobId,
         userId,
         channel: NotificationChannel.DASHBOARD,
+        orgId,
       })),
     });
   }
 
   const client = await prisma.client.findFirst({
-    where: { jobs: { some: { id: jobId } } },
+    where: { orgId, jobs: { some: { id: jobId } } },
     select: { phone: true, fullName: true },
   });
 
@@ -603,9 +625,12 @@ export async function notifyApprovalNeeded(
   }
 }
 
-async function getUserPreferencesForRoles(roles: Array<"ADMIN" | "OPS" | "TECHNICIAN_INTERNAL" | "TECHNICIAN_EXTERNAL" | "FRONT_DESK">) {
+async function getUserPreferencesForRoles(
+  orgId: string,
+  roles: Array<"ADMIN" | "OPS" | "TECHNICIAN_INTERNAL" | "TECHNICIAN_EXTERNAL" | "FRONT_DESK">,
+) {
   const users = await prisma.user.findMany({
-    where: { role: { in: roles }, isActive: true },
+    where: { orgId, role: { in: roles }, isActive: true },
     select: { id: true },
   });
   if (users.length === 0) {
@@ -648,6 +673,7 @@ async function getUserPreferencesForRoles(roles: Array<"ADMIN" | "OPS" | "TECHNI
 }
 
 export async function notifyJobAssigned(
+  orgId: string,
   jobId: string,
   jobNumber: string,
   deviceInfo: string,
@@ -657,6 +683,7 @@ export async function notifyJobAssigned(
   const message = `You've been assigned job ${jobNumber} - ${deviceInfo}`;
 
   await createNotification({
+    orgId,
     type: NotificationType.JOB_ASSIGNED,
     title,
     message,
@@ -666,12 +693,13 @@ export async function notifyJobAssigned(
 }
 
 export async function notifyEstimateSubmitted(
+  orgId: string,
   jobId: string,
   jobNumber: string,
   deviceInfo: string,
   estimatedCost: number
 ) {
-  const prefs = await getUserPreferencesForRoles(["ADMIN", "OPS"]);
+  const prefs = await getUserPreferencesForRoles(orgId, ["ADMIN", "OPS"]);
   const targets = prefs.filter((p) => p.notifyEstimateSubmitted).map((p) => p.userId);
   const title = "Estimate Submitted";
   const message = `External tech submitted estimate for job ${jobNumber} (${deviceInfo}) - ${formatMoney(estimatedCost)}`;
@@ -685,18 +713,20 @@ export async function notifyEstimateSubmitted(
         jobId,
         userId,
         channel: NotificationChannel.DASHBOARD,
+        orgId,
       })),
     });
   }
 }
 
 export async function notifyTimelineUpdate(
+  orgId: string,
   jobId: string,
   jobNumber: string,
   deviceInfo: string,
   newTimeline: string
 ) {
-  const prefs = await getUserPreferencesForRoles(["ADMIN", "OPS"]);
+  const prefs = await getUserPreferencesForRoles(orgId, ["ADMIN", "OPS"]);
   const targets = prefs.filter((p) => p.notifyTimelineUpdated).map((p) => p.userId);
   const title = "Timeline Updated";
   const message = `Job ${jobNumber} (${deviceInfo}) timeline updated: ${newTimeline}`;
@@ -710,18 +740,20 @@ export async function notifyTimelineUpdate(
         jobId,
         userId,
         channel: NotificationChannel.DASHBOARD,
+        orgId,
       })),
     });
   }
 }
 
 export async function notifyDelayNote(
+  orgId: string,
   jobId: string,
   jobNumber: string,
   deviceInfo: string,
   note: string
 ) {
-  const prefs = await getUserPreferencesForRoles(["ADMIN", "OPS"]);
+  const prefs = await getUserPreferencesForRoles(orgId, ["ADMIN", "OPS"]);
   const targets = prefs.filter((p) => p.notifyDelayNote).map((p) => p.userId);
   const title = "Delay Note Added";
   const message = `Job ${jobNumber} (${deviceInfo}) delay: ${note}`;
@@ -735,6 +767,7 @@ export async function notifyDelayNote(
         jobId,
         userId,
         channel: NotificationChannel.DASHBOARD,
+        orgId,
       })),
     });
   }

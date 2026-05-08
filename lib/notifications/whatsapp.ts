@@ -141,6 +141,7 @@ export async function sendRepairRequestConfirmation(
 
   const fallback = `Hello ${customerName},\n\nThank you for submitting your repair request (${requestNumber}).\n\nWe have received your device and will contact you shortly.\n\nBest regards,\nYour Repair Team`;
   const rendered = await renderCommunicationTemplate({
+    orgId: orgId ?? "",
     key: "REPAIR_REQUEST_CONFIRMATION",
     channel: "WHATSAPP",
     variables: { customerName, requestNumber },
@@ -162,6 +163,7 @@ export async function sendIntakeApprovalNotification(
   const preferredDropoffDateLine = preferredDropoffDate ? `Preferred drop-off date: ${preferredDropoffDate}` : "";
   const fallback = `Hello ${customerName},\n\nYour repair request (${requestNumber}) has been APPROVED.\n\nPlease bring your device to our shop at your convenience.\n\nBest regards,\nYour Repair Team`;
   const rendered = await renderCommunicationTemplate({
+    orgId: orgId ?? "",
     key: "FRONT_DESK_APPROVED",
     channel: "WHATSAPP",
     variables: { customerName, requestNumber, preferredDropoffDateLine },
@@ -181,6 +183,7 @@ export async function sendIntakeRejectionNotification(
 
   const fallback = `Hello ${customerName},\n\nUnfortunately, we are unable to process your repair request (${requestNumber}) at this time.\n\nPlease contact us for more information.\n\nBest regards,\nYour Repair Team`;
   const rendered = await renderCommunicationTemplate({
+    orgId: orgId ?? "",
     key: "FRONT_DESK_REJECTED",
     channel: "WHATSAPP",
     variables: { customerName, requestNumber },
@@ -200,6 +203,7 @@ export async function sendJobCreatedNotification(
 
   const fallback = `Hello ${customerName},\n\nYour device has been registered as Job #${jobNumber}.\n\nWe will update you as the repair progresses.\n\nBest regards,\nYour Repair Team`;
   const rendered = await renderCommunicationTemplate({
+    orgId: orgId ?? "",
     key: "JOB_CREATED",
     channel: "WHATSAPP",
     variables: { customerName, jobNumber },
@@ -219,6 +223,7 @@ export async function sendJobCompletionNotification(
 
   const fallback = `Hello ${customerName},\n\nGreat news! Your device (Job #${jobNumber}) is ready for pickup.\n\nPlease visit our shop to collect your device.\n\nBest regards,\nYour Repair Team`;
   const rendered = await renderCommunicationTemplate({
+    orgId: orgId ?? "",
     key: "JOB_COMPLETED",
     channel: "WHATSAPP",
     variables: { customerName, jobNumber },
