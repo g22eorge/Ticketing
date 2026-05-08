@@ -61,7 +61,7 @@ export async function GET(req: NextRequest) {
         amount: tx.amount,
         currency: tx.currency,
         status: "successful",
-        flwTxId: tx.confirmation_code,
+        confirmationCode: tx.confirmation_code,
         txRef: merchantReference,
         plan,
       });

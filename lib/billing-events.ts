@@ -8,7 +8,8 @@ export interface BillingEvent {
   amount: number;
   currency: string;
   status: string;
-  flwTxId: string | null;
+  /** Pesapal confirmation_code — stored in legacy flwTxId column */
+  confirmationCode: string | null;
   txRef: string | null;
   plan: string | null;
   createdAt: Date;
@@ -41,7 +42,7 @@ export async function recordBillingEvent(params: {
   amount: number;
   currency: string;
   status: string;
-  flwTxId?: string | null;
+  confirmationCode?: string | null;
   txRef?: string | null;
   plan?: string | null;
 }): Promise<void> {
@@ -50,7 +51,7 @@ export async function recordBillingEvent(params: {
   await prisma.$executeRaw`
     INSERT INTO "BillingEvent" (id, orgId, event, amount, currency, status, flwTxId, txRef, plan)
     VALUES (${id}, ${params.orgId}, ${params.event}, ${params.amount}, ${params.currency},
-            ${params.status}, ${params.flwTxId ?? null}, ${params.txRef ?? null}, ${params.plan ?? null})
+            ${params.status}, ${params.confirmationCode ?? null}, ${params.txRef ?? null}, ${params.plan ?? null})
   `;
 }
 
@@ -123,7 +124,7 @@ function rowToBillingEvent(r: Record<string, unknown>): BillingEvent {
     amount: Number(r.amount),
     currency: String(r.currency),
     status: String(r.status),
-    flwTxId: r.flwTxId ? String(r.flwTxId) : null,
+    confirmationCode: r.flwTxId ? String(r.flwTxId) : null,
     txRef: r.txRef ? String(r.txRef) : null,
     plan: r.plan ? String(r.plan) : null,
     createdAt: new Date(String(r.createdAt)),
