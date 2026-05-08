@@ -7,8 +7,8 @@ export const metadata: Metadata = {
 };
 
 const EFFECTIVE_DATE = "1 May 2025";
-const COMPANY = "Eagle Info Solutions SMC Limited";
-const CONTACT_EMAIL = "legal@eagleinfosolutions.com";
+const COMPANY = "Repair Manager";
+const CONTACT_EMAIL = process.env.NEXT_PUBLIC_CONTACT_EMAIL || "support@example.com";
 
 export default function PrivacyPage() {
   return (

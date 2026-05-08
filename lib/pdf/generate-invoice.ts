@@ -51,8 +51,7 @@ export async function generateInvoiceBuffer(
   const vatAmount = vatApplicable ? Math.max(clientBill - repairCost, 0) : 0;
   const issuedAtDate = new Date();
   const logoUrl = await resolveInvoiceLogo();
-  const normalizedFooterText = branding.footerText
-    .replace("Eagle InfoSolutions SMC Limited", "Eagle Info Solutions SMC Limited");
+  const normalizedFooterText = branding.footerText.trim();
   const quotationNumber = formatQuotationNumber(
     job.jobNumber, issuedAtDate, branding.quotePrefix,
     branding.quoteFormat, branding.sequencePadLength,

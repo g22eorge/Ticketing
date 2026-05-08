@@ -367,7 +367,7 @@ export default async function LandingPage() {
             </nav>
           </div>
           <div className="border-t border-white/6 pt-5 text-[12px] text-white/25">
-            © {new Date().getFullYear()} Eagle Info Solutions SMC Limited. All rights reserved.
+            © {new Date().getFullYear()} Repair Manager. All rights reserved.
           </div>
         </div>
       </footer>

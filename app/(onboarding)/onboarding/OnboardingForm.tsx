@@ -33,7 +33,7 @@ export function OnboardingForm() {
           id="businessName"
           name="businessName"
           type="text"
-          placeholder="Eagle Info Solutions"
+          placeholder="Your business name"
           required
           minLength={2}
           maxLength={100}

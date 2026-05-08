@@ -35,7 +35,7 @@ export function getDefaultCommunicationTemplates(): Array<{
         "We have received your device and will contact you shortly to confirm the diagnosis and timeline.",
         "",
         "Best regards,",
-        "Eagle Info Solutions",
+        "{companyName}",
       ].join("\n"),
     },
     {
@@ -52,7 +52,7 @@ export function getDefaultCommunicationTemplates(): Array<{
         "Please bring your device to our shop at your convenience.",
         "",
         "Best regards,",
-        "Eagle Info Solutions",
+        "{companyName}",
       ].join("\n"),
     },
     {
@@ -69,7 +69,7 @@ export function getDefaultCommunicationTemplates(): Array<{
         "Please contact us for more information.",
         "",
         "Best regards,",
-        "Eagle Info Solutions",
+        "{companyName}",
       ].join("\n"),
     },
     {
@@ -86,7 +86,7 @@ export function getDefaultCommunicationTemplates(): Array<{
         "We will update you as the repair progresses.",
         "",
         "Best regards,",
-        "Eagle Info Solutions",
+        "{companyName}",
       ].join("\n"),
     },
     {
@@ -103,7 +103,7 @@ export function getDefaultCommunicationTemplates(): Array<{
         "Please visit our shop to collect your device.",
         "",
         "Best regards,",
-        "Eagle Info Solutions",
+        "{companyName}",
       ].join("\n"),
     },
     {
@@ -119,7 +119,7 @@ export function getDefaultCommunicationTemplates(): Array<{
         "Status: {newStatusLabel}",
         "",
         "Best regards,",
-        "Eagle Info Solutions",
+        "{companyName}",
       ].join("\n"),
     },
     {
@@ -134,7 +134,7 @@ export function getDefaultCommunicationTemplates(): Array<{
         "Status: {newStatusLabel}",
         "",
         "Best regards,",
-        "Eagle Info Solutions",
+        "{companyName}",
       ].join("\n"),
     },
     {
@@ -150,7 +150,7 @@ export function getDefaultCommunicationTemplates(): Array<{
         "",
         "Please visit us to collect it.",
         "",
-        "Eagle Info Solutions",
+        "{companyName}",
       ].join("\n"),
     },
     {
@@ -165,7 +165,7 @@ export function getDefaultCommunicationTemplates(): Array<{
         "",
         "Please visit us to collect it.",
         "",
-        "Eagle Info Solutions",
+        "{companyName}",
       ].join("\n"),
     },
     {
@@ -181,7 +181,7 @@ export function getDefaultCommunicationTemplates(): Array<{
         "",
         "If you need delivery, reply and we will advise.",
         "",
-        "Eagle Info Solutions",
+        "{companyName}",
       ].join("\n"),
     },
     {
@@ -196,7 +196,7 @@ export function getDefaultCommunicationTemplates(): Array<{
         "",
         "If you need delivery, reply and we will advise.",
         "",
-        "Eagle Info Solutions",
+        "{companyName}",
       ].join("\n"),
     },
   ];

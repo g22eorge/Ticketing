@@ -113,7 +113,7 @@ export default function TwitterImage() {
                 background: "rgba(0,0,0,0.35)",
               }}
             >
-              eagleinfosolutions.com
+              Repair Manager
             </div>
           </div>
         </div>

@@ -43,10 +43,8 @@ export async function getOnboardingStatus(orgId: string): Promise<OnboardingStat
   const ageMs = Date.now() - org.createdAt.getTime();
   const ageDays = ageMs / 86_400_000;
 
-  const DEFAULT_COMPANY_NAME = "Eagle Info Solutions";
   const brandingConfigured =
     !!branding &&
-    branding.companyName !== DEFAULT_COMPANY_NAME &&
     branding.companyName.trim().length > 0;
 
   const teamMemberAdded = userCount > 1;

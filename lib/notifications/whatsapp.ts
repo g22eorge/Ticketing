@@ -101,7 +101,7 @@ export async function sendRepairRequestConfirmation(
     return { success: false, error: "WhatsApp not configured" };
   }
 
-  const fallback = `Hello ${customerName},\n\nThank you for submitting your repair request (${requestNumber}).\n\nWe have received your device and will contact you shortly to confirm the diagnosis and timeline.\n\nBest regards,\nEagle Info Solutions`;
+  const fallback = `Hello ${customerName},\n\nThank you for submitting your repair request (${requestNumber}).\n\nWe have received your device and will contact you shortly to confirm the diagnosis and timeline.\n\nBest regards,\nYour Repair Team`;
 
   const rendered = await renderCommunicationTemplate({
     key: "REPAIR_REQUEST_CONFIRMATION",
@@ -128,7 +128,7 @@ export async function sendIntakeApprovalNotification(
     ? `Preferred drop-off date: ${preferredDropoffDate}`
     : "";
 
-  const fallback = `Hello ${customerName},\n\nYour repair request (${requestNumber}) has been APPROVED.\n\nPlease bring your device to our shop at your convenience.\n\nBest regards,\nEagle Info Solutions`;
+  const fallback = `Hello ${customerName},\n\nYour repair request (${requestNumber}) has been APPROVED.\n\nPlease bring your device to our shop at your convenience.\n\nBest regards,\nYour Repair Team`;
 
   const rendered = await renderCommunicationTemplate({
     key: "FRONT_DESK_APPROVED",
@@ -150,7 +150,7 @@ export async function sendIntakeRejectionNotification(
     return { success: false, error: "WhatsApp not configured" };
   }
 
-  const fallback = `Hello ${customerName},\n\nUnfortunately, we are unable to process your repair request (${requestNumber}) at this time.\n\nPlease contact us for more information.\n\nBest regards,\nEagle Info Solutions`;
+  const fallback = `Hello ${customerName},\n\nUnfortunately, we are unable to process your repair request (${requestNumber}) at this time.\n\nPlease contact us for more information.\n\nBest regards,\nYour Repair Team`;
 
   const rendered = await renderCommunicationTemplate({
     key: "FRONT_DESK_REJECTED",
@@ -172,7 +172,7 @@ export async function sendJobCreatedNotification(
     return { success: false, error: "WhatsApp not configured" };
   }
 
-  const fallback = `Hello ${customerName},\n\nYour device has been registered as Job #${jobNumber}.\n\nWe will update you as the repair progresses.\n\nBest regards,\nEagle Info Solutions`;
+  const fallback = `Hello ${customerName},\n\nYour device has been registered as Job #${jobNumber}.\n\nWe will update you as the repair progresses.\n\nBest regards,\nYour Repair Team`;
 
   const rendered = await renderCommunicationTemplate({
     key: "JOB_CREATED",
@@ -194,7 +194,7 @@ export async function sendJobCompletionNotification(
     return { success: false, error: "WhatsApp not configured" };
   }
 
-  const fallback = `Hello ${customerName},\n\nGreat news! Your device (Job #${jobNumber}) is ready for pickup.\n\nPlease visit our shop to collect your device.\n\nBest regards,\nEagle Info Solutions`;
+  const fallback = `Hello ${customerName},\n\nGreat news! Your device (Job #${jobNumber}) is ready for pickup.\n\nPlease visit our shop to collect your device.\n\nBest regards,\nYour Repair Team`;
 
   const rendered = await renderCommunicationTemplate({
     key: "JOB_COMPLETED",

@@ -53,7 +53,7 @@ export function LoginForm() {
           type="email"
           required
           autoComplete="email"
-          placeholder="you@eagleinfo.com"
+          placeholder="you@example.com"
           className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/20 focus:border-[#D4AF37]/50 focus:bg-white/8 focus:ring-2 focus:ring-[#D4AF37]/15"
         />
       </div>
@@ -98,8 +98,13 @@ export function LoginForm() {
           onClick={() => {
             const emailInput = formRef.current?.querySelector<HTMLInputElement>('input[name="email"]');
             const email = (emailInput?.value ?? "").trim();
-            const message = `Hi Eagle Info Support, please reset my MRMS password. Email: ${email || "<your email>"}`;
-            window.open(`https://wa.me/256772006344?text=${encodeURIComponent(message)}`, "_blank", "noopener,noreferrer");
+            const waNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER;
+            if (waNumber) {
+              const message = `Hi Support, please reset my password. Email: ${email || "<your email>"}`;
+              window.open(`https://wa.me/${waNumber}?text=${encodeURIComponent(message)}`, "_blank", "noopener,noreferrer");
+            } else {
+              alert("Please contact your administrator to reset your password.");
+            }
           }}
           className="text-xs text-[#D4AF37]/60 transition hover:text-[#D4AF37]"
         >

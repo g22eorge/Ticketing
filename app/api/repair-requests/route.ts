@@ -5,16 +5,18 @@ import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
 import { prisma } from "@/lib/prisma";
 import { deliverOutboundMessage, enqueueEmailMessage, enqueueWhatsAppMessage } from "@/lib/notifications/whatsapp-outbox";
 
+const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL || "";
 const ALLOWED_ORIGINS = [
-  process.env.ALLOWED_ORIGIN_1 || "https://www.eagleinfosolutions.com",
-  process.env.ALLOWED_ORIGIN_2 || "https://eagleinfosolutions.com",
-].filter(Boolean);
+  process.env.ALLOWED_ORIGIN_1,
+  process.env.ALLOWED_ORIGIN_2,
+  appUrl,
+].filter(Boolean) as string[];
 
 function getCorsHeaders(origin: string | null) {
   const allowedOrigin =
     origin && ALLOWED_ORIGINS.includes(origin)
       ? origin
-      : "https://www.eagleinfosolutions.com";
+      : (ALLOWED_ORIGINS[0] ?? "*");
 
   return {
     "Access-Control-Allow-Origin": allowedOrigin,
@@ -274,8 +276,8 @@ export async function POST(request: NextRequest) {
     const customerName = String(body.customer_name ?? "Customer");
     const deviceLines = results.map((r) => `• ${r.requestNumber} — ${r.brand} (${r.deviceType.replace(/_/g, " ")})`).join("\n");
     const whatsappMessage = isBatch
-      ? `Hello ${customerName},\n\nThank you! We've received your repair requests:\n\n${deviceLines}\n\nWe'll contact you shortly to confirm details for each device.\n\nBest regards,\nEagle Info Solutions`
-      : `Hello ${customerName},\n\nThank you for submitting your repair request (${results[0].requestNumber}).\n\nWe have received your device and will contact you shortly to confirm the diagnosis and timeline.\n\nBest regards,\nEagle Info Solutions`;
+      ? `Hello ${customerName},\n\nThank you! We've received your repair requests:\n\n${deviceLines}\n\nWe'll contact you shortly to confirm details for each device.\n\nBest regards,\nYour Repair Team`
+      : `Hello ${customerName},\n\nThank you for submitting your repair request (${results[0].requestNumber}).\n\nWe have received your device and will contact you shortly to confirm the diagnosis and timeline.\n\nBest regards,\nYour Repair Team`;
 
     let confirmation: "queued" | "sent" | "skipped" = "skipped";
     let outboxId: string | undefined;

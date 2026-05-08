@@ -64,14 +64,14 @@ export function Header({ userName, role, permissions = [] }: HeaderProps) {
           <div className="overflow-hidden rounded-lg border border-[var(--line)] bg-[var(--panel)] shadow-sm">
             <Image
               src="/eagle-info-logo.png"
-              alt="Eagle Info logo"
+              alt="Logo"
               width={28}
               height={28}
               className="h-7 w-7 object-cover"
               priority
             />
           </div>
-          <span className="text-[13px] font-bold text-[var(--ink)] tracking-tight">Eagle Info</span>
+          <span className="text-[13px] font-bold text-[var(--ink)] tracking-tight">Repair Manager</span>
         </Link>
 
         {/* Spacer */}

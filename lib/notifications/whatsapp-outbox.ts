@@ -320,10 +320,10 @@ async function deliverEmail(row: {
   const to = row.to.split(",").map((t) => t.trim()).filter(Boolean);
 
   // Use a dedicated alerts sender domain (Resend verifies sender domains).
-  // Prefer explicit env override; otherwise default to alerts.eagleinfosolutions.com.
+  // Set RESEND_ALERTS_FROM to configure the sender address.
   const from =
     process.env.RESEND_ALERTS_FROM ||
-    "Eagle Info Alerts <alerts@alerts.eagleinfosolutions.com>";
+    "Repair Manager Alerts <noreply@repair-manager.app>";
 
   // Prefer a structured template when we have the DB id.
   if (row.type === "REPAIR_REQUEST_EMAIL_ALERT" && row.repairRequestId) {

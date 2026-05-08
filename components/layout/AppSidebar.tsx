@@ -265,7 +265,7 @@ export function AppSidebar({
         <div className="overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)] shadow-sm">
           <Image
             src="/eagle-info-logo.png"
-            alt="Eagle Info logo"
+            alt="Logo"
             width={36}
             height={36}
             className="h-9 w-9 object-cover"
@@ -273,8 +273,8 @@ export function AppSidebar({
           />
         </div>
         <div className="min-w-0">
-          <p className="text-[13px] font-bold tracking-tight text-[var(--ink)] leading-none">Eagle Info</p>
-          <p className="text-[10px] font-semibold text-[var(--accent)] tracking-wide mt-0.5">Repair Manager</p>
+          <p className="text-[13px] font-bold tracking-tight text-[var(--ink)] leading-none">Repair</p>
+          <p className="text-[10px] font-semibold text-[var(--accent)] tracking-wide mt-0.5">Manager</p>
         </div>
       </Link>
 
@@ -353,7 +353,7 @@ export function AppSidebar({
 
       {/* ── Footer ── */}
       <div className="border-t border-[var(--line)] px-5 py-3">
-        <p className="text-[10px] text-[var(--ink-muted)]/50 tracking-wide">Eagle Info Solutions</p>
+        <p className="text-[10px] text-[var(--ink-muted)]/50 tracking-wide">Repair Manager</p>
       </div>
     </aside>
   );

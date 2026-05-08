@@ -664,9 +664,8 @@ export async function updateJobAction(formData: FormData) {
 export async function updateOneTimeExternalAssignmentAction(formData: FormData) {
   const { session, user, orgId } = await requireOrgSession();
   const permissionUser = { role: user.role, permissions: user.permissions };
-  const isRest = user.email?.toLowerCase() === "rest@eagle.tech";
 
-  if (!(user.role === "ADMIN" || user.role === "OPS" || isRest || can.assignJobs(permissionUser))) {
+  if (!(user.role === "ADMIN" || user.role === "OPS" || can.assignJobs(permissionUser))) {
     return { error: "Forbidden" };
   }
 
@@ -917,7 +916,7 @@ export async function sendQuotationViaWhatsAppAction(
   return sendPdfViaWhatsApp({
     jobId, userId: user.id,
     buffer: result.buffer, filename: result.filename, clientPhone: result.clientPhone,
-    caption: `Please find your quotation (${result.quotationNumber}) attached. — Eagle Info Solutions`,
+    caption: `Please find your quotation (${result.quotationNumber}) attached.`,
     outboxBody: `[Quotation PDF] ${result.quotationNumber}`,
     auditAction: "QUOTATION_SENT_WHATSAPP",
     auditDetail: { quotationNumber: result.quotationNumber },
@@ -936,7 +935,7 @@ export async function sendInvoiceViaWhatsAppAction(
   return sendPdfViaWhatsApp({
     jobId, userId: user.id,
     buffer: result.buffer, filename: result.filename, clientPhone: result.clientPhone,
-    caption: `Please find your invoice (${result.invoiceNumber}) attached. — Eagle Info Solutions`,
+    caption: `Please find your invoice (${result.invoiceNumber}) attached.`,
     outboxBody: `[Invoice PDF] ${result.invoiceNumber}`,
     auditAction: "INVOICE_SENT_WHATSAPP",
     auditDetail: { invoiceNumber: result.invoiceNumber },
@@ -955,7 +954,7 @@ export async function sendJobCardViaWhatsAppAction(
   return sendPdfViaWhatsApp({
     jobId, userId: user.id,
     buffer: result.buffer, filename: result.filename, clientPhone: result.clientPhone,
-    caption: `Please find your job card (${result.documentNumber}) attached. — Eagle Info Solutions`,
+    caption: `Please find your job card (${result.documentNumber}) attached.`,
     outboxBody: `[Job Card PDF] ${result.documentNumber}`,
     auditAction: "JOB_CARD_SENT_WHATSAPP",
     auditDetail: { documentNumber: result.documentNumber },

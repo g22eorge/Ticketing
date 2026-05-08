@@ -241,7 +241,7 @@ export async function notifyStatusChange(
     if (client?.phone && prefs.some((p) => p.whatsappEnabled)) {
       await sendCustomWhatsAppMessage(
         client.phone,
-        `Hi ${client.fullName}, your device for job ${jobNumber} is ready for pickup. Please visit us to collect it. - Eagle Info Solutions`,
+        `Hi ${client.fullName}, your device for job ${jobNumber} is ready for pickup. Please visit us to collect it. - Your Repair Team`,
       );
     }
   }
@@ -313,7 +313,7 @@ async function sendClientWhatsAppForStatusChange(input: {
     ? (templateKey as OutboundMessageType)
     : OutboundMessageType.JOB_STATUS_UPDATE;
 
-  const fallback = `Hi ${client.fullName}, update on job ${input.jobNumber}: status is now ${input.newStatus.replaceAll("_", " ")}. - Eagle Info Solutions`;
+  const fallback = `Hi ${client.fullName}, update on job ${input.jobNumber}: status is now ${input.newStatus.replaceAll("_", " ")}. - Your Repair Team`;
 
   const templateVars = {
     customerName: client.fullName,
@@ -399,7 +399,7 @@ async function scheduleReadyForPickupNudges(input: {
   const nudgeVars = { customerName: client.fullName, jobNumber: input.jobNumber };
 
   const makeRendered = async (key: string) => {
-    const fallback = `Hi ${client.fullName}, your device for job ${input.jobNumber} is ready for pickup. Please visit us to collect it. - Eagle Info Solutions`;
+    const fallback = `Hi ${client.fullName}, your device for job ${input.jobNumber} is ready for pickup. Please visit us to collect it. - Your Repair Team`;
     return renderCommunicationTemplate({
       key,
       channel: "WHATSAPP",
@@ -474,7 +474,7 @@ async function sendClientEmailForStatusChange(input: {
   };
 
   const fallbackSubject = `Update on Job #${input.jobNumber}`;
-  const fallbackBody = `Hello ${client.fullName},\n\nUpdate on Job #${input.jobNumber}: status is now ${vars.newStatusLabel}.\n\nEagle Info Solutions`;
+  const fallbackBody = `Hello ${client.fullName},\n\nUpdate on Job #${input.jobNumber}: status is now ${vars.newStatusLabel}.\n\nYour Repair Team`;
 
   const rendered = await renderCommunicationTemplate({
     key: templateKey,
@@ -527,7 +527,7 @@ async function scheduleReadyForPickupEmailNudges(input: {
 
   const makeEmail = async (key: string) => {
     const fallbackSubject = `Pickup Reminder: Job #${input.jobNumber}`;
-    const fallbackBody = `Hello ${client.fullName},\n\nReminder: your device for job ${input.jobNumber} is ready for pickup.\n\nEagle Info Solutions`;
+    const fallbackBody = `Hello ${client.fullName},\n\nReminder: your device for job ${input.jobNumber} is ready for pickup.\n\nYour Repair Team`;
     const rendered = await renderCommunicationTemplate({
       key,
       channel: "EMAIL",
@@ -598,7 +598,7 @@ export async function notifyApprovalNeeded(
   if (client?.phone && prefs.some((p) => p.whatsappEnabled)) {
     await sendCustomWhatsAppMessage(
       client.phone,
-      `Hi ${client.fullName}, your repair for job ${jobNumber} is ready. Estimated cost: ${formatMoney(costEstimate)}. Please confirm to proceed. - Eagle Info Solutions`
+      `Hi ${client.fullName}, your repair for job ${jobNumber} is ready. Estimated cost: ${formatMoney(costEstimate)}. Please confirm to proceed. - Your Repair Team`
     );
   }
 }

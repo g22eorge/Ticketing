@@ -290,7 +290,7 @@ export async function POST() {
     await addBrandingColumn("backgroundColor", "TEXT", "'#FFFFFF'");
     await addBrandingColumn("surfaceColor", "TEXT", "'#F5F5F5'");
     await addBrandingColumn("borderColor", "TEXT", "'#E5E5E5'");
-    await addBrandingColumn("signatureCompanyLabel", "TEXT", "'Signed by: Eagle Info Solutions'");
+    await addBrandingColumn("signatureCompanyLabel", "TEXT", "'Signed by: Company'");
     await addBrandingColumn("signatureClientLabel", "TEXT", "'Signed by: Client'");
     await addBrandingColumn("signatureCompanyLabel", "TEXT");
     await addBrandingColumn("signatureClientLabel", "TEXT");

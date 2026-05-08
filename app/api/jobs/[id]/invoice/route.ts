@@ -193,12 +193,7 @@ export async function GET(
   const dueDate = new Date(issuedAtDate);
   dueDate.setDate(dueDate.getDate() + branding.quoteValidityDays);
   const logoUrl = await resolveInvoiceLogo();
-  const normalizedFooterText =
-    branding.footerText
-      .replace("Eagle InfoSolutions SMC Limited", "Eagle Info Solutions SMC Limited")
-      .trim() === "System built by Almeida @ 2026 all rights reserved."
-      ? "System built by Almeida @ 2026 all rights reserved."
-      : branding.footerText.replace("Eagle InfoSolutions SMC Limited", "Eagle Info Solutions SMC Limited");
+  const normalizedFooterText = branding.footerText.trim();
   const quotationNumber = formatQuotationNumber(
     job.jobNumber,
     issuedAtDate,
