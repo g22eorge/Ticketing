@@ -46,7 +46,7 @@ export default async function AppLayout({
 
   // ── Trial expiry warning email (fire-and-forget, once per server instance) ─
   if (org?.billingStatus === "TRIALING" && org.trialEndsAt) {
-    const daysLeft = Math.ceil((org.trialEndsAt.getTime() - Date.now()) / 86_400_000);
+    const daysLeft = Math.ceil((org.trialEndsAt.getTime() - now.getTime()) / 86_400_000);
     if (daysLeft <= 3 && daysLeft > 0 && !trialWarningSent.has(orgId)) {
       trialWarningSent.add(orgId);
       prisma.user

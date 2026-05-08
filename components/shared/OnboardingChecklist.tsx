@@ -6,12 +6,12 @@ import { useEffect, useState } from "react";
 /** One-time celebration banner after all setup steps are complete. */
 export function OnboardingComplete({ orgId }: { orgId: string }) {
   const storageKey = `onboarding-complete-dismissed:${orgId}`;
-  const [dismissed, setDismissed] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  const [hydrated, setHydrated] = useState<{ mounted: boolean; dismissed: boolean }>({ mounted: false, dismissed: false });
+  const { mounted, dismissed } = hydrated;
 
   useEffect(() => {
-    setMounted(true);
-    setDismissed(localStorage.getItem(storageKey) === "1");
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setHydrated({ mounted: true, dismissed: localStorage.getItem(storageKey) === "1" });
   }, [storageKey]);
 
   if (!mounted || dismissed) return null;
@@ -24,7 +24,7 @@ export function OnboardingComplete({ orgId }: { orgId: string }) {
         <p className="text-sm text-[var(--ink-muted)]">You&apos;re ready to manage repairs like a pro.</p>
       </div>
       <button
-        onClick={() => { localStorage.setItem(storageKey, "1"); setDismissed(true); }}
+        onClick={() => { localStorage.setItem(storageKey, "1"); setHydrated((h) => ({ ...h, dismissed: true })); }}
         className="shrink-0 rounded-lg p-1.5 text-[var(--ink-muted)] transition hover:bg-[var(--border)] hover:text-[var(--ink)]"
         aria-label="Dismiss"
       >
@@ -47,12 +47,12 @@ type Props = {
 
 export function OnboardingChecklist({ orgId, steps, doneCount, totalCount }: Props) {
   const storageKey = `onboarding-dismissed:${orgId}`;
-  const [dismissed, setDismissed] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  const [hydrated, setHydrated] = useState<{ mounted: boolean; dismissed: boolean }>({ mounted: false, dismissed: false });
+  const { mounted, dismissed } = hydrated;
 
   useEffect(() => {
-    setMounted(true);
-    setDismissed(localStorage.getItem(storageKey) === "1");
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setHydrated({ mounted: true, dismissed: localStorage.getItem(storageKey) === "1" });
   }, [storageKey]);
 
   if (!mounted || dismissed) return null;
@@ -61,7 +61,7 @@ export function OnboardingChecklist({ orgId, steps, doneCount, totalCount }: Pro
 
   function dismiss() {
     localStorage.setItem(storageKey, "1");
-    setDismissed(true);
+    setHydrated((h) => ({ ...h, dismissed: true }));
   }
 
   return (
