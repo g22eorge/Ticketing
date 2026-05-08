@@ -23,7 +23,7 @@ async function sendRenderedWhatsApp(
       const atCfg = getAtConfig(orgCfg);
       if (atCfg) {
         console.log("[WhatsApp→SMS] Falling back to Africa's Talking SMS for", phone);
-        const smsResult = await sendSms(phone, rendered.body, atCfg);
+        const smsResult = await sendSms(phone, rendered.body, atCfg, orgId);
         if (smsResult.success) return { success: true, messageId: smsResult.messageId };
       }
     }

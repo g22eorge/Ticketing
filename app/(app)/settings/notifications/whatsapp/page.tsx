@@ -7,6 +7,7 @@ import { whatsappHealthCheckForOrg } from "@/lib/notifications/whatsapp";
 import { WhatsAppTestPanel } from "@/components/settings/WhatsAppTestPanel";
 import { WhatsAppConfigForm } from "@/components/settings/WhatsAppConfigForm";
 import { ATSmsConfigForm } from "@/components/settings/ATSmsConfigForm";
+import { checkSmsQuota } from "@/lib/notifications/sms-quota";
 
 export const dynamic = "force-dynamic";
 
@@ -14,7 +15,12 @@ export default async function WhatsAppSettingsPage() {
   const { user, orgId } = await requireOrgSession();
   if (user.role !== "ADMIN") redirect("/settings/notifications");
 
-  const orgConfig = await getOrgWhatsAppConfig(orgId);
+  const platformAtConfigured = Boolean(process.env.AT_API_KEY && process.env.AT_USERNAME);
+
+  const [orgConfig, smsStats] = await Promise.all([
+    getOrgWhatsAppConfig(orgId),
+    platformAtConfigured ? checkSmsQuota(orgId) : Promise.resolve(null),
+  ]);
   const health = orgConfig ? await whatsappHealthCheckForOrg(orgId) : null;
 
   const healthData = health as (typeof health & {
@@ -124,8 +130,13 @@ export default async function WhatsAppSettingsPage() {
         />
       ) : null}
 
-      {/* Africa's Talking SMS */}
-      <ATSmsConfigForm orgId={orgId} current={orgConfig} />
+      {/* SMS Notifications */}
+      <ATSmsConfigForm
+        orgId={orgId}
+        smsFallback={orgConfig?.smsFallback ?? false}
+        platformConfigured={platformAtConfigured}
+        stats={smsStats}
+      />
 
       {/* Links */}
       <div className="flex flex-wrap gap-3">

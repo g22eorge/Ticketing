@@ -1,3 +1,5 @@
+import { checkSmsQuota, incrementSmsUsage } from "@/lib/notifications/sms-quota";
+
 export interface AtSmsConfig {
   apiKey: string;
   username: string;
@@ -30,7 +32,17 @@ export async function sendSms(
   phone: string,
   message: string,
   cfg?: AtSmsConfig | null,
+  orgId?: string,
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
+  // Quota check
+  if (orgId) {
+    const quota = await checkSmsQuota(orgId);
+    if (!quota.allowed) {
+      console.warn(`[SMS] Quota exceeded for org ${orgId}: ${quota.used}/${quota.limit}`);
+      return { success: false, error: `SMS quota exceeded (${quota.used}/${quota.limit} used this month)` };
+    }
+  }
+
   const config = cfg ?? getAtConfig();
   if (!config) return { success: false, error: "SMS not configured" };
 
@@ -57,6 +69,7 @@ export async function sendSms(
     const data = await res.json();
     const recipient = data?.SMSMessageData?.Recipients?.[0];
     if (recipient?.statusCode === 101) {
+      if (orgId) void incrementSmsUsage(orgId);
       return { success: true, messageId: String(recipient.messageId) };
     }
     return { success: false, error: recipient?.status ?? "Unknown SMS error" };

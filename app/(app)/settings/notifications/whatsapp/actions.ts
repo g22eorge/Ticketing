@@ -124,18 +124,8 @@ export async function saveATConfigAction(
   const { user, orgId } = await requireOrgSession();
   if (user.role !== "ADMIN") return { ok: false, error: "Forbidden" };
 
-  const atApiKeyInput = (formData.get("atApiKey") as string | null)?.trim() ?? "";
-  const atUsername = (formData.get("atUsername") as string | null)?.trim() ?? "";
-  const atSenderId = (formData.get("atSenderId") as string | null)?.trim() ?? "";
   const smsFallback = formData.get("smsFallback") === "on";
-
-  if (!atUsername) return { ok: false, error: "Username is required." };
-
   const existing = await getOrgWhatsAppConfig(orgId);
-
-  // Keep existing API key if left blank
-  const atApiKey = atApiKeyInput || existing?.atApiKey || "";
-  if (!atApiKey) return { ok: false, error: "API Key is required." };
 
   try {
     await saveOrgWhatsAppConfig(orgId, {
@@ -144,9 +134,9 @@ export async function saveATConfigAction(
       accessToken: existing?.accessToken ?? "",
       businessAccountId: existing?.businessAccountId ?? "",
       provider: existing?.provider ?? "meta",
-      atApiKey,
-      atUsername,
-      atSenderId: atSenderId || null,
+      atApiKey: existing?.atApiKey ?? null,
+      atUsername: existing?.atUsername ?? null,
+      atSenderId: existing?.atSenderId ?? null,
       smsFallback,
     });
     revalidatePath("/settings/notifications/whatsapp");

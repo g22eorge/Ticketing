@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentUserRole } from "@/lib/session";
 import { getBillingEventsByOrg } from "@/lib/billing-events";
 import { setBillingStatusAction, setPlanAction, extendTrialAction } from "../../actions";
+import { getSmsUsage, SMS_PLAN_QUOTAS } from "@/lib/notifications/sms-quota";
 
 const STATUS_CLASSES: Record<string, string> = {
   TRIALING: "bg-blue-100 text-blue-700",
@@ -42,14 +43,16 @@ export default async function OrgDetailPage({ params }: { params: Promise<{ id: 
 
   if (!org) notFound();
 
-  const [orgUsers, billingHistory] = await Promise.all([
+  const [orgUsers, billingHistory, smsUsed] = await Promise.all([
     prisma.user.findMany({
       where: { orgId: id },
       select: { id: true, name: true, email: true, role: true, createdAt: true },
       orderBy: { createdAt: "asc" },
     }),
     getBillingEventsByOrg(id).catch(() => []),
+    getSmsUsage(id),
   ]);
+  const smsLimit = SMS_PLAN_QUOTAS[org.plan] ?? 200;
 
   const fmt = (d: Date | null) =>
     d ? d.toLocaleDateString("en-UG", { day: "numeric", month: "short", year: "numeric" }) : "—";
@@ -86,11 +89,12 @@ export default async function OrgDetailPage({ params }: { params: Promise<{ id: 
       </div>
 
       {/* Stats */}
-      <div className="grid gap-4 sm:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {[
           { label: "Users", value: org._count.users },
           { label: "Jobs", value: org._count.jobs },
           { label: "Total Paid", value: fmtMoney(totalPaid) },
+          { label: "SMS This Month", value: `${smsUsed} / ${smsLimit}` },
         ].map((m) => (
           <div key={m.label} className="rounded-xl border border-[var(--line)] bg-[var(--panel)] px-5 py-4">
             <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-[var(--ink-muted)]">{m.label}</p>
