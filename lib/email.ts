@@ -1,6 +1,5 @@
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
 const FROM = process.env.EMAIL_FROM ?? "Repair Manager <noreply@repairmanager.app>";
 
 async function send(to: string, subject: string, html: string) {
@@ -9,6 +8,7 @@ async function send(to: string, subject: string, html: string) {
     return;
   }
   try {
+    const resend = new Resend(process.env.RESEND_API_KEY);
     await resend.emails.send({ from: FROM, to, subject, html });
   } catch (err) {
     console.error("[email] send failed", err);
