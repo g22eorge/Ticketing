@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { execFileSync } from "child_process";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserRole } from "@/lib/session";
 import { OrgPlan } from "@prisma/client";
@@ -54,6 +55,27 @@ export async function extendTrialAction(formData: FormData) {
     where: { id: orgId },
     data: { trialEndsAt: newDate, billingStatus: "TRIALING" },
   });
+  revalidatePath("/platform");
+}
+
+export async function runCommercialSeedAction() {
+  await requirePlatformAdmin();
+  try {
+    const cwd = process.cwd();
+    execFileSync("bun", ["run", "prisma/seed-commercial.ts"], {
+      cwd,
+      env: {
+        ...process.env,
+        DATABASE_URL: process.env.DATABASE_URL ?? "file:./dev.db",
+        TURSO_DATABASE_URL: process.env.TURSO_DATABASE_URL ?? "",
+        TURSO_AUTH_TOKEN: process.env.TURSO_AUTH_TOKEN ?? "",
+      },
+      stdio: "pipe",
+      timeout: 60_000,
+    });
+  } catch (err) {
+    console.error("[seed:commercial]", err);
+  }
   revalidatePath("/platform");
 }
 
