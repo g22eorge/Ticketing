@@ -2,6 +2,8 @@ import { AppSidebar } from "@/components/layout/AppSidebar";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { Header } from "@/components/layout/Header";
 import { PageThemeHeader } from "@/components/layout/PageThemeHeader";
+import { QuickActionFAB } from "@/components/layout/QuickActionFAB";
+import type { FabAction } from "@/components/layout/QuickActionFAB";
 import { JobStatus, Prisma } from "@prisma/client";
 import { can } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
@@ -144,6 +146,60 @@ export default async function AppLayout({
           pendingRequests: pendingRequestsCount,
         }}
       />
+      <QuickActionFAB actions={buildFabActions(user)} />
     </div>
   );
+}
+
+// ── FAB actions ───────────────────────────────────────────────────────────────
+
+function Icon({ d, color = "currentColor" }: { d: string; color?: string }) {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <path d={d} />
+    </svg>
+  );
+}
+
+function buildFabActions(user: { role: string; permissions?: string[] }): FabAction[] {
+  const u = user as Parameters<typeof can.createJob>[0];
+  const actions: FabAction[] = [];
+
+  if (can.createJob(u)) {
+    actions.push({
+      label: "New Job",
+      href: "/jobs/new",
+      color: "bg-emerald-500",
+      icon: <Icon d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" color="white" />,
+    });
+  }
+
+  if (can.viewClientInfo(u)) {
+    actions.push({
+      label: "New Client",
+      href: "/clients/new",
+      color: "bg-blue-500",
+      icon: <Icon d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z" color="white" />,
+    });
+  }
+
+  if (can.viewIntake(u)) {
+    actions.push({
+      label: "Repair Request",
+      href: "/repair-requests",
+      color: "bg-amber-500",
+      icon: <Icon d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" color="white" />,
+    });
+  }
+
+  if (can.viewFinancials(u)) {
+    actions.push({
+      label: "New Invoice",
+      href: "/jobs?invoice=1",
+      color: "bg-purple-500",
+      icon: <Icon d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M16 13H8M16 17H8M10 9H8" color="white" />,
+    });
+  }
+
+  return actions;
 }
