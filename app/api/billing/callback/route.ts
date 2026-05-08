@@ -1,40 +1,39 @@
 /**
  * GET /api/billing/callback
  *
- * Flutterwave redirects here after the user completes (or cancels) payment.
- * Query params: status, tx_ref, transaction_id
+ * Pesapal redirects here after the user completes (or abandons) payment.
+ * Query params: OrderTrackingId, OrderMerchantReference, OrderNotificationType
+ *
+ * The IPN handler (/api/webhooks/pesapal) is the reliable server-to-server
+ * confirmation. This callback is just for the user-facing redirect.
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { verifyTransaction } from "@/lib/flutterwave";
+import { getTransactionStatus, parseMerchantRef } from "@/lib/pesapal";
 import { OrgPlan } from "@prisma/client";
 import { sendPaymentConfirmation } from "@/lib/email";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
-  const status = searchParams.get("status");
-  const transactionId = searchParams.get("transaction_id");
-
+  const orderTrackingId = searchParams.get("OrderTrackingId");
+  const merchantReference = searchParams.get("OrderMerchantReference");
   const base = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
-  if (status !== "successful" || !transactionId) {
+  if (!orderTrackingId || !merchantReference) {
     return NextResponse.redirect(`${base}/settings/billing?payment=cancelled`);
   }
 
   try {
-    const tx = await verifyTransaction(transactionId);
+    const tx = await getTransactionStatus(orderTrackingId);
 
-    if (tx.status !== "successful") {
+    if (tx.payment_status_description !== "Completed") {
       return NextResponse.redirect(`${base}/settings/billing?payment=failed`);
     }
 
-    const orgId = tx.meta?.orgId;
-    const targetPlan = tx.meta?.targetPlan as OrgPlan | undefined;
-
-    if (!orgId || !targetPlan) {
-      return NextResponse.redirect(`${base}/settings/billing?payment=failed`);
-    }
+    const parsed = parseMerchantRef(merchantReference);
+    if (!parsed) return NextResponse.redirect(`${base}/settings/billing?payment=failed`);
+    const { orgId, plan } = parsed;
 
     const renewsAt = new Date();
     renewsAt.setMonth(renewsAt.getMonth() + 1);
@@ -42,28 +41,21 @@ export async function GET(req: NextRequest) {
     const updatedOrg = await prisma.organization.update({
       where: { id: orgId },
       data: {
-        plan: targetPlan,
+        plan: plan as OrgPlan,
         billingStatus: "ACTIVE",
-        flwCustomerId: String(tx.customer.email), // use email as stable customer ref
         planRenewsAt: renewsAt,
         planCancelledAt: null,
+        flwSubscriptionId: orderTrackingId,
       },
       select: { name: true },
     });
 
-    // Fire-and-forget payment confirmation email.
     const admin = await prisma.user.findFirst({
       where: { orgId, role: "ADMIN" },
       select: { email: true, name: true },
     });
     if (admin) {
-      void sendPaymentConfirmation(
-        admin.email,
-        admin.name,
-        updatedOrg.name,
-        targetPlan,
-        tx.amount,
-      );
+      void sendPaymentConfirmation(admin.email, admin.name, updatedOrg.name, plan as OrgPlan, tx.amount);
     }
 
     return NextResponse.redirect(`${base}/settings/billing?payment=success`);

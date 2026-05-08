@@ -56,18 +56,14 @@ export async function getPlatformSettings(keys: string[]): Promise<Record<string
   return result;
 }
 
-/** Retrieve the active FLW secret key: DB takes precedence over env var. */
-export async function getFlwSecretKey(): Promise<string | null> {
-  const db = await getPlatformSetting("FLW_SECRET_KEY");
-  return db ?? process.env.FLW_SECRET_KEY ?? null;
+// ── Pesapal ──────────────────────────────────────────────────────────────────
+
+export async function getPesapalConsumerKey(): Promise<string | null> {
+  const db = await getPlatformSetting("PESAPAL_CONSUMER_KEY");
+  return db ?? process.env.PESAPAL_CONSUMER_KEY ?? null;
 }
 
-export async function getFlwWebhookSecret(): Promise<string | null> {
-  const db = await getPlatformSetting("FLW_WEBHOOK_SECRET");
-  return db ?? process.env.FLW_WEBHOOK_SECRET ?? null;
-}
-
-export async function getFlwPublicKey(): Promise<string | null> {
-  const db = await getPlatformSetting("FLW_PUBLIC_KEY");
-  return db ?? process.env.FLW_PUBLIC_KEY ?? null;
+export async function getPesapalConsumerSecret(): Promise<string | null> {
+  const db = await getPlatformSetting("PESAPAL_CONSUMER_SECRET");
+  return db ?? process.env.PESAPAL_CONSUMER_SECRET ?? null;
 }

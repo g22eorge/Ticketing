@@ -1,12 +1,11 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { randomUUID } from "crypto";
 
 import { prisma } from "@/lib/prisma";
 import { requireOrgSession } from "@/lib/org-context";
 import { can } from "@/lib/permissions";
 import { getLimitsForOrg, PLAN_LIMITS, PLAN_LABELS } from "@/lib/plan-limits";
-import { getOrCreatePaymentPlan, initializePayment, cancelSubscription, FLW_CURRENCY, FLW_PLAN_PRICES } from "@/lib/flutterwave";
+import { submitOrder, getOrCreateIpnId, buildMerchantRef, PLAN_PRICES, CURRENCY } from "@/lib/pesapal";
 import { formatMoney } from "@/lib/currency";
 
 // ── Server actions ────────────────────────────────────────────────────────────
@@ -46,33 +45,22 @@ async function subscribeToPlan(formData: FormData) {
   const targetPlan = formData.get("plan") as "GROWTH" | "ENTERPRISE";
   if (!["GROWTH", "ENTERPRISE"].includes(targetPlan)) redirect("/settings/billing");
 
-  const org = await prisma.organization.findUnique({
-    where: { id: orgId },
-    select: { name: true, plan: true, flwSubscriptionId: true },
-  });
-  if (!org) redirect("/settings/billing");
-
-  const flwPlan = await getOrCreatePaymentPlan(targetPlan);
-
-  const txRef = `rmgr-${orgId}-${randomUUID()}`;
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+  const merchantRef = buildMerchantRef(orgId, targetPlan);
+  const ipnId = await getOrCreateIpnId();
 
-  const paymentUrl = await initializePayment({
-    txRef,
-    amount: FLW_PLAN_PRICES[targetPlan],
+  const result = await submitOrder({
+    merchantReference: merchantRef,
+    amount: PLAN_PRICES[targetPlan],
+    currency: "UGX",
+    description: `Repair Manager ${targetPlan} plan`,
+    callbackUrl: `${baseUrl}/api/billing/callback`,
+    ipnId,
     email: user.email,
     name: user.name,
-    planId: flwPlan.id,
-    redirectUrl: `${baseUrl}/api/billing/callback`,
-    meta: { orgId, targetPlan, txRef },
   });
 
-  await prisma.organization.update({
-    where: { id: orgId },
-    data: { flwPlanId: String(flwPlan.id) },
-  });
-
-  redirect(paymentUrl);
+  redirect(result.redirect_url);
 }
 
 async function cancelPlan(_formData: FormData) {
@@ -80,15 +68,6 @@ async function cancelPlan(_formData: FormData) {
 
   const { user, orgId } = await requireOrgSession();
   if (!can.manageUsers(user)) redirect("/settings/billing");
-
-  const org = await prisma.organization.findUnique({
-    where: { id: orgId },
-    select: { flwSubscriptionId: true },
-  });
-
-  if (org?.flwSubscriptionId) {
-    await cancelSubscription(org.flwSubscriptionId);
-  }
 
   await prisma.organization.update({
     where: { id: orgId },
@@ -120,7 +99,6 @@ export default async function BillingPage({
         trialEndsAt: true,
         planRenewsAt: true,
         planCancelledAt: true,
-        flwSubscriptionId: true,
       },
     }),
     getLimitsForOrg(orgId),
@@ -205,7 +183,7 @@ export default async function BillingPage({
                 </div>
                 <p className="mt-2 text-2xl font-bold text-[var(--ink)]">
                   <span className="text-base font-normal text-[var(--ink-muted)]">UGX </span>
-                  {formatMoney(FLW_PLAN_PRICES.GROWTH)}
+                  {formatMoney(PLAN_PRICES.GROWTH)}
                   <span className="text-sm font-normal text-[var(--ink-muted)]"> / mo</span>
                 </p>
               </div>
@@ -248,7 +226,7 @@ export default async function BillingPage({
                 <p className="font-semibold text-[var(--ink)] text-lg">Enterprise</p>
                 <p className="mt-2 text-2xl font-bold text-[var(--ink)]">
                   <span className="text-base font-normal text-[var(--ink-muted)]">UGX </span>
-                  {formatMoney(FLW_PLAN_PRICES.ENTERPRISE)}
+                  {formatMoney(PLAN_PRICES.ENTERPRISE)}
                   <span className="text-sm font-normal text-[var(--ink-muted)]"> / mo</span>
                 </p>
               </div>
@@ -298,7 +276,7 @@ export default async function BillingPage({
     },
     {
       key: "GROWTH",
-      price: FLW_PLAN_PRICES.GROWTH,
+      price: PLAN_PRICES.GROWTH,
       features: [
         `${PLAN_LIMITS.GROWTH.maxUsers} team members`,
         `${PLAN_LIMITS.GROWTH.maxJobsPerMonth} jobs / month`,
@@ -309,7 +287,7 @@ export default async function BillingPage({
     },
     {
       key: "ENTERPRISE",
-      price: FLW_PLAN_PRICES.ENTERPRISE,
+      price: PLAN_PRICES.ENTERPRISE,
       features: [
         "Unlimited team members",
         "Unlimited jobs",
@@ -372,7 +350,7 @@ export default async function BillingPage({
             <span className="font-medium text-[var(--ink)]">
               {org.planRenewsAt.toLocaleDateString("en-UG", { day: "numeric", month: "long", year: "numeric" })}
             </span>{" "}
-            · {FLW_CURRENCY} {formatMoney(FLW_PLAN_PRICES[org.plan] ?? 0)} / month
+            · {CURRENCY} {formatMoney(PLAN_PRICES[org.plan] ?? 0)} / month
           </p>
         )}
 
@@ -382,7 +360,7 @@ export default async function BillingPage({
           </p>
         )}
 
-        {isAdmin && org.billingStatus === "ACTIVE" && org.flwSubscriptionId && (
+        {isAdmin && org.billingStatus === "ACTIVE" && (
           <form action={cancelPlan}>
             <button
               type="submit"

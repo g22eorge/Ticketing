@@ -1,7 +1,9 @@
 import { redirect } from "next/navigation";
 import { getCurrentUserRole } from "@/lib/session";
-import { getPlatformSettings } from "@/lib/platform-settings";
-import { FlutterwaveSettingsForm } from "@/components/platform/FlutterwaveSettingsForm";
+import { getPlatformSettings, getPlatformSetting } from "@/lib/platform-settings";
+import { PesapalSettingsForm } from "@/components/platform/PesapalSettingsForm";
+import { PLAN_PRICES } from "@/lib/pesapal";
+import { formatMoney } from "@/lib/currency";
 
 export const dynamic = "force-dynamic";
 
@@ -10,22 +12,22 @@ export default async function PlatformSettingsPage() {
   const platformEmail = process.env.PLATFORM_ADMIN_EMAIL;
   if (!platformEmail || user!.email !== platformEmail) redirect("/dashboard");
 
-  const stored = await getPlatformSettings(["FLW_SECRET_KEY", "FLW_PUBLIC_KEY", "FLW_WEBHOOK_SECRET"]);
+  const [stored, ipnId] = await Promise.all([
+    getPlatformSettings(["PESAPAL_CONSUMER_KEY", "PESAPAL_CONSUMER_SECRET", "PESAPAL_IPN_ID"]),
+    getPlatformSetting("PESAPAL_IPN_ID"),
+  ]);
 
-  // Mask stored values — only show whether they're set, not the actual value
   const configured = {
-    FLW_SECRET_KEY: !!stored.FLW_SECRET_KEY || !!process.env.FLW_SECRET_KEY,
-    FLW_PUBLIC_KEY: !!stored.FLW_PUBLIC_KEY || !!process.env.FLW_PUBLIC_KEY,
-    FLW_WEBHOOK_SECRET: !!stored.FLW_WEBHOOK_SECRET || !!process.env.FLW_WEBHOOK_SECRET,
-    // indicate whether the value comes from DB (overridable) vs env-only
-    FLW_SECRET_KEY_inDb: !!stored.FLW_SECRET_KEY,
-    FLW_PUBLIC_KEY_inDb: !!stored.FLW_PUBLIC_KEY,
-    FLW_WEBHOOK_SECRET_inDb: !!stored.FLW_WEBHOOK_SECRET,
+    PESAPAL_CONSUMER_KEY: !!stored.PESAPAL_CONSUMER_KEY || !!process.env.PESAPAL_CONSUMER_KEY,
+    PESAPAL_CONSUMER_SECRET: !!stored.PESAPAL_CONSUMER_SECRET || !!process.env.PESAPAL_CONSUMER_SECRET,
+    PESAPAL_IPN_ID: !!stored.PESAPAL_IPN_ID,
+    PESAPAL_CONSUMER_KEY_inDb: !!stored.PESAPAL_CONSUMER_KEY,
+    PESAPAL_CONSUMER_SECRET_inDb: !!stored.PESAPAL_CONSUMER_SECRET,
+    PESAPAL_IPN_ID_inDb: !!stored.PESAPAL_IPN_ID,
   };
 
-  const webhookUrl = process.env.NEXT_PUBLIC_APP_URL
-    ? `${process.env.NEXT_PUBLIC_APP_URL}/api/webhooks/flutterwave`
-    : "/api/webhooks/flutterwave";
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+  const webhookUrl = `${baseUrl}/api/webhooks/pesapal`;
 
   return (
     <div className="space-y-6">
@@ -36,26 +38,39 @@ export default async function PlatformSettingsPage() {
         </p>
       </div>
 
-      {/* Flutterwave */}
-      <FlutterwaveSettingsForm configured={configured} webhookUrl={webhookUrl} />
+      <PesapalSettingsForm configured={configured} webhookUrl={webhookUrl} ipnId={ipnId} />
 
       {/* Pricing reference */}
       <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] p-5">
         <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Subscription Pricing (UGX)</p>
         <div className="grid gap-3 sm:grid-cols-2">
-          {[
-            { plan: "GROWTH", price: "95,000 / month" },
-            { plan: "ENTERPRISE", price: "180,000 / month" },
-          ].map((p) => (
-            <div key={p.plan} className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-4 py-3">
-              <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">{p.plan}</p>
-              <p className="mt-0.5 font-mono text-sm font-semibold text-[var(--ink)]">UGX {p.price}</p>
+          {(["GROWTH", "ENTERPRISE"] as const).map((plan) => (
+            <div key={plan} className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-4 py-3">
+              <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">{plan}</p>
+              <p className="mt-0.5 font-mono text-sm font-semibold text-[var(--ink)]">UGX {formatMoney(PLAN_PRICES[plan])} / month</p>
             </div>
           ))}
         </div>
         <p className="mt-3 text-xs text-[var(--ink-muted)]">
-          Prices are defined in <code className="font-mono">lib/flutterwave.ts</code> → <code className="font-mono">FLW_PLAN_PRICES</code>.
+          Prices are defined in <code className="font-mono">lib/pesapal.ts</code> → <code className="font-mono">PLAN_PRICES</code>.
         </p>
+      </div>
+
+      {/* Environment */}
+      <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] p-5">
+        <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Environment</p>
+        <div className="flex items-center gap-2">
+          <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+            process.env.PESAPAL_ENV === "production"
+              ? "bg-green-100 text-green-700"
+              : "bg-amber-100 text-amber-700"
+          }`}>
+            {process.env.PESAPAL_ENV === "production" ? "Production" : "Sandbox"}
+          </span>
+          <p className="text-xs text-[var(--ink-muted)]">
+            Set <code className="font-mono">PESAPAL_ENV=production</code> in env vars to switch to live payments.
+          </p>
+        </div>
       </div>
     </div>
   );

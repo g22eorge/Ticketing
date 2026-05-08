@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getCurrentUserRole } from "@/lib/session";
 import { setPlatformSetting, deletePlatformSetting } from "@/lib/platform-settings";
+import { registerIpn, getRegisteredIpns } from "@/lib/pesapal";
 
 async function requirePlatformAdmin() {
   const { user } = await getCurrentUserRole();
@@ -12,26 +13,18 @@ async function requirePlatformAdmin() {
   return user!;
 }
 
-export async function saveFlutterwaveSettingsAction(
+export async function savePesapalSettingsAction(
   _prev: { ok: boolean; error?: string } | null,
   formData: FormData,
 ): Promise<{ ok: boolean; error?: string }> {
   await requirePlatformAdmin();
 
-  const secretKey = (formData.get("FLW_SECRET_KEY") as string | null)?.trim() ?? "";
-  const publicKey = (formData.get("FLW_PUBLIC_KEY") as string | null)?.trim() ?? "";
-  const webhookSecret = (formData.get("FLW_WEBHOOK_SECRET") as string | null)?.trim() ?? "";
+  const consumerKey = (formData.get("PESAPAL_CONSUMER_KEY") as string | null)?.trim() ?? "";
+  const consumerSecret = (formData.get("PESAPAL_CONSUMER_SECRET") as string | null)?.trim() ?? "";
 
   try {
-    if (secretKey) {
-      await setPlatformSetting("FLW_SECRET_KEY", secretKey);
-    }
-    if (publicKey) {
-      await setPlatformSetting("FLW_PUBLIC_KEY", publicKey);
-    }
-    if (webhookSecret) {
-      await setPlatformSetting("FLW_WEBHOOK_SECRET", webhookSecret);
-    }
+    if (consumerKey) await setPlatformSetting("PESAPAL_CONSUMER_KEY", consumerKey);
+    if (consumerSecret) await setPlatformSetting("PESAPAL_CONSUMER_SECRET", consumerSecret);
     revalidatePath("/platform/settings");
     return { ok: true };
   } catch (err) {
@@ -39,13 +32,13 @@ export async function saveFlutterwaveSettingsAction(
   }
 }
 
-export async function clearFlutterwaveKeyAction(
+export async function clearPesapalKeyAction(
   _prev: { ok: boolean } | null,
   formData: FormData,
 ): Promise<{ ok: boolean; error?: string }> {
   await requirePlatformAdmin();
   const key = formData.get("key") as string | null;
-  if (!key || !["FLW_SECRET_KEY", "FLW_PUBLIC_KEY", "FLW_WEBHOOK_SECRET"].includes(key)) {
+  if (!key || !["PESAPAL_CONSUMER_KEY", "PESAPAL_CONSUMER_SECRET", "PESAPAL_IPN_ID"].includes(key)) {
     return { ok: false, error: "Invalid key" };
   }
   try {
@@ -54,5 +47,32 @@ export async function clearFlutterwaveKeyAction(
     return { ok: true };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : "Delete failed" };
+  }
+}
+
+export async function registerIpnAction(
+  _prev: { ok: boolean; ipnId?: string; error?: string } | null,
+  _formData: FormData,
+): Promise<{ ok: boolean; ipnId?: string; error?: string }> {
+  await requirePlatformAdmin();
+  try {
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+    const ipnUrl = `${baseUrl}/api/webhooks/pesapal`;
+
+    // Check if already registered
+    const existing = await getRegisteredIpns().catch(() => []);
+    const found = existing.find((i) => i.url === ipnUrl && i.status === "Active");
+    if (found) {
+      await setPlatformSetting("PESAPAL_IPN_ID", found.ipn_id);
+      revalidatePath("/platform/settings");
+      return { ok: true, ipnId: found.ipn_id };
+    }
+
+    const ipnId = await registerIpn(ipnUrl);
+    await setPlatformSetting("PESAPAL_IPN_ID", ipnId);
+    revalidatePath("/platform/settings");
+    return { ok: true, ipnId };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "IPN registration failed" };
   }
 }

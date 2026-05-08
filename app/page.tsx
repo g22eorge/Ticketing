@@ -3,7 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { getSession } from "@/lib/session";
-import { FLW_PLAN_PRICES, FLW_CURRENCY } from "@/lib/flutterwave";
+import { PLAN_PRICES, CURRENCY } from "@/lib/pesapal";
 import { PLAN_LIMITS } from "@/lib/plan-limits";
 
 export const metadata: Metadata = {
@@ -95,7 +95,7 @@ const plans = [
   {
     key: "GROWTH" as const,
     label: "Growth",
-    price: FLW_PLAN_PRICES.GROWTH,
+    price: PLAN_PRICES.GROWTH,
     desc: "For growing shops that need more capacity and branding.",
     features: [
       `Up to ${PLAN_LIMITS.GROWTH.maxUsers} team members`,
@@ -105,13 +105,13 @@ const plans = [
       "Custom branding on invoices",
       "Priority support",
     ],
-    cta: "Start 14-day trial",
+    cta: "Try free for 14 days",
     highlight: true,
   },
   {
     key: "ENTERPRISE" as const,
     label: "Enterprise",
-    price: FLW_PLAN_PRICES.ENTERPRISE,
+    price: PLAN_PRICES.ENTERPRISE,
     desc: "Unlimited scale for multi-location repair operations.",
     features: [
       "Unlimited team members",
@@ -121,7 +121,7 @@ const plans = [
       "Dedicated support",
       "SLA agreement",
     ],
-    cta: "Start 14-day trial",
+    cta: "Try free for 14 days",
     highlight: false,
   },
 ];
@@ -195,7 +195,7 @@ export default async function LandingPage() {
                 Log in to your workspace
               </Link>
             </div>
-            <p className="mt-4 text-[12px] text-white/30">14-day free trial on paid plans · Cancel anytime</p>
+            <p className="mt-4 text-[12px] text-white/30">30-day free trial · 14-day Growth trial · Cancel anytime</p>
           </div>
         </section>
 
@@ -267,7 +267,7 @@ export default async function LandingPage() {
           <div className="mx-auto max-w-6xl">
             <p className="mb-3 text-center text-[11px] font-bold uppercase tracking-[0.18em] text-[#D4AF37]/70">Simple pricing</p>
             <h2 className="mb-2 text-center text-2xl font-bold text-white md:text-3xl">Start free, scale when ready</h2>
-            <p className="mb-12 text-center text-sm text-white/40">All paid plans include a 14-day free trial. Cancel any time.</p>
+            <p className="mb-12 text-center text-sm text-white/40">Start with a 30-day free trial. Growth plan includes an optional 14-day trial before paying.</p>
 
             <div className="grid gap-4 md:grid-cols-3">
               {plans.map((plan) => (
@@ -295,7 +295,7 @@ export default async function LandingPage() {
                         <span className="text-3xl font-bold text-white">Free</span>
                       ) : (
                         <>
-                          <span className="text-base font-medium text-white/40">{FLW_CURRENCY}</span>
+                          <span className="text-base font-medium text-white/40">{CURRENCY}</span>
                           <span className="text-3xl font-bold text-white">{formatPrice(plan.price)}</span>
                           <span className="text-sm text-white/40">/ mo</span>
                         </>

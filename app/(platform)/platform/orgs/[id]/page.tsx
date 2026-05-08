@@ -117,7 +117,7 @@ export default async function OrgDetailPage({ params }: { params: Promise<{ id: 
             <p className="text-[var(--ink)]">{fmt(org.planRenewsAt)}</p>
           </div>
           <div>
-            <p className="font-semibold text-[var(--ink-muted)]">FLW sub ID</p>
+            <p className="font-semibold text-[var(--ink-muted)]">Payment ref</p>
             <p className="font-mono text-[var(--ink)] truncate">{org.flwSubscriptionId ?? "—"}</p>
           </div>
         </div>
