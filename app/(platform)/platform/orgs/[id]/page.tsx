@@ -36,7 +36,7 @@ export default async function OrgDetailPage({ params }: { params: Promise<{ id: 
       flwCustomerId: true,
       createdAt: true,
       updatedAt: true,
-      _count: { select: { users: true, jobs: true, clients: true } },
+      _count: { select: { users: true, jobs: true } },
     },
   });
 
@@ -48,7 +48,7 @@ export default async function OrgDetailPage({ params }: { params: Promise<{ id: 
       select: { id: true, name: true, email: true, role: true, createdAt: true },
       orderBy: { createdAt: "asc" },
     }),
-    getBillingEventsByOrg(id),
+    getBillingEventsByOrg(id).catch(() => []),
   ]);
 
   const fmt = (d: Date | null) =>
@@ -90,7 +90,6 @@ export default async function OrgDetailPage({ params }: { params: Promise<{ id: 
         {[
           { label: "Users", value: org._count.users },
           { label: "Jobs", value: org._count.jobs },
-          { label: "Clients", value: org._count.clients },
           { label: "Total Paid", value: fmtMoney(totalPaid) },
         ].map((m) => (
           <div key={m.label} className="rounded-xl border border-[var(--line)] bg-[var(--panel)] px-5 py-4">
