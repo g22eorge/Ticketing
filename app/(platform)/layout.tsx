@@ -32,6 +32,12 @@ export default async function PlatformLayout({ children }: { children: React.Rea
         </div>
         <div className="flex items-center gap-4 py-3">
           <span className="text-xs text-[var(--ink-muted)]">{user!.email}</span>
+          <Link
+            href="/dashboard"
+            className="text-xs font-semibold text-[var(--ink-muted)] hover:text-[var(--ink)] transition-colors"
+          >
+            ← Back to app
+          </Link>
           <SignOutButton />
         </div>
       </div>
