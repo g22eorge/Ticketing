@@ -20,6 +20,7 @@ function collectTrustedOrigins() {
     "https://app.eagleinfosolutions.com",    // commercial (multi-tenant)
     "https://mrms-f8wt.vercel.app",         // commercial Vercel deployment
     "https://mrms-eight.vercel.app",
+    "https://mrms-apga.vercel.app",         // commercial Vercel deployment (apga)
   ];
 
   const fromSingleEnv = [
