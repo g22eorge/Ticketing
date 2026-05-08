@@ -72,7 +72,7 @@ export default function PrivacyPage() {
             <h2 className="mb-3 text-base font-bold text-white">2. How We Use Your Information</h2>
             <ul className="list-disc space-y-1.5 pl-5">
               <li>To create and manage your workspace and user accounts.</li>
-              <li>To process subscription payments via Flutterwave.</li>
+              <li>To process subscription payments via Pesapal.</li>
               <li>To send transactional emails (account confirmation, trial expiry notices, payment receipts).</li>
               <li>To provide customer support when you contact us.</li>
               <li>To detect and prevent fraud, abuse, and security incidents.</li>
@@ -99,7 +99,7 @@ export default function PrivacyPage() {
                 </thead>
                 <tbody>
                   {[
-                    ["Flutterwave", "Payment processing for paid subscriptions"],
+                    ["Pesapal", "Payment processing for paid subscriptions"],
                     ["Resend", "Transactional email delivery (billing, trial notices)"],
                     ["Hosting provider", "Cloud infrastructure and database hosting"],
                   ].map(([p, d], i) => (

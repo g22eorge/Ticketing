@@ -243,7 +243,7 @@ export default async function OrgDetailPage({ params }: { params: Promise<{ id: 
                   {e.amount > 0 ? fmtMoney(e.amount, e.currency) : "—"}
                 </td>
                 <td className="px-4 py-2 font-mono text-xs text-[var(--ink-muted)] truncate max-w-[140px]">
-                  {e.txRef ?? e.flwTxId ?? "—"}
+                  {e.txRef ?? "—"}
                 </td>
               </tr>
             ))}

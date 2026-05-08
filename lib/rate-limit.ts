@@ -70,7 +70,7 @@ export const rateLimit = {
   upload: (userId: string) =>
     checkRateLimit(`upload:${userId}`, { limit: 30, windowMs: 10 * 60 * 1000 }),
 
-  /** Webhook endpoints — 200 per minute per IP (FLW can batch events). */
+  /** Webhook endpoints — 200 per minute per IP (Pesapal IPN callbacks). */
   webhook: (ip: string) =>
     checkRateLimit(`webhook:${ip}`, { limit: 200, windowMs: 60 * 1000 }),
 

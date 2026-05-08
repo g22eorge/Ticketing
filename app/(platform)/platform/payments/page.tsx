@@ -34,7 +34,7 @@ export default async function PaymentsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-[var(--ink)]">Payments</h1>
-        <p className="mt-1 text-sm text-[var(--ink-muted)]">Payment events recorded from Flutterwave webhooks</p>
+        <p className="mt-1 text-sm text-[var(--ink-muted)]">Payment events recorded from Pesapal webhooks</p>
       </div>
 
       {/* Summary */}
@@ -95,14 +95,14 @@ export default async function PaymentsPage() {
                 </td>
                 <td className="px-4 py-2 text-[var(--ink-muted)]">{e.plan ?? "—"}</td>
                 <td className="px-4 py-2 font-mono text-xs text-[var(--ink-muted)] max-w-[160px] truncate">
-                  {e.txRef ?? e.flwTxId ?? "—"}
+                  {e.txRef ?? "—"}
                 </td>
               </tr>
             ))}
             {events.length === 0 && (
               <tr>
                 <td colSpan={7} className="px-4 py-8 text-center text-[var(--ink-muted)]">
-                  No payment events recorded yet. Events are logged when Flutterwave webhooks fire.
+                  No payment events recorded yet. Events are logged when Pesapal IPN callbacks fire.
                 </td>
               </tr>
             )}

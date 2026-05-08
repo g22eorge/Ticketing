@@ -76,7 +76,7 @@ export default function TermsPage() {
             <h2 className="mb-3 text-base font-bold text-white">3. Subscription, Billing, and Cancellation</h2>
             <p className="mb-3">
               The Starter plan is free. Paid plans (Growth and Enterprise) are billed monthly in Ugandan Shillings (UGX)
-              via Flutterwave. All paid plans begin with a 14-day free trial.
+              via Pesapal. All paid plans begin with a 14-day free trial.
             </p>
             <p className="mb-3">
               Subscription charges are non-refundable except where required by applicable law.
