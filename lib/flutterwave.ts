@@ -7,11 +7,13 @@
  * Docs: https://developer.flutterwave.com/docs
  */
 
+import { getFlwSecretKey } from "@/lib/platform-settings";
+
 const FLW_BASE = "https://api.flutterwave.com/v3";
 
-function secretKey() {
-  const key = process.env.FLW_SECRET_KEY;
-  if (!key) throw new Error("FLW_SECRET_KEY is not set");
+async function secretKey(): Promise<string> {
+  const key = await getFlwSecretKey();
+  if (!key) throw new Error("FLW_SECRET_KEY is not configured");
   return key;
 }
 
@@ -23,7 +25,7 @@ async function flwFetch<T>(
     ...options,
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${secretKey()}`,
+      Authorization: `Bearer ${await secretKey()}`,
       ...options.headers,
     },
   });
@@ -118,7 +120,7 @@ export async function initializePayment(params: InitPaymentParams): Promise<stri
         title: "Repair Manager",
         description: "Monthly subscription",
         logo: process.env.NEXT_PUBLIC_APP_URL
-          ? `${process.env.NEXT_PUBLIC_APP_URL}/eagle-info-logo.png`
+          ? `${process.env.NEXT_PUBLIC_APP_URL}/logo.png`
           : undefined,
       },
       meta: params.meta,
@@ -150,8 +152,9 @@ export async function verifyTransaction(transactionId: string): Promise<FlwTrans
 
 import { createHmac } from "crypto";
 
-export function verifyWebhookSignature(payload: string, signature: string): boolean {
-  const secret = process.env.FLW_WEBHOOK_SECRET;
+export async function verifyWebhookSignature(payload: string, signature: string): Promise<boolean> {
+  const { getFlwWebhookSecret } = await import("@/lib/platform-settings");
+  const secret = await getFlwWebhookSecret();
   if (!secret) return false;
   const expected = createHmac("sha256", secret).update(payload).digest("hex");
   return expected === signature;

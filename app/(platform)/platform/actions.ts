@@ -33,3 +33,39 @@ export async function toggleOrgActive(formData: FormData) {
   await prisma.organization.update({ where: { id: orgId }, data: { isActive: !isActive } });
   revalidatePath("/platform");
 }
+
+export async function extendTrialAction(formData: FormData) {
+  await requirePlatformAdmin();
+  const orgId = formData.get("orgId") as string;
+  const days = parseInt(formData.get("days") as string, 10);
+  if (!orgId || isNaN(days) || days <= 0) return;
+
+  const org = await prisma.organization.findUnique({
+    where: { id: orgId },
+    select: { trialEndsAt: true, billingStatus: true },
+  });
+  if (!org) return;
+
+  const base = org.trialEndsAt && org.trialEndsAt > new Date() ? org.trialEndsAt : new Date();
+  const newDate = new Date(base);
+  newDate.setDate(newDate.getDate() + days);
+
+  await prisma.organization.update({
+    where: { id: orgId },
+    data: { trialEndsAt: newDate, billingStatus: "TRIALING" },
+  });
+  revalidatePath("/platform");
+}
+
+export async function setBillingStatusAction(formData: FormData) {
+  await requirePlatformAdmin();
+  const orgId = formData.get("orgId") as string;
+  const status = formData.get("status") as string;
+  if (!orgId || !["TRIALING", "ACTIVE", "PAST_DUE", "CANCELLED"].includes(status)) return;
+  await prisma.organization.update({
+    where: { id: orgId },
+    data: { billingStatus: status as never },
+  });
+  revalidatePath("/platform");
+  revalidatePath(`/platform/orgs/${orgId}`);
+}

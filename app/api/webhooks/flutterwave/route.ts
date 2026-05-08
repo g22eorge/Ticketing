@@ -14,6 +14,7 @@ import { prisma } from "@/lib/prisma";
 import { verifyWebhookSignature } from "@/lib/flutterwave";
 import { OrgPlan } from "@prisma/client";
 import { sendPaymentFailedAlert } from "@/lib/email";
+import { recordBillingEvent } from "@/lib/billing-events";
 
 type FlwWebhookPayload = {
   event: string;
@@ -33,7 +34,7 @@ export async function POST(req: NextRequest) {
   const rawBody = await req.text();
   const signature = req.headers.get("verif-hash") ?? "";
 
-  if (!verifyWebhookSignature(rawBody, signature)) {
+  if (!(await verifyWebhookSignature(rawBody, signature))) {
     return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
   }
 
@@ -68,12 +69,32 @@ export async function POST(req: NextRequest) {
           flwSubscriptionId: data.payment_plan ? String(data.payment_plan) : undefined,
         },
       });
+
+      void recordBillingEvent({
+        orgId,
+        event: "charge.completed",
+        amount: data.amount,
+        currency: data.currency,
+        status: "successful",
+        flwTxId: String(data.id),
+        txRef: data.tx_ref,
+        plan: targetPlan ?? null,
+      });
     }
 
     if (event === "charge.completed" && data.status !== "successful") {
       // Payment failed — notify the org admin.
       const orgId = data.meta?.orgId ?? extractOrgFromTxRef(data.tx_ref);
       if (orgId) {
+        void recordBillingEvent({
+          orgId,
+          event: "charge.completed",
+          amount: data.amount,
+          currency: data.currency,
+          status: data.status,
+          flwTxId: String(data.id),
+          txRef: data.tx_ref,
+        });
         const org = await prisma.organization.findUnique({
           where: { id: orgId },
           select: { name: true },
@@ -94,6 +115,15 @@ export async function POST(req: NextRequest) {
         await prisma.organization.update({
           where: { id: orgId },
           data: { billingStatus: "CANCELLED", planCancelledAt: new Date() },
+        });
+        void recordBillingEvent({
+          orgId,
+          event: "subscription.cancelled",
+          amount: 0,
+          currency: data.currency,
+          status: "cancelled",
+          flwTxId: String(data.id),
+          txRef: data.tx_ref,
         });
       }
     }
