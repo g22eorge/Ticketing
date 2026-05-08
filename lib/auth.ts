@@ -26,6 +26,8 @@ function collectTrustedOrigins() {
     normalizeOrigin(process.env.BETTER_AUTH_URL),
     normalizeOrigin(process.env.NEXT_PUBLIC_APP_URL),
     normalizeOrigin(process.env.AUTH_URL),
+    // Vercel injects VERCEL_URL (without protocol) for every deployment — preview and production.
+    process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null,
   ].filter((origin): origin is string => Boolean(origin));
 
   const fromListEnv = (process.env.BETTER_AUTH_TRUSTED_ORIGINS ?? "")

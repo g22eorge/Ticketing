@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { useFormStatus } from "react-dom";
 
 import { acceptInvite, type AcceptInviteState } from "./actions";
@@ -115,6 +115,3 @@ export function AcceptForm({ token, email }: { token: string; email: string }) {
     </form>
   );
 }
-
-// useState is needed — add the import here
-import { useState } from "react";
