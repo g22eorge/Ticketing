@@ -15,6 +15,7 @@ type HeaderProps = {
   userName: string;
   role: string;
   permissions?: string[];
+  isPlatformAdmin?: boolean;
 };
 
 function roleDisplay(role: string) {
@@ -50,7 +51,7 @@ function initials(name: string) {
     .toUpperCase() || "?";
 }
 
-export function Header({ userName, role, permissions = [] }: HeaderProps) {
+export function Header({ userName, role, permissions = [], isPlatformAdmin = false }: HeaderProps) {
   const router = useRouter();
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -128,6 +129,19 @@ export function Header({ userName, role, permissions = [] }: HeaderProps) {
                     onClick={() => setMenuOpen(false)}
                   >
                     Users
+                  </Link>
+                ) : null}
+                {isPlatformAdmin ? (
+                  <Link
+                    role="menuitem"
+                    href="/platform"
+                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm font-semibold text-[var(--gold)] hover:bg-[var(--gold)]/10"
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                      <path fillRule="evenodd" d="M9.661 2.237a.531.531 0 0 1 .678 0 11.947 11.947 0 0 0 7.078 2.749.5.5 0 0 1 .479.425c.069.52.104 1.05.104 1.589 0 5.162-3.26 9.563-7.834 11.256a.48.48 0 0 1-.332 0C5.26 16.563 2 12.162 2 7c0-.538.035-1.069.104-1.589a.5.5 0 0 1 .48-.425 11.947 11.947 0 0 0 7.077-2.749Z" clipRule="evenodd" />
+                    </svg>
+                    Platform Admin
                   </Link>
                 ) : null}
                 <button
