@@ -48,8 +48,6 @@ export function proxy(req: NextRequest) {
   const ip = clientIp(req);
 
   // ── Rate limiting ───────────────────────────────────────────────────────────
-  // Auth rate limiting is handled in /api/login where the email is known,
-  // so the platform super admin can be exempted by identity rather than IP.
 
   // Webhook endpoints: allow bursts but cap runaway callers (200 / min per IP).
   if (pathname.startsWith("/api/webhooks")) {
@@ -99,15 +97,25 @@ export function proxy(req: NextRequest) {
 
   // ── Auth gate ───────────────────────────────────────────────────────────────
 
-  // Root landing page and all explicitly public paths are always accessible.
-  if (pathname === "/" || PUBLIC_PATHS.some((p) => pathname.startsWith(p))) {
+  if (pathname === "/") {
     return NextResponse.next();
   }
 
   const session = getSessionCookie(req);
+
+  // Redirect authenticated users away from the login page.
+  if (pathname === "/login" && session) {
+    return NextResponse.redirect(new URL("/dashboard", req.url));
+  }
+
+  // Root landing page and all explicitly public paths are always accessible.
+  if (PUBLIC_PATHS.some((p) => pathname.startsWith(p))) {
+    return NextResponse.next();
+  }
+
   if (!session) {
     const loginUrl = new URL("/login", req.url);
-    loginUrl.searchParams.set("callbackUrl", pathname);
+    loginUrl.searchParams.set("callbackURL", pathname);
     return NextResponse.redirect(loginUrl);
   }
 
