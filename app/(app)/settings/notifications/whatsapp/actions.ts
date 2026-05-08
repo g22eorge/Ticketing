@@ -2,8 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 
-import { getCurrentUserRole } from "@/lib/session";
-import { sendWhatsAppTemplateMessage, whatsappIsConfigured } from "@/lib/notifications/whatsapp";
+import { requireOrgSession } from "@/lib/org-context";
+import { sendWhatsAppTemplateMessage } from "@/lib/notifications/whatsapp";
+import { getOrgWhatsAppConfig, saveOrgWhatsAppConfig, deleteOrgWhatsAppConfig } from "@/lib/org-whatsapp-config";
 import { prisma } from "@/lib/prisma";
 
 export type SendTestResult =
@@ -14,20 +15,24 @@ export async function sendTestWhatsAppAction(
   _prev: SendTestResult | null,
   formData: FormData
 ): Promise<SendTestResult> {
-  const { user } = await getCurrentUserRole();
+  const { user, orgId } = await requireOrgSession();
   if (user.role !== "ADMIN") return { ok: false, error: "Forbidden" };
 
-  if (!whatsappIsConfigured()) return { ok: false, error: "WhatsApp is not configured on this server." };
+  const orgConfig = await getOrgWhatsAppConfig(orgId);
+  if (!orgConfig) return { ok: false, error: "WhatsApp is not configured for your organisation." };
 
   const to = (formData.get("to") as string | null)?.trim() ?? "";
-
   if (!to) return { ok: false, error: "Recipient number is required." };
 
-  const from = process.env.WHATSAPP_BUSINESS_NUMBER ?? "Unknown";
+  const whatsappCfg = {
+    businessNumber: orgConfig.businessNumber,
+    provider: orgConfig.provider,
+    accessToken: orgConfig.accessToken,
+    phoneNumberId: orgConfig.phoneNumberId,
+    businessAccountId: orgConfig.businessAccountId || undefined,
+  };
 
-  // Use the approved hello_world template — free-form text is silently dropped
-  // by Meta for business-initiated conversations outside the 24-hour window.
-  const result = await sendWhatsAppTemplateMessage(to, "hello_world", "en_US", []);
+  const result = await sendWhatsAppTemplateMessage(to, "hello_world", "en_US", [], whatsappCfg);
 
   await prisma.outboundMessage.create({
     data: {
@@ -44,6 +49,7 @@ export async function sendTestWhatsAppAction(
       nextAttemptAt: new Date(0),
       lastErrorCode: result.success ? null : result.errorCode ? `API_ERROR_${result.errorCode}` : "WHATSAPP_ERROR",
       lastError: result.success ? null : (result.error ?? "Unknown error"),
+      orgId,
     },
     select: { id: true },
   });
@@ -51,5 +57,60 @@ export async function sendTestWhatsAppAction(
   revalidatePath("/settings/notifications/whatsapp");
 
   if (!result.success) return { ok: false, error: result.error ?? "Send failed." };
-  return { ok: true, messageId: result.messageId!, to, from };
+  return { ok: true, messageId: result.messageId!, to, from: orgConfig.businessNumber };
+}
+
+export async function saveWhatsAppConfigAction(
+  _prev: { ok: boolean; error?: string } | null,
+  formData: FormData
+): Promise<{ ok: boolean; error?: string }> {
+  const { user, orgId } = await requireOrgSession();
+  if (user.role !== "ADMIN") return { ok: false, error: "Forbidden" };
+
+  const businessNumber = (formData.get("businessNumber") as string | null)?.trim() ?? "";
+  const phoneNumberId = (formData.get("phoneNumberId") as string | null)?.trim() ?? "";
+  const accessTokenInput = (formData.get("accessToken") as string | null)?.trim() ?? "";
+  const businessAccountId = (formData.get("businessAccountId") as string | null)?.trim() ?? "";
+
+  if (!businessNumber || !phoneNumberId) {
+    return { ok: false, error: "Business Number and Phone Number ID are required." };
+  }
+
+  // If access token was left blank (update case), keep existing
+  let accessToken = accessTokenInput;
+  if (!accessToken) {
+    const existing = await getOrgWhatsAppConfig(orgId);
+    if (!existing?.accessToken) return { ok: false, error: "Access Token is required." };
+    accessToken = existing.accessToken;
+  }
+
+  try {
+    await saveOrgWhatsAppConfig(orgId, {
+      businessNumber,
+      phoneNumberId,
+      accessToken,
+      businessAccountId,
+      provider: "meta",
+    });
+    revalidatePath("/settings/notifications/whatsapp");
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "Save failed" };
+  }
+}
+
+export async function deleteWhatsAppConfigAction(
+  _prev: { ok: boolean } | null,
+  formData: FormData
+): Promise<{ ok: boolean; error?: string }> {
+  const { user, orgId } = await requireOrgSession();
+  if (user.role !== "ADMIN") return { ok: false, error: "Forbidden" };
+
+  try {
+    await deleteOrgWhatsAppConfig(orgId);
+    revalidatePath("/settings/notifications/whatsapp");
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "Delete failed" };
+  }
 }
