@@ -32,7 +32,7 @@ const FIELDS: { key: "PESAPAL_CONSUMER_KEY" | "PESAPAL_CONSUMER_SECRET"; label: 
 export function PesapalSettingsForm({ configured, webhookUrl, ipnId }: Props) {
   const [saveState, saveAction, saving] = useActionState<{ ok: boolean; error?: string } | null, FormData>(savePesapalSettingsAction, null);
   const [, clearAction] = useActionState<{ ok: boolean; error?: string } | null, FormData>(clearPesapalKeyAction, null);
-  const [ipnState, ipnAction, registering] = useActionState<{ ok: boolean; ipnId?: string; error?: string } | null, void>(registerIpnAction, null);
+  const [ipnState, ipnAction, registering] = useActionState<{ ok: boolean; ipnId?: string; error?: string } | null, FormData>(registerIpnAction, null);
 
   return (
     <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] p-5 space-y-5">
