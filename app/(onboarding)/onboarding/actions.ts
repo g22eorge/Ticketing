@@ -67,7 +67,7 @@ export async function createOrganization(
 
   // Create org and link the founding user as ADMIN.
   const trialEndsAt = new Date();
-  trialEndsAt.setDate(trialEndsAt.getDate() + 14);
+  trialEndsAt.setDate(trialEndsAt.getDate() + 30);
 
   await prisma.$transaction(async (tx) => {
     const org = await tx.organization.create({

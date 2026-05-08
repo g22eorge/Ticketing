@@ -11,6 +11,32 @@ import { formatMoney } from "@/lib/currency";
 
 // ── Server actions ────────────────────────────────────────────────────────────
 
+async function startGrowthTrial(_formData: FormData) {
+  "use server";
+
+  const { user, orgId } = await requireOrgSession();
+  if (!can.manageUsers(user)) redirect("/settings/billing");
+
+  const org = await prisma.organization.findUnique({
+    where: { id: orgId },
+    select: { plan: true, billingStatus: true },
+  });
+
+  // Only available when org is still on Starter (never upgraded) and trial has expired.
+  if (!org || org.plan !== "STARTER") redirect("/settings/billing");
+
+  const trialEndsAt = new Date();
+  trialEndsAt.setDate(trialEndsAt.getDate() + 14);
+
+  await prisma.organization.update({
+    where: { id: orgId },
+    data: { plan: "GROWTH", billingStatus: "TRIALING", trialEndsAt },
+  });
+
+  revalidatePath("/settings/billing");
+  redirect("/dashboard");
+}
+
 async function subscribeToPlan(formData: FormData) {
   "use server";
 
@@ -26,7 +52,6 @@ async function subscribeToPlan(formData: FormData) {
   });
   if (!org) redirect("/settings/billing");
 
-  // Get or create the FLW payment plan.
   const flwPlan = await getOrCreatePaymentPlan(targetPlan);
 
   const txRef = `rmgr-${orgId}-${randomUUID()}`;
@@ -39,14 +64,9 @@ async function subscribeToPlan(formData: FormData) {
     name: user.name,
     planId: flwPlan.id,
     redirectUrl: `${baseUrl}/api/billing/callback`,
-    meta: {
-      orgId,
-      targetPlan,
-      txRef,
-    },
+    meta: { orgId, targetPlan, txRef },
   });
 
-  // Store the pending tx ref so the callback can look it up.
   await prisma.organization.update({
     where: { id: orgId },
     data: { flwPlanId: String(flwPlan.id) },
@@ -55,7 +75,7 @@ async function subscribeToPlan(formData: FormData) {
   redirect(paymentUrl);
 }
 
-async function cancelPlan(formData: FormData) {
+async function cancelPlan(_formData: FormData) {
   "use server";
 
   const { user, orgId } = await requireOrgSession();
@@ -72,10 +92,7 @@ async function cancelPlan(formData: FormData) {
 
   await prisma.organization.update({
     where: { id: orgId },
-    data: {
-      billingStatus: "CANCELLED",
-      planCancelledAt: new Date(),
-    },
+    data: { billingStatus: "CANCELLED", planCancelledAt: new Date() },
   });
 
   revalidatePath("/settings/billing");
@@ -116,6 +133,153 @@ export default async function BillingPage({
     ? Math.max(0, Math.ceil((org.trialEndsAt.getTime() - now.getTime()) / 86_400_000))
     : null;
 
+  const isStarterTrialExpired =
+    org.plan === "STARTER" &&
+    org.billingStatus === "TRIALING" &&
+    org.trialEndsAt != null &&
+    org.trialEndsAt < now;
+
+  const isGrowthTrialExpired =
+    org.plan === "GROWTH" &&
+    org.billingStatus === "TRIALING" &&
+    org.trialEndsAt != null &&
+    org.trialEndsAt < now;
+
+  const isTrialActive =
+    org.billingStatus === "TRIALING" &&
+    org.trialEndsAt != null &&
+    org.trialEndsAt > now;
+
+  // Growth trial is available only when org is still on Starter (never upgraded yet)
+  const canStartGrowthTrial = isAdmin && isStarterTrialExpired;
+
+  const isPastDue = org.billingStatus === "PAST_DUE";
+
+  // ── Suspension wall ───────────────────────────────────────────────────────
+  if (isSuspended || isStarterTrialExpired || isGrowthTrialExpired || isPastDue) {
+    const alertTitle = isGrowthTrialExpired
+      ? "Your Growth trial has ended"
+      : isPastDue
+      ? "Payment overdue"
+      : "Your free trial has ended";
+
+    const alertBody = isGrowthTrialExpired
+      ? "Subscribe to Growth or Enterprise to restore access to your workspace."
+      : isPastDue
+      ? "Your last payment failed. Re-subscribe below to restore full access."
+      : "Your 30-day free trial has expired. Upgrade to a paid plan to continue using your workspace.";
+
+    return (
+      <div className="space-y-6">
+        {/* Alert banner */}
+        <div className="rounded-xl border border-red-500/40 bg-red-500/10 px-5 py-5">
+          <p className="font-semibold text-red-400 text-lg">{alertTitle}</p>
+          <p className="mt-1 text-sm text-red-300/80">{alertBody}</p>
+        </div>
+
+        <div>
+          <h1 className="text-xl font-bold text-[var(--ink)]">Choose a plan</h1>
+          <p className="mt-1 text-sm text-[var(--ink-muted)]">
+            Select a plan to restore access for <span className="font-medium text-[var(--ink)]">{org.name}</span>
+          </p>
+        </div>
+
+        {!isAdmin && (
+          <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] p-5">
+            <p className="text-sm text-[var(--ink-muted)]">
+              Only admins can manage the subscription. Contact your workspace admin to upgrade.
+            </p>
+          </div>
+        )}
+
+        {isAdmin && (
+          <div className="grid gap-4 md:grid-cols-2">
+            {/* Growth card */}
+            <div className="rounded-xl border border-[var(--gold)] bg-[var(--gold)]/5 p-6 space-y-5">
+              <div>
+                <div className="flex items-center justify-between">
+                  <p className="font-semibold text-[var(--ink)] text-lg">Growth</p>
+                  <span className="rounded-full bg-[var(--gold)]/20 px-2.5 py-0.5 text-[10px] font-semibold text-[var(--gold)] uppercase tracking-wide">
+                    Recommended
+                  </span>
+                </div>
+                <p className="mt-2 text-2xl font-bold text-[var(--ink)]">
+                  <span className="text-base font-normal text-[var(--ink-muted)]">UGX </span>
+                  {formatMoney(FLW_PLAN_PRICES.GROWTH)}
+                  <span className="text-sm font-normal text-[var(--ink-muted)]"> / mo</span>
+                </p>
+              </div>
+              <ul className="space-y-2">
+                {[
+                  `${PLAN_LIMITS.GROWTH.maxUsers} team members`,
+                  `${PLAN_LIMITS.GROWTH.maxJobsPerMonth} jobs / month`,
+                  `${PLAN_LIMITS.GROWTH.maxParts} inventory SKUs`,
+                  "Custom branding",
+                  "Priority support",
+                ].map((f) => (
+                  <li key={f} className="flex items-center gap-2 text-sm text-[var(--ink-muted)]">
+                    <span className="text-[var(--gold)]">✓</span> {f}
+                  </li>
+                ))}
+              </ul>
+              <div className="space-y-2">
+                <form action={subscribeToPlan}>
+                  <input type="hidden" name="plan" value="GROWTH" />
+                  <button type="submit" className="btn-premium w-full rounded-lg py-2.5 text-sm font-semibold text-white">
+                    Subscribe to Growth
+                  </button>
+                </form>
+                {canStartGrowthTrial && (
+                  <form action={startGrowthTrial}>
+                    <button
+                      type="submit"
+                      className="w-full rounded-lg border border-[var(--gold)] py-2.5 text-sm font-semibold text-[var(--gold)] hover:bg-[var(--gold)]/10 transition-colors"
+                    >
+                      Try Growth free for 14 days
+                    </button>
+                  </form>
+                )}
+              </div>
+            </div>
+
+            {/* Enterprise card */}
+            <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] p-6 space-y-5">
+              <div>
+                <p className="font-semibold text-[var(--ink)] text-lg">Enterprise</p>
+                <p className="mt-2 text-2xl font-bold text-[var(--ink)]">
+                  <span className="text-base font-normal text-[var(--ink-muted)]">UGX </span>
+                  {formatMoney(FLW_PLAN_PRICES.ENTERPRISE)}
+                  <span className="text-sm font-normal text-[var(--ink-muted)]"> / mo</span>
+                </p>
+              </div>
+              <ul className="space-y-2">
+                {[
+                  "Unlimited team members",
+                  "Unlimited jobs",
+                  "Unlimited inventory",
+                  "Custom branding",
+                  "Dedicated support",
+                  "SLA agreement",
+                ].map((f) => (
+                  <li key={f} className="flex items-center gap-2 text-sm text-[var(--ink-muted)]">
+                    <span className="text-[var(--gold)]">✓</span> {f}
+                  </li>
+                ))}
+              </ul>
+              <form action={subscribeToPlan}>
+                <input type="hidden" name="plan" value="ENTERPRISE" />
+                <button type="submit" className="w-full rounded-lg border border-[var(--line)] py-2.5 text-sm font-semibold text-[var(--ink)] hover:bg-[var(--gold)]/10 transition-colors">
+                  Subscribe to Enterprise
+                </button>
+              </form>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // ── Normal billing page (active trial or paid) ─────────────────────────────
   const plans: Array<{
     key: "STARTER" | "GROWTH" | "ENTERPRISE";
     price: number | null;
@@ -159,16 +323,6 @@ export default async function BillingPage({
 
   return (
     <div className="space-y-6">
-      {/* Suspension banner */}
-      {isSuspended && (
-        <div className="rounded-xl border border-red-500/40 bg-red-500/10 px-5 py-4">
-          <p className="font-semibold text-red-400">Access suspended</p>
-          <p className="mt-1 text-sm text-red-300/80">
-            Your trial has ended or payment is overdue. Upgrade your plan below to restore full access to your workspace.
-          </p>
-        </div>
-      )}
-
       {/* Header */}
       <div>
         <h1 className="text-xl font-bold text-[var(--ink)]">Billing & Plan</h1>
@@ -177,7 +331,7 @@ export default async function BillingPage({
         </p>
       </div>
 
-      {/* Current status */}
+      {/* Current status card */}
       <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-5 space-y-3">
         <div className="flex items-start justify-between gap-4">
           <div>
@@ -197,13 +351,21 @@ export default async function BillingPage({
           </span>
         </div>
 
-        {org.billingStatus === "TRIALING" && trialDaysLeft !== null && (
-          <p className="text-sm text-[var(--ink-muted)]">
-            {trialDaysLeft > 0
-              ? `Free trial — ${trialDaysLeft} day${trialDaysLeft !== 1 ? "s" : ""} remaining`
-              : "Your free trial has ended. Upgrade to continue."}
-          </p>
+        {isTrialActive && trialDaysLeft !== null && (
+          <div>
+            <p className="text-sm text-[var(--ink-muted)]">
+              {trialDaysLeft > 0
+                ? <>{org.plan === "STARTER" ? "Free trial" : "Growth trial"} — <span className="font-medium text-[var(--ink)]">{trialDaysLeft} day{trialDaysLeft !== 1 ? "s" : ""} remaining</span></>
+                : "Your trial has ended."}
+            </p>
+            {org.plan === "STARTER" && trialDaysLeft <= 7 && trialDaysLeft > 0 && (
+              <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">
+                Your trial ends soon. Upgrade now to avoid interruption.
+              </p>
+            )}
+          </div>
         )}
+
         {org.billingStatus === "ACTIVE" && org.planRenewsAt && (
           <p className="text-sm text-[var(--ink-muted)]">
             Next renewal:{" "}
@@ -213,13 +375,13 @@ export default async function BillingPage({
             · {FLW_CURRENCY} {formatMoney(FLW_PLAN_PRICES[org.plan] ?? 0)} / month
           </p>
         )}
+
         {org.billingStatus === "CANCELLED" && org.planCancelledAt && (
           <p className="text-sm text-amber-600 dark:text-amber-400">
-            Subscription cancelled. Your current plan stays active until the end of the billing period.
+            Subscription cancelled. Your access continues until the end of the current billing period.
           </p>
         )}
 
-        {/* Cancel button for active subscribers */}
         {isAdmin && org.billingStatus === "ACTIVE" && org.flwSubscriptionId && (
           <form action={cancelPlan}>
             <button
@@ -232,7 +394,7 @@ export default async function BillingPage({
         )}
       </section>
 
-      {/* Plan cards */}
+      {/* Plan cards — hide Starter upgrade (it's the free tier, no upgrade path back to it) */}
       <div className="grid gap-4 md:grid-cols-3">
         {plans.map(({ key, price, features }) => {
           const isCurrent = org.plan === key;
@@ -293,7 +455,7 @@ export default async function BillingPage({
 
               {isDowngrade && !isCurrent && (
                 <p className="text-xs text-[var(--ink-muted)]">
-                  Downgrade by cancelling your current subscription.
+                  To downgrade, cancel your current subscription first.
                 </p>
               )}
             </div>
