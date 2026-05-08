@@ -14,13 +14,14 @@ const STATUS_CLASSES: Record<string, string> = {
 
 export const dynamic = "force-dynamic";
 
-export default async function OrgDetailPage({ params }: { params: { id: string } }) {
+export default async function OrgDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const { user } = await getCurrentUserRole();
   const platformEmail = process.env.PLATFORM_ADMIN_EMAIL;
   if (!platformEmail || user!.email !== platformEmail) redirect("/dashboard");
 
   const org = await prisma.organization.findUnique({
-    where: { id: params.id },
+    where: { id },
     select: {
       id: true,
       name: true,
@@ -43,11 +44,11 @@ export default async function OrgDetailPage({ params }: { params: { id: string }
 
   const [orgUsers, billingHistory] = await Promise.all([
     prisma.user.findMany({
-      where: { orgId: params.id },
+      where: { orgId: id },
       select: { id: true, name: true, email: true, role: true, createdAt: true },
       orderBy: { createdAt: "asc" },
     }),
-    getBillingEventsByOrg(params.id),
+    getBillingEventsByOrg(id),
   ]);
 
   const fmt = (d: Date | null) =>
