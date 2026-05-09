@@ -6,6 +6,7 @@ import { PaymentMethod } from "@prisma/client";
 
 import { formatMoney } from "@/lib/currency";
 import { canGenerateInvoiceForStatus } from "@/lib/documents";
+import { JobStatus } from "@/lib/job-status";
 import { can } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { requireOrgSession } from "@/lib/org-context";
@@ -17,6 +18,8 @@ export default async function InvoicesPage() {
   if (!("ADMIN" === user.role || "OPS" === user.role || can.approveInvoices(user))) {
     redirect("/dashboard");
   }
+
+  let dbNeedsFix = false;
 
   async function addPaymentAction(formData: FormData) {
     "use server";
@@ -85,8 +88,17 @@ export default async function InvoicesPage() {
     revalidatePath("/documents/invoices");
   }
 
-  const [invoices, readyJobs] = await Promise.all([
-    prisma.invoice.findMany({
+  let invoices: Array<{
+    id: string;
+    invoiceNumber: string;
+    issuedAt: Date;
+    totalAmount: number;
+    paidAmount: number;
+    status: string;
+    job: { id: string; jobNumber: string; status: JobStatus; client: { fullName: string } };
+  }> = [];
+  try {
+    invoices = await prisma.invoice.findMany({
       where: { orgId },
       orderBy: { issuedAt: "desc" },
       take: 100,
@@ -106,8 +118,15 @@ export default async function InvoicesPage() {
           },
         },
       },
-    }),
-    prisma.job.findMany({
+    });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (msg.includes("no such table") && msg.includes("Invoice")) dbNeedsFix = true;
+    invoices = [];
+  }
+
+  const readyJobs = await prisma.job
+    .findMany({
       where: {
         orgId,
         status: { in: ["READY_FOR_PICKUP", "COMPLETED", "CLOSED"] },
@@ -119,14 +138,31 @@ export default async function InvoicesPage() {
         id: true,
         jobNumber: true,
       },
-    }),
-  ]);
+    })
+    .catch(() => []);
 
   return (
     <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 sm:p-5">
       <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--accent)]">Documents</p>
       <h1 className="mt-1 text-lg font-semibold text-[var(--ink)]">Invoices</h1>
       <p className="mt-1 text-sm text-[var(--ink-muted)]">Generate invoices and record partial payments.</p>
+
+      {dbNeedsFix ? (
+        <div className="mt-4 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
+          <p className="font-semibold text-amber-50">Invoice tables are missing in the database.</p>
+          <p className="mt-1 text-amber-100/90">
+            Run <span className="mono">/api/admin/db-fix</span> as the platform admin to create <span className="mono">Invoice</span> and <span className="mono">Payment</span>.
+          </p>
+          <a
+            className="mt-3 inline-flex rounded-lg border border-amber-500/30 bg-black/20 px-3 py-2 text-xs font-semibold text-amber-50 hover:bg-black/30"
+            href="/api/admin/db-fix"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Open DB Fix
+          </a>
+        </div>
+      ) : null}
 
       {readyJobs.length > 0 ? (
         <div className="mt-4 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] p-3">

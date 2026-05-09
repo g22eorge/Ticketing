@@ -113,6 +113,8 @@ export default async function ReportsPage({
     redirect("/dashboard");
   }
 
+  let dbNeedsFix = false;
+
   const selectedMonth = parseMonth(filters.month);
   const selectedYear = Number(filters.year) || new Date().getFullYear();
   const selectedRange = period === "year" ? yearRange(selectedYear) : monthRange(selectedMonth.year, selectedMonth.month);
@@ -130,8 +132,6 @@ export default async function ReportsPage({
     externalCount,
     inHouseCount,
     externalPayoutOutstandingJobs,
-    paymentsAgg,
-    invoicesAgg,
     paidExternalJobs,
     earliestJob,
     latestJob,
@@ -187,14 +187,6 @@ export default async function ReportsPage({
       },
       select: { id: true, externalTechBill: true },
     }),
-    prisma.payment.aggregate({
-      where: { orgId, receivedAt: { gte: selectedRange.start, lte: selectedRange.end } },
-      _sum: { amount: true },
-    }),
-    prisma.invoice.aggregate({
-      where: { orgId, issuedAt: { gte: selectedRange.start, lte: selectedRange.end } },
-      _sum: { totalAmount: true, paidAmount: true },
-    }),
     prisma.job.findMany({
       where: { orgId, externalPaid: true, externalPaidAt: { gte: selectedRange.start, lte: selectedRange.end } },
       select: { externalTechFee: true, externalTechBill: true },
@@ -202,6 +194,32 @@ export default async function ReportsPage({
     prisma.job.findFirst({ where: { orgId }, orderBy: { receivedAt: "asc" }, select: { receivedAt: true } }),
     prisma.job.findFirst({ where: { orgId }, orderBy: { receivedAt: "desc" }, select: { receivedAt: true } }),
   ]);
+
+  let paymentsAgg: { _sum: { amount: number | null } } = { _sum: { amount: 0 } };
+  try {
+    paymentsAgg = await prisma.payment.aggregate({
+      where: { orgId, receivedAt: { gte: selectedRange.start, lte: selectedRange.end } },
+      _sum: { amount: true },
+    });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (msg.includes("no such table") && msg.includes("Payment")) dbNeedsFix = true;
+    paymentsAgg = { _sum: { amount: 0 } };
+  }
+
+  let invoicesAgg: { _sum: { totalAmount: number | null; paidAmount: number | null } } = {
+    _sum: { totalAmount: 0, paidAmount: 0 },
+  };
+  try {
+    invoicesAgg = await prisma.invoice.aggregate({
+      where: { orgId, issuedAt: { gte: selectedRange.start, lte: selectedRange.end } },
+      _sum: { totalAmount: true, paidAmount: true },
+    });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (msg.includes("no such table") && msg.includes("Invoice")) dbNeedsFix = true;
+    invoicesAgg = { _sum: { totalAmount: 0, paidAmount: 0 } };
+  }
 
   const currentYear = new Date().getFullYear();
   const minYear = earliestJob?.receivedAt?.getFullYear() ?? currentYear;
@@ -299,6 +317,23 @@ export default async function ReportsPage({
     }
     return [...freq.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8);
   })();
+
+  const dbFixBanner = dbNeedsFix ? (
+    <section className="panel-shadow rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-100">
+      <p className="font-semibold text-amber-50">Finance tables are missing in the database.</p>
+      <p className="mt-1 text-amber-100/90">
+        Run <span className="mono">/api/admin/db-fix</span> as the platform admin to create <span className="mono">Invoice</span> and <span className="mono">Payment</span>.
+      </p>
+      <a
+        className="mt-3 inline-flex rounded-lg border border-amber-500/30 bg-black/20 px-3 py-2 text-xs font-semibold text-amber-50 hover:bg-black/30"
+        href="/api/admin/db-fix"
+        target="_blank"
+        rel="noreferrer"
+      >
+        Open DB Fix
+      </a>
+    </section>
+  ) : null;
 
   const totalPath = inHouseCount + externalCount;
   const externalRatio = totalPath > 0 ? (externalCount / totalPath) * 100 : 0;
@@ -605,6 +640,7 @@ export default async function ReportsPage({
 
   return (
     <div className="space-y-5">
+      {dbFixBanner}
 
       {/* 1. COMMAND HEADER */}
       <section className="panel-shadow flex flex-wrap items-center gap-3 rounded-xl border border-[var(--line)] bg-[var(--panel)] px-5 py-4">
