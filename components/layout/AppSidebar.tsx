@@ -92,6 +92,15 @@ function isActive(pathname: string, href: string) {
   return pathname === href || (href !== "/dashboard" && pathname.startsWith(`${href}/`));
 }
 
+function activeHrefForPath(pathname: string, hrefs: readonly string[]) {
+  let best: string | null = null;
+  for (const href of hrefs) {
+    if (!isActive(pathname, href)) continue;
+    if (!best || href.length > best.length) best = href;
+  }
+  return best;
+}
+
 function navIcon(href: string) {
   if (href === "/dashboard") {
     return (
@@ -283,6 +292,10 @@ export function AppSidebar({
   };
 }) {
   const pathname = usePathname();
+  const visibleHrefs = nav
+    .filter((item) => isVisible(role, item.roles === "all" ? "all" : item.roles))
+    .map((item) => item.href);
+  const activeHref = activeHrefForPath(pathname, visibleHrefs);
   const groupedNav = groupedNavForRole(role, permissions);
 
   return (
@@ -314,7 +327,7 @@ export function AppSidebar({
             </p>
             <div className="space-y-0.5">
               {section.items.map((item) => {
-                const active = isActive(pathname, item.href);
+                const active = activeHref === item.href;
                 const badge =
                   item.href === "/jobs"
                     ? badges?.jobs
