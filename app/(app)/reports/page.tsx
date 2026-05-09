@@ -1155,7 +1155,7 @@ export default async function ReportsPage({
       </div>
 
       {/* 9. EXPORT CENTER */}
-      <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-5">
+      <section id="export-center" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-5">
         <div className="mb-4 flex items-center justify-between gap-2">
           <div>
             <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Export Center</p>
@@ -1199,10 +1199,10 @@ export default async function ReportsPage({
         {user.role === "ADMIN" ? (
           <>
             {" "}Use{" "}
-            <Link href={`/api/reports/export?type=revenue-variance&month=${monthlyExportMonth}`} className="text-[var(--accent)] hover:underline">
+            <Link href="#export-center" className="text-[var(--accent)] hover:underline">
               Repair Margin CSV
             </Link>
-            {" "}to investigate client bill vs external tech bill variance.
+            {" "}above to investigate client bill vs external tech bill variance.
           </>
         ) : (
           <> Use Pipeline Aging and Device Performance CSVs to drill into operational bottlenecks.</>
