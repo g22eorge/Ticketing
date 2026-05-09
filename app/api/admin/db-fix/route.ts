@@ -74,6 +74,20 @@ async function userColumns() {
   return new Set(rows.map((r) => r.name));
 }
 
+async function supplierColumns() {
+  const rows = await prisma.$queryRaw<Array<{ name: string }>>`
+    PRAGMA table_info('Supplier')
+  `;
+  return new Set(rows.map((r) => r.name));
+}
+
+async function purchaseOrderColumns() {
+  const rows = await prisma.$queryRaw<Array<{ name: string }>>`
+    PRAGMA table_info('PurchaseOrder')
+  `;
+  return new Set(rows.map((r) => r.name));
+}
+
 export async function POST() {
   const { user } = await getCurrentUserRole();
   if (user.role !== "ADMIN") {
@@ -342,6 +356,102 @@ export async function POST() {
     changes.push({ kind: "alter_table", detail: "Added User.branchId (+ index)" });
   }
 
+  // Suppliers + Purchase Orders
+  const hasSupplier = await tableExists("Supplier");
+  if (!hasSupplier) {
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "Supplier" (
+        "id" TEXT NOT NULL PRIMARY KEY,
+        "orgId" TEXT NOT NULL,
+        "name" TEXT NOT NULL,
+        "contactName" TEXT,
+        "email" TEXT,
+        "phone" TEXT,
+        "address" TEXT,
+        "notes" TEXT,
+        "isActive" INTEGER NOT NULL DEFAULT 1,
+        "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY ("orgId") REFERENCES "Organization"("id") ON DELETE CASCADE ON UPDATE CASCADE
+      )
+    `);
+    await prisma.$executeRawUnsafe('CREATE INDEX IF NOT EXISTS "Supplier_orgId_idx" ON "Supplier"("orgId")');
+    changes.push({ kind: "create_table", detail: "Created Supplier + orgId index" });
+  }
+
+  const hasPurchaseOrder = await tableExists("PurchaseOrder");
+  if (!hasPurchaseOrder) {
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "PurchaseOrder" (
+        "id" TEXT NOT NULL PRIMARY KEY,
+        "orgId" TEXT NOT NULL,
+        "supplierId" TEXT NOT NULL,
+        "status" TEXT NOT NULL DEFAULT 'DRAFT',
+        "reference" TEXT,
+        "orderedAt" DATETIME,
+        "expectedAt" DATETIME,
+        "receivedAt" DATETIME,
+        "notes" TEXT,
+        "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY ("orgId") REFERENCES "Organization"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+        FOREIGN KEY ("supplierId") REFERENCES "Supplier"("id") ON DELETE RESTRICT ON UPDATE CASCADE
+      )
+    `);
+    await prisma.$executeRawUnsafe('CREATE INDEX IF NOT EXISTS "PurchaseOrder_orgId_idx" ON "PurchaseOrder"("orgId")');
+    await prisma.$executeRawUnsafe('CREATE INDEX IF NOT EXISTS "PurchaseOrder_supplierId_idx" ON "PurchaseOrder"("supplierId")');
+    changes.push({ kind: "create_table", detail: "Created PurchaseOrder + indexes" });
+  }
+
+  const hasPurchaseOrderItem = await tableExists("PurchaseOrderItem");
+  if (!hasPurchaseOrderItem) {
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "PurchaseOrderItem" (
+        "id" TEXT NOT NULL PRIMARY KEY,
+        "poId" TEXT NOT NULL,
+        "partId" TEXT,
+        "description" TEXT NOT NULL,
+        "qtyOrdered" INTEGER NOT NULL,
+        "qtyReceived" INTEGER NOT NULL DEFAULT 0,
+        "unitCost" REAL NOT NULL,
+        "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY ("poId") REFERENCES "PurchaseOrder"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+        FOREIGN KEY ("partId") REFERENCES "Part"("id") ON DELETE SET NULL ON UPDATE CASCADE
+      )
+    `);
+    await prisma.$executeRawUnsafe('CREATE INDEX IF NOT EXISTS "PurchaseOrderItem_poId_idx" ON "PurchaseOrderItem"("poId")');
+    changes.push({ kind: "create_table", detail: "Created PurchaseOrderItem + poId index" });
+  }
+
+  // Ensure schema drift doesn't break Prisma reads after partial deploys.
+  if (await tableExists("Supplier")) {
+    const scols = await supplierColumns();
+    const addSupplierColumn = async (name: string, type: string, dflt?: string) => {
+      if (scols.has(name)) return;
+      const defaultClause = dflt ? ` DEFAULT ${dflt}` : "";
+      await prisma.$executeRawUnsafe(`ALTER TABLE "Supplier" ADD COLUMN "${name}" ${type}${defaultClause}`);
+      changes.push({ kind: "alter_table", detail: `Added Supplier.${name}` });
+    };
+    await addSupplierColumn("isActive", "INTEGER", "1");
+  }
+
+  if (await tableExists("PurchaseOrder")) {
+    const pcols = await purchaseOrderColumns();
+    const addPOColumn = async (name: string, type: string, dflt?: string) => {
+      if (pcols.has(name)) return;
+      const defaultClause = dflt ? ` DEFAULT ${dflt}` : "";
+      await prisma.$executeRawUnsafe(`ALTER TABLE "PurchaseOrder" ADD COLUMN "${name}" ${type}${defaultClause}`);
+      changes.push({ kind: "alter_table", detail: `Added PurchaseOrder.${name}` });
+    };
+    await addPOColumn("status", "TEXT", "'DRAFT'");
+    await addPOColumn("reference", "TEXT");
+    await addPOColumn("orderedAt", "DATETIME");
+    await addPOColumn("expectedAt", "DATETIME");
+    await addPOColumn("receivedAt", "DATETIME");
+    await addPOColumn("notes", "TEXT");
+  }
+
   // Re-check and report
   const finalCols = await jobColumns();
   return NextResponse.json({
@@ -370,6 +480,9 @@ export async function POST() {
       OutboundMessage: await tableExists("OutboundMessage"),
       Device: await tableExists("Device"),
       Branch: await tableExists("Branch"),
+      Supplier: await tableExists("Supplier"),
+      PurchaseOrder: await tableExists("PurchaseOrder"),
+      PurchaseOrderItem: await tableExists("PurchaseOrderItem"),
     },
   });
 }
