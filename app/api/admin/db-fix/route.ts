@@ -193,6 +193,10 @@ export async function POST() {
   await addJobColumn("softwareInstallerSource", "TEXT");
   await addJobColumn("softwareInstallerSourceNote", "TEXT");
 
+  // Branch scoping for jobs (added later in commercial roll-out).
+  await addJobColumn("branchId", "TEXT");
+  await prisma.$executeRawUnsafe('CREATE INDEX IF NOT EXISTS "Job_branchId_idx" ON "Job"("branchId")');
+
   // Notifications
   const hasNotification = await tableExists("Notification");
   if (!hasNotification) {
