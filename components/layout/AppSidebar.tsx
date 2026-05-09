@@ -22,6 +22,7 @@ const nav = [
   { href: "/documents/quotations", label: "Quotations", group: "documents", roles: ["ADMIN", "OPS", "TECHNICIAN_INTERNAL"] },
   { href: "/documents/invoices", label: "Invoices", group: "documents", roles: ["ADMIN", "OPS"] },
   { href: "/reports", label: "Reports", group: "finance", roles: ["ADMIN", "OPS"] },
+  { href: "/pos", label: "POS", group: "finance", roles: ["ADMIN", "OPS", "FRONT_DESK"] },
   { href: "/payout-followups", label: "Payments", group: "finance", roles: ["ADMIN", "OPS"] },
   { href: "/technicians/payouts", label: "Payouts", group: "finance", roles: ["TECHNICIAN_EXTERNAL"] },
   { href: "/settings/billing", label: "Billing", group: "admin", roles: ["ADMIN"] },

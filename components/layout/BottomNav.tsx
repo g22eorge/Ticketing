@@ -108,6 +108,7 @@ const ITEMS = {
   intake:      { href: "/intake",                label: "Intake",    icon: intakeIcon },
   clients:     { href: "/clients",               label: "Clients",   icon: clientsIcon },
   reports:     { href: "/reports",               label: "Reports",   icon: reportsIcon },
+  pos:         { href: "/pos",                   label: "POS",       icon: invoiceIcon },
   inventory:   { href: "/inventory",             label: "Inventory", icon: inventoryIcon },
   payoutFollowups: { href: "/payout-followups",  label: "Payments", icon: payoutsIcon },
   payouts:     { href: "/technicians/payouts",   label: "Payouts",   icon: payoutsIcon },
@@ -136,6 +137,7 @@ function getMoreGroups(role: Role, permissions: string[]): NavGroup[] {
   const allow = (href: string) => {
     if (href === ITEMS.clients.href) return can.viewClientInfo(permUser);
     if (href === ITEMS.reports.href) return can.viewAccountsSummary(permUser);
+    if (href === ITEMS.pos.href) return ["ADMIN", "OPS", "FRONT_DESK"].includes(role);
     if (href === ITEMS.invoiceDocs.href) return can.viewFinancials(permUser);
     if (href === ITEMS.quotations.href) return can.viewFinancials(permUser) || role === "TECHNICIAN_INTERNAL";
     if (href === ITEMS.jobCards.href) return can.generateJobCards(permUser);
@@ -159,7 +161,7 @@ function getMoreGroups(role: Role, permissions: string[]): NavGroup[] {
     },
     {
       title: "Management",
-      items: [ITEMS.users, ITEMS.reports, ITEMS.branding, ITEMS.notifications],
+      items: [ITEMS.users, ITEMS.reports, ITEMS.pos, ITEMS.branding, ITEMS.notifications],
     },
     {
       title: "Communication",

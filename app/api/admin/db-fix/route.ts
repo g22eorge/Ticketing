@@ -284,6 +284,7 @@ export async function POST() {
     };
     await addPayColumn("orgId", "TEXT");
     await addPayColumn("invoiceId", "TEXT");
+    await addPayColumn("saleId", "TEXT");
     await addPayColumn("amount", "REAL", "0");
     await addPayColumn("method", "TEXT", "'CASH'");
     await addPayColumn("reference", "TEXT");
@@ -292,6 +293,58 @@ export async function POST() {
     await addPayColumn("note", "TEXT");
     await prisma.$executeRawUnsafe('CREATE INDEX IF NOT EXISTS "Payment_orgId_receivedAt_idx" ON "Payment"("orgId", "receivedAt")');
     await prisma.$executeRawUnsafe('CREATE INDEX IF NOT EXISTS "Payment_invoiceId_idx" ON "Payment"("invoiceId")');
+    await prisma.$executeRawUnsafe('CREATE INDEX IF NOT EXISTS "Payment_saleId_idx" ON "Payment"("saleId")');
+  }
+
+  // Sales (POS)
+  const hasSale = await tableExists("Sale");
+  if (!hasSale) {
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "Sale" (
+        "id" TEXT NOT NULL PRIMARY KEY,
+        "orgId" TEXT NOT NULL,
+        "branchId" TEXT,
+        "clientId" TEXT,
+        "status" TEXT NOT NULL DEFAULT 'OPEN',
+        "saleNumber" TEXT NOT NULL UNIQUE,
+        "subtotal" REAL NOT NULL DEFAULT 0,
+        "vatAmount" REAL NOT NULL DEFAULT 0,
+        "totalAmount" REAL NOT NULL DEFAULT 0,
+        "paidAmount" REAL NOT NULL DEFAULT 0,
+        "paidAt" DATETIME,
+        "notes" TEXT,
+        "createdById" TEXT,
+        "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY ("orgId") REFERENCES "Organization"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+        FOREIGN KEY ("branchId") REFERENCES "Branch"("id") ON DELETE SET NULL ON UPDATE CASCADE,
+        FOREIGN KEY ("clientId") REFERENCES "Client"("id") ON DELETE SET NULL ON UPDATE CASCADE,
+        FOREIGN KEY ("createdById") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE
+      )
+    `);
+    await prisma.$executeRawUnsafe('CREATE INDEX IF NOT EXISTS "Sale_orgId_createdAt_idx" ON "Sale"("orgId", "createdAt")');
+    await prisma.$executeRawUnsafe('CREATE INDEX IF NOT EXISTS "Sale_orgId_status_idx" ON "Sale"("orgId", "status")');
+    await prisma.$executeRawUnsafe('CREATE INDEX IF NOT EXISTS "Sale_branchId_idx" ON "Sale"("branchId")');
+    await prisma.$executeRawUnsafe('CREATE INDEX IF NOT EXISTS "Sale_clientId_idx" ON "Sale"("clientId")');
+    changes.push({ kind: "create_table", detail: "Created Sale + indexes" });
+  }
+
+  const hasSaleItem = await tableExists("SaleItem");
+  if (!hasSaleItem) {
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "SaleItem" (
+        "id" TEXT NOT NULL PRIMARY KEY,
+        "saleId" TEXT NOT NULL,
+        "description" TEXT NOT NULL,
+        "quantity" INTEGER NOT NULL DEFAULT 1,
+        "unitPrice" REAL NOT NULL,
+        "lineTotal" REAL NOT NULL,
+        "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY ("saleId") REFERENCES "Sale"("id") ON DELETE CASCADE ON UPDATE CASCADE
+      )
+    `);
+    await prisma.$executeRawUnsafe('CREATE INDEX IF NOT EXISTS "SaleItem_saleId_idx" ON "SaleItem"("saleId")');
+    changes.push({ kind: "create_table", detail: "Created SaleItem + index" });
   }
 
   if (!cols.has("deviceId")) {

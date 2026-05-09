@@ -1,0 +1,142 @@
+import Link from "next/link";
+import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
+
+import { formatMoneyCompact } from "@/lib/currency";
+import { prisma } from "@/lib/prisma";
+import { requireOrgSession } from "@/lib/org-context";
+import { can } from "@/lib/permissions";
+
+function monthKey(d: Date) {
+  return `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+
+async function nextSaleNumber(orgId: string) {
+  const prefix = `S-${monthKey(new Date())}-`;
+  const last = await prisma.sale.findFirst({
+    where: { orgId, saleNumber: { startsWith: prefix } },
+    orderBy: { saleNumber: "desc" },
+    select: { saleNumber: true },
+  });
+  const lastSeq = last?.saleNumber.slice(prefix.length);
+  const n = lastSeq ? Number.parseInt(lastSeq, 10) : 0;
+  const next = Number.isFinite(n) ? n + 1 : 1;
+  return `${prefix}${String(next).padStart(4, "0")}`;
+}
+
+export default async function PosPage() {
+  const { user, orgId } = await requireOrgSession();
+  if (!(can.viewFinancials(user) || ["ADMIN", "OPS", "FRONT_DESK"].includes(user.role))) {
+    redirect("/dashboard");
+  }
+
+  const branches = await prisma.branch.findMany({
+    where: { orgId, isActive: true },
+    orderBy: [{ isDefault: "desc" }, { name: "asc" }],
+    select: { id: true, name: true, isDefault: true },
+  }).catch(() => []);
+
+  const defaultBranchId = branches.find((b) => b.isDefault)?.id ?? branches[0]?.id ?? null;
+
+  async function createSaleAction(formData: FormData) {
+    "use server";
+    const { user, orgId, session } = await requireOrgSession();
+    if (!(can.viewFinancials(user) || ["ADMIN", "OPS", "FRONT_DESK"].includes(user.role))) return;
+
+    const branchId = String(formData.get("branchId") ?? "").trim() || null;
+    const saleNumber = await nextSaleNumber(orgId);
+    const sale = await prisma.sale.create({
+      data: {
+        orgId,
+        branchId,
+        saleNumber,
+        status: "OPEN",
+        createdById: session.user.id,
+      },
+      select: { id: true },
+    });
+
+    revalidatePath("/pos");
+    redirect(`/pos/${sale.id}`);
+  }
+
+  const sales = await prisma.sale.findMany({
+    where: { orgId },
+    orderBy: { createdAt: "desc" },
+    take: 40,
+    select: {
+      id: true,
+      saleNumber: true,
+      status: true,
+      totalAmount: true,
+      paidAmount: true,
+      createdAt: true,
+      branch: { select: { name: true } },
+    },
+  });
+
+  return (
+    <div className="space-y-4">
+      <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 sm:p-5">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--accent)]">POS</p>
+        <h1 className="mt-1 text-lg font-semibold text-[var(--ink)]">Sales</h1>
+        <p className="mt-1 text-sm text-[var(--ink-muted)]">Create a sale and take partial payments.</p>
+
+        <form action={createSaleAction} className="mt-4 flex flex-wrap items-end gap-2">
+          <div>
+            <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Branch</p>
+            <select
+              name="branchId"
+              defaultValue={defaultBranchId ?? ""}
+              className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm outline-none focus:border-[var(--accent)]/50"
+            >
+              <option value="">No branch</option>
+              {branches.map((b) => (
+                <option key={b.id} value={b.id}>{b.name}</option>
+              ))}
+            </select>
+          </div>
+          <button className="btn-premium rounded-lg px-4 py-2 text-sm text-white">New Sale</button>
+        </form>
+      </section>
+
+      <section className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
+        <div className="border-b border-[var(--line)] bg-[var(--panel-strong)] px-4 py-2.5">
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Recent</p>
+        </div>
+        {sales.length === 0 ? (
+          <div className="px-4 py-10 text-sm text-[var(--ink-muted)]">No sales yet.</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[720px] text-left text-sm">
+              <thead className="border-b border-[var(--line)]">
+                <tr className="text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
+                  <th className="px-4 py-2.5">Sale</th>
+                  <th className="px-4 py-2.5">Branch</th>
+                  <th className="px-4 py-2.5">Total</th>
+                  <th className="px-4 py-2.5">Paid</th>
+                  <th className="px-4 py-2.5">Status</th>
+                  <th className="px-4 py-2.5">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[var(--line)]">
+                {sales.map((s) => (
+                  <tr key={s.id} className="hover:bg-[var(--panel-strong)]/40">
+                    <td className="px-4 py-3 mono font-semibold">{s.saleNumber}</td>
+                    <td className="px-4 py-3 text-[var(--ink-muted)]">{s.branch?.name ?? "-"}</td>
+                    <td className="px-4 py-3">{formatMoneyCompact(s.totalAmount)}</td>
+                    <td className="px-4 py-3">{formatMoneyCompact(s.paidAmount)}</td>
+                    <td className="px-4 py-3 text-[var(--ink-muted)]">{s.status}</td>
+                    <td className="px-4 py-3">
+                      <Link href={`/pos/${s.id}`} className="btn-premium-secondary rounded-md px-2.5 py-1.5 text-xs">Open</Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+    </div>
+  );
+}

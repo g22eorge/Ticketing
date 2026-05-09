@@ -59,6 +59,7 @@ model Organization {
   inboundMessages          InboundMessage[]
   invoices                 Invoice[]
   payments                 Payment[]
+  sales                    Sale[]
   auditLogs                AuditLog[]
   invites                  UserInvite[]
   branches                 Branch[]
@@ -117,6 +118,7 @@ model User {
   partReservations PartReservation[] @relation("PartReservedBy")
   stockTransactions PartStockTransaction[] @relation("StockTxnBy")
   paymentsCreated Payment[] @relation("PaymentCreatedBy")
+  salesCreated    Sale[]     @relation("SaleCreatedBy")
   accessAuditEntries UserAccessAudit[] @relation("AccessAuditTarget")
   accessAuditChanges UserAccessAudit[] @relation("AccessAuditActor")
   invitesSent        UserInvite[]      @relation("InvitedBy")
@@ -268,6 +270,12 @@ enum PaymentMethod {
   OTHER
 }
 
+enum SaleStatus {
+  OPEN
+  PAID
+  VOID
+}
+
 enum DeviceType {
   PHONE_ANDROID
   PHONE_IPHONE
@@ -321,6 +329,7 @@ model Client {
   devices         Device[]
   notesEntries    ClientNote[]
   inboundMessages InboundMessage[]
+  sales          Sale[]
 
   @@unique([phone, orgId])
   @@index([orgId])
@@ -502,8 +511,11 @@ model Payment {
   orgId      String
   org        Organization  @relation(fields: [orgId], references: [id], onDelete: Cascade)
 
-  invoiceId  String
-  invoice    Invoice       @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  invoiceId  String?
+  invoice    Invoice?      @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  saleId     String?
+  sale       Sale?         @relation(fields: [saleId], references: [id], onDelete: Cascade)
 
   amount     Float
   method     PaymentMethod @default(CASH)
@@ -518,6 +530,59 @@ model Payment {
 
   @@index([orgId, receivedAt])
   @@index([invoiceId])
+  @@index([saleId])
+}
+
+model Sale {
+  id          String      @id @default(cuid())
+  orgId       String
+  org         Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  branchId    String?
+  branch      Branch?     @relation(fields: [branchId], references: [id], onDelete: SetNull)
+
+  clientId    String?
+  client      Client?     @relation(fields: [clientId], references: [id], onDelete: SetNull)
+
+  status      SaleStatus  @default(OPEN)
+  saleNumber  String      @unique
+
+  subtotal    Float       @default(0)
+  vatAmount   Float       @default(0)
+  totalAmount Float       @default(0)
+  paidAmount  Float       @default(0)
+  paidAt      DateTime?
+
+  notes       String?
+
+  items       SaleItem[]
+  payments    Payment[]
+
+  createdById String?
+  createdBy   User?       @relation("SaleCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@index([orgId, createdAt])
+  @@index([orgId, status])
+  @@index([branchId])
+  @@index([clientId])
+}
+
+model SaleItem {
+  id          String   @id @default(cuid())
+  saleId      String
+  sale        Sale     @relation(fields: [saleId], references: [id], onDelete: Cascade)
+
+  description String
+  quantity    Int      @default(1)
+  unitPrice   Float
+  lineTotal   Float
+
+  createdAt   DateTime @default(now())
+
+  @@index([saleId])
 }
 
 model Part {
@@ -1001,6 +1066,7 @@ model Branch {
 
   users User[]
   jobs  Job[]
+  sales Sale[]
 
   @@index([orgId])
 }
