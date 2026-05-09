@@ -214,7 +214,7 @@ export default async function ReportsPage({
       amount: resolveTechCost(externalPayoutMap.get(job.id)?.externalTechFee, job.externalTechBill),
     }));
 
-  const externalPayoutOutstandingTotal = unpaidPayouts.reduce((sum, payout) => sum + payout.amount, 0);
+  const _externalPayoutOutstandingTotal = unpaidPayouts.reduce((sum, payout) => sum + payout.amount, 0);
 
   const statusCount = new Map(statusGroup.map((s) => [normalizeJobStatus(s.status as JobStatus), s._count.status]));
   const statusData = UI_JOB_STATUSES.map((status) => ({
@@ -664,7 +664,9 @@ export default async function ReportsPage({
           <div className="relative">
             <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Cash In</p>
             <p className="mt-1.5 text-2xl font-bold text-emerald-700">{formatMoneyCompact(cashIn, currency)}</p>
-            <p className="mt-2 text-[10px] text-[var(--ink-muted)]">payments received</p>
+            <p className="mt-2 text-[10px] text-[var(--ink-muted)]">
+              Balance {formatMoneyCompact(issuedBalance, currency)}
+            </p>
           </div>
         </Link>
 
@@ -692,39 +694,6 @@ export default async function ReportsPage({
         </div>
 
         <Link
-          href="/documents/invoices"
-          className="panel-shadow relative overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px] hover:border-[var(--accent)]/40"
-        >
-          <div className="absolute inset-0 bg-gradient-to-br from-[var(--accent)]/5 to-transparent" />
-          <div className="relative">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Balance</p>
-            <p className="mt-1.5 text-2xl font-bold text-[var(--ink)]">{formatMoneyCompact(issuedBalance, currency)}</p>
-            <p className="mt-2 text-[10px] text-[var(--ink-muted)]">issued minus paid</p>
-          </div>
-        </Link>
-      </section>
-
-      <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        {/* Revenue */}
-        <Link
-          href={`/jobs?status=COMPLETED&dateField=completedAt&from=${selectedRange.start.toISOString().slice(0,10)}&to=${selectedRange.end.toISOString().slice(0,10)}`}
-          className="panel-shadow relative overflow-hidden rounded-xl border border-[var(--accent)]/30 bg-[var(--panel)] p-4 transition hover:-translate-y-[2px] hover:border-[var(--accent)]/60"
-        >
-          <div className="absolute inset-0 bg-gradient-to-br from-[var(--accent)]/5 to-transparent" />
-          <div className="relative">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Revenue</p>
-            <p className="mt-1.5 text-2xl font-bold text-[var(--ink)]">{formatMoneyCompact(revenueSelected, currency)}</p>
-            <div className="mt-2 flex items-center gap-1.5">
-              <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold ${revenueDelta >= 0 ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-600"}`}>
-                {revenueDelta >= 0 ? "+" : ""}{formatMoneyCompact(Math.abs(revenueDelta), currency)}
-              </span>
-              <span className="text-[10px] text-[var(--ink-muted)]">vs {prevMonthString}</span>
-            </div>
-          </div>
-        </Link>
-
-        {/* Margin */}
-        <Link
           href={`/api/reports/export?type=revenue-variance&month=${monthlyExportMonth}`}
           className={`panel-shadow relative overflow-hidden rounded-xl border bg-[var(--panel)] p-4 transition hover:-translate-y-[2px] ${marginSelected >= 0 ? "border-emerald-200/60 hover:border-emerald-400/60" : "border-red-200/60 hover:border-red-400/60"}`}
         >
@@ -738,36 +707,6 @@ export default async function ReportsPage({
               {completedSelected.length > 0
                 ? `${formatMoneyCompact(marginSelected / completedSelected.length, currency)} avg / job`
                 : "No completed jobs"}
-            </p>
-          </div>
-        </Link>
-
-        {/* Completed */}
-        <Link
-          href={`/jobs?status=COMPLETED&dateField=completedAt&from=${selectedRange.start.toISOString().slice(0,10)}&to=${selectedRange.end.toISOString().slice(0,10)}`}
-          className="panel-shadow relative overflow-hidden rounded-xl border border-blue-200/60 bg-[var(--panel)] p-4 transition hover:-translate-y-[2px] hover:border-blue-400/60"
-        >
-          <div className="absolute inset-0 bg-gradient-to-br from-blue-50/30 to-transparent" />
-          <div className="relative">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Completed</p>
-            <p className="mt-1.5 text-2xl font-bold text-[var(--ink)]">{completedSelected.length}</p>
-            <p className="mt-2 text-[10px] text-[var(--ink-muted)]">
-              {completionMomentum >= 0 ? "+" : ""}{completionMomentum} vs {prevMonthString}
-            </p>
-          </div>
-        </Link>
-
-        {/* Payouts Due */}
-        <Link
-          href="/payout-followups"
-          className="panel-shadow relative overflow-hidden rounded-xl border border-amber-200/60 bg-[var(--panel)] p-4 transition hover:-translate-y-[2px] hover:border-amber-400/60"
-        >
-          <div className="absolute inset-0 bg-gradient-to-br from-amber-50/30 to-transparent" />
-          <div className="relative">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Payouts Due</p>
-            <p className="mt-1.5 text-2xl font-bold text-amber-700">{formatMoneyCompact(externalPayoutOutstandingTotal, currency)}</p>
-            <p className="mt-2 text-[10px] text-[var(--ink-muted)]">
-              {unpaidPayouts.length} unpaid external {unpaidPayouts.length === 1 ? "job" : "jobs"}
             </p>
           </div>
         </Link>
