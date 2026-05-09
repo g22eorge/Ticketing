@@ -20,28 +20,38 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
 
   const { id } = await params;
 
-  const sale = await prisma.sale.findFirst({
-    where: { id, orgId },
-    select: {
-      id: true,
-      saleNumber: true,
-      status: true,
-      subtotal: true,
-      discountAmount: true,
-      vatAmount: true,
-      totalAmount: true,
-      paidAmount: true,
-      paidAt: true,
-      createdAt: true,
-      notes: true,
-      branch: { select: { name: true } },
-      client: { select: { fullName: true } },
-      items: { select: { id: true, description: true, quantity: true, unitPrice: true, lineTotal: true }, orderBy: { createdAt: "asc" } },
-      payments: { select: { id: true, amount: true, method: true, reference: true, receivedAt: true }, orderBy: { receivedAt: "desc" } },
-    },
-  });
+  let dbNeedsFix = false;
+  const sale = await prisma.sale
+    .findFirst({
+      where: { id, orgId },
+      select: {
+        id: true,
+        saleNumber: true,
+        status: true,
+        subtotal: true,
+        discountAmount: true,
+        vatAmount: true,
+        totalAmount: true,
+        paidAmount: true,
+        paidAt: true,
+        createdAt: true,
+        notes: true,
+        branch: { select: { name: true } },
+        client: { select: { fullName: true } },
+        items: { select: { id: true, description: true, quantity: true, unitPrice: true, lineTotal: true }, orderBy: { createdAt: "asc" } },
+        payments: { select: { id: true, amount: true, method: true, reference: true, receivedAt: true }, orderBy: { receivedAt: "desc" } },
+      },
+    })
+    .catch((err) => {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg.includes("no such table") && msg.includes("Sale")) dbNeedsFix = true;
+      return null;
+    });
 
-  if (!sale) redirect("/pos");
+  if (!sale) {
+    if (dbNeedsFix) redirect("/pos");
+    redirect("/pos");
+  }
 
   const orgBranding = await prisma.documentBrandingSettings.findFirst({
     where: { orgId },

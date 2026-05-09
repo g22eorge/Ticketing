@@ -30,6 +30,8 @@ export default async function PosPage() {
     redirect("/dashboard");
   }
 
+  let dbNeedsFix = false;
+
   const branches = await prisma.branch.findMany({
     where: { orgId, isActive: true },
     orderBy: [{ isDefault: "desc" }, { name: "asc" }],
@@ -60,23 +62,45 @@ export default async function PosPage() {
     redirect(`/pos/${sale.id}`);
   }
 
-  const sales = await prisma.sale.findMany({
-    where: { orgId },
-    orderBy: { createdAt: "desc" },
-    take: 40,
-    select: {
-      id: true,
-      saleNumber: true,
-      status: true,
-      totalAmount: true,
-      paidAmount: true,
-      createdAt: true,
-      branch: { select: { name: true } },
-    },
-  });
+  const sales = await prisma.sale
+    .findMany({
+      where: { orgId },
+      orderBy: { createdAt: "desc" },
+      take: 40,
+      select: {
+        id: true,
+        saleNumber: true,
+        status: true,
+        totalAmount: true,
+        paidAmount: true,
+        createdAt: true,
+        branch: { select: { name: true } },
+      },
+    })
+    .catch((err) => {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg.includes("no such table") && msg.includes("Sale")) dbNeedsFix = true;
+      return [];
+    });
 
   return (
     <div className="space-y-4">
+      {dbNeedsFix ? (
+        <section className="panel-shadow rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-100">
+          <p className="font-semibold text-amber-50">POS database tables are missing.</p>
+          <p className="mt-1 text-amber-100/90">
+            Run <span className="mono">/api/admin/db-fix</span> as the platform admin to create <span className="mono">Sale</span> tables.
+          </p>
+          <a
+            className="mt-3 inline-flex rounded-lg border border-amber-500/30 bg-black/20 px-3 py-2 text-xs font-semibold text-amber-50 hover:bg-black/30"
+            href="/api/admin/db-fix"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Open DB Fix
+          </a>
+        </section>
+      ) : null}
       <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 sm:p-5">
         <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--accent)]">POS</p>
         <h1 className="mt-1 text-lg font-semibold text-[var(--ink)]">Sales</h1>
