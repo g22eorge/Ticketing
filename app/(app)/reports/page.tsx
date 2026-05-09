@@ -71,12 +71,14 @@ function monthOptions(count: number) {
   });
 }
 
-function yearOptions(count: number) {
-  const now = new Date();
-  return Array.from({ length: count }, (_, index) => {
-    const year = now.getFullYear() - index;
-    return { value: String(year), label: `${year} Annual Package` };
-  });
+function yearOptions(startYear: number, endYear: number) {
+  const safeStart = Math.min(startYear, endYear);
+  const safeEnd = Math.max(startYear, endYear);
+  const out = [] as Array<{ value: string; label: string }>;
+  for (let year = safeEnd; year >= safeStart; year--) {
+    out.push({ value: String(year), label: `${year} Annual Package` });
+  }
+  return out;
 }
 
 const statusLabel: Record<ReturnType<typeof normalizeJobStatus>, string> = {
@@ -128,6 +130,8 @@ export default async function ReportsPage({
     externalCount,
     inHouseCount,
     externalPayoutOutstandingJobs,
+    earliestJob,
+    latestJob,
   ] = await Promise.all([
     prisma.job.groupBy({ by: ["status"], where: { orgId }, _count: { status: true } }),
     // Bug fix #2: narrow select to only fields we actually use
@@ -180,7 +184,13 @@ export default async function ReportsPage({
       },
       select: { id: true, externalTechBill: true },
     }),
+    prisma.job.findFirst({ where: { orgId }, orderBy: { receivedAt: "asc" }, select: { receivedAt: true } }),
+    prisma.job.findFirst({ where: { orgId }, orderBy: { receivedAt: "desc" }, select: { receivedAt: true } }),
   ]);
+
+  const currentYear = new Date().getFullYear();
+  const minYear = earliestJob?.receivedAt?.getFullYear() ?? currentYear;
+  const maxYear = Math.max(currentYear, latestJob?.receivedAt?.getFullYear() ?? currentYear);
 
   const externalPayoutMap = await getJobPayoutsByIds(externalPayoutOutstandingJobs.map((job) => job.id));
   const unpaidPayouts = externalPayoutOutstandingJobs
@@ -308,7 +318,7 @@ export default async function ReportsPage({
       ? String(selectedYear - 1)
       : monthLabel(new Date(selectedMonth.year, selectedMonth.month - 2, 1).getFullYear(), new Date(selectedMonth.year, selectedMonth.month - 2, 1).getMonth() + 1);
   const currency = getAppCurrency();
-  const selectableMonths = period === "year" ? yearOptions(6) : monthOptions(18);
+  const selectableMonths = period === "year" ? yearOptions(minYear, maxYear) : monthOptions(18);
   const monthlyExportMonth = monthLabel(selectedMonth.year, selectedMonth.month);
   const trendNow = new Date();
   const yearToDateMonthCount = trendNow.getMonth() + 1;
