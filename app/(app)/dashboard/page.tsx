@@ -705,6 +705,8 @@ export default async function DashboardPage({
       completedMtd,
       externalCompleted,
       clientUnpaidCount,
+      cashInMtdAgg,
+      posCashInMtdAgg,
       receivedToday,
       completedToday,
       pendingRequests,
@@ -729,6 +731,14 @@ export default async function DashboardPage({
       prisma.job.count({
         where: { orgId, clientBill: { gt: 0 }, clientPaid: false, status: { in: ["READY_FOR_PICKUP", "COMPLETED", "DELIVERED"] } },
       }).catch(() => 0),
+      prisma.payment.aggregate({
+        where: { orgId, receivedAt: { gte: mtdStart, lte: today } },
+        _sum: { amount: true },
+      }).catch(() => ({ _sum: { amount: 0 } })),
+      prisma.payment.aggregate({
+        where: { orgId, receivedAt: { gte: mtdStart, lte: today }, saleId: { not: null } },
+        _sum: { amount: true },
+      }).catch(() => ({ _sum: { amount: 0 } })),
       prisma.job.count({ where: { orgId, receivedAt: { gte: todayStart } } }),
       prisma.job.count({ where: { orgId, completedAt: { gte: todayStart } } }),
       prisma.repairRequest.count({ where: { orgId, requestStatus: { in: ["PENDING_FRONT_DESK", "PENDING_INTAKE"] } } }).catch(() => 0),
@@ -781,6 +791,9 @@ export default async function DashboardPage({
     const revenueMtd = completedMtd
       .filter((job) => getClientBill(job) !== null)
       .reduce((sum, job) => sum + (getClientBill(job) ?? 0), 0);
+
+    const cashInMtd = cashInMtdAgg._sum.amount ?? 0;
+    const posCashInMtd = posCashInMtdAgg._sum.amount ?? 0;
 
     const statusCount = new Map<string, number>();
     for (const item of statusGroup) {
@@ -900,7 +913,13 @@ export default async function DashboardPage({
                 href="/reports"
                 className="rounded-lg border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-1.5 text-[11px] font-semibold text-emerald-300 transition hover:border-emerald-500/40"
               >
-                Revenue {formatMoney(revenueMtd, currency)}
+                Cash in {formatMoney(cashInMtd, currency)}
+              </Link>
+              <Link
+                href="/pos"
+                className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1.5 text-[11px] font-semibold text-[var(--ink-muted)] transition hover:border-[var(--accent)]/30 hover:text-[var(--ink)]"
+              >
+                POS {formatMoney(posCashInMtd, currency)}
               </Link>
               <Link
                 href="/payout-followups"
@@ -1091,7 +1110,7 @@ export default async function DashboardPage({
 
     const trendMonths = trendMonthsForYear(selectedRange.start.getFullYear(), period === "year" ? 12 : selectedMonth.month);
 
-    const [completedThisMonth, pendingBilling, externalCompleted] = await Promise.all([
+    const [completedThisMonth, pendingBilling, externalCompleted, cashInAgg, repairCashInAgg, posCashInAgg, invoiceAgg, saleAgg] = await Promise.all([
       prisma.job.findMany({
         where: { orgId, status: "COMPLETED", completedAt: { gte: selectedRange.start, lte: selectedRange.end } },
         select: { id: true, jobNumber: true, completedAt: true, clientBill: true },
@@ -1111,9 +1130,37 @@ export default async function DashboardPage({
         },
         select: { id: true, externalTechBill: true },
       }),
+      prisma.payment.aggregate({
+        where: { orgId, receivedAt: { gte: selectedRange.start, lte: selectedRange.end } },
+        _sum: { amount: true },
+      }).catch(() => ({ _sum: { amount: 0 } })),
+      prisma.payment.aggregate({
+        where: { orgId, receivedAt: { gte: selectedRange.start, lte: selectedRange.end }, invoiceId: { not: null } },
+        _sum: { amount: true },
+      }).catch(() => ({ _sum: { amount: 0 } })),
+      prisma.payment.aggregate({
+        where: { orgId, receivedAt: { gte: selectedRange.start, lte: selectedRange.end }, saleId: { not: null } },
+        _sum: { amount: true },
+      }).catch(() => ({ _sum: { amount: 0 } })),
+      prisma.invoice.aggregate({
+        where: { orgId, issuedAt: { gte: selectedRange.start, lte: selectedRange.end } },
+        _sum: { totalAmount: true, paidAmount: true },
+      }).catch(() => ({ _sum: { totalAmount: 0, paidAmount: 0 } })),
+      prisma.sale.aggregate({
+        where: { orgId, createdAt: { gte: selectedRange.start, lte: selectedRange.end }, status: { not: "VOID" } },
+        _sum: { totalAmount: true, paidAmount: true },
+      }).catch(() => ({ _sum: { totalAmount: 0, paidAmount: 0 } })),
     ]);
 
-    const monthRevenue = completedThisMonth.reduce((sum, job) => sum + (getClientBill(job) ?? 0), 0);
+    const cashIn = cashInAgg._sum.amount ?? 0;
+    const repairCashIn = repairCashInAgg._sum.amount ?? 0;
+    const posCashIn = posCashInAgg._sum.amount ?? 0;
+    const invoiceIssued = invoiceAgg._sum.totalAmount ?? 0;
+    const invoiceIssuedPaid = invoiceAgg._sum.paidAmount ?? 0;
+    const invoiceIssuedBalance = Math.max(0, invoiceIssued - invoiceIssuedPaid);
+    const posTotal = saleAgg._sum.totalAmount ?? 0;
+    const posPaid = saleAgg._sum.paidAmount ?? 0;
+    const posBalance = Math.max(0, posTotal - posPaid);
 
     const revenueTrend = await loadRevenueMarginTrend(trendMonths, orgId);
 
@@ -1135,7 +1182,7 @@ export default async function DashboardPage({
 
         <StickyKpiRow
           items={[
-            { label: "Revenue", value: formatMoneyCompact(monthRevenue, currency), href: "/reports" },
+            { label: "Cash In", value: formatMoneyCompact(cashIn, currency), href: reportHref },
             { label: "Pending", value: String(pendingBilling), href: "/jobs?status=IN_REPAIR,READY_FOR_PICKUP,AWAITING_APPROVAL", tone: "warning" },
             { label: "Payouts", value: formatMoneyCompact(payoutOutstanding, currency), href: "/reports", tone: "brand" },
             { label: "Completed", value: String(completedThisMonth.length), href: "/jobs?status=COMPLETED", tone: "success" },
@@ -1160,8 +1207,28 @@ export default async function DashboardPage({
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Cash Exposure</p>
             <div className="mt-3 space-y-2">
               <div className="flex items-center justify-between rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm">
-                <span>Revenue ({selectedPeriodLabel})</span>
-                <span className="font-semibold">{formatMoneyCompact(monthRevenue, currency)}</span>
+                <span>Cash in ({selectedPeriodLabel})</span>
+                <span className="font-semibold">{formatMoneyCompact(cashIn, currency)}</span>
+              </div>
+              <div className="grid gap-2 sm:grid-cols-2">
+                <div className="flex items-center justify-between rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm">
+                  <span>Repairs cash in</span>
+                  <span className="font-semibold">{formatMoneyCompact(repairCashIn, currency)}</span>
+                </div>
+                <div className="flex items-center justify-between rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm">
+                  <span>POS cash in</span>
+                  <span className="font-semibold">{formatMoneyCompact(posCashIn, currency)}</span>
+                </div>
+              </div>
+              <div className="grid gap-2 sm:grid-cols-2">
+                <div className="flex items-center justify-between rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm">
+                  <span>Invoice balance</span>
+                  <span className="font-semibold">{formatMoneyCompact(invoiceIssuedBalance, currency)}</span>
+                </div>
+                <div className="flex items-center justify-between rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm">
+                  <span>POS balance</span>
+                  <span className="font-semibold">{formatMoneyCompact(posBalance, currency)}</span>
+                </div>
               </div>
               <div className="flex items-center justify-between rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm">
                 <span>External payouts due</span>
