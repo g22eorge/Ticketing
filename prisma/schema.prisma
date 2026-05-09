@@ -57,6 +57,8 @@ model Organization {
   notifications            Notification[]
   outboundMessages         OutboundMessage[]
   inboundMessages          InboundMessage[]
+  invoices                 Invoice[]
+  payments                 Payment[]
   auditLogs                AuditLog[]
   invites                  UserInvite[]
   branches                 Branch[]
@@ -114,6 +116,7 @@ model User {
   notificationPreferences NotificationPreferences?
   partReservations PartReservation[] @relation("PartReservedBy")
   stockTransactions PartStockTransaction[] @relation("StockTxnBy")
+  paymentsCreated Payment[] @relation("PaymentCreatedBy")
   accessAuditEntries UserAccessAudit[] @relation("AccessAuditTarget")
   accessAuditChanges UserAccessAudit[] @relation("AccessAuditActor")
   invitesSent        UserInvite[]      @relation("InvitedBy")
@@ -248,6 +251,21 @@ enum DeliveryMethod {
   PICKUP
   DELIVERY
   COURIER
+}
+
+enum InvoiceStatus {
+  DRAFT
+  ISSUED
+  PAID
+  VOID
+}
+
+enum PaymentMethod {
+  CASH
+  MOBILE_MONEY
+  BANK_TRANSFER
+  CARD
+  OTHER
 }
 
 enum DeviceType {
@@ -439,6 +457,8 @@ model Job {
   partReservations PartReservation[]
   stockTransactions PartStockTransaction[]
 
+  invoice Invoice?
+
   @@index([orgId])
   @@index([orgId, status])
   @@index([deviceId])
@@ -449,6 +469,55 @@ model Job {
   @@index([assignedToId, status])
   @@index([completedAt])
   @@index([repairPath])
+}
+
+model Invoice {
+  id            String        @id @default(cuid())
+  orgId         String
+  org           Organization  @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  jobId         String        @unique
+  job           Job           @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  invoiceNumber String        @unique
+  status        InvoiceStatus @default(ISSUED)
+  issuedAt      DateTime      @default(now())
+  totalAmount   Float
+
+  paidAmount    Float         @default(0)
+  paidAt        DateTime?
+
+  notes         String?
+
+  payments      Payment[]
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@index([orgId, issuedAt])
+  @@index([orgId, status])
+}
+
+model Payment {
+  id         String        @id @default(cuid())
+  orgId      String
+  org        Organization  @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  invoiceId  String
+  invoice    Invoice       @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  amount     Float
+  method     PaymentMethod @default(CASH)
+  reference  String?
+  receivedAt DateTime      @default(now())
+
+  createdById String?
+  createdBy   User?        @relation("PaymentCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  note       String?
+  createdAt  DateTime      @default(now())
+
+  @@index([orgId, receivedAt])
+  @@index([invoiceId])
 }
 
 model Part {

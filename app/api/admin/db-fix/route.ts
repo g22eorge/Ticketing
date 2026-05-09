@@ -207,6 +207,93 @@ export async function POST() {
   await addJobColumn("invoiceNumber", "TEXT");
   await addJobColumn("invoiceIssuedAt", "DATETIME");
 
+  // Invoices + Payments (partial payments)
+  const hasInvoice = await tableExists("Invoice");
+  if (!hasInvoice) {
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "Invoice" (
+        "id" TEXT NOT NULL PRIMARY KEY,
+        "orgId" TEXT NOT NULL,
+        "jobId" TEXT NOT NULL UNIQUE,
+        "invoiceNumber" TEXT NOT NULL UNIQUE,
+        "status" TEXT NOT NULL DEFAULT 'ISSUED',
+        "issuedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        "totalAmount" REAL NOT NULL,
+        "paidAmount" REAL NOT NULL DEFAULT 0,
+        "paidAt" DATETIME,
+        "notes" TEXT,
+        "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY ("orgId") REFERENCES "Organization"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+        FOREIGN KEY ("jobId") REFERENCES "Job"("id") ON DELETE CASCADE ON UPDATE CASCADE
+      )
+    `);
+    await prisma.$executeRawUnsafe('CREATE INDEX IF NOT EXISTS "Invoice_orgId_issuedAt_idx" ON "Invoice"("orgId", "issuedAt")');
+    await prisma.$executeRawUnsafe('CREATE INDEX IF NOT EXISTS "Invoice_orgId_status_idx" ON "Invoice"("orgId", "status")');
+    changes.push({ kind: "create_table", detail: "Created Invoice + indexes" });
+  } else {
+    const invCols = await tableColumns("Invoice");
+    const addInvColumn = async (name: string, type: string, dflt?: string) => {
+      if (invCols.has(name)) return;
+      const defaultClause = dflt ? ` DEFAULT ${dflt}` : "";
+      await prisma.$executeRawUnsafe(`ALTER TABLE "Invoice" ADD COLUMN "${name}" ${type}${defaultClause}`);
+      changes.push({ kind: "alter_table", detail: `Added Invoice.${name}` });
+    };
+    await addInvColumn("orgId", "TEXT");
+    await addInvColumn("jobId", "TEXT");
+    await addInvColumn("invoiceNumber", "TEXT");
+    await addInvColumn("status", "TEXT", "'ISSUED'");
+    await addInvColumn("issuedAt", "DATETIME");
+    await addInvColumn("totalAmount", "REAL", "0");
+    await addInvColumn("paidAmount", "REAL", "0");
+    await addInvColumn("paidAt", "DATETIME");
+    await addInvColumn("notes", "TEXT");
+    await prisma.$executeRawUnsafe('CREATE INDEX IF NOT EXISTS "Invoice_orgId_issuedAt_idx" ON "Invoice"("orgId", "issuedAt")');
+    await prisma.$executeRawUnsafe('CREATE INDEX IF NOT EXISTS "Invoice_orgId_status_idx" ON "Invoice"("orgId", "status")');
+  }
+
+  const hasPayment = await tableExists("Payment");
+  if (!hasPayment) {
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "Payment" (
+        "id" TEXT NOT NULL PRIMARY KEY,
+        "orgId" TEXT NOT NULL,
+        "invoiceId" TEXT NOT NULL,
+        "amount" REAL NOT NULL,
+        "method" TEXT NOT NULL DEFAULT 'CASH',
+        "reference" TEXT,
+        "receivedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        "createdById" TEXT,
+        "note" TEXT,
+        "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY ("orgId") REFERENCES "Organization"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+        FOREIGN KEY ("invoiceId") REFERENCES "Invoice"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+        FOREIGN KEY ("createdById") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE
+      )
+    `);
+    await prisma.$executeRawUnsafe('CREATE INDEX IF NOT EXISTS "Payment_orgId_receivedAt_idx" ON "Payment"("orgId", "receivedAt")');
+    await prisma.$executeRawUnsafe('CREATE INDEX IF NOT EXISTS "Payment_invoiceId_idx" ON "Payment"("invoiceId")');
+    changes.push({ kind: "create_table", detail: "Created Payment + indexes" });
+  } else {
+    const payCols = await tableColumns("Payment");
+    const addPayColumn = async (name: string, type: string, dflt?: string) => {
+      if (payCols.has(name)) return;
+      const defaultClause = dflt ? ` DEFAULT ${dflt}` : "";
+      await prisma.$executeRawUnsafe(`ALTER TABLE "Payment" ADD COLUMN "${name}" ${type}${defaultClause}`);
+      changes.push({ kind: "alter_table", detail: `Added Payment.${name}` });
+    };
+    await addPayColumn("orgId", "TEXT");
+    await addPayColumn("invoiceId", "TEXT");
+    await addPayColumn("amount", "REAL", "0");
+    await addPayColumn("method", "TEXT", "'CASH'");
+    await addPayColumn("reference", "TEXT");
+    await addPayColumn("receivedAt", "DATETIME");
+    await addPayColumn("createdById", "TEXT");
+    await addPayColumn("note", "TEXT");
+    await prisma.$executeRawUnsafe('CREATE INDEX IF NOT EXISTS "Payment_orgId_receivedAt_idx" ON "Payment"("orgId", "receivedAt")');
+    await prisma.$executeRawUnsafe('CREATE INDEX IF NOT EXISTS "Payment_invoiceId_idx" ON "Payment"("invoiceId")');
+  }
+
   if (!cols.has("deviceId")) {
     await prisma.$executeRawUnsafe('ALTER TABLE "Job" ADD COLUMN "deviceId" TEXT');
     await prisma.$executeRawUnsafe('CREATE INDEX IF NOT EXISTS "Job_deviceId_idx" ON "Job"("deviceId")');

@@ -130,6 +130,9 @@ export default async function ReportsPage({
     externalCount,
     inHouseCount,
     externalPayoutOutstandingJobs,
+    paymentsAgg,
+    invoicesAgg,
+    paidExternalJobs,
     earliestJob,
     latestJob,
   ] = await Promise.all([
@@ -184,6 +187,18 @@ export default async function ReportsPage({
       },
       select: { id: true, externalTechBill: true },
     }),
+    prisma.payment.aggregate({
+      where: { orgId, receivedAt: { gte: selectedRange.start, lte: selectedRange.end } },
+      _sum: { amount: true },
+    }),
+    prisma.invoice.aggregate({
+      where: { orgId, issuedAt: { gte: selectedRange.start, lte: selectedRange.end } },
+      _sum: { totalAmount: true, paidAmount: true },
+    }),
+    prisma.job.findMany({
+      where: { orgId, externalPaid: true, externalPaidAt: { gte: selectedRange.start, lte: selectedRange.end } },
+      select: { externalTechFee: true, externalTechBill: true },
+    }),
     prisma.job.findFirst({ where: { orgId }, orderBy: { receivedAt: "asc" }, select: { receivedAt: true } }),
     prisma.job.findFirst({ where: { orgId }, orderBy: { receivedAt: "desc" }, select: { receivedAt: true } }),
   ]);
@@ -220,6 +235,17 @@ export default async function ReportsPage({
     (sum, job) => sum + ((getClientBill(job) ?? 0) - (getExternalTechBill(job) ?? 0)),
     0,
   );
+
+  // Cashflow (payments + external payouts).
+  const cashIn = paymentsAgg._sum.amount ?? 0;
+  const cashOutExternal = paidExternalJobs.reduce(
+    (sum, job) => sum + resolveTechCost(job.externalTechFee, job.externalTechBill),
+    0,
+  );
+  const cashNet = cashIn - cashOutExternal;
+  const issuedTotal = invoicesAgg._sum.totalAmount ?? 0;
+  const issuedPaid = invoicesAgg._sum.paidAmount ?? 0;
+  const issuedBalance = Math.max(0, issuedTotal - issuedPaid);
   const averageRepairTimeHours = (() => {
     const values = completedAll
       .filter((job) => job.completedAt)
@@ -629,6 +655,55 @@ export default async function ReportsPage({
       </section>
 
       {/* 2. FINANCIAL COMMAND CENTER — 4 premium KPI tiles (clickable) */}
+      <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <Link
+          href="/documents/invoices"
+          className="panel-shadow relative overflow-hidden rounded-xl border border-emerald-200/60 bg-[var(--panel)] p-4 transition hover:-translate-y-[2px] hover:border-emerald-400/60"
+        >
+          <div className="absolute inset-0 bg-gradient-to-br from-emerald-50/30 to-transparent" />
+          <div className="relative">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Cash In</p>
+            <p className="mt-1.5 text-2xl font-bold text-emerald-700">{formatMoneyCompact(cashIn, currency)}</p>
+            <p className="mt-2 text-[10px] text-[var(--ink-muted)]">payments received</p>
+          </div>
+        </Link>
+
+        <Link
+          href="/payout-followups"
+          className="panel-shadow relative overflow-hidden rounded-xl border border-amber-200/60 bg-[var(--panel)] p-4 transition hover:-translate-y-[2px] hover:border-amber-400/60"
+        >
+          <div className="absolute inset-0 bg-gradient-to-br from-amber-50/30 to-transparent" />
+          <div className="relative">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Cash Out</p>
+            <p className="mt-1.5 text-2xl font-bold text-amber-700">{formatMoneyCompact(cashOutExternal, currency)}</p>
+            <p className="mt-2 text-[10px] text-[var(--ink-muted)]">external payouts</p>
+          </div>
+        </Link>
+
+        <div className={`panel-shadow relative overflow-hidden rounded-xl border bg-[var(--panel)] p-4 ${cashNet >= 0 ? "border-blue-200/60" : "border-red-200/60"}`}>
+          <div className={`absolute inset-0 bg-gradient-to-br ${cashNet >= 0 ? "from-blue-50/30" : "from-red-50/30"} to-transparent`} />
+          <div className="relative">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Net</p>
+            <p className={`mt-1.5 text-2xl font-bold ${cashNet >= 0 ? "text-blue-700" : "text-red-600"}`}>
+              {formatMoneyCompact(cashNet, currency)}
+            </p>
+            <p className="mt-2 text-[10px] text-[var(--ink-muted)]">cash in minus out</p>
+          </div>
+        </div>
+
+        <Link
+          href="/documents/invoices"
+          className="panel-shadow relative overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px] hover:border-[var(--accent)]/40"
+        >
+          <div className="absolute inset-0 bg-gradient-to-br from-[var(--accent)]/5 to-transparent" />
+          <div className="relative">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Balance</p>
+            <p className="mt-1.5 text-2xl font-bold text-[var(--ink)]">{formatMoneyCompact(issuedBalance, currency)}</p>
+            <p className="mt-2 text-[10px] text-[var(--ink-muted)]">issued minus paid</p>
+          </div>
+        </Link>
+      </section>
+
       <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {/* Revenue */}
         <Link

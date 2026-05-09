@@ -203,11 +203,32 @@ export async function GET(
   );
   const invoiceNumber = `INV-${quotationNumber.replace(/\s+/g, "-")}`;
 
+  const invoiceTotal = clientBill;
+
   await prisma.job.update({
     where: { id: job.id },
     data: {
       invoiceIssuedAt: issuedAtDate,
       invoiceNumber,
+    },
+  });
+
+  // Create/update invoice record for partial payments.
+  await prisma.invoice.upsert({
+    where: { jobId: job.id },
+    update: {
+      invoiceNumber,
+      issuedAt: issuedAtDate,
+      totalAmount: invoiceTotal,
+      status: invoiceTotal <= 0 ? "PAID" : "ISSUED",
+    },
+    create: {
+      orgId,
+      jobId: job.id,
+      invoiceNumber,
+      issuedAt: issuedAtDate,
+      totalAmount: invoiceTotal,
+      status: invoiceTotal <= 0 ? "PAID" : "ISSUED",
     },
   });
 

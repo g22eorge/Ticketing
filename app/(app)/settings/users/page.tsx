@@ -694,38 +694,45 @@ export default async function UsersPage({
         </p>
       )}
 
-      {/* Invite panel — generates a shareable link */}
-      <InvitePanel inviteAction={inviteUser} roleOptions={roleOptions} />
+      <details className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4" open={false}>
+        <summary className="cursor-pointer list-none text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
+          Add User
+        </summary>
+        <div className="mt-3 space-y-3">
+          {/* Invite panel — generates a shareable link */}
+          <InvitePanel inviteAction={inviteUser} roleOptions={roleOptions} />
+
+          <section className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] p-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">New User</p>
+            <form action={createUser} className="mt-2 grid gap-2 md:grid-cols-2 xl:grid-cols-5">
+              <input required name="name" placeholder="Name" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-sm outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
+              <input required type="email" name="email" placeholder="Email" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-sm outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
+              <input name="phone" placeholder="Phone" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-sm outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
+              <input required minLength={8} type="password" name="password" placeholder="Password" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-sm outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
+              <select name="role" defaultValue="OPS" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-sm outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14">
+                {roleOptions.map((option) => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
+              </select>
+              <button className="btn-premium rounded-lg px-3 py-1.5 text-sm text-white md:col-span-2 xl:col-span-1">Create</button>
+            </form>
+          </section>
+        </div>
+      </details>
 
       <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Create User</p>
-        <form action={createUser} className="mt-2 grid gap-2 md:grid-cols-2 xl:grid-cols-5">
-          <input required name="name" placeholder="Name" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-sm outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
-          <input required type="email" name="email" placeholder="Email" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-sm outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
-          <input name="phone" placeholder="Phone" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-sm outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
-          <input required minLength={8} type="password" name="password" placeholder="Password" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-sm outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
-          <select name="role" defaultValue="OPS" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-sm outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14">
-            {roleOptions.map((option) => (
-              <option key={option.value} value={option.value}>{option.label}</option>
-            ))}
-          </select>
-          <button className="btn-premium rounded-lg px-3 py-1.5 text-sm text-white md:col-span-2 xl:col-span-1">Create User</button>
-        </form>
-      </section>
-
-      <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">User Selection</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Users</p>
         <form method="GET" className="mt-2 grid gap-2 md:grid-cols-[1fr_auto]">
           <input
             name="q"
             defaultValue={q}
-            placeholder="Search by name, phone, email, or role"
+            placeholder="Search name, email, phone"
             className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-sm outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14"
           />
           <div className="flex gap-2">
             <button className="btn-premium-secondary rounded-lg px-3 py-1.5 text-sm">Search</button>
             <Link href="/settings/users" className="rounded-lg border border-[var(--line)] px-3 py-1.5 text-sm text-[var(--ink-muted)] hover:text-[var(--ink)]">
-              Reset
+              Clear
             </Link>
           </div>
         </form>
@@ -747,9 +754,9 @@ export default async function UsersPage({
 
       {selectedUser ? (
         <>
-          <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Profile Summary</p>
-            <div className="mt-3 grid gap-2 md:grid-cols-2 xl:grid-cols-3">
+           <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">User</p>
+             <div className="mt-3 grid gap-2 md:grid-cols-2 xl:grid-cols-3">
               <div className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] p-3">
                 <p className="text-[11px] uppercase tracking-[0.1em] text-[var(--ink-muted)]">Name</p>
                 <p className="mt-1 text-sm font-semibold text-[var(--ink)]">{selectedUser.name}</p>
@@ -777,53 +784,60 @@ export default async function UsersPage({
                   )}
                 </p>
               </div>
-              <div className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] p-3">
-                <p className="text-[11px] uppercase tracking-[0.1em] text-[var(--ink-muted)]">Branch / Location</p>
-                <p className="mt-1 text-sm text-[var(--ink)]">Not assigned</p>
-              </div>
-            </div>
-          </section>
+             </div>
+           </section>
 
-          <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Edit User Details</p>
-            <p className="mt-1 text-xs text-[var(--ink-muted)]">Update name, email, and phone. Email changes take effect immediately.</p>
-            <div className="mt-3">
-              <UserDetailsForm
-                id={selectedUser.id}
-                name={selectedUser.name}
-                email={selectedUser.email}
-                phone={selectedUser.phone}
-                action={updateUserDetails}
-              />
-            </div>
-          </section>
+           <details className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4" open>
+             <summary className="cursor-pointer list-none text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
+               Edit
+             </summary>
+             <div className="mt-3">
+               <UserDetailsForm
+                 id={selectedUser.id}
+                 name={selectedUser.name}
+                 email={selectedUser.email}
+                 phone={selectedUser.phone}
+                 action={updateUserDetails}
+               />
+             </div>
+           </details>
 
-          <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Reset Password</p>
-            <p className="mt-1 text-xs text-[var(--ink-muted)]">Use this when a user forgets their password. A reset signs them out everywhere.</p>
-            <div className="mt-3">
-              <UserPasswordResetForm userId={selectedUser.id} action={resetUserPassword} />
-            </div>
-          </section>
+           <details className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4" open={false}>
+             <summary className="cursor-pointer list-none text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
+               Password
+             </summary>
+             <div className="mt-3">
+               <UserPasswordResetForm userId={selectedUser.id} action={resetUserPassword} />
+             </div>
+           </details>
 
-          <UserAccessControlPanel
-            key={selectedUser.id}
-            userId={selectedUser.id}
-            queryText={q}
-            initialRole={selectedUser.role}
-            initialPermissions={selectedUser.permissionGrants.map((grant) => grant.permission)}
-            roleOptions={roleOptions}
-            roleDefaultPermissions={roleDefaults}
-            roleDefaultCapabilities={roleCapabilities}
-            permissions={permissionOptions}
-            saveAction={saveAccessChanges}
-          />
+           <details className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4" open={false}>
+             <summary className="cursor-pointer list-none text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
+               Access
+             </summary>
+             <div className="mt-3">
+               <UserAccessControlPanel
+                 key={selectedUser.id}
+                 userId={selectedUser.id}
+                 queryText={q}
+                 initialRole={selectedUser.role}
+                 initialPermissions={selectedUser.permissionGrants.map((grant) => grant.permission)}
+                 roleOptions={roleOptions}
+                 roleDefaultPermissions={roleDefaults}
+                 roleDefaultCapabilities={roleCapabilities}
+                 permissions={permissionOptions}
+                 saveAction={saveAccessChanges}
+               />
+             </div>
+           </details>
 
-          <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Access Audit Trail</p>
-            <div className="mt-3 space-y-2">
-              {accessAudit.length > 0 ? (
-                accessAudit.map((entry) => {
+           <details className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4" open={false}>
+             <summary className="cursor-pointer list-none text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
+               Audit
+             </summary>
+             <div className="mt-3 space-y-2">
+               {accessAudit.length > 0 ? (
+                 accessAudit.map((entry) => {
                   let detail = "No detail";
                   try {
                     const parsed = entry.detail ? JSON.parse(entry.detail) as { added?: string[]; removed?: string[]; fromRole?: string; toRole?: string } : null;
@@ -843,12 +857,12 @@ export default async function UsersPage({
                       <p className="mt-1">{detail}</p>
                     </div>
                   );
-                })
-              ) : (
-                <p className="text-sm text-[var(--ink-muted)]">No access changes recorded yet for this user.</p>
-              )}
-            </div>
-          </section>
+                  })
+                ) : (
+                  <p className="text-sm text-[var(--ink-muted)]">No access changes recorded yet for this user.</p>
+                )}
+             </div>
+           </details>
         </>
       ) : (
         <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-6 text-sm text-[var(--ink-muted)]">

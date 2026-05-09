@@ -141,8 +141,7 @@ export function UserAccessControlPanel({
       <input type="hidden" name="role" value={role} />
 
       <section className="rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 panel-shadow">
-        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Role Assignment</p>
-        <p className="mt-1 text-xs text-[var(--ink-muted)]">Single-role mode is active in this deployment. Select one role, then customize permission grants.</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Role</p>
         <div className="mt-3 grid gap-2 md:grid-cols-2 xl:grid-cols-3">
           {roleOptions.map((option) => {
             const active = role === option.value;
@@ -168,13 +167,13 @@ export function UserAccessControlPanel({
         </div>
       </section>
 
-      <section className="rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 panel-shadow">
-        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Permissions Checklist</p>
-        <p className="mt-1 text-xs text-[var(--ink-muted)]">Inherited permissions are locked by role. Manual grants can be toggled and saved.</p>
-
+      <details className="rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 panel-shadow" open={false}>
+        <summary className="cursor-pointer list-none text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
+          Permissions
+        </summary>
         <div className="mt-3 space-y-2">
           {byGroup.map(([groupName, groupItems], index) => (
-            <details key={groupName} className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] p-3" open={index < 2}>
+            <details key={groupName} className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] p-3" open={index === 0}>
               <summary className="cursor-pointer list-none text-sm font-semibold text-[var(--ink)]">{groupName}</summary>
               <div className="mt-3 grid gap-2 md:grid-cols-2">
                 {groupItems.map((item) => {
@@ -208,13 +207,7 @@ export function UserAccessControlPanel({
                         </p>
                         <p className="mt-0.5 text-xs text-[var(--ink-muted)]">{item.description}</p>
                         <p className="mt-1 text-[11px] text-[var(--ink-muted)]">
-                          {inherited
-                            ? "Inherited from role"
-                            : item.permission && selectedPermissions.has(item.permission)
-                              ? "Manual override"
-                              : item.mutable
-                                ? "Not granted"
-                                : "Role-controlled"}
+                          {inherited ? "Role" : item.permission && selectedPermissions.has(item.permission) ? "On" : "Off"}
                         </p>
                       </div>
                     </label>
@@ -228,10 +221,10 @@ export function UserAccessControlPanel({
         {Array.from(selectedPermissions).map((permission) => (
           <input key={permission} type="hidden" name="permissions" value={permission} />
         ))}
-      </section>
+      </details>
 
       <section className="rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 panel-shadow">
-        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Permission Summary</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Summary</p>
         <p className="mt-2 text-sm text-[var(--ink)]">{summaryText}</p>
       </section>
 
