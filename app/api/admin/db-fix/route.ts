@@ -68,6 +68,13 @@ async function tableColumns(name: string) {
   return new Set(rows.map((r) => r.name));
 }
 
+async function tableInfo(name: string) {
+  const rows = await prisma.$queryRawUnsafe<Array<{ name: string; notnull: number }>>(
+    `PRAGMA table_info('${name.replaceAll("'", "''")}')`,
+  );
+  return rows;
+}
+
 async function jobColumns() {
   const rows = await prisma.$queryRaw<Array<{ name: string }>>`
     PRAGMA table_info('Job')
@@ -258,7 +265,8 @@ export async function POST() {
       CREATE TABLE IF NOT EXISTS "Payment" (
         "id" TEXT NOT NULL PRIMARY KEY,
         "orgId" TEXT NOT NULL,
-        "invoiceId" TEXT NOT NULL,
+        "invoiceId" TEXT,
+        "saleId" TEXT,
         "amount" REAL NOT NULL,
         "method" TEXT NOT NULL DEFAULT 'CASH',
         "reference" TEXT,
@@ -268,11 +276,13 @@ export async function POST() {
         "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY ("orgId") REFERENCES "Organization"("id") ON DELETE CASCADE ON UPDATE CASCADE,
         FOREIGN KEY ("invoiceId") REFERENCES "Invoice"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+        FOREIGN KEY ("saleId") REFERENCES "Sale"("id") ON DELETE CASCADE ON UPDATE CASCADE,
         FOREIGN KEY ("createdById") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE
       )
     `);
     await prisma.$executeRawUnsafe('CREATE INDEX IF NOT EXISTS "Payment_orgId_receivedAt_idx" ON "Payment"("orgId", "receivedAt")');
     await prisma.$executeRawUnsafe('CREATE INDEX IF NOT EXISTS "Payment_invoiceId_idx" ON "Payment"("invoiceId")');
+    await prisma.$executeRawUnsafe('CREATE INDEX IF NOT EXISTS "Payment_saleId_idx" ON "Payment"("saleId")');
     changes.push({ kind: "create_table", detail: "Created Payment + indexes" });
   } else {
     const payCols = await tableColumns("Payment");
@@ -291,6 +301,56 @@ export async function POST() {
     await addPayColumn("receivedAt", "DATETIME");
     await addPayColumn("createdById", "TEXT");
     await addPayColumn("note", "TEXT");
+
+    // If this DB was created before POS, invoiceId might be NOT NULL.
+    // Rebuild to allow sale-only payments.
+    const payInfo = await tableInfo("Payment");
+    const invoiceIdNotNull = payInfo.find((c) => c.name === "invoiceId")?.notnull === 1;
+    if (invoiceIdNotNull) {
+      await prisma.$executeRawUnsafe(`PRAGMA foreign_keys=OFF;`);
+      await prisma.$executeRawUnsafe(`
+        CREATE TABLE IF NOT EXISTS "_Payment_new" (
+          "id" TEXT NOT NULL PRIMARY KEY,
+          "orgId" TEXT NOT NULL,
+          "invoiceId" TEXT,
+          "saleId" TEXT,
+          "amount" REAL NOT NULL,
+          "method" TEXT NOT NULL DEFAULT 'CASH',
+          "reference" TEXT,
+          "receivedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          "createdById" TEXT,
+          "note" TEXT,
+          "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY ("orgId") REFERENCES "Organization"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+          FOREIGN KEY ("invoiceId") REFERENCES "Invoice"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+          FOREIGN KEY ("saleId") REFERENCES "Sale"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+          FOREIGN KEY ("createdById") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE
+        )
+      `);
+
+      const hasSaleId = payCols.has("saleId");
+      await prisma.$executeRawUnsafe(`
+        INSERT OR REPLACE INTO "_Payment_new" (id, orgId, invoiceId, saleId, amount, method, reference, receivedAt, createdById, note, createdAt)
+        SELECT
+          id,
+          orgId,
+          invoiceId,
+          ${hasSaleId ? "saleId" : "NULL"} as saleId,
+          amount,
+          method,
+          reference,
+          receivedAt,
+          createdById,
+          note,
+          createdAt
+        FROM "Payment"
+      `);
+      await prisma.$executeRawUnsafe('DROP TABLE "Payment"');
+      await prisma.$executeRawUnsafe('ALTER TABLE "_Payment_new" RENAME TO "Payment"');
+      await prisma.$executeRawUnsafe(`PRAGMA foreign_keys=ON;`);
+      changes.push({ kind: "alter_table", detail: "Rebuilt Payment to allow invoiceId nullable" });
+    }
+
     await prisma.$executeRawUnsafe('CREATE INDEX IF NOT EXISTS "Payment_orgId_receivedAt_idx" ON "Payment"("orgId", "receivedAt")');
     await prisma.$executeRawUnsafe('CREATE INDEX IF NOT EXISTS "Payment_invoiceId_idx" ON "Payment"("invoiceId")');
     await prisma.$executeRawUnsafe('CREATE INDEX IF NOT EXISTS "Payment_saleId_idx" ON "Payment"("saleId")');
@@ -308,6 +368,7 @@ export async function POST() {
         "status" TEXT NOT NULL DEFAULT 'OPEN',
         "saleNumber" TEXT NOT NULL UNIQUE,
         "subtotal" REAL NOT NULL DEFAULT 0,
+        "discountAmount" REAL NOT NULL DEFAULT 0,
         "vatAmount" REAL NOT NULL DEFAULT 0,
         "totalAmount" REAL NOT NULL DEFAULT 0,
         "paidAmount" REAL NOT NULL DEFAULT 0,
@@ -327,6 +388,34 @@ export async function POST() {
     await prisma.$executeRawUnsafe('CREATE INDEX IF NOT EXISTS "Sale_branchId_idx" ON "Sale"("branchId")');
     await prisma.$executeRawUnsafe('CREATE INDEX IF NOT EXISTS "Sale_clientId_idx" ON "Sale"("clientId")');
     changes.push({ kind: "create_table", detail: "Created Sale + indexes" });
+  } else {
+    const saleCols = await tableColumns("Sale");
+    const addSaleColumn = async (name: string, type: string, dflt?: string) => {
+      if (saleCols.has(name)) return;
+      const defaultClause = dflt ? ` DEFAULT ${dflt}` : "";
+      await prisma.$executeRawUnsafe(`ALTER TABLE "Sale" ADD COLUMN "${name}" ${type}${defaultClause}`);
+      changes.push({ kind: "alter_table", detail: `Added Sale.${name}` });
+    };
+
+    await addSaleColumn("orgId", "TEXT");
+    await addSaleColumn("branchId", "TEXT");
+    await addSaleColumn("clientId", "TEXT");
+    await addSaleColumn("status", "TEXT", "'OPEN'");
+    await addSaleColumn("saleNumber", "TEXT");
+    await addSaleColumn("subtotal", "REAL", "0");
+    await addSaleColumn("discountAmount", "REAL", "0");
+    await addSaleColumn("vatAmount", "REAL", "0");
+    await addSaleColumn("totalAmount", "REAL", "0");
+    await addSaleColumn("paidAmount", "REAL", "0");
+    await addSaleColumn("paidAt", "DATETIME");
+    await addSaleColumn("notes", "TEXT");
+    await addSaleColumn("createdById", "TEXT");
+    await addSaleColumn("createdAt", "DATETIME");
+    await addSaleColumn("updatedAt", "DATETIME");
+    await prisma.$executeRawUnsafe('CREATE INDEX IF NOT EXISTS "Sale_orgId_createdAt_idx" ON "Sale"("orgId", "createdAt")');
+    await prisma.$executeRawUnsafe('CREATE INDEX IF NOT EXISTS "Sale_orgId_status_idx" ON "Sale"("orgId", "status")');
+    await prisma.$executeRawUnsafe('CREATE INDEX IF NOT EXISTS "Sale_branchId_idx" ON "Sale"("branchId")');
+    await prisma.$executeRawUnsafe('CREATE INDEX IF NOT EXISTS "Sale_clientId_idx" ON "Sale"("clientId")');
   }
 
   const hasSaleItem = await tableExists("SaleItem");
@@ -335,16 +424,37 @@ export async function POST() {
       CREATE TABLE IF NOT EXISTS "SaleItem" (
         "id" TEXT NOT NULL PRIMARY KEY,
         "saleId" TEXT NOT NULL,
+        "partId" TEXT,
         "description" TEXT NOT NULL,
         "quantity" INTEGER NOT NULL DEFAULT 1,
         "unitPrice" REAL NOT NULL,
         "lineTotal" REAL NOT NULL,
         "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY ("saleId") REFERENCES "Sale"("id") ON DELETE CASCADE ON UPDATE CASCADE
+        FOREIGN KEY ("saleId") REFERENCES "Sale"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+        FOREIGN KEY ("partId") REFERENCES "Part"("id") ON DELETE SET NULL ON UPDATE CASCADE
       )
     `);
     await prisma.$executeRawUnsafe('CREATE INDEX IF NOT EXISTS "SaleItem_saleId_idx" ON "SaleItem"("saleId")');
+    await prisma.$executeRawUnsafe('CREATE INDEX IF NOT EXISTS "SaleItem_partId_idx" ON "SaleItem"("partId")');
     changes.push({ kind: "create_table", detail: "Created SaleItem + index" });
+  } else {
+    const itemCols = await tableColumns("SaleItem");
+    if (!itemCols.has("partId")) {
+      await prisma.$executeRawUnsafe('ALTER TABLE "SaleItem" ADD COLUMN "partId" TEXT');
+      changes.push({ kind: "alter_table", detail: "Added SaleItem.partId" });
+    }
+    await prisma.$executeRawUnsafe('CREATE INDEX IF NOT EXISTS "SaleItem_saleId_idx" ON "SaleItem"("saleId")');
+    await prisma.$executeRawUnsafe('CREATE INDEX IF NOT EXISTS "SaleItem_partId_idx" ON "SaleItem"("partId")');
+  }
+
+  // Stock transactions: add saleId link if missing
+  if (await tableExists("PartStockTransaction")) {
+    const stCols = await tableColumns("PartStockTransaction");
+    if (!stCols.has("saleId")) {
+      await prisma.$executeRawUnsafe('ALTER TABLE "PartStockTransaction" ADD COLUMN "saleId" TEXT');
+      changes.push({ kind: "alter_table", detail: "Added PartStockTransaction.saleId" });
+    }
+    await prisma.$executeRawUnsafe('CREATE INDEX IF NOT EXISTS "PartStockTransaction_saleId_idx" ON "PartStockTransaction"("saleId")');
   }
 
   if (!cols.has("deviceId")) {

@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 
 import { PaymentMethod } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 
 import { formatMoney } from "@/lib/currency";
 import { prisma } from "@/lib/prisma";
@@ -26,6 +27,7 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
       saleNumber: true,
       status: true,
       subtotal: true,
+      discountAmount: true,
       vatAmount: true,
       totalAmount: true,
       paidAmount: true,
@@ -47,18 +49,54 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
   }).catch(() => null);
   const vatRate = Math.max(0, orgBranding?.vatRatePercent ?? 18) / 100;
 
+  const parts = await prisma.part.findMany({
+    where: { orgId, isActive: true },
+    orderBy: [{ name: "asc" }],
+    select: { id: true, sku: true, name: true, qtyOnHand: true },
+    take: 300,
+  }).catch(() => []);
+
+  async function recalcSaleTotals(tx: Prisma.TransactionClient, saleId: string, includeVat: boolean) {
+    const itemsAgg = await tx.saleItem.aggregate({ where: { saleId }, _sum: { lineTotal: true } });
+    const subtotal = itemsAgg._sum.lineTotal ?? 0;
+    const current = await tx.sale.findUnique({ where: { id: saleId }, select: { discountAmount: true } });
+    const discountAmount = Math.max(0, Math.min(current?.discountAmount ?? 0, subtotal));
+    const taxable = Math.max(0, subtotal - discountAmount);
+    const vatAmount = includeVat ? taxable * vatRate : 0;
+    const totalAmount = taxable + vatAmount;
+
+    const payAgg = await tx.payment.aggregate({ where: { saleId, orgId }, _sum: { amount: true } });
+    const paidAmount = payAgg._sum.amount ?? 0;
+    const isPaid = totalAmount > 0 && paidAmount >= totalAmount;
+
+    await tx.sale.update({
+      where: { id: saleId },
+      data: {
+        subtotal,
+        discountAmount,
+        vatAmount,
+        totalAmount,
+        paidAmount,
+        paidAt: isPaid ? new Date() : null,
+        status: isPaid ? "PAID" : "OPEN",
+      },
+    });
+  }
+
   async function addItemAction(formData: FormData) {
     "use server";
     const { user, orgId } = await requireOrgSession();
     if (!(can.viewFinancials(user) || ["ADMIN", "OPS", "FRONT_DESK"].includes(user.role))) return;
 
     const saleId = String(formData.get("saleId") ?? "").trim();
+    const partId = String(formData.get("partId") ?? "").trim() || null;
     const description = String(formData.get("description") ?? "").trim();
     const qty = Number(String(formData.get("quantity") ?? "1").trim());
     const unitPrice = Number(String(formData.get("unitPrice") ?? "0").trim());
     const vat = String(formData.get("vat") ?? "on") === "on";
 
-    if (!saleId || !description) return;
+    if (!saleId) return;
+    if (!partId && !description) return;
     if (!Number.isFinite(qty) || qty <= 0) return;
     if (!Number.isFinite(unitPrice) || unitPrice < 0) return;
 
@@ -68,30 +106,34 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
     const lineTotal = unitPrice * qty;
 
     await prisma.$transaction(async (tx) => {
+      let resolvedDescription = description;
+      let resolvedPartId: string | null = null;
+
+      if (partId) {
+        const part = await tx.part.findFirst({ where: { id: partId, orgId, isActive: true }, select: { id: true, sku: true, name: true, qtyOnHand: true } });
+        if (!part) return;
+        if (part.qtyOnHand - Math.abs(qty) < 0) return;
+
+        resolvedPartId = part.id;
+        resolvedDescription = `${part.sku} ${part.name}`;
+
+        await tx.part.update({ where: { id: part.id }, data: { qtyOnHand: part.qtyOnHand - Math.abs(qty) } });
+        await tx.partStockTransaction.create({
+          data: {
+            partId: part.id,
+            saleId,
+            type: "OUT",
+            quantity: Math.abs(qty),
+            reason: `POS sale item (${resolvedDescription})`,
+          },
+        });
+      }
+
       await tx.saleItem.create({
-        data: { saleId, description, quantity: qty, unitPrice, lineTotal },
+        data: { saleId, partId: resolvedPartId, description: resolvedDescription, quantity: qty, unitPrice, lineTotal },
       });
 
-      const itemsAgg = await tx.saleItem.aggregate({ where: { saleId }, _sum: { lineTotal: true } });
-      const subtotal = itemsAgg._sum.lineTotal ?? 0;
-      const vatAmount = vat ? subtotal * vatRate : 0;
-      const totalAmount = subtotal + vatAmount;
-
-      const payAgg = await tx.payment.aggregate({ where: { saleId, orgId }, _sum: { amount: true } });
-      const paidAmount = payAgg._sum.amount ?? 0;
-      const isPaid = totalAmount > 0 && paidAmount >= totalAmount;
-
-      await tx.sale.update({
-        where: { id: saleId },
-        data: {
-          subtotal,
-          vatAmount,
-          totalAmount,
-          paidAmount,
-          paidAt: isPaid ? new Date() : null,
-          status: isPaid ? "PAID" : "OPEN",
-        },
-      });
+      await recalcSaleTotals(tx, saleId, vat);
     });
 
     revalidatePath(`/pos/${saleId}`);
@@ -179,19 +221,48 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
             <p className="mt-1 text-lg font-bold text-amber-700">{formatMoney(balance)}</p>
           </div>
         </div>
+
+        <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-[var(--ink-muted)]">
+          <span>Subtotal: {formatMoney(sale.subtotal)}</span>
+          <span>Discount: {sale.discountAmount > 0 ? `-${formatMoney(sale.discountAmount)}` : formatMoney(0)}</span>
+          <span>VAT: {formatMoney(sale.vatAmount)}</span>
+        </div>
+
+        <div className="mt-3 flex flex-wrap gap-2">
+          <a
+            href={`/api/sales/${sale.id}/receipt`}
+            target="_blank"
+            rel="noreferrer"
+            className="btn-premium-secondary rounded-lg px-3 py-2 text-sm"
+          >
+            Receipt PDF
+          </a>
+        </div>
       </section>
 
       <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
         <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Items</p>
 
         {sale.status === "OPEN" ? (
-          <form action={addItemAction} className="mt-3 grid gap-2 md:grid-cols-[2fr_80px_140px_auto]">
+          <form action={addItemAction} className="mt-3 grid gap-2 md:grid-cols-[1.2fr_1.8fr_80px_140px_auto]">
             <input type="hidden" name="saleId" value={sale.id} />
+            <select
+              name="partId"
+              defaultValue=""
+              className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm outline-none focus:border-[var(--accent)]/50"
+              title="Optional: pick a part to deduct stock"
+            >
+              <option value="">Custom item</option>
+              {parts.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.sku} · {p.name} ({p.qtyOnHand})
+                </option>
+              ))}
+            </select>
             <input
               name="description"
               placeholder="Description"
               className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm outline-none focus:border-[var(--accent)]/50"
-              required
             />
             <input
               name="quantity"
@@ -209,6 +280,48 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
               required
             />
             <button className="btn-premium rounded-lg px-4 py-2 text-sm text-white">Add</button>
+          </form>
+        ) : null}
+
+        {sale.status === "OPEN" ? (
+          <form
+            action={async (formData: FormData) => {
+              "use server";
+              const { user, orgId } = await requireOrgSession();
+              if (!(can.viewFinancials(user) || ["ADMIN", "OPS", "FRONT_DESK"].includes(user.role))) return;
+              const saleId = String(formData.get("saleId") ?? "").trim();
+              const raw = String(formData.get("discountAmount") ?? "").trim();
+              if (!saleId) return;
+              const discountAmount = Math.max(0, Number(raw || "0"));
+              if (!Number.isFinite(discountAmount)) return;
+
+              const existingSale = await prisma.sale.findFirst({ where: { id: saleId, orgId }, select: { id: true, status: true } });
+              if (!existingSale || existingSale.status !== "OPEN") return;
+
+              await prisma.$transaction(async (tx) => {
+                const itemsAgg = await tx.saleItem.aggregate({ where: { saleId }, _sum: { lineTotal: true } });
+                const subtotal = itemsAgg._sum.lineTotal ?? 0;
+                const capped = Math.max(0, Math.min(discountAmount, subtotal));
+                await tx.sale.update({ where: { id: saleId }, data: { discountAmount: capped } });
+                await recalcSaleTotals(tx, saleId, true);
+              });
+
+              revalidatePath(`/pos/${saleId}`);
+            }}
+            className="mt-3 flex flex-wrap items-end gap-2"
+          >
+            <input type="hidden" name="saleId" value={sale.id} />
+            <div>
+              <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Discount</p>
+              <input
+                name="discountAmount"
+                inputMode="decimal"
+                defaultValue={sale.discountAmount}
+                placeholder="0"
+                className="w-36 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm outline-none focus:border-[var(--accent)]/50"
+              />
+            </div>
+            <button className="btn-premium-secondary rounded-lg px-3 py-2 text-sm">Apply</button>
           </form>
         ) : null}
 

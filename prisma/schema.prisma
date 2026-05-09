@@ -19,69 +19,69 @@ enum OrgPlan {
 }
 
 enum OrgBillingStatus {
-  TRIALING      // free trial, no payment yet
-  ACTIVE        // paid and current
-  PAST_DUE      // payment failed, grace period
-  CANCELLED     // subscription cancelled, reverts to STARTER at period end
+  TRIALING // free trial, no payment yet
+  ACTIVE // paid and current
+  PAST_DUE // payment failed, grace period
+  CANCELLED // subscription cancelled, reverts to STARTER at period end
 }
 
 model Organization {
-  id        String   @id @default(cuid())
-  name      String
-  slug      String   @unique
-  plan      OrgPlan  @default(STARTER)
-  isActive  Boolean  @default(true)
+  id       String  @id @default(cuid())
+  name     String
+  slug     String  @unique
+  plan     OrgPlan @default(STARTER)
+  isActive Boolean @default(true)
 
   // Flutterwave subscription tracking
-  billingStatus       OrgBillingStatus @default(TRIALING)
-  flwCustomerId       String?          // Flutterwave customer ID
-  flwSubscriptionId   String?          // active FLW subscription ID
-  flwPlanId           String?          // FLW payment plan ID in use
-  trialEndsAt         DateTime?        // null = no trial
-  planRenewsAt        DateTime?        // next renewal date
-  planCancelledAt     DateTime?        // set when cancelled
+  billingStatus     OrgBillingStatus @default(TRIALING)
+  flwCustomerId     String? // Flutterwave customer ID
+  flwSubscriptionId String? // active FLW subscription ID
+  flwPlanId         String? // FLW payment plan ID in use
+  trialEndsAt       DateTime? // null = no trial
+  planRenewsAt      DateTime? // next renewal date
+  planCancelledAt   DateTime? // set when cancelled
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  users                    User[]
-  clients                  Client[]
-  devices                  Device[]
-  jobs                     Job[]
-  parts                    Part[]
-  repairRequests           RepairRequest[]
-  repairRequestSequences   RepairRequestSequence[]
-  brandingSettings         DocumentBrandingSettings?
-  commTemplates            CommunicationTemplate[]
-  commPolicies             CommunicationPolicy[]
-  notifications            Notification[]
-  outboundMessages         OutboundMessage[]
-  inboundMessages          InboundMessage[]
-  invoices                 Invoice[]
-  payments                 Payment[]
-  sales                    Sale[]
-  auditLogs                AuditLog[]
-  invites                  UserInvite[]
-  branches                 Branch[]
-  suppliers                Supplier[]
-  purchaseOrders           PurchaseOrder[]
+  users                  User[]
+  clients                Client[]
+  devices                Device[]
+  jobs                   Job[]
+  parts                  Part[]
+  repairRequests         RepairRequest[]
+  repairRequestSequences RepairRequestSequence[]
+  brandingSettings       DocumentBrandingSettings?
+  commTemplates          CommunicationTemplate[]
+  commPolicies           CommunicationPolicy[]
+  notifications          Notification[]
+  outboundMessages       OutboundMessage[]
+  inboundMessages        InboundMessage[]
+  invoices               Invoice[]
+  payments               Payment[]
+  sales                  Sale[]
+  auditLogs              AuditLog[]
+  invites                UserInvite[]
+  branches               Branch[]
+  suppliers              Supplier[]
+  purchaseOrders         PurchaseOrder[]
 
   @@index([slug])
   @@index([isActive])
 }
 
 model UserInvite {
-  id          String    @id @default(cuid())
-  token       String    @unique @default(cuid())
+  id          String       @id @default(cuid())
+  token       String       @unique @default(cuid())
   email       String
-  role        Role      @default(OPS)
+  role        Role         @default(OPS)
   orgId       String
   org         Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
   invitedById String
-  invitedBy   User      @relation("InvitedBy", fields: [invitedById], references: [id], onDelete: Cascade)
+  invitedBy   User         @relation("InvitedBy", fields: [invitedById], references: [id], onDelete: Cascade)
   expiresAt   DateTime
   usedAt      DateTime?
-  createdAt   DateTime  @default(now())
+  createdAt   DateTime     @default(now())
 
   @@index([token])
   @@index([orgId])
@@ -89,39 +89,39 @@ model UserInvite {
 }
 
 model User {
-  id            String   @id @default(cuid())
+  id            String        @id @default(cuid())
   name          String
-  email         String   @unique
+  email         String        @unique
   phone         String?
-  emailVerified Boolean  @default(false)
+  emailVerified Boolean       @default(false)
   image         String?
-  role          Role     @default(OPS)
-  isActive      Boolean  @default(true)
+  role          Role          @default(OPS)
+  isActive      Boolean       @default(true)
   orgId         String?
   org           Organization? @relation(fields: [orgId], references: [id], onDelete: SetNull)
   branchId      String?
   branch        Branch?       @relation(fields: [branchId], references: [id], onDelete: SetNull)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
 
-  sessions     Session[]
-  accounts     Account[]
-  permissionGrants UserPermission[]
-  jobsCreated  Job[]      @relation("CreatedBy")
-  jobsAssigned Job[]      @relation("AssignedTo")
-  payoutsMarked Job[]     @relation("PayoutMarkedBy")
-  clientPaymentsMarked Job[] @relation("ClientPaymentMarkedBy")
-  auditLogs    AuditLog[]
-  clientNotes  ClientNote[]
-  notifications Notification[]
+  sessions                Session[]
+  accounts                Account[]
+  permissionGrants        UserPermission[]
+  jobsCreated             Job[]                    @relation("CreatedBy")
+  jobsAssigned            Job[]                    @relation("AssignedTo")
+  payoutsMarked           Job[]                    @relation("PayoutMarkedBy")
+  clientPaymentsMarked    Job[]                    @relation("ClientPaymentMarkedBy")
+  auditLogs               AuditLog[]
+  clientNotes             ClientNote[]
+  notifications           Notification[]
   notificationPreferences NotificationPreferences?
-  partReservations PartReservation[] @relation("PartReservedBy")
-  stockTransactions PartStockTransaction[] @relation("StockTxnBy")
-  paymentsCreated Payment[] @relation("PaymentCreatedBy")
-  salesCreated    Sale[]     @relation("SaleCreatedBy")
-  accessAuditEntries UserAccessAudit[] @relation("AccessAuditTarget")
-  accessAuditChanges UserAccessAudit[] @relation("AccessAuditActor")
-  invitesSent        UserInvite[]      @relation("InvitedBy")
+  partReservations        PartReservation[]        @relation("PartReservedBy")
+  stockTransactions       PartStockTransaction[]   @relation("StockTxnBy")
+  paymentsCreated         Payment[]                @relation("PaymentCreatedBy")
+  salesCreated            Sale[]                   @relation("SaleCreatedBy")
+  accessAuditEntries      UserAccessAudit[]        @relation("AccessAuditTarget")
+  accessAuditChanges      UserAccessAudit[]        @relation("AccessAuditActor")
+  invitesSent             UserInvite[]             @relation("InvitedBy")
 
   @@index([orgId])
 }
@@ -314,7 +314,7 @@ enum StockTransactionType {
 }
 
 model Client {
-  id           String   @id @default(cuid())
+  id           String        @id @default(cuid())
   fullName     String
   phone        String
   email        String?
@@ -322,37 +322,37 @@ model Client {
   notes        String?
   orgId        String?
   org          Organization? @relation(fields: [orgId], references: [id], onDelete: SetNull)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
 
   jobs            Job[]
   devices         Device[]
   notesEntries    ClientNote[]
   inboundMessages InboundMessage[]
-  sales          Sale[]
+  sales           Sale[]
 
   @@unique([phone, orgId])
   @@index([orgId])
 }
 
 model Device {
-  id           String     @id @default(cuid())
-  clientId     String
-  client       Client     @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  orgId        String?
-  org          Organization? @relation(fields: [orgId], references: [id], onDelete: SetNull)
+  id       String        @id @default(cuid())
+  clientId String
+  client   Client        @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  orgId    String?
+  org      Organization? @relation(fields: [orgId], references: [id], onDelete: SetNull)
 
-  deviceType   DeviceType
-  brand        String
-  model        String
-  serialOrImei String?
-  accessories  String?
+  deviceType    DeviceType
+  brand         String
+  model         String
+  serialOrImei  String?
+  accessories   String?
   physicalNotes String?
 
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  jobs         Job[]
+  jobs Job[]
 
   @@index([clientId])
   @@index([orgId])
@@ -370,22 +370,22 @@ model ClientNote {
 }
 
 model Job {
-  id            String     @id @default(cuid())
-  jobNumber     String     @unique
-  status        JobStatus  @default(RECEIVED)
+  id            String        @id @default(cuid())
+  jobNumber     String        @unique
+  status        JobStatus     @default(RECEIVED)
   repairPath    RepairPath?
   orgId         String?
   org           Organization? @relation(fields: [orgId], references: [id], onDelete: SetNull)
   branchId      String?
   branch        Branch?       @relation(fields: [branchId], references: [id], onDelete: SetNull)
   clientId      String
-  client        Client     @relation(fields: [clientId], references: [id])
+  client        Client        @relation(fields: [clientId], references: [id])
   deviceId      String?
-  device        Device?    @relation(fields: [deviceId], references: [id], onDelete: SetNull)
+  device        Device?       @relation(fields: [deviceId], references: [id], onDelete: SetNull)
   createdById   String
-  createdBy     User       @relation("CreatedBy", fields: [createdById], references: [id])
+  createdBy     User          @relation("CreatedBy", fields: [createdById], references: [id])
   assignedToId  String?
-  assignedTo    User?      @relation("AssignedTo", fields: [assignedToId], references: [id])
+  assignedTo    User?         @relation("AssignedTo", fields: [assignedToId], references: [id])
   deviceType    DeviceType
   brand         String
   model         String
@@ -394,77 +394,77 @@ model Job {
   physicalNotes String?
 
   // Business line: hardware repair vs software-only services.
-  serviceType   ServiceType @default(HARDWARE)
+  serviceType ServiceType @default(HARDWARE)
 
   // Software service scope (no app catalog; client must provide valid licenses).
-  softwareOsInstall          Boolean @default(false)
-  softwareDriversUpdates     Boolean @default(false)
-  softwareDataBackupRestore  Boolean @default(false)
-  softwareAccountSetup       Boolean @default(false)
-  softwarePerformanceTune    Boolean @default(false)
-  softwareThirdPartyApps     Boolean @default(false)
-  softwareRequestedNotes     String?
-  softwareLicenseAttested    Boolean @default(false)
-  softwareInstallerSource    SoftwareInstallerSource?
+  softwareOsInstall           Boolean                  @default(false)
+  softwareDriversUpdates      Boolean                  @default(false)
+  softwareDataBackupRestore   Boolean                  @default(false)
+  softwareAccountSetup        Boolean                  @default(false)
+  softwarePerformanceTune     Boolean                  @default(false)
+  softwareThirdPartyApps      Boolean                  @default(false)
+  softwareRequestedNotes      String?
+  softwareLicenseAttested     Boolean                  @default(false)
+  softwareInstallerSource     SoftwareInstallerSource?
   softwareInstallerSourceNote String?
 
-  issueDescription  String
-  workflowReason    WorkflowReason @default(NONE)
-  statusNote        String?
-  diagnosisNotes    String?
-  externalDiagnosis String?
-  recommendedRepair String?
-  recommendationOption RecommendationOption?
-  communicationStatus CommunicationStatus @default(NONE)
+  issueDescription       String
+  workflowReason         WorkflowReason        @default(NONE)
+  statusNote             String?
+  diagnosisNotes         String?
+  externalDiagnosis      String?
+  recommendedRepair      String?
+  recommendationOption   RecommendationOption?
+  communicationStatus    CommunicationStatus   @default(NONE)
   clientConversationNote String?
-  lastClientContactAt DateTime?
-  partsNeeded       String?
+  lastClientContactAt    DateTime?
+  partsNeeded            String?
 
-  externalTechBill Float? @map("costEstimate")
-  clientBill       Float? @map("finalCost")
-  vatApplicable    Boolean @default(true)
-  externalTechFee Float?
-  externalPaid    Boolean   @default(false)
-  externalPaidAt  DateTime?
-  externalPaidById String?
-  externalPaidBy  User?     @relation("PayoutMarkedBy", fields: [externalPaidById], references: [id])
+  externalTechBill   Float?    @map("costEstimate")
+  clientBill         Float?    @map("finalCost")
+  vatApplicable      Boolean   @default(true)
+  externalTechFee    Float?
+  externalPaid       Boolean   @default(false)
+  externalPaidAt     DateTime?
+  externalPaidById   String?
+  externalPaidBy     User?     @relation("PayoutMarkedBy", fields: [externalPaidById], references: [id])
   externalPaymentRef String?
-  clientPaid      Boolean   @default(false)
-  clientPaidAt    DateTime?
-  clientPaidById  String?
-  clientPaidBy    User?     @relation("ClientPaymentMarkedBy", fields: [clientPaidById], references: [id])
-  clientPaymentRef String?
-  invoiceNumber   String?   @unique
-  invoiceIssuedAt DateTime?
-  clientApproved Boolean?
-  approvalDate   DateTime?
-  quotedAt       DateTime?
+  clientPaid         Boolean   @default(false)
+  clientPaidAt       DateTime?
+  clientPaidById     String?
+  clientPaidBy       User?     @relation("ClientPaymentMarkedBy", fields: [clientPaidById], references: [id])
+  clientPaymentRef   String?
+  invoiceNumber      String?   @unique
+  invoiceIssuedAt    DateTime?
+  clientApproved     Boolean?
+  approvalDate       DateTime?
+  quotedAt           DateTime?
 
-  repairTimeline  String?
+  repairTimeline     String?
   timelineMinMinutes Int?
   timelineMaxMinutes Int?
   timelineConfidence TimelineConfidence?
-  timelineNote String?
-  technicianNotes String?
-  workDone        String?
-  partsReplaced   String?
+  timelineNote       String?
+  technicianNotes    String?
+  workDone           String?
+  partsReplaced      String?
 
-  receivedAt  DateTime  @default(now())
-  completedAt DateTime?
-  deliveredAt DateTime?
+  receivedAt     DateTime        @default(now())
+  completedAt    DateTime?
+  deliveredAt    DateTime?
   deliveryMethod DeliveryMethod? // PICKUP, DELIVERY, COURIER
-  deliveredTo String? // name of person who received
-  closedAt    DateTime?
-  updatedAt   DateTime  @updatedAt
+  deliveredTo    String? // name of person who received
+  closedAt       DateTime?
+  updatedAt      DateTime        @updatedAt
 
-  photos    Photo[]
-  auditLogs AuditLog[]
-  notifications Notification[]
+  photos                    Photo[]
+  auditLogs                 AuditLog[]
+  notifications             Notification[]
   oneTimeExternalAssignment OneTimeExternalTechAssignment?
-  outboundMessages OutboundMessage[]
-  inboundMessages  InboundMessage[]
-  partReservations PartReservation[]
-  stockTransactions PartStockTransaction[]
+  outboundMessages          OutboundMessage[]
+  inboundMessages           InboundMessage[]
+  partReservations          PartReservation[]
+  stockTransactions         PartStockTransaction[]
 
   invoice Invoice?
 
@@ -481,41 +481,41 @@ model Job {
 }
 
 model Invoice {
-  id            String        @id @default(cuid())
-  orgId         String
-  org           Organization  @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  id    String       @id @default(cuid())
+  orgId String
+  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
 
-  jobId         String        @unique
-  job           Job           @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  jobId String @unique
+  job   Job    @relation(fields: [jobId], references: [id], onDelete: Cascade)
 
   invoiceNumber String        @unique
   status        InvoiceStatus @default(ISSUED)
   issuedAt      DateTime      @default(now())
   totalAmount   Float
 
-  paidAmount    Float         @default(0)
-  paidAt        DateTime?
+  paidAmount Float     @default(0)
+  paidAt     DateTime?
 
-  notes         String?
+  notes String?
 
-  payments      Payment[]
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  payments  Payment[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 
   @@index([orgId, issuedAt])
   @@index([orgId, status])
 }
 
 model Payment {
-  id         String        @id @default(cuid())
-  orgId      String
-  org        Organization  @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  id    String       @id @default(cuid())
+  orgId String
+  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
 
-  invoiceId  String?
-  invoice    Invoice?      @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  invoiceId String?
+  invoice   Invoice? @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
 
-  saleId     String?
-  sale       Sale?         @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  saleId String?
+  sale   Sale?   @relation(fields: [saleId], references: [id], onDelete: Cascade)
 
   amount     Float
   method     PaymentMethod @default(CASH)
@@ -523,10 +523,10 @@ model Payment {
   receivedAt DateTime      @default(now())
 
   createdById String?
-  createdBy   User?        @relation("PaymentCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  createdBy   User?   @relation("PaymentCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
 
-  note       String?
-  createdAt  DateTime      @default(now())
+  note      String?
+  createdAt DateTime @default(now())
 
   @@index([orgId, receivedAt])
   @@index([invoiceId])
@@ -534,35 +534,37 @@ model Payment {
 }
 
 model Sale {
-  id          String      @id @default(cuid())
-  orgId       String
-  org         Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  id    String       @id @default(cuid())
+  orgId String
+  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
 
-  branchId    String?
-  branch      Branch?     @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  branchId String?
+  branch   Branch? @relation(fields: [branchId], references: [id], onDelete: SetNull)
 
-  clientId    String?
-  client      Client?     @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  clientId String?
+  client   Client? @relation(fields: [clientId], references: [id], onDelete: SetNull)
 
-  status      SaleStatus  @default(OPEN)
-  saleNumber  String      @unique
+  status     SaleStatus @default(OPEN)
+  saleNumber String     @unique
 
-  subtotal    Float       @default(0)
-  vatAmount   Float       @default(0)
-  totalAmount Float       @default(0)
-  paidAmount  Float       @default(0)
-  paidAt      DateTime?
+  subtotal       Float     @default(0)
+  discountAmount Float     @default(0)
+  vatAmount      Float     @default(0)
+  totalAmount    Float     @default(0)
+  paidAmount     Float     @default(0)
+  paidAt         DateTime?
 
-  notes       String?
+  notes String?
 
-  items       SaleItem[]
-  payments    Payment[]
+  items             SaleItem[]
+  payments          Payment[]
+  stockTransactions PartStockTransaction[]
 
   createdById String?
-  createdBy   User?       @relation("SaleCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  createdBy   User?   @relation("SaleCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
 
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([orgId, createdAt])
   @@index([orgId, status])
@@ -571,128 +573,136 @@ model Sale {
 }
 
 model SaleItem {
-  id          String   @id @default(cuid())
-  saleId      String
-  sale        Sale     @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  id     String @id @default(cuid())
+  saleId String
+  sale   Sale   @relation(fields: [saleId], references: [id], onDelete: Cascade)
+
+  partId String?
+  part   Part?   @relation(fields: [partId], references: [id], onDelete: SetNull)
 
   description String
-  quantity    Int      @default(1)
+  quantity    Int    @default(1)
   unitPrice   Float
   lineTotal   Float
 
-  createdAt   DateTime @default(now())
+  createdAt DateTime @default(now())
 
   @@index([saleId])
+  @@index([partId])
 }
 
 model Part {
-  id             String   @id @default(cuid())
-  sku            String
-  name           String
-  manufacturer   String?
-  unitCost       Float?
-  qtyOnHand      Int      @default(0)
-  reorderLevel   Int      @default(0)
-  isActive       Boolean  @default(true)
-  orgId          String?
-  org            Organization? @relation(fields: [orgId], references: [id], onDelete: SetNull)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id           String        @id @default(cuid())
+  sku          String
+  name         String
+  manufacturer String?
+  unitCost     Float?
+  qtyOnHand    Int           @default(0)
+  reorderLevel Int           @default(0)
+  isActive     Boolean       @default(true)
+  orgId        String?
+  org          Organization? @relation(fields: [orgId], references: [id], onDelete: SetNull)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
 
-  reservations         PartReservation[]
-  transactions         PartStockTransaction[]
-  purchaseOrderItems   PurchaseOrderItem[]
+  reservations       PartReservation[]
+  transactions       PartStockTransaction[]
+  saleItems          SaleItem[]
+  purchaseOrderItems PurchaseOrderItem[]
 
   @@unique([sku, orgId])
   @@index([orgId, isActive])
 }
 
 model PartReservation {
-  id             String                @id @default(cuid())
-  jobId           String
-  job             Job                   @relation(fields: [jobId], references: [id], onDelete: Cascade)
-  partId          String
-  part            Part                  @relation(fields: [partId], references: [id], onDelete: Restrict)
-  quantity        Int
-  status          PartReservationStatus @default(RESERVED)
+  id               String                @id @default(cuid())
+  jobId            String
+  job              Job                   @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  partId           String
+  part             Part                  @relation(fields: [partId], references: [id], onDelete: Restrict)
+  quantity         Int
+  status           PartReservationStatus @default(RESERVED)
   unitCostSnapshot Float?
-  reservedById    String?
-  reservedBy      User?                 @relation("PartReservedBy", fields: [reservedById], references: [id], onDelete: SetNull)
-  reservedAt      DateTime              @default(now())
-  consumedAt      DateTime?
-  releasedAt      DateTime?
-  note            String?
+  reservedById     String?
+  reservedBy       User?                 @relation("PartReservedBy", fields: [reservedById], references: [id], onDelete: SetNull)
+  reservedAt       DateTime              @default(now())
+  consumedAt       DateTime?
+  releasedAt       DateTime?
+  note             String?
 
   @@index([jobId, status])
   @@index([partId, status])
 }
 
 model PartStockTransaction {
-  id             String               @id @default(cuid())
-  partId          String
-  part            Part                 @relation(fields: [partId], references: [id], onDelete: Cascade)
-  type            StockTransactionType
-  quantity        Int
-  reason          String?
-  jobId           String?
-  job             Job?                 @relation(fields: [jobId], references: [id], onDelete: SetNull)
-  createdById     String?
-  createdBy       User?                @relation("StockTxnBy", fields: [createdById], references: [id], onDelete: SetNull)
-  createdAt       DateTime             @default(now())
+  id          String               @id @default(cuid())
+  partId      String
+  part        Part                 @relation(fields: [partId], references: [id], onDelete: Cascade)
+  type        StockTransactionType
+  quantity    Int
+  reason      String?
+  jobId       String?
+  job         Job?                 @relation(fields: [jobId], references: [id], onDelete: SetNull)
+  saleId      String?
+  sale        Sale?                @relation(fields: [saleId], references: [id], onDelete: SetNull)
+  createdById String?
+  createdBy   User?                @relation("StockTxnBy", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime             @default(now())
 
   @@index([partId, createdAt])
   @@index([jobId])
+  @@index([saleId])
 }
 
 model OneTimeExternalTechAssignment {
-  id                String   @id @default(cuid())
-  jobId             String   @unique
-  job               Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  id    String @id @default(cuid())
+  jobId String @unique
+  job   Job    @relation(fields: [jobId], references: [id], onDelete: Cascade)
 
-  technicianName    String
-  phone             String
-  specialization    String?
+  technicianName String
+  phone          String
+  specialization String?
 
   agreedRepairCost  Float?
   partsNotes        String?
   expectedPartsCost Float?
 
-  assignedAt        DateTime
-  expectedReturnAt  DateTime?
-  returnedAt        DateTime?
+  assignedAt       DateTime
+  expectedReturnAt DateTime?
+  returnedAt       DateTime?
 
-  instructions      String?
-  progressNotes     String?
-  finalOutcome      String?
+  instructions  String?
+  progressNotes String?
+  finalOutcome  String?
 
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([assignedAt])
 }
 
 model Photo {
   id         String   @id @default(cuid())
-  jobId       String
-  job         Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
-  url         String
-  label       String?
+  jobId      String
+  job        Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  url        String
+  label      String?
   uploadedAt DateTime @default(now())
 
   @@index([jobId, uploadedAt])
 }
 
 model AuditLog {
-  id        String   @id @default(cuid())
+  id        String        @id @default(cuid())
   jobId     String
-  job       Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  job       Job           @relation(fields: [jobId], references: [id], onDelete: Cascade)
   userId    String
-  user      User     @relation(fields: [userId], references: [id])
+  user      User          @relation(fields: [userId], references: [id])
   action    String
   detail    String?
   orgId     String?
   org       Organization? @relation(fields: [orgId], references: [id], onDelete: SetNull)
-  createdAt DateTime @default(now())
+  createdAt DateTime      @default(now())
 
   @@index([orgId, createdAt])
   @@index([jobId, createdAt])
@@ -747,20 +757,20 @@ enum OutboundMessageType {
 }
 
 model Notification {
-  id          String            @id @default(cuid())
-  type        NotificationType
-  title       String
-  message     String
-  jobId       String?
-  job         Job?             @relation(fields: [jobId], references: [id], onDelete: SetNull)
-  userId      String?
-  user        User?            @relation(fields: [userId], references: [id], onDelete: SetNull)
-  channel     NotificationChannel @default(DASHBOARD)
-  isRead      Boolean          @default(false)
-  readAt      DateTime?
-  orgId       String?
-  org         Organization?    @relation(fields: [orgId], references: [id], onDelete: SetNull)
-  createdAt   DateTime         @default(now())
+  id        String              @id @default(cuid())
+  type      NotificationType
+  title     String
+  message   String
+  jobId     String?
+  job       Job?                @relation(fields: [jobId], references: [id], onDelete: SetNull)
+  userId    String?
+  user      User?               @relation(fields: [userId], references: [id], onDelete: SetNull)
+  channel   NotificationChannel @default(DASHBOARD)
+  isRead    Boolean             @default(false)
+  readAt    DateTime?
+  orgId     String?
+  org       Organization?       @relation(fields: [orgId], references: [id], onDelete: SetNull)
+  createdAt DateTime            @default(now())
 
   @@index([orgId, isRead, createdAt])
   @@index([userId, isRead])
@@ -768,54 +778,54 @@ model Notification {
 }
 
 model OutboundMessage {
-  id               String               @id @default(cuid())
-  channel          OutboundMessageChannel
-  status           OutboundMessageStatus @default(PENDING)
-  type             OutboundMessageType
+  id      String                 @id @default(cuid())
+  channel OutboundMessageChannel
+  status  OutboundMessageStatus  @default(PENDING)
+  type    OutboundMessageType
 
-  to               String
+  to      String
   // EMAIL only. (Legacy rows may store the subject on the first line of `body`.)
-  subject          String?
-  body             String
+  subject String?
+  body    String
 
   // Optional template metadata for observability/debugging.
-  templateKey      String?
+  templateKey          String?
   // JSON string of the variables used to render the template at enqueue time.
-  templateVars     String?
+  templateVars         String?
   // When set, this message is sent as a Meta-approved template message instead of free-form text.
-  metaTemplateName     String?  // approved template name, e.g. "repair_status_update"
-  metaTemplateLanguage String?  // language code, e.g. "en"
+  metaTemplateName     String? // approved template name, e.g. "repair_status_update"
+  metaTemplateLanguage String? // language code, e.g. "en"
   // JSON array of parameter VALUES in positional order matching {{1}}, {{2}}… in the template body.
   metaTemplateVars     String?
 
-  provider         String?
+  provider          String?
   providerMessageId String?
 
   // Provider delivery statuses (webhook callbacks). This does not affect outbox retry.
-  providerDeliveryStatus String?
-  providerDeliveryAt     DateTime?
+  providerDeliveryStatus    String?
+  providerDeliveryAt        DateTime?
   providerDeliveryErrorCode String?
   providerDeliveryError     String?
 
-  attemptCount     Int                  @default(0)
-  lastAttemptAt    DateTime?
-  nextAttemptAt    DateTime             @default(now())
-  sentAt           DateTime?
+  attemptCount  Int       @default(0)
+  lastAttemptAt DateTime?
+  nextAttemptAt DateTime  @default(now())
+  sentAt        DateTime?
 
-  lastErrorCode    String?
-  lastError        String?
+  lastErrorCode String?
+  lastError     String?
 
-  lockedAt         DateTime?
+  lockedAt DateTime?
 
-  repairRequestId  String?
-  repairRequest    RepairRequest?       @relation(fields: [repairRequestId], references: [id], onDelete: SetNull)
-  jobId            String?
-  job              Job?                 @relation(fields: [jobId], references: [id], onDelete: SetNull)
-  orgId            String?
-  org              Organization?        @relation(fields: [orgId], references: [id], onDelete: SetNull)
+  repairRequestId String?
+  repairRequest   RepairRequest? @relation(fields: [repairRequestId], references: [id], onDelete: SetNull)
+  jobId           String?
+  job             Job?           @relation(fields: [jobId], references: [id], onDelete: SetNull)
+  orgId           String?
+  org             Organization?  @relation(fields: [orgId], references: [id], onDelete: SetNull)
 
-  createdAt        DateTime             @default(now())
-  updatedAt        DateTime             @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([orgId, channel, status, nextAttemptAt])
   @@index([channel, status, nextAttemptAt])
@@ -826,119 +836,119 @@ model OutboundMessage {
 }
 
 model NotificationPreferences {
-  id                  String   @id @default(cuid())
-  userId              String   @unique
-  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  notifyStatusChange  Boolean  @default(true)
-  notifyApprovalNeeded Boolean @default(true)
-  notifyJobAssigned   Boolean  @default(true)
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  notifyStatusChange      Boolean @default(true)
+  notifyApprovalNeeded    Boolean @default(true)
+  notifyJobAssigned       Boolean @default(true)
   notifyEstimateSubmitted Boolean @default(true)
-  notifyPaymentReceived Boolean @default(true)
-  notifyPayoutGenerated Boolean @default(true)
-  notifyTimelineUpdated Boolean @default(true)
-  notifyDelayNote    Boolean  @default(true)
-  
-  whatsappEnabled     Boolean  @default(true)
-  emailEnabled        Boolean  @default(false)
-  
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  notifyPaymentReceived   Boolean @default(true)
+  notifyPayoutGenerated   Boolean @default(true)
+  notifyTimelineUpdated   Boolean @default(true)
+  notifyDelayNote         Boolean @default(true)
+
+  whatsappEnabled Boolean @default(true)
+  emailEnabled    Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model CommunicationTemplate {
-  id          String   @id @default(cuid())
-  key         String
-  channel     OutboundMessageChannel
-  label       String
-  subject     String?
-  body        String
+  id               String                 @id @default(cuid())
+  key              String
+  channel          OutboundMessageChannel
+  label            String
+  subject          String?
+  body             String
   // JSON array of placeholder keys in the ORDER they map to Meta template {{1}}, {{2}}…
-  variables         String?
+  variables        String?
   // Meta / WhatsApp Business API template fields. Set these once the template is approved.
-  metaTemplateName  String?
-  metaLanguageCode  String?
-  isActive    Boolean  @default(true)
-  orgId       String?
-  org         Organization? @relation(fields: [orgId], references: [id], onDelete: SetNull)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  metaTemplateName String?
+  metaLanguageCode String?
+  isActive         Boolean                @default(true)
+  orgId            String?
+  org              Organization?          @relation(fields: [orgId], references: [id], onDelete: SetNull)
+  createdAt        DateTime               @default(now())
+  updatedAt        DateTime               @updatedAt
 
   @@unique([key, channel, orgId])
   @@index([orgId, channel, isActive])
 }
 
 model CommunicationPolicy {
-  id               String    @id @default(cuid())
+  id               String        @id @default(cuid())
   status           JobStatus
-  dashboardEnabled Boolean   @default(true)
-  whatsappEnabled  Boolean   @default(false)
-  emailEnabled     Boolean   @default(false)
+  dashboardEnabled Boolean       @default(true)
+  whatsappEnabled  Boolean       @default(false)
+  emailEnabled     Boolean       @default(false)
   templateKey      String?
   nudge1Hours      Int?
   nudge2Hours      Int?
   orgId            String?
   org              Organization? @relation(fields: [orgId], references: [id], onDelete: SetNull)
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
 
   @@unique([status, orgId])
   @@index([orgId, templateKey])
 }
 
 model DocumentBrandingSettings {
-  id                   String   @id @default(cuid())
-  orgId                String?  @unique
-  org                  Organization? @relation(fields: [orgId], references: [id], onDelete: SetNull)
-  companyName          String   @default("Eagle Info Solutions")
-  companyTagline       String?
-  companyAddressLine1  String   @default("Nalubega Complex, 1st Floor")
-  companyAddressLine2  String   @default("Shop L28, Bombo Road Opposite Watoto Church")
-  companyContacts      String   @default("+256772 006 344 | +256754 006 344")
-  companyEmail         String?
-  companyWebsite       String?
-  documentTitle        String   @default("Job Card")
-  quotePrefix          String   @default("EIS")
-  quoteFormat          String   @default("{PREFIX} {M}/{YYYY}/{SEQ}")
-  quoteValidityDays    Int      @default(30)
-  sequencePadLength    Int      @default(4)
-  vatDefaultApplicable Boolean  @default(true)
-  vatRatePercent       Float    @default(18)
-  vatLabel             String   @default("VAT")
-  termsText            String   @default("Quotation valid for 30 days from date issued.\nRepair work begins only after approval is recorded.\nParts availability may affect final timeline.\nHidden pre-existing faults may affect final outcome.\nUncollected devices may attract storage fees after notice.")
-  footerText           String   @default("System built by Almeida @ 2026 all rights reserved.")
-  signatureCompanyLabel String  @default("Signed by: Eagle Info Solutions")
-  signatureClientLabel String   @default("Signed by: Client")
-  primaryColor         String   @default("#000000")
-  secondaryColor       String   @default("#D4AF37")
-  accentColor          String   @default("#D4AF37")
-  backgroundColor      String   @default("#FFFFFF")
-  surfaceColor         String   @default("#F5F5F5")
-  borderColor          String   @default("#E5E5E5")
-  updatedAt            DateTime @updatedAt
+  id                    String        @id @default(cuid())
+  orgId                 String?       @unique
+  org                   Organization? @relation(fields: [orgId], references: [id], onDelete: SetNull)
+  companyName           String        @default("Eagle Info Solutions")
+  companyTagline        String?
+  companyAddressLine1   String        @default("Nalubega Complex, 1st Floor")
+  companyAddressLine2   String        @default("Shop L28, Bombo Road Opposite Watoto Church")
+  companyContacts       String        @default("+256772 006 344 | +256754 006 344")
+  companyEmail          String?
+  companyWebsite        String?
+  documentTitle         String        @default("Job Card")
+  quotePrefix           String        @default("EIS")
+  quoteFormat           String        @default("{PREFIX} {M}/{YYYY}/{SEQ}")
+  quoteValidityDays     Int           @default(30)
+  sequencePadLength     Int           @default(4)
+  vatDefaultApplicable  Boolean       @default(true)
+  vatRatePercent        Float         @default(18)
+  vatLabel              String        @default("VAT")
+  termsText             String        @default("Quotation valid for 30 days from date issued.\nRepair work begins only after approval is recorded.\nParts availability may affect final timeline.\nHidden pre-existing faults may affect final outcome.\nUncollected devices may attract storage fees after notice.")
+  footerText            String        @default("System built by Almeida @ 2026 all rights reserved.")
+  signatureCompanyLabel String        @default("Signed by: Eagle Info Solutions")
+  signatureClientLabel  String        @default("Signed by: Client")
+  primaryColor          String        @default("#000000")
+  secondaryColor        String        @default("#D4AF37")
+  accentColor           String        @default("#D4AF37")
+  backgroundColor       String        @default("#FFFFFF")
+  surfaceColor          String        @default("#F5F5F5")
+  borderColor           String        @default("#E5E5E5")
+  updatedAt             DateTime      @updatedAt
 }
 
 model InboundMessage {
-  id         String   @id @default(cuid())
-  wamid      String   @unique
-  from       String
-  body       String?
-  mediaType  String?
-  mediaId    String?
+  id           String   @id @default(cuid())
+  wamid        String   @unique
+  from         String
+  body         String?
+  mediaType    String?
+  mediaId      String?
   mediaCaption String?
-  timestamp  DateTime
+  timestamp    DateTime
 
-  clientId   String?
-  client     Client?  @relation(fields: [clientId], references: [id], onDelete: SetNull)
-  jobId      String?
-  job        Job?     @relation(fields: [jobId], references: [id], onDelete: SetNull)
-  orgId      String?
-  org        Organization? @relation(fields: [orgId], references: [id], onDelete: SetNull)
+  clientId String?
+  client   Client?       @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  jobId    String?
+  job      Job?          @relation(fields: [jobId], references: [id], onDelete: SetNull)
+  orgId    String?
+  org      Organization? @relation(fields: [orgId], references: [id], onDelete: SetNull)
 
-  isRead     Boolean  @default(false)
-  readAt     DateTime?
+  isRead Boolean   @default(false)
+  readAt DateTime?
 
-  createdAt  DateTime @default(now())
+  createdAt DateTime @default(now())
 
   @@index([orgId, isRead, createdAt])
   @@index([from, timestamp])
@@ -949,51 +959,51 @@ model InboundMessage {
 
 // REPAIR REQUEST FRONT_DESK MODELS
 model RepairRequest {
-  id            String   @id @default(cuid())
-  requestNumber String   @unique
-  requestStatus RepairRequestStatus @default(PENDING_FRONT_DESK)
+  id             String               @id @default(cuid())
+  requestNumber  String               @unique
+  requestStatus  RepairRequestStatus  @default(PENDING_FRONT_DESK)
   handoverStatus RepairHandoverStatus @default(PENDING)
-  orgId         String?
-  org           Organization? @relation(fields: [orgId], references: [id], onDelete: SetNull)
-  
+  orgId          String?
+  org            Organization?        @relation(fields: [orgId], references: [id], onDelete: SetNull)
+
   // Customer info
-  customerName String
-  phone        String
-  email        String?
+  customerName           String
+  phone                  String
+  email                  String?
   preferredContactMethod ContactMethod @default(WHATSAPP)
-  
+
   // Device info
   deviceType   DeviceType
-  brand       String
-  model       String?
+  brand        String
+  model        String?
   serialNumber String?
-  
+
   // Problem description
   problemDescription String
-  
+
   // Handover method specific fields
-  handoverMethod    HandoverMethod
+  handoverMethod       HandoverMethod
   preferredDropoffDate String?
   preferredDropoffTime String?
-  dropoffNotes        String?
-  
-  deliveryPersonName  String?
-  deliveryPersonPhone String?
-  deliveryCompany     String?
-  dispatchDate        String?
-  expectedArrivalTime String?
+  dropoffNotes         String?
+
+  deliveryPersonName        String?
+  deliveryPersonPhone       String?
+  deliveryCompany           String?
+  dispatchDate              String?
+  expectedArrivalTime       String?
   deliveryTrackingReference String?
   deliveryFeeResponsibility String?
-  deliveryNotes       String?
-  
-  pickupAddress     String?
-  pickupLandmark    String?
-  preferredPickupDate String?
-  preferredPickupTime String?
+  deliveryNotes             String?
+
+  pickupAddress          String?
+  pickupLandmark         String?
+  preferredPickupDate    String?
+  preferredPickupTime    String?
   alternateContactPerson String?
-  alternateContactPhone String?
-  pickupNotes       String?
-  
+  alternateContactPhone  String?
+  pickupNotes            String?
+
   // Linked job (set when converted to a job)
   linkedJobId String?
 
@@ -1012,12 +1022,12 @@ model RepairRequest {
 
 // Allocates human-friendly repair request numbers safely under concurrency.
 model RepairRequestSequence {
-  id        String   @id @default(cuid())
+  id        String        @id @default(cuid())
   orgId     String?
   org       Organization? @relation(fields: [orgId], references: [id], onDelete: SetNull)
   year      Int
-  value     Int      @default(0)
-  updatedAt DateTime @updatedAt
+  value     Int           @default(0)
+  updatedAt DateTime      @updatedAt
 
   @@unique([orgId, year])
 }
