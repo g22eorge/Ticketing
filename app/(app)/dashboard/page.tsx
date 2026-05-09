@@ -72,10 +72,11 @@ function monthCountInclusive(startYear: number, startMonth: number, endYear: num
   return Math.max(1, endIndex - startIndex + 1);
 }
 
-function trendMonthsSinceStartOfYear(end: Date) {
+function trendMonthsSinceStartOfYear(end: Date, startMonthOverride?: number) {
   const endYear = end.getFullYear();
   const endMonth = end.getMonth() + 1;
-  const count = monthCountInclusive(endYear, 1, endYear, endMonth);
+  const startMonth = Math.min(endMonth, Math.max(1, startMonthOverride ?? 1));
+  const count = monthCountInclusive(endYear, startMonth, endYear, endMonth);
   return monthSequence(endYear, endMonth, count);
 }
 
@@ -707,6 +708,7 @@ export default async function DashboardPage({
       clientUnpaidCount,
       cashInMtdAgg,
       posCashInMtdAgg,
+      earliestJob,
       receivedToday,
       completedToday,
       pendingRequests,
@@ -739,6 +741,7 @@ export default async function DashboardPage({
         where: { orgId, receivedAt: { gte: mtdStart, lte: today }, saleId: { not: null } },
         _sum: { amount: true },
       }).catch(() => ({ _sum: { amount: 0 } })),
+      prisma.job.findFirst({ where: { orgId }, orderBy: { receivedAt: "asc" }, select: { receivedAt: true } }).catch(() => null),
       prisma.job.count({ where: { orgId, receivedAt: { gte: todayStart } } }),
       prisma.job.count({ where: { orgId, completedAt: { gte: todayStart } } }),
       prisma.repairRequest.count({ where: { orgId, requestStatus: { in: ["PENDING_FRONT_DESK", "PENDING_INTAKE"] } } }).catch(() => 0),
@@ -830,7 +833,10 @@ export default async function DashboardPage({
     const hasAlerts = overdueWithDays.length > 0 || awaitingApprovalCount > 0 || pendingRequests > 0 || unassignedActiveCount > 0;
     const mtdLabel = monthLabel(today.getFullYear(), today.getMonth() + 1);
 
-    const trendMonths = trendMonthsSinceStartOfYear(today);
+    const startMonthOverride = earliestJob?.receivedAt && earliestJob.receivedAt.getFullYear() === today.getFullYear()
+      ? earliestJob.receivedAt.getMonth() + 1
+      : 1;
+    const trendMonths = trendMonthsSinceStartOfYear(today, startMonthOverride);
     const revenueTrend = await loadRevenueMarginTrend(trendMonths, orgId);
 
     return (
