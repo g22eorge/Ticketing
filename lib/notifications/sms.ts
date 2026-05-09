@@ -1,4 +1,5 @@
 import { checkSmsQuota, incrementSmsUsage } from "@/lib/notifications/sms-quota";
+import { getPlatformSettings } from "@/lib/platform-settings";
 
 export interface AtSmsConfig {
   apiKey: string;
@@ -6,9 +7,10 @@ export interface AtSmsConfig {
   senderId?: string;
 }
 
-export function getAtConfig(
+export async function resolveAtConfig(
   orgCfg?: { atApiKey?: string | null; atUsername?: string | null; atSenderId?: string | null } | null,
-): AtSmsConfig | null {
+): Promise<AtSmsConfig | null> {
+  // 1) Org-level override (optional)
   if (orgCfg?.atApiKey && orgCfg?.atUsername) {
     return {
       apiKey: orgCfg.atApiKey,
@@ -16,6 +18,21 @@ export function getAtConfig(
       senderId: orgCfg.atSenderId ?? undefined,
     };
   }
+
+  // 2) Platform settings (DB) override
+  const stored = await getPlatformSettings(["AT_API_KEY", "AT_USERNAME", "AT_SENDER_ID"]);
+  const dbApiKey = stored.AT_API_KEY?.trim();
+  const dbUsername = stored.AT_USERNAME?.trim();
+  if (dbApiKey && dbUsername) {
+    const dbSenderId = stored.AT_SENDER_ID?.trim();
+    return {
+      apiKey: dbApiKey,
+      username: dbUsername,
+      senderId: dbSenderId ? dbSenderId : undefined,
+    };
+  }
+
+  // 3) Environment variables fallback
   const apiKey = process.env.AT_API_KEY;
   const username = process.env.AT_USERNAME;
   if (!apiKey || !username) return null;
@@ -25,7 +42,8 @@ export function getAtConfig(
 export function smsIsConfigured(
   orgCfg?: { atApiKey?: string | null; atUsername?: string | null } | null,
 ): boolean {
-  return Boolean(getAtConfig(orgCfg));
+  // Fast sync check for org-level override only.
+  return Boolean(orgCfg?.atApiKey && orgCfg?.atUsername);
 }
 
 export async function sendSms(
@@ -43,7 +61,7 @@ export async function sendSms(
     }
   }
 
-  const config = cfg ?? getAtConfig();
+  const config = cfg ?? (await resolveAtConfig());
   if (!config) return { success: false, error: "SMS not configured" };
 
   const to = normalizePhone(phone);
@@ -81,7 +99,7 @@ export async function sendSms(
 export async function smsHealthCheck(
   cfg?: AtSmsConfig | null,
 ): Promise<{ ok: boolean; error?: string }> {
-  const config = cfg ?? getAtConfig();
+  const config = cfg ?? (await resolveAtConfig());
   if (!config) return { ok: false, error: "SMS not configured" };
 
   try {

@@ -8,6 +8,7 @@ import { WhatsAppTestPanel } from "@/components/settings/WhatsAppTestPanel";
 import { WhatsAppConfigForm } from "@/components/settings/WhatsAppConfigForm";
 import { ATSmsConfigForm } from "@/components/settings/ATSmsConfigForm";
 import { checkSmsQuota } from "@/lib/notifications/sms-quota";
+import { getPlatformSettings } from "@/lib/platform-settings";
 
 export const dynamic = "force-dynamic";
 
@@ -15,7 +16,9 @@ export default async function WhatsAppSettingsPage() {
   const { user, orgId } = await requireOrgSession();
   if (user.role !== "ADMIN") redirect("/settings/notifications");
 
-  const platformAtConfigured = Boolean(process.env.AT_API_KEY && process.env.AT_USERNAME);
+  const platformAtStored = await getPlatformSettings(["AT_API_KEY", "AT_USERNAME"]);
+  const platformAtConfigured =
+    Boolean((platformAtStored.AT_API_KEY && platformAtStored.AT_USERNAME) || (process.env.AT_API_KEY && process.env.AT_USERNAME));
 
   const [orgConfig, smsStats] = await Promise.all([
     getOrgWhatsAppConfig(orgId),

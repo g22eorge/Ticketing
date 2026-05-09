@@ -32,13 +32,21 @@ export async function savePesapalSettingsAction(
   }
 }
 
-export async function clearPesapalKeyAction(
+export async function clearPlatformKeyAction(
   _prev: { ok: boolean } | null,
   formData: FormData,
 ): Promise<{ ok: boolean; error?: string }> {
   await requirePlatformAdmin();
   const key = formData.get("key") as string | null;
-  if (!key || !["PESAPAL_CONSUMER_KEY", "PESAPAL_CONSUMER_SECRET", "PESAPAL_IPN_ID"].includes(key)) {
+  const allowed = [
+    "PESAPAL_CONSUMER_KEY",
+    "PESAPAL_CONSUMER_SECRET",
+    "PESAPAL_IPN_ID",
+    "AT_API_KEY",
+    "AT_USERNAME",
+    "AT_SENDER_ID",
+  ];
+  if (!key || !allowed.includes(key)) {
     return { ok: false, error: "Invalid key" };
   }
   try {
@@ -47,6 +55,30 @@ export async function clearPesapalKeyAction(
     return { ok: true };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : "Delete failed" };
+  }
+}
+
+// Backwards compatible export name
+export const clearPesapalKeyAction = clearPlatformKeyAction;
+
+export async function saveAtSettingsAction(
+  _prev: { ok: boolean; error?: string } | null,
+  formData: FormData,
+): Promise<{ ok: boolean; error?: string }> {
+  await requirePlatformAdmin();
+
+  const apiKey = (formData.get("AT_API_KEY") as string | null)?.trim() ?? "";
+  const username = (formData.get("AT_USERNAME") as string | null)?.trim() ?? "";
+  const senderId = (formData.get("AT_SENDER_ID") as string | null)?.trim() ?? "";
+
+  try {
+    if (apiKey) await setPlatformSetting("AT_API_KEY", apiKey);
+    if (username) await setPlatformSetting("AT_USERNAME", username);
+    if (senderId) await setPlatformSetting("AT_SENDER_ID", senderId);
+    revalidatePath("/platform/settings");
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "Save failed" };
   }
 }
 

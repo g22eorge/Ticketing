@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getCurrentUserRole } from "@/lib/session";
 import { getPlatformSettings, getPlatformSetting } from "@/lib/platform-settings";
 import { PesapalSettingsForm } from "@/components/platform/PesapalSettingsForm";
+import { ATSmsPlatformSettingsForm } from "@/components/platform/ATSmsPlatformSettingsForm";
 import { PLAN_PRICES } from "@/lib/pesapal";
 import { formatMoney } from "@/lib/currency";
 
@@ -13,7 +14,14 @@ export default async function PlatformSettingsPage() {
   if (!platformEmail || user!.email !== platformEmail) redirect("/dashboard");
 
   const [stored, ipnId] = await Promise.all([
-    getPlatformSettings(["PESAPAL_CONSUMER_KEY", "PESAPAL_CONSUMER_SECRET", "PESAPAL_IPN_ID"]),
+    getPlatformSettings([
+      "PESAPAL_CONSUMER_KEY",
+      "PESAPAL_CONSUMER_SECRET",
+      "PESAPAL_IPN_ID",
+      "AT_API_KEY",
+      "AT_USERNAME",
+      "AT_SENDER_ID",
+    ]),
     getPlatformSetting("PESAPAL_IPN_ID"),
   ]);
 
@@ -24,6 +32,15 @@ export default async function PlatformSettingsPage() {
     PESAPAL_CONSUMER_KEY_inDb: !!stored.PESAPAL_CONSUMER_KEY,
     PESAPAL_CONSUMER_SECRET_inDb: !!stored.PESAPAL_CONSUMER_SECRET,
     PESAPAL_IPN_ID_inDb: !!stored.PESAPAL_IPN_ID,
+  };
+
+  const atConfigured = {
+    AT_API_KEY: !!stored.AT_API_KEY || !!process.env.AT_API_KEY,
+    AT_USERNAME: !!stored.AT_USERNAME || !!process.env.AT_USERNAME,
+    AT_SENDER_ID: !!stored.AT_SENDER_ID || !!process.env.AT_SENDER_ID,
+    AT_API_KEY_inDb: !!stored.AT_API_KEY,
+    AT_USERNAME_inDb: !!stored.AT_USERNAME,
+    AT_SENDER_ID_inDb: !!stored.AT_SENDER_ID,
   };
 
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
@@ -39,6 +56,8 @@ export default async function PlatformSettingsPage() {
       </div>
 
       <PesapalSettingsForm configured={configured} webhookUrl={webhookUrl} ipnId={ipnId} />
+
+      <ATSmsPlatformSettingsForm configured={atConfigured} />
 
       {/* Pricing reference */}
       <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] p-5">
