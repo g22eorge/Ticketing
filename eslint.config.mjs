@@ -15,6 +15,8 @@ const eslintConfig = defineConfig([
     // Playwright artifacts (may or may not exist; avoid ESLint glob crashes)
     "test-results/**",
     "playwright-report/**",
+    // Local agent/assistant artifacts
+    ".claude/**",
   ]),
   {
     rules: {

@@ -21,8 +21,26 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
   const { id } = await params;
 
   let dbNeedsFix = false;
-  const sale = await prisma.sale
-    .findFirst({
+  let sale: {
+    id: string;
+    saleNumber: string;
+    status: string;
+    subtotal: number;
+    discountAmount: number;
+    vatAmount: number;
+    totalAmount: number;
+    paidAmount: number;
+    paidAt: Date | null;
+    createdAt: Date;
+    notes: string | null;
+    branch: { name: string } | null;
+    client: { fullName: string } | null;
+    items: Array<{ id: string; description: string; quantity: number; unitPrice: number; lineTotal: number }>;
+    payments: Array<{ id: string; amount: number; method: PaymentMethod; reference: string | null; receivedAt: Date }>;
+  } | null = null;
+
+  try {
+    sale = await prisma.sale.findFirst({
       where: { id, orgId },
       select: {
         id: true,
@@ -41,12 +59,12 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
         items: { select: { id: true, description: true, quantity: true, unitPrice: true, lineTotal: true }, orderBy: { createdAt: "asc" } },
         payments: { select: { id: true, amount: true, method: true, reference: true, receivedAt: true }, orderBy: { receivedAt: "desc" } },
       },
-    })
-    .catch((err) => {
-      const msg = err instanceof Error ? err.message : String(err);
-      if (msg.includes("no such table") && msg.includes("Sale")) dbNeedsFix = true;
-      return null;
     });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (msg.includes("no such table") && msg.includes("Sale")) dbNeedsFix = true;
+    sale = null;
+  }
 
   if (!sale) {
     if (dbNeedsFix) redirect("/pos");

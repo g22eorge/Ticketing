@@ -62,8 +62,17 @@ export default async function PosPage() {
     redirect(`/pos/${sale.id}`);
   }
 
-  const sales = await prisma.sale
-    .findMany({
+  let sales: Array<{
+    id: string;
+    saleNumber: string;
+    status: string;
+    totalAmount: number;
+    paidAmount: number;
+    createdAt: Date;
+    branch: { name: string } | null;
+  }> = [];
+  try {
+    sales = await prisma.sale.findMany({
       where: { orgId },
       orderBy: { createdAt: "desc" },
       take: 40,
@@ -76,12 +85,12 @@ export default async function PosPage() {
         createdAt: true,
         branch: { select: { name: true } },
       },
-    })
-    .catch((err) => {
-      const msg = err instanceof Error ? err.message : String(err);
-      if (msg.includes("no such table") && msg.includes("Sale")) dbNeedsFix = true;
-      return [];
     });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (msg.includes("no such table") && msg.includes("Sale")) dbNeedsFix = true;
+    sales = [];
+  }
 
   return (
     <div className="space-y-4">
