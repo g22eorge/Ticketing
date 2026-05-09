@@ -117,7 +117,7 @@ const ITEMS = {
   commsTemplates: { href: "/settings/notifications/templates", label: "Templates", icon: messagesIcon },
   notifications: { href: "/settings/notifications", label: "Notifications", icon: notificationsIcon },
   profile:     { href: "/settings/profile",      label: "Profile",   icon: profileIcon },
-  jobCards:    { href: "/documents/job-cards",   label: "Intake Inv", icon: invoiceIcon },
+  jobCards:    { href: "/documents/job-cards",   label: "Job Cards",  icon: invoiceIcon },
   quotations:  { href: "/documents/quotations",  label: "Quotes",    icon: invoiceIcon },
   invoiceDocs: { href: "/documents/invoices",    label: "Invoices",  icon: invoiceIcon },
 } satisfies Record<string, NavItem>;

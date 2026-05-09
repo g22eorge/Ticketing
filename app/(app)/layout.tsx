@@ -198,12 +198,7 @@ function buildFabActions(user: { role: string; permissions?: string[] }): FabAct
   }
 
   if (can.viewClientInfo(u)) {
-    actions.push({
-      label: "New Client",
-      href: "/clients/new",
-      color: "bg-blue-500",
-      icon: <Icon d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z" color="white" />,
-    });
+    // No standalone "create client" flow yet. Avoid linking to a missing route.
   }
 
   if (can.viewIntake(u)) {
