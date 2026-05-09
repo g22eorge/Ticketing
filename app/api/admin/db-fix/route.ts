@@ -67,6 +67,13 @@ async function brandingColumns() {
   return new Set(rows.map((r) => r.name));
 }
 
+async function userColumns() {
+  const rows = await prisma.$queryRaw<Array<{ name: string }>>`
+    PRAGMA table_info('User')
+  `;
+  return new Set(rows.map((r) => r.name));
+}
+
 export async function POST() {
   const { user } = await getCurrentUserRole();
   if (user.role !== "ADMIN") {
@@ -307,6 +314,34 @@ export async function POST() {
     }
   }
 
+  // Branches (multi-branch roll-out). Some production snapshots predate Branch + User.branchId.
+  const hasBranch = await tableExists("Branch");
+  if (!hasBranch) {
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "Branch" (
+        "id" TEXT NOT NULL PRIMARY KEY,
+        "orgId" TEXT NOT NULL,
+        "name" TEXT NOT NULL,
+        "address" TEXT,
+        "phone" TEXT,
+        "isDefault" INTEGER NOT NULL DEFAULT 0,
+        "isActive" INTEGER NOT NULL DEFAULT 1,
+        "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY ("orgId") REFERENCES "Organization"("id") ON DELETE CASCADE ON UPDATE CASCADE
+      )
+    `);
+    await prisma.$executeRawUnsafe('CREATE INDEX IF NOT EXISTS "Branch_orgId_idx" ON "Branch"("orgId")');
+    changes.push({ kind: "create_table", detail: "Created Branch + orgId index" });
+  }
+
+  const ucols = await userColumns();
+  if (!ucols.has("branchId")) {
+    await prisma.$executeRawUnsafe('ALTER TABLE "User" ADD COLUMN "branchId" TEXT');
+    await prisma.$executeRawUnsafe('CREATE INDEX IF NOT EXISTS "User_branchId_idx" ON "User"("branchId")');
+    changes.push({ kind: "alter_table", detail: "Added User.branchId (+ index)" });
+  }
+
   // Re-check and report
   const finalCols = await jobColumns();
   return NextResponse.json({
@@ -334,6 +369,7 @@ export async function POST() {
       NotificationPreferences: await tableExists("NotificationPreferences"),
       OutboundMessage: await tableExists("OutboundMessage"),
       Device: await tableExists("Device"),
+      Branch: await tableExists("Branch"),
     },
   });
 }
