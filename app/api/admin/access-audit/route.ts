@@ -7,6 +7,14 @@ import { getCurrentUserRole } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
+async function requirePlatformAdmin() {
+  const { user } = await getCurrentUserRole();
+  const platformEmail = process.env.PLATFORM_ADMIN_EMAIL;
+  if (!platformEmail || !user?.email || user.email !== platformEmail) return null;
+  if (user.role !== "ADMIN") return null;
+  return user;
+}
+
 type AccessMatrix = {
   jobs: boolean;
   intake: boolean;
@@ -49,8 +57,8 @@ function buildAccess(role: Role, isActive: boolean, permissions: string[]): Acce
 }
 
 export async function GET(req: NextRequest) {
-  const { user: actor } = await getCurrentUserRole();
-  if (actor.role !== "ADMIN") {
+  const actor = await requirePlatformAdmin();
+  if (!actor) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

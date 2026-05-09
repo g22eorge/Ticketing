@@ -10,10 +10,16 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getTransactionStatus, parseMerchantRef } from "@/lib/pesapal";
+import { getTransactionStatus, parseMerchantRef, PLAN_PRICES, CURRENCY } from "@/lib/pesapal";
 import { OrgPlan } from "@prisma/client";
 import { recordBillingEvent } from "@/lib/billing-events";
 import { sendPaymentConfirmation, sendPaymentFailedAlert } from "@/lib/email";
+
+function addOneMonth(from: Date) {
+  const d = new Date(from);
+  d.setMonth(d.getMonth() + 1);
+  return d;
+}
 
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
@@ -40,9 +46,26 @@ export async function GET(req: NextRequest) {
     if (!parsed) return NextResponse.json(ack);
     const { orgId, plan } = parsed;
 
+    // Prevent forged merchantReference activating other orgs.
+    if (tx.merchant_reference !== merchantReference) {
+      return NextResponse.json(ack);
+    }
+
+    // Ensure the paid amount matches the intended plan.
+    const expectedAmount = PLAN_PRICES[plan];
+    if (tx.currency !== CURRENCY || typeof expectedAmount !== "number" || tx.amount !== expectedAmount) {
+      return NextResponse.json(ack);
+    }
+
     if (tx.payment_status_description === "Completed") {
-      const renewsAt = new Date();
-      renewsAt.setMonth(renewsAt.getMonth() + 1);
+      const org = await prisma.organization.findUnique({
+        where: { id: orgId },
+        select: { id: true, name: true, planRenewsAt: true },
+      });
+      if (!org) return NextResponse.json(ack);
+
+      const baseDate = org.planRenewsAt && org.planRenewsAt > new Date() ? org.planRenewsAt : new Date();
+      const renewsAt = addOneMonth(baseDate);
 
       await prisma.organization.update({
         where: { id: orgId },
@@ -64,13 +87,14 @@ export async function GET(req: NextRequest) {
         confirmationCode: tx.confirmation_code,
         txRef: merchantReference,
         plan,
+        idempotencyKey: `pesapal:${orderTrackingId}:completed`,
       });
 
-      const [org, admin] = await Promise.all([
-        prisma.organization.findUnique({ where: { id: orgId }, select: { name: true } }),
-        prisma.user.findFirst({ where: { orgId, role: "ADMIN" }, select: { email: true, name: true } }),
-      ]);
-      if (org && admin) {
+      const admin = await prisma.user.findFirst({
+        where: { orgId, role: "ADMIN" },
+        select: { email: true, name: true },
+      });
+      if (admin) {
         void sendPaymentConfirmation(admin.email, admin.name, org.name, plan as OrgPlan, tx.amount);
       }
     } else if (tx.payment_status_description === "Failed" || tx.payment_status_description === "Reversed") {
@@ -82,6 +106,7 @@ export async function GET(req: NextRequest) {
         status: tx.payment_status_description.toLowerCase(),
         txRef: merchantReference,
         plan,
+        idempotencyKey: `pesapal:${orderTrackingId}:${tx.payment_status_description.toLowerCase()}`,
       });
 
       const [org, admin] = await Promise.all([

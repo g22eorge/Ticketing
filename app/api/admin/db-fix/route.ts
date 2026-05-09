@@ -5,6 +5,14 @@ import { getCurrentUserRole } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
+async function requirePlatformAdmin() {
+  const { user } = await getCurrentUserRole();
+  const platformEmail = process.env.PLATFORM_ADMIN_EMAIL;
+  if (!platformEmail || !user?.email || user.email !== platformEmail) return null;
+  if (user.role !== "ADMIN") return null;
+  return user;
+}
+
 export async function GET() {
   // Provide a safe in-browser runner (uses current session cookies).
   // Actual mutation stays on POST.
@@ -53,6 +61,13 @@ async function tableExists(name: string) {
   return rows.length > 0;
 }
 
+async function tableColumns(name: string) {
+  const rows = await prisma.$queryRawUnsafe<Array<{ name: string }>>(
+    `PRAGMA table_info('${name.replaceAll("'", "''")}')`,
+  );
+  return new Set(rows.map((r) => r.name));
+}
+
 async function jobColumns() {
   const rows = await prisma.$queryRaw<Array<{ name: string }>>`
     PRAGMA table_info('Job')
@@ -89,8 +104,8 @@ async function purchaseOrderColumns() {
 }
 
 export async function POST() {
-  const { user } = await getCurrentUserRole();
-  if (user.role !== "ADMIN") {
+  const user = await requirePlatformAdmin();
+  if (!user) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -124,12 +139,44 @@ export async function POST() {
   if (!hasRepairRequestSequence) {
     await prisma.$executeRawUnsafe(`
       CREATE TABLE IF NOT EXISTS "RepairRequestSequence" (
-        "year" INTEGER NOT NULL PRIMARY KEY,
+        "id" TEXT NOT NULL PRIMARY KEY,
+        "orgId" TEXT,
+        "year" INTEGER NOT NULL,
         "value" INTEGER NOT NULL DEFAULT 0,
         "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
       )
     `);
+    await prisma.$executeRawUnsafe('CREATE UNIQUE INDEX IF NOT EXISTS "RepairRequestSequence_orgId_year_key" ON "RepairRequestSequence"("orgId", "year")');
     changes.push({ kind: "create_table", detail: "Created RepairRequestSequence" });
+  } else {
+    // Upgrade legacy schema (year PK without orgId/id) to the current schema.
+    const cols = await tableColumns("RepairRequestSequence");
+    const legacy = cols.has("year") && cols.has("value") && !cols.has("id");
+    if (legacy) {
+      const defaultOrg = await prisma.organization.findFirst({ select: { id: true }, orderBy: { createdAt: "asc" } });
+      if (!defaultOrg?.id) {
+        changes.push({ kind: "warning", detail: "RepairRequestSequence legacy table found but no Organization rows exist; skipping upgrade." });
+      } else {
+        await prisma.$executeRawUnsafe(`
+          CREATE TABLE IF NOT EXISTS "_RepairRequestSequence_new" (
+            "id" TEXT NOT NULL PRIMARY KEY,
+            "orgId" TEXT,
+            "year" INTEGER NOT NULL,
+            "value" INTEGER NOT NULL DEFAULT 0,
+            "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+          )
+        `);
+        await prisma.$executeRawUnsafe('CREATE UNIQUE INDEX IF NOT EXISTS "_RepairRequestSequence_new_orgId_year_key" ON "_RepairRequestSequence_new"("orgId", "year")');
+        await prisma.$executeRawUnsafe(`
+          INSERT OR REPLACE INTO "_RepairRequestSequence_new" (id, orgId, year, value, updatedAt)
+          SELECT lower(hex(randomblob(16))), '${defaultOrg.id}', year, value, updatedAt FROM "RepairRequestSequence"
+        `);
+        await prisma.$executeRawUnsafe('DROP TABLE "RepairRequestSequence"');
+        await prisma.$executeRawUnsafe('ALTER TABLE "_RepairRequestSequence_new" RENAME TO "RepairRequestSequence"');
+        await prisma.$executeRawUnsafe('CREATE UNIQUE INDEX IF NOT EXISTS "RepairRequestSequence_orgId_year_key" ON "RepairRequestSequence"("orgId", "year")');
+        changes.push({ kind: "alter_table", detail: "Upgraded legacy RepairRequestSequence schema" });
+      }
+    }
   }
 
   // Job columns

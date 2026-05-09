@@ -4,8 +4,8 @@ import { revalidatePath } from "next/cache";
 import { Prisma, OutboundMessageChannel, OutboundMessageStatus, OutboundMessageType } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
-import { getCurrentUserRole } from "@/lib/session";
-import { deliverOutboundMessage, getOutboxRetryLimit, retryDueOutboundMessages } from "@/lib/notifications/whatsapp-outbox";
+import { requireOrgSession } from "@/lib/org-context";
+import { deliverOutboundMessageForOrg, getOutboxRetryLimit, retryDueOutboundMessages } from "@/lib/notifications/whatsapp-outbox";
 
 export const dynamic = "force-dynamic";
 
@@ -54,7 +54,7 @@ export default async function OutboxPage({
 }: {
   searchParams: Promise<SearchParams>;
 }) {
-  const { user } = await getCurrentUserRole();
+  const { user, orgId } = await requireOrgSession();
   if (!(user.role === "ADMIN" || user.role === "OPS")) {
     redirect("/dashboard");
   }
@@ -72,6 +72,7 @@ export default async function OutboxPage({
   const q = typeof filters.q === "string" ? filters.q.trim() : "";
 
   const where: Prisma.OutboundMessageWhereInput = {
+    orgId,
     ...(channel ? { channel } : {}),
     ...(status ? { status } : {}),
     ...(type ? { type } : {}),
@@ -117,6 +118,7 @@ export default async function OutboxPage({
     prisma.outboundMessage.groupBy({
       by: ["status"],
       _count: { status: true },
+      where: { orgId },
     }),
   ]);
 
@@ -124,30 +126,30 @@ export default async function OutboxPage({
 
   async function retryNowAction() {
     "use server";
-    const { user } = await getCurrentUserRole();
+    const { user, orgId } = await requireOrgSession();
     if (!(user.role === "ADMIN" || user.role === "OPS")) return;
-    await retryDueOutboundMessages(getOutboxRetryLimit(25));
+    await retryDueOutboundMessages(getOutboxRetryLimit(25), { orgId });
     revalidatePath("/settings/notifications/outbox");
   }
 
   async function retryOneAction(formData: FormData) {
     "use server";
-    const { user } = await getCurrentUserRole();
+    const { user, orgId } = await requireOrgSession();
     if (!(user.role === "ADMIN" || user.role === "OPS")) return;
     const id = String(formData.get("id") ?? "");
     if (!id) return;
-    await deliverOutboundMessage(id);
+    await deliverOutboundMessageForOrg(id, orgId);
     revalidatePath("/settings/notifications/outbox");
   }
 
   async function markDeadAction(formData: FormData) {
     "use server";
-    const { user } = await getCurrentUserRole();
+    const { user, orgId } = await requireOrgSession();
     if (!(user.role === "ADMIN" || user.role === "OPS")) return;
     const id = String(formData.get("id") ?? "");
     if (!id) return;
-    await prisma.outboundMessage.update({
-      where: { id },
+    await prisma.outboundMessage.updateMany({
+      where: { id, orgId },
       data: { status: "DEAD", nextAttemptAt: new Date(0), lockedAt: null },
     });
     revalidatePath("/settings/notifications/outbox");

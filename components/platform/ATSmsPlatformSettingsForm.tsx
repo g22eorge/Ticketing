@@ -51,7 +51,7 @@ export function ATSmsPlatformSettingsForm({ configured }: Props) {
   return (
     <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] p-5 space-y-5">
       <div>
-        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Africa's Talking (SMS)</p>
+        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Africa&apos;s Talking (SMS)</p>
         <p className="mt-1 text-xs text-[var(--ink-muted)]">
           Configure platform-wide SMS credentials. Values saved here override environment variables.
         </p>

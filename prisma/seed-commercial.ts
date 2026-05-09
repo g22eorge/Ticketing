@@ -190,6 +190,19 @@ async function createJob({
   });
 }
 
+async function ensureAudit(jobId: string, userId: string, action: string, detail: unknown) {
+  const serialized = JSON.stringify(detail);
+  const existing = await prisma.auditLog.findFirst({
+    where: { jobId, userId, action, detail: serialized },
+    select: { id: true },
+  });
+  if (existing) return;
+  await prisma.auditLog.create({
+    data: { jobId, userId, action, detail: serialized },
+    select: { id: true },
+  });
+}
+
 // ── main ─────────────────────────────────────────────────────────────────────
 
 export async function seedCommercialData() {
@@ -251,7 +264,7 @@ export async function seedCommercialData() {
   ];
 
   for (const j of tfJobs) {
-    await createJob({
+    const job = await createJob({
       orgId: techfix.id,
       jobNumber: j.n,
       status: j.status,
@@ -269,6 +282,7 @@ export async function seedCommercialData() {
       receivedAt: j.received,
       completedAt: j.completed,
     });
+    await ensureAudit(job.id, tfOps.id, "JOB_CREATED", { seeded: true, org: techfix.slug, jobNumber: j.n });
   }
 
   console.log(`✓ TechFix Uganda — ${tfJobs.length} jobs, 4 users (GROWTH / ACTIVE)`);
@@ -314,7 +328,7 @@ export async function seedCommercialData() {
   ];
 
   for (const j of irJobs) {
-    await createJob({
+    const job = await createJob({
       orgId: irepair.id,
       jobNumber: j.n,
       status: j.status,
@@ -332,6 +346,7 @@ export async function seedCommercialData() {
       receivedAt: j.received,
       completedAt: j.completed,
     });
+    await ensureAudit(job.id, irOps.id, "JOB_CREATED", { seeded: true, org: irepair.slug, jobNumber: j.n });
   }
 
   console.log(`✓ iRepair Kenya — ${irJobs.length} jobs, 2 users (STARTER / TRIALING — 5 days left)`);
@@ -393,7 +408,7 @@ export async function seedCommercialData() {
   ];
 
   for (const j of ffJobs) {
-    await createJob({
+    const job = await createJob({
       orgId: fixitfast.id,
       jobNumber: j.n,
       status: j.status,
@@ -411,6 +426,7 @@ export async function seedCommercialData() {
       receivedAt: j.received,
       completedAt: j.completed,
     });
+    await ensureAudit(job.id, ffOps.id, "JOB_CREATED", { seeded: true, org: fixitfast.slug, jobNumber: j.n });
   }
 
   console.log(`✓ FixIt Fast Ghana — ${ffJobs.length} jobs, 5 users (ENTERPRISE / ACTIVE)\n`);

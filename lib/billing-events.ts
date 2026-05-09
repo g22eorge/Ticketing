@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { createHash, randomUUID } from "node:crypto";
 
 export interface BillingEvent {
   id: string;
@@ -45,9 +46,13 @@ export async function recordBillingEvent(params: {
   confirmationCode?: string | null;
   txRef?: string | null;
   plan?: string | null;
+  /** If provided, ensures repeated webhook deliveries don't duplicate events. */
+  idempotencyKey?: string | null;
 }): Promise<void> {
   await ensureTable();
-  const id = crypto.randomUUID().replace(/-/g, "");
+  const id = params.idempotencyKey
+    ? createHash("sha256").update(params.idempotencyKey).digest("hex").slice(0, 32)
+    : randomUUID().replace(/-/g, "");
   await prisma.$executeRaw`
     INSERT INTO "BillingEvent" (id, orgId, event, amount, currency, status, flwTxId, txRef, plan)
     VALUES (${id}, ${params.orgId}, ${params.event}, ${params.amount}, ${params.currency},

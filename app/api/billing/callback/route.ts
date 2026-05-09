@@ -10,9 +10,15 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getTransactionStatus, parseMerchantRef } from "@/lib/pesapal";
+import { getTransactionStatus, parseMerchantRef, PLAN_PRICES, CURRENCY } from "@/lib/pesapal";
 import { OrgPlan } from "@prisma/client";
 import { sendPaymentConfirmation } from "@/lib/email";
+
+function addOneMonth(from: Date) {
+  const d = new Date(from);
+  d.setMonth(d.getMonth() + 1);
+  return d;
+}
 
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
@@ -31,12 +37,29 @@ export async function GET(req: NextRequest) {
       return NextResponse.redirect(`${base}/settings/billing?payment=failed`);
     }
 
+    // Prevent forged merchantReference activating other orgs.
+    if (tx.merchant_reference !== merchantReference) {
+      return NextResponse.redirect(`${base}/settings/billing?payment=failed`);
+    }
+
     const parsed = parseMerchantRef(merchantReference);
     if (!parsed) return NextResponse.redirect(`${base}/settings/billing?payment=failed`);
     const { orgId, plan } = parsed;
 
-    const renewsAt = new Date();
-    renewsAt.setMonth(renewsAt.getMonth() + 1);
+    // Ensure the paid amount matches the intended plan.
+    const expectedAmount = PLAN_PRICES[plan];
+    if (tx.currency !== CURRENCY || typeof expectedAmount !== "number" || tx.amount !== expectedAmount) {
+      return NextResponse.redirect(`${base}/settings/billing?payment=failed`);
+    }
+
+    const org = await prisma.organization.findUnique({
+      where: { id: orgId },
+      select: { id: true, name: true, planRenewsAt: true },
+    });
+    if (!org) return NextResponse.redirect(`${base}/settings/billing?payment=failed`);
+
+    const baseDate = org.planRenewsAt && org.planRenewsAt > new Date() ? org.planRenewsAt : new Date();
+    const renewsAt = addOneMonth(baseDate);
 
     const updatedOrg = await prisma.organization.update({
       where: { id: orgId },
