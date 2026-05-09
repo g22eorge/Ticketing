@@ -11,9 +11,20 @@ try {
   const marker = `qa-rr-${Date.now()}`;
   const phone = `+256700${String(Date.now()).slice(-6)}`;
 
+  // Tests should not depend on DEFAULT_ORG_ID.
+  const org = await prisma.organization.create({
+    data: {
+      name: `QA Org ${marker}`,
+      slug: `qa-org-${Date.now()}`,
+      billingStatus: "TRIALING",
+    },
+    select: { id: true },
+  });
+
   const createOne = async () => {
     const { createRepairRequest } = await import("../lib/repairs/request.ts");
     return createRepairRequest({
+      orgId: org.id,
       customerName: marker,
       phone,
       email: `${marker}@example.invalid`,

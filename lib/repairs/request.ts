@@ -41,17 +41,11 @@ async function allocateRequestNumber(orgId?: string | null): Promise<string> {
 
   // Repair requests are tenant-scoped; sequences must not use NULL orgIds because
   // SQLite UNIQUE constraints treat NULLs as distinct (breaking atomic upserts).
-  if (!orgId) {
-    const fromEnv = process.env.DEFAULT_ORG_ID?.trim();
-    if (fromEnv) orgId = fromEnv;
-  }
-  if (!orgId) {
-    const onlyOrg = await prisma.organization.findFirst({ select: { id: true }, orderBy: { createdAt: "asc" } });
-    orgId = onlyOrg?.id ?? null;
-  }
-  if (!orgId) {
-    throw new Error("No organisation configured for repair requests (missing DEFAULT_ORG_ID).");
-  }
+  //
+  // Do NOT fall back to "first org". That is nondeterministic and can route public
+  // repair requests into the wrong tenant. Require explicit orgId or DEFAULT_ORG_ID.
+  if (!orgId) orgId = process.env.DEFAULT_ORG_ID?.trim() ?? null;
+  if (!orgId) throw new Error("Missing orgId for repair requests. Provide orgId or set DEFAULT_ORG_ID.");
 
   const ensureSequenceTable = async () => {
     // Some environments (e.g. Turso drift) may be missing this table.
@@ -106,11 +100,12 @@ export async function createRepairRequest(
   input: CreateRepairRequestInput
 ): Promise<{ success: boolean; requestId?: string; requestNumber?: string; error?: string }> {
   try {
-    const resolvedOrgId =
-      input.orgId?.trim() ||
-      process.env.DEFAULT_ORG_ID?.trim() ||
-      (await prisma.organization.findFirst({ select: { id: true }, orderBy: { createdAt: "asc" } }))?.id ||
-      null;
+    // Public repair requests must be bound to a single tenant.
+    // Never pick an org implicitly from the DB.
+    const resolvedOrgId = input.orgId?.trim() || process.env.DEFAULT_ORG_ID?.trim() || null;
+    if (!resolvedOrgId) {
+      return { success: false, error: "Missing orgId for repair request. Provide orgId or set DEFAULT_ORG_ID." };
+    }
 
     // Request numbers must be human-friendly but also safe under concurrency.
     // We allocate from a per-year sequence table, and still retry in case the

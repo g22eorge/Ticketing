@@ -119,6 +119,8 @@ function buildSharedFields(body: Record<string, unknown>, ip: string) {
     "SELF_DROPOFF" | "SEND_WITH_DELIVERY_PERSON" | "REQUEST_PICKUP";
 
   return {
+    // orgId is resolved in POST (may be omitted for single-tenant deployments using DEFAULT_ORG_ID)
+    orgId: undefined as string | undefined,
     customerName: sanitizeText((body.customer_name as string) || ""),
     phone: normalizeUgandaPhone((phone as string) || ""),
     email: email ? (sanitizeOptionalText(email as string) ?? undefined) : undefined,
@@ -145,6 +147,27 @@ function buildSharedFields(body: Record<string, unknown>, ip: string) {
     pickupNotes: body.pickup_notes ? sanitizeOptionalText(body.pickup_notes as string) ?? undefined : undefined,
     submissionIp: ip,
   };
+}
+
+async function resolveOrgIdFromRequest(request: NextRequest, body: Record<string, unknown>): Promise<string | undefined> {
+  const headerOrgId = request.headers.get("x-org-id")?.trim();
+  const bodyOrgId = typeof body.org_id === "string" ? body.org_id.trim() : "";
+  const orgSlug = typeof body.org_slug === "string" ? body.org_slug.trim() : "";
+
+  const candidate = headerOrgId || bodyOrgId;
+  if (candidate) {
+    const org = await prisma.organization.findUnique({ where: { id: candidate }, select: { id: true } });
+    if (!org) throw new Error("Invalid org_id");
+    return org.id;
+  }
+
+  if (orgSlug) {
+    const org = await prisma.organization.findUnique({ where: { slug: orgSlug }, select: { id: true } });
+    if (!org) throw new Error("Invalid org_slug");
+    return org.id;
+  }
+
+  return undefined;
 }
 
 async function deliverInline(outboxId: string) {
@@ -179,6 +202,16 @@ export async function POST(request: NextRequest) {
     }
 
     const isBatch = Array.isArray(body.devices) && body.devices.length > 0;
+
+    let orgId: string | undefined;
+    try {
+      orgId = await resolveOrgIdFromRequest(request, body);
+    } catch (e) {
+      return NextResponse.json(
+        { success: false, error: e instanceof Error ? e.message : "Invalid organization" },
+        { status: 400, headers: corsHeaders },
+      );
+    }
 
     // ── Validation ──────────────────────────────────────────────────────────
     const customerErrors = validateCustomerAndHandover(body);
@@ -231,6 +264,7 @@ export async function POST(request: NextRequest) {
 
     // ── Create repair request(s) ─────────────────────────────────────────────
     const shared = buildSharedFields(body, ip);
+    shared.orgId = orgId;
     const results: Array<{ requestNumber: string; requestId: string; brand: string; deviceType: string; problemDescription: string }> = [];
 
     if (isBatch) {

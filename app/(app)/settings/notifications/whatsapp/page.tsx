@@ -142,14 +142,7 @@ export default async function WhatsAppSettingsPage() {
       />
 
       {/* Links */}
-      <div className="flex flex-wrap gap-3">
-        <Link
-          href="/settings/notifications/outbox"
-          className="btn-premium-secondary rounded-lg px-3 py-1.5 text-sm"
-        >
-          View Message Outbox →
-        </Link>
-      </div>
+      {/* Outbox lives in Settings > Notifications */}
     </div>
   );
 }

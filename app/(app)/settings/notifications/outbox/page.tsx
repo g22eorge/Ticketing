@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import Link from "next/link";
 
 import { Prisma, OutboundMessageChannel, OutboundMessageStatus, OutboundMessageType } from "@prisma/client";
 
@@ -157,6 +158,26 @@ export default async function OutboxPage({
 
   return (
     <div className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <Link
+          href="/settings/notifications"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--ink-muted)] transition-colors hover:text-[var(--ink)]"
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+          Notifications
+        </Link>
+        <div className="flex flex-wrap gap-2">
+          <Link href="/settings/notifications/templates" className="btn-premium-secondary rounded-lg px-3 py-1.5 text-sm">
+            Templates
+          </Link>
+          {user.role === "ADMIN" ? (
+            <Link href="/settings/notifications/whatsapp" className="btn-premium-secondary rounded-lg px-3 py-1.5 text-sm">
+              WhatsApp
+            </Link>
+          ) : null}
+        </div>
+      </div>
+
       {/* Summary bar */}
       <div className="panel-shadow flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
         <div className="flex flex-wrap items-center gap-2">

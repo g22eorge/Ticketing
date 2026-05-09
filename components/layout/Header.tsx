@@ -16,6 +16,7 @@ type HeaderProps = {
   role: string;
   permissions?: string[];
   isPlatformAdmin?: boolean;
+  orgName?: string | null;
 };
 
 function roleDisplay(role: string) {
@@ -51,7 +52,7 @@ function initials(name: string) {
     .toUpperCase() || "?";
 }
 
-export function Header({ userName, role, permissions = [], isPlatformAdmin = false }: HeaderProps) {
+export function Header({ userName, role, permissions = [], isPlatformAdmin = false, orgName = null }: HeaderProps) {
   const router = useRouter();
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -113,6 +114,16 @@ export function Header({ userName, role, permissions = [], isPlatformAdmin = fal
                 className="absolute right-0 mt-2 w-52 overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)] shadow-xl"
                 onMouseLeave={() => setMenuOpen(false)}
               >
+                {orgName ? (
+                  <div className="border-b border-[var(--line)] px-3 py-2">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
+                      Org
+                    </p>
+                    <p className="mt-0.5 truncate text-sm font-semibold text-[var(--ink)]" title={orgName}>
+                      {orgName}
+                    </p>
+                  </div>
+                ) : null}
                 <Link
                   role="menuitem"
                   href="/settings/profile"

@@ -64,13 +64,36 @@ export default async function NotificationTemplatesPage({
     return (
       <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 sm:p-5">
         <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--accent)]">Settings</p>
-        <h1 className="mt-1 text-lg font-semibold text-[var(--ink)]">Communication Templates</h1>
+        <h1 className="mt-1 text-lg font-semibold text-[var(--ink)]">Templates</h1>
         <p className="mt-2 text-sm text-[var(--ink-muted)]">
           Templates are not available in this runtime (older database/client). Deploy the latest schema to enable them.
         </p>
       </section>
     );
   }
+
+  // Top nav
+  const topNav = (
+    <div className="flex flex-wrap items-center justify-between gap-2">
+      <Link
+        href="/settings/notifications"
+        className="inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--ink-muted)] transition-colors hover:text-[var(--ink)]"
+      >
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        Notifications
+      </Link>
+      <div className="flex flex-wrap gap-2">
+        <Link href="/settings/notifications/outbox" className="btn-premium-secondary rounded-lg px-3 py-1.5 text-sm">
+          Outbox
+        </Link>
+        {user.role === "ADMIN" ? (
+          <Link href="/settings/notifications/whatsapp" className="btn-premium-secondary rounded-lg px-3 py-1.5 text-sm">
+            WhatsApp
+          </Link>
+        ) : null}
+      </div>
+    </div>
+  );
 
   async function seedDefaults() {
     "use server";
@@ -442,18 +465,16 @@ export default async function NotificationTemplatesPage({
 
   return (
     <div className="space-y-4">
+      {topNav}
       <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 sm:p-5">
         <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--accent)]">Settings</p>
-        <h1 className="mt-1 text-lg font-semibold text-[var(--ink)]">Comms Templates</h1>
+        <h1 className="mt-1 text-lg font-semibold text-[var(--ink)]">Templates</h1>
         <p className="mt-1 text-sm text-[var(--ink-muted)]">
-          Manage reusable WhatsApp and email message templates. Use placeholders like <code>{"{customerName}"}</code> or <code>{"{jobNumber}"}</code>.
+          Use <code>{"{customerName}"}</code> and <code>{"{jobNumber}"}</code>.
         </p>
         {saved ? <p className="mt-3 text-sm text-[var(--accent)]">Saved: {saved}</p> : null}
         {error ? <p className="mt-3 text-sm text-red-600">{error}</p> : null}
         <div className="mt-4 flex flex-wrap gap-2">
-          <Link href="/settings/notifications" className="btn-premium-secondary rounded-lg px-3 py-2 text-sm">
-            Notification Center
-          </Link>
           {user.role === "ADMIN" ? (
             <form action={seedDefaults}>
               <button className="btn-premium rounded-lg px-3 py-2 text-sm">

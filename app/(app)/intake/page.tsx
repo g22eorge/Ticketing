@@ -1,16 +1,17 @@
 import { redirect } from "next/navigation";
-import { getCurrentUserRole } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { IntakeClient } from "@/components/intake/IntakeClient";
 import { can } from "@/lib/permissions";
+import { requireOrgSession } from "@/lib/org-context";
 
 export const dynamic = "force-dynamic";
 
 export default async function IntakePage() {
-  const { user } = await getCurrentUserRole();
+  const { user, orgId } = await requireOrgSession();
   if (!can.viewIntake(user)) redirect("/dashboard");
 
   const requests = await prisma.repairRequest.findMany({
+    where: { orgId },
     orderBy: { createdAt: "desc" },
     take: 200,
   });

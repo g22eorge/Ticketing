@@ -150,7 +150,7 @@ export default async function AppLayout({
       />
       <div className="relative flex min-h-screen min-w-0 flex-1 flex-col overflow-x-clip md:h-full md:min-h-0">
         <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_top_right,rgba(212,175,55,0.06),transparent_50%),radial-gradient(ellipse_at_bottom_left,rgba(212,175,55,0.04),transparent_40%)]" />
-        <Header userName={user.name} role={user.role} permissions={user.permissions} isPlatformAdmin={isPlatformAdmin} />
+        <Header userName={user.name} role={user.role} permissions={user.permissions} isPlatformAdmin={isPlatformAdmin} orgName={org?.name ?? null} />
         <main className="fade-in flex-1 overflow-x-hidden px-4 pb-[var(--mobile-shell-bottom)] pt-[var(--mobile-shell-top)] md:min-h-0 md:overflow-y-auto md:px-6 md:pb-8">
           <div className="mobile-page-shell mx-auto w-full max-w-lg md:max-w-[1240px] md:space-y-5 xl:max-w-[1360px]">
             <PageThemeHeader role={user.role} />
@@ -208,8 +208,8 @@ function buildFabActions(user: { role: string; permissions?: string[] }): FabAct
 
   if (can.viewIntake(u)) {
     actions.push({
-      label: "Repair Request",
-      href: "/repair-requests",
+      label: "Intake",
+      href: "/intake",
       color: "bg-amber-500",
       icon: <Icon d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" color="white" />,
     });
