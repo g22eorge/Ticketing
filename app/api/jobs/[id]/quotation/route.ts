@@ -115,7 +115,6 @@ export async function GET(
       id: true,
       jobNumber: true,
       status: true,
-      quotedAt: true,
       repairPath: true,
       deviceType: true,
       brand: true,
