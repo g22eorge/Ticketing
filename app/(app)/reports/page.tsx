@@ -207,6 +207,16 @@ export default async function ReportsPage({
     payments = [];
   }
 
+  let refunds: Array<{ amount: number; currency: string | null; exchangeRateToBase: number | null }> = [];
+  try {
+    refunds = await prisma.refund.findMany({
+      where: { orgId, refundedAt: { gte: selectedRange.start, lte: selectedRange.end } },
+      select: { amount: true, currency: true, exchangeRateToBase: true },
+    });
+  } catch {
+    refunds = [];
+  }
+
   let invoicesAgg: { _sum: { totalAmount: number | null; paidAmount: number | null } } = {
     _sum: { totalAmount: 0, paidAmount: 0 },
   };
@@ -259,11 +269,15 @@ export default async function ReportsPage({
     (sum, p) => sum + toBaseAmount({ amount: p.amount, currency: p.currency, baseCurrency: org.baseCurrency, exchangeRateToBase: p.exchangeRateToBase }),
     0,
   );
+  const cashOutRefunds = refunds.reduce(
+    (sum, r) => sum + toBaseAmount({ amount: r.amount, currency: r.currency, baseCurrency: org.baseCurrency, exchangeRateToBase: r.exchangeRateToBase }),
+    0,
+  );
   const cashOutExternal = paidExternalJobs.reduce(
     (sum, job) => sum + resolveTechCost(job.externalTechFee, job.externalTechBill),
     0,
   );
-  const cashNet = cashIn - cashOutExternal;
+  const cashNet = cashIn - cashOutExternal - cashOutRefunds;
   const issuedTotal = invoicesAgg._sum.totalAmount ?? 0;
   const issuedPaid = invoicesAgg._sum.paidAmount ?? 0;
   const issuedBalance = Math.max(0, issuedTotal - issuedPaid);
@@ -716,8 +730,10 @@ export default async function ReportsPage({
           <div className="absolute inset-0 bg-gradient-to-br from-amber-50/30 to-transparent" />
           <div className="relative">
             <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Cash Out</p>
-            <p className="mt-1.5 text-2xl font-bold text-amber-700">{formatMoneyCompact(cashOutExternal, currency)}</p>
-            <p className="mt-2 text-[10px] text-[var(--ink-muted)]">external payouts</p>
+            <p className="mt-1.5 text-2xl font-bold text-amber-700">{formatMoneyCompact(cashOutExternal + cashOutRefunds, currency)}</p>
+            <p className="mt-2 text-[10px] text-[var(--ink-muted)]">
+              payouts {formatMoneyCompact(cashOutExternal, currency)} · refunds {formatMoneyCompact(cashOutRefunds, currency)}
+            </p>
           </div>
         </Link>
 

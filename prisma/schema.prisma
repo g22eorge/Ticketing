@@ -63,6 +63,8 @@ model Organization {
   inboundMessages        InboundMessage[]
   invoices               Invoice[]
   payments               Payment[]
+  refunds                Refund[]
+  creditNotes            CreditNote[]
   sales                  Sale[]
   auditLogs              AuditLog[]
   invites                UserInvite[]
@@ -122,6 +124,9 @@ model User {
   partReservations        PartReservation[]        @relation("PartReservedBy")
   stockTransactions       PartStockTransaction[]   @relation("StockTxnBy")
   paymentsCreated         Payment[]                @relation("PaymentCreatedBy")
+  refundsCreated          Refund[]
+  creditNotesCreated      CreditNote[]             @relation("CreditNoteCreatedBy")
+  creditNotesReceivedBack CreditNote[]             @relation("CreditNoteReceivedBackBy")
   salesCreated            Sale[]                   @relation("SaleCreatedBy")
   accessAuditEntries      UserAccessAudit[]        @relation("AccessAuditTarget")
   accessAuditChanges      UserAccessAudit[]        @relation("AccessAuditActor")
@@ -541,6 +546,86 @@ model Payment {
   @@index([saleId])
 }
 
+model Refund {
+  id    String       @id @default(cuid())
+  orgId String
+  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  // Refund can relate to either a Sale (merchandise) or an Invoice (repairs).
+  saleId       String?
+  sale         Sale?       @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  invoiceId    String?
+  invoice      Invoice?    @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  creditNoteId String?
+  creditNote   CreditNote? @relation(fields: [creditNoteId], references: [id], onDelete: SetNull)
+
+  currency           String @default("UGX")
+  exchangeRateToBase Float?
+  amount             Float
+  method             PaymentMethod @default(CASH)
+  reference          String?
+  refundedAt         DateTime      @default(now())
+  createdById        String
+  createdBy          User          @relation(fields: [createdById], references: [id], onDelete: Restrict)
+  note               String?
+  createdAt          DateTime      @default(now())
+
+  @@index([orgId, refundedAt])
+  @@index([saleId])
+  @@index([invoiceId])
+  @@index([creditNoteId])
+}
+
+model CreditNote {
+  id    String       @id @default(cuid())
+  orgId String
+  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  // Credit notes are for merchandise sales only (Sale-based).
+  saleId String
+  sale   Sale    @relation(fields: [saleId], references: [id], onDelete: Cascade)
+
+  creditNoteNumber String   @unique
+  currency         String   @default("UGX")
+  totalAmount      Float
+  issuedAt         DateTime @default(now())
+  reason           String?
+
+  // Stock return is only applied when items are physically received back.
+  itemsReceivedBackAt  DateTime?
+  itemsReceivedBackById String?
+  itemsReceivedBackBy   User?     @relation("CreditNoteReceivedBackBy", fields: [itemsReceivedBackById], references: [id], onDelete: SetNull)
+  itemsReceivedBackNote String?
+
+  createdById String
+  createdBy   User   @relation("CreditNoteCreatedBy", fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
+
+  items   CreditNoteItem[]
+  refunds Refund[]
+
+  @@index([orgId, issuedAt])
+  @@index([saleId])
+}
+
+model CreditNoteItem {
+  id           String     @id @default(cuid())
+  creditNoteId String
+  creditNote   CreditNote @relation(fields: [creditNoteId], references: [id], onDelete: Cascade)
+
+  partId       String?
+  part         Part?      @relation(fields: [partId], references: [id], onDelete: SetNull)
+  description  String
+  quantity     Int
+  unitPrice    Float
+  lineTotal    Float
+
+  createdAt DateTime @default(now())
+
+  @@index([creditNoteId])
+  @@index([partId])
+}
+
 model Sale {
   id    String       @id @default(cuid())
   orgId String
@@ -568,6 +653,8 @@ model Sale {
 
   items             SaleItem[]
   payments          Payment[]
+  refunds           Refund[]
+  creditNotes       CreditNote[]
   stockTransactions PartStockTransaction[]
 
   createdById String?

@@ -483,6 +483,90 @@ export async function POST() {
     await prisma.$executeRawUnsafe('CREATE INDEX IF NOT EXISTS "SaleItem_partId_idx" ON "SaleItem"("partId")');
   }
 
+  // Credit notes (sale-only) + credit note items
+  const hasCreditNote = await tableExists("CreditNote");
+  if (!hasCreditNote) {
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "CreditNote" (
+        "id" TEXT NOT NULL PRIMARY KEY,
+        "orgId" TEXT NOT NULL,
+        "saleId" TEXT NOT NULL,
+        "creditNoteNumber" TEXT NOT NULL,
+        "currency" TEXT NOT NULL DEFAULT 'UGX',
+        "totalAmount" REAL NOT NULL,
+        "issuedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        "reason" TEXT,
+        "itemsReceivedBackAt" DATETIME,
+        "itemsReceivedBackById" TEXT,
+        "itemsReceivedBackNote" TEXT,
+        "createdById" TEXT NOT NULL,
+        "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY ("orgId") REFERENCES "Organization"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+        FOREIGN KEY ("saleId") REFERENCES "Sale"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+        FOREIGN KEY ("itemsReceivedBackById") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE,
+        FOREIGN KEY ("createdById") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE
+      )
+    `);
+    await prisma.$executeRawUnsafe('CREATE UNIQUE INDEX IF NOT EXISTS "CreditNote_creditNoteNumber_key" ON "CreditNote"("creditNoteNumber")');
+    await prisma.$executeRawUnsafe('CREATE INDEX IF NOT EXISTS "CreditNote_orgId_issuedAt_idx" ON "CreditNote"("orgId", "issuedAt")');
+    await prisma.$executeRawUnsafe('CREATE INDEX IF NOT EXISTS "CreditNote_saleId_idx" ON "CreditNote"("saleId")');
+    changes.push({ kind: "create_table", detail: "Created CreditNote + indexes" });
+  }
+
+  const hasCreditNoteItem = await tableExists("CreditNoteItem");
+  if (!hasCreditNoteItem) {
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "CreditNoteItem" (
+        "id" TEXT NOT NULL PRIMARY KEY,
+        "creditNoteId" TEXT NOT NULL,
+        "partId" TEXT,
+        "description" TEXT NOT NULL,
+        "quantity" INTEGER NOT NULL,
+        "unitPrice" REAL NOT NULL,
+        "lineTotal" REAL NOT NULL,
+        "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY ("creditNoteId") REFERENCES "CreditNote"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+        FOREIGN KEY ("partId") REFERENCES "Part"("id") ON DELETE SET NULL ON UPDATE CASCADE
+      )
+    `);
+    await prisma.$executeRawUnsafe('CREATE INDEX IF NOT EXISTS "CreditNoteItem_creditNoteId_idx" ON "CreditNoteItem"("creditNoteId")');
+    await prisma.$executeRawUnsafe('CREATE INDEX IF NOT EXISTS "CreditNoteItem_partId_idx" ON "CreditNoteItem"("partId")');
+    changes.push({ kind: "create_table", detail: "Created CreditNoteItem + indexes" });
+  }
+
+  // Refunds (cash-out)
+  const hasRefund = await tableExists("Refund");
+  if (!hasRefund) {
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "Refund" (
+        "id" TEXT NOT NULL PRIMARY KEY,
+        "orgId" TEXT NOT NULL,
+        "saleId" TEXT,
+        "invoiceId" TEXT,
+        "creditNoteId" TEXT,
+        "currency" TEXT NOT NULL DEFAULT 'UGX',
+        "exchangeRateToBase" REAL,
+        "amount" REAL NOT NULL,
+        "method" TEXT NOT NULL DEFAULT 'CASH',
+        "reference" TEXT,
+        "refundedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        "createdById" TEXT NOT NULL,
+        "note" TEXT,
+        "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY ("orgId") REFERENCES "Organization"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+        FOREIGN KEY ("saleId") REFERENCES "Sale"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+        FOREIGN KEY ("invoiceId") REFERENCES "Invoice"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+        FOREIGN KEY ("creditNoteId") REFERENCES "CreditNote"("id") ON DELETE SET NULL ON UPDATE CASCADE,
+        FOREIGN KEY ("createdById") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE
+      )
+    `);
+    await prisma.$executeRawUnsafe('CREATE INDEX IF NOT EXISTS "Refund_orgId_refundedAt_idx" ON "Refund"("orgId", "refundedAt")');
+    await prisma.$executeRawUnsafe('CREATE INDEX IF NOT EXISTS "Refund_saleId_idx" ON "Refund"("saleId")');
+    await prisma.$executeRawUnsafe('CREATE INDEX IF NOT EXISTS "Refund_invoiceId_idx" ON "Refund"("invoiceId")');
+    await prisma.$executeRawUnsafe('CREATE INDEX IF NOT EXISTS "Refund_creditNoteId_idx" ON "Refund"("creditNoteId")');
+    changes.push({ kind: "create_table", detail: "Created Refund + indexes" });
+  }
+
   // Stock transactions: add saleId link if missing
   if (await tableExists("PartStockTransaction")) {
     const stCols = await tableColumns("PartStockTransaction");
