@@ -28,6 +28,7 @@ const nav = [
   { href: "/payout-followups", label: "Payments", group: "finance", roles: ["ADMIN", "OPS"] },
   { href: "/technicians/payouts", label: "Payouts", group: "finance", roles: ["TECHNICIAN_EXTERNAL"] },
   { href: "/settings/billing", label: "Billing", group: "admin", roles: ["ADMIN"] },
+  { href: "/settings", label: "Settings", group: "personal", roles: "all" },
   { href: "/settings/users", label: "Users", group: "admin", roles: ["ADMIN"] },
   { href: "/settings/branches", label: "Branches", group: "admin", roles: ["ADMIN"] },
   { href: "/settings/branding", label: "Branding", group: "admin", roles: ["ADMIN"] },
@@ -69,15 +70,16 @@ const roleOrder: Partial<Record<Role, readonly string[]>> = {
     "/settings/branding",
     "/settings/notifications/templates",
     "/settings/notifications/whatsapp",
+    "/settings",
     "/settings/profile",
     "/settings/notifications",
   ],
-  OPS: ["/dashboard", "/jobs", "/intake", "/clients", "/technicians", "/inventory", "/inventory/suppliers", "/inventory/purchase-orders", "/documents/job-cards", "/documents/quotations", "/documents/invoices", "/documents/receipts", "/documents/delivery-notes", "/reports", "/pos", "/payout-followups", "/settings/notifications/templates", "/settings/profile", "/settings/notifications"],
-  TECHNICIAN_INTERNAL: ["/dashboard", "/jobs", "/intake", "/technicians", "/inventory", "/documents/job-cards", "/documents/quotations", "/settings/profile", "/settings/notifications"],
-  TECHNICIAN_EXTERNAL: ["/dashboard", "/jobs", "/technicians/payouts", "/technicians", "/settings/profile", "/settings/notifications"],
-  FRONT_DESK: ["/dashboard", "/jobs", "/intake", "/clients", "/technicians", "/documents/job-cards", "/documents/receipts", "/documents/delivery-notes", "/settings/profile"],
+  OPS: ["/dashboard", "/jobs", "/intake", "/clients", "/technicians", "/inventory", "/inventory/suppliers", "/inventory/purchase-orders", "/documents/job-cards", "/documents/quotations", "/documents/invoices", "/documents/receipts", "/documents/delivery-notes", "/reports", "/pos", "/payout-followups", "/settings", "/settings/notifications/templates", "/settings/profile", "/settings/notifications"],
+  TECHNICIAN_INTERNAL: ["/dashboard", "/jobs", "/intake", "/technicians", "/inventory", "/documents/job-cards", "/documents/quotations", "/settings", "/settings/profile", "/settings/notifications"],
+  TECHNICIAN_EXTERNAL: ["/dashboard", "/jobs", "/technicians/payouts", "/technicians", "/settings", "/settings/profile", "/settings/notifications"],
+  FRONT_DESK: ["/dashboard", "/jobs", "/intake", "/clients", "/technicians", "/documents/job-cards", "/documents/receipts", "/documents/delivery-notes", "/settings", "/settings/profile"],
 // Legacy alias - normalizeRole() converts INTAKE → FRONT_DESK, but keep for completeness.
-  INTAKE: ["/dashboard", "/jobs", "/intake", "/clients", "/technicians", "/documents/job-cards", "/settings/profile"],
+  INTAKE: ["/dashboard", "/jobs", "/intake", "/clients", "/technicians", "/documents/job-cards", "/settings", "/settings/profile"],
 };
 
 const roleGroupOrder: Partial<Record<Role, readonly NavGroup[]>> = {

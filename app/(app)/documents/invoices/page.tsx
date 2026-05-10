@@ -161,11 +161,44 @@ export default async function InvoicesPage() {
     })
     .catch(() => []);
 
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const totalCount = invoices.length;
+  const thisMonthCount = invoices.filter((i) => i.issuedAt >= monthStart).length;
+  const outstandingCount = invoices.filter((i) => i.totalAmount > i.paidAmount).length;
+  const totalOutstanding = invoices.reduce((sum, i) => sum + Math.max(0, i.totalAmount - i.paidAmount), 0);
+
   return (
-    <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 sm:p-5">
-      <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--accent)]">Documents</p>
-      <h1 className="mt-1 text-lg font-semibold text-[var(--ink)]">Invoices</h1>
-      <p className="mt-1 text-sm text-[var(--ink-muted)]">Generate invoices and record partial payments.</p>
+    <section className="space-y-4">
+      <div className="panel-shadow overflow-hidden rounded-2xl border border-[var(--line)] bg-gradient-to-r from-sky-100 via-white to-orange-100 p-4 text-slate-950 sm:p-6 dark:from-slate-900 dark:via-slate-950 dark:to-slate-900 dark:text-[var(--ink)]">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h1 className="text-xl font-semibold">Invoices</h1>
+            <p className="mt-1 text-sm text-slate-700 dark:text-[var(--ink-muted)]">Generate invoices and record partial payments.</p>
+          </div>
+          <Link href="/documents/receipts" className="btn-premium rounded-full px-4 py-2 text-sm text-white">Receipts</Link>
+        </div>
+      </div>
+
+      <div className="grid gap-3 md:grid-cols-4">
+        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Total Invoices</p>
+          <p className="mt-2 text-2xl font-semibold text-[var(--ink)]">{totalCount}</p>
+          <p className="mt-1 text-xs text-[var(--ink-muted)]">This month: {thisMonthCount}</p>
+        </div>
+        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Outstanding</p>
+          <p className="mt-2 text-2xl font-semibold text-[var(--ink)]">{outstandingCount}</p>
+        </div>
+        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Outstanding Amount</p>
+          <p className="mt-2 text-2xl font-semibold text-[var(--ink)]">{formatMoney(totalOutstanding, org.baseCurrency)}</p>
+        </div>
+        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Ready Jobs</p>
+          <p className="mt-2 text-2xl font-semibold text-[var(--ink)]">{readyJobs.length}</p>
+        </div>
+      </div>
 
       {dbNeedsFix ? (
         <div className="mt-4 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
@@ -240,16 +273,35 @@ export default async function InvoicesPage() {
                   </td>
                   <td className="px-3 py-2">
                     <div className="flex flex-wrap items-center gap-2">
-                      {canGenerateInvoiceForStatus(inv.job.status) ? (
-                        <a
-                          href={`/api/jobs/${inv.job.id}/invoice`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="btn-premium-secondary inline-flex rounded-md px-2.5 py-1.5 text-xs"
-                        >
-                          PDF
-                        </a>
-                      ) : null}
+                      <details className="relative inline-block">
+                        <summary className="inline-flex h-9 w-9 cursor-pointer list-none items-center justify-center rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink)] transition hover:border-[var(--accent)]/40">
+                          <span className="sr-only">Actions</span>
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                            <circle cx="5" cy="12" r="1.8" />
+                            <circle cx="12" cy="12" r="1.8" />
+                            <circle cx="19" cy="12" r="1.8" />
+                          </svg>
+                        </summary>
+                        <div className="panel-shadow absolute right-0 z-20 mt-2 w-48 overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
+                          <div className="py-1">
+                            <Link href={`/jobs/${inv.job.id}`} className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm font-medium text-[var(--ink)] transition hover:bg-[var(--panel-strong)]">
+                              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
+                              View
+                            </Link>
+                            {canGenerateInvoiceForStatus(inv.job.status) ? (
+                              <a href={`/api/jobs/${inv.job.id}/invoice`} target="_blank" rel="noreferrer" className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm font-medium text-[var(--ink)] transition hover:bg-[var(--panel-strong)]">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+                                Download PDF
+                              </a>
+                            ) : (
+                              <span className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm font-medium text-[var(--ink-muted)]">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+                                Download PDF
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </details>
 
                       {balance > 0 ? (
                         <form action={addPaymentAction} className="flex items-center gap-1">
