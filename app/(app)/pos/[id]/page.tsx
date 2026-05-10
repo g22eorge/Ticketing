@@ -9,6 +9,7 @@ import { formatMoney, normalizeCurrency } from "@/lib/currency";
 import { prisma } from "@/lib/prisma";
 import { requireOrgSession } from "@/lib/org-context";
 import { can } from "@/lib/permissions";
+import { assertOrgCanMutate } from "@/lib/org-write";
 
 const METHODS = Object.values(PaymentMethod);
 
@@ -180,8 +181,10 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
 
   async function addItemAction(formData: FormData) {
     "use server";
-    const { user, orgId } = await requireOrgSession();
+    const { user, orgId, org } = await requireOrgSession();
     if (!(can.viewFinancials(user) || ["ADMIN", "OPS", "FRONT_DESK"].includes(user.role))) return;
+
+    assertOrgCanMutate({ access: org.access, userRole: user.role, kind: "GENERAL" });
 
     const saleId = String(formData.get("saleId") ?? "").trim();
     const partId = String(formData.get("partId") ?? "").trim() || null;
@@ -238,6 +241,7 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
     "use server";
     const { user, orgId, session, org } = await requireOrgSession();
     if (!(can.viewFinancials(user) || ["ADMIN", "OPS", "FRONT_DESK"].includes(user.role))) return;
+    assertOrgCanMutate({ access: org.access, userRole: user.role, kind: "PAYMENT" });
 
     const saleId = String(formData.get("saleId") ?? "").trim();
     const rawAmount = String(formData.get("amount") ?? "").trim();
@@ -299,6 +303,8 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
     "use server";
     const { user, orgId, org, session } = await requireOrgSession();
     if (!(can.viewFinancials(user) || ["ADMIN", "OPS"].includes(user.role))) return;
+    // Expired workspaces are read-only except for payment entry.
+    assertOrgCanMutate({ access: org.access, userRole: user.role, kind: "GENERAL" });
 
     const saleId = String(formData.get("saleId") ?? "").trim();
     if (!saleId) return;
@@ -389,8 +395,9 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
 
   async function markItemsReceivedBackAction(formData: FormData) {
     "use server";
-    const { user, orgId, session } = await requireOrgSession();
+    const { user, orgId, session, org } = await requireOrgSession();
     if (!(can.viewFinancials(user) || ["ADMIN", "OPS"].includes(user.role))) return;
+    assertOrgCanMutate({ access: org.access, userRole: user.role, kind: "GENERAL" });
 
     const saleId = String(formData.get("saleId") ?? "").trim();
     const creditNoteId = String(formData.get("creditNoteId") ?? "").trim();
@@ -440,6 +447,8 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
     "use server";
     const { user, orgId, org, session } = await requireOrgSession();
     if (!(can.viewFinancials(user) || ["ADMIN", "OPS"].includes(user.role))) return;
+    // Expired workspaces are read-only except for payment entry.
+    assertOrgCanMutate({ access: org.access, userRole: user.role, kind: "GENERAL" });
 
     const saleId = String(formData.get("saleId") ?? "").trim();
     const creditNoteId = String(formData.get("creditNoteId") ?? "").trim();

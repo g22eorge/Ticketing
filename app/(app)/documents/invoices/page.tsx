@@ -10,6 +10,7 @@ import { JobStatus } from "@/lib/job-status";
 import { can } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { requireOrgSession } from "@/lib/org-context";
+import { assertOrgCanMutate } from "@/lib/org-write";
 
 const PAYMENT_METHODS = Object.values(PaymentMethod);
 
@@ -25,6 +26,7 @@ export default async function InvoicesPage() {
     "use server";
     const { user, orgId, session, org } = await requireOrgSession();
     if (!("ADMIN" === user.role || "OPS" === user.role || can.approveInvoices(user))) return;
+    assertOrgCanMutate({ access: org.access, userRole: user.role, kind: "PAYMENT" });
 
     const invoiceId = String(formData.get("invoiceId") ?? "").trim();
     const rawAmount = String(formData.get("amount") ?? "").trim();

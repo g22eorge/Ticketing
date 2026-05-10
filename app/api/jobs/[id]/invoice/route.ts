@@ -113,7 +113,7 @@ export async function GET(
   context: { params: Promise<{ id: string }> },
 ) {
   const { id } = await context.params;
-  const { session, user, orgId } = await requireOrgSession();
+  const { session, user, orgId, org: orgCtx } = await requireOrgSession();
 
   if (!( ["ADMIN", "OPS"].includes(user.role) || can.approveInvoices(user) )) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -125,6 +125,8 @@ export async function GET(
       id: true,
       jobNumber: true,
       status: true,
+      invoiceNumber: true,
+      invoiceIssuedAt: true,
       repairPath: true,
       deviceType: true,
       brand: true,
@@ -196,58 +198,69 @@ export async function GET(
   const vatRate = Math.max(0, branding.vatRatePercent) / 100;
   const repairCost = vatApplicable && clientBill > 0 ? clientBill / (1 + vatRate) : clientBill;
   const vatAmount = vatApplicable ? Math.max(clientBill - repairCost, 0) : 0;
+  const suspended = orgCtx.access.isSuspended;
   const issuedAtDate = new Date();
   const dueDate = new Date(issuedAtDate);
   dueDate.setDate(dueDate.getDate() + branding.quoteValidityDays);
   const logoUrl = await resolveInvoiceLogo();
   const normalizedFooterText = branding.footerText.trim();
+  const issuedAtForNumber = job.invoiceIssuedAt ?? issuedAtDate;
   const quotationNumber = formatQuotationNumber(
     job.jobNumber,
-    issuedAtDate,
+    issuedAtForNumber,
     branding.quotePrefix,
     branding.quoteFormat,
     branding.sequencePadLength,
   );
-  const invoiceNumber = `INV-${quotationNumber.replace(/\s+/g, "-")}`;
+  const invoiceNumber = job.invoiceNumber?.trim() || `INV-${quotationNumber.replace(/\s+/g, "-")}`;
+
+  if (suspended && !job.invoiceNumber) {
+    return NextResponse.json(
+      { error: "Workspace is read-only. Generating new invoices is disabled until billing is restored." },
+      { status: 402 },
+    );
+  }
 
   const invoiceTotal = clientBill;
 
-  await prisma.job.update({
-    where: { id: job.id },
-    data: {
-      invoiceIssuedAt: issuedAtDate,
-      invoiceNumber,
-    },
-  });
+  if (!suspended) {
+    await prisma.job.update({
+      where: { id: job.id },
+      data: {
+        invoiceIssuedAt: issuedAtDate,
+        invoiceNumber,
+      },
+    });
 
-  // Create/update invoice record for partial payments.
-  await prisma.invoice.upsert({
-    where: { jobId: job.id },
-    update: {
-      invoiceNumber,
-      issuedAt: issuedAtDate,
-      totalAmount: invoiceTotal,
-      status: invoiceTotal <= 0 ? "PAID" : "ISSUED",
-    },
-    create: {
-      orgId,
-      jobId: job.id,
-      invoiceNumber,
-      issuedAt: issuedAtDate,
-      totalAmount: invoiceTotal,
-      status: invoiceTotal <= 0 ? "PAID" : "ISSUED",
-    },
-  });
+    // Create/update invoice record for partial payments.
+    await prisma.invoice.upsert({
+      where: { jobId: job.id },
+      update: {
+        invoiceNumber,
+        issuedAt: issuedAtDate,
+        totalAmount: invoiceTotal,
+        status: invoiceTotal <= 0 ? "PAID" : "ISSUED",
+      },
+      create: {
+        orgId,
+        jobId: job.id,
+        invoiceNumber,
+        issuedAt: issuedAtDate,
+        totalAmount: invoiceTotal,
+        status: invoiceTotal <= 0 ? "PAID" : "ISSUED",
+      },
+    });
 
-  await prisma.auditLog.create({
-    data: {
-      jobId: job.id,
-      userId: session.user.id,
-      action: "INVOICE_GENERATED",
-      detail: JSON.stringify({ invoiceNumber }),
-      orgId,
-    },
-  });
+    await prisma.auditLog.create({
+      data: {
+        jobId: job.id,
+        userId: session.user.id,
+        action: "INVOICE_GENERATED",
+        detail: JSON.stringify({ invoiceNumber }),
+        orgId,
+      },
+    });
+  }
 
   const invoiceElement = createElement(InvoiceDoc, {
     companyName: branding.companyName,

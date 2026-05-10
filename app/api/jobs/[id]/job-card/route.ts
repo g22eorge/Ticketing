@@ -94,7 +94,7 @@ export async function GET(
   context: { params: Promise<{ id: string }> },
 ) {
   const { id } = await context.params;
-  const { session, user, orgId } = await requireOrgSession();
+  const { session, user, orgId, org: orgCtx } = await requireOrgSession();
   const permissionUser = { role: user.role, permissions: user.permissions };
 
   if (!can.generateJobCards(permissionUser)) {
@@ -146,15 +146,18 @@ export async function GET(
     ? await QRCode.toDataURL(`${baseUrl}/status/${job.jobNumber}`, { width: 120, margin: 1 }).catch(() => undefined)
     : undefined;
 
-  await prisma.auditLog.create({
-    data: {
-      jobId: job.id,
-      userId: session.user.id,
-      action: "JOB_CARD_GENERATED",
-      detail: JSON.stringify({ documentNumber }),
-      orgId,
-    },
-  });
+  // Read-only mode: allow download without mutating state.
+  if (!orgCtx.access.isSuspended) {
+    await prisma.auditLog.create({
+      data: {
+        jobId: job.id,
+        userId: session.user.id,
+        action: "JOB_CARD_GENERATED",
+        detail: JSON.stringify({ documentNumber }),
+        orgId,
+      },
+    });
+  }
 
   const docElement = createElement(JobCardDoc, {
     companyName: branding.companyName,

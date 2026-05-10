@@ -96,7 +96,7 @@ export async function GET(
   context: { params: Promise<{ id: string }> },
 ) {
   const { id } = await context.params;
-  const { session, user, orgId } = await requireOrgSession();
+  const { session, user, orgId, org: orgCtx } = await requireOrgSession();
   const permissionUser = { role: user.role, permissions: user.permissions };
 
   if (
@@ -115,6 +115,7 @@ export async function GET(
       id: true,
       jobNumber: true,
       status: true,
+      quotedAt: true,
       repairPath: true,
       deviceType: true,
       brand: true,
@@ -147,6 +148,14 @@ export async function GET(
     return NextResponse.json({ error: "Quotation can only be generated after diagnosis starts." }, { status: 409 });
   }
 
+  const suspended = orgCtx.access.isSuspended;
+  if (suspended && !job.quotedAt) {
+    return NextResponse.json(
+      { error: "Workspace is read-only. Generating new quotations is disabled until billing is restored." },
+      { status: 402 },
+    );
+  }
+
   const org = await prisma.organization.findUnique({ where: { id: orgId }, select: { plan: true, baseCurrency: true } }).catch(() => null);
   const currency = normalizeCurrency(org?.baseCurrency, "UGX");
   const branding = await getDocumentBrandingSettings(orgId);
@@ -173,7 +182,7 @@ export async function GET(
     branding.sequencePadLength,
   );
 
-  if (!job.quotedAt) {
+  if (!suspended && !job.quotedAt) {
     await prisma.job.update({ where: { id: job.id, orgId }, data: { quotedAt: issuedAtDate } });
     await prisma.auditLog.create({
       data: {

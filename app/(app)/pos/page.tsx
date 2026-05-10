@@ -6,6 +6,7 @@ import { formatMoneyCompact, normalizeCurrency } from "@/lib/currency";
 import { prisma } from "@/lib/prisma";
 import { requireOrgSession } from "@/lib/org-context";
 import { can } from "@/lib/permissions";
+import { assertOrgCanMutate } from "@/lib/org-write";
 
 function monthKey(d: Date) {
   return `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}`;
@@ -44,6 +45,7 @@ export default async function PosPage() {
     "use server";
     const { user, orgId, session, org } = await requireOrgSession();
     if (!(can.viewFinancials(user) || ["ADMIN", "OPS", "FRONT_DESK"].includes(user.role))) return;
+    assertOrgCanMutate({ access: org.access, userRole: user.role, kind: "GENERAL" });
 
     const branchId = String(formData.get("branchId") ?? "").trim() || null;
     const saleNumber = await nextSaleNumber(orgId);

@@ -9,9 +9,9 @@ import { can } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { requireOrgSession } from "@/lib/org-context";
 import { filterSupportedJobStatuses } from "@/lib/job-status-server";
-import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { sendTrialExpiryWarning } from "@/lib/email";
+import Link from "next/link";
 
 // Module-level dedup: only send trial warning email once per server instance per org.
 const trialWarningSent = new Set<string>();
@@ -60,14 +60,7 @@ export default async function AppLayout({
   const isPastDue = org?.billingStatus === "PAST_DUE";
   const isSuspended = trialExpired || isPastDue;
 
-  if (isSuspended) {
-    const h = await headers();
-    const pathname = h.get("x-pathname") ?? h.get("next-url") ?? "";
-    const onBillingPage = pathname.includes("/settings/billing");
-    if (!onBillingPage) {
-      redirect("/settings/billing?suspended=1");
-    }
-  }
+  // Read-only mode: allow navigation + downloads. Mutations are blocked server-side.
 
   // ── Trial expiry warning email (fire-and-forget, once per server instance) ─
   if (org?.billingStatus === "TRIALING" && org.trialEndsAt) {
@@ -154,6 +147,20 @@ export default async function AppLayout({
         <main className="fade-in flex-1 overflow-x-hidden px-4 pb-[var(--mobile-shell-bottom)] pt-[var(--mobile-shell-top)] md:min-h-0 md:overflow-y-auto md:px-6 md:pb-8">
           <div className="mobile-page-shell mx-auto w-full max-w-lg md:max-w-[1240px] md:space-y-5 xl:max-w-[1360px]">
             <PageThemeHeader role={user.role} />
+            {isSuspended ? (
+              <div className="panel-shadow rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-100">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="font-semibold text-amber-50">Workspace is read-only until billing is restored.</p>
+                  <Link
+                    href="/settings/billing?suspended=1"
+                    className="inline-flex rounded-lg border border-amber-500/30 bg-black/20 px-3 py-1.5 text-xs font-semibold text-amber-50 hover:bg-black/30"
+                  >
+                    Open Billing
+                  </Link>
+                </div>
+                <p className="mt-1 text-xs text-amber-100/90">Admins can still record payments to recover revenue.</p>
+              </div>
+            ) : null}
             {children}
           </div>
         </main>
@@ -169,7 +176,7 @@ export default async function AppLayout({
           pendingRequests: pendingRequestsCount,
         }}
       />
-      <QuickActionFAB actions={buildFabActions(user)} />
+      <QuickActionFAB actions={isSuspended ? [] : buildFabActions(user)} />
     </div>
   );
 }

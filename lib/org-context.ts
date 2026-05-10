@@ -14,6 +14,7 @@
 import { redirect } from "next/navigation";
 
 import { getAppCurrency, normalizeCurrency, parseSupportedCurrencies } from "@/lib/currency";
+import { getOrgAccess } from "@/lib/billing-access";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserRole, getCurrentUserRoleOptional } from "@/lib/session";
 
@@ -32,11 +33,26 @@ export async function requireOrgSession() {
   const orgRow = await prisma.organization
     .findUnique({
       where: { id: orgId },
-      select: { baseCurrency: true, supportedCurrencies: true },
+      select: {
+        baseCurrency: true,
+        supportedCurrencies: true,
+        plan: true,
+        billingStatus: true,
+        trialEndsAt: true,
+        planRenewsAt: true,
+        planCancelledAt: true,
+      },
     })
     .catch(() => null);
   const baseCurrency = normalizeCurrency(orgRow?.baseCurrency, getAppCurrency());
   const supportedCurrencies = parseSupportedCurrencies(orgRow?.supportedCurrencies, baseCurrency);
+  const access = getOrgAccess(orgRow ? {
+    plan: orgRow.plan,
+    billingStatus: orgRow.billingStatus,
+    trialEndsAt: orgRow.trialEndsAt ?? null,
+    planRenewsAt: orgRow.planRenewsAt ?? null,
+    planCancelledAt: orgRow.planCancelledAt ?? null,
+  } : null);
 
   return {
     session,
@@ -45,6 +61,12 @@ export async function requireOrgSession() {
     org: {
       baseCurrency,
       supportedCurrencies,
+      plan: orgRow?.plan ?? "STARTER",
+      billingStatus: orgRow?.billingStatus ?? "TRIALING",
+      trialEndsAt: orgRow?.trialEndsAt ?? null,
+      planRenewsAt: orgRow?.planRenewsAt ?? null,
+      planCancelledAt: orgRow?.planCancelledAt ?? null,
+      access,
     },
   };
 }

@@ -12,6 +12,7 @@ import { prisma } from "@/lib/prisma";
 import { filterSupportedJobStatuses } from "@/lib/job-status-server";
 import { sanitizeOptionalText, sanitizeText } from "@/lib/sanitize";
 import { requireOrgSession } from "@/lib/org-context";
+import { assertOrgCanMutate } from "@/lib/org-write";
 import { getUploadsRoot } from "@/lib/storage";
 import { checkJobLimit } from "@/lib/plan-limits";
 import { rateLimit } from "@/lib/rate-limit";
@@ -110,7 +111,10 @@ export async function createJobAction(
   formData: FormData,
 ): Promise<{ error: string | null }> {
   try {
-    const { session, user, orgId } = await requireOrgSession();
+    const { session, user, orgId, org } = await requireOrgSession();
+
+    // Billing enforcement: suspended orgs are read-only.
+    assertOrgCanMutate({ access: org.access, userRole: user.role, kind: "GENERAL" });
 
     if (!can.createJob(user)) {
       return { error: "You cannot create jobs." };
