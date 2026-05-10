@@ -94,24 +94,28 @@ function fallbackKeyForKind(kind: DocKind) {
   return "receipt_classic";
 }
 
-// Return type is intentionally widened because different templates
-// may take different props shapes.
-export function InvoiceTemplateComponent(key: TemplateKey): ComponentType<object> {
+// Different templates have different prop types; the caller is responsible for
+// supplying a compatible props object.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function InvoiceTemplateComponent(key: TemplateKey): ComponentType<any> {
   if (key === "invoice_green") return InvoiceDocumentV2;
   if (key === "invoice_minimal") return InvoiceDocument;
   return InvoiceDocument;
 }
 
-export function QuotationTemplateComponent(key: TemplateKey): ComponentType<object> {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function QuotationTemplateComponent(key: TemplateKey): ComponentType<any> {
   if (key === "quote_minimal") return QuotationDocumentMinimal;
   return QuotationDocument;
 }
 
-export function JobCardTemplateComponent(_key: TemplateKey): ComponentType<object> {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function JobCardTemplateComponent(_key: TemplateKey): ComponentType<any> {
   if (_key === "job_card_minimal") return JobCardDocument;
   return JobCardDocument;
 }
 
-export function ReceiptTemplateComponent(_key: TemplateKey): ComponentType<object> {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function ReceiptTemplateComponent(_key: TemplateKey): ComponentType<any> {
   return SaleReceiptDocument;
 }
