@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
 
-import { markMessagesReadAction, sendManualReplyAction, sendQuotationViaWhatsAppAction, sendInvoiceViaWhatsAppAction, sendJobCardViaWhatsAppAction, updateJobAction, updateOneTimeExternalAssignmentAction } from "@/app/(app)/jobs/[id]/actions";
+import { markMessagesReadAction, sendManualReplyAction, sendQuotationViaWhatsAppAction, sendInvoiceViaWhatsAppAction, sendJobCardViaWhatsAppAction, updateJobAction, updateOneTimeExternalAssignmentAction, recordClientPaymentAction } from "@/app/(app)/jobs/[id]/actions";
 import { JobStatusBadge } from "@/components/jobs/JobStatusBadge";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { AuditTimeline } from "@/components/shared/AuditTimeline";
@@ -1467,6 +1467,61 @@ export function JobDetailTabs({ role, permissions = [], job, technicians, device
                 placeholder="Payment reference / receipt # (optional)"
                 className={fieldClass}
               />
+
+              <div className="rounded-lg border border-[var(--line)] bg-[var(--panel)] p-2">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Record payment</p>
+                <form
+                  action={(fd) => {
+                    fd.set("jobId", job.id);
+                    // Default reference to whatever is in the ref input (if any).
+                    const existingRef = String(fd.get("reference") ?? "").trim();
+                    if (!existingRef && job.clientPaymentRef) {
+                      fd.set("reference", job.clientPaymentRef);
+                    }
+                    startFinancialTransition(async () => {
+                      const res = await recordClientPaymentAction(fd);
+                      if (res.error) {
+                        toast.error(res.error);
+                        return;
+                      }
+                      toast.success("Payment recorded");
+                      router.refresh();
+                    });
+                  }}
+                  className="mt-2 grid gap-2 sm:grid-cols-[160px_200px_1fr_auto]"
+                >
+                  <input
+                    name="amount"
+                    inputMode="decimal"
+                    placeholder="Amount"
+                    className={fieldClass}
+                    required
+                  />
+                  <select name="method" defaultValue="CASH" className={fieldClass}>
+                    <option value="CASH">CASH</option>
+                    <option value="MOBILE_MONEY">MOBILE MONEY</option>
+                    <option value="CARD">CARD</option>
+                    <option value="BANK_TRANSFER">BANK TRANSFER</option>
+                    <option value="OTHER">OTHER</option>
+                  </select>
+                  <input
+                    name="reference"
+                    placeholder="Ref (optional)"
+                    className={fieldClass}
+                  />
+                  <button
+                    type="submit"
+                    disabled={isFinancialPending}
+                    className="btn-premium w-full rounded-lg px-3 py-1.5 text-[13px] disabled:opacity-60 sm:w-auto sm:py-2 sm:text-sm"
+                  >
+                    Add payment
+                  </button>
+                </form>
+                <p className="mt-2 text-xs text-[var(--ink-muted)]">
+                  Use this instead of “Mark Paid” so cash-in dashboards stay accurate.
+                </p>
+              </div>
+
               <div className="flex flex-wrap gap-2">
                 <button
                   type="submit"

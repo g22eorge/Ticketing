@@ -7,6 +7,7 @@ import {
   RecommendationOption,
   RepairPath,
   Role,
+  PaymentMethod,
 } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
@@ -27,6 +28,8 @@ import { uploadWhatsAppMedia, sendWhatsAppDocument } from "@/lib/notifications/w
 import { generateQuotationBuffer } from "@/lib/pdf/generate-quotation";
 import { generateInvoiceBuffer } from "@/lib/pdf/generate-invoice";
 import { generateJobCardBuffer } from "@/lib/pdf/generate-job-card";
+import { getDocumentBrandingSettings } from "@/lib/document-branding";
+import { formatQuotationNumber } from "@/lib/documents";
 
 const workflowReasonValues = [
   "NONE",
@@ -70,6 +73,13 @@ const updateSchema = z.object({
   nextStatus: z.nativeEnum(JobStatus).optional(),
   deliveryMethod: z.enum(["PICKUP", "DELIVERY", "COURIER"]).optional(),
   deliveredTo: z.string().optional(),
+});
+
+const recordClientPaymentSchema = z.object({
+  jobId: z.string().min(1),
+  amount: z.coerce.number().positive(),
+  method: z.string().optional(),
+  reference: z.string().optional(),
 });
 
 const oneTimeExternalSchema = z.object({
@@ -659,6 +669,130 @@ export async function updateJobAction(formData: FormData) {
   revalidatePath("/dashboard");
 
   return { success: true };
+}
+
+export async function recordClientPaymentAction(formData: FormData) {
+  const { session, user, orgId } = await requireOrgSession();
+  const permissionUser = { role: user.role, permissions: user.permissions };
+  if (!can.approveInvoices(permissionUser)) {
+    return { error: "Forbidden" };
+  }
+
+  const parsed = recordClientPaymentSchema.safeParse(Object.fromEntries(formData.entries()));
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Invalid payment" };
+  }
+
+  const payload = parsed.data;
+
+  const job = await prisma.job.findUnique({
+    where: { id: payload.jobId, orgId },
+    select: {
+      id: true,
+      jobNumber: true,
+      status: true,
+      clientBill: true,
+      invoiceNumber: true,
+      invoiceIssuedAt: true,
+    },
+  });
+  if (!job) return { error: "Job not found" };
+  const totalAmount = typeof job.clientBill === "number" ? job.clientBill : 0;
+  if (!Number.isFinite(totalAmount) || totalAmount <= 0) {
+    return { error: "Set client bill before recording payment" };
+  }
+
+  const rawMethod = String(payload.method ?? "CASH").trim();
+  const safeMethod: PaymentMethod = (Object.values(PaymentMethod) as string[]).includes(rawMethod)
+    ? (rawMethod as PaymentMethod)
+    : PaymentMethod.OTHER;
+  const reference = (payload.reference ?? "").trim();
+
+  // Ensure invoice exists (upsert by jobId). If no invoiceNumber stamped on job yet,
+  // generate one using org branding settings.
+  const issuedAt = job.invoiceIssuedAt ?? new Date();
+  const branding = await getDocumentBrandingSettings(orgId).catch(() => null);
+  const quotePrefix = branding?.quotePrefix ?? "EIS";
+  const quoteFormat = branding?.quoteFormat ?? "{PREFIX} {M}/{YYYY}/{SEQ}";
+  const padLength = branding?.sequencePadLength ?? 4;
+  const derivedQuotation = formatQuotationNumber(job.jobNumber, issuedAt, quotePrefix, quoteFormat, padLength);
+  const derivedInvoiceNumber = `INV-${derivedQuotation.replace(/\s+/g, "-")}`;
+  const invoiceNumber = job.invoiceNumber?.trim() || derivedInvoiceNumber;
+
+  try {
+    const result = await prisma.$transaction(async (tx) => {
+      const invoice = await tx.invoice.upsert({
+        where: { jobId: job.id },
+        create: {
+          orgId,
+          jobId: job.id,
+          invoiceNumber,
+          issuedAt,
+          totalAmount,
+          paidAmount: 0,
+          status: "ISSUED",
+        },
+        update: {
+          invoiceNumber,
+          issuedAt,
+          totalAmount,
+        },
+        select: { id: true, totalAmount: true },
+      });
+
+      await tx.payment.create({
+        data: {
+          orgId,
+          invoiceId: invoice.id,
+          saleId: null,
+          amount: payload.amount,
+          method: safeMethod,
+          reference: reference || null,
+          createdById: session.user.id,
+        },
+      });
+
+      const agg = await tx.payment.aggregate({
+        where: { orgId, invoiceId: invoice.id },
+        _sum: { amount: true },
+      });
+      const paidAmount = agg._sum.amount ?? 0;
+      const isPaid = invoice.totalAmount > 0 && paidAmount >= invoice.totalAmount;
+
+      await tx.invoice.update({
+        where: { id: invoice.id },
+        data: {
+          paidAmount,
+          paidAt: isPaid ? new Date() : null,
+          status: invoice.totalAmount <= 0 ? "PAID" : isPaid ? "PAID" : "ISSUED",
+        },
+      });
+
+      // Keep legacy job flags in sync for existing queues.
+      await tx.job.update({
+        where: { id: job.id },
+        data: {
+          clientPaid: isPaid,
+          clientPaidAt: isPaid ? new Date() : null,
+          clientPaidById: isPaid ? session.user.id : null,
+          clientPaymentRef: reference || null,
+          invoiceNumber,
+          invoiceIssuedAt: issuedAt,
+        },
+      });
+
+      return { paidAmount, isPaid, invoiceNumber };
+    });
+
+    revalidatePath(`/jobs/${job.id}`);
+    revalidatePath("/documents/invoices");
+    revalidatePath("/reports");
+    revalidatePath("/dashboard");
+    return { ok: true, ...result };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to record payment";
+    return { error: message };
+  }
 }
 
 export async function updateOneTimeExternalAssignmentAction(formData: FormData) {
