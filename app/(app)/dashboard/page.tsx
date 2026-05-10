@@ -6,7 +6,7 @@ import { MonthSelectForm } from "@/components/shared/MonthSelectForm";
 import { OnboardingChecklist, OnboardingComplete } from "@/components/shared/OnboardingChecklist";
 import { RevenueLineChart } from "@/components/reports/ReportsCharts";
 import { getClientBill, resolveTechCost } from "@/lib/billing";
-import { formatMoney, formatMoneyCompact, getAppCurrency } from "@/lib/currency";
+import { formatMoney, formatMoneyCompact, toBaseAmount } from "@/lib/currency";
 import { formatEATMonthLabel } from "@/lib/date-eat";
 import { UI_JOB_STATUSES, JobStatus, normalizeJobStatus } from "@/lib/job-status";
 import { filterSupportedJobStatuses } from "@/lib/job-status-server";
@@ -364,7 +364,7 @@ export default async function DashboardPage({
 }: {
   searchParams: Promise<SearchParams>;
 }) {
-  const { session, user, orgId } = await requireOrgSession();
+  const { session, user, orgId, org } = await requireOrgSession();
   const permissionUser = { role: user.role, permissions: user.permissions };
   const filters = await searchParams;
   const period: "month" | "year" = filters.period === "year" ? "year" : "month";
@@ -401,7 +401,7 @@ export default async function DashboardPage({
 
     const payouts = await getJobPayoutsByIds(jobs.map((job) => job.id)).catch(() => new Map());
 
-    const currency = getAppCurrency();
+    const currency = org.baseCurrency;
     const openCount = jobs.filter((job) => [
       "RECEIVED",
       "DIAGNOSING",
@@ -631,7 +631,7 @@ export default async function DashboardPage({
               <Link href="/jobs?pricing=priced" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-center col-span-2 sm:col-span-1">
                 <p className="text-[10px] uppercase tracking-[0.08em] text-[var(--ink-muted)]">Margin</p>
                 <p className={`mt-1 text-sm font-semibold ${marginTotal >= 0 ? "text-[var(--accent)]" : "text-black"}`}>
-                  {marginTotal >= 0 ? "+" : ""}{formatMoneyCompact(marginTotal, getAppCurrency())}
+                  {marginTotal >= 0 ? "+" : ""}{formatMoneyCompact(marginTotal, org.baseCurrency)}
                 </p>
               </Link>
             </div>
@@ -709,7 +709,7 @@ export default async function DashboardPage({
   }
 
   if (user.role === "ADMIN") {
-    const currency = getAppCurrency();
+    const currency = org.baseCurrency;
     const today = new Date();
     const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0, 0);
     const threeDaysAgo = new Date(today.getTime() - 3 * 24 * 60 * 60 * 1000);
@@ -720,8 +720,7 @@ export default async function DashboardPage({
       completedMtd,
       externalCompleted,
       clientUnpaidCount,
-      cashInMtdAgg,
-      posCashInMtdAgg,
+      paymentsMtd,
       earliestJob,
       receivedToday,
       completedToday,
@@ -747,14 +746,10 @@ export default async function DashboardPage({
       prisma.job.count({
         where: { orgId, clientBill: { gt: 0 }, clientPaid: false, status: { in: ["READY_FOR_PICKUP", "COMPLETED", "DELIVERED"] } },
       }).catch(() => 0),
-      prisma.payment.aggregate({
+      prisma.payment.findMany({
         where: { orgId, receivedAt: { gte: mtdStart, lte: today } },
-        _sum: { amount: true },
-      }).catch(() => ({ _sum: { amount: 0 } })),
-      prisma.payment.aggregate({
-        where: { orgId, receivedAt: { gte: mtdStart, lte: today }, saleId: { not: null } },
-        _sum: { amount: true },
-      }).catch(() => ({ _sum: { amount: 0 } })),
+        select: { amount: true, currency: true, exchangeRateToBase: true, saleId: true, invoiceId: true },
+      }).catch(() => []),
       prisma.job.findFirst({ where: { orgId }, orderBy: { receivedAt: "asc" }, select: { receivedAt: true } }).catch(() => null),
       prisma.job.count({ where: { orgId, receivedAt: { gte: todayStart } } }),
       prisma.job.count({ where: { orgId, completedAt: { gte: todayStart } } }),
@@ -809,8 +804,16 @@ export default async function DashboardPage({
       .filter((job) => getClientBill(job) !== null)
       .reduce((sum, job) => sum + (getClientBill(job) ?? 0), 0);
 
-    const cashInMtd = cashInMtdAgg._sum.amount ?? 0;
-    const posCashInMtd = posCashInMtdAgg._sum.amount ?? 0;
+    const cashInMtd = paymentsMtd.reduce(
+      (sum, p) => sum + toBaseAmount({ amount: p.amount, currency: p.currency, baseCurrency: org.baseCurrency, exchangeRateToBase: p.exchangeRateToBase }),
+      0,
+    );
+    const posCashInMtd = paymentsMtd
+      .filter((p) => p.saleId)
+      .reduce(
+        (sum, p) => sum + toBaseAmount({ amount: p.amount, currency: p.currency, baseCurrency: org.baseCurrency, exchangeRateToBase: p.exchangeRateToBase }),
+        0,
+      );
 
     const statusCount = new Map<string, number>();
     for (const item of statusGroup) {
@@ -1118,7 +1121,7 @@ export default async function DashboardPage({
   }
 
   if (user.role === "OPS") {
-    const currency = getAppCurrency();
+    const currency = org.baseCurrency;
     const selectedMonth = parseMonth(filters.month);
     const selectedYear = Number(filters.year) || new Date().getFullYear();
     const selectedRange = period === "year" ? yearRange(selectedYear) : monthRange(selectedMonth.year, selectedMonth.month);
@@ -1131,7 +1134,7 @@ export default async function DashboardPage({
 
     const trendMonths = trendMonthsForYear(selectedRange.start.getFullYear(), period === "year" ? 12 : selectedMonth.month);
 
-    const [completedThisMonth, pendingBilling, externalCompleted, cashInAgg, repairCashInAgg, posCashInAgg, invoiceAgg, saleAgg] = await Promise.all([
+    const [completedThisMonth, pendingBilling, externalCompleted, paymentsSelected, invoiceAgg, saleAgg] = await Promise.all([
       prisma.job.findMany({
         where: { orgId, status: "COMPLETED", completedAt: { gte: selectedRange.start, lte: selectedRange.end } },
         select: { id: true, jobNumber: true, completedAt: true, clientBill: true },
@@ -1151,18 +1154,10 @@ export default async function DashboardPage({
         },
         select: { id: true, externalTechBill: true },
       }),
-      prisma.payment.aggregate({
+      prisma.payment.findMany({
         where: { orgId, receivedAt: { gte: selectedRange.start, lte: selectedRange.end } },
-        _sum: { amount: true },
-      }).catch(() => ({ _sum: { amount: 0 } })),
-      prisma.payment.aggregate({
-        where: { orgId, receivedAt: { gte: selectedRange.start, lte: selectedRange.end }, invoiceId: { not: null } },
-        _sum: { amount: true },
-      }).catch(() => ({ _sum: { amount: 0 } })),
-      prisma.payment.aggregate({
-        where: { orgId, receivedAt: { gte: selectedRange.start, lte: selectedRange.end }, saleId: { not: null } },
-        _sum: { amount: true },
-      }).catch(() => ({ _sum: { amount: 0 } })),
+        select: { amount: true, currency: true, exchangeRateToBase: true, saleId: true, invoiceId: true },
+      }).catch(() => []),
       prisma.invoice.aggregate({
         where: { orgId, issuedAt: { gte: selectedRange.start, lte: selectedRange.end } },
         _sum: { totalAmount: true, paidAmount: true },
@@ -1173,9 +1168,22 @@ export default async function DashboardPage({
       }).catch(() => ({ _sum: { totalAmount: 0, paidAmount: 0 } })),
     ]);
 
-    const cashIn = cashInAgg._sum.amount ?? 0;
-    const repairCashIn = repairCashInAgg._sum.amount ?? 0;
-    const posCashIn = posCashInAgg._sum.amount ?? 0;
+    const cashIn = paymentsSelected.reduce(
+      (sum, p) => sum + toBaseAmount({ amount: p.amount, currency: p.currency, baseCurrency: org.baseCurrency, exchangeRateToBase: p.exchangeRateToBase }),
+      0,
+    );
+    const repairCashIn = paymentsSelected
+      .filter((p) => p.invoiceId)
+      .reduce(
+        (sum, p) => sum + toBaseAmount({ amount: p.amount, currency: p.currency, baseCurrency: org.baseCurrency, exchangeRateToBase: p.exchangeRateToBase }),
+        0,
+      );
+    const posCashIn = paymentsSelected
+      .filter((p) => p.saleId)
+      .reduce(
+        (sum, p) => sum + toBaseAmount({ amount: p.amount, currency: p.currency, baseCurrency: org.baseCurrency, exchangeRateToBase: p.exchangeRateToBase }),
+        0,
+      );
     const invoiceIssued = invoiceAgg._sum.totalAmount ?? 0;
     const invoiceIssuedPaid = invoiceAgg._sum.paidAmount ?? 0;
     const invoiceIssuedBalance = Math.max(0, invoiceIssued - invoiceIssuedPaid);

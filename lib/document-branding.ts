@@ -29,6 +29,12 @@ export const defaultBranding = {
   backgroundColor: "#FFFFFF",
   surfaceColor: "#F5F5F5",
   borderColor: "#E5E5E5",
+
+  // Template selections
+  invoiceTemplateKey: "invoice_classic",
+  quotationTemplateKey: "quote_classic",
+  jobCardTemplateKey: "job_card_classic",
+  receiptTemplateKey: "receipt_classic",
 };
 
 type BrandingSettings = typeof defaultBranding;
@@ -67,6 +73,11 @@ function coerceRow(row: Record<string, unknown>): BrandingSettings {
     backgroundColor: String(row.backgroundColor ?? defaultBranding.backgroundColor),
     surfaceColor: String(row.surfaceColor ?? defaultBranding.surfaceColor),
     borderColor: String(row.borderColor ?? defaultBranding.borderColor),
+
+    invoiceTemplateKey: String(row.invoiceTemplateKey ?? defaultBranding.invoiceTemplateKey),
+    quotationTemplateKey: String(row.quotationTemplateKey ?? defaultBranding.quotationTemplateKey),
+    jobCardTemplateKey: String(row.jobCardTemplateKey ?? defaultBranding.jobCardTemplateKey),
+    receiptTemplateKey: String(row.receiptTemplateKey ?? defaultBranding.receiptTemplateKey),
   };
 }
 
@@ -95,9 +106,29 @@ async function ensureRawTable() {
       footerText TEXT NOT NULL,
       signatureCompanyLabel TEXT NOT NULL,
       signatureClientLabel TEXT NOT NULL,
+      invoiceTemplateKey TEXT NOT NULL DEFAULT 'invoice_classic',
+      quotationTemplateKey TEXT NOT NULL DEFAULT 'quote_classic',
+      jobCardTemplateKey TEXT NOT NULL DEFAULT 'job_card_classic',
+      receiptTemplateKey TEXT NOT NULL DEFAULT 'receipt_classic',
       updatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
     )
   `);
+
+  // Older installs may have the table without the newer template columns.
+  // Keep this local to branding to avoid hard dependency on /api/admin/db-fix.
+  const cols = await prisma.$queryRaw<Array<{ name: string }>>`
+    PRAGMA table_info('DocumentBrandingSettings')
+  `.catch(() => []);
+  const colSet = new Set(cols.map((c) => c.name));
+  const addColumn = async (name: string, sqlType: string, dflt: string) => {
+    if (colSet.has(name)) return;
+    await prisma.$executeRawUnsafe(`ALTER TABLE "DocumentBrandingSettings" ADD COLUMN "${name}" ${sqlType} DEFAULT ${dflt}`);
+    colSet.add(name);
+  };
+  await addColumn("invoiceTemplateKey", "TEXT", "'invoice_classic'");
+  await addColumn("quotationTemplateKey", "TEXT", "'quote_classic'");
+  await addColumn("jobCardTemplateKey", "TEXT", "'job_card_classic'");
+  await addColumn("receiptTemplateKey", "TEXT", "'receipt_classic'");
 
   rawTableEnsured = true;
 }
@@ -117,7 +148,9 @@ async function getViaRaw() {
           companyContacts, companyEmail, companyWebsite, documentTitle,
           quotePrefix, quoteFormat, quoteValidityDays, sequencePadLength,
           vatDefaultApplicable, vatRatePercent, vatLabel, termsText,
-          footerText, signatureCompanyLabel, signatureClientLabel, updatedAt
+          footerText, signatureCompanyLabel, signatureClientLabel,
+          invoiceTemplateKey, quotationTemplateKey, jobCardTemplateKey, receiptTemplateKey,
+          updatedAt
         ) VALUES (
           ${defaultBranding.id}, ${defaultBranding.companyName}, ${defaultBranding.companyTagline},
           ${defaultBranding.companyAddressLine1}, ${defaultBranding.companyAddressLine2},
@@ -126,7 +159,9 @@ async function getViaRaw() {
           ${defaultBranding.quoteValidityDays}, ${defaultBranding.sequencePadLength},
           ${defaultBranding.vatDefaultApplicable}, ${defaultBranding.vatRatePercent}, ${defaultBranding.vatLabel},
           ${defaultBranding.termsText}, ${defaultBranding.footerText},
-          ${defaultBranding.signatureCompanyLabel}, ${defaultBranding.signatureClientLabel}, CURRENT_TIMESTAMP
+          ${defaultBranding.signatureCompanyLabel}, ${defaultBranding.signatureClientLabel},
+          ${defaultBranding.invoiceTemplateKey}, ${defaultBranding.quotationTemplateKey}, ${defaultBranding.jobCardTemplateKey}, ${defaultBranding.receiptTemplateKey},
+          CURRENT_TIMESTAMP
         )
       `;
       return defaultBranding;
@@ -166,7 +201,9 @@ export async function saveDocumentBrandingSettings(orgId: string, data: Branding
       companyContacts, companyEmail, companyWebsite, documentTitle,
       quotePrefix, quoteFormat, quoteValidityDays, sequencePadLength,
       vatDefaultApplicable, vatRatePercent, vatLabel, termsText,
-      footerText, signatureCompanyLabel, signatureClientLabel, updatedAt
+      footerText, signatureCompanyLabel, signatureClientLabel,
+      invoiceTemplateKey, quotationTemplateKey, jobCardTemplateKey, receiptTemplateKey,
+      updatedAt
     ) VALUES (
       ${data.id}, ${data.companyName}, ${data.companyTagline},
       ${data.companyAddressLine1}, ${data.companyAddressLine2},
@@ -175,7 +212,9 @@ export async function saveDocumentBrandingSettings(orgId: string, data: Branding
       ${data.quoteValidityDays}, ${data.sequencePadLength},
       ${data.vatDefaultApplicable}, ${data.vatRatePercent}, ${data.vatLabel},
       ${data.termsText}, ${data.footerText}, ${data.signatureCompanyLabel},
-      ${data.signatureClientLabel}, CURRENT_TIMESTAMP
+      ${data.signatureClientLabel},
+      ${data.invoiceTemplateKey}, ${data.quotationTemplateKey}, ${data.jobCardTemplateKey}, ${data.receiptTemplateKey},
+      CURRENT_TIMESTAMP
     )
     ON CONFLICT(id) DO UPDATE SET
       companyName = excluded.companyName,
@@ -197,6 +236,10 @@ export async function saveDocumentBrandingSettings(orgId: string, data: Branding
       footerText = excluded.footerText,
       signatureCompanyLabel = excluded.signatureCompanyLabel,
       signatureClientLabel = excluded.signatureClientLabel,
+      invoiceTemplateKey = excluded.invoiceTemplateKey,
+      quotationTemplateKey = excluded.quotationTemplateKey,
+      jobCardTemplateKey = excluded.jobCardTemplateKey,
+      receiptTemplateKey = excluded.receiptTemplateKey,
       updatedAt = CURRENT_TIMESTAMP
   `;
 }

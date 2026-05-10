@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { PaymentMethod } from "@prisma/client";
 import { Prisma } from "@prisma/client";
 
-import { formatMoney } from "@/lib/currency";
+import { formatMoney, normalizeCurrency } from "@/lib/currency";
 import { prisma } from "@/lib/prisma";
 import { requireOrgSession } from "@/lib/org-context";
 import { can } from "@/lib/permissions";
@@ -13,7 +13,7 @@ import { can } from "@/lib/permissions";
 const METHODS = Object.values(PaymentMethod);
 
 export default async function SalePage({ params }: { params: Promise<{ id: string }> }) {
-  const { user, orgId } = await requireOrgSession();
+  const { user, orgId, org } = await requireOrgSession();
   if (!(can.viewFinancials(user) || ["ADMIN", "OPS", "FRONT_DESK"].includes(user.role))) {
     redirect("/dashboard");
   }
@@ -25,6 +25,7 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
     id: string;
     saleNumber: string;
     status: string;
+    currency: string | null;
     subtotal: number;
     discountAmount: number;
     vatAmount: number;
@@ -36,7 +37,7 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
     branch: { name: string } | null;
     client: { fullName: string } | null;
     items: Array<{ id: string; description: string; quantity: number; unitPrice: number; lineTotal: number }>;
-    payments: Array<{ id: string; amount: number; method: PaymentMethod; reference: string | null; receivedAt: Date }>;
+    payments: Array<{ id: string; amount: number; method: PaymentMethod; reference: string | null; receivedAt: Date; currency: string | null }>;
   } | null = null;
 
   try {
@@ -46,6 +47,7 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
         id: true,
         saleNumber: true,
         status: true,
+        currency: true,
         subtotal: true,
         discountAmount: true,
         vatAmount: true,
@@ -57,7 +59,7 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
         branch: { select: { name: true } },
         client: { select: { fullName: true } },
         items: { select: { id: true, description: true, quantity: true, unitPrice: true, lineTotal: true }, orderBy: { createdAt: "asc" } },
-        payments: { select: { id: true, amount: true, method: true, reference: true, receivedAt: true }, orderBy: { receivedAt: "desc" } },
+        payments: { select: { id: true, amount: true, method: true, reference: true, receivedAt: true, currency: true }, orderBy: { receivedAt: "desc" } },
       },
     });
   } catch (err) {
@@ -76,6 +78,8 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
     select: { vatRatePercent: true },
   }).catch(() => null);
   const vatRate = Math.max(0, orgBranding?.vatRatePercent ?? 18) / 100;
+
+  const saleCurrency = normalizeCurrency(sale.currency, org.baseCurrency);
 
   const parts = await prisma.part.findMany({
     where: { orgId, isActive: true },
@@ -169,7 +173,7 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
 
   async function addPaymentAction(formData: FormData) {
     "use server";
-    const { user, orgId, session } = await requireOrgSession();
+    const { user, orgId, session, org } = await requireOrgSession();
     if (!(can.viewFinancials(user) || ["ADMIN", "OPS", "FRONT_DESK"].includes(user.role))) return;
 
     const saleId = String(formData.get("saleId") ?? "").trim();
@@ -181,8 +185,15 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
     const amount = Number(rawAmount);
     if (!Number.isFinite(amount) || amount <= 0) return;
 
-    const existingSale = await prisma.sale.findFirst({ where: { id: saleId, orgId }, select: { id: true, totalAmount: true, status: true } });
+    const existingSale = await prisma.sale.findFirst({ where: { id: saleId, orgId }, select: { id: true, totalAmount: true, status: true, currency: true } });
     if (!existingSale || existingSale.status === "VOID") return;
+
+    const saleCurrency = normalizeCurrency(existingSale.currency, org.baseCurrency);
+    if (saleCurrency !== org.baseCurrency) {
+      // POS currently assumes sale totals and payments are in org base currency.
+      // When enabling non-base POS currencies, collect FX rate at payment time.
+      return;
+    }
 
     const safeMethod: PaymentMethod = METHODS.includes(method as PaymentMethod)
       ? (method as PaymentMethod)
@@ -194,6 +205,8 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
           orgId,
           saleId,
           invoiceId: null,
+          currency: saleCurrency,
+          exchangeRateToBase: null,
           amount,
           method: safeMethod,
           reference: reference || null,
@@ -238,22 +251,22 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
         <div className="mt-4 grid gap-2 sm:grid-cols-3">
           <div className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] p-3">
             <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Total</p>
-            <p className="mt-1 text-lg font-bold text-[var(--ink)]">{formatMoney(sale.totalAmount)}</p>
+            <p className="mt-1 text-lg font-bold text-[var(--ink)]">{formatMoney(sale.totalAmount, saleCurrency)}</p>
           </div>
           <div className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] p-3">
             <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Paid</p>
-            <p className="mt-1 text-lg font-bold text-emerald-700">{formatMoney(sale.paidAmount)}</p>
+            <p className="mt-1 text-lg font-bold text-emerald-700">{formatMoney(sale.paidAmount, saleCurrency)}</p>
           </div>
           <div className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] p-3">
             <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Balance</p>
-            <p className="mt-1 text-lg font-bold text-amber-700">{formatMoney(balance)}</p>
+            <p className="mt-1 text-lg font-bold text-amber-700">{formatMoney(balance, saleCurrency)}</p>
           </div>
         </div>
 
         <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-[var(--ink-muted)]">
-          <span>Subtotal: {formatMoney(sale.subtotal)}</span>
-          <span>Discount: {sale.discountAmount > 0 ? `-${formatMoney(sale.discountAmount)}` : formatMoney(0)}</span>
-          <span>VAT: {formatMoney(sale.vatAmount)}</span>
+          <span>Subtotal: {formatMoney(sale.subtotal, saleCurrency)}</span>
+          <span>Discount: {sale.discountAmount > 0 ? `-${formatMoney(sale.discountAmount, saleCurrency)}` : formatMoney(0, saleCurrency)}</span>
+          <span>VAT: {formatMoney(sale.vatAmount, saleCurrency)}</span>
         </div>
 
         <div className="mt-3 flex flex-wrap gap-2">
@@ -368,8 +381,8 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
                 <tr key={it.id} className="border-t border-[var(--line)]">
                   <td className="px-3 py-2">{it.description}</td>
                   <td className="px-3 py-2">{it.quantity}</td>
-                  <td className="px-3 py-2">{formatMoney(it.unitPrice)}</td>
-                  <td className="px-3 py-2">{formatMoney(it.lineTotal)}</td>
+                  <td className="px-3 py-2">{formatMoney(it.unitPrice, saleCurrency)}</td>
+                  <td className="px-3 py-2">{formatMoney(it.lineTotal, saleCurrency)}</td>
                 </tr>
               ))}
               {sale.items.length === 0 ? (
@@ -429,7 +442,7 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
                   <td className="px-3 py-2 text-[var(--ink-muted)]">{p.receivedAt.toLocaleString()}</td>
                   <td className="px-3 py-2">{p.method.replaceAll("_", " ")}</td>
                   <td className="px-3 py-2 text-[var(--ink-muted)]">{p.reference ?? "-"}</td>
-                  <td className="px-3 py-2 font-semibold">{formatMoney(p.amount)}</td>
+                  <td className="px-3 py-2 font-semibold">{formatMoney(p.amount, normalizeCurrency(p.currency, saleCurrency))}</td>
                 </tr>
               ))}
               {sale.payments.length === 0 ? (

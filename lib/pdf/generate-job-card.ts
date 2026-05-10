@@ -4,7 +4,7 @@ import { renderToBuffer } from "@react-pdf/renderer";
 import { formatEATDocDate } from "@/lib/date-eat";
 import { getDocumentBrandingSettings } from "@/lib/document-branding";
 import { compactText, compactListText, prettyEnum, resolvePdfLogo } from "@/lib/pdf/pdf-utils";
-import { JobCardDocument } from "@/lib/pdf/JobCardDocument";
+import { JobCardTemplateComponent, resolveTemplateKey } from "@/lib/pdf/templates";
 import { prisma } from "@/lib/prisma";
 
 export type GenerateJobCardResult =
@@ -21,6 +21,7 @@ export async function generateJobCardBuffer(
     where: { id: jobId },
     select: {
       id: true, jobNumber: true, status: true,
+      orgId: true,
       deviceType: true, brand: true, model: true, serialOrImei: true,
       accessories: true, physicalNotes: true, issueDescription: true,
       diagnosisNotes: true, externalDiagnosis: true,
@@ -33,7 +34,15 @@ export async function generateJobCardBuffer(
 
   if (!job) return { ok: false, error: "Job not found" };
 
-  const branding = await getDocumentBrandingSettings();
+  const orgId = job.orgId ?? undefined;
+  const org = orgId ? await prisma.organization.findUnique({ where: { id: orgId }, select: { plan: true } }).catch(() => null) : null;
+  const branding = await getDocumentBrandingSettings(orgId);
+  const templateKey = resolveTemplateKey({
+    kind: "JOB_CARD",
+    requestedKey: (branding as unknown as { jobCardTemplateKey?: string | null }).jobCardTemplateKey,
+    plan: org?.plan ?? "STARTER",
+  });
+  const JobCardDoc = JobCardTemplateComponent(templateKey);
   const logoUrl = await resolvePdfLogo();
   const documentNumber = `JC-${job.jobNumber}`;
 
@@ -47,7 +56,7 @@ export async function generateJobCardBuffer(
     }).catch(() => null);
   }
 
-  const docElement = createElement(JobCardDocument, {
+  const docElement = createElement(JobCardDoc, {
     companyName: branding.companyName,
     companyTagline: branding.companyTagline ?? "",
     companyAddressLine1: branding.companyAddressLine1,

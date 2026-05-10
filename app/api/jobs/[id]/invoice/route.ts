@@ -5,11 +5,11 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 
 import { getClientBill } from "@/lib/billing";
-import { formatMoney, getAppCurrency } from "@/lib/currency";
+import { formatMoney, normalizeCurrency } from "@/lib/currency";
 import { getDocumentBrandingSettings } from "@/lib/document-branding";
 import { canGenerateInvoiceForStatus, formatQuotationNumber } from "@/lib/documents";
 import { can } from "@/lib/permissions";
-import { InvoiceDocumentV2 } from "@/lib/pdf/InvoiceDocumentV2";
+import { InvoiceTemplateComponent, resolveTemplateKey } from "@/lib/pdf/templates";
 import { prisma } from "@/lib/prisma";
 import { requireOrgSession } from "@/lib/org-context";
 
@@ -182,8 +182,15 @@ export async function GET(
     );
   }
 
-  const currency = getAppCurrency();
-  const branding = await getDocumentBrandingSettings();
+  const org = await prisma.organization.findUnique({ where: { id: orgId }, select: { plan: true, baseCurrency: true } }).catch(() => null);
+  const currency = normalizeCurrency(org?.baseCurrency, "UGX");
+  const branding = await getDocumentBrandingSettings(orgId);
+  const templateKey = resolveTemplateKey({
+    kind: "INVOICE",
+    requestedKey: (branding as unknown as { invoiceTemplateKey?: string | null }).invoiceTemplateKey,
+    plan: org?.plan ?? "STARTER",
+  });
+  const InvoiceDoc = InvoiceTemplateComponent(templateKey);
   const clientBill = getClientBill(job) ?? 0;
   const vatApplicable = (job as { vatApplicable?: boolean }).vatApplicable ?? true;
   const vatRate = Math.max(0, branding.vatRatePercent) / 100;
@@ -242,7 +249,7 @@ export async function GET(
     },
   });
 
-  const invoiceElement = createElement(InvoiceDocumentV2, {
+  const invoiceElement = createElement(InvoiceDoc, {
     companyName: branding.companyName,
     companyTagline: branding.companyTagline ?? "",
     companyAddressLine1: branding.companyAddressLine1,

@@ -5,11 +5,11 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 
 import { getClientBill } from "@/lib/billing";
-import { formatMoney, getAppCurrency } from "@/lib/currency";
+import { formatMoney, normalizeCurrency } from "@/lib/currency";
 import { getDocumentBrandingSettings } from "@/lib/document-branding";
 import { canGenerateQuotationForStatus, formatQuotationNumber } from "@/lib/documents";
 import { can } from "@/lib/permissions";
-import { QuotationDocument } from "@/lib/pdf/QuotationDocument";
+import { QuotationTemplateComponent, resolveTemplateKey } from "@/lib/pdf/templates";
 import { prisma } from "@/lib/prisma";
 import { requireOrgSession } from "@/lib/org-context";
 
@@ -147,8 +147,15 @@ export async function GET(
     return NextResponse.json({ error: "Quotation can only be generated after diagnosis starts." }, { status: 409 });
   }
 
-  const currency = getAppCurrency();
-  const branding = await getDocumentBrandingSettings();
+  const org = await prisma.organization.findUnique({ where: { id: orgId }, select: { plan: true, baseCurrency: true } }).catch(() => null);
+  const currency = normalizeCurrency(org?.baseCurrency, "UGX");
+  const branding = await getDocumentBrandingSettings(orgId);
+  const templateKey = resolveTemplateKey({
+    kind: "QUOTATION",
+    requestedKey: (branding as unknown as { quotationTemplateKey?: string | null }).quotationTemplateKey,
+    plan: org?.plan ?? "STARTER",
+  });
+  const QuoteDoc = QuotationTemplateComponent(templateKey);
   const bill = getClientBill(job) ?? 0;
   const vatApplicable = (job as { vatApplicable?: boolean }).vatApplicable ?? true;
   const vatRate = Math.max(0, branding.vatRatePercent) / 100;
@@ -179,7 +186,7 @@ export async function GET(
     });
   }
 
-  const docElement = createElement(QuotationDocument, {
+  const docElement = createElement(QuoteDoc, {
     companyName: branding.companyName,
     companyTagline: branding.companyTagline ?? "",
     companyAddressLine1: branding.companyAddressLine1,

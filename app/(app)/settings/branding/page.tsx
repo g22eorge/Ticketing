@@ -9,6 +9,8 @@ import { defaultBranding, getDocumentBrandingSettings, saveDocumentBrandingSetti
 import { sanitizeOptionalText, sanitizeText } from "@/lib/sanitize";
 import { requireOrgSession } from "@/lib/org-context";
 import { can } from "@/lib/permissions";
+import { planLabel, resolveTemplateKey, splitTemplatesByPlan } from "@/lib/pdf/templates";
+import { prisma } from "@/lib/prisma";
 
 type SearchParams = {
   saved?: string;
@@ -49,6 +51,23 @@ const brandingSchema = z.object({
   backgroundColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/).default("#FFFFFF"),
   surfaceColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/).default("#F5F5F5"),
   borderColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/).default("#E5E5E5"),
+
+  invoiceTemplateKey: z.preprocess((v) => {
+    const text = String(v ?? "").trim();
+    return text ? text : undefined;
+  }, z.string().min(1).optional()),
+  quotationTemplateKey: z.preprocess((v) => {
+    const text = String(v ?? "").trim();
+    return text ? text : undefined;
+  }, z.string().min(1).optional()),
+  jobCardTemplateKey: z.preprocess((v) => {
+    const text = String(v ?? "").trim();
+    return text ? text : undefined;
+  }, z.string().min(1).optional()),
+  receiptTemplateKey: z.preprocess((v) => {
+    const text = String(v ?? "").trim();
+    return text ? text : undefined;
+  }, z.string().min(1).optional()),
 });
 
 function normalizeOptionalEmail(value: FormDataEntryValue | null) {
@@ -108,7 +127,19 @@ export default async function BrandingPage({
 
   const params = await searchParams;
   const preview = await resolveLogoPreview();
+  const org = await prisma.organization.findUnique({ where: { id: orgId }, select: { plan: true } }).catch(() => null);
+  const plan = org?.plan ?? "STARTER";
   const settings = await getDocumentBrandingSettings(orgId);
+
+  const invoiceTemplates = splitTemplatesByPlan("INVOICE", plan);
+  const quotationTemplates = splitTemplatesByPlan("QUOTATION", plan);
+  const jobCardTemplates = splitTemplatesByPlan("JOB_CARD", plan);
+  const receiptTemplates = splitTemplatesByPlan("RECEIPT", plan);
+
+  const selectedInvoiceKey = resolveTemplateKey({ kind: "INVOICE", requestedKey: (settings as unknown as { invoiceTemplateKey?: string | null }).invoiceTemplateKey, plan });
+  const selectedQuoteKey = resolveTemplateKey({ kind: "QUOTATION", requestedKey: (settings as unknown as { quotationTemplateKey?: string | null }).quotationTemplateKey, plan });
+  const selectedJobCardKey = resolveTemplateKey({ kind: "JOB_CARD", requestedKey: (settings as unknown as { jobCardTemplateKey?: string | null }).jobCardTemplateKey, plan });
+  const selectedReceiptKey = resolveTemplateKey({ kind: "RECEIPT", requestedKey: (settings as unknown as { receiptTemplateKey?: string | null }).receiptTemplateKey, plan });
   const quotePreview = renderQuotePreview(
     settings.quotePrefix,
     settings.quoteFormat,
@@ -191,6 +222,11 @@ export default async function BrandingPage({
       backgroundColor: String(formData.get("backgroundColor") ?? "#FFFFFF"),
       surfaceColor: String(formData.get("surfaceColor") ?? "#F5F5F5"),
       borderColor: String(formData.get("borderColor") ?? "#E5E5E5"),
+
+      invoiceTemplateKey: String(formData.get("invoiceTemplateKey") ?? ""),
+      quotationTemplateKey: String(formData.get("quotationTemplateKey") ?? ""),
+      jobCardTemplateKey: String(formData.get("jobCardTemplateKey") ?? ""),
+      receiptTemplateKey: String(formData.get("receiptTemplateKey") ?? ""),
     });
 
     if (!parsed.success) {
@@ -225,6 +261,11 @@ export default async function BrandingPage({
       backgroundColor: parsed.data.backgroundColor,
       surfaceColor: parsed.data.surfaceColor,
       borderColor: parsed.data.borderColor,
+
+      invoiceTemplateKey: resolveTemplateKey({ kind: "INVOICE", requestedKey: parsed.data.invoiceTemplateKey, plan }),
+      quotationTemplateKey: resolveTemplateKey({ kind: "QUOTATION", requestedKey: parsed.data.quotationTemplateKey, plan }),
+      jobCardTemplateKey: resolveTemplateKey({ kind: "JOB_CARD", requestedKey: parsed.data.jobCardTemplateKey, plan }),
+      receiptTemplateKey: resolveTemplateKey({ kind: "RECEIPT", requestedKey: parsed.data.receiptTemplateKey, plan }),
     });
 
     revalidatePath("/settings/branding");
@@ -260,6 +301,86 @@ export default async function BrandingPage({
           </p>
           <input type="number" name="quoteValidityDays" defaultValue={settings.quoteValidityDays} placeholder="Validity days" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-sm outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
           <input type="number" name="sequencePadLength" defaultValue={settings.sequencePadLength} placeholder="Sequence pad length" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-sm outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
+          </div>
+        </details>
+
+        <details className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] p-3" open>
+          <summary className="text-sm font-semibold text-[var(--ink)]">Document Templates</summary>
+          <p className="mt-2 text-xs text-[var(--ink-muted)]">
+            Available templates depend on your plan ({planLabel(plan)}). Locked templates show the required upgrade.
+          </p>
+          <div className="mt-3 grid gap-2 lg:grid-cols-2">
+            <div>
+              <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Invoice Template</p>
+              <select
+                name="invoiceTemplateKey"
+                defaultValue={selectedInvoiceKey}
+                className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-sm outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14"
+              >
+                {invoiceTemplates.allowed.map((t) => (
+                  <option key={t.key} value={t.key}>{t.label}</option>
+                ))}
+                {invoiceTemplates.locked.map((t) => (
+                  <option key={t.key} value={t.key} disabled>
+                    {t.label} (Upgrade to {planLabel(t.minPlan)})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Quotation Template</p>
+              <select
+                name="quotationTemplateKey"
+                defaultValue={selectedQuoteKey}
+                className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-sm outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14"
+              >
+                {quotationTemplates.allowed.map((t) => (
+                  <option key={t.key} value={t.key}>{t.label}</option>
+                ))}
+                {quotationTemplates.locked.map((t) => (
+                  <option key={t.key} value={t.key} disabled>
+                    {t.label} (Upgrade to {planLabel(t.minPlan)})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Job Card Template</p>
+              <select
+                name="jobCardTemplateKey"
+                defaultValue={selectedJobCardKey}
+                className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-sm outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14"
+              >
+                {jobCardTemplates.allowed.map((t) => (
+                  <option key={t.key} value={t.key}>{t.label}</option>
+                ))}
+                {jobCardTemplates.locked.map((t) => (
+                  <option key={t.key} value={t.key} disabled>
+                    {t.label} (Upgrade to {planLabel(t.minPlan)})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Receipt Template</p>
+              <select
+                name="receiptTemplateKey"
+                defaultValue={selectedReceiptKey}
+                className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-sm outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14"
+              >
+                {receiptTemplates.allowed.map((t) => (
+                  <option key={t.key} value={t.key}>{t.label}</option>
+                ))}
+                {receiptTemplates.locked.map((t) => (
+                  <option key={t.key} value={t.key} disabled>
+                    {t.label} (Upgrade to {planLabel(t.minPlan)})
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
         </details>
 

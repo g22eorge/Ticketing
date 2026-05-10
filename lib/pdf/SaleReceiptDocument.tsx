@@ -7,7 +7,7 @@ import {
   View,
 } from "@react-pdf/renderer";
 
-import { formatMoney, getAppCurrency } from "@/lib/currency";
+import { formatMoney, getAppCurrency, normalizeCurrency } from "@/lib/currency";
 
 type Branding = {
   documentTitle?: string | null;
@@ -24,6 +24,7 @@ type Sale = {
   saleNumber: string;
   status: string;
   createdAt: Date;
+  currency?: string | null;
   branch: { name: string } | null;
   client: { fullName: string; phone: string | null } | null;
   subtotal: number;
@@ -42,7 +43,7 @@ export function SaleReceiptDocument({
   sale: Sale;
   branding: Branding;
 }) {
-  const currency = getAppCurrency();
+  const currency = normalizeCurrency(sale.currency, getAppCurrency());
   const title = branding?.documentTitle || branding?.companyName || "Receipt";
   const companyLine = [branding?.companyName, branding?.companyContacts, branding?.companyEmail, branding?.companyWebsite]
     .filter(Boolean)

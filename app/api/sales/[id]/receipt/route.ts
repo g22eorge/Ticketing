@@ -6,7 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { requireOrgSession } from "@/lib/org-context";
 import { can } from "@/lib/permissions";
 import { getDocumentBrandingSettings } from "@/lib/document-branding";
-import { SaleReceiptDocument } from "@/lib/pdf/SaleReceiptDocument";
+import { ReceiptTemplateComponent, resolveTemplateKey } from "@/lib/pdf/templates";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -24,16 +24,17 @@ export async function GET(
 
   const sale = await prisma.sale.findFirst({
     where: { id, orgId },
-    select: {
-      id: true,
-      saleNumber: true,
-      status: true,
-      subtotal: true,
-      discountAmount: true,
-      vatAmount: true,
-      totalAmount: true,
-      paidAmount: true,
-      createdAt: true,
+      select: {
+        id: true,
+        saleNumber: true,
+        status: true,
+        currency: true,
+        subtotal: true,
+        discountAmount: true,
+        vatAmount: true,
+        totalAmount: true,
+        paidAmount: true,
+        createdAt: true,
       branch: { select: { name: true } },
       client: { select: { fullName: true, phone: true } },
       items: { select: { id: true, description: true, quantity: true, unitPrice: true, lineTotal: true }, orderBy: { createdAt: "asc" } },
@@ -44,9 +45,16 @@ export async function GET(
   if (!sale) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const branding = await getDocumentBrandingSettings(orgId).catch(() => null);
+  const org = await prisma.organization.findUnique({ where: { id: orgId }, select: { plan: true } }).catch(() => null);
+  const templateKey = resolveTemplateKey({
+    kind: "RECEIPT",
+    requestedKey: (branding as unknown as { receiptTemplateKey?: string | null }).receiptTemplateKey,
+    plan: org?.plan ?? "STARTER",
+  });
+  const ReceiptDoc = ReceiptTemplateComponent(templateKey);
 
   try {
-    const element = createElement(SaleReceiptDocument, {
+    const element = createElement(ReceiptDoc, {
       sale,
       branding,
     });

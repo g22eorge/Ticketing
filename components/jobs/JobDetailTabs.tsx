@@ -390,6 +390,8 @@ function MessagesTab({
 type Props = {
   role: Role;
   permissions?: string[];
+  orgBaseCurrency: string;
+  supportedCurrencies: string[];
   returnTo?: string;
   returnLabel?: string;
   initialTab?: string;
@@ -521,7 +523,7 @@ type Props = {
   };
 };
 
-export function JobDetailTabs({ role, permissions = [], job, technicians, deviceHistory = [], returnTo = "/jobs", returnLabel = "All jobs", initialTab }: Props) {
+export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, supportedCurrencies, job, technicians, deviceHistory = [], returnTo = "/jobs", returnLabel = "All jobs", initialTab }: Props) {
   const inboundMessages = job.inboundMessages ?? [];
   const outboundMessages = job.outboundMessages ?? [];
   const unreadCount = inboundMessages.filter((m) => !m.isRead).length;
@@ -533,6 +535,7 @@ export function JobDetailTabs({ role, permissions = [], job, technicians, device
     return "overview";
   });
   const [savedSection, setSavedSection] = useState<string | null>(null);
+  const [clientPaymentCurrency, setClientPaymentCurrency] = useState(orgBaseCurrency);
   const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
   const [showOneTimeForm, setShowOneTimeForm] = useState(false);
   const [isDiagnosisPending, startDiagnosisTransition] = useTransition();
@@ -1488,7 +1491,7 @@ export function JobDetailTabs({ role, permissions = [], job, technicians, device
                       router.refresh();
                     });
                   }}
-                  className="mt-2 grid gap-2 sm:grid-cols-[160px_200px_1fr_auto]"
+                  className="mt-2 grid gap-2 sm:grid-cols-[160px_200px_180px_1fr_auto]"
                 >
                   <input
                     name="amount"
@@ -1504,6 +1507,28 @@ export function JobDetailTabs({ role, permissions = [], job, technicians, device
                     <option value="BANK_TRANSFER">BANK TRANSFER</option>
                     <option value="OTHER">OTHER</option>
                   </select>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    <select
+                      name="currency"
+                      value={clientPaymentCurrency}
+                      onChange={(e) => setClientPaymentCurrency(e.target.value)}
+                      className={fieldClass}
+                      title={clientPaymentCurrency === orgBaseCurrency ? "" : `Provide exchange rate to ${orgBaseCurrency}`}
+                    >
+                      {supportedCurrencies.map((c) => (
+                        <option key={c} value={c}>{c}</option>
+                      ))}
+                    </select>
+                    <input
+                      name="exchangeRateToBase"
+                      inputMode="decimal"
+                      placeholder={`1 ${clientPaymentCurrency} = ? ${orgBaseCurrency}`}
+                      className={fieldClass}
+                      required={clientPaymentCurrency !== orgBaseCurrency}
+                      disabled={clientPaymentCurrency === orgBaseCurrency}
+                      title={`Required when currency differs from ${orgBaseCurrency}`}
+                    />
+                  </div>
                   <input
                     name="reference"
                     placeholder="Ref (optional)"

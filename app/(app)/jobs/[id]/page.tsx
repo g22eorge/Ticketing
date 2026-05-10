@@ -7,7 +7,7 @@ import { JobDetailTabs } from "@/components/jobs/JobDetailTabs";
 import { getClientBill, getExternalTechBill } from "@/lib/billing";
 import { can } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
-import { getCurrentUserRole } from "@/lib/session";
+import { requireOrgSession } from "@/lib/org-context";
 
 export default async function JobDetailPage({
   params,
@@ -18,7 +18,7 @@ export default async function JobDetailPage({
 }) {
   const { id } = await params;
   const { returnTo, returnLabel, tab } = await searchParams;
-  const { session, user } = await getCurrentUserRole();
+  const { session, user, orgId, org } = await requireOrgSession();
   const safeReturnTo =
     returnTo && returnTo.startsWith("/") && !returnTo.startsWith("//")
       ? returnTo
@@ -28,8 +28,8 @@ export default async function JobDetailPage({
   const canAccessAllForPricing = can.approveInvoices(user);
   const where =
     user.role === "TECHNICIAN_EXTERNAL" || (user.role === "TECHNICIAN_INTERNAL" && !canOverseeExternal && !canAccessAllForPricing)
-      ? { id, assignedToId: session.user.id }
-      : { id };
+      ? { id, orgId, assignedToId: session.user.id }
+      : { id, orgId };
 
   if (user.role === "TECHNICIAN_EXTERNAL") {
     const job = await prisma.job.findFirst({
@@ -222,6 +222,8 @@ export default async function JobDetailPage({
     <JobDetailTabs
       role={user.role}
       permissions={user.permissions}
+      orgBaseCurrency={org.baseCurrency}
+      supportedCurrencies={org.supportedCurrencies}
       job={{ ...jobWithBilling, outboundMessages, inboundMessages }}
       technicians={technicians}
       deviceHistory={deviceHistory}

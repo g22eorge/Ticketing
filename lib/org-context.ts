@@ -13,6 +13,8 @@
 
 import { redirect } from "next/navigation";
 
+import { getAppCurrency, normalizeCurrency, parseSupportedCurrencies } from "@/lib/currency";
+import { prisma } from "@/lib/prisma";
 import { getCurrentUserRole, getCurrentUserRoleOptional } from "@/lib/session";
 
 /** Use in server components and server actions that require a full org context. */
@@ -26,10 +28,24 @@ export async function requireOrgSession() {
     redirect("/onboarding");
   }
 
+  const orgId = user!.orgId as string;
+  const orgRow = await prisma.organization
+    .findUnique({
+      where: { id: orgId },
+      select: { baseCurrency: true, supportedCurrencies: true },
+    })
+    .catch(() => null);
+  const baseCurrency = normalizeCurrency(orgRow?.baseCurrency, getAppCurrency());
+  const supportedCurrencies = parseSupportedCurrencies(orgRow?.supportedCurrencies, baseCurrency);
+
   return {
     session,
     user: user!,
-    orgId: user!.orgId as string,
+    orgId,
+    org: {
+      baseCurrency,
+      supportedCurrencies,
+    },
   };
 }
 

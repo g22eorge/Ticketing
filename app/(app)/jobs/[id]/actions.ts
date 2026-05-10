@@ -30,6 +30,7 @@ import { generateInvoiceBuffer } from "@/lib/pdf/generate-invoice";
 import { generateJobCardBuffer } from "@/lib/pdf/generate-job-card";
 import { getDocumentBrandingSettings } from "@/lib/document-branding";
 import { formatQuotationNumber } from "@/lib/documents";
+import { isSupportedCurrency, normalizeCurrency, toBaseAmount } from "@/lib/currency";
 
 const workflowReasonValues = [
   "NONE",
@@ -80,6 +81,15 @@ const recordClientPaymentSchema = z.object({
   amount: z.coerce.number().positive(),
   method: z.string().optional(),
   reference: z.string().optional(),
+  currency: z.string().optional(),
+  exchangeRateToBase: z.preprocess(
+    (value) => {
+      const raw = typeof value === "string" ? value.trim() : "";
+      if (!raw) return undefined;
+      return Number(raw);
+    },
+    z.number().positive().optional(),
+  ),
 });
 
 const oneTimeExternalSchema = z.object({
@@ -672,7 +682,7 @@ export async function updateJobAction(formData: FormData) {
 }
 
 export async function recordClientPaymentAction(formData: FormData) {
-  const { session, user, orgId } = await requireOrgSession();
+  const { session, user, orgId, org } = await requireOrgSession();
   const permissionUser = { role: user.role, permissions: user.permissions };
   if (!can.approveInvoices(permissionUser)) {
     return { error: "Forbidden" };
@@ -684,6 +694,18 @@ export async function recordClientPaymentAction(formData: FormData) {
   }
 
   const payload = parsed.data;
+
+  const baseCurrency = org.baseCurrency;
+  const currency = normalizeCurrency(payload.currency, baseCurrency);
+  if (!isSupportedCurrency(currency)) {
+    return { error: "Unsupported currency" };
+  }
+  const exchangeRateToBase = currency === baseCurrency ? null : (payload.exchangeRateToBase ?? null);
+  if (currency !== baseCurrency) {
+    if (!exchangeRateToBase || !Number.isFinite(exchangeRateToBase) || exchangeRateToBase <= 0) {
+      return { error: `Exchange rate is required for ${currency} payments` };
+    }
+  }
 
   const job = await prisma.job.findUnique({
     where: { id: payload.jobId, orgId },
@@ -728,6 +750,7 @@ export async function recordClientPaymentAction(formData: FormData) {
           jobId: job.id,
           invoiceNumber,
           issuedAt,
+          currency: baseCurrency,
           totalAmount,
           paidAmount: 0,
           status: "ISSUED",
@@ -735,6 +758,7 @@ export async function recordClientPaymentAction(formData: FormData) {
         update: {
           invoiceNumber,
           issuedAt,
+          currency: baseCurrency,
           totalAmount,
         },
         select: { id: true, totalAmount: true },
@@ -745,6 +769,8 @@ export async function recordClientPaymentAction(formData: FormData) {
           orgId,
           invoiceId: invoice.id,
           saleId: null,
+          currency,
+          exchangeRateToBase,
           amount: payload.amount,
           method: safeMethod,
           reference: reference || null,
@@ -752,12 +778,15 @@ export async function recordClientPaymentAction(formData: FormData) {
         },
       });
 
-      const agg = await tx.payment.aggregate({
-        where: { orgId, invoiceId: invoice.id },
-        _sum: { amount: true },
-      });
-      const paidAmount = agg._sum.amount ?? 0;
-      const isPaid = invoice.totalAmount > 0 && paidAmount >= invoice.totalAmount;
+       const payments = await tx.payment.findMany({
+         where: { orgId, invoiceId: invoice.id },
+         select: { amount: true, currency: true, exchangeRateToBase: true },
+       });
+       const paidAmount = payments.reduce(
+         (sum, p) => sum + toBaseAmount({ amount: p.amount, currency: p.currency, baseCurrency, exchangeRateToBase: p.exchangeRateToBase }),
+         0,
+       );
+       const isPaid = invoice.totalAmount > 0 && paidAmount >= invoice.totalAmount;
 
       await tx.invoice.update({
         where: { id: invoice.id },

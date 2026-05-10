@@ -5,7 +5,7 @@ import { PersistedDisclosure } from "@/components/mobile/PersistedDisclosure";
 import { TechnicianBarChart } from "@/components/reports/ReportsCharts";
 import { MonthSelectForm } from "@/components/shared/MonthSelectForm";
 import { getClientBill, getExternalTechBill, resolveTechCost } from "@/lib/billing";
-import { formatMoney, formatMoneyCompact, getAppCurrency } from "@/lib/currency";
+import { formatMoney, formatMoneyCompact, toBaseAmount } from "@/lib/currency";
 import { formatEATMonthLabel } from "@/lib/date-eat";
 import { UI_JOB_STATUSES, JobStatus, normalizeJobStatus } from "@/lib/job-status";
 import { filterSupportedJobStatuses } from "@/lib/job-status-server";
@@ -107,7 +107,7 @@ export default async function ReportsPage({
   searchParams: Promise<SearchParams>;
 }) {
   const filters = await searchParams;
-  const { user, orgId } = await requireOrgSession();
+  const { user, orgId, org } = await requireOrgSession();
   const period: "month" | "year" = filters.period === "year" ? "year" : "month";
   if (!can.viewAccountsSummary(user)) {
     redirect("/dashboard");
@@ -195,16 +195,16 @@ export default async function ReportsPage({
     prisma.job.findFirst({ where: { orgId }, orderBy: { receivedAt: "desc" }, select: { receivedAt: true } }),
   ]);
 
-  let paymentsAgg: { _sum: { amount: number | null } } = { _sum: { amount: 0 } };
+  let payments: Array<{ amount: number; currency: string | null; exchangeRateToBase: number | null }> = [];
   try {
-    paymentsAgg = await prisma.payment.aggregate({
+    payments = await prisma.payment.findMany({
       where: { orgId, receivedAt: { gte: selectedRange.start, lte: selectedRange.end } },
-      _sum: { amount: true },
+      select: { amount: true, currency: true, exchangeRateToBase: true },
     });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     if (msg.includes("no such table") && msg.includes("Payment")) dbNeedsFix = true;
-    paymentsAgg = { _sum: { amount: 0 } };
+    payments = [];
   }
 
   let invoicesAgg: { _sum: { totalAmount: number | null; paidAmount: number | null } } = {
@@ -255,7 +255,10 @@ export default async function ReportsPage({
   );
 
   // Cashflow (payments + external payouts).
-  const cashIn = paymentsAgg._sum.amount ?? 0;
+  const cashIn = payments.reduce(
+    (sum, p) => sum + toBaseAmount({ amount: p.amount, currency: p.currency, baseCurrency: org.baseCurrency, exchangeRateToBase: p.exchangeRateToBase }),
+    0,
+  );
   const cashOutExternal = paidExternalJobs.reduce(
     (sum, job) => sum + resolveTechCost(job.externalTechFee, job.externalTechBill),
     0,
@@ -378,7 +381,7 @@ export default async function ReportsPage({
     period === "year"
       ? String(selectedYear - 1)
       : monthLabel(new Date(selectedMonth.year, selectedMonth.month - 2, 1).getFullYear(), new Date(selectedMonth.year, selectedMonth.month - 2, 1).getMonth() + 1);
-  const currency = getAppCurrency();
+  const currency = org.baseCurrency;
   const selectableMonths = period === "year" ? yearOptions(minYear, maxYear) : monthOptions(18);
   const monthlyExportMonth = monthLabel(selectedMonth.year, selectedMonth.month);
   const trendNow = new Date();

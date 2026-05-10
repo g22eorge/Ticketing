@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 
-import { formatMoneyCompact } from "@/lib/currency";
+import { formatMoneyCompact, normalizeCurrency } from "@/lib/currency";
 import { prisma } from "@/lib/prisma";
 import { requireOrgSession } from "@/lib/org-context";
 import { can } from "@/lib/permissions";
@@ -25,7 +25,7 @@ async function nextSaleNumber(orgId: string) {
 }
 
 export default async function PosPage() {
-  const { user, orgId } = await requireOrgSession();
+  const { user, orgId, org } = await requireOrgSession();
   if (!(can.viewFinancials(user) || ["ADMIN", "OPS", "FRONT_DESK"].includes(user.role))) {
     redirect("/dashboard");
   }
@@ -42,7 +42,7 @@ export default async function PosPage() {
 
   async function createSaleAction(formData: FormData) {
     "use server";
-    const { user, orgId, session } = await requireOrgSession();
+    const { user, orgId, session, org } = await requireOrgSession();
     if (!(can.viewFinancials(user) || ["ADMIN", "OPS", "FRONT_DESK"].includes(user.role))) return;
 
     const branchId = String(formData.get("branchId") ?? "").trim() || null;
@@ -53,6 +53,7 @@ export default async function PosPage() {
         branchId,
         saleNumber,
         status: "OPEN",
+        currency: org.baseCurrency,
         createdById: session.user.id,
       },
       select: { id: true },
@@ -66,6 +67,7 @@ export default async function PosPage() {
     id: string;
     saleNumber: string;
     status: string;
+    currency: string | null;
     totalAmount: number;
     paidAmount: number;
     createdAt: Date;
@@ -76,16 +78,17 @@ export default async function PosPage() {
       where: { orgId },
       orderBy: { createdAt: "desc" },
       take: 40,
-      select: {
-        id: true,
-        saleNumber: true,
-        status: true,
-        totalAmount: true,
-        paidAmount: true,
-        createdAt: true,
-        branch: { select: { name: true } },
-      },
-    });
+        select: {
+          id: true,
+          saleNumber: true,
+          status: true,
+          currency: true,
+          totalAmount: true,
+          paidAmount: true,
+          createdAt: true,
+          branch: { select: { name: true } },
+        },
+      });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     if (msg.includes("no such table") && msg.includes("Sale")) dbNeedsFix = true;
@@ -157,8 +160,8 @@ export default async function PosPage() {
                   <tr key={s.id} className="hover:bg-[var(--panel-strong)]/40">
                     <td className="px-4 py-3 mono font-semibold">{s.saleNumber}</td>
                     <td className="px-4 py-3 text-[var(--ink-muted)]">{s.branch?.name ?? "-"}</td>
-                    <td className="px-4 py-3">{formatMoneyCompact(s.totalAmount)}</td>
-                    <td className="px-4 py-3">{formatMoneyCompact(s.paidAmount)}</td>
+                    <td className="px-4 py-3">{formatMoneyCompact(s.totalAmount, normalizeCurrency(s.currency, org.baseCurrency))}</td>
+                    <td className="px-4 py-3">{formatMoneyCompact(s.paidAmount, normalizeCurrency(s.currency, org.baseCurrency))}</td>
                     <td className="px-4 py-3 text-[var(--ink-muted)]">{s.status}</td>
                     <td className="px-4 py-3">
                       <Link href={`/pos/${s.id}`} className="btn-premium-secondary rounded-md px-2.5 py-1.5 text-xs">Open</Link>

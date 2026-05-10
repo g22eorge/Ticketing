@@ -3,11 +3,11 @@ import { renderToBuffer } from "@react-pdf/renderer";
 
 import { getClientBill } from "@/lib/billing";
 import { formatEATDocDate } from "@/lib/date-eat";
-import { formatMoney, getAppCurrency } from "@/lib/currency";
+import { formatMoney, normalizeCurrency } from "@/lib/currency";
 import { getDocumentBrandingSettings } from "@/lib/document-branding";
 import { canGenerateInvoiceForStatus, formatQuotationNumber } from "@/lib/documents";
 import { compactText, compactListText, prettyEnum, resolveInvoiceLogo } from "@/lib/pdf/pdf-utils";
-import { InvoiceDocumentV2 } from "@/lib/pdf/InvoiceDocumentV2";
+import { InvoiceTemplateComponent, resolveTemplateKey } from "@/lib/pdf/templates";
 import { prisma } from "@/lib/prisma";
 
 export type GenerateInvoiceResult =
@@ -24,6 +24,7 @@ export async function generateInvoiceBuffer(
     where: { id: jobId },
     select: {
       id: true, jobNumber: true, status: true, repairPath: true,
+      orgId: true,
       deviceType: true, brand: true, model: true, serialOrImei: true,
       accessories: true, physicalNotes: true, issueDescription: true,
       diagnosisNotes: true, externalDiagnosis: true, recommendedRepair: true,
@@ -42,8 +43,16 @@ export async function generateInvoiceBuffer(
     return { ok: false, error: "Invoice can only be generated after repair reaches pickup/completion stage" };
   }
 
-  const currency = getAppCurrency();
-  const branding = await getDocumentBrandingSettings();
+  const orgId = job.orgId ?? undefined;
+  const org = orgId ? await prisma.organization.findUnique({ where: { id: orgId }, select: { plan: true, baseCurrency: true } }).catch(() => null) : null;
+  const currency = normalizeCurrency(org?.baseCurrency, "UGX");
+  const branding = await getDocumentBrandingSettings(orgId);
+  const templateKey = resolveTemplateKey({
+    kind: "INVOICE",
+    requestedKey: (branding as unknown as { invoiceTemplateKey?: string | null }).invoiceTemplateKey,
+    plan: org?.plan ?? "STARTER",
+  });
+  const InvoiceDoc = InvoiceTemplateComponent(templateKey);
   const clientBill = getClientBill(job) ?? 0;
   const vatApplicable = job.vatApplicable ?? true;
   const vatRate = Math.max(0, branding.vatRatePercent) / 100;
@@ -74,7 +83,7 @@ export async function generateInvoiceBuffer(
     })] : []),
   ]).catch(() => null);
 
-  const docElement = createElement(InvoiceDocumentV2, {
+  const docElement = createElement(InvoiceDoc, {
     companyName: branding.companyName,
     companyTagline: branding.companyTagline ?? "",
     companyAddressLine1: branding.companyAddressLine1,

@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { PaymentMethod } from "@prisma/client";
 
-import { formatMoney } from "@/lib/currency";
+import { formatMoney, isSupportedCurrency, normalizeCurrency, toBaseAmount } from "@/lib/currency";
 import { canGenerateInvoiceForStatus } from "@/lib/documents";
 import { JobStatus } from "@/lib/job-status";
 import { can } from "@/lib/permissions";
@@ -14,7 +14,7 @@ import { requireOrgSession } from "@/lib/org-context";
 const PAYMENT_METHODS = Object.values(PaymentMethod);
 
 export default async function InvoicesPage() {
-  const { user, orgId } = await requireOrgSession();
+  const { user, orgId, org } = await requireOrgSession();
   if (!("ADMIN" === user.role || "OPS" === user.role || can.approveInvoices(user))) {
     redirect("/dashboard");
   }
@@ -23,17 +23,27 @@ export default async function InvoicesPage() {
 
   async function addPaymentAction(formData: FormData) {
     "use server";
-    const { user, orgId, session } = await requireOrgSession();
+    const { user, orgId, session, org } = await requireOrgSession();
     if (!("ADMIN" === user.role || "OPS" === user.role || can.approveInvoices(user))) return;
 
     const invoiceId = String(formData.get("invoiceId") ?? "").trim();
     const rawAmount = String(formData.get("amount") ?? "").trim();
     const method = String(formData.get("method") ?? "CASH").trim();
     const reference = String(formData.get("reference") ?? "").trim();
+    const currency = normalizeCurrency(formData.get("currency"), org.baseCurrency);
+    const exchangeRateToBaseRaw = String(formData.get("exchangeRateToBase") ?? "").trim();
     if (!invoiceId) return;
 
     const amount = Number(rawAmount);
     if (!Number.isFinite(amount) || amount <= 0) return;
+
+    if (!isSupportedCurrency(currency)) return;
+    const exchangeRateToBase = currency === org.baseCurrency
+      ? null
+      : (exchangeRateToBaseRaw ? Number(exchangeRateToBaseRaw) : null);
+    if (currency !== org.baseCurrency) {
+      if (!exchangeRateToBase || !Number.isFinite(exchangeRateToBase) || exchangeRateToBase <= 0) return;
+    }
 
     const invoice = await prisma.invoice.findFirst({
       where: { id: invoiceId, orgId },
@@ -50,6 +60,8 @@ export default async function InvoicesPage() {
         data: {
           orgId,
           invoiceId: invoice.id,
+          currency,
+          exchangeRateToBase,
           amount,
           method: safeMethod,
           reference: reference || null,
@@ -57,11 +69,15 @@ export default async function InvoicesPage() {
         },
       });
 
-      const agg = await tx.payment.aggregate({
+      // If multi-currency payments are present, recompute using stored exchange rates.
+      const payments = await tx.payment.findMany({
         where: { invoiceId: invoice.id, orgId },
-        _sum: { amount: true },
+        select: { amount: true, currency: true, exchangeRateToBase: true },
       });
-      const paidAmount = agg._sum.amount ?? 0;
+      const paidAmount = payments.reduce(
+        (sum, p) => sum + toBaseAmount({ amount: p.amount, currency: p.currency, baseCurrency: org.baseCurrency, exchangeRateToBase: p.exchangeRateToBase }),
+        0,
+      );
       const isPaid = invoice.totalAmount > 0 && paidAmount >= invoice.totalAmount;
 
       await tx.invoice.update({
@@ -92,6 +108,7 @@ export default async function InvoicesPage() {
     id: string;
     invoiceNumber: string;
     issuedAt: Date;
+    currency: string | null;
     totalAmount: number;
     paidAmount: number;
     status: string;
@@ -106,6 +123,7 @@ export default async function InvoicesPage() {
         id: true,
         invoiceNumber: true,
         issuedAt: true,
+        currency: true,
         totalAmount: true,
         paidAmount: true,
         status: true,
@@ -198,6 +216,7 @@ export default async function InvoicesPage() {
           <tbody>
             {invoices.map((inv) => {
               const balance = Math.max(0, inv.totalAmount - inv.paidAmount);
+              const invoiceCurrency = normalizeCurrency(inv.currency, org.baseCurrency);
               return (
                 <tr key={inv.id} className="border-t border-[var(--line)] align-top">
                   <td className="px-3 py-2">
@@ -210,12 +229,12 @@ export default async function InvoicesPage() {
                     </Link>
                     <p className="text-xs text-[var(--ink-muted)]">{inv.job.client.fullName}</p>
                   </td>
-                  <td className="px-3 py-2">{formatMoney(inv.totalAmount)}</td>
+                  <td className="px-3 py-2">{formatMoney(inv.totalAmount, invoiceCurrency)}</td>
                   <td className="hidden px-3 py-2 md:table-cell text-[var(--ink-muted)]">
-                    {inv.paidAmount > 0 ? formatMoney(inv.paidAmount) : "-"}
+                    {inv.paidAmount > 0 ? formatMoney(inv.paidAmount, invoiceCurrency) : "-"}
                   </td>
                   <td className="hidden px-3 py-2 lg:table-cell text-[var(--ink-muted)]">
-                    {balance > 0 ? formatMoney(balance) : "0"}
+                    {balance > 0 ? formatMoney(balance, invoiceCurrency) : "0"}
                   </td>
                   <td className="px-3 py-2">
                     <div className="flex flex-wrap items-center gap-2">
@@ -238,6 +257,23 @@ export default async function InvoicesPage() {
                             inputMode="decimal"
                             placeholder="Amt"
                             className="w-24 rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-1 text-xs outline-none focus:border-[var(--accent)]/50"
+                          />
+                          <select
+                            name="currency"
+                            defaultValue={invoiceCurrency}
+                            className="rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-1 text-xs outline-none focus:border-[var(--accent)]/50"
+                            title={invoiceCurrency === org.baseCurrency ? "" : "If not base currency, also provide exchange rate"}
+                          >
+                            {org.supportedCurrencies.map((c) => (
+                              <option key={c} value={c}>{c}</option>
+                            ))}
+                          </select>
+                          <input
+                            name="exchangeRateToBase"
+                            inputMode="decimal"
+                            placeholder={invoiceCurrency === org.baseCurrency ? "Rate" : `1 ${invoiceCurrency} = ? ${org.baseCurrency}`}
+                            className="w-36 rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-1 text-xs outline-none focus:border-[var(--accent)]/50"
+                            title={`Only required when currency differs from ${org.baseCurrency}`}
                           />
                           <select
                             name="method"

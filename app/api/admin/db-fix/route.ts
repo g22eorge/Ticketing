@@ -89,6 +89,13 @@ async function brandingColumns() {
   return new Set(rows.map((r) => r.name));
 }
 
+async function orgColumns() {
+  const rows = await prisma.$queryRaw<Array<{ name: string }>>`
+    PRAGMA table_info('Organization')
+  `;
+  return new Set(rows.map((r) => r.name));
+}
+
 async function userColumns() {
   const rows = await prisma.$queryRaw<Array<{ name: string }>>`
     PRAGMA table_info('User')
@@ -117,6 +124,21 @@ export async function POST() {
   }
 
   const changes: Array<{ kind: string; detail: string }> = [];
+
+  // Organization: multi-currency columns
+  try {
+    const ocols = await orgColumns();
+    const addOrgColumn = async (name: string, type: string, dflt?: string) => {
+      if (ocols.has(name)) return;
+      const defaultClause = dflt ? ` DEFAULT ${dflt}` : "";
+      await prisma.$executeRawUnsafe(`ALTER TABLE "Organization" ADD COLUMN "${name}" ${type}${defaultClause}`);
+      changes.push({ kind: "alter_table", detail: `Added Organization.${name}` });
+    };
+    await addOrgColumn("baseCurrency", "TEXT", "'UGX'");
+    await addOrgColumn("supportedCurrencies", "TEXT", "'UGX'");
+  } catch {
+    // ignore
+  }
 
   // Devices
   const hasDevice = await tableExists("Device");
@@ -223,6 +245,7 @@ export async function POST() {
         "orgId" TEXT NOT NULL,
         "jobId" TEXT NOT NULL UNIQUE,
         "invoiceNumber" TEXT NOT NULL UNIQUE,
+        "currency" TEXT NOT NULL DEFAULT 'UGX',
         "status" TEXT NOT NULL DEFAULT 'ISSUED',
         "issuedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
         "totalAmount" REAL NOT NULL,
@@ -249,6 +272,7 @@ export async function POST() {
     await addInvColumn("orgId", "TEXT");
     await addInvColumn("jobId", "TEXT");
     await addInvColumn("invoiceNumber", "TEXT");
+    await addInvColumn("currency", "TEXT", "'UGX'");
     await addInvColumn("status", "TEXT", "'ISSUED'");
     await addInvColumn("issuedAt", "DATETIME");
     await addInvColumn("totalAmount", "REAL", "0");
@@ -267,6 +291,8 @@ export async function POST() {
         "orgId" TEXT NOT NULL,
         "invoiceId" TEXT,
         "saleId" TEXT,
+        "currency" TEXT NOT NULL DEFAULT 'UGX',
+        "exchangeRateToBase" REAL,
         "amount" REAL NOT NULL,
         "method" TEXT NOT NULL DEFAULT 'CASH',
         "reference" TEXT,
@@ -295,6 +321,8 @@ export async function POST() {
     await addPayColumn("orgId", "TEXT");
     await addPayColumn("invoiceId", "TEXT");
     await addPayColumn("saleId", "TEXT");
+    await addPayColumn("currency", "TEXT", "'UGX'");
+    await addPayColumn("exchangeRateToBase", "REAL");
     await addPayColumn("amount", "REAL", "0");
     await addPayColumn("method", "TEXT", "'CASH'");
     await addPayColumn("reference", "TEXT");
@@ -314,6 +342,8 @@ export async function POST() {
           "orgId" TEXT NOT NULL,
           "invoiceId" TEXT,
           "saleId" TEXT,
+          "currency" TEXT NOT NULL DEFAULT 'UGX',
+          "exchangeRateToBase" REAL,
           "amount" REAL NOT NULL,
           "method" TEXT NOT NULL DEFAULT 'CASH',
           "reference" TEXT,
@@ -329,13 +359,17 @@ export async function POST() {
       `);
 
       const hasSaleId = payCols.has("saleId");
+      const hasCurrency = payCols.has("currency");
+      const hasRate = payCols.has("exchangeRateToBase");
       await prisma.$executeRawUnsafe(`
-        INSERT OR REPLACE INTO "_Payment_new" (id, orgId, invoiceId, saleId, amount, method, reference, receivedAt, createdById, note, createdAt)
+        INSERT OR REPLACE INTO "_Payment_new" (id, orgId, invoiceId, saleId, currency, exchangeRateToBase, amount, method, reference, receivedAt, createdById, note, createdAt)
         SELECT
           id,
           orgId,
           invoiceId,
           ${hasSaleId ? "saleId" : "NULL"} as saleId,
+          ${hasCurrency ? "currency" : "'UGX'"} as currency,
+          ${hasRate ? "exchangeRateToBase" : "NULL"} as exchangeRateToBase,
           amount,
           method,
           reference,
@@ -367,6 +401,7 @@ export async function POST() {
         "clientId" TEXT,
         "status" TEXT NOT NULL DEFAULT 'OPEN',
         "saleNumber" TEXT NOT NULL UNIQUE,
+        "currency" TEXT NOT NULL DEFAULT 'UGX',
         "subtotal" REAL NOT NULL DEFAULT 0,
         "discountAmount" REAL NOT NULL DEFAULT 0,
         "vatAmount" REAL NOT NULL DEFAULT 0,
@@ -402,6 +437,7 @@ export async function POST() {
     await addSaleColumn("clientId", "TEXT");
     await addSaleColumn("status", "TEXT", "'OPEN'");
     await addSaleColumn("saleNumber", "TEXT");
+    await addSaleColumn("currency", "TEXT", "'UGX'");
     await addSaleColumn("subtotal", "REAL", "0");
     await addSaleColumn("discountAmount", "REAL", "0");
     await addSaleColumn("vatAmount", "REAL", "0");
@@ -616,6 +652,11 @@ export async function POST() {
     await addBrandingColumn("signatureClientLabel", "TEXT", "'Signed by: Client'");
     await addBrandingColumn("signatureCompanyLabel", "TEXT");
     await addBrandingColumn("signatureClientLabel", "TEXT");
+
+    await addBrandingColumn("invoiceTemplateKey", "TEXT", "'invoice_classic'");
+    await addBrandingColumn("quotationTemplateKey", "TEXT", "'quote_classic'");
+    await addBrandingColumn("jobCardTemplateKey", "TEXT", "'job_card_classic'");
+    await addBrandingColumn("receiptTemplateKey", "TEXT", "'receipt_classic'");
   }
 
   // Replace hardcoded "Eagle Info Solutions" in communication templates

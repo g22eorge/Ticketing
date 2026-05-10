@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserRole } from "@/lib/session";
+import { normalizeCurrency } from "@/lib/currency";
 
 export const dynamic = "force-dynamic";
 
@@ -32,6 +33,9 @@ export async function POST(req: Request) {
 
   const branchId = url.searchParams.get("branchId")?.trim() || null;
 
+  const org = await prisma.organization.findUnique({ where: { id: orgId }, select: { baseCurrency: true } }).catch(() => null);
+  const baseCurrency = normalizeCurrency(org?.baseCurrency, "UGX");
+
   const tag = suffix();
 
   const result = await prisma.$transaction(async (tx) => {
@@ -42,6 +46,7 @@ export async function POST(req: Request) {
         branchId,
         status: "PAID",
         saleNumber: `S-DEMO-${tag}`,
+        currency: baseCurrency,
         subtotal: 100_000,
         discountAmount: 0,
         vatAmount: 0,
@@ -69,6 +74,8 @@ export async function POST(req: Request) {
         orgId,
         saleId: sale.id,
         invoiceId: null,
+        currency: baseCurrency,
+        exchangeRateToBase: null,
         amount: 100_000,
         method: "CASH",
         reference: `DEMO-POS-${tag}`,
@@ -118,6 +125,7 @@ export async function POST(req: Request) {
         invoiceNumber: `INV-DEMO-${tag}`,
         status: "PAID",
         issuedAt: new Date(),
+        currency: baseCurrency,
         totalAmount: 250_000,
         paidAmount: 250_000,
         paidAt: new Date(),
@@ -131,6 +139,8 @@ export async function POST(req: Request) {
         orgId,
         invoiceId: invoice.id,
         saleId: null,
+        currency: baseCurrency,
+        exchangeRateToBase: null,
         amount: 250_000,
         method: "CASH",
         reference: `DEMO-INV-${tag}`,

@@ -7,7 +7,7 @@ import QRCode from "qrcode";
 
 import { getDocumentBrandingSettings } from "@/lib/document-branding";
 import { can } from "@/lib/permissions";
-import { JobCardDocument } from "@/lib/pdf/JobCardDocument";
+import { JobCardTemplateComponent, resolveTemplateKey } from "@/lib/pdf/templates";
 import { prisma } from "@/lib/prisma";
 import { requireOrgSession } from "@/lib/org-context";
 
@@ -130,7 +130,14 @@ export async function GET(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  const branding = await getDocumentBrandingSettings();
+  const org = await prisma.organization.findUnique({ where: { id: orgId }, select: { plan: true } }).catch(() => null);
+  const branding = await getDocumentBrandingSettings(orgId);
+  const templateKey = resolveTemplateKey({
+    kind: "JOB_CARD",
+    requestedKey: (branding as unknown as { jobCardTemplateKey?: string | null }).jobCardTemplateKey,
+    plan: org?.plan ?? "STARTER",
+  });
+  const JobCardDoc = JobCardTemplateComponent(templateKey);
   const logoUrl = await resolveLogo();
   const documentNumber = `JC-${job.jobNumber}`;
 
@@ -149,7 +156,7 @@ export async function GET(
     },
   });
 
-  const docElement = createElement(JobCardDocument, {
+  const docElement = createElement(JobCardDoc, {
     companyName: branding.companyName,
     companyTagline: branding.companyTagline ?? "",
     companyAddressLine1: branding.companyAddressLine1,

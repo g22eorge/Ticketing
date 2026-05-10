@@ -41,6 +41,10 @@ model Organization {
   planRenewsAt      DateTime? // next renewal date
   planCancelledAt   DateTime? // set when cancelled
 
+  // Multi-currency
+  baseCurrency        String @default("UGX")
+  supportedCurrencies String @default("UGX") // comma-separated ISO currency codes
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -489,6 +493,7 @@ model Invoice {
   job   Job    @relation(fields: [jobId], references: [id], onDelete: Cascade)
 
   invoiceNumber String        @unique
+  currency      String        @default("UGX")
   status        InvoiceStatus @default(ISSUED)
   issuedAt      DateTime      @default(now())
   totalAmount   Float
@@ -516,6 +521,9 @@ model Payment {
 
   saleId String?
   sale   Sale?   @relation(fields: [saleId], references: [id], onDelete: Cascade)
+
+  currency           String @default("UGX")
+  exchangeRateToBase Float? // when currency != org.baseCurrency
 
   amount     Float
   method     PaymentMethod @default(CASH)
@@ -546,6 +554,8 @@ model Sale {
 
   status     SaleStatus @default(OPEN)
   saleNumber String     @unique
+
+  currency String @default("UGX")
 
   subtotal       Float     @default(0)
   discountAmount Float     @default(0)
@@ -925,6 +935,13 @@ model DocumentBrandingSettings {
   backgroundColor       String        @default("#FFFFFF")
   surfaceColor          String        @default("#F5F5F5")
   borderColor           String        @default("#E5E5E5")
+
+  // Document template selections (gated by org plan in UI/server)
+  invoiceTemplateKey   String        @default("invoice_classic")
+  quotationTemplateKey String        @default("quote_classic")
+  jobCardTemplateKey   String        @default("job_card_classic")
+  receiptTemplateKey   String        @default("receipt_classic")
+
   updatedAt             DateTime      @updatedAt
 }
 
