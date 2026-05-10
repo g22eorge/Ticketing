@@ -1,5 +1,7 @@
 import type { OrgPlan } from "@prisma/client";
 
+import type { ComponentType } from "react";
+
 import { InvoiceDocument } from "@/lib/pdf/InvoiceDocument";
 import { InvoiceDocumentV2 } from "@/lib/pdf/InvoiceDocumentV2";
 import { JobCardDocument } from "@/lib/pdf/JobCardDocument";
@@ -92,22 +94,24 @@ function fallbackKeyForKind(kind: DocKind) {
   return "receipt_classic";
 }
 
-export function InvoiceTemplateComponent(key: TemplateKey) {
+// Return type is intentionally widened because different templates
+// may take different props shapes.
+export function InvoiceTemplateComponent(key: TemplateKey): ComponentType<any> {
   if (key === "invoice_green") return InvoiceDocumentV2;
   if (key === "invoice_minimal") return InvoiceDocument;
   return InvoiceDocument;
 }
 
-export function QuotationTemplateComponent(key: TemplateKey) {
+export function QuotationTemplateComponent(key: TemplateKey): ComponentType<any> {
   if (key === "quote_minimal") return QuotationDocumentMinimal;
   return QuotationDocument;
 }
 
-export function JobCardTemplateComponent(_key: TemplateKey) {
+export function JobCardTemplateComponent(_key: TemplateKey): ComponentType<any> {
   if (_key === "job_card_minimal") return JobCardDocument;
   return JobCardDocument;
 }
 
-export function ReceiptTemplateComponent(_key: TemplateKey) {
+export function ReceiptTemplateComponent(_key: TemplateKey): ComponentType<any> {
   return SaleReceiptDocument;
 }
