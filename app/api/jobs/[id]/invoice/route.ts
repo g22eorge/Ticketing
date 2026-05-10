@@ -262,7 +262,7 @@ export async function GET(
     });
   }
 
-  const invoiceElement = createElement(InvoiceDoc as ComponentType<object>, {
+  const invoiceElement = createElement(InvoiceDoc as ComponentType<Record<string, unknown>>, {
     companyName: branding.companyName,
     companyTagline: branding.companyTagline ?? "",
     companyAddressLine1: branding.companyAddressLine1,
