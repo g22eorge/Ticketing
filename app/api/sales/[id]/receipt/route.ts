@@ -54,7 +54,7 @@ export async function GET(
   const ReceiptDoc = ReceiptTemplateComponent(templateKey);
 
   try {
-    const element = createElement(ReceiptDoc, {
+    const element = createElement(ReceiptDoc as never, {
       sale,
       branding,
     });

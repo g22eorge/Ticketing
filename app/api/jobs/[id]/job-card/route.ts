@@ -159,7 +159,7 @@ export async function GET(
     });
   }
 
-  const docElement = createElement(JobCardDoc, {
+  const docElement = createElement(JobCardDoc as never, {
     companyName: branding.companyName,
     companyTagline: branding.companyTagline ?? "",
     companyAddressLine1: branding.companyAddressLine1,

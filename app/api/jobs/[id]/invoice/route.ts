@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { renderToBuffer } from "@react-pdf/renderer";
-import { createElement, type ComponentType } from "react";
+import { createElement } from "react";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 
@@ -262,7 +262,7 @@ export async function GET(
     });
   }
 
-  const invoiceElement = createElement(InvoiceDoc as ComponentType<Record<string, unknown>>, {
+  const invoiceElement = createElement(InvoiceDoc as never, {
     companyName: branding.companyName,
     companyTagline: branding.companyTagline ?? "",
     companyAddressLine1: branding.companyAddressLine1,

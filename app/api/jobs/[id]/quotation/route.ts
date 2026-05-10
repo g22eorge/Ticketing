@@ -194,7 +194,7 @@ export async function GET(
     });
   }
 
-  const docElement = createElement(QuoteDoc, {
+  const docElement = createElement(QuoteDoc as never, {
     companyName: branding.companyName,
     companyTagline: branding.companyTagline ?? "",
     companyAddressLine1: branding.companyAddressLine1,
