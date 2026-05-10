@@ -6,6 +6,7 @@ import { requireOrgSession } from "@/lib/org-context";
 import { sendWhatsAppTemplateMessage } from "@/lib/notifications/whatsapp";
 import { getOrgWhatsAppConfig, saveOrgWhatsAppConfig, deleteOrgWhatsAppConfig } from "@/lib/org-whatsapp-config";
 import { prisma } from "@/lib/prisma";
+import { assertOrgCanMutate } from "@/lib/org-write";
 
 export type SendTestResult =
   | { ok: true; messageId: string; to: string; from: string }
@@ -15,8 +16,9 @@ export async function sendTestWhatsAppAction(
   _prev: SendTestResult | null,
   formData: FormData
 ): Promise<SendTestResult> {
-  const { user, orgId } = await requireOrgSession();
+  const { user, orgId, org } = await requireOrgSession();
   if (user.role !== "ADMIN") return { ok: false, error: "Forbidden" };
+  assertOrgCanMutate({ access: org.access, userRole: user.role, kind: "GENERAL" });
 
   const orgConfig = await getOrgWhatsAppConfig(orgId);
   if (!orgConfig) return { ok: false, error: "WhatsApp is not configured for your organisation." };
@@ -64,8 +66,9 @@ export async function saveWhatsAppConfigAction(
   _prev: { ok: boolean; error?: string } | null,
   formData: FormData
 ): Promise<{ ok: boolean; error?: string }> {
-  const { user, orgId } = await requireOrgSession();
+  const { user, orgId, org } = await requireOrgSession();
   if (user.role !== "ADMIN") return { ok: false, error: "Forbidden" };
+  assertOrgCanMutate({ access: org.access, userRole: user.role, kind: "GENERAL" });
 
   const businessNumber = (formData.get("businessNumber") as string | null)?.trim() ?? "";
   const phoneNumberId = (formData.get("phoneNumberId") as string | null)?.trim() ?? "";
@@ -105,8 +108,9 @@ export async function saveWhatsAppConfigAction(
 }
 
 export async function deleteWhatsAppConfigAction(): Promise<{ ok: boolean; error?: string }> {
-  const { user, orgId } = await requireOrgSession();
+  const { user, orgId, org } = await requireOrgSession();
   if (user.role !== "ADMIN") return { ok: false, error: "Forbidden" };
+  assertOrgCanMutate({ access: org.access, userRole: user.role, kind: "GENERAL" });
 
   try {
     await deleteOrgWhatsAppConfig(orgId);

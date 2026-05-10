@@ -4,10 +4,12 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireOrgSession } from "@/lib/org-context";
 import { can } from "@/lib/permissions";
+import { assertOrgCanMutate } from "@/lib/org-write";
 
 async function requireAdmin() {
   const ctx = await requireOrgSession();
   if (!can.manageUsers(ctx.user)) redirect("/inventory");
+  assertOrgCanMutate({ access: ctx.org.access, userRole: ctx.user.role, kind: "GENERAL" });
   return ctx;
 }
 

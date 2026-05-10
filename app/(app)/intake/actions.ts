@@ -7,6 +7,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { can } from "@/lib/permissions";
 import { requireOrgSession } from "@/lib/org-context";
+import { assertOrgCanMutate } from "@/lib/org-write";
 import { sanitizeOptionalText, sanitizeText } from "@/lib/sanitize";
 import { generateJobNumber } from "@/app/(app)/jobs/new/actions";
 import { checkJobLimit } from "@/lib/plan-limits";
@@ -59,8 +60,9 @@ const updateDetailsSchema = z.object({
 });
 
 export async function updateRepairRequestDetailsAction(formData: FormData) {
-  const { user, orgId } = await requireOrgSession();
+  const { user, orgId, org } = await requireOrgSession();
   if (!can.manageIntake(user)) return { error: "Forbidden" } as const;
+  assertOrgCanMutate({ access: org.access, userRole: user.role, kind: "GENERAL" });
 
   // FormData.get returns null when missing; Zod optional() expects undefined.
   const get = (key: string) => formData.get(key) ?? undefined;
@@ -143,8 +145,9 @@ const statusSchema = z.object({
 });
 
 export async function setRepairRequestStatusAction(input: { id: string; status: RepairRequestStatus }) {
-  const { session, user, orgId } = await requireOrgSession();
+  const { session, user, orgId, org } = await requireOrgSession();
   if (!can.manageIntake(user)) return { error: "Forbidden" } as const;
+  assertOrgCanMutate({ access: org.access, userRole: user.role, kind: "GENERAL" });
 
   const parsed = statusSchema.safeParse(input);
   if (!parsed.success) return { error: "Invalid status" } as const;
@@ -258,8 +261,9 @@ const deleteSchema = z.object({
 });
 
 export async function deleteRepairRequestAction(formData: FormData) {
-  const { user, orgId } = await requireOrgSession();
+  const { user, orgId, org } = await requireOrgSession();
   if (user.role !== Role.ADMIN) return { error: "Forbidden" } as const;
+  assertOrgCanMutate({ access: org.access, userRole: user.role, kind: "GENERAL" });
 
   const parsed = deleteSchema.safeParse({ id: formData.get("id") });
   if (!parsed.success) return { error: "Invalid request" } as const;

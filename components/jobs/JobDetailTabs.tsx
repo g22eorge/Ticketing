@@ -873,50 +873,49 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
         ))}
       </div>
 
-      <div className="hidden min-[1025px]:block rounded-xl border border-[var(--line)] bg-[var(--panel)] p-3">
-          <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--ink-muted)]">Documents</p>
-          <div className="flex flex-wrap gap-2">
-            {showJobCardAction ? (
-              <a
-                href={`/api/jobs/${job.id}/job-card`}
-                target="_blank"
-                rel="noreferrer"
-                className="btn-premium-secondary inline-flex shrink-0 items-center justify-center rounded-lg px-3 py-1.5 text-[13px] sm:inline-block sm:w-auto sm:py-2 sm:text-sm"
-              >
-                Generate Job Card
-              </a>
-            ) : null}
-            {showQuotationAction ? (
-              <a
-                href={`/api/jobs/${job.id}/quotation`}
-                target="_blank"
-                rel="noreferrer"
-                className="btn-premium-secondary inline-flex shrink-0 items-center justify-center rounded-lg px-3 py-1.5 text-[13px] sm:inline-block sm:w-auto sm:py-2 sm:text-sm"
-              >
-                Generate Quotation
-              </a>
-            ) : null}
-            {showInvoiceAction ? (
-              <a
-                href={`/api/jobs/${job.id}/invoice`}
-                target="_blank"
-                rel="noreferrer"
-                className="btn-premium-secondary inline-flex shrink-0 items-center justify-center rounded-lg px-3 py-1.5 text-[13px] sm:inline-block sm:w-auto sm:py-2 sm:text-sm"
-              >
-                Generate Invoice
-              </a>
-            ) : null}
-          </div>
-          {documentHints.length > 0 ? (
-            <div className="mt-2 space-y-1">
-              {documentHints.map((hint) => (
-                <p key={hint} className="text-xs text-[var(--ink-muted)]">
-                  {hint}
-                </p>
-              ))}
-            </div>
-          ) : null}
-        </div>
+       <div className="hidden min-[1025px]:block rounded-xl border border-[var(--line)] bg-[var(--panel)] p-3">
+         <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--ink-muted)]">Documents</p>
+         <div className="flex flex-wrap items-center gap-2">
+           {showJobCardAction || showQuotationAction || showInvoiceAction ? (
+             <details className="relative">
+               <summary className="btn-premium-secondary inline-flex cursor-pointer list-none items-center justify-center gap-2 rounded-lg px-3 py-1.5 text-[13px] sm:py-2 sm:text-sm">
+                 <span>Open</span>
+                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+               </summary>
+               <div className="panel-shadow absolute right-0 z-20 mt-2 w-56 overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
+                 <div className="py-1">
+                   {showJobCardAction ? (
+                     <a href={`/api/jobs/${job.id}/job-card`} target="_blank" rel="noreferrer" className="flex w-full items-center gap-2.5 px-4 py-3 text-left text-sm font-medium text-[var(--ink)] transition hover:bg-[var(--panel-strong)]">
+                       Job Card PDF
+                     </a>
+                   ) : null}
+                   {showQuotationAction ? (
+                     <a href={`/api/jobs/${job.id}/quotation`} target="_blank" rel="noreferrer" className="flex w-full items-center gap-2.5 px-4 py-3 text-left text-sm font-medium text-[var(--ink)] transition hover:bg-[var(--panel-strong)]">
+                       Quotation PDF
+                     </a>
+                   ) : null}
+                   {showInvoiceAction ? (
+                     <a href={`/api/jobs/${job.id}/invoice`} target="_blank" rel="noreferrer" className="flex w-full items-center gap-2.5 px-4 py-3 text-left text-sm font-medium text-[var(--ink)] transition hover:bg-[var(--panel-strong)]">
+                       Invoice PDF
+                     </a>
+                   ) : null}
+                 </div>
+               </div>
+             </details>
+           ) : (
+             <p className="text-sm text-[var(--ink-muted)]">No documents available.</p>
+           )}
+         </div>
+         {documentHints.length > 0 ? (
+           <div className="mt-2 space-y-1">
+             {documentHints.map((hint) => (
+               <p key={hint} className="text-xs text-[var(--ink-muted)]">
+                 {hint}
+               </p>
+             ))}
+           </div>
+         ) : null}
+       </div>
 
       {active === "overview" ? (
         <div className={panelShellClass}>
