@@ -525,13 +525,6 @@ export default async function NotificationTemplatesPage({
         {error ? <p className="mt-3 text-sm text-red-600">{error}</p> : null}
         <div className="mt-4 flex flex-wrap gap-2">
           {user.role === "ADMIN" ? (
-            <form action={seedDefaults}>
-              <button className="btn-premium rounded-lg px-3 py-2 text-sm">
-                {templates.length === 0 ? "Create Default Templates" : "Re-seed Defaults"}
-              </button>
-            </form>
-          ) : null}
-          {user.role === "ADMIN" ? (
             <form action={deduplicateTemplates}>
               <button className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-100">
                 Remove Duplicates
