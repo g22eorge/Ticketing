@@ -7,6 +7,7 @@ import { can } from "@/lib/permissions";
 import { PLAN_LIMITS, PLAN_LABELS } from "@/lib/plan-limits";
 import { submitOrder, getOrCreateIpnId, buildMerchantRef, PLAN_PRICES, CURRENCY } from "@/lib/pesapal";
 import { formatMoney } from "@/lib/currency";
+import { getPesapalConsumerKey, getPesapalConsumerSecret } from "@/lib/platform-settings";
 
 // ── Server actions ────────────────────────────────────────────────────────────
 
@@ -99,6 +100,7 @@ export default async function BillingPage({
         trialEndsAt: true,
         planRenewsAt: true,
         planCancelledAt: true,
+        flwSubscriptionId: true,
       },
     }),
   ]);
@@ -134,6 +136,19 @@ export default async function BillingPage({
 
   const isPastDue = org.billingStatus === "PAST_DUE";
 
+  const paymentNotice = (() => {
+    if (params.payment === "success") return { tone: "success" as const, title: "Payment received", body: "Your subscription is active." };
+    if (params.payment === "failed") return { tone: "error" as const, title: "Payment failed", body: "No charge was captured. Try again or use a different method." };
+    if (params.payment === "cancelled") return { tone: "warn" as const, title: "Payment cancelled", body: "You can resume payment anytime." };
+    return null;
+  })();
+
+  const [pesapalKey, pesapalSecret] = isAdmin
+    ? await Promise.all([getPesapalConsumerKey(), getPesapalConsumerSecret()])
+    : [null, null];
+  const pesapalConfigured = Boolean(pesapalKey && pesapalSecret);
+  const pesapalMode = process.env.PESAPAL_ENV === "production" ? "live" : "sandbox";
+
   // ── Suspension wall ───────────────────────────────────────────────────────
   if (isSuspended || isStarterTrialExpired || isGrowthTrialExpired || isPastDue) {
     const alertTitle = isGrowthTrialExpired
@@ -150,6 +165,19 @@ export default async function BillingPage({
 
     return (
       <div className="space-y-6">
+        {paymentNotice ? (
+          <div className={`rounded-xl border px-5 py-4 text-sm ${
+            paymentNotice.tone === "success"
+              ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-200"
+              : paymentNotice.tone === "error"
+                ? "border-red-500/30 bg-red-500/10 text-red-200"
+                : "border-amber-500/30 bg-amber-500/10 text-amber-200"
+          }`}>
+            <p className="font-semibold text-[var(--ink)]">{paymentNotice.title}</p>
+            <p className="mt-1 text-[var(--ink-muted)]">{paymentNotice.body}</p>
+          </div>
+        ) : null}
+
         {/* Alert banner */}
         <div className="rounded-xl border border-red-500/40 bg-red-500/10 px-5 py-5">
           <p className="font-semibold text-red-400 text-lg">{alertTitle}</p>
@@ -254,6 +282,19 @@ export default async function BillingPage({
             </div>
           </div>
         )}
+
+        {isAdmin ? (
+          <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] p-5">
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Payment provider</p>
+            <p className="mt-1 text-sm text-[var(--ink)]">Pesapal ({pesapalMode})</p>
+            <p className="mt-1 text-xs text-[var(--ink-muted)]">
+              {pesapalConfigured ? "Credentials configured." : "Missing Pesapal credentials. Set PESAPAL_CONSUMER_KEY and PESAPAL_CONSUMER_SECRET in Platform Settings or environment variables."}
+            </p>
+            {org.flwSubscriptionId ? (
+              <p className="mt-2 text-xs text-[var(--ink-muted)]">Last payment reference: <span className="mono">{org.flwSubscriptionId}</span></p>
+            ) : null}
+          </div>
+        ) : null}
       </div>
     );
   }
@@ -302,6 +343,19 @@ export default async function BillingPage({
 
   return (
     <div className="space-y-6">
+      {paymentNotice ? (
+        <div className={`rounded-xl border px-5 py-4 text-sm ${
+          paymentNotice.tone === "success"
+            ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-200"
+            : paymentNotice.tone === "error"
+              ? "border-red-500/30 bg-red-500/10 text-red-200"
+              : "border-amber-500/30 bg-amber-500/10 text-amber-200"
+        }`}>
+          <p className="font-semibold text-[var(--ink)]">{paymentNotice.title}</p>
+          <p className="mt-1 text-[var(--ink-muted)]">{paymentNotice.body}</p>
+        </div>
+      ) : null}
+
       {/* Header */}
       <div>
         <h1 className="text-xl font-bold text-[var(--ink)]">Billing & Plan</h1>
@@ -309,6 +363,26 @@ export default async function BillingPage({
           Manage your subscription for <span className="font-medium text-[var(--ink)]">{org.name}</span>
         </p>
       </div>
+
+      {isAdmin ? (
+        <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-5">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Payment provider</p>
+              <p className="mt-1 text-sm text-[var(--ink)]">Pesapal ({pesapalMode})</p>
+              <p className="mt-1 text-xs text-[var(--ink-muted)]">
+                {pesapalConfigured ? "Credentials configured." : "Missing Pesapal credentials. Set PESAPAL_CONSUMER_KEY and PESAPAL_CONSUMER_SECRET in Platform Settings or environment variables."}
+              </p>
+              {org.flwSubscriptionId ? (
+                <p className="mt-2 text-xs text-[var(--ink-muted)]">Last payment reference: <span className="mono">{org.flwSubscriptionId}</span></p>
+              ) : null}
+            </div>
+            <div className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-xs text-[var(--ink-muted)]">
+              Callback: <span className="mono">/api/billing/callback</span>
+            </div>
+          </div>
+        </section>
+      ) : null}
 
       {/* Current status card */}
       <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-5 space-y-3">
