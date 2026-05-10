@@ -122,6 +122,7 @@ model User {
   notifications           Notification[]
   notificationPreferences NotificationPreferences?
   partReservations        PartReservation[]        @relation("PartReservedBy")
+  deliveryNotesCreated    DeliveryNote[]           @relation("DeliveryNoteCreatedBy")
   stockTransactions       PartStockTransaction[]   @relation("StockTxnBy")
   paymentsCreated         Payment[]                @relation("PaymentCreatedBy")
   refundsCreated          Refund[]
@@ -277,6 +278,11 @@ enum PaymentMethod {
   BANK_TRANSFER
   CARD
   OTHER
+}
+
+enum SaleBillingMode {
+  CASH
+  INVOICE
 }
 
 enum SaleStatus {
@@ -641,6 +647,10 @@ model Sale {
   status     SaleStatus @default(OPEN)
   saleNumber String     @unique
 
+  billingMode SaleBillingMode @default(CASH)
+  invoiceNumber String?
+  invoicedAt    DateTime?
+
   currency String @default("UGX")
 
   subtotal       Float     @default(0)
@@ -656,6 +666,7 @@ model Sale {
   payments          Payment[]
   refunds           Refund[]
   creditNotes       CreditNote[]
+  deliveryNotes     DeliveryNote[]
   stockTransactions PartStockTransaction[]
 
   createdById String?
@@ -668,6 +679,52 @@ model Sale {
   @@index([orgId, status])
   @@index([branchId])
   @@index([clientId])
+}
+
+model DeliveryNote {
+  id    String       @id @default(cuid())
+  orgId String
+  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  saleId String
+  sale   Sale   @relation(fields: [saleId], references: [id], onDelete: Cascade)
+
+  deliveryNoteNumber String   @unique
+  deliveredAt        DateTime @default(now())
+  deliveryMethod     DeliveryMethod?
+
+  deliveredByName String
+  receivedByName  String
+  receivedBySignatureText String?
+
+  note String?
+  createdById String?
+  createdBy   User?   @relation("DeliveryNoteCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime @default(now())
+
+  items DeliveryNoteItem[]
+
+  @@index([orgId, deliveredAt])
+  @@index([saleId])
+}
+
+model DeliveryNoteItem {
+  id             String       @id @default(cuid())
+  deliveryNoteId String
+  deliveryNote   DeliveryNote @relation(fields: [deliveryNoteId], references: [id], onDelete: Cascade)
+
+  saleItemId  String?
+  saleItem    SaleItem? @relation(fields: [saleItemId], references: [id], onDelete: SetNull)
+
+  partId      String?
+  part        Part?     @relation(fields: [partId], references: [id], onDelete: SetNull)
+
+  description String
+  quantity    Int
+
+  @@index([deliveryNoteId])
+  @@index([saleItemId])
+  @@index([partId])
 }
 
 model SaleItem {
@@ -684,6 +741,8 @@ model SaleItem {
   lineTotal   Float
 
   createdAt DateTime @default(now())
+
+  deliveryNoteItems DeliveryNoteItem[]
 
   @@index([saleId])
   @@index([partId])
@@ -708,6 +767,7 @@ model Part {
   saleItems          SaleItem[]
   purchaseOrderItems PurchaseOrderItem[]
   creditNoteItems   CreditNoteItem[]
+  deliveryNoteItems DeliveryNoteItem[]
 
   @@unique([sku, orgId])
   @@index([orgId, isActive])

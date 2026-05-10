@@ -401,6 +401,9 @@ export async function POST() {
         "clientId" TEXT,
         "status" TEXT NOT NULL DEFAULT 'OPEN',
         "saleNumber" TEXT NOT NULL UNIQUE,
+        "billingMode" TEXT NOT NULL DEFAULT 'CASH',
+        "invoiceNumber" TEXT,
+        "invoicedAt" DATETIME,
         "currency" TEXT NOT NULL DEFAULT 'UGX',
         "subtotal" REAL NOT NULL DEFAULT 0,
         "discountAmount" REAL NOT NULL DEFAULT 0,
@@ -437,6 +440,9 @@ export async function POST() {
     await addSaleColumn("clientId", "TEXT");
     await addSaleColumn("status", "TEXT", "'OPEN'");
     await addSaleColumn("saleNumber", "TEXT");
+    await addSaleColumn("billingMode", "TEXT", "'CASH'");
+    await addSaleColumn("invoiceNumber", "TEXT");
+    await addSaleColumn("invoicedAt", "DATETIME");
     await addSaleColumn("currency", "TEXT", "'UGX'");
     await addSaleColumn("subtotal", "REAL", "0");
     await addSaleColumn("discountAmount", "REAL", "0");
@@ -481,6 +487,54 @@ export async function POST() {
     }
     await prisma.$executeRawUnsafe('CREATE INDEX IF NOT EXISTS "SaleItem_saleId_idx" ON "SaleItem"("saleId")');
     await prisma.$executeRawUnsafe('CREATE INDEX IF NOT EXISTS "SaleItem_partId_idx" ON "SaleItem"("partId")');
+  }
+
+  // Delivery notes (sale fulfillment)
+  const hasDeliveryNote = await tableExists("DeliveryNote");
+  if (!hasDeliveryNote) {
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "DeliveryNote" (
+        "id" TEXT NOT NULL PRIMARY KEY,
+        "orgId" TEXT NOT NULL,
+        "saleId" TEXT NOT NULL,
+        "deliveryNoteNumber" TEXT NOT NULL UNIQUE,
+        "deliveredAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        "deliveryMethod" TEXT,
+        "deliveredByName" TEXT NOT NULL,
+        "receivedByName" TEXT NOT NULL,
+        "receivedBySignatureText" TEXT,
+        "note" TEXT,
+        "createdById" TEXT,
+        "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY ("orgId") REFERENCES "Organization"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+        FOREIGN KEY ("saleId") REFERENCES "Sale"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+        FOREIGN KEY ("createdById") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE
+      )
+    `);
+    await prisma.$executeRawUnsafe('CREATE INDEX IF NOT EXISTS "DeliveryNote_orgId_deliveredAt_idx" ON "DeliveryNote"("orgId", "deliveredAt")');
+    await prisma.$executeRawUnsafe('CREATE INDEX IF NOT EXISTS "DeliveryNote_saleId_idx" ON "DeliveryNote"("saleId")');
+    changes.push({ kind: "create_table", detail: "Created DeliveryNote + indexes" });
+  }
+
+  const hasDeliveryNoteItem = await tableExists("DeliveryNoteItem");
+  if (!hasDeliveryNoteItem) {
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "DeliveryNoteItem" (
+        "id" TEXT NOT NULL PRIMARY KEY,
+        "deliveryNoteId" TEXT NOT NULL,
+        "saleItemId" TEXT,
+        "partId" TEXT,
+        "description" TEXT NOT NULL,
+        "quantity" INTEGER NOT NULL,
+        FOREIGN KEY ("deliveryNoteId") REFERENCES "DeliveryNote"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+        FOREIGN KEY ("saleItemId") REFERENCES "SaleItem"("id") ON DELETE SET NULL ON UPDATE CASCADE,
+        FOREIGN KEY ("partId") REFERENCES "Part"("id") ON DELETE SET NULL ON UPDATE CASCADE
+      )
+    `);
+    await prisma.$executeRawUnsafe('CREATE INDEX IF NOT EXISTS "DeliveryNoteItem_deliveryNoteId_idx" ON "DeliveryNoteItem"("deliveryNoteId")');
+    await prisma.$executeRawUnsafe('CREATE INDEX IF NOT EXISTS "DeliveryNoteItem_saleItemId_idx" ON "DeliveryNoteItem"("saleItemId")');
+    await prisma.$executeRawUnsafe('CREATE INDEX IF NOT EXISTS "DeliveryNoteItem_partId_idx" ON "DeliveryNoteItem"("partId")');
+    changes.push({ kind: "create_table", detail: "Created DeliveryNoteItem + indexes" });
   }
 
   // Credit notes (sale-only) + credit note items

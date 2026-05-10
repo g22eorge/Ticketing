@@ -120,6 +120,8 @@ const ITEMS = {
   jobCards:    { href: "/documents/job-cards",   label: "Job Cards",  icon: invoiceIcon },
   quotations:  { href: "/documents/quotations",  label: "Quotes",    icon: invoiceIcon },
   invoiceDocs: { href: "/documents/invoices",    label: "Invoices",  icon: invoiceIcon },
+  receipts:    { href: "/documents/receipts",    label: "Receipts",  icon: invoiceIcon },
+  deliveryNotes:{ href: "/documents/delivery-notes", label: "Delivery", icon: invoiceIcon },
 } satisfies Record<string, NavItem>;
 
 /* ── role-based nav config ── */
@@ -141,6 +143,8 @@ function getMoreGroups(role: Role, permissions: string[]): NavGroup[] {
     if (href === ITEMS.invoiceDocs.href) return can.viewFinancials(permUser);
     if (href === ITEMS.quotations.href) return can.viewFinancials(permUser) || role === "TECHNICIAN_INTERNAL";
     if (href === ITEMS.jobCards.href) return can.generateJobCards(permUser);
+    if (href === ITEMS.receipts.href) return can.viewFinancials(permUser);
+    if (href === ITEMS.deliveryNotes.href) return can.viewFinancials(permUser) || ["OPS", "FRONT_DESK", "ADMIN"].includes(role);
     if (href === ITEMS.payoutFollowups.href) return can.reviewExternalBills(permUser) || can.approveInvoices(permUser);
     if (href === ITEMS.users.href || href === ITEMS.branding.href) return role === "ADMIN";
     if (href === ITEMS.inventory.href) return ["ADMIN", "OPS", "TECHNICIAN_INTERNAL"].includes(role);
@@ -153,7 +157,7 @@ function getMoreGroups(role: Role, permissions: string[]): NavGroup[] {
   const groups: NavGroup[] = [
     {
       title: "Documents",
-      items: [ITEMS.jobCards, ITEMS.quotations, ITEMS.invoiceDocs],
+      items: [ITEMS.jobCards, ITEMS.quotations, ITEMS.invoiceDocs, ITEMS.receipts, ITEMS.deliveryNotes],
     },
     {
       title: "Operations",

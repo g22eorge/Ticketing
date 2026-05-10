@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 
-import { PaymentMethod } from "@prisma/client";
+import { DeliveryMethod, PaymentMethod } from "@prisma/client";
 import { Prisma } from "@prisma/client";
 
 import { formatMoney, normalizeCurrency } from "@/lib/currency";
@@ -26,6 +26,9 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
     id: string;
     saleNumber: string;
     status: string;
+    billingMode: "CASH" | "INVOICE";
+    invoiceNumber: string | null;
+    invoicedAt: Date | null;
     currency: string | null;
     subtotal: number;
     discountAmount: number;
@@ -64,6 +67,15 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
     creditNoteId: string | null;
   }> = [];
 
+  let deliveryNotes: Array<{
+    id: string;
+    deliveryNoteNumber: string;
+    deliveredAt: Date;
+    deliveryMethod: DeliveryMethod | null;
+    deliveredByName: string;
+    receivedByName: string;
+  }> = [];
+
   try {
     sale = await prisma.sale.findFirst({
       where: { id, orgId },
@@ -71,6 +83,9 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
         id: true,
         saleNumber: true,
         status: true,
+        billingMode: true,
+        invoiceNumber: true,
+        invoicedAt: true,
         currency: true,
         subtotal: true,
         discountAmount: true,
@@ -143,6 +158,24 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
     });
   } catch {
     refunds = [];
+  }
+
+  // Delivery notes are optional; keep page working if table is missing.
+  try {
+    deliveryNotes = await prisma.deliveryNote.findMany({
+      where: { orgId, saleId: sale.id },
+      orderBy: { deliveredAt: "desc" },
+      select: {
+        id: true,
+        deliveryNoteNumber: true,
+        deliveredAt: true,
+        deliveryMethod: true,
+        deliveredByName: true,
+        receivedByName: true,
+      },
+    });
+  } catch {
+    deliveryNotes = [];
   }
 
   const parts = await prisma.part.findMany({
@@ -297,6 +330,90 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
 
     revalidatePath(`/pos/${saleId}`);
     revalidatePath("/reports");
+  }
+
+  async function createDeliveryNoteAction(formData: FormData) {
+    "use server";
+    const { user, orgId, org, session } = await requireOrgSession();
+    if (!(can.viewFinancials(user) || ["ADMIN", "OPS", "FRONT_DESK"].includes(user.role))) return;
+    assertOrgCanMutate({ access: org.access, userRole: user.role, kind: "GENERAL" });
+
+    const saleId = String(formData.get("saleId") ?? "").trim();
+    const deliveredByName = String(formData.get("deliveredByName") ?? "").trim();
+    const receivedByName = String(formData.get("receivedByName") ?? "").trim();
+    const receivedBySignatureText = String(formData.get("receivedBySignatureText") ?? "").trim() || null;
+    const note = String(formData.get("note") ?? "").trim() || null;
+    const deliveryMethodRaw = String(formData.get("deliveryMethod") ?? "").trim();
+    const deliveredAtRaw = String(formData.get("deliveredAt") ?? "").trim();
+
+    if (!saleId || !deliveredByName || !receivedByName) return;
+
+    const deliveryMethod: DeliveryMethod | null =
+      deliveryMethodRaw && (Object.values(DeliveryMethod) as string[]).includes(deliveryMethodRaw)
+        ? (deliveryMethodRaw as DeliveryMethod)
+        : null;
+    const deliveredAt = deliveredAtRaw ? new Date(deliveredAtRaw) : new Date();
+    if (Number.isNaN(deliveredAt.getTime())) return;
+
+    const saleRow = await prisma.sale.findFirst({
+      where: { id: saleId, orgId },
+      select: { id: true, saleNumber: true },
+    });
+    if (!saleRow) return;
+
+    const items = await prisma.saleItem.findMany({
+      where: { saleId },
+      orderBy: { createdAt: "asc" },
+      select: { id: true, description: true, quantity: true, partId: true },
+    });
+
+    const picked: Array<{ saleItemId: string; description: string; quantity: number; partId: string | null }> = [];
+    for (const it of items) {
+      const raw = String(formData.get(`deliverQty:${it.id}`) ?? "").trim();
+      if (!raw) continue;
+      const qty = Math.max(0, Math.floor(Number(raw)));
+      if (!Number.isFinite(qty) || qty <= 0) continue;
+      if (qty > it.quantity) continue;
+      picked.push({ saleItemId: it.id, description: it.description, quantity: qty, partId: it.partId });
+    }
+    if (picked.length === 0) return;
+
+    try {
+      await prisma.$transaction(async (tx) => {
+        const year = new Date().getFullYear();
+        const count = await tx.deliveryNote.count({ where: { orgId } }).catch(() => 0);
+        const deliveryNoteNumber = `DN-${year}-${String(count + 1).padStart(4, "0")}`;
+
+        await tx.deliveryNote.create({
+          data: {
+            orgId,
+            saleId,
+            deliveryNoteNumber,
+            deliveredAt,
+            deliveryMethod,
+            deliveredByName,
+            receivedByName,
+            receivedBySignatureText,
+            note,
+            createdById: session.user.id,
+            items: {
+              create: picked.map((p) => ({
+                saleItemId: p.saleItemId,
+                partId: p.partId,
+                description: p.description,
+                quantity: p.quantity,
+              })),
+            },
+          },
+        });
+      });
+    } catch {
+      // swallow errors for environments where delivery notes aren't migrated yet
+      return;
+    }
+
+    revalidatePath(`/pos/${saleId}`);
+    revalidatePath("/documents/delivery-notes");
   }
 
   async function createCreditNoteAction(formData: FormData) {
@@ -723,6 +840,120 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
               {sale.payments.length === 0 ? (
                 <tr className="border-t border-[var(--line)]">
                   <td className="px-3 py-6 text-sm text-[var(--ink-muted)]" colSpan={4}>No payments yet.</td>
+                </tr>
+              ) : null}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Delivery Notes</p>
+        <p className="mt-1 text-xs text-[var(--ink-muted)]">
+          Create delivery notes after issuing an invoice. Delivery notes do not affect cashflow.
+        </p>
+
+        <form action={createDeliveryNoteAction} className="mt-3 grid gap-2 md:grid-cols-2">
+          <input type="hidden" name="saleId" value={sale.id} />
+          <input
+            name="deliveredByName"
+            placeholder="Delivered by (name)"
+            className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm outline-none focus:border-[var(--accent)]/50"
+            required
+          />
+          <input
+            name="receivedByName"
+            placeholder="Received by (name)"
+            className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm outline-none focus:border-[var(--accent)]/50"
+            required
+          />
+          <input
+            name="receivedBySignatureText"
+            placeholder="Signature text (optional)"
+            className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm outline-none focus:border-[var(--accent)]/50"
+          />
+          <select
+            name="deliveryMethod"
+            defaultValue=""
+            className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm outline-none focus:border-[var(--accent)]/50"
+          >
+            <option value="">(method)</option>
+            {Object.values(DeliveryMethod).map((m) => (
+              <option key={m} value={m}>{m.replaceAll("_", " ")}</option>
+            ))}
+          </select>
+          <input
+            type="datetime-local"
+            name="deliveredAt"
+            className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm outline-none focus:border-[var(--accent)]/50"
+          />
+          <textarea
+            name="note"
+            placeholder="Note (optional)"
+            className="md:col-span-2 min-h-[64px] rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm outline-none focus:border-[var(--accent)]/50"
+          />
+
+          <div className="md:col-span-2 overflow-hidden rounded-lg border border-[var(--line)] bg-[var(--panel-strong)]">
+            <table className="w-full text-left text-sm">
+              <thead className="bg-[var(--panel)] text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
+                <tr>
+                  <th className="px-3 py-2">Item</th>
+                  <th className="px-3 py-2">Sold</th>
+                  <th className="px-3 py-2">Deliver Qty</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sale.items.map((it) => (
+                  <tr key={it.id} className="border-t border-[var(--line)]">
+                    <td className="px-3 py-2">{it.description}</td>
+                    <td className="px-3 py-2 text-[var(--ink-muted)]">{it.quantity}</td>
+                    <td className="px-3 py-2">
+                      <input
+                        name={`deliverQty:${it.id}`}
+                        inputMode="numeric"
+                        placeholder="0"
+                        className="w-24 rounded-lg border border-[var(--line)] bg-[var(--panel)] px-2 py-1.5 text-sm outline-none focus:border-[var(--accent)]/50"
+                      />
+                    </td>
+                  </tr>
+                ))}
+                {sale.items.length === 0 ? (
+                  <tr className="border-t border-[var(--line)]">
+                    <td className="px-3 py-6 text-sm text-[var(--ink-muted)]" colSpan={3}>No items yet.</td>
+                  </tr>
+                ) : null}
+              </tbody>
+            </table>
+          </div>
+
+          <button className="btn-premium rounded-lg px-4 py-2 text-sm text-white md:col-span-2">Create Delivery Note</button>
+        </form>
+
+        <div className="mt-4 overflow-hidden rounded-lg border border-[var(--line)]">
+          <table className="w-full text-left text-sm">
+            <thead className="bg-[var(--panel-strong)] text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
+              <tr>
+                <th className="px-3 py-2">Delivery Note</th>
+                <th className="hidden px-3 py-2 md:table-cell">Delivered</th>
+                <th className="px-3 py-2">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {deliveryNotes.map((dn) => (
+                <tr key={dn.id} className="border-t border-[var(--line)]">
+                  <td className="px-3 py-2">
+                    <p className="mono font-semibold">{dn.deliveryNoteNumber}</p>
+                    <p className="text-xs text-[var(--ink-muted)]">{dn.deliveredByName} → {dn.receivedByName}</p>
+                  </td>
+                  <td className="hidden px-3 py-2 text-[var(--ink-muted)] md:table-cell">{dn.deliveredAt.toLocaleString()}</td>
+                  <td className="px-3 py-2">
+                    <a href={`/api/delivery-notes/${dn.id}`} target="_blank" rel="noreferrer" className="btn-premium-secondary inline-flex rounded-md px-2.5 py-1.5 text-xs">Download</a>
+                  </td>
+                </tr>
+              ))}
+              {deliveryNotes.length === 0 ? (
+                <tr className="border-t border-[var(--line)]">
+                  <td className="px-3 py-6 text-sm text-[var(--ink-muted)]" colSpan={3}>No delivery notes yet.</td>
                 </tr>
               ) : null}
             </tbody>
