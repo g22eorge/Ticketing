@@ -6,7 +6,6 @@ import { JobStatus, OutboundMessageChannel, OutboundMessageType, Prisma } from "
 import { requireOrgSession } from "@/lib/org-context";
 import { prisma } from "@/lib/prisma";
 import { extractTemplateVariables } from "@/lib/notifications/templates";
-import { upsertDefaultCommunicationPolicies, upsertDefaultCommunicationTemplates } from "@/lib/notifications/default-templates";
 import { UI_JOB_STATUSES, normalizeJobStatus, type JobStatus as LegacyJobStatus } from "@/lib/job-status";
 import { revalidatePath } from "next/cache";
 
@@ -95,17 +94,7 @@ export default async function NotificationTemplatesPage({
     </div>
   );
 
-  async function seedDefaults() {
-    "use server";
-    const { user: actor, orgId: seedOrgId } = await requireOrgSession();
-    if (actor.role !== "ADMIN") return;
-    await Promise.all([
-      upsertDefaultCommunicationTemplates(seedOrgId),
-      upsertDefaultCommunicationPolicies(seedOrgId),
-    ]);
-    revalidatePath("/settings/notifications/templates");
-    redirect("/settings/notifications/templates?saved=defaults+seeded");
-  }
+  // No default template seeding. Orgs define their own templates.
 
   async function createTemplate(formData: FormData) {
     "use server";

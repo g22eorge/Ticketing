@@ -659,16 +659,8 @@ export async function POST() {
     await addBrandingColumn("receiptTemplateKey", "TEXT", "'receipt_classic'");
   }
 
-  // Replace hardcoded "Eagle Info Solutions" in communication templates
-  const templateTableExists = await tableExists("CommunicationTemplate");
-  if (templateTableExists) {
-    const updated = await prisma.$executeRawUnsafe(
-      `UPDATE "CommunicationTemplate" SET body = REPLACE(body, 'Eagle Info Solutions', 'Your Repair Team') WHERE body LIKE '%Eagle Info Solutions%'`
-    );
-    if (updated > 0) {
-      changes.push({ kind: "data_fix", detail: `Replaced 'Eagle Info Solutions' in ${updated} communication template(s)` });
-    }
-  }
+  // Communication templates are org-owned and user-defined.
+  // Do not mutate template bodies during db-fix.
 
   // Branches (multi-branch roll-out). Some production snapshots predate Branch + User.branchId.
   const hasBranch = await tableExists("Branch");
