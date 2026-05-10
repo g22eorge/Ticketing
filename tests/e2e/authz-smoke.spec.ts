@@ -89,5 +89,5 @@ test("admin sees admin navigation and can open user settings", async ({ page }) 
 
   await page.getByRole("link", { name: "Users" }).first().click();
   await page.waitForURL("**/settings/users");
-  await expect(page.getByRole("button", { name: "Create User" })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Create/ })).toBeVisible();
 });

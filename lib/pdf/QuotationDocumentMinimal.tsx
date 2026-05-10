@@ -92,7 +92,7 @@ export function QuotationDocumentMinimal(props: Props) {
             {addressLine ? <Text style={s.tiny}>{addressLine}</Text> : null}
           </View>
           {props.companyLogoUrl ? (
-            <Image src={props.companyLogoUrl} style={{ width: 54, height: 54 }} />
+            <Image src={props.companyLogoUrl} alt="" style={{ width: 54, height: 54 }} />
           ) : null}
         </View>
 

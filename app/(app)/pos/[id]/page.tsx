@@ -14,7 +14,7 @@ import { assertOrgCanMutate } from "@/lib/org-write";
 const METHODS = Object.values(PaymentMethod);
 
 export default async function SalePage({ params }: { params: Promise<{ id: string }> }) {
-  const { user, orgId, org, session } = await requireOrgSession();
+  const { user, orgId, org } = await requireOrgSession();
   if (!(can.viewFinancials(user) || ["ADMIN", "OPS", "FRONT_DESK"].includes(user.role))) {
     redirect("/dashboard");
   }

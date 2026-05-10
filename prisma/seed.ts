@@ -1,5 +1,5 @@
 import { hashPassword } from "better-auth/crypto";
-import { DeviceType, JobStatus, OutboundMessageChannel, Prisma, RepairPath, Role } from "@prisma/client";
+import { DeviceType, JobStatus, Prisma, RepairPath, Role } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
 

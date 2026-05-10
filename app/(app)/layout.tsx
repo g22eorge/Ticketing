@@ -9,7 +9,6 @@ import { can } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { requireOrgSession } from "@/lib/org-context";
 import { filterSupportedJobStatuses } from "@/lib/job-status-server";
-import { redirect } from "next/navigation";
 import { sendTrialExpiryWarning } from "@/lib/email";
 import Link from "next/link";
 

@@ -96,22 +96,22 @@ function fallbackKeyForKind(kind: DocKind) {
 
 // Return type is intentionally widened because different templates
 // may take different props shapes.
-export function InvoiceTemplateComponent(key: TemplateKey): ComponentType<any> {
+export function InvoiceTemplateComponent(key: TemplateKey): ComponentType<object> {
   if (key === "invoice_green") return InvoiceDocumentV2;
   if (key === "invoice_minimal") return InvoiceDocument;
   return InvoiceDocument;
 }
 
-export function QuotationTemplateComponent(key: TemplateKey): ComponentType<any> {
+export function QuotationTemplateComponent(key: TemplateKey): ComponentType<object> {
   if (key === "quote_minimal") return QuotationDocumentMinimal;
   return QuotationDocument;
 }
 
-export function JobCardTemplateComponent(_key: TemplateKey): ComponentType<any> {
+export function JobCardTemplateComponent(_key: TemplateKey): ComponentType<object> {
   if (_key === "job_card_minimal") return JobCardDocument;
   return JobCardDocument;
 }
 
-export function ReceiptTemplateComponent(_key: TemplateKey): ComponentType<any> {
+export function ReceiptTemplateComponent(_key: TemplateKey): ComponentType<object> {
   return SaleReceiptDocument;
 }
