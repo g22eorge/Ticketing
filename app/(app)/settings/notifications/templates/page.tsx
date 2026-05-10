@@ -59,6 +59,55 @@ export default async function NotificationTemplatesPage({
   const saved = params.saved ? String(params.saved) : "";
   const error = params.error ? String(params.error) : "";
 
+  async function bulkReplaceBrandName() {
+    "use server";
+
+    const { user: actor, orgId: replaceOrgId } = await requireOrgSession();
+    if (actor.role !== "ADMIN") redirect("/dashboard");
+
+    const branding = await prisma.documentBrandingSettings
+      .findFirst({ where: { orgId: replaceOrgId }, select: { companyName: true } })
+      .catch(() => null);
+    const companyName = (branding?.companyName ?? "").trim();
+    if (!companyName) {
+      redirect("/settings/notifications/templates?error=Set+company+name+first+in+Settings+%E2%86%92+Branding");
+    }
+
+    const rows = await prisma.communicationTemplate.findMany({
+      where: {
+        orgId: replaceOrgId,
+        OR: [
+          { body: { contains: "Eagle Info Solutions" } },
+          { body: { contains: "Your Repair Team" } },
+          { subject: { contains: "Eagle Info Solutions" } },
+          { subject: { contains: "Your Repair Team" } },
+        ],
+      },
+      select: { id: true, body: true, subject: true },
+    });
+
+    let updated = 0;
+    for (const t of rows) {
+      const nextBody = t.body
+        .replaceAll("Eagle Info Solutions", companyName)
+        .replaceAll("Your Repair Team", companyName);
+      const nextSubject = t.subject
+        ? t.subject
+            .replaceAll("Eagle Info Solutions", companyName)
+            .replaceAll("Your Repair Team", companyName)
+        : null;
+      if (nextBody === t.body && nextSubject === t.subject) continue;
+      await prisma.communicationTemplate.update({
+        where: { id: t.id },
+        data: { body: nextBody, subject: nextSubject },
+      });
+      updated += 1;
+    }
+
+    revalidatePath("/settings/notifications/templates");
+    redirect(`/settings/notifications/templates?saved=${encodeURIComponent(`brand+replaced+(${updated})`)}`);
+  }
+
   if (!supportsCommsTemplates()) {
     return (
       <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 sm:p-5">
@@ -82,6 +131,17 @@ export default async function NotificationTemplatesPage({
         Notifications
       </Link>
       <div className="flex flex-wrap gap-2">
+        {user.role === "ADMIN" ? (
+          <form action={bulkReplaceBrandName}>
+            <button
+              className="btn-premium-secondary rounded-lg px-3 py-1.5 text-sm"
+              type="submit"
+              title='Replace "Eagle Info Solutions"/"Your Repair Team" with your company name'
+            >
+              Replace Brand Name
+            </button>
+          </form>
+        ) : null}
         <Link href="/settings/notifications/outbox" className="btn-premium-secondary rounded-lg px-3 py-1.5 text-sm">
           Outbox
         </Link>
