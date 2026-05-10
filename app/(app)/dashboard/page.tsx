@@ -169,6 +169,20 @@ function RevenueMarginTrendSection({
   );
 }
 
+function trimLeadingZeroTrend(
+  trendMonths: { key: string; start: Date; end: Date }[],
+  revenueTrend: { key: string; revenue: number; margin: number }[],
+) {
+  // Drop leading months where both revenue and margin are 0.
+  // If everything is 0, keep just the last month so the UI doesn't render a wall of empty boxes.
+  const firstNonZero = revenueTrend.findIndex((m) => m.revenue !== 0 || m.margin !== 0);
+  const startIndex = firstNonZero === -1 ? Math.max(0, revenueTrend.length - 1) : firstNonZero;
+  return {
+    trendMonths: trendMonths.slice(startIndex),
+    revenueTrend: revenueTrend.slice(startIndex),
+  };
+}
+
 function monthOptions(count: number) {
   const now = new Date();
   return Array.from({ length: count }, (_, index) => {
@@ -837,7 +851,8 @@ export default async function DashboardPage({
       ? earliestJob.receivedAt.getMonth() + 1
       : 1;
     const trendMonths = trendMonthsSinceStartOfYear(today, startMonthOverride);
-    const revenueTrend = await loadRevenueMarginTrend(trendMonths, orgId);
+    const revenueTrendRaw = await loadRevenueMarginTrend(trendMonths, orgId);
+    const { trendMonths: trimmedMonths, revenueTrend } = trimLeadingZeroTrend(trendMonths, revenueTrendRaw);
 
     return (
       <div className="space-y-4">
@@ -894,7 +909,7 @@ export default async function DashboardPage({
           </section>
         ) : null}
 
-        <RevenueMarginTrendSection trendMonths={trendMonths} revenueTrend={revenueTrend} currency={currency} />
+        <RevenueMarginTrendSection trendMonths={trimmedMonths} revenueTrend={revenueTrend} currency={currency} />
 
         {/* Live Repair Pipeline — with today's stats and quick actions in the header */}
         <section className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
@@ -1169,6 +1184,7 @@ export default async function DashboardPage({
     const posBalance = Math.max(0, posTotal - posPaid);
 
     const revenueTrend = await loadRevenueMarginTrend(trendMonths, orgId);
+    const trimmed = trimLeadingZeroTrend(trendMonths, revenueTrend);
 
     const payoutMap = await getJobPayoutsByIds(externalCompleted.map((job) => job.id)).catch(() => new Map());
     // externalCompleted already pre-filtered to externalPaid=false in the DB query
@@ -1245,7 +1261,7 @@ export default async function DashboardPage({
           </section>
         </div>
 
-        <RevenueMarginTrendSection trendMonths={trendMonths} revenueTrend={revenueTrend} currency={currency} />
+        <RevenueMarginTrendSection trendMonths={trimmed.trendMonths} revenueTrend={trimmed.revenueTrend} currency={currency} />
 
       </div>
     );
