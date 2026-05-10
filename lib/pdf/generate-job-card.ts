@@ -56,7 +56,7 @@ export async function generateJobCardBuffer(
     }).catch(() => null);
   }
 
-  const docElement = createElement(JobCardDoc, {
+  const docElement = createElement(JobCardDoc as never, {
     companyName: branding.companyName,
     companyTagline: branding.companyTagline ?? "",
     companyAddressLine1: branding.companyAddressLine1,

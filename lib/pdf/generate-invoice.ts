@@ -83,7 +83,7 @@ export async function generateInvoiceBuffer(
     })] : []),
   ]).catch(() => null);
 
-  const docElement = createElement(InvoiceDoc, {
+  const docElement = createElement(InvoiceDoc as never, {
     companyName: branding.companyName,
     companyTagline: branding.companyTagline ?? "",
     companyAddressLine1: branding.companyAddressLine1,

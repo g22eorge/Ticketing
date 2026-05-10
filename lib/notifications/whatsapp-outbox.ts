@@ -375,7 +375,7 @@ async function deliverEmail(row: {
         ...(intakeUrl ? ["", `Intake: ${intakeUrl}`] : []),
       ].join("\n");
 
-      const react = React.createElement(RepairRequestAlertEmail, {
+      const react = React.createElement(RepairRequestAlertEmail as never, {
         requestNumber: request.requestNumber,
         createdAtISO: request.createdAt.toISOString(),
         customerName: request.customerName,
