@@ -14,22 +14,37 @@ export type PlanLimits = {
   maxUsers: number;           // active users in the org (ADMIN, OPS, techs, etc.)
   maxJobsPerMonth: number;    // jobs created in the current calendar month
   maxParts: number;           // distinct SKUs in inventory
+  maxBranches: number;
+  maxSuppliers: number;
+  maxSalesPerMonth: number;
+  maxPurchaseOrdersPerMonth: number;
+  maxRepairRequestsPerMonth: number;
   customBranding: boolean;    // can customise invoice/document branding
   inviteLinks: boolean;       // can generate invite links (vs manual create only)
 };
 
 export const PLAN_LIMITS: Record<OrgPlan, PlanLimits> = {
   STARTER: {
-    maxUsers: 3,
-    maxJobsPerMonth: 50,
-    maxParts: 20,
+    maxUsers: 5,
+    maxJobsPerMonth: 150,
+    maxParts: 100,
+    maxBranches: 1,
+    maxSuppliers: 25,
+    maxSalesPerMonth: 300,
+    maxPurchaseOrdersPerMonth: 50,
+    maxRepairRequestsPerMonth: 300,
     customBranding: false,
     inviteLinks: true,
   },
   GROWTH: {
-    maxUsers: 15,
-    maxJobsPerMonth: 500,
-    maxParts: 200,
+    maxUsers: 40,
+    maxJobsPerMonth: 2000,
+    maxParts: 2000,
+    maxBranches: 8,
+    maxSuppliers: 500,
+    maxSalesPerMonth: 5000,
+    maxPurchaseOrdersPerMonth: 1000,
+    maxRepairRequestsPerMonth: 5000,
     customBranding: true,
     inviteLinks: true,
   },
@@ -37,6 +52,11 @@ export const PLAN_LIMITS: Record<OrgPlan, PlanLimits> = {
     maxUsers: Infinity,
     maxJobsPerMonth: Infinity,
     maxParts: Infinity,
+    maxBranches: Infinity,
+    maxSuppliers: Infinity,
+    maxSalesPerMonth: Infinity,
+    maxPurchaseOrdersPerMonth: Infinity,
+    maxRepairRequestsPerMonth: Infinity,
     customBranding: true,
     inviteLinks: true,
   },

@@ -72,6 +72,7 @@ model Organization {
   branches               Branch[]
   suppliers              Supplier[]
   purchaseOrders         PurchaseOrder[]
+  userGroups             UserGroup[]
 
   @@index([slug])
   @@index([isActive])
@@ -104,6 +105,7 @@ model User {
   image         String?
   role          Role          @default(OPS)
   isActive      Boolean       @default(true)
+  accessMode    UserAccessMode @default(FULL)
   orgId         String?
   org           Organization? @relation(fields: [orgId], references: [id], onDelete: SetNull)
   branchId      String?
@@ -133,6 +135,7 @@ model User {
   accessAuditEntries      UserAccessAudit[]        @relation("AccessAuditTarget")
   accessAuditChanges      UserAccessAudit[]        @relation("AccessAuditActor")
   invitesSent             UserInvite[]             @relation("InvitedBy")
+  groupMemberships        UserGroupMember[]
 
   @@index([orgId])
 }
@@ -160,6 +163,45 @@ model UserAccessAudit {
 
   @@index([targetUserId, createdAt])
   @@index([actorUserId, createdAt])
+}
+
+model UserGroup {
+  id          String       @id @default(cuid())
+  orgId       String
+  org         Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  members     UserGroupMember[]
+  permissions UserGroupPermission[]
+
+  @@unique([orgId, name])
+  @@index([orgId, createdAt])
+}
+
+model UserGroupMember {
+  id        String    @id @default(cuid())
+  groupId   String
+  group     UserGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime  @default(now())
+
+  @@unique([groupId, userId])
+  @@index([userId])
+}
+
+model UserGroupPermission {
+  id         String    @id @default(cuid())
+  groupId    String
+  group      UserGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  permission String
+  createdAt  DateTime  @default(now())
+
+  @@unique([groupId, permission])
+  @@index([permission])
 }
 
 model Session {
@@ -209,6 +251,11 @@ enum Role {
   // Legacy: kept for existing production rows.
   // The app normalizes this to FRONT_DESK at runtime.
   INTAKE
+}
+
+enum UserAccessMode {
+  FULL
+  READ_ONLY
 }
 
 enum JobStatus {
@@ -517,6 +564,7 @@ model Invoice {
 
   payments  Payment[]
   refunds   Refund[]
+  deliveryNotes DeliveryNote[]
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
@@ -687,8 +735,11 @@ model DeliveryNote {
   orgId String
   org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
 
-  saleId String
-  sale   Sale   @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  saleId String?
+  sale   Sale?   @relation(fields: [saleId], references: [id], onDelete: Cascade)
+
+  invoiceId String?
+  invoice   Invoice? @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
 
   deliveryNoteNumber String   @unique
   deliveredAt        DateTime @default(now())
@@ -707,6 +758,7 @@ model DeliveryNote {
 
   @@index([orgId, deliveredAt])
   @@index([saleId])
+  @@index([invoiceId])
 }
 
 model DeliveryNoteItem {
@@ -1314,4 +1366,499 @@ model PurchaseOrderItem {
   updatedAt   DateTime      @updatedAt
 
   @@index([poId])
+}
+
+model SystemAuditEvent {
+  id          String   @id @default(cuid())
+  orgId       String?
+  actorUserId String?
+  entityType  String
+  entityId    String
+  action      String
+  summary     String?
+  beforeJson  String?
+  afterJson   String?
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+
+  @@index([orgId, createdAt])
+  @@index([entityType, entityId, createdAt])
+  @@index([actorUserId, createdAt])
+}
+
+model OrgFeatureEntitlement {
+  id           String    @id @default(cuid())
+  orgId        String
+  feature      String
+  enabled      Boolean   @default(true)
+  limitValue   Float?
+  metadataJson String?
+  startsAt     DateTime?
+  endsAt       DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@unique([orgId, feature])
+  @@index([orgId, enabled])
+}
+
+model OrgSubscriptionEvent {
+  id              String   @id @default(cuid())
+  orgId           String
+  provider        String
+  eventType       String
+  providerEventId String?
+  plan            String?
+  status          String?
+  amount          Float?
+  currency        String?
+  payloadJson     String?
+  occurredAt      DateTime @default(now())
+  createdAt       DateTime @default(now())
+
+  @@index([orgId, occurredAt])
+  @@index([provider, providerEventId])
+}
+
+model OrgUsageSnapshot {
+  id           String   @id @default(cuid())
+  orgId        String
+  periodKey    String
+  metric       String
+  value        Float
+  capturedAt   DateTime @default(now())
+  metadataJson String?
+
+  @@unique([orgId, periodKey, metric])
+  @@index([orgId, metric, capturedAt])
+}
+
+model OrgSecurityPolicy {
+  id                    String   @id @default(cuid())
+  orgId                 String   @unique
+  requireMfa            Boolean  @default(false)
+  sessionTimeoutMinutes Int?
+  passwordMinLength     Int      @default(8)
+  allowedIpRanges       String?
+  updatedById           String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
+model BranchOperatingHours {
+  id        String   @id @default(cuid())
+  branchId  String
+  dayOfWeek Int
+  opensAt   String?
+  closesAt  String?
+  isClosed  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([branchId, dayOfWeek])
+  @@index([branchId])
+}
+
+model BranchNumberingSettings {
+  id               String   @id @default(cuid())
+  branchId         String   @unique
+  jobPrefix        String?
+  invoicePrefix    String?
+  receiptPrefix    String?
+  quotationPrefix  String?
+  salePrefix       String?
+  nextJobSequence  Int      @default(1)
+  nextSaleSequence Int      @default(1)
+  updatedAt        DateTime @updatedAt
+}
+
+model CustomerConsent {
+  id          String    @id @default(cuid())
+  orgId       String
+  clientId    String
+  consentType String
+  channel     String?
+  granted     Boolean   @default(true)
+  source      String?
+  capturedAt  DateTime  @default(now())
+  expiresAt   DateTime?
+  note        String?
+
+  @@index([orgId, clientId, consentType])
+  @@index([orgId, capturedAt])
+}
+
+model ClientMergeRecord {
+  id             String   @id @default(cuid())
+  orgId          String
+  sourceClientId String
+  targetClientId String
+  mergedById     String
+  reason         String?
+  snapshotJson   String?
+  mergedAt       DateTime @default(now())
+
+  @@index([orgId, mergedAt])
+  @@index([sourceClientId])
+  @@index([targetClientId])
+}
+
+model DeviceSpecification {
+  id        String   @id @default(cuid())
+  orgId     String
+  deviceId  String
+  key       String
+  value     String
+  source    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([deviceId, key])
+  @@index([orgId, key])
+}
+
+model JobAssignmentHistory {
+  id             String    @id @default(cuid())
+  orgId          String
+  jobId          String
+  assignedToId   String?
+  assignedById   String?
+  assignmentType String    @default("PRIMARY")
+  startedAt      DateTime  @default(now())
+  endedAt        DateTime?
+  note           String?
+
+  @@index([orgId, jobId, startedAt])
+  @@index([assignedToId, startedAt])
+}
+
+model JobStatusHistory {
+  id           String   @id @default(cuid())
+  orgId        String
+  jobId        String
+  fromStatus   String?
+  toStatus     String
+  reason       String?
+  changedById  String?
+  changedAt    DateTime @default(now())
+  metadataJson String?
+
+  @@index([orgId, jobId, changedAt])
+  @@index([orgId, toStatus, changedAt])
+}
+
+model DiagnosisReport {
+  id              String   @id @default(cuid())
+  orgId           String
+  jobId           String
+  authorId        String?
+  visibility      String   @default("INTERNAL")
+  summary         String
+  findings        String?
+  recommendedWork String?
+  riskNotes       String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([orgId, jobId, createdAt])
+}
+
+model RepairTask {
+  id           String    @id @default(cuid())
+  orgId        String
+  jobId        String
+  title        String
+  description  String?
+  status       String    @default("PENDING")
+  priority     String    @default("NORMAL")
+  assignedToId String?
+  dueAt        DateTime?
+  completedAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([orgId, jobId, status])
+  @@index([assignedToId, status, dueAt])
+}
+
+model CustomerApproval {
+  id              String    @id @default(cuid())
+  orgId           String
+  jobId           String
+  approvalType    String
+  status          String    @default("PENDING")
+  amount          Float?
+  currency        String?
+  requestedById   String?
+  respondedByName String?
+  responseNote    String?
+  requestedAt     DateTime  @default(now())
+  respondedAt     DateTime?
+
+  @@index([orgId, jobId, status])
+  @@index([orgId, requestedAt])
+}
+
+model QualityCheck {
+  id            String    @id @default(cuid())
+  orgId         String
+  jobId         String
+  checkedById   String?
+  status        String    @default("PENDING")
+  checklistJson String?
+  notes         String?
+  checkedAt     DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([orgId, jobId, status])
+}
+
+model WarrantyClaim {
+  id            String    @id @default(cuid())
+  orgId         String
+  originalJobId String
+  warrantyJobId String?
+  status        String    @default("OPEN")
+  reason        String
+  resolution    String?
+  openedAt      DateTime  @default(now())
+  closedAt      DateTime?
+
+  @@index([orgId, status, openedAt])
+  @@index([originalJobId])
+}
+
+model InventoryCategory {
+  id        String   @id @default(cuid())
+  orgId     String
+  name      String
+  parentId  String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([orgId, name])
+  @@index([orgId, isActive])
+}
+
+model StockLocation {
+  id        String   @id @default(cuid())
+  orgId     String
+  branchId  String?
+  name      String
+  code      String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([orgId, code])
+  @@index([orgId, branchId, isActive])
+}
+
+model PartLocationStock {
+  id          String   @id @default(cuid())
+  orgId       String
+  partId      String
+  locationId  String
+  qtyOnHand   Int      @default(0)
+  qtyReserved Int      @default(0)
+  updatedAt   DateTime @updatedAt
+
+  @@unique([partId, locationId])
+  @@index([orgId, locationId])
+  @@index([partId])
+}
+
+model SupplierPrice {
+  id           String    @id @default(cuid())
+  orgId        String
+  supplierId   String
+  partId       String?
+  sku          String?
+  description  String
+  unitCost     Float
+  currency     String    @default("UGX")
+  minQuantity  Int?
+  leadTimeDays Int?
+  validFrom    DateTime  @default(now())
+  validTo      DateTime?
+  createdAt    DateTime  @default(now())
+
+  @@index([orgId, supplierId, validFrom])
+  @@index([partId, validFrom])
+}
+
+model ReorderRule {
+  id                  String   @id @default(cuid())
+  orgId               String
+  partId              String
+  locationId          String?
+  minQty              Int      @default(0)
+  targetQty           Int      @default(0)
+  preferredSupplierId String?
+  isActive            Boolean  @default(true)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@unique([partId, locationId])
+  @@index([orgId, isActive])
+}
+
+model InvoiceLine {
+  id             String   @id @default(cuid())
+  orgId          String
+  invoiceId      String
+  sourceType     String?
+  sourceId       String?
+  description    String
+  quantity       Float    @default(1)
+  unitPrice      Float
+  discountAmount Float    @default(0)
+  taxAmount      Float    @default(0)
+  lineTotal      Float
+  createdAt      DateTime @default(now())
+
+  @@index([orgId, invoiceId])
+  @@index([sourceType, sourceId])
+}
+
+model DocumentTaxLine {
+  id            String   @id @default(cuid())
+  orgId         String
+  documentType  String
+  documentId    String
+  taxLabel      String
+  taxRate       Float
+  taxableAmount Float
+  taxAmount     Float
+  createdAt     DateTime @default(now())
+
+  @@index([orgId, documentType, documentId])
+}
+
+model Receipt {
+  id            String    @id @default(cuid())
+  orgId         String
+  receiptNumber String    @unique
+  paymentId     String?
+  saleId        String?
+  invoiceId     String?
+  branchId      String?
+  amount        Float
+  currency      String    @default("UGX")
+  issuedAt      DateTime  @default(now())
+  issuedById    String?
+  voidedAt      DateTime?
+  voidReason    String?
+
+  @@index([orgId, issuedAt])
+  @@index([paymentId])
+}
+
+model PaymentAllocation {
+  id          String   @id @default(cuid())
+  orgId       String
+  paymentId   String
+  targetType  String
+  targetId    String
+  amount      Float
+  allocatedAt DateTime @default(now())
+  note        String?
+
+  @@index([orgId, paymentId])
+  @@index([targetType, targetId])
+}
+
+model CashierShift {
+  id          String    @id @default(cuid())
+  orgId       String
+  branchId    String?
+  cashierId   String
+  status      String    @default("OPEN")
+  openingCash Float     @default(0)
+  closingCash Float?
+  openedAt    DateTime  @default(now())
+  closedAt    DateTime?
+  notes       String?
+
+  @@index([orgId, branchId, status])
+  @@index([cashierId, openedAt])
+}
+
+model Conversation {
+  id              String    @id @default(cuid())
+  orgId           String
+  channel         String
+  clientId        String?
+  jobId           String?
+  repairRequestId String?
+  assignedToId    String?
+  status          String    @default("OPEN")
+  subject         String?
+  lastMessageAt   DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([orgId, status, lastMessageAt])
+  @@index([clientId])
+  @@index([jobId])
+}
+
+model ConversationMessage {
+  id                String    @id @default(cuid())
+  orgId             String
+  conversationId    String
+  direction         String
+  channel           String
+  sender            String?
+  recipient         String?
+  body              String?
+  outboundMessageId String?
+  inboundMessageId  String?
+  providerMessageId String?
+  sentAt            DateTime?
+  receivedAt        DateTime?
+  createdAt         DateTime  @default(now())
+
+  @@index([orgId, conversationId, createdAt])
+  @@index([providerMessageId])
+}
+
+model CommunicationTemplateVersion {
+  id          String    @id @default(cuid())
+  orgId       String?
+  templateId  String
+  version     Int
+  status      String    @default("DRAFT")
+  subject     String?
+  body        String
+  variables   String?
+  approvedAt  DateTime?
+  createdById String?
+  createdAt   DateTime  @default(now())
+
+  @@unique([templateId, version])
+  @@index([orgId, status])
+}
+
+model FileAsset {
+  id           String    @id @default(cuid())
+  orgId        String
+  ownerType    String
+  ownerId      String
+  url          String
+  storageKey   String?
+  fileName     String?
+  mimeType     String?
+  sizeBytes    Int?
+  label        String?
+  visibility   String    @default("INTERNAL")
+  uploadedById String?
+  deletedAt    DateTime?
+  createdAt    DateTime  @default(now())
+
+  @@index([orgId, ownerType, ownerId])
+  @@index([storageKey])
 }

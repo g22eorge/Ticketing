@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 
-import { PaymentMethod } from "@prisma/client";
+import { DeliveryMethod, InvoiceStatus, PaymentMethod } from "@prisma/client";
 
 import { formatMoney, isSupportedCurrency, normalizeCurrency, toBaseAmount } from "@/lib/currency";
 import { canGenerateInvoiceForStatus } from "@/lib/documents";
@@ -11,8 +11,12 @@ import { can } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { requireOrgSession } from "@/lib/org-context";
 import { assertOrgCanMutate } from "@/lib/org-write";
+import { ConfirmSubmitButton } from "@/components/shared/ConfirmSubmitButton";
+import { writeSystemAuditEvent } from "@/lib/commercial/audit";
 
 const PAYMENT_METHODS = Object.values(PaymentMethod);
+const INVOICE_STATUSES = Object.values(InvoiceStatus);
+const DELIVERY_METHODS = Object.values(DeliveryMethod);
 
 export default async function InvoicesPage() {
   const { user, orgId, org } = await requireOrgSession();
@@ -106,6 +110,110 @@ export default async function InvoicesPage() {
     revalidatePath("/documents/invoices");
   }
 
+  async function updateInvoiceAction(formData: FormData) {
+    "use server";
+    const { user, orgId, org } = await requireOrgSession();
+    if (!("ADMIN" === user.role || "OPS" === user.role || can.approveInvoices(user))) return;
+    assertOrgCanMutate({ access: org.access, userRole: user.role, kind: "GENERAL" });
+
+    const invoiceId = String(formData.get("invoiceId") ?? "").trim();
+    const statusRaw = String(formData.get("status") ?? "ISSUED").trim();
+    const notes = String(formData.get("notes") ?? "").trim();
+    if (!invoiceId) return;
+    const status = INVOICE_STATUSES.includes(statusRaw as InvoiceStatus) ? (statusRaw as InvoiceStatus) : InvoiceStatus.ISSUED;
+
+    await prisma.invoice.updateMany({
+      where: { id: invoiceId, orgId },
+      data: { status, notes: notes || null },
+    });
+    await writeSystemAuditEvent({ orgId, actorUserId: user.id, entityType: "Invoice", entityId: invoiceId, action: "INVOICE_UPDATED", summary: `Invoice status set to ${status}` });
+
+    revalidatePath("/documents/invoices");
+  }
+
+  async function deleteInvoiceAction(formData: FormData) {
+    "use server";
+    const { user, orgId, org } = await requireOrgSession();
+    if (!("ADMIN" === user.role || can.approveInvoices(user))) return;
+    assertOrgCanMutate({ access: org.access, userRole: user.role, kind: "GENERAL" });
+
+    const invoiceId = String(formData.get("invoiceId") ?? "").trim();
+    if (!invoiceId) return;
+
+    const invoice = await prisma.invoice.findFirst({
+      where: { id: invoiceId, orgId },
+      select: {
+        id: true,
+        jobId: true,
+        payments: { select: { id: true }, take: 1 },
+        deliveryNotes: { select: { id: true }, take: 1 },
+      },
+    });
+    if (!invoice || invoice.payments.length > 0 || invoice.deliveryNotes.length > 0) return;
+
+    await prisma.$transaction(async (tx) => {
+      await tx.invoice.deleteMany({ where: { id: invoice.id, orgId } });
+      await tx.job.updateMany({
+        where: { id: invoice.jobId, orgId },
+        data: { invoiceIssuedAt: null, invoiceNumber: null },
+      });
+    });
+    await writeSystemAuditEvent({ orgId, actorUserId: user.id, entityType: "Invoice", entityId: invoice.id, action: "INVOICE_DELETED", summary: "Invoice deleted" });
+
+    revalidatePath("/documents/invoices");
+  }
+
+  async function createDeliveryNoteAction(formData: FormData) {
+    "use server";
+    const { user, orgId, org, session } = await requireOrgSession();
+    if (!(can.viewFinancials(user) || ["ADMIN", "OPS"].includes(user.role))) return;
+    assertOrgCanMutate({ access: org.access, userRole: user.role, kind: "GENERAL" });
+
+    const invoiceId = String(formData.get("invoiceId") ?? "").trim();
+    const deliveredByName = String(formData.get("deliveredByName") ?? "").trim();
+    const receivedByName = String(formData.get("receivedByName") ?? "").trim();
+    const receivedBySignatureText = String(formData.get("receivedBySignatureText") ?? "").trim();
+    const note = String(formData.get("note") ?? "").trim();
+    const methodRaw = String(formData.get("deliveryMethod") ?? "").trim();
+    if (!invoiceId || !deliveredByName || !receivedByName) return;
+
+    const deliveryMethod = DELIVERY_METHODS.includes(methodRaw as DeliveryMethod) ? (methodRaw as DeliveryMethod) : null;
+    const invoice = await prisma.invoice.findFirst({
+      where: { id: invoiceId, orgId },
+      select: { id: true, invoiceNumber: true, paidAmount: true, totalAmount: true, job: { select: { jobNumber: true, brand: true, model: true } } },
+    });
+    if (!invoice || invoice.paidAmount < invoice.totalAmount) return;
+
+    await prisma.$transaction(async (tx) => {
+      const year = new Date().getFullYear();
+      const count = await tx.deliveryNote.count({ where: { orgId } }).catch(() => 0);
+      const deliveryNoteNumber = `DN-${year}-${String(count + 1).padStart(4, "0")}`;
+      await tx.deliveryNote.create({
+        data: {
+          orgId,
+          invoiceId: invoice.id,
+          deliveryNoteNumber,
+          deliveryMethod,
+          deliveredByName,
+          receivedByName,
+          receivedBySignatureText: receivedBySignatureText || null,
+          note: note || null,
+          createdById: session.user.id,
+          items: {
+            create: [{
+              description: `Repair handover for ${invoice.job.jobNumber} (${invoice.job.brand} ${invoice.job.model})`,
+              quantity: 1,
+            }],
+          },
+        },
+      });
+    });
+    await writeSystemAuditEvent({ orgId, actorUserId: user.id, entityType: "Invoice", entityId: invoice.id, action: "DELIVERY_NOTE_CREATED", summary: "Delivery note created from paid invoice" });
+
+    revalidatePath("/documents/invoices");
+    revalidatePath("/documents/delivery-notes");
+  }
+
   let invoices: Array<{
     id: string;
     invoiceNumber: string;
@@ -114,8 +222,10 @@ export default async function InvoicesPage() {
     totalAmount: number;
     paidAmount: number;
     status: string;
+    notes: string | null;
     job: { id: string; jobNumber: string; status: JobStatus; client: { fullName: string } };
     payments: Array<{ id: string }>;
+    deliveryNotes: Array<{ id: string }>;
   }> = [];
   try {
     invoices = await prisma.invoice.findMany({
@@ -130,6 +240,7 @@ export default async function InvoicesPage() {
         totalAmount: true,
         paidAmount: true,
         status: true,
+        notes: true,
         job: {
           select: {
             id: true,
@@ -139,6 +250,7 @@ export default async function InvoicesPage() {
           },
         },
         payments: { select: { id: true }, orderBy: { receivedAt: "desc" }, take: 1 },
+        deliveryNotes: { select: { id: true }, take: 1 },
       },
     });
   } catch (err) {
@@ -306,6 +418,44 @@ export default async function InvoicesPage() {
                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M4 2h16v20l-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M9 7h6M9 11h6M9 15h4"/></svg>
                                 Download Receipt PDF
                               </a>
+                            ) : null}
+                            {balance <= 0 ? (
+                              <details className="border-t border-[var(--line)]">
+                                <summary className="flex w-full cursor-pointer list-none items-center gap-2 px-4 py-3 text-left text-sm font-medium text-[var(--ink)] transition hover:bg-[var(--panel-strong)]">
+                                  Create Delivery Note
+                                </summary>
+                                <form action={createDeliveryNoteAction} className="space-y-2 px-4 pb-3">
+                                  <input type="hidden" name="invoiceId" value={inv.id} />
+                                  <input name="deliveredByName" placeholder="Delivered by" className="w-full rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-1.5 text-xs outline-none focus:border-[var(--accent)]/50" />
+                                  <input name="receivedByName" placeholder="Received by" className="w-full rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-1.5 text-xs outline-none focus:border-[var(--accent)]/50" />
+                                  <input name="receivedBySignatureText" placeholder="Signature text" className="w-full rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-1.5 text-xs outline-none focus:border-[var(--accent)]/50" />
+                                  <select name="deliveryMethod" defaultValue="" className="w-full rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-1.5 text-xs outline-none focus:border-[var(--accent)]/50">
+                                    <option value="">No method</option>
+                                    {DELIVERY_METHODS.map((m) => <option key={m} value={m}>{m.replaceAll("_", " ")}</option>)}
+                                  </select>
+                                  <textarea name="note" placeholder="Delivery note" className="min-h-16 w-full rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-1.5 text-xs outline-none focus:border-[var(--accent)]/50" />
+                                  <button className="btn-premium w-full rounded-md px-2.5 py-1.5 text-xs text-white">Create</button>
+                                </form>
+                              </details>
+                            ) : null}
+                            <details className="border-t border-[var(--line)]">
+                              <summary className="flex w-full cursor-pointer list-none items-center gap-2 px-4 py-3 text-left text-sm font-medium text-[var(--ink)] transition hover:bg-[var(--panel-strong)]">
+                                Edit Invoice
+                              </summary>
+                              <form action={updateInvoiceAction} className="space-y-2 px-4 pb-3">
+                                <input type="hidden" name="invoiceId" value={inv.id} />
+                                <select name="status" defaultValue={inv.status} className="w-full rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-1.5 text-xs outline-none focus:border-[var(--accent)]/50">
+                                  {INVOICE_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+                                </select>
+                                <textarea name="notes" defaultValue={inv.notes ?? ""} placeholder="Invoice notes" className="min-h-16 w-full rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-1.5 text-xs outline-none focus:border-[var(--accent)]/50" />
+                                <button className="btn-premium w-full rounded-md px-2.5 py-1.5 text-xs text-white">Save</button>
+                              </form>
+                            </details>
+                            {inv.payments.length === 0 && inv.deliveryNotes.length === 0 ? (
+                              <form action={deleteInvoiceAction} className="border-t border-[var(--line)] px-4 py-3">
+                                <input type="hidden" name="invoiceId" value={inv.id} />
+                                <ConfirmSubmitButton message="Delete this invoice? This cannot be undone." className="text-left text-sm font-semibold text-red-600 transition hover:text-red-700">Delete Invoice</ConfirmSubmitButton>
+                              </form>
                             ) : null}
                           </div>
                         </div>

@@ -10,6 +10,8 @@ import { prisma } from "@/lib/prisma";
 import { requireOrgSession } from "@/lib/org-context";
 import { can } from "@/lib/permissions";
 import { assertOrgCanMutate } from "@/lib/org-write";
+import { ConfirmSubmitButton } from "@/components/shared/ConfirmSubmitButton";
+import { writeSystemAuditEvent } from "@/lib/commercial/audit";
 
 const METHODS = Object.values(PaymentMethod);
 
@@ -38,10 +40,12 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
     paidAt: Date | null;
     createdAt: Date;
     notes: string | null;
+    branchId: string | null;
     branch: { name: string } | null;
     client: { fullName: string } | null;
-    items: Array<{ id: string; description: string; quantity: number; unitPrice: number; lineTotal: number }>;
+    items: Array<{ id: string; partId: string | null; description: string; quantity: number; unitPrice: number; lineTotal: number }>;
     payments: Array<{ id: string; amount: number; method: PaymentMethod; reference: string | null; receivedAt: Date; currency: string | null }>;
+    _count: { payments: number; creditNotes: number; refunds: number; deliveryNotes: number };
   } | null = null;
 
   let creditNotes: Array<{
@@ -95,10 +99,12 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
         paidAt: true,
         createdAt: true,
         notes: true,
+        branchId: true,
         branch: { select: { name: true } },
         client: { select: { fullName: true } },
-        items: { select: { id: true, description: true, quantity: true, unitPrice: true, lineTotal: true }, orderBy: { createdAt: "asc" } },
+        items: { select: { id: true, partId: true, description: true, quantity: true, unitPrice: true, lineTotal: true }, orderBy: { createdAt: "asc" } },
         payments: { select: { id: true, amount: true, method: true, reference: true, receivedAt: true, currency: true }, orderBy: { receivedAt: "desc" } },
+        _count: { select: { payments: true, creditNotes: true, refunds: true, deliveryNotes: true } },
       },
     });
   } catch (err) {
@@ -119,6 +125,11 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
   const vatRate = Math.max(0, orgBranding?.vatRatePercent ?? 18) / 100;
 
   const saleCurrency = normalizeCurrency(sale.currency, org.baseCurrency);
+  const branches = await prisma.branch.findMany({
+    where: { orgId, isActive: true },
+    orderBy: [{ isDefault: "desc" }, { name: "asc" }],
+    select: { id: true, name: true },
+  }).catch(() => []);
 
   // Credit notes / refunds are optional features; keep page working if tables are missing.
   try {
@@ -210,6 +221,170 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
         status: isPaid ? "PAID" : "OPEN",
       },
     });
+  }
+
+  async function updateSaleAction(formData: FormData) {
+    "use server";
+    const { user, orgId, org } = await requireOrgSession();
+    if (!(can.viewFinancials(user) || ["ADMIN", "OPS", "FRONT_DESK"].includes(user.role))) return;
+    assertOrgCanMutate({ access: org.access, userRole: user.role, kind: "GENERAL" });
+
+    const saleId = String(formData.get("saleId") ?? "").trim();
+    const branchId = String(formData.get("branchId") ?? "").trim() || null;
+    const notes = String(formData.get("notes") ?? "").trim();
+    if (!saleId) return;
+
+    if (branchId) {
+      const branch = await prisma.branch.findFirst({ where: { id: branchId, orgId, isActive: true }, select: { id: true } });
+      if (!branch) return;
+    }
+
+    await prisma.sale.updateMany({
+      where: { id: saleId, orgId },
+      data: { branchId, notes: notes || null },
+    });
+    await writeSystemAuditEvent({ orgId, actorUserId: user.id, entityType: "Sale", entityId: saleId, action: "POS_SALE_UPDATED", summary: "POS sale metadata updated" });
+
+    revalidatePath(`/pos/${saleId}`);
+    revalidatePath("/pos");
+  }
+
+  async function deleteSaleAction(formData: FormData) {
+    "use server";
+    const { user, orgId, org } = await requireOrgSession();
+    if (user.role !== "ADMIN") return;
+    assertOrgCanMutate({ access: org.access, userRole: user.role, kind: "GENERAL" });
+
+    const saleId = String(formData.get("saleId") ?? "").trim();
+    if (!saleId) return;
+
+    const sale = await prisma.sale.findFirst({
+      where: { id: saleId, orgId },
+      select: {
+        id: true,
+        status: true,
+        invoicedAt: true,
+        items: { select: { partId: true, quantity: true, description: true } },
+        payments: { select: { id: true }, take: 1 },
+        creditNotes: { select: { id: true }, take: 1 },
+        refunds: { select: { id: true }, take: 1 },
+        deliveryNotes: { select: { id: true }, take: 1 },
+      },
+    });
+    if (!sale || sale.status !== "OPEN" || sale.invoicedAt || sale.payments.length || sale.creditNotes.length || sale.refunds.length || sale.deliveryNotes.length) return;
+
+    await prisma.$transaction(async (tx) => {
+      for (const item of sale.items) {
+        if (!item.partId) continue;
+        const part = await tx.part.findFirst({ where: { id: item.partId, orgId }, select: { id: true, qtyOnHand: true } });
+        if (!part) continue;
+        await tx.part.update({ where: { id: part.id }, data: { qtyOnHand: part.qtyOnHand + Math.abs(item.quantity) } });
+        await tx.partStockTransaction.create({
+          data: {
+            partId: part.id,
+            saleId: sale.id,
+            type: "IN",
+            quantity: Math.abs(item.quantity),
+            reason: `POS sale deleted (${item.description})`,
+            createdById: user.id,
+          },
+        });
+      }
+      await tx.sale.deleteMany({ where: { id: sale.id, orgId } });
+    });
+    await writeSystemAuditEvent({ orgId, actorUserId: user.id, entityType: "Sale", entityId: sale.id, action: "POS_SALE_DELETED", summary: "Open POS sale deleted" });
+
+    revalidatePath("/pos");
+    redirect("/pos");
+  }
+
+  async function updateItemAction(formData: FormData) {
+    "use server";
+    const { user, orgId, org } = await requireOrgSession();
+    if (!(can.viewFinancials(user) || ["ADMIN", "OPS", "FRONT_DESK"].includes(user.role))) return;
+    assertOrgCanMutate({ access: org.access, userRole: user.role, kind: "GENERAL" });
+
+    const saleId = String(formData.get("saleId") ?? "").trim();
+    const itemId = String(formData.get("itemId") ?? "").trim();
+    const description = String(formData.get("description") ?? "").trim();
+    const quantity = Math.max(1, Math.floor(Number(String(formData.get("quantity") ?? "1").trim())));
+    const unitPrice = Number(String(formData.get("unitPrice") ?? "0").trim());
+    if (!saleId || !itemId || !description || !Number.isFinite(quantity) || !Number.isFinite(unitPrice) || unitPrice < 0) return;
+
+    await prisma.$transaction(async (tx) => {
+      const sale = await tx.sale.findFirst({ where: { id: saleId, orgId }, select: { id: true, status: true } });
+      if (!sale || sale.status !== "OPEN") return;
+
+      const item = await tx.saleItem.findFirst({ where: { id: itemId, saleId }, select: { id: true, partId: true, quantity: true } });
+      if (!item) return;
+
+      const delta = quantity - item.quantity;
+      if (item.partId && delta !== 0) {
+        const part = await tx.part.findFirst({ where: { id: item.partId, orgId }, select: { id: true, qtyOnHand: true } });
+        if (!part) return;
+        const nextQty = part.qtyOnHand - delta;
+        if (nextQty < 0) return;
+        await tx.part.update({ where: { id: part.id }, data: { qtyOnHand: nextQty } });
+        await tx.partStockTransaction.create({
+          data: {
+            partId: part.id,
+            saleId,
+            type: delta > 0 ? "OUT" : "IN",
+            quantity: Math.abs(delta),
+            reason: `POS sale item updated (${description})`,
+            createdById: user.id,
+          },
+        });
+      }
+
+      await tx.saleItem.update({ where: { id: item.id }, data: { description, quantity, unitPrice, lineTotal: quantity * unitPrice } });
+      await recalcSaleTotals(tx, saleId, true);
+    });
+    await writeSystemAuditEvent({ orgId, actorUserId: user.id, entityType: "SaleItem", entityId: itemId, action: "POS_ITEM_UPDATED", summary: "POS sale item updated" });
+
+    revalidatePath(`/pos/${saleId}`);
+  }
+
+  async function deleteItemAction(formData: FormData) {
+    "use server";
+    const { user, orgId, org } = await requireOrgSession();
+    if (!(can.viewFinancials(user) || ["ADMIN", "OPS", "FRONT_DESK"].includes(user.role))) return;
+    assertOrgCanMutate({ access: org.access, userRole: user.role, kind: "GENERAL" });
+
+    const saleId = String(formData.get("saleId") ?? "").trim();
+    const itemId = String(formData.get("itemId") ?? "").trim();
+    if (!saleId || !itemId) return;
+
+    await prisma.$transaction(async (tx) => {
+      const sale = await tx.sale.findFirst({ where: { id: saleId, orgId }, select: { id: true, status: true } });
+      if (!sale || sale.status !== "OPEN") return;
+
+      const item = await tx.saleItem.findFirst({ where: { id: itemId, saleId }, select: { id: true, partId: true, quantity: true, description: true } });
+      if (!item) return;
+
+      if (item.partId) {
+        const part = await tx.part.findFirst({ where: { id: item.partId, orgId }, select: { id: true, qtyOnHand: true } });
+        if (part) {
+          await tx.part.update({ where: { id: part.id }, data: { qtyOnHand: part.qtyOnHand + Math.abs(item.quantity) } });
+          await tx.partStockTransaction.create({
+            data: {
+              partId: part.id,
+              saleId,
+              type: "IN",
+              quantity: Math.abs(item.quantity),
+              reason: `POS sale item deleted (${item.description})`,
+              createdById: user.id,
+            },
+          });
+        }
+      }
+
+      await tx.saleItem.delete({ where: { id: item.id } });
+      await recalcSaleTotals(tx, saleId, true);
+    });
+    await writeSystemAuditEvent({ orgId, actorUserId: user.id, entityType: "SaleItem", entityId: itemId, action: "POS_ITEM_DELETED", summary: "POS sale item deleted" });
+
+    revalidatePath(`/pos/${saleId}`);
   }
 
   async function addItemAction(formData: FormData) {
@@ -330,90 +505,6 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
 
     revalidatePath(`/pos/${saleId}`);
     revalidatePath("/reports");
-  }
-
-  async function createDeliveryNoteAction(formData: FormData) {
-    "use server";
-    const { user, orgId, org, session } = await requireOrgSession();
-    if (!(can.viewFinancials(user) || ["ADMIN", "OPS", "FRONT_DESK"].includes(user.role))) return;
-    assertOrgCanMutate({ access: org.access, userRole: user.role, kind: "GENERAL" });
-
-    const saleId = String(formData.get("saleId") ?? "").trim();
-    const deliveredByName = String(formData.get("deliveredByName") ?? "").trim();
-    const receivedByName = String(formData.get("receivedByName") ?? "").trim();
-    const receivedBySignatureText = String(formData.get("receivedBySignatureText") ?? "").trim() || null;
-    const note = String(formData.get("note") ?? "").trim() || null;
-    const deliveryMethodRaw = String(formData.get("deliveryMethod") ?? "").trim();
-    const deliveredAtRaw = String(formData.get("deliveredAt") ?? "").trim();
-
-    if (!saleId || !deliveredByName || !receivedByName) return;
-
-    const deliveryMethod: DeliveryMethod | null =
-      deliveryMethodRaw && (Object.values(DeliveryMethod) as string[]).includes(deliveryMethodRaw)
-        ? (deliveryMethodRaw as DeliveryMethod)
-        : null;
-    const deliveredAt = deliveredAtRaw ? new Date(deliveredAtRaw) : new Date();
-    if (Number.isNaN(deliveredAt.getTime())) return;
-
-    const saleRow = await prisma.sale.findFirst({
-      where: { id: saleId, orgId },
-      select: { id: true, saleNumber: true },
-    });
-    if (!saleRow) return;
-
-    const items = await prisma.saleItem.findMany({
-      where: { saleId },
-      orderBy: { createdAt: "asc" },
-      select: { id: true, description: true, quantity: true, partId: true },
-    });
-
-    const picked: Array<{ saleItemId: string; description: string; quantity: number; partId: string | null }> = [];
-    for (const it of items) {
-      const raw = String(formData.get(`deliverQty:${it.id}`) ?? "").trim();
-      if (!raw) continue;
-      const qty = Math.max(0, Math.floor(Number(raw)));
-      if (!Number.isFinite(qty) || qty <= 0) continue;
-      if (qty > it.quantity) continue;
-      picked.push({ saleItemId: it.id, description: it.description, quantity: qty, partId: it.partId });
-    }
-    if (picked.length === 0) return;
-
-    try {
-      await prisma.$transaction(async (tx) => {
-        const year = new Date().getFullYear();
-        const count = await tx.deliveryNote.count({ where: { orgId } }).catch(() => 0);
-        const deliveryNoteNumber = `DN-${year}-${String(count + 1).padStart(4, "0")}`;
-
-        await tx.deliveryNote.create({
-          data: {
-            orgId,
-            saleId,
-            deliveryNoteNumber,
-            deliveredAt,
-            deliveryMethod,
-            deliveredByName,
-            receivedByName,
-            receivedBySignatureText,
-            note,
-            createdById: session.user.id,
-            items: {
-              create: picked.map((p) => ({
-                saleItemId: p.saleItemId,
-                partId: p.partId,
-                description: p.description,
-                quantity: p.quantity,
-              })),
-            },
-          },
-        });
-      });
-    } catch {
-      // swallow errors for environments where delivery notes aren't migrated yet
-      return;
-    }
-
-    revalidatePath(`/pos/${saleId}`);
-    revalidatePath("/documents/delivery-notes");
   }
 
   async function createCreditNoteAction(formData: FormData) {
@@ -625,6 +716,7 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
   }
 
   const balance = Math.max(0, sale.totalAmount - sale.paidAmount);
+  const canDeleteSale = user.role === "ADMIN" && sale.status === "OPEN" && !sale.invoicedAt && sale._count.payments === 0 && sale._count.creditNotes === 0 && sale._count.refunds === 0 && sale._count.deliveryNotes === 0;
 
   return (
     <div className="space-y-4">
@@ -670,7 +762,32 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
           >
             Receipt PDF
           </a>
+          {canDeleteSale ? (
+            <form action={deleteSaleAction}>
+              <input type="hidden" name="saleId" value={sale.id} />
+              <ConfirmSubmitButton message="Delete this open POS sale? Stock will be restored." className="rounded-lg border border-red-200 px-3 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-50">Delete Sale</ConfirmSubmitButton>
+            </form>
+          ) : null}
         </div>
+
+        <form action={updateSaleAction} className="mt-4 grid gap-2 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] p-3 md:grid-cols-[220px_1fr_auto]">
+          <input type="hidden" name="saleId" value={sale.id} />
+          <select
+            name="branchId"
+            defaultValue={sale.branchId ?? ""}
+            className="rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 py-2 text-sm outline-none focus:border-[var(--accent)]/50"
+          >
+            <option value="">No branch</option>
+            {branches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+          </select>
+          <input
+            name="notes"
+            defaultValue={sale.notes ?? ""}
+            placeholder="Sale note"
+            className="rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 py-2 text-sm outline-none focus:border-[var(--accent)]/50"
+          />
+          <button className="btn-premium-secondary rounded-lg px-3 py-2 text-sm">Save Sale</button>
+        </form>
       </section>
 
       <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
@@ -766,20 +883,49 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
                 <th className="px-3 py-2">Qty</th>
                 <th className="px-3 py-2">Price</th>
                 <th className="px-3 py-2">Total</th>
+                {sale.status === "OPEN" ? <th className="px-3 py-2">Action</th> : null}
               </tr>
             </thead>
             <tbody>
               {sale.items.map((it) => (
                 <tr key={it.id} className="border-t border-[var(--line)]">
-                  <td className="px-3 py-2">{it.description}</td>
-                  <td className="px-3 py-2">{it.quantity}</td>
-                  <td className="px-3 py-2">{formatMoney(it.unitPrice, saleCurrency)}</td>
+                  <td className="px-3 py-2">
+                    {sale.status === "OPEN" ? (
+                      <input form={`edit-item-${it.id}`} name="description" defaultValue={it.description} className="w-full rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-1.5 text-sm outline-none focus:border-[var(--accent)]/50" />
+                    ) : it.description}
+                  </td>
+                  <td className="px-3 py-2">
+                    {sale.status === "OPEN" ? (
+                      <input form={`edit-item-${it.id}`} name="quantity" defaultValue={it.quantity} inputMode="numeric" className="w-20 rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-1.5 text-sm outline-none focus:border-[var(--accent)]/50" />
+                    ) : it.quantity}
+                  </td>
+                  <td className="px-3 py-2">
+                    {sale.status === "OPEN" ? (
+                      <input form={`edit-item-${it.id}`} name="unitPrice" defaultValue={it.unitPrice} inputMode="decimal" className="w-28 rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-1.5 text-sm outline-none focus:border-[var(--accent)]/50" />
+                    ) : formatMoney(it.unitPrice, saleCurrency)}
+                  </td>
                   <td className="px-3 py-2">{formatMoney(it.lineTotal, saleCurrency)}</td>
+                  {sale.status === "OPEN" ? (
+                    <td className="px-3 py-2">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <form id={`edit-item-${it.id}`} action={updateItemAction}>
+                          <input type="hidden" name="saleId" value={sale.id} />
+                          <input type="hidden" name="itemId" value={it.id} />
+                          <button className="btn-premium-secondary rounded-md px-2.5 py-1.5 text-xs">Save</button>
+                        </form>
+                        <form action={deleteItemAction}>
+                          <input type="hidden" name="saleId" value={sale.id} />
+                          <input type="hidden" name="itemId" value={it.id} />
+                          <ConfirmSubmitButton message="Delete this POS line item? Stock will be restored if linked to inventory." className="rounded-md border border-red-200 px-2.5 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-50">Delete</ConfirmSubmitButton>
+                        </form>
+                      </div>
+                    </td>
+                  ) : null}
                 </tr>
               ))}
               {sale.items.length === 0 ? (
                 <tr className="border-t border-[var(--line)]">
-                  <td className="px-3 py-6 text-sm text-[var(--ink-muted)]" colSpan={4}>No items yet.</td>
+                  <td className="px-3 py-6 text-sm text-[var(--ink-muted)]" colSpan={sale.status === "OPEN" ? 5 : 4}>No items yet.</td>
                 </tr>
               ) : null}
             </tbody>
@@ -850,84 +996,8 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
       <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
         <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Delivery Notes</p>
         <p className="mt-1 text-xs text-[var(--ink-muted)]">
-          Create delivery notes after issuing an invoice. Delivery notes do not affect cashflow.
+          POS quick sales do not generate delivery notes. Legacy notes remain available for audit/download only.
         </p>
-
-        <form action={createDeliveryNoteAction} className="mt-3 grid gap-2 md:grid-cols-2">
-          <input type="hidden" name="saleId" value={sale.id} />
-          <input
-            name="deliveredByName"
-            placeholder="Delivered by (name)"
-            className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm outline-none focus:border-[var(--accent)]/50"
-            required
-          />
-          <input
-            name="receivedByName"
-            placeholder="Received by (name)"
-            className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm outline-none focus:border-[var(--accent)]/50"
-            required
-          />
-          <input
-            name="receivedBySignatureText"
-            placeholder="Signature text (optional)"
-            className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm outline-none focus:border-[var(--accent)]/50"
-          />
-          <select
-            name="deliveryMethod"
-            defaultValue=""
-            className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm outline-none focus:border-[var(--accent)]/50"
-          >
-            <option value="">(method)</option>
-            {Object.values(DeliveryMethod).map((m) => (
-              <option key={m} value={m}>{m.replaceAll("_", " ")}</option>
-            ))}
-          </select>
-          <input
-            type="datetime-local"
-            name="deliveredAt"
-            className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm outline-none focus:border-[var(--accent)]/50"
-          />
-          <textarea
-            name="note"
-            placeholder="Note (optional)"
-            className="md:col-span-2 min-h-[64px] rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm outline-none focus:border-[var(--accent)]/50"
-          />
-
-          <div className="md:col-span-2 overflow-hidden rounded-lg border border-[var(--line)] bg-[var(--panel-strong)]">
-            <table className="w-full text-left text-sm">
-              <thead className="bg-[var(--panel)] text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
-                <tr>
-                  <th className="px-3 py-2">Item</th>
-                  <th className="px-3 py-2">Sold</th>
-                  <th className="px-3 py-2">Deliver Qty</th>
-                </tr>
-              </thead>
-              <tbody>
-                {sale.items.map((it) => (
-                  <tr key={it.id} className="border-t border-[var(--line)]">
-                    <td className="px-3 py-2">{it.description}</td>
-                    <td className="px-3 py-2 text-[var(--ink-muted)]">{it.quantity}</td>
-                    <td className="px-3 py-2">
-                      <input
-                        name={`deliverQty:${it.id}`}
-                        inputMode="numeric"
-                        placeholder="0"
-                        className="w-24 rounded-lg border border-[var(--line)] bg-[var(--panel)] px-2 py-1.5 text-sm outline-none focus:border-[var(--accent)]/50"
-                      />
-                    </td>
-                  </tr>
-                ))}
-                {sale.items.length === 0 ? (
-                  <tr className="border-t border-[var(--line)]">
-                    <td className="px-3 py-6 text-sm text-[var(--ink-muted)]" colSpan={3}>No items yet.</td>
-                  </tr>
-                ) : null}
-              </tbody>
-            </table>
-          </div>
-
-          <button className="btn-premium rounded-lg px-4 py-2 text-sm text-white md:col-span-2">Create Delivery Note</button>
-        </form>
 
         <div className="mt-4 overflow-hidden rounded-lg border border-[var(--line)]">
           <table className="w-full text-left text-sm">

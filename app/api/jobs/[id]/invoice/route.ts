@@ -203,7 +203,7 @@ export async function GET(
   const dueDate = new Date(issuedAtDate);
   dueDate.setDate(dueDate.getDate() + branding.quoteValidityDays);
   const logoUrl = await resolveInvoiceLogo();
-  const normalizedFooterText = branding.footerText.trim();
+  const normalizedFooterText = (branding.footerText ?? "").trim();
   const issuedAtForNumber = job.invoiceIssuedAt ?? issuedAtDate;
   const quotationNumber = formatQuotationNumber(
     job.jobNumber,
@@ -271,8 +271,11 @@ export async function GET(
     companyEmail: branding.companyEmail ?? "",
     companyWebsite: branding.companyWebsite ?? "",
     companyLogoUrl: logoUrl,
+    documentTitle: "INVOICE",
+    quotationNumber,
     invoiceNumber,
     dateIssued: formatInvoiceDate(issuedAtDate),
+    validUntil: formatInvoiceDate(dueDate),
     repairId: job.jobNumber,
     preparedByName: user.name,
     preparedByRole: user.role,
@@ -283,21 +286,29 @@ export async function GET(
     deviceType: prettyEnum(job.deviceType),
     deviceLabel: compactText(`${job.brand} ${job.model}`, 45),
     serialOrImei: compactText(job.serialOrImei, 30),
+    accessories: compactText(job.accessories, 60),
+    physicalCondition: compactText(job.physicalNotes, 80),
+    customerIssue: compactListText(job.issueDescription, 180),
     diagnosisSummary: compactListText(job.diagnosisNotes ?? job.externalDiagnosis, 180),
+    scopeOfWork: compactListText(job.recommendedRepair ?? job.workDone, 180),
     workDone: compactListText(job.workDone, 180),
     partsReplaced: compactListText(job.partsReplaced, 180),
     repairCost: formatMoney(repairCost, currency),
     vatApplicable,
-    vatLabel: `${branding.vatLabel} (${branding.vatRatePercent}%)`,
+    vatLabel: `${branding.vatLabel ?? "VAT"} (${branding.vatRatePercent ?? 0}%)`,
     vatAmount: formatMoney(vatAmount, currency),
     totalAmountPayable: formatMoney(clientBill, currency),
+    estimatedDuration: compactText(job.repairTimeline ?? job.timelineNote, 60),
+    approvalStatus: job.clientApproved === true ? "Approved" : "Not recorded",
+    recommendation: compactText(job.recommendationOption ?? job.recommendedRepair, 80),
+    notes: compactListText(job.technicianNotes ?? job.statusNote, 160),
     isPaid: job.clientApproved === true,
     status: prettyEnum(job.status),
     currency,
-    termsText: branding.termsText,
+    termsText: branding.termsText ?? "",
     footerText: normalizedFooterText,
-    signatureCompanyLabel: branding.signatureCompanyLabel,
-    signatureClientLabel: branding.signatureClientLabel,
+    signatureCompanyLabel: branding.signatureCompanyLabel ?? "Company",
+    signatureClientLabel: branding.signatureClientLabel ?? "Client",
   });
 
   let body: Uint8Array;

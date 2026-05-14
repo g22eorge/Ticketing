@@ -92,6 +92,7 @@ export function QuotationDocumentMinimal(props: Props) {
             {addressLine ? <Text style={s.tiny}>{addressLine}</Text> : null}
           </View>
           {props.companyLogoUrl ? (
+            // eslint-disable-next-line jsx-a11y/alt-text -- react-pdf Image does not support alt.
             <Image src={props.companyLogoUrl} style={{ width: 54, height: 54 }} />
           ) : null}
         </View>

@@ -58,6 +58,21 @@ const deviceLabel: Record<string, string> = {
   OTHER:         "Other",
 };
 
+const quotationStatuses = new Set<JobStatus>([
+  "DIAGNOSING",
+  "REFERRED",
+  "IN_EXTERNAL_REPAIR",
+  "WAITING_FOR_PARTS",
+  "RETURNED_FROM_EXTERNAL",
+  "AWAITING_APPROVAL",
+  "IN_REPAIR",
+  "READY_FOR_PICKUP",
+  "COMPLETED",
+  "CLOSED",
+]);
+
+const invoiceStatuses = new Set<JobStatus>(["READY_FOR_PICKUP", "COMPLETED", "CLOSED"]);
+
 /** Small SVG icons for device types */
 function DeviceIcon({ type }: { type: string }) {
   if (type === "PHONE_ANDROID" || type === "PHONE_IPHONE") {
@@ -130,6 +145,9 @@ export function JobTable({
   const canSeeAssignment = can.assignJobs(permissionUser) || role === "ADMIN" || role === "OPS";
   const canEditPage = role !== "TECHNICIAN_EXTERNAL" && !can.createJob(permissionUser);
   const canManagePricing = can.approveInvoices(permissionUser);
+  const canUseJobCards = can.generateJobCards(permissionUser);
+  const canUseQuotations = role !== "TECHNICIAN_EXTERNAL" && (["ADMIN", "OPS", "TECHNICIAN_INTERNAL"].includes(role) || can.viewFinancials(permissionUser));
+  const canUseInvoices = role !== "TECHNICIAN_EXTERNAL" && can.approveInvoices(permissionUser);
   const showClientFacingCostOnly =
     (can.viewApprovedCost(permissionUser) || canManagePricing)
     && !can.reviewExternalBills(permissionUser);
@@ -211,7 +229,10 @@ export function JobTable({
                 : ["AWAITING_APPROVAL", "IN_REPAIR", "READY_FOR_PICKUP"].includes(job.status)
                   ? <span key="needs" className="rounded px-1.5 py-0.5 text-[10px] font-semibold bg-amber-50 text-amber-600">Needs pricing</span>
                   : null
-              : null;
+                  : null;
+
+            const canDownloadQuotation = canUseQuotations && quotationStatuses.has(job.status);
+            const canDownloadInvoice = canUseInvoices && invoiceStatuses.has(job.status);
 
             return (
               <div
@@ -236,8 +257,38 @@ export function JobTable({
                     <span className="mono text-[10px] font-medium tracking-wide text-[var(--ink-muted)]/50">
                       {job.jobNumber}
                     </span>
-                    {(canEditPage || (canDelete && deleteAction)) ? (
+                    {(canEditPage || canUseJobCards || canDownloadQuotation || canDownloadInvoice || (canDelete && deleteAction)) ? (
                       <div className="pointer-events-auto flex items-center gap-3">
+                        {canUseJobCards ? (
+                          <a
+                            href={`/api/jobs/${job.id}/job-card`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-[10px] font-medium uppercase tracking-wide text-[var(--ink-muted)]/60 transition hover:text-[var(--ink-muted)]"
+                          >
+                            Card
+                          </a>
+                        ) : null}
+                        {canDownloadQuotation ? (
+                          <a
+                            href={`/api/jobs/${job.id}/quotation`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-[10px] font-medium uppercase tracking-wide text-[var(--ink-muted)]/60 transition hover:text-[var(--ink-muted)]"
+                          >
+                            Quote
+                          </a>
+                        ) : null}
+                        {canDownloadInvoice ? (
+                          <a
+                            href={`/api/jobs/${job.id}/invoice`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-[10px] font-medium uppercase tracking-wide text-[var(--ink-muted)]/60 transition hover:text-[var(--ink-muted)]"
+                          >
+                            Inv
+                          </a>
+                        ) : null}
                         {canEditPage ? (
                           <Link
                             href={`/jobs/${job.id}/edit${returnTo ? `?returnTo=${encodeURIComponent(returnTo)}` : ""}`}
@@ -348,6 +399,8 @@ export function JobTable({
               const strip = statusStripClass(job.status);
               const hasFlag = job.workflowReason && job.workflowReason !== "NONE";
               const flagCfg = hasFlag ? workflowReasonConfig[job.workflowReason as HighlightReason] : null;
+              const canDownloadQuotation = canUseQuotations && quotationStatuses.has(job.status);
+              const canDownloadInvoice = canUseInvoices && invoiceStatuses.has(job.status);
               return (
                 <tr
                   key={job.id}
@@ -454,14 +507,44 @@ export function JobTable({
                       >
                         Open
                       </Link>
-                      {canEditPage ? (
-                        <Link
-                          href={`/jobs/${job.id}/edit${returnTo ? `?returnTo=${encodeURIComponent(returnTo)}` : ""}`}
-                          className="whitespace-nowrap rounded-lg border border-[var(--line)] px-2.5 py-1 text-[11px] font-medium text-[var(--ink-muted)] transition-colors hover:border-[var(--ink)]/20 hover:text-[var(--ink)]"
-                        >
-                          Edit
-                        </Link>
-                      ) : null}
+                      <details className="relative inline-block">
+                        <summary className="inline-flex h-7 w-8 cursor-pointer list-none items-center justify-center rounded-lg border border-[var(--line)] text-[var(--ink-muted)] transition-colors hover:border-[var(--accent)]/50 hover:bg-[var(--accent)]/8 hover:text-[var(--accent)]">
+                          <span className="sr-only">More actions</span>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                            <circle cx="5" cy="12" r="1.8" />
+                            <circle cx="12" cy="12" r="1.8" />
+                            <circle cx="19" cy="12" r="1.8" />
+                          </svg>
+                        </summary>
+                        <div className="panel-shadow absolute right-0 z-20 mt-2 w-52 overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)] text-left">
+                          <div className="py-1">
+                            {canEditPage ? (
+                              <Link href={`/jobs/${job.id}/edit${returnTo ? `?returnTo=${encodeURIComponent(returnTo)}` : ""}`} className="flex w-full px-4 py-2.5 text-sm font-medium text-[var(--ink)] transition hover:bg-[var(--panel-strong)]">
+                                Edit Job
+                              </Link>
+                            ) : null}
+                            {canUseJobCards ? (
+                              <a href={`/api/jobs/${job.id}/job-card`} target="_blank" rel="noreferrer" className="flex w-full px-4 py-2.5 text-sm font-medium text-[var(--ink)] transition hover:bg-[var(--panel-strong)]">
+                                Download Job Card
+                              </a>
+                            ) : null}
+                            {canDownloadQuotation ? (
+                              <a href={`/api/jobs/${job.id}/quotation`} target="_blank" rel="noreferrer" className="flex w-full px-4 py-2.5 text-sm font-medium text-[var(--ink)] transition hover:bg-[var(--panel-strong)]">
+                                Download Quotation
+                              </a>
+                            ) : (
+                              canUseQuotations ? <span className="flex w-full px-4 py-2.5 text-sm font-medium text-[var(--ink-muted)]">Quotation unavailable</span> : null
+                            )}
+                            {canDownloadInvoice ? (
+                              <a href={`/api/jobs/${job.id}/invoice`} target="_blank" rel="noreferrer" className="flex w-full px-4 py-2.5 text-sm font-medium text-[var(--ink)] transition hover:bg-[var(--panel-strong)]">
+                                Download Invoice
+                              </a>
+                            ) : (
+                              canUseInvoices ? <span className="flex w-full px-4 py-2.5 text-sm font-medium text-[var(--ink-muted)]">Invoice unavailable</span> : null
+                            )}
+                          </div>
+                        </div>
+                      </details>
                       {canDelete && deleteAction ? (
                         <form action={deleteAction} className="inline">
                           <input type="hidden" name="id" value={job.id} />

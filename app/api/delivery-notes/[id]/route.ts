@@ -36,8 +36,40 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
           client: { select: { fullName: true } },
         },
       },
+      invoice: {
+        select: {
+          invoiceNumber: true,
+          job: { select: { jobNumber: true, client: { select: { fullName: true } } } },
+        },
+      },
       items: { select: { description: true, quantity: true }, orderBy: { description: "asc" } },
     },
+  }).catch(async (err) => {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (!msg.includes("Unknown field `invoice`")) throw err;
+    // Keep legacy deployments readable until their generated Prisma client includes DeliveryNote.invoice.
+    const legacyNote = await prisma.deliveryNote.findFirst({
+      where: { id, orgId },
+      select: {
+        id: true,
+        deliveryNoteNumber: true,
+        deliveredAt: true,
+        deliveryMethod: true,
+        deliveredByName: true,
+        receivedByName: true,
+        receivedBySignatureText: true,
+        note: true,
+        sale: {
+          select: {
+            saleNumber: true,
+            invoiceNumber: true,
+            client: { select: { fullName: true } },
+          },
+        },
+        items: { select: { description: true, quantity: true }, orderBy: { description: "asc" } },
+      },
+    });
+    return legacyNote ? { ...legacyNote, invoice: null } : null;
   });
 
   if (!note) {
@@ -45,12 +77,16 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
   }
 
   const branding = await getDocumentBrandingSettings(orgId);
+  const sourceRef = note.invoice?.invoiceNumber
+    ? `${note.invoice.invoiceNumber} / ${note.invoice.job.jobNumber}`
+    : (note.sale?.invoiceNumber ?? note.sale?.saleNumber ?? "-");
+  const clientName = note.invoice?.job.client.fullName ?? note.sale?.client?.fullName ?? "-";
   const element = createElement(DeliveryNoteDocument as never, {
     branding,
     deliveryNoteNumber: note.deliveryNoteNumber,
     deliveredAt: note.deliveredAt.toLocaleString("en-GB"),
-    saleRef: note.sale.invoiceNumber ?? note.sale.saleNumber,
-    clientName: note.sale.client?.fullName ?? "-",
+    saleRef: sourceRef,
+    clientName,
     deliveredByName: note.deliveredByName,
     receivedByName: note.receivedByName,
     receivedBySignatureText: note.receivedBySignatureText,

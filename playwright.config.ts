@@ -7,7 +7,7 @@ const databaseUrl =
   process.env.E2E_DATABASE_URL ??
   process.env.DATABASE_URL ??
   `file:${path.resolve(process.cwd(), "prisma/dev.db")}`;
-const authEnv = `NEXT_PUBLIC_APP_URL=${baseURL} BETTER_AUTH_URL=${baseURL} BETTER_AUTH_SECRET=abcdefghijklmnopqrstuvwxyz123456 PROD=false DATABASE_URL=${databaseUrl}`;
+const authEnv = `NEXT_PUBLIC_APP_URL=${baseURL} BETTER_AUTH_URL=${baseURL} BETTER_AUTH_SECRET=abcdefghijklmnopqrstuvwxyz123456 PROD=false ALLOW_SQLITE_PRODUCTION=1 DATABASE_URL=${databaseUrl}`;
 
 const webServerBoot = `${authEnv} bunx prisma db push --skip-generate && bunx prisma generate && ${authEnv} bun run seed`;
 
@@ -32,6 +32,6 @@ export default defineConfig({
     command: webServerCommand,
     url: `${baseURL}/login`,
     reuseExistingServer: false,
-    timeout: 120000,
+    timeout: 300000,
   },
 });

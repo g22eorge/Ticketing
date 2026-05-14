@@ -4,6 +4,7 @@ import path from "node:path";
 
 const root = process.cwd();
 const appDir = path.join(root, "app");
+const ignoredDirs = new Set([".next", "node_modules", ".git", ".claude"]);
 
 async function walk(dir) {
   const entries = await readdir(dir, { withFileTypes: true });
@@ -12,7 +13,7 @@ async function walk(dir) {
   for (const entry of entries) {
     const fullPath = path.join(dir, entry.name);
     if (entry.isDirectory()) {
-      if (entry.name === ".next" || entry.name === "node_modules" || entry.name === ".git") {
+      if (ignoredDirs.has(entry.name)) {
         continue;
       }
       files.push(...(await walk(fullPath)));
@@ -40,11 +41,17 @@ function toMatcher(routePattern) {
 }
 
 const pageFiles = (await walk(appDir)).filter((file) => file.endsWith("/page.tsx"));
-const routes = pageFiles.map(normalizeRouteFromPage);
+const routeFiles = (await walk(appDir)).filter((file) => file.endsWith("/route.ts"));
+const apiRoutes = routeFiles.map((file) => {
+  const relative = file.replace(appDir, "").replace(/\\/g, "/");
+  const withoutRoute = relative.replace(/\/route\.ts$/, "");
+  return withoutRoute.replace(/\/\([^/]+\)/g, "");
+});
+const routes = [...pageFiles.map(normalizeRouteFromPage), ...apiRoutes];
 const matchers = routes.map((route) => ({ route, regex: toMatcher(route) }));
 
 const tsxFiles = (await walk(root)).filter(
-  (file) => file.endsWith(".tsx") && !file.includes("/.next/") && !file.includes("/node_modules/"),
+  (file) => file.endsWith(".tsx") && !file.includes("/.next/") && !file.includes("/node_modules/") && !file.includes("/.claude/"),
 );
 
 const hrefRegex = /href\s*=\s*"(\/[^"#?]*)"/g;

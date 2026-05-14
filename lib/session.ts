@@ -47,6 +47,7 @@ export async function getCurrentUserRole() {
         id: string;
         role: Role;
         isActive: boolean;
+        accessMode: "FULL" | "READ_ONLY";
         name: string;
         email: string;
         phone: string | null;
@@ -62,6 +63,7 @@ export async function getCurrentUserRole() {
         id: true,
         role: true,
         isActive: true,
+        accessMode: true,
         name: true,
         email: true,
         phone: true,
@@ -75,6 +77,7 @@ export async function getCurrentUserRole() {
           id: row.id,
           role: normalizeRole(row.role),
           isActive: row.isActive,
+          accessMode: (row.accessMode as unknown as "FULL" | "READ_ONLY") ?? "FULL",
           name: row.name,
           email: row.email,
           phone: row.phone ?? null,
@@ -94,17 +97,20 @@ export async function getCurrentUserRole() {
     let phone: string | null = null;
     let orgId: string | null = null;
     let permissions: string[] = [];
+    let accessMode: "FULL" | "READ_ONLY" = "FULL";
 
     if (baseUser) {
       try {
-        const rows = await prisma.$queryRaw<Array<{ phone: string | null; orgId: string | null }>>`
-          SELECT phone, orgId FROM "User" WHERE id = ${session.user.id} LIMIT 1
+        const rows = await prisma.$queryRaw<Array<{ phone: string | null; orgId: string | null; accessMode: string | null }>>`
+          SELECT phone, orgId, accessMode FROM "User" WHERE id = ${session.user.id} LIMIT 1
         `;
         phone = rows[0]?.phone ?? null;
         orgId = rows[0]?.orgId ?? null;
+        accessMode = rows[0]?.accessMode === "READ_ONLY" ? "READ_ONLY" : "FULL";
       } catch {
         phone = null;
         orgId = null;
+        accessMode = "FULL";
       }
 
       try {
@@ -120,7 +126,7 @@ export async function getCurrentUserRole() {
     }
 
     user = baseUser
-      ? { ...baseUser, role: normalizeRole(baseUser.role), phone, orgId, permissions }
+      ? { ...baseUser, role: normalizeRole(baseUser.role), phone, orgId, permissions, accessMode }
       : null;
   }
 
@@ -145,6 +151,7 @@ export async function getCurrentUserRoleOptional() {
         id: true,
         role: true,
         isActive: true,
+        accessMode: true,
         name: true,
         email: true,
         phone: true,
@@ -163,6 +170,7 @@ export async function getCurrentUserRoleOptional() {
         id: row.id,
         role: normalizeRole(row.role),
         isActive: row.isActive,
+        accessMode: (row.accessMode as unknown as "FULL" | "READ_ONLY") ?? "FULL",
         name: row.name,
         email: row.email,
         phone: row.phone ?? null,
@@ -189,6 +197,7 @@ export async function getCurrentUserRoleOptional() {
         role: normalizeRole(baseUser.role),
         phone: null,
         orgId: null,
+        accessMode: "FULL" as const,
         permissions: [],
       },
     };

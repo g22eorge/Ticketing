@@ -7,6 +7,8 @@ import { prisma } from "@/lib/prisma";
 import { requireOrgSession } from "@/lib/org-context";
 import { can } from "@/lib/permissions";
 import { assertOrgCanMutate } from "@/lib/org-write";
+import { ConfirmSubmitButton } from "@/components/shared/ConfirmSubmitButton";
+import { writeSystemAuditEvent } from "@/lib/commercial/audit";
 
 function monthKey(d: Date) {
   return `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}`;
@@ -65,6 +67,54 @@ export default async function PosPage() {
     redirect(`/pos/${sale.id}`);
   }
 
+  async function deleteSaleAction(formData: FormData) {
+    "use server";
+    const { user, orgId, org } = await requireOrgSession();
+    if (user.role !== "ADMIN") return;
+    assertOrgCanMutate({ access: org.access, userRole: user.role, kind: "GENERAL" });
+
+    const saleId = String(formData.get("saleId") ?? "").trim();
+    if (!saleId) return;
+
+    const sale = await prisma.sale.findFirst({
+      where: { id: saleId, orgId },
+      select: {
+        id: true,
+        status: true,
+        invoicedAt: true,
+        items: { select: { partId: true, quantity: true, description: true } },
+        payments: { select: { id: true }, take: 1 },
+        creditNotes: { select: { id: true }, take: 1 },
+        refunds: { select: { id: true }, take: 1 },
+        deliveryNotes: { select: { id: true }, take: 1 },
+      },
+    });
+    if (!sale || sale.status !== "OPEN" || sale.invoicedAt || sale.payments.length || sale.creditNotes.length || sale.refunds.length || sale.deliveryNotes.length) return;
+
+    await prisma.$transaction(async (tx) => {
+      for (const item of sale.items) {
+        if (!item.partId) continue;
+        const part = await tx.part.findFirst({ where: { id: item.partId, orgId }, select: { id: true, qtyOnHand: true } });
+        if (!part) continue;
+        await tx.part.update({ where: { id: part.id }, data: { qtyOnHand: part.qtyOnHand + Math.abs(item.quantity) } });
+        await tx.partStockTransaction.create({
+          data: {
+            partId: part.id,
+            saleId: sale.id,
+            type: "IN",
+            quantity: Math.abs(item.quantity),
+            reason: `POS sale deleted (${item.description})`,
+            createdById: user.id,
+          },
+        });
+      }
+      await tx.sale.deleteMany({ where: { id: sale.id, orgId } });
+    });
+    await writeSystemAuditEvent({ orgId, actorUserId: user.id, entityType: "Sale", entityId: sale.id, action: "POS_SALE_DELETED", summary: "Open POS sale deleted" });
+
+    revalidatePath("/pos");
+  }
+
   let sales: Array<{
     id: string;
     saleNumber: string;
@@ -72,8 +122,10 @@ export default async function PosPage() {
     currency: string | null;
     totalAmount: number;
     paidAmount: number;
+    invoicedAt: Date | null;
     createdAt: Date;
     branch: { name: string } | null;
+    _count: { payments: number; creditNotes: number; refunds: number; deliveryNotes: number };
   }> = [];
   try {
     sales = await prisma.sale.findMany({
@@ -87,8 +139,10 @@ export default async function PosPage() {
           currency: true,
           totalAmount: true,
           paidAmount: true,
+          invoicedAt: true,
           createdAt: true,
           branch: { select: { name: true } },
+          _count: { select: { payments: true, creditNotes: true, refunds: true, deliveryNotes: true } },
         },
       });
   } catch (err) {
@@ -158,18 +212,29 @@ export default async function PosPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--line)]">
-                {sales.map((s) => (
-                  <tr key={s.id} className="hover:bg-[var(--panel-strong)]/40">
-                    <td className="px-4 py-3 mono font-semibold">{s.saleNumber}</td>
-                    <td className="px-4 py-3 text-[var(--ink-muted)]">{s.branch?.name ?? "-"}</td>
-                    <td className="px-4 py-3">{formatMoneyCompact(s.totalAmount, normalizeCurrency(s.currency, org.baseCurrency))}</td>
-                    <td className="px-4 py-3">{formatMoneyCompact(s.paidAmount, normalizeCurrency(s.currency, org.baseCurrency))}</td>
-                    <td className="px-4 py-3 text-[var(--ink-muted)]">{s.status}</td>
-                    <td className="px-4 py-3">
-                      <Link href={`/pos/${s.id}`} className="btn-premium-secondary rounded-md px-2.5 py-1.5 text-xs">Open</Link>
-                    </td>
-                  </tr>
-                ))}
+                {sales.map((s) => {
+                  const canDeleteSale = user.role === "ADMIN" && s.status === "OPEN" && !s.invoicedAt && s._count.payments === 0 && s._count.creditNotes === 0 && s._count.refunds === 0 && s._count.deliveryNotes === 0;
+                  return (
+                    <tr key={s.id} className="hover:bg-[var(--panel-strong)]/40">
+                      <td className="px-4 py-3 mono font-semibold">{s.saleNumber}</td>
+                      <td className="px-4 py-3 text-[var(--ink-muted)]">{s.branch?.name ?? "-"}</td>
+                      <td className="px-4 py-3">{formatMoneyCompact(s.totalAmount, normalizeCurrency(s.currency, org.baseCurrency))}</td>
+                      <td className="px-4 py-3">{formatMoneyCompact(s.paidAmount, normalizeCurrency(s.currency, org.baseCurrency))}</td>
+                      <td className="px-4 py-3 text-[var(--ink-muted)]">{s.status}</td>
+                      <td className="px-4 py-3">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Link href={`/pos/${s.id}`} className="btn-premium-secondary rounded-md px-2.5 py-1.5 text-xs">Open/Edit</Link>
+                          {canDeleteSale ? (
+                            <form action={deleteSaleAction}>
+                              <input type="hidden" name="saleId" value={s.id} />
+                              <ConfirmSubmitButton message="Delete this open POS sale? Stock will be restored." className="rounded-md border border-red-200 px-2.5 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-50">Delete</ConfirmSubmitButton>
+                            </form>
+                          ) : null}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
