@@ -147,7 +147,7 @@ export async function GET(
     : undefined;
 
   // Read-only mode: allow download without mutating state.
-  if (!orgCtx.access.isSuspended) {
+  if (!orgCtx.access.isSuspended && user.accessMode !== "READ_ONLY") {
     await prisma.auditLog.create({
       data: {
         jobId: job.id,

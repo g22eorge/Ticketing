@@ -12,6 +12,7 @@ import { can } from "@/lib/permissions";
 import { InvoiceTemplateComponent, resolveTemplateKey } from "@/lib/pdf/templates";
 import { prisma } from "@/lib/prisma";
 import { requireOrgSession } from "@/lib/org-context";
+import { assertOrgCanMutate } from "@/lib/org-write";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -184,6 +185,14 @@ export async function GET(
     );
   }
 
+  const isReadOnly = orgCtx.access.isSuspended || user.accessMode === "READ_ONLY";
+  if (isReadOnly && !job.invoiceNumber) {
+    return NextResponse.json(
+      { error: "Workspace is read-only. Generating new invoices is disabled until billing is restored." },
+      { status: 402 },
+    );
+  }
+
   const org = await prisma.organization.findUnique({ where: { id: orgId }, select: { plan: true, baseCurrency: true } }).catch(() => null);
   const currency = normalizeCurrency(org?.baseCurrency, "UGX");
   const branding = await getDocumentBrandingSettings(orgId);
@@ -198,7 +207,6 @@ export async function GET(
   const vatRate = Math.max(0, branding.vatRatePercent) / 100;
   const repairCost = vatApplicable && clientBill > 0 ? clientBill / (1 + vatRate) : clientBill;
   const vatAmount = vatApplicable ? Math.max(clientBill - repairCost, 0) : 0;
-  const suspended = orgCtx.access.isSuspended;
   const issuedAtDate = new Date();
   const dueDate = new Date(issuedAtDate);
   dueDate.setDate(dueDate.getDate() + branding.quoteValidityDays);
@@ -214,16 +222,15 @@ export async function GET(
   );
   const invoiceNumber = job.invoiceNumber?.trim() || `INV-${quotationNumber.replace(/\s+/g, "-")}`;
 
-  if (suspended && !job.invoiceNumber) {
-    return NextResponse.json(
-      { error: "Workspace is read-only. Generating new invoices is disabled until billing is restored." },
-      { status: 402 },
-    );
-  }
-
   const invoiceTotal = clientBill;
 
-  if (!suspended) {
+  if (!isReadOnly) {
+    try {
+      assertOrgCanMutate({ access: orgCtx.access, userRole: user.role, userAccessMode: user.accessMode, kind: "GENERAL" });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Workspace is read-only.";
+      return NextResponse.json({ error: message }, { status: 403 });
+    }
     await prisma.job.update({
       where: { id: job.id },
       data: {

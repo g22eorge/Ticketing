@@ -7,6 +7,7 @@ import { sanitizeOptionalText, sanitizeText } from "@/lib/sanitize";
 import { generateJobNumber } from "@/app/(app)/jobs/new/actions";
 import { sendIntakeApprovalNotification, sendIntakeRejectionNotification, sendJobCreatedNotification } from "@/lib/notifications/whatsapp";
 import { checkJobLimit } from "@/lib/plan-limits";
+import { assertOrgCanMutate } from "@/lib/org-write";
 
 const ALLOWED_STATUSES = ["APPROVED", "REJECTED", "CONVERTED_TO_JOB"] as const;
 type AllowedStatus = (typeof ALLOWED_STATUSES)[number];
@@ -15,9 +16,15 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { session, user, orgId } = await requireOrgSession();
+  const { session, user, orgId, org } = await requireOrgSession();
   if (!can.viewClientInfo(user)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+  }
+  try {
+    assertOrgCanMutate({ access: org.access, userRole: user.role, userAccessMode: user.accessMode, kind: "GENERAL" });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Workspace is read-only.";
+    return NextResponse.json({ error: message }, { status: 403 });
   }
 
   const { id } = await params;
@@ -102,8 +109,8 @@ export async function PATCH(
     });
 
     // 4. Mark request as converted and store linked job ID
-    await prisma.repairRequest.update({
-      where: { id },
+    await prisma.repairRequest.updateMany({
+      where: { id, orgId },
       data: { requestStatus: "CONVERTED_TO_JOB", linkedJobId: job.id },
     });
 
@@ -121,10 +128,14 @@ export async function PATCH(
   }
 
   /* ── Approve / Reject ── */
-  const updated = await prisma.repairRequest.update({
-    where: { id },
+  await prisma.repairRequest.updateMany({
+    where: { id, orgId },
     data: { requestStatus: status as AllowedStatus },
   });
+  const updated = await prisma.repairRequest.findFirst({ where: { id, orgId } });
+  if (!updated) {
+    return NextResponse.json({ error: "Request not found" }, { status: 404 });
+  }
 
   // Send WhatsApp notification (non-blocking)
   if (status === "APPROVED") {

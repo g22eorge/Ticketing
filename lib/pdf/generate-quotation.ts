@@ -20,9 +20,10 @@ export async function generateQuotationBuffer(
   staffRole: string,
   stampQuotedAt = false,
   staffUserId?: string,
+  expectedOrgId?: string,
 ): Promise<GenerateQuotationResult> {
   const job = await prisma.job.findUnique({
-    where: { id: jobId },
+    where: expectedOrgId ? { id: jobId, orgId: expectedOrgId } : { id: jobId },
     select: {
       id: true, jobNumber: true, status: true, repairPath: true,
       orgId: true,
@@ -73,6 +74,7 @@ export async function generateQuotationBuffer(
           jobId: job.id, userId: staffUserId,
           action: "QUOTATION_GENERATED",
           detail: JSON.stringify({ quotationNumber }),
+          orgId: job.orgId,
         },
       });
     }

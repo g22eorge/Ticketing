@@ -1076,12 +1076,12 @@ async function sendPdfViaWhatsApp(opts: {
 export async function sendQuotationViaWhatsAppAction(
   jobId: string,
 ): Promise<{ success: boolean; error?: string }> {
-  const { user, org } = await requireOrgSession();
+  const { user, org, orgId } = await requireOrgSession();
   assertOrgCanMutate({ access: org.access, userRole: user.role, userAccessMode: user.accessMode, kind: "GENERAL" });
   if (!["ADMIN", "OPS", "FRONT_DESK"].includes(user.role)) {
     return { success: false, error: "Not authorised" };
   }
-  const result = await generateQuotationBuffer(jobId, user.name, user.role, true, user.id);
+  const result = await generateQuotationBuffer(jobId, user.name, user.role, true, user.id, orgId);
   if (!result.ok) return { success: false, error: result.error };
   return sendPdfViaWhatsApp({
     jobId, userId: user.id,
@@ -1096,12 +1096,12 @@ export async function sendQuotationViaWhatsAppAction(
 export async function sendInvoiceViaWhatsAppAction(
   jobId: string,
 ): Promise<{ success: boolean; error?: string }> {
-  const { user, org } = await requireOrgSession();
+  const { user, org, orgId } = await requireOrgSession();
   assertOrgCanMutate({ access: org.access, userRole: user.role, userAccessMode: user.accessMode, kind: "GENERAL" });
   if (!["ADMIN", "OPS"].includes(user.role) && !can.approveInvoices({ role: user.role, permissions: user.permissions })) {
     return { success: false, error: "Not authorised" };
   }
-  const result = await generateInvoiceBuffer(jobId, user.name, user.role, user.id);
+  const result = await generateInvoiceBuffer(jobId, user.name, user.role, user.id, orgId);
   if (!result.ok) return { success: false, error: result.error };
   return sendPdfViaWhatsApp({
     jobId, userId: user.id,
@@ -1116,12 +1116,12 @@ export async function sendInvoiceViaWhatsAppAction(
 export async function sendJobCardViaWhatsAppAction(
   jobId: string,
 ): Promise<{ success: boolean; error?: string }> {
-  const { user, org } = await requireOrgSession();
+  const { user, org, orgId } = await requireOrgSession();
   assertOrgCanMutate({ access: org.access, userRole: user.role, userAccessMode: user.accessMode, kind: "GENERAL" });
   if (!["ADMIN", "OPS"].includes(user.role) && !can.generateJobCards({ role: user.role, permissions: user.permissions })) {
     return { success: false, error: "Not authorised" };
   }
-  const result = await generateJobCardBuffer(jobId, user.name, user.role, user.id);
+  const result = await generateJobCardBuffer(jobId, user.name, user.role, user.id, orgId);
   if (!result.ok) return { success: false, error: result.error };
   return sendPdfViaWhatsApp({
     jobId, userId: user.id,

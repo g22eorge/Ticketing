@@ -266,7 +266,13 @@ export async function getDocumentBrandingSettings(orgId?: string) {
       return coerceRow(existing);
     }
 
-    const created = await delegate.create({ data: orgId ? { ...defaultBranding, orgId } : defaultBranding });
+    if (orgId) {
+      const { id: _id, ...brandingDefaults } = defaultBranding;
+      const created = await delegate.create({ data: { ...brandingDefaults, orgId } as BrandingSettings & { orgId: string } });
+      return coerceRow(created);
+    }
+
+    const created = await delegate.create({ data: defaultBranding });
     return coerceRow(created);
   }
 

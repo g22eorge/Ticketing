@@ -16,9 +16,10 @@ export async function generateJobCardBuffer(
   staffName: string,
   staffRole: string,
   staffUserId?: string,
+  expectedOrgId?: string,
 ): Promise<GenerateJobCardResult> {
   const job = await prisma.job.findUnique({
-    where: { id: jobId },
+    where: expectedOrgId ? { id: jobId, orgId: expectedOrgId } : { id: jobId },
     select: {
       id: true, jobNumber: true, status: true,
       orgId: true,
@@ -52,6 +53,7 @@ export async function generateJobCardBuffer(
         jobId: job.id, userId: staffUserId,
         action: "JOB_CARD_GENERATED",
         detail: JSON.stringify({ documentNumber }),
+        orgId: job.orgId,
       },
     }).catch(() => null);
   }

@@ -147,8 +147,8 @@ export async function GET(
     return NextResponse.json({ error: "Quotation can only be generated after diagnosis starts." }, { status: 409 });
   }
 
-  const suspended = orgCtx.access.isSuspended;
-  if (suspended && !job.quotedAt) {
+  const isReadOnly = orgCtx.access.isSuspended || user.accessMode === "READ_ONLY";
+  if (isReadOnly && !job.quotedAt) {
     return NextResponse.json(
       { error: "Workspace is read-only. Generating new quotations is disabled until billing is restored." },
       { status: 402 },
@@ -181,7 +181,7 @@ export async function GET(
     branding.sequencePadLength,
   );
 
-  if (!suspended && !job.quotedAt) {
+  if (!isReadOnly && !job.quotedAt) {
     await prisma.job.update({ where: { id: job.id, orgId }, data: { quotedAt: issuedAtDate } });
     await prisma.auditLog.create({
       data: {

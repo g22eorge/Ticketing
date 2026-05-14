@@ -19,9 +19,10 @@ export async function generateInvoiceBuffer(
   staffName: string,
   staffRole: string,
   staffUserId?: string,
+  expectedOrgId?: string,
 ): Promise<GenerateInvoiceResult> {
   const job = await prisma.job.findUnique({
-    where: { id: jobId },
+    where: expectedOrgId ? { id: jobId, orgId: expectedOrgId } : { id: jobId },
     select: {
       id: true, jobNumber: true, status: true, repairPath: true,
       orgId: true,
@@ -79,6 +80,7 @@ export async function generateInvoiceBuffer(
         userId: staffUserId,
         action: "INVOICE_GENERATED",
         detail: JSON.stringify({ invoiceNumber }),
+        orgId: job.orgId,
       },
     })] : []),
   ]).catch(() => null);
