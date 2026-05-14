@@ -3,6 +3,7 @@ import { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 
 import { JobTable, JobRow } from "@/components/jobs/JobTable";
+import { JobBoardView } from "@/components/jobs/JobBoardView";
 import { UI_JOB_STATUSES, JobStatus, normalizeJobStatus } from "@/lib/job-status";
 import { filterSupportedJobStatuses } from "@/lib/job-status-server";
 import { getClientBill, getExternalTechBill } from "@/lib/billing";
@@ -23,6 +24,7 @@ type SearchParams = {
   dateField?: "receivedAt" | "completedAt";
   page?: string;
   sort?: string;
+  view?: string;
 };
 
 type JobWithClient = Prisma.JobGetPayload<{
@@ -278,6 +280,40 @@ export default async function JobsPage({
     }
   }
 
+  const isBoard = filters.view === "board";
+
+  // Board view: load all active jobs (up to 200) without pagination.
+  let boardRows: JobRow[] = [];
+  if (isBoard) {
+    const boardActiveDbStatuses = uiStatuses.length
+      ? dbStatuses
+      : (filterSupportedJobStatuses([
+          "RECEIVED", "DIAGNOSING", "REFERRED",
+          "PENDING_EXTERNAL_ASSIGNMENT", "ASSIGNED_ONE_TIME_EXTERNAL",
+          "AWAITING_APPROVAL", "IN_REPAIR",
+          "IN_EXTERNAL_REPAIR", "WAITING_FOR_PARTS", "RETURNED_FROM_EXTERNAL",
+        ]) as JobStatus[]);
+    const boardWhere = { ...where, status: { in: boardActiveDbStatuses } };
+    const rawBoard = await prisma.job
+      .findMany({ where: boardWhere, include: includeWithOneTime, orderBy: { receivedAt: "desc" }, take: 200 })
+      .catch(() => prisma.job.findMany({ where: boardWhere, include: includeBase, orderBy: { receivedAt: "desc" }, take: 200 }));
+    const fallbackFields = (j: (typeof rawBoard)[0]) => j as typeof j & { deviceType?: string; brand?: string | null; model?: string | null };
+    boardRows = rawBoard.map((job) => ({
+      id: job.id,
+      jobNumber: job.jobNumber,
+      status: job.status,
+      deviceType: job.device?.deviceType ?? fallbackFields(job).deviceType ?? "OTHER",
+      brand: job.device?.brand ?? fallbackFields(job).brand ?? "",
+      model: job.device?.model ?? fallbackFields(job).model ?? "",
+      clientName: "client" in job ? (job as { client?: { fullName?: string } }).client?.fullName : undefined,
+      assignedTo: job.assignedTo?.name ?? (job as { oneTimeExternalAssignment?: { technicianName: string } }).oneTimeExternalAssignment?.technicianName,
+      receivedAt: job.receivedAt,
+      externalTechBill: getExternalTechBill(job),
+      clientBill: getClientBill(job),
+      workflowReason: (job as { workflowReason?: JobRow["workflowReason"] }).workflowReason ?? null,
+    }));
+  }
+
   const totalPages = Math.max(Math.ceil(total / pageSize), 1);
   const pageStart = total === 0 ? 0 : (page - 1) * pageSize + 1;
   const pageEnd = Math.min(page * pageSize, total);
@@ -345,14 +381,45 @@ export default async function JobsPage({
   return (
     <div className="space-y-4 pb-[calc(env(safe-area-inset-bottom)+5.25rem)] sm:pb-4">
 
-      {/* Minimal top actions (no status bar) */}
-      {can.createJob(user) ? (
-        <div className="flex justify-end">
+      {/* Top actions bar */}
+      <div className="flex items-center justify-between gap-2">
+        {/* View toggle */}
+        <div className="hidden items-center rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] p-0.5 sm:flex">
+          {(["table", "board"] as const).map((v) => {
+            const active = v === (isBoard ? "board" : "table");
+            const params = new URLSearchParams({ ...preserved, view: v === "table" ? "" : v });
+            if (v === "table") params.delete("view");
+            return (
+              <Link
+                key={v}
+                href={`/jobs?${params.toString()}`}
+                className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[11px] font-semibold transition ${
+                  active
+                    ? "bg-[var(--panel)] text-[var(--ink)] shadow-sm"
+                    : "text-[var(--ink-muted)] hover:text-[var(--ink)]"
+                }`}
+              >
+                {v === "table" ? (
+                  <svg viewBox="0 0 16 16" fill="currentColor" className="h-3.5 w-3.5" aria-hidden="true">
+                    <path d="M0 3a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H1a1 1 0 0 1-1-1V3zm0 5a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H1a1 1 0 0 1-1-1V8zm1 4a1 1 0 0 0-1 1v2a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1H1z"/>
+                  </svg>
+                ) : (
+                  <svg viewBox="0 0 16 16" fill="currentColor" className="h-3.5 w-3.5" aria-hidden="true">
+                    <path d="M1 2a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V2zm5 0a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V2zm5 0a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1V2z"/>
+                  </svg>
+                )}
+                {v === "table" ? "Table" : "Board"}
+              </Link>
+            );
+          })}
+        </div>
+
+        {can.createJob(user) ? (
           <Link href="/jobs/new" className="btn-premium hidden rounded-lg px-4 py-2 text-sm font-semibold sm:inline-flex">
             + New Job
           </Link>
-        </div>
-      ) : null}
+        ) : <span />}
+      </div>
 
       {/* ── FAB: New Job — mobile only, floats above bottom nav ── */}
       {can.createJob(user) ? (
@@ -521,7 +588,21 @@ export default async function JobsPage({
       </form>
 
       {/* ── Results ── */}
-      {rows.length === 0 ? (
+      {isBoard ? (
+        boardRows.length === 0 ? (
+          <div className="panel-shadow flex flex-col items-center gap-2 rounded-xl border border-[var(--line)] bg-[var(--panel)] py-14 text-center">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-8 w-8 text-[var(--ink-muted)]/40" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 0 0 2.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 0 0-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25Z" />
+            </svg>
+            <p className="text-sm font-medium text-[var(--ink-muted)]">No active jobs found</p>
+            {hasAnyFilter && (
+              <Link href="/jobs?view=board" className="mt-1 text-xs text-[var(--accent)] underline-offset-2 hover:underline">Clear filters</Link>
+            )}
+          </div>
+        ) : (
+          <JobBoardView jobs={boardRows} showClient={!isExternalTech} />
+        )
+      ) : rows.length === 0 ? (
         <div className="panel-shadow flex flex-col items-center gap-2 rounded-xl border border-[var(--line)] bg-[var(--panel)] py-14 text-center">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-8 w-8 text-[var(--ink-muted)]/40" aria-hidden="true">
             <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 0 0 2.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 0 0-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25Z" />

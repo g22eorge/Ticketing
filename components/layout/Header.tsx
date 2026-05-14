@@ -9,10 +9,13 @@ import { toast } from "sonner";
 import { authClient } from "@/lib/auth-client";
 import { NotificationBell } from "@/components/shared/NotificationBell";
 import { useTheme } from "@/components/layout/ThemeProvider";
+import { SettingsPanel } from "@/components/settings/SettingsPanel";
 import { can } from "@/lib/permissions";
 
 type HeaderProps = {
   userName: string;
+  userEmail: string;
+  userPhone?: string | null;
   role: string;
   permissions?: string[];
   isPlatformAdmin?: boolean;
@@ -52,134 +55,169 @@ function initials(name: string) {
     .toUpperCase() || "?";
 }
 
-export function Header({ userName, role, permissions = [], isPlatformAdmin = false, orgName = null }: HeaderProps) {
+export function Header({ userName, userEmail, userPhone = null, role, permissions = [], isPlatformAdmin = false, orgName = null }: HeaderProps) {
   const router = useRouter();
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-30 border-b border-[var(--line)] bg-[var(--panel)]/95 backdrop-blur-md px-4 py-2.5">
-      <div className="mx-auto flex w-full max-w-lg items-center gap-3 md:max-w-[1240px] xl:max-w-[1360px]">
+    <>
+      <header className="sticky top-0 z-30 border-b border-[var(--line)] bg-[var(--panel)]/95 backdrop-blur-md px-4 py-2.5">
+        <div className="mx-auto flex w-full max-w-lg items-center gap-3 md:max-w-[1240px] xl:max-w-[1360px]">
 
-        {/* Mobile brand (hidden on desktop where sidebar shows) */}
-        <Link href="/" className="flex items-center gap-2.5 lg:hidden hover:opacity-80 transition-opacity">
-          <div className="overflow-hidden rounded-lg border border-[var(--line)] bg-[var(--panel)] shadow-sm">
-            <Image
-              src="/eagle-info-logo.png"
-              alt="Logo"
-              width={28}
-              height={28}
-              className="h-7 w-7 object-cover"
-              priority
-            />
-          </div>
-          <span className="text-[13px] font-bold text-[var(--ink)] tracking-tight">Repair Manager</span>
-        </Link>
+          {/* Mobile brand (hidden on desktop where sidebar shows) */}
+          <Link href="/" className="flex items-center gap-2.5 lg:hidden hover:opacity-80 transition-opacity">
+            <div className="overflow-hidden rounded-lg border border-[var(--line)] bg-[var(--panel)] shadow-sm">
+              <Image
+                src="/eagle-info-logo.png"
+                alt="Logo"
+                width={28}
+                height={28}
+                className="h-7 w-7 object-cover"
+                priority
+              />
+            </div>
+            <span className="text-[13px] font-bold text-[var(--ink)] tracking-tight">Repair Manager</span>
+          </Link>
 
-        {/* Spacer */}
-        <div className="flex-1" />
+          {/* Spacer */}
+          <div className="flex-1" />
 
-        {/* Right section */}
-        <div className="flex items-center gap-2">
-          <ThemeToggle />
-          {can.viewNotifications({ role: role as never, permissions }) ? <NotificationBell /> : null}
+          {/* Right section */}
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            {can.viewNotifications({ role: role as never, permissions }) ? <NotificationBell /> : null}
 
-          {/* User menu */}
-          <div className="relative">
+            {/* Settings gear */}
             <button
               type="button"
-              onClick={() => setMenuOpen((v) => !v)}
-              aria-haspopup="menu"
-              aria-expanded={menuOpen}
-              className="flex items-center gap-2 rounded-full border border-[var(--line)] bg-[var(--panel-strong)]/60 pl-1.5 pr-3 py-1 transition hover:border-[var(--accent)]/30"
-              title="Account menu"
+              onClick={() => setSettingsOpen(true)}
+              title="Settings"
+              aria-label="Open settings"
+              className="rounded-md border border-[var(--line)] bg-[var(--panel-strong)] p-2 text-[var(--ink-muted)] transition hover:border-[var(--accent)]/40 hover:text-[var(--accent)]"
             >
-              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--accent)] text-[10px] font-bold text-black select-none">
-                {initials(userName)}
-              </div>
-              <span className="hidden sm:inline text-[12px] font-semibold text-[var(--ink)] leading-none truncate max-w-[140px]">
-                {userName.split(" ")[0]}
-              </span>
-              <span className={`hidden sm:inline rounded-full px-2 py-0.5 text-[10px] font-semibold leading-none ${roleAccent(role)}`}>
-                {roleDisplay(role)}
-              </span>
-              <svg className="ml-0.5 h-4 w-4 text-[var(--ink-muted)]" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 10.94l3.71-3.71a.75.75 0 1 1 1.06 1.06l-4.24 4.24a.75.75 0 0 1-1.06 0L5.21 8.29a.75.75 0 0 1 .02-1.08Z" clipRule="evenodd" />
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
+                <circle cx="12" cy="12" r="3"/>
               </svg>
             </button>
 
-            {menuOpen ? (
-              <div
-                role="menu"
-                className="absolute right-0 mt-2 w-52 overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)] shadow-xl"
-                onMouseLeave={() => setMenuOpen(false)}
+            {/* User menu */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setMenuOpen((v) => !v)}
+                aria-haspopup="menu"
+                aria-expanded={menuOpen}
+                className="flex items-center gap-2 rounded-full border border-[var(--line)] bg-[var(--panel-strong)]/60 pl-1.5 pr-3 py-1 transition hover:border-[var(--accent)]/30"
+                title="Account menu"
               >
-                {orgName ? (
-                  <div className="border-b border-[var(--line)] px-3 py-2">
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
-                      Org
-                    </p>
-                    <p className="mt-0.5 truncate text-sm font-semibold text-[var(--ink)]" title={orgName}>
-                      {orgName}
-                    </p>
-                  </div>
-                ) : null}
-                <Link
-                  role="menuitem"
-                  href="/settings/profile"
-                  className="flex w-full items-center px-3 py-2 text-left text-sm text-[var(--ink)] hover:bg-[var(--panel-strong)]"
-                  onClick={() => setMenuOpen(false)}
+                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--accent)] text-[10px] font-bold text-black select-none">
+                  {initials(userName)}
+                </div>
+                <span className="hidden sm:inline text-[12px] font-semibold text-[var(--ink)] leading-none truncate max-w-[140px]">
+                  {userName.split(" ")[0]}
+                </span>
+                <span className={`hidden sm:inline rounded-full px-2 py-0.5 text-[10px] font-semibold leading-none ${roleAccent(role)}`}>
+                  {roleDisplay(role)}
+                </span>
+                <svg className="ml-0.5 h-4 w-4 text-[var(--ink-muted)]" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                  <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 10.94l3.71-3.71a.75.75 0 1 1 1.06 1.06l-4.24 4.24a.75.75 0 0 1-1.06 0L5.21 8.29a.75.75 0 0 1 .02-1.08Z" clipRule="evenodd" />
+                </svg>
+              </button>
+
+              {menuOpen ? (
+                <div
+                  role="menu"
+                  className="absolute right-0 mt-2 w-52 overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)] shadow-xl"
+                  onMouseLeave={() => setMenuOpen(false)}
                 >
-                  Profile
-                </Link>
-                {role === "ADMIN" ? (
+                  {orgName ? (
+                    <div className="border-b border-[var(--line)] px-3 py-2">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
+                        Org
+                      </p>
+                      <p className="mt-0.5 truncate text-sm font-semibold text-[var(--ink)]" title={orgName}>
+                        {orgName}
+                      </p>
+                    </div>
+                  ) : null}
+                  <button
+                    role="menuitem"
+                    type="button"
+                    className="flex w-full items-center px-3 py-2 text-left text-sm text-[var(--ink)] hover:bg-[var(--panel-strong)]"
+                    onClick={() => { setMenuOpen(false); setSettingsOpen(true); }}
+                  >
+                    Settings
+                  </button>
                   <Link
                     role="menuitem"
-                    href="/settings/users"
+                    href="/settings/profile"
                     className="flex w-full items-center px-3 py-2 text-left text-sm text-[var(--ink)] hover:bg-[var(--panel-strong)]"
                     onClick={() => setMenuOpen(false)}
                   >
-                    Users
+                    Profile
                   </Link>
-                ) : null}
-                {isPlatformAdmin ? (
-                  <Link
+                  {role === "ADMIN" ? (
+                    <Link
+                      role="menuitem"
+                      href="/settings/users"
+                      className="flex w-full items-center px-3 py-2 text-left text-sm text-[var(--ink)] hover:bg-[var(--panel-strong)]"
+                      onClick={() => setMenuOpen(false)}
+                    >
+                      Users
+                    </Link>
+                  ) : null}
+                  {isPlatformAdmin ? (
+                    <Link
+                      role="menuitem"
+                      href="/platform"
+                      className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm font-semibold text-[var(--gold)] hover:bg-[var(--gold)]/10"
+                      onClick={() => setMenuOpen(false)}
+                    >
+                      <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                        <path fillRule="evenodd" d="M9.661 2.237a.531.531 0 0 1 .678 0 11.947 11.947 0 0 0 7.078 2.749.5.5 0 0 1 .479.425c.069.52.104 1.05.104 1.589 0 5.162-3.26 9.563-7.834 11.256a.48.48 0 0 1-.332 0C5.26 16.563 2 12.162 2 7c0-.538.035-1.069.104-1.589a.5.5 0 0 1 .48-.425 11.947 11.947 0 0 0 7.077-2.749Z" clipRule="evenodd" />
+                      </svg>
+                      Platform Admin
+                    </Link>
+                  ) : null}
+                  <button
                     role="menuitem"
-                    href="/platform"
-                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm font-semibold text-[var(--gold)] hover:bg-[var(--gold)]/10"
-                    onClick={() => setMenuOpen(false)}
+                    type="button"
+                    disabled={isSigningOut}
+                    onClick={async () => {
+                      setIsSigningOut(true);
+                      const result = await authClient.signOut();
+                      if (result.error) {
+                        toast.error(result.error.message || "Sign out failed");
+                        setIsSigningOut(false);
+                        return;
+                      }
+                      router.push("/login");
+                      router.refresh();
+                    }}
+                    className="flex w-full items-center px-3 py-2 text-left text-sm text-red-700 hover:bg-red-50 disabled:opacity-50"
                   >
-                    <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                      <path fillRule="evenodd" d="M9.661 2.237a.531.531 0 0 1 .678 0 11.947 11.947 0 0 0 7.078 2.749.5.5 0 0 1 .479.425c.069.52.104 1.05.104 1.589 0 5.162-3.26 9.563-7.834 11.256a.48.48 0 0 1-.332 0C5.26 16.563 2 12.162 2 7c0-.538.035-1.069.104-1.589a.5.5 0 0 1 .48-.425 11.947 11.947 0 0 0 7.077-2.749Z" clipRule="evenodd" />
-                    </svg>
-                    Platform Admin
-                  </Link>
-                ) : null}
-                <button
-                  role="menuitem"
-                  type="button"
-                  disabled={isSigningOut}
-                  onClick={async () => {
-                    setIsSigningOut(true);
-                    const result = await authClient.signOut();
-                    if (result.error) {
-                      toast.error(result.error.message || "Sign out failed");
-                      setIsSigningOut(false);
-                      return;
-                    }
-                    router.push("/login");
-                    router.refresh();
-                  }}
-                  className="flex w-full items-center px-3 py-2 text-left text-sm text-red-700 hover:bg-red-50 disabled:opacity-50"
-                >
-                  {isSigningOut ? "Signing out…" : "Sign out"}
-                </button>
-              </div>
-            ) : null}
+                    {isSigningOut ? "Signing out…" : "Sign out"}
+                  </button>
+                </div>
+              ) : null}
+            </div>
           </div>
         </div>
-      </div>
-    </header>
+      </header>
+
+      <SettingsPanel
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        userName={userName}
+        userEmail={userEmail}
+        userPhone={userPhone}
+        userRole={roleDisplay(role)}
+        role={role}
+      />
+    </>
   );
 }
 
