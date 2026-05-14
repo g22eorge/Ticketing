@@ -137,12 +137,19 @@ async function seedTenantFixture() {
 
 async function login(page: Page, email: string) {
   const origin = new URL(baseUrl);
-  const response = await fetch(`${baseUrl}/api/auth/sign-in/email`, {
-    method: "POST",
-    headers: { "content-type": "application/json", accept: "application/json", origin: baseUrl },
-    body: JSON.stringify({ email, password, callbackURL: "/jobs" }),
-  });
-  expect(response.ok, `status=${response.status} body=${(await response.clone().text()).slice(0, 240)}`).toBeTruthy();
+  let response: Response | null = null;
+  let failureNote = "";
+  for (let attempt = 1; attempt <= 15; attempt += 1) {
+    response = await fetch(`${baseUrl}/api/auth/sign-in/email`, {
+      method: "POST",
+      headers: { "content-type": "application/json", accept: "application/json", origin: baseUrl },
+      body: JSON.stringify({ email, password, callbackURL: "/jobs" }),
+    });
+    if (response.ok) break;
+    failureNote = `status=${response.status} body=${(await response.clone().text()).slice(0, 240)}`;
+    await new Promise((resolve) => setTimeout(resolve, response?.status === 429 ? 2000 : 350));
+  }
+  expect(response?.ok, failureNote).toBeTruthy();
   await page.context().addCookies(response.headers.getSetCookie().map((entry) => parseSetCookie(entry, origin)));
 }
 
