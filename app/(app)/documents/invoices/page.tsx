@@ -115,6 +115,7 @@ export default async function InvoicesPage() {
     paidAmount: number;
     status: string;
     job: { id: string; jobNumber: string; status: JobStatus; client: { fullName: string } };
+    payments: Array<{ id: string }>;
   }> = [];
   try {
     invoices = await prisma.invoice.findMany({
@@ -137,6 +138,7 @@ export default async function InvoicesPage() {
             client: { select: { fullName: true } },
           },
         },
+        payments: { select: { id: true }, orderBy: { receivedAt: "desc" }, take: 1 },
       },
     });
   } catch (err) {
@@ -291,14 +293,20 @@ export default async function InvoicesPage() {
                             {canGenerateInvoiceForStatus(inv.job.status) ? (
                               <a href={`/api/jobs/${inv.job.id}/invoice`} target="_blank" rel="noreferrer" className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm font-medium text-[var(--ink)] transition hover:bg-[var(--panel-strong)]">
                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
-                                Download PDF
+                                Download Invoice PDF
                               </a>
                             ) : (
                               <span className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm font-medium text-[var(--ink-muted)]">
                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
-                                Download PDF
+                                Download Invoice PDF
                               </span>
                             )}
+                            {inv.payments[0]?.id ? (
+                              <a href={`/api/payments/${inv.payments[0].id}/receipt`} target="_blank" rel="noreferrer" className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm font-medium text-emerald-700 transition hover:bg-[var(--panel-strong)]">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M4 2h16v20l-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M9 7h6M9 11h6M9 15h4"/></svg>
+                                Download Receipt PDF
+                              </a>
+                            ) : null}
                           </div>
                         </div>
                       </details>
@@ -343,10 +351,17 @@ export default async function InvoicesPage() {
                             placeholder="Ref"
                             className="hidden w-28 rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-1 text-xs outline-none focus:border-[var(--accent)]/50 md:block"
                           />
-                          <button className="btn-premium rounded-md px-2.5 py-1 text-xs text-white">Add</button>
+                          <button className="btn-premium rounded-md px-2.5 py-1 text-xs text-white">Record Payment</button>
                         </form>
                       ) : (
-                        <span className="text-xs font-semibold text-emerald-600">Paid</span>
+                        <div className="flex items-center gap-2">
+                          <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700">Paid</span>
+                          {inv.payments[0]?.id && (
+                            <a href={`/api/payments/${inv.payments[0].id}/receipt`} target="_blank" rel="noreferrer" className="rounded-full border border-emerald-200 px-2.5 py-1 text-xs font-semibold text-emerald-700 hover:bg-emerald-50">
+                              Receipt ↓
+                            </a>
+                          )}
+                        </div>
                       )}
                     </div>
                   </td>

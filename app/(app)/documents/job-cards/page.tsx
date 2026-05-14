@@ -39,7 +39,7 @@ export default async function JobCardsPage() {
             <h1 className="text-xl font-semibold">Job Cards</h1>
             <p className="mt-1 text-sm text-slate-700 dark:text-[var(--ink-muted)]">Intake records for received and active jobs.</p>
           </div>
-          <Link href="/jobs" className="btn-premium rounded-full px-4 py-2 text-sm text-white">Open Jobs</Link>
+          <Link href="/jobs/new" className="btn-premium rounded-full px-4 py-2 text-sm text-white">New Job</Link>
         </div>
       </div>
 
