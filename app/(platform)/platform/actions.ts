@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserRole } from "@/lib/session";
 import { OrgPlan } from "@prisma/client";
+import { setOrgAtSenderId } from "@/lib/org-whatsapp-config";
 
 async function requirePlatformAdmin() {
   const { user } = await getCurrentUserRole();
@@ -66,6 +67,18 @@ export async function runCommercialSeedAction() {
     console.error("[seed:commercial]", err);
   }
   revalidatePath("/platform");
+}
+
+export async function setOrgSmsSenderAction(formData: FormData) {
+  await requirePlatformAdmin();
+  const orgId = formData.get("orgId") as string;
+  const raw = (formData.get("senderId") as string | null)?.trim() ?? "";
+  if (!orgId) return;
+  // AT sender IDs: alphanumeric only, 1–11 chars (or empty to clear)
+  const senderId = raw === "" ? null : raw;
+  if (senderId && (senderId.length > 11 || !/^[A-Za-z0-9]+$/.test(senderId))) return;
+  await setOrgAtSenderId(orgId, senderId);
+  revalidatePath(`/platform/orgs/${orgId}`);
 }
 
 export async function setBillingStatusAction(formData: FormData) {

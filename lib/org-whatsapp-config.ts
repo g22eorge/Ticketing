@@ -91,6 +91,16 @@ export async function saveOrgWhatsAppConfig(
   `;
 }
 
+export async function setOrgAtSenderId(orgId: string, senderId: string | null): Promise<void> {
+  await ensureTable();
+  // Upsert: create a stub row if none exists, otherwise just update atSenderId
+  await prisma.$executeRaw`
+    INSERT INTO "OrgWhatsAppConfig" (orgId, businessNumber, phoneNumberId, accessToken, businessAccountId, provider, atSenderId, updatedAt)
+    VALUES (${orgId}, '', '', '', null, 'meta', ${senderId ?? null}, CURRENT_TIMESTAMP)
+    ON CONFLICT(orgId) DO UPDATE SET atSenderId = ${senderId ?? null}, updatedAt = CURRENT_TIMESTAMP
+  `;
+}
+
 export async function deleteOrgWhatsAppConfig(orgId: string): Promise<void> {
   await ensureTable();
   await prisma.$executeRaw`DELETE FROM "OrgWhatsAppConfig" WHERE orgId = ${orgId}`;

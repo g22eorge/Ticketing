@@ -3,8 +3,9 @@ import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserRole } from "@/lib/session";
 import { getBillingEventsByOrg } from "@/lib/billing-events";
-import { setBillingStatusAction, setPlanAction, extendTrialAction } from "../../actions";
+import { setBillingStatusAction, setPlanAction, extendTrialAction, setOrgSmsSenderAction } from "../../actions";
 import { getSmsUsage, SMS_PLAN_QUOTAS } from "@/lib/notifications/sms-quota";
+import { getOrgWhatsAppConfig } from "@/lib/org-whatsapp-config";
 
 const STATUS_CLASSES: Record<string, string> = {
   TRIALING: "bg-blue-100 text-blue-700",
@@ -43,7 +44,7 @@ export default async function OrgDetailPage({ params }: { params: Promise<{ id: 
 
   if (!org) notFound();
 
-  const [orgUsers, billingHistory, smsUsed] = await Promise.all([
+  const [orgUsers, billingHistory, smsUsed, orgWaCfg] = await Promise.all([
     prisma.user.findMany({
       where: { orgId: id },
       select: { id: true, name: true, email: true, role: true, createdAt: true },
@@ -51,6 +52,7 @@ export default async function OrgDetailPage({ params }: { params: Promise<{ id: 
     }),
     getBillingEventsByOrg(id).catch(() => []),
     getSmsUsage(id),
+    getOrgWhatsAppConfig(id).catch(() => null),
   ]);
   const smsLimit = SMS_PLAN_QUOTAS[org.plan] ?? 200;
 
@@ -178,6 +180,37 @@ export default async function OrgDetailPage({ params }: { params: Promise<{ id: 
             </button>
           </form>
         </div>
+      </div>
+
+      {/* SMS Sender ID */}
+      <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] p-5 space-y-3">
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]">SMS Sender Name</p>
+          <p className="mt-0.5 text-xs text-[var(--ink-muted)]">
+            Alphanumeric, max 11 chars. Must be pre-approved by Africa&apos;s Talking before use.
+            Leave blank to use the platform default.
+          </p>
+        </div>
+        <form action={setOrgSmsSenderAction} className="flex items-center gap-2">
+          <input type="hidden" name="orgId" value={org.id} />
+          <input
+            type="text"
+            name="senderId"
+            defaultValue={orgWaCfg?.atSenderId ?? ""}
+            placeholder="e.g. EagleInfo"
+            maxLength={11}
+            pattern="[A-Za-z0-9]*"
+            className="rounded-md border border-[var(--line)] bg-[var(--bg)] px-3 py-1.5 text-xs font-mono text-[var(--ink)] focus:outline-none focus:ring-1 focus:ring-[var(--gold)] w-40"
+          />
+          <button type="submit" className="rounded-md bg-[var(--gold)]/20 px-3 py-1.5 text-xs font-semibold text-[var(--gold)] hover:bg-[var(--gold)]/30">
+            Save
+          </button>
+          {orgWaCfg?.atSenderId && (
+            <span className="text-xs text-[var(--ink-muted)]">
+              Current: <span className="font-mono font-semibold text-[var(--ink)]">{orgWaCfg.atSenderId}</span>
+            </span>
+          )}
+        </form>
       </div>
 
       {/* Users */}
