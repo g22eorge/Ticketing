@@ -3,7 +3,7 @@ import { canRecordPaymentsWhenSuspended, suspensionMessage, type OrgAccess } fro
 export function assertOrgCanMutate(params: {
   access: OrgAccess;
   userRole: string;
-  userAccessMode?: "FULL" | "READ_ONLY";
+  userAccessMode: "FULL" | "READ_ONLY";
   kind: "GENERAL" | "PAYMENT";
 }) {
   if (params.userAccessMode === "READ_ONLY") {

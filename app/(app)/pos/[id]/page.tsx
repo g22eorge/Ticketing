@@ -227,7 +227,7 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
     "use server";
     const { user, orgId, org } = await requireOrgSession();
     if (!(can.viewFinancials(user) || ["ADMIN", "OPS", "FRONT_DESK"].includes(user.role))) return;
-    assertOrgCanMutate({ access: org.access, userRole: user.role, kind: "GENERAL" });
+    assertOrgCanMutate({ access: org.access, userRole: user.role, userAccessMode: user.accessMode, kind: "GENERAL" });
 
     const saleId = String(formData.get("saleId") ?? "").trim();
     const branchId = String(formData.get("branchId") ?? "").trim() || null;
@@ -253,7 +253,7 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
     "use server";
     const { user, orgId, org } = await requireOrgSession();
     if (user.role !== "ADMIN") return;
-    assertOrgCanMutate({ access: org.access, userRole: user.role, kind: "GENERAL" });
+    assertOrgCanMutate({ access: org.access, userRole: user.role, userAccessMode: user.accessMode, kind: "GENERAL" });
 
     const saleId = String(formData.get("saleId") ?? "").trim();
     if (!saleId) return;
@@ -302,7 +302,7 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
     "use server";
     const { user, orgId, org } = await requireOrgSession();
     if (!(can.viewFinancials(user) || ["ADMIN", "OPS", "FRONT_DESK"].includes(user.role))) return;
-    assertOrgCanMutate({ access: org.access, userRole: user.role, kind: "GENERAL" });
+    assertOrgCanMutate({ access: org.access, userRole: user.role, userAccessMode: user.accessMode, kind: "GENERAL" });
 
     const saleId = String(formData.get("saleId") ?? "").trim();
     const itemId = String(formData.get("itemId") ?? "").trim();
@@ -349,7 +349,7 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
     "use server";
     const { user, orgId, org } = await requireOrgSession();
     if (!(can.viewFinancials(user) || ["ADMIN", "OPS", "FRONT_DESK"].includes(user.role))) return;
-    assertOrgCanMutate({ access: org.access, userRole: user.role, kind: "GENERAL" });
+    assertOrgCanMutate({ access: org.access, userRole: user.role, userAccessMode: user.accessMode, kind: "GENERAL" });
 
     const saleId = String(formData.get("saleId") ?? "").trim();
     const itemId = String(formData.get("itemId") ?? "").trim();
@@ -392,7 +392,7 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
     const { user, orgId, org } = await requireOrgSession();
     if (!(can.viewFinancials(user) || ["ADMIN", "OPS", "FRONT_DESK"].includes(user.role))) return;
 
-    assertOrgCanMutate({ access: org.access, userRole: user.role, kind: "GENERAL" });
+    assertOrgCanMutate({ access: org.access, userRole: user.role, userAccessMode: user.accessMode, kind: "GENERAL" });
 
     const saleId = String(formData.get("saleId") ?? "").trim();
     const partId = String(formData.get("partId") ?? "").trim() || null;
@@ -449,7 +449,7 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
     "use server";
     const { user, orgId, session, org } = await requireOrgSession();
     if (!(can.viewFinancials(user) || ["ADMIN", "OPS", "FRONT_DESK"].includes(user.role))) return;
-    assertOrgCanMutate({ access: org.access, userRole: user.role, kind: "PAYMENT" });
+    assertOrgCanMutate({ access: org.access, userRole: user.role, userAccessMode: user.accessMode, kind: "PAYMENT" });
 
     const saleId = String(formData.get("saleId") ?? "").trim();
     const rawAmount = String(formData.get("amount") ?? "").trim();
@@ -512,7 +512,7 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
     const { user, orgId, org, session } = await requireOrgSession();
     if (!(can.viewFinancials(user) || ["ADMIN", "OPS"].includes(user.role))) return;
     // Expired workspaces are read-only except for payment entry.
-    assertOrgCanMutate({ access: org.access, userRole: user.role, kind: "GENERAL" });
+    assertOrgCanMutate({ access: org.access, userRole: user.role, userAccessMode: user.accessMode, kind: "GENERAL" });
 
     const saleId = String(formData.get("saleId") ?? "").trim();
     if (!saleId) return;
@@ -605,7 +605,7 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
     "use server";
     const { user, orgId, session, org } = await requireOrgSession();
     if (!(can.viewFinancials(user) || ["ADMIN", "OPS"].includes(user.role))) return;
-    assertOrgCanMutate({ access: org.access, userRole: user.role, kind: "GENERAL" });
+    assertOrgCanMutate({ access: org.access, userRole: user.role, userAccessMode: user.accessMode, kind: "GENERAL" });
 
     const saleId = String(formData.get("saleId") ?? "").trim();
     const creditNoteId = String(formData.get("creditNoteId") ?? "").trim();
@@ -656,7 +656,7 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
     const { user, orgId, org, session } = await requireOrgSession();
     if (!(can.viewFinancials(user) || ["ADMIN", "OPS"].includes(user.role))) return;
     // Expired workspaces are read-only except for payment entry.
-    assertOrgCanMutate({ access: org.access, userRole: user.role, kind: "GENERAL" });
+    assertOrgCanMutate({ access: org.access, userRole: user.role, userAccessMode: user.accessMode, kind: "GENERAL" });
 
     const saleId = String(formData.get("saleId") ?? "").trim();
     const creditNoteId = String(formData.get("creditNoteId") ?? "").trim();

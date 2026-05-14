@@ -18,7 +18,7 @@ export async function sendTestWhatsAppAction(
 ): Promise<SendTestResult> {
   const { user, orgId, org } = await requireOrgSession();
   if (user.role !== "ADMIN") return { ok: false, error: "Forbidden" };
-  assertOrgCanMutate({ access: org.access, userRole: user.role, kind: "GENERAL" });
+  assertOrgCanMutate({ access: org.access, userRole: user.role, userAccessMode: user.accessMode, kind: "GENERAL" });
 
   const orgConfig = await getOrgWhatsAppConfig(orgId);
   if (!orgConfig) return { ok: false, error: "WhatsApp is not configured for your organisation." };
@@ -68,7 +68,7 @@ export async function saveWhatsAppConfigAction(
 ): Promise<{ ok: boolean; error?: string }> {
   const { user, orgId, org } = await requireOrgSession();
   if (user.role !== "ADMIN") return { ok: false, error: "Forbidden" };
-  assertOrgCanMutate({ access: org.access, userRole: user.role, kind: "GENERAL" });
+  assertOrgCanMutate({ access: org.access, userRole: user.role, userAccessMode: user.accessMode, kind: "GENERAL" });
 
   const businessNumber = (formData.get("businessNumber") as string | null)?.trim() ?? "";
   const phoneNumberId = (formData.get("phoneNumberId") as string | null)?.trim() ?? "";
@@ -110,7 +110,7 @@ export async function saveWhatsAppConfigAction(
 export async function deleteWhatsAppConfigAction(): Promise<{ ok: boolean; error?: string }> {
   const { user, orgId, org } = await requireOrgSession();
   if (user.role !== "ADMIN") return { ok: false, error: "Forbidden" };
-  assertOrgCanMutate({ access: org.access, userRole: user.role, kind: "GENERAL" });
+  assertOrgCanMutate({ access: org.access, userRole: user.role, userAccessMode: user.accessMode, kind: "GENERAL" });
 
   try {
     await deleteOrgWhatsAppConfig(orgId);

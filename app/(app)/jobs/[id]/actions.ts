@@ -150,7 +150,7 @@ function buildTimeline(payload: z.infer<typeof updateSchema>) {
 
 export async function updateJobAction(formData: FormData) {
   const { session, user, orgId, org } = await requireOrgSession();
-  assertOrgCanMutate({ access: org.access, userRole: user.role, kind: "GENERAL" });
+  assertOrgCanMutate({ access: org.access, userRole: user.role, userAccessMode: user.accessMode, kind: "GENERAL" });
   const permissionUser = { role: user.role, permissions: user.permissions };
   // FRONT_DESK users are read-only by default (they create jobs, not edit them).
   // Exception: users who have been granted specific elevated permissions
@@ -685,7 +685,7 @@ export async function updateJobAction(formData: FormData) {
 
 export async function recordClientPaymentAction(formData: FormData) {
   const { session, user, orgId, org } = await requireOrgSession();
-  assertOrgCanMutate({ access: org.access, userRole: user.role, kind: "PAYMENT" });
+  assertOrgCanMutate({ access: org.access, userRole: user.role, userAccessMode: user.accessMode, kind: "PAYMENT" });
   const permissionUser = { role: user.role, permissions: user.permissions };
   if (!can.approveInvoices(permissionUser)) {
     return { error: "Forbidden" };
@@ -829,7 +829,7 @@ export async function recordClientPaymentAction(formData: FormData) {
 
 export async function updateOneTimeExternalAssignmentAction(formData: FormData) {
   const { session, user, orgId, org } = await requireOrgSession();
-  assertOrgCanMutate({ access: org.access, userRole: user.role, kind: "GENERAL" });
+  assertOrgCanMutate({ access: org.access, userRole: user.role, userAccessMode: user.accessMode, kind: "GENERAL" });
   const permissionUser = { role: user.role, permissions: user.permissions };
 
   if (!(user.role === "ADMIN" || user.role === "OPS" || can.assignJobs(permissionUser))) {
@@ -981,7 +981,7 @@ export async function updateOneTimeExternalAssignmentAction(formData: FormData) 
 
 export async function markMessagesReadAction(jobId: string): Promise<void> {
   const { user, org } = await requireOrgSession();
-  assertOrgCanMutate({ access: org.access, userRole: user.role, kind: "GENERAL" });
+  assertOrgCanMutate({ access: org.access, userRole: user.role, userAccessMode: user.accessMode, kind: "GENERAL" });
   if (!["ADMIN", "OPS", "FRONT_DESK"].includes(user.role)) return;
 
   try {
@@ -1001,7 +1001,7 @@ export async function sendManualReplyAction(
   message: string
 ): Promise<{ success: boolean; error?: string }> {
   const { user, org } = await requireOrgSession();
-  assertOrgCanMutate({ access: org.access, userRole: user.role, kind: "GENERAL" });
+  assertOrgCanMutate({ access: org.access, userRole: user.role, userAccessMode: user.accessMode, kind: "GENERAL" });
   if (!["ADMIN", "OPS", "FRONT_DESK"].includes(user.role)) {
     return { success: false, error: "Not authorised" };
   }
@@ -1077,7 +1077,7 @@ export async function sendQuotationViaWhatsAppAction(
   jobId: string,
 ): Promise<{ success: boolean; error?: string }> {
   const { user, org } = await requireOrgSession();
-  assertOrgCanMutate({ access: org.access, userRole: user.role, kind: "GENERAL" });
+  assertOrgCanMutate({ access: org.access, userRole: user.role, userAccessMode: user.accessMode, kind: "GENERAL" });
   if (!["ADMIN", "OPS", "FRONT_DESK"].includes(user.role)) {
     return { success: false, error: "Not authorised" };
   }
@@ -1097,7 +1097,7 @@ export async function sendInvoiceViaWhatsAppAction(
   jobId: string,
 ): Promise<{ success: boolean; error?: string }> {
   const { user, org } = await requireOrgSession();
-  assertOrgCanMutate({ access: org.access, userRole: user.role, kind: "GENERAL" });
+  assertOrgCanMutate({ access: org.access, userRole: user.role, userAccessMode: user.accessMode, kind: "GENERAL" });
   if (!["ADMIN", "OPS"].includes(user.role) && !can.approveInvoices({ role: user.role, permissions: user.permissions })) {
     return { success: false, error: "Not authorised" };
   }
@@ -1117,7 +1117,7 @@ export async function sendJobCardViaWhatsAppAction(
   jobId: string,
 ): Promise<{ success: boolean; error?: string }> {
   const { user, org } = await requireOrgSession();
-  assertOrgCanMutate({ access: org.access, userRole: user.role, kind: "GENERAL" });
+  assertOrgCanMutate({ access: org.access, userRole: user.role, userAccessMode: user.accessMode, kind: "GENERAL" });
   if (!["ADMIN", "OPS"].includes(user.role) && !can.generateJobCards({ role: user.role, permissions: user.permissions })) {
     return { success: false, error: "Not authorised" };
   }

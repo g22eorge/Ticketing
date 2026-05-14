@@ -33,7 +33,7 @@ export async function updateNotificationPrefsAction(
   formData: FormData,
 ): Promise<UpdateNotificationPrefsState> {
   const { session, user, org } = await requireOrgSession();
-  assertOrgCanMutate({ access: org.access, userRole: user.role, kind: "GENERAL" });
+  assertOrgCanMutate({ access: org.access, userRole: user.role, userAccessMode: user.accessMode, kind: "GENERAL" });
   const parsed = schema.safeParse(Object.fromEntries(formData.entries()));
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid preferences" };

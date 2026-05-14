@@ -114,7 +114,7 @@ export async function createJobAction(
     const { session, user, orgId, org } = await requireOrgSession();
 
     // Billing enforcement: suspended orgs are read-only.
-    assertOrgCanMutate({ access: org.access, userRole: user.role, kind: "GENERAL" });
+    assertOrgCanMutate({ access: org.access, userRole: user.role, userAccessMode: user.accessMode, kind: "GENERAL" });
 
     if (!can.createJob(user)) {
       return { error: "You cannot create jobs." };

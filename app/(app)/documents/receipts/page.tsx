@@ -23,7 +23,7 @@ export default async function ReceiptsPage() {
     "use server";
     const { user, orgId, org } = await requireOrgSession();
     if (!(can.viewFinancials(user) || ["ADMIN", "OPS"].includes(user.role))) return;
-    assertOrgCanMutate({ access: org.access, userRole: user.role, kind: "PAYMENT" });
+    assertOrgCanMutate({ access: org.access, userRole: user.role, userAccessMode: user.accessMode, kind: "PAYMENT" });
 
     const paymentId = String(formData.get("paymentId") ?? "").trim();
     const amount = Number(String(formData.get("amount") ?? "").trim());
@@ -77,7 +77,7 @@ export default async function ReceiptsPage() {
     "use server";
     const { user, orgId, org } = await requireOrgSession();
     if (!("ADMIN" === user.role || can.approveInvoices(user))) return;
-    assertOrgCanMutate({ access: org.access, userRole: user.role, kind: "PAYMENT" });
+    assertOrgCanMutate({ access: org.access, userRole: user.role, userAccessMode: user.accessMode, kind: "PAYMENT" });
 
     const paymentId = String(formData.get("paymentId") ?? "").trim();
     if (!paymentId) return;
@@ -302,11 +302,6 @@ export default async function ReceiptsPage() {
             ) : null}
           </tbody>
         </table>
-      </div>
-
-      <div className="flex flex-wrap gap-2">
-        <Link href="/pos" className="btn-premium-secondary rounded-lg px-3 py-2 text-sm">Open POS</Link>
-        <Link href="/documents/invoices" className="btn-premium-secondary rounded-lg px-3 py-2 text-sm">Open Invoices</Link>
       </div>
     </section>
   );

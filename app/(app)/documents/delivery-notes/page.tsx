@@ -22,7 +22,7 @@ export default async function DeliveryNotesPage() {
     "use server";
     const { user, orgId, org } = await requireOrgSession();
     if (!(can.viewFinancials(user) || ["ADMIN", "OPS"].includes(user.role))) return;
-    assertOrgCanMutate({ access: org.access, userRole: user.role, kind: "GENERAL" });
+    assertOrgCanMutate({ access: org.access, userRole: user.role, userAccessMode: user.accessMode, kind: "GENERAL" });
 
     const deliveryNoteId = String(formData.get("deliveryNoteId") ?? "").trim();
     const deliveredByName = String(formData.get("deliveredByName") ?? "").trim();
@@ -52,7 +52,7 @@ export default async function DeliveryNotesPage() {
     "use server";
     const { user, orgId, org } = await requireOrgSession();
     if (!("ADMIN" === user.role || can.approveInvoices(user))) return;
-    assertOrgCanMutate({ access: org.access, userRole: user.role, kind: "GENERAL" });
+    assertOrgCanMutate({ access: org.access, userRole: user.role, userAccessMode: user.accessMode, kind: "GENERAL" });
 
     const deliveryNoteId = String(formData.get("deliveryNoteId") ?? "").trim();
     if (!deliveryNoteId) return;

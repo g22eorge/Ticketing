@@ -30,7 +30,7 @@ export default async function InvoicesPage() {
     "use server";
     const { user, orgId, session, org } = await requireOrgSession();
     if (!("ADMIN" === user.role || "OPS" === user.role || can.approveInvoices(user))) return;
-    assertOrgCanMutate({ access: org.access, userRole: user.role, kind: "PAYMENT" });
+    assertOrgCanMutate({ access: org.access, userRole: user.role, userAccessMode: user.accessMode, kind: "PAYMENT" });
 
     const invoiceId = String(formData.get("invoiceId") ?? "").trim();
     const rawAmount = String(formData.get("amount") ?? "").trim();
@@ -114,7 +114,7 @@ export default async function InvoicesPage() {
     "use server";
     const { user, orgId, org } = await requireOrgSession();
     if (!("ADMIN" === user.role || "OPS" === user.role || can.approveInvoices(user))) return;
-    assertOrgCanMutate({ access: org.access, userRole: user.role, kind: "GENERAL" });
+    assertOrgCanMutate({ access: org.access, userRole: user.role, userAccessMode: user.accessMode, kind: "GENERAL" });
 
     const invoiceId = String(formData.get("invoiceId") ?? "").trim();
     const statusRaw = String(formData.get("status") ?? "ISSUED").trim();
@@ -135,7 +135,7 @@ export default async function InvoicesPage() {
     "use server";
     const { user, orgId, org } = await requireOrgSession();
     if (!("ADMIN" === user.role || can.approveInvoices(user))) return;
-    assertOrgCanMutate({ access: org.access, userRole: user.role, kind: "GENERAL" });
+    assertOrgCanMutate({ access: org.access, userRole: user.role, userAccessMode: user.accessMode, kind: "GENERAL" });
 
     const invoiceId = String(formData.get("invoiceId") ?? "").trim();
     if (!invoiceId) return;
@@ -167,7 +167,7 @@ export default async function InvoicesPage() {
     "use server";
     const { user, orgId, org, session } = await requireOrgSession();
     if (!(can.viewFinancials(user) || ["ADMIN", "OPS"].includes(user.role))) return;
-    assertOrgCanMutate({ access: org.access, userRole: user.role, kind: "GENERAL" });
+    assertOrgCanMutate({ access: org.access, userRole: user.role, userAccessMode: user.accessMode, kind: "GENERAL" });
 
     const invoiceId = String(formData.get("invoiceId") ?? "").trim();
     const deliveredByName = String(formData.get("deliveredByName") ?? "").trim();
@@ -528,15 +528,6 @@ export default async function InvoicesPage() {
             ) : null}
           </tbody>
         </table>
-      </div>
-
-      <div className="mt-4 flex flex-wrap gap-2">
-        <Link href="/jobs" className="btn-premium-secondary rounded-lg px-3 py-2 text-sm">
-          Jobs
-        </Link>
-        <Link href="/payout-followups" className="btn-premium-secondary rounded-lg px-3 py-2 text-sm">
-          Payments
-        </Link>
       </div>
     </section>
   );
