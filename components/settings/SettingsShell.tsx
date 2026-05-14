@@ -64,8 +64,10 @@ export function SettingsShell({
     return best;
   }, [groups, pathname]);
 
-  const allItems = useMemo(() => groups.flatMap((group) => group.items.map((item) => ({ ...item, group: group.title }))), [groups]);
-  const primaryItems = allItems.slice(0, 6);
+  const filteredItems = useMemo(
+    () => filtered.flatMap((g) => g.items),
+    [filtered],
+  );
 
   return (
     <section className="space-y-4">
@@ -114,7 +116,7 @@ export function SettingsShell({
         </div>
 
         <div className="mt-5 flex flex-wrap gap-2">
-          {primaryItems.map((item) => {
+          {filteredItems.map((item) => {
             const active = isActive(pathname, item.href);
             return (
               <Link
@@ -132,80 +134,18 @@ export function SettingsShell({
           })}
         </div>
 
-        <div className="mt-5">
-          <p className="text-sm text-[var(--ink-muted)]">
-            {activeItem?.description ?? "Manage workspace configuration and your account."}
-          </p>
+        <div className="mt-3">
+          {filteredItems.length === 0 ? (
+            <p className="text-sm text-[var(--ink-muted)]">No settings match &ldquo;{q}&rdquo;.</p>
+          ) : (
+            <p className="text-sm text-[var(--ink-muted)]">
+              {activeItem?.description ?? "Manage workspace configuration and your account."}
+            </p>
+          )}
         </div>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[280px_1fr]">
-        <aside className="panel-shadow h-fit rounded-[1.5rem] border border-[var(--line)] bg-[var(--panel)] p-3">
-          <nav className="space-y-4">
-            {filtered.map((group) => (
-              <div key={group.title} className="space-y-2">
-                <p className="px-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">
-                  {group.title}
-                </p>
-                <div className="space-y-1">
-                  {group.items.map((item) => {
-                    const active = isActive(pathname, item.href);
-                    return (
-                      <Link
-                        key={item.href}
-                        href={item.href}
-                        className={`flex items-center justify-between gap-3 rounded-[1rem] px-3 py-2 transition ${
-                          active
-                            ? "bg-[var(--accent)]/12 text-[var(--ink)] border border-[var(--accent)]/25"
-                            : "border border-transparent text-[var(--ink-muted)] hover:bg-[var(--panel-strong)] hover:text-[var(--ink)]"
-                        }`}
-                      >
-                        <span className="flex min-w-0 items-center gap-3">
-                          <span className={`flex h-9 w-9 items-center justify-center rounded-xl border ${
-                            active
-                              ? "border-[var(--accent)]/25 bg-[var(--accent)]/10 text-[var(--accent-text)]"
-                              : "border-[var(--line)] bg-[var(--panel)] text-[var(--ink-muted)]"
-                          }`}>
-                            {item.icon ?? (
-                              <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4" aria-hidden="true">
-                                <path d="M10 2a8 8 0 1 0 0 16 8 8 0 0 0 0-16Zm1 11H9v-2h2v2Zm0-3H9V5h2v5Z" />
-                              </svg>
-                            )}
-                          </span>
-                          <span className="min-w-0">
-                            <span className="block truncate text-sm font-semibold text-[var(--ink)]">{item.label}</span>
-                          {item.description ? (
-                            <span className="block truncate text-xs text-[var(--ink-muted)]">{item.description}</span>
-                          ) : null}
-                          </span>
-                        </span>
-                        {item.badge ? (
-                          <span className="shrink-0 rounded-full border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-0.5 text-[10px] font-semibold text-[var(--ink-muted)]">
-                            {item.badge}
-                          </span>
-                        ) : null}
-                      </Link>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
-
-            {filtered.length === 0 ? (
-              <p className="rounded-xl border border-[var(--line)] bg-[var(--panel-strong)] p-3 text-sm text-[var(--ink-muted)]">
-                No settings match this search.
-              </p>
-            ) : null}
-          </nav>
-        </aside>
-
-        <div className="min-w-0">
-          {/* Keep the right pane clean; pages render their own cards. */}
-          <div className="rounded-[1.5rem] p-0 sm:p-0">
-            {children}
-          </div>
-        </div>
-      </div>
+      <div>{children}</div>
     </section>
   );
 }
