@@ -284,13 +284,18 @@ export default async function InvoicesPage() {
 
   return (
     <section className="space-y-4">
-      <div className="panel-shadow overflow-hidden rounded-2xl border border-[var(--line)] bg-gradient-to-r from-sky-100 via-white to-orange-100 p-4 text-slate-950 sm:p-6 dark:from-slate-900 dark:via-slate-950 dark:to-slate-900 dark:text-[var(--ink)]">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h1 className="text-xl font-semibold">Invoices</h1>
-            <p className="mt-1 text-sm text-slate-700 dark:text-[var(--ink-muted)]">Generate invoices and record partial payments.</p>
+      <div className="panel-shadow overflow-hidden rounded-[1.75rem] border border-[var(--line)] bg-[var(--panel)] p-4 sm:p-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-[var(--line)] bg-[var(--accent)] text-xl font-black text-black">
+              ₹
+            </div>
+            <div className="min-w-0">
+              <p className="truncate text-xl font-black text-[var(--ink)]">Invoices</p>
+              <p className="mt-0.5 truncate text-xs text-[var(--ink-muted)]">Generate invoices · record payments · track outstanding balances</p>
+            </div>
           </div>
-          <Link href="/jobs/new" className="btn-premium rounded-full px-4 py-2 text-sm text-white">New Job</Link>
+          <Link href="/jobs/new" className="btn-premium rounded-full px-4 py-2 text-sm">New Job</Link>
         </div>
       </div>
 
@@ -350,40 +355,56 @@ export default async function InvoicesPage() {
         </div>
       ) : null}
 
-      <div className="mt-4 overflow-hidden rounded-lg border border-[var(--line)]">
+      <div className="mt-4 overflow-hidden rounded-xl border border-[var(--line)]">
         <table className="w-full text-left text-sm">
-          <thead className="bg-[var(--panel-strong)] text-xs uppercase tracking-wide text-[var(--ink-muted)]">
+          <thead className="bg-[var(--panel-strong)] text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
             <tr>
-              <th className="px-3 py-2">Invoice</th>
-              <th className="hidden px-3 py-2 md:table-cell">Job</th>
-              <th className="px-3 py-2">Total</th>
-              <th className="hidden px-3 py-2 md:table-cell">Paid</th>
-              <th className="hidden px-3 py-2 lg:table-cell">Balance</th>
-              <th className="px-3 py-2">Action</th>
+              <th className="px-3 py-2.5">Invoice</th>
+              <th className="hidden px-3 py-2.5 md:table-cell">Job</th>
+              <th className="px-3 py-2.5">Status</th>
+              <th className="px-3 py-2.5">Total</th>
+              <th className="hidden px-3 py-2.5 md:table-cell">Paid</th>
+              <th className="hidden px-3 py-2.5 lg:table-cell">Balance</th>
+              <th className="px-3 py-2.5">Action</th>
             </tr>
           </thead>
           <tbody>
             {invoices.map((inv) => {
               const balance = Math.max(0, inv.totalAmount - inv.paidAmount);
               const invoiceCurrency = normalizeCurrency(inv.currency, org.baseCurrency);
+              const isPaid = balance <= 0;
+              const statusBadge = isPaid
+                ? "bg-emerald-500/15 text-emerald-700 border-emerald-500/30"
+                : inv.status === "VOID"
+                  ? "bg-red-500/10 text-red-600 border-red-500/20"
+                  : inv.status === "DRAFT"
+                    ? "bg-[var(--panel-strong)] text-[var(--ink-muted)] border-[var(--line)]"
+                    : "bg-amber-400/15 text-amber-700 border-amber-400/30";
+              const statusLabel = isPaid ? "Paid" : inv.status === "VOID" ? "Void" : inv.status === "DRAFT" ? "Draft" : "Outstanding";
               return (
-                <tr key={inv.id} className="border-t border-[var(--line)] align-top">
-                  <td className="px-3 py-2">
+                <tr key={inv.id} className="border-t border-[var(--line)] align-middle hover:bg-[var(--panel-strong)]/40">
+                  <td className="px-3 py-2.5">
                     <p className="mono font-bold text-[var(--ink)]">{inv.invoiceNumber}</p>
                     <p className="text-xs text-[var(--ink-muted)]">{inv.issuedAt.toLocaleDateString()}</p>
                   </td>
-                  <td className="hidden px-3 py-2 md:table-cell">
+                  <td className="hidden px-3 py-2.5 md:table-cell">
                     <Link className="mono font-bold text-[var(--ink)] transition-colors hover:text-[var(--accent)]" href={`/jobs/${inv.job.id}`}>
                       {inv.job.jobNumber}
                     </Link>
                     <p className="text-xs text-[var(--ink-muted)]">{inv.job.client.fullName}</p>
                   </td>
-                  <td className="px-3 py-2">{formatMoney(inv.totalAmount, invoiceCurrency)}</td>
-                  <td className="hidden px-3 py-2 md:table-cell text-[var(--ink-muted)]">
+                  <td className="px-3 py-2.5">
+                    <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${statusBadge}`}>{statusLabel}</span>
+                  </td>
+                  <td className="px-3 py-2.5 font-semibold text-[var(--ink)]">{formatMoney(inv.totalAmount, invoiceCurrency)}</td>
+                  <td className="hidden px-3 py-2.5 text-[var(--ink-muted)] md:table-cell">
                     {inv.paidAmount > 0 ? formatMoney(inv.paidAmount, invoiceCurrency) : "-"}
                   </td>
-                  <td className="hidden px-3 py-2 lg:table-cell text-[var(--ink-muted)]">
-                    {balance > 0 ? formatMoney(balance, invoiceCurrency) : "0"}
+                  <td className="hidden px-3 py-2.5 lg:table-cell">
+                    {isPaid
+                      ? <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">Cleared</span>
+                      : <span className="font-medium text-amber-700">{formatMoney(balance, invoiceCurrency)}</span>
+                    }
                   </td>
                   <td className="px-3 py-2">
                     <div className="flex flex-wrap items-center gap-2">

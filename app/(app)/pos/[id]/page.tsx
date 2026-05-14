@@ -728,29 +728,44 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
       </div>
 
       <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 sm:p-5">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--accent)]">POS</p>
-        <h1 className="mt-1 text-lg font-semibold text-[var(--ink)]">{sale.saleNumber}</h1>
-        <p className="mt-1 text-sm text-[var(--ink-muted)]">Status: {sale.status}</p>
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--accent)]">POS Sale</p>
+            <h1 className="mt-0.5 text-lg font-bold text-[var(--ink)]">{sale.saleNumber}</h1>
+            {sale.client ? <p className="mt-0.5 text-xs text-[var(--ink-muted)]">{sale.client.fullName}</p> : null}
+          </div>
+          <span className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${
+            sale.status === "PAID"
+              ? "border-emerald-500/30 bg-emerald-500/15 text-emerald-700"
+              : sale.status === "VOID"
+                ? "border-red-500/20 bg-red-500/10 text-red-600"
+                : "border-amber-400/30 bg-amber-400/15 text-amber-700"
+          }`}>
+            {sale.status}
+          </span>
+        </div>
 
-        <div className="mt-4 grid gap-2 sm:grid-cols-3">
+        <div className="mt-4 grid gap-2 sm:grid-cols-4">
+          <div className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] p-3">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Subtotal</p>
+            <p className="mt-1 text-base font-bold text-[var(--ink)]">{formatMoney(sale.subtotal, saleCurrency)}</p>
+            {sale.discountAmount > 0 ? <p className="mt-0.5 text-xs text-red-500">−{formatMoney(sale.discountAmount, saleCurrency)} disc</p> : null}
+            {sale.vatAmount > 0 ? <p className="mt-0.5 text-xs text-[var(--ink-muted)]">+{formatMoney(sale.vatAmount, saleCurrency)} VAT</p> : null}
+          </div>
           <div className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] p-3">
             <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Total</p>
-            <p className="mt-1 text-lg font-bold text-[var(--ink)]">{formatMoney(sale.totalAmount, saleCurrency)}</p>
+            <p className="mt-1 text-base font-bold text-[var(--ink)]">{formatMoney(sale.totalAmount, saleCurrency)}</p>
           </div>
           <div className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] p-3">
             <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Paid</p>
-            <p className="mt-1 text-lg font-bold text-emerald-700">{formatMoney(sale.paidAmount, saleCurrency)}</p>
+            <p className="mt-1 text-base font-bold text-emerald-700">{formatMoney(sale.paidAmount, saleCurrency)}</p>
           </div>
-          <div className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] p-3">
+          <div className={`rounded-lg border p-3 ${balance > 0 ? "border-amber-400/30 bg-amber-400/10" : "border-emerald-500/20 bg-emerald-500/10"}`}>
             <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Balance</p>
-            <p className="mt-1 text-lg font-bold text-amber-700">{formatMoney(balance, saleCurrency)}</p>
+            <p className={`mt-1 text-base font-bold ${balance > 0 ? "text-amber-700" : "text-emerald-700"}`}>
+              {balance > 0 ? formatMoney(balance, saleCurrency) : "Cleared"}
+            </p>
           </div>
-        </div>
-
-        <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-[var(--ink-muted)]">
-          <span>Subtotal: {formatMoney(sale.subtotal, saleCurrency)}</span>
-          <span>Discount: {sale.discountAmount > 0 ? `-${formatMoney(sale.discountAmount, saleCurrency)}` : formatMoney(0, saleCurrency)}</span>
-          <span>VAT: {formatMoney(sale.vatAmount, saleCurrency)}</span>
         </div>
 
         <div className="mt-3 flex flex-wrap gap-2">

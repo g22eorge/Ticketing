@@ -1395,52 +1395,66 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
           }}
           className={`${panelShellClass} space-y-3 [&_*]:min-w-0`}
         >
-          <p className="text-xs font-semibold uppercase tracking-wide text-[var(--ink-muted)]">Billing</p>
-          <input
-            name="externalTechBill"
-            type="number"
-            step="0.01"
-            defaultValue={job.externalTechBill ?? undefined}
-            placeholder={repairCostLabel}
-            className={fieldClass}
-          />
-          {!canManageFinancials ? (
-            <p className="text-xs text-[var(--ink-muted)]">
-              Client billing and payout controls are admin-only.
-            </p>
-          ) : null}
-          {canManageFinancials ? (
-            <input
-              name="clientBill"
-              type="number"
-              step="0.01"
-              defaultValue={job.clientBill ?? undefined}
-              placeholder="Our bill to client"
-              className={fieldClass}
-            />
-          ) : null}
-          {canManageFinancials ? (
-            <label className="flex items-center gap-2 text-sm text-[var(--ink)]">
-              <input
-                type="checkbox"
-                name="vatApplicable"
-                value="true"
-                defaultChecked={vatApplicable}
-              />
-              <input type="hidden" name="vatApplicable" value="false" />
-              VAT applicable (18%)
-            </label>
-          ) : null}
-          {canManageFinancials ? (
-            <p className="text-xs text-[var(--ink-muted)]">
-              Repair cost: {formatBillAmount(repairCostBeforeVat)} | VAT: {formatBillAmount(vatAmount)} | Total: {formatBillAmount(clientBillValue)}
-            </p>
-          ) : null}
-          {canManageFinancials ? (
-              <p className={`text-xs [overflow-wrap:anywhere] ${existingMargin !== null && existingMargin >= 0 ? "text-[var(--accent)]" : "text-black"}`}>
-                Repair margin: {existingMargin === null ? "Set external tech bill and client bill" : `${existingMargin >= 0 ? "+" : ""}${formatBillAmount(existingMargin)}`}
+          <div className={softSectionClass}>
+            <p className="text-xs font-semibold uppercase tracking-wide text-[var(--ink-muted)]">Billing</p>
+            <div className="grid gap-2 sm:grid-cols-2">
+              <div>
+                <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">{repairCostLabel}</label>
+                <input
+                  name="externalTechBill"
+                  type="number"
+                  step="0.01"
+                  defaultValue={job.externalTechBill ?? undefined}
+                  placeholder="0.00"
+                  className={fieldClass}
+                />
+              </div>
+              {canManageFinancials ? (
+                <div>
+                  <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">Client bill</label>
+                  <input
+                    name="clientBill"
+                    type="number"
+                    step="0.01"
+                    defaultValue={job.clientBill ?? undefined}
+                    placeholder="0.00"
+                    className={fieldClass}
+                  />
+                </div>
+              ) : null}
+            </div>
+            {canManageFinancials ? (
+              <label className="flex items-center gap-2 text-sm text-[var(--ink)]">
+                <input type="checkbox" name="vatApplicable" value="true" defaultChecked={vatApplicable} />
+                <input type="hidden" name="vatApplicable" value="false" />
+                VAT applicable (18%)
+              </label>
+            ) : null}
+            {canManageFinancials ? (
+              <div className="grid grid-cols-3 gap-2 rounded-lg bg-[var(--panel-strong)] p-2 text-center">
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">Pre-VAT</p>
+                  <p className="mt-0.5 text-sm font-bold text-[var(--ink)]">{formatBillAmount(repairCostBeforeVat)}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">VAT</p>
+                  <p className="mt-0.5 text-sm font-bold text-[var(--ink)]">{formatBillAmount(vatAmount)}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">Total</p>
+                  <p className="mt-0.5 text-sm font-bold text-[var(--ink)]">{formatBillAmount(clientBillValue)}</p>
+                </div>
+              </div>
+            ) : null}
+            {canManageFinancials ? (
+              <p className={`text-xs font-medium [overflow-wrap:anywhere] ${existingMargin === null ? "text-[var(--ink-muted)]" : existingMargin >= 0 ? "text-[var(--accent)]" : "text-red-500"}`}>
+                Margin: {existingMargin === null ? "Set both bills to calculate" : `${existingMargin >= 0 ? "+" : ""}${formatBillAmount(existingMargin)}`}
               </p>
-          ) : null}
+            ) : null}
+            {!canManageFinancials ? (
+              <p className="text-xs text-[var(--ink-muted)]">Client billing and payout controls are admin-only.</p>
+            ) : null}
+          </div>
 
           {/* ── Client payment section ──────────────────────────────────── */}
           {canManageFinancials && typeof job.clientBill === "number" && job.clientBill > 0 ? (

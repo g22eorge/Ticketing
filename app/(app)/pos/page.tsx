@@ -220,7 +220,17 @@ export default async function PosPage() {
                       <td className="px-4 py-3 text-[var(--ink-muted)]">{s.branch?.name ?? "-"}</td>
                       <td className="px-4 py-3">{formatMoneyCompact(s.totalAmount, normalizeCurrency(s.currency, org.baseCurrency))}</td>
                       <td className="px-4 py-3">{formatMoneyCompact(s.paidAmount, normalizeCurrency(s.currency, org.baseCurrency))}</td>
-                      <td className="px-4 py-3 text-[var(--ink-muted)]">{s.status}</td>
+                      <td className="px-4 py-3">
+                        <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${
+                          s.status === "PAID"
+                            ? "border-emerald-500/30 bg-emerald-500/15 text-emerald-700"
+                            : s.status === "VOID"
+                              ? "border-red-500/20 bg-red-500/10 text-red-600"
+                              : "border-amber-400/30 bg-amber-400/15 text-amber-700"
+                        }`}>
+                          {s.status}
+                        </span>
+                      </td>
                       <td className="px-4 py-3">
                         <div className="flex flex-wrap items-center gap-2">
                           <Link href={`/pos/${s.id}`} className="btn-premium-secondary rounded-md px-2.5 py-1.5 text-xs">Open/Edit</Link>
