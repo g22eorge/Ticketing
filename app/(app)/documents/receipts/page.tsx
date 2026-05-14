@@ -164,48 +164,63 @@ export default async function ReceiptsPage() {
   );
   const cashPaymentsCount = payments.filter((p) => p.method === "CASH").length;
 
+  function methodBadge(method: string) {
+    switch (method) {
+      case "CASH":          return "border-emerald-500/30 bg-emerald-500/15 text-emerald-700";
+      case "MOBILE_MONEY":  return "border-sky-500/30 bg-sky-500/15 text-sky-700";
+      case "CARD":          return "border-purple-500/30 bg-purple-500/15 text-purple-700";
+      case "BANK_TRANSFER": return "border-indigo-500/30 bg-indigo-500/15 text-indigo-700";
+      default:              return "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]";
+    }
+  }
+
   return (
     <section className="space-y-4">
-      <div className="panel-shadow overflow-hidden rounded-2xl border border-[var(--line)] bg-gradient-to-r from-sky-100 via-white to-orange-100 p-4 text-slate-950 sm:p-6 dark:from-slate-900 dark:via-slate-950 dark:to-slate-900 dark:text-[var(--ink)]">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h1 className="text-xl font-semibold">Receipts</h1>
-            <p className="mt-1 text-sm text-slate-700 dark:text-[var(--ink-muted)]">Track sales receipts and payment confirmations.</p>
+      <div className="panel-shadow overflow-hidden rounded-[1.75rem] border border-[var(--line)] bg-[var(--panel)] p-4 sm:p-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-[var(--line)] bg-[var(--accent)] text-xl font-black text-black">
+              R
+            </div>
+            <div className="min-w-0">
+              <p className="truncate text-xl font-black text-[var(--ink)]">Receipts</p>
+              <p className="mt-0.5 truncate text-xs text-[var(--ink-muted)]">Track payments · download receipt PDFs · edit or void entries</p>
+            </div>
           </div>
-          <Link href="/jobs/new" className="btn-premium rounded-full px-4 py-2 text-sm text-white">New Job</Link>
+          <Link href="/jobs/new" className="btn-premium rounded-full px-4 py-2 text-sm">New Job</Link>
         </div>
       </div>
 
       <div className="grid gap-3 md:grid-cols-4">
         <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
           <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Total Receipts</p>
-          <p className="mt-2 text-2xl font-semibold text-[var(--ink)]">{receiptsTotal}</p>
+          <p className="mt-2 text-2xl font-bold text-[var(--ink)]">{receiptsTotal}</p>
           <p className="mt-1 text-xs text-[var(--ink-muted)]">This month: {thisMonth.length}</p>
         </div>
         <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
           <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Total Amount</p>
-          <p className="mt-2 text-2xl font-semibold text-[var(--ink)]">{formatMoney(totalAmountBase, org.baseCurrency)}</p>
+          <p className="mt-2 text-2xl font-bold text-[var(--ink)]">{formatMoney(totalAmountBase, org.baseCurrency)}</p>
         </div>
         <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
           <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">This Month</p>
-          <p className="mt-2 text-2xl font-semibold text-[var(--ink)]">{formatMoney(thisMonthAmountBase, org.baseCurrency)}</p>
+          <p className="mt-2 text-2xl font-bold text-[var(--accent)]">{formatMoney(thisMonthAmountBase, org.baseCurrency)}</p>
         </div>
         <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
           <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Cash Payments</p>
-          <p className="mt-2 text-2xl font-semibold text-[var(--ink)]">{cashPaymentsCount}</p>
+          <p className="mt-2 text-2xl font-bold text-[var(--ink)]">{cashPaymentsCount}</p>
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-lg border border-[var(--line)]">
+      <div className="overflow-hidden rounded-xl border border-[var(--line)]">
         <table className="w-full text-left text-sm">
-          <thead className="bg-[var(--panel-strong)] text-xs uppercase tracking-wide text-[var(--ink-muted)]">
+          <thead className="bg-[var(--panel-strong)] text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
             <tr>
-              <th className="px-3 py-2">Date</th>
-              <th className="px-3 py-2">Amount</th>
-              <th className="hidden px-3 py-2 md:table-cell">Method</th>
-              <th className="hidden px-3 py-2 lg:table-cell">Reference</th>
-              <th className="px-3 py-2">For</th>
-              <th className="px-3 py-2">Action</th>
+              <th className="px-3 py-2.5">Date</th>
+              <th className="px-3 py-2.5">Amount</th>
+              <th className="hidden px-3 py-2.5 md:table-cell">Method</th>
+              <th className="hidden px-3 py-2.5 lg:table-cell">Reference</th>
+              <th className="px-3 py-2.5">For</th>
+              <th className="px-3 py-2.5">Action</th>
             </tr>
           </thead>
           <tbody>
@@ -226,12 +241,16 @@ export default async function ReceiptsPage() {
                   : null;
 
               return (
-                <tr key={p.id} className="border-t border-[var(--line)]">
-                  <td className="px-3 py-2 text-[var(--ink-muted)]">{p.receivedAt.toLocaleString()}</td>
-                  <td className="px-3 py-2 mono font-semibold text-[var(--ink)]">{formatMoney(p.amount, currency)}</td>
-                  <td className="hidden px-3 py-2 text-[var(--ink-muted)] md:table-cell">{p.method.replaceAll("_", " ")}</td>
-                  <td className="hidden px-3 py-2 text-[var(--ink-muted)] lg:table-cell">{p.reference ?? "-"}</td>
-                  <td className="px-3 py-2">
+                <tr key={p.id} className="border-t border-[var(--line)] align-middle hover:bg-[var(--panel-strong)]/40">
+                  <td className="px-3 py-2.5 text-[var(--ink-muted)]">{p.receivedAt.toLocaleDateString()}<br /><span className="text-[10px]">{p.receivedAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span></td>
+                  <td className="px-3 py-2.5 mono font-bold text-[var(--ink)]">{formatMoney(p.amount, currency)}</td>
+                  <td className="hidden px-3 py-2.5 md:table-cell">
+                    <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${methodBadge(p.method)}`}>
+                      {p.method.replaceAll("_", " ")}
+                    </span>
+                  </td>
+                  <td className="hidden px-3 py-2.5 text-[var(--ink-muted)] lg:table-cell">{p.reference ?? "-"}</td>
+                  <td className="px-3 py-2.5">
                     {linkHref ? (
                       <Link href={linkHref} className="font-medium text-[var(--ink)] transition hover:text-[var(--accent)]">
                         {label}
@@ -295,7 +314,7 @@ export default async function ReceiptsPage() {
             })}
             {payments.length === 0 ? (
               <tr className="border-t border-[var(--line)]">
-                <td className="px-3 py-6 text-sm text-[var(--ink-muted)]" colSpan={6}>
+                <td className="px-3 py-8 text-sm text-[var(--ink-muted)]" colSpan={6}>
                   No payments yet.
                 </td>
               </tr>
