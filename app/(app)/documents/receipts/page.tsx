@@ -65,9 +65,7 @@ export default async function ReceiptsPage() {
             <h1 className="text-xl font-semibold">Receipts</h1>
             <p className="mt-1 text-sm text-slate-700 dark:text-[var(--ink-muted)]">Track sales receipts and payment confirmations.</p>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <Link href="/documents/invoices" className="btn-premium rounded-full px-4 py-2 text-sm text-white">Record Payment</Link>
-          </div>
+          <Link href="/jobs/new" className="btn-premium rounded-full px-4 py-2 text-sm text-white">New Job</Link>
         </div>
       </div>
 

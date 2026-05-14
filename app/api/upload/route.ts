@@ -12,6 +12,11 @@ import { requireOrgSession } from "@/lib/org-context";
 
 const MAX_SIZE = 5 * 1024 * 1024;
 const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
+const MIME_TO_EXT: Record<string, string> = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+};
 
 export async function POST(req: NextRequest) {
   const { session, user, orgId } = await requireOrgSession();
@@ -68,7 +73,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Only jpeg/png/webp up to 5MB are allowed" }, { status: 400 });
     }
 
-    const ext = file.type.split("/")[1];
+    const ext = MIME_TO_EXT[file.type];
+    if (!ext) {
+      return NextResponse.json({ error: "Only jpeg/png/webp up to 5MB are allowed" }, { status: 400 });
+    }
     const fileName = `${Date.now()}-${randomUUID()}.${ext}`;
     const absPath = path.join(uploadDir, fileName);
     const arrayBuffer = await file.arrayBuffer();

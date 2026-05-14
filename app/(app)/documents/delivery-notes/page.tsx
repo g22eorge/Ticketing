@@ -46,7 +46,7 @@ export default async function DeliveryNotesPage() {
             <h1 className="text-xl font-semibold">Delivery Notes</h1>
             <p className="mt-1 text-sm text-slate-700 dark:text-[var(--ink-muted)]">Proof of delivery for invoiced sales.</p>
           </div>
-          <Link href="/pos" className="btn-premium rounded-full px-4 py-2 text-sm text-white">Open Sales</Link>
+          <Link href="/jobs/new" className="btn-premium rounded-full px-4 py-2 text-sm text-white">New Job</Link>
         </div>
       </div>
 

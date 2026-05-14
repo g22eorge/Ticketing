@@ -1,6 +1,6 @@
 import { renderCommunicationTemplate } from "@/lib/notifications/templates";
 import { getOrgWhatsAppConfig } from "@/lib/org-whatsapp-config";
-import { resolveAtConfig, sendSms } from "@/lib/notifications/sms";
+import { getAtConfig, sendSms } from "@/lib/notifications/sms";
 
 async function sendRenderedWhatsApp(
   phone: string,
@@ -20,7 +20,7 @@ async function sendRenderedWhatsApp(
   if (!result.success && orgId) {
     const orgCfg = await getOrgWhatsAppConfig(orgId);
     if (orgCfg?.smsFallback) {
-      const atCfg = await resolveAtConfig(orgCfg);
+      const atCfg = getAtConfig(orgCfg);
       if (atCfg) {
         console.log("[WhatsApp→SMS] Falling back to Africa's Talking SMS for", phone);
         const smsResult = await sendSms(phone, rendered.body, atCfg, orgId);

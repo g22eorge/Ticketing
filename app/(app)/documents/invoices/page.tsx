@@ -178,7 +178,7 @@ export default async function InvoicesPage() {
             <h1 className="text-xl font-semibold">Invoices</h1>
             <p className="mt-1 text-sm text-slate-700 dark:text-[var(--ink-muted)]">Generate invoices and record partial payments.</p>
           </div>
-          <Link href="/documents/receipts" className="btn-premium rounded-full px-4 py-2 text-sm text-white">Receipts</Link>
+          <Link href="/jobs/new" className="btn-premium rounded-full px-4 py-2 text-sm text-white">New Job</Link>
         </div>
       </div>
 

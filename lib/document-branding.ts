@@ -120,15 +120,23 @@ async function ensureRawTable() {
     PRAGMA table_info('DocumentBrandingSettings')
   `.catch(() => []);
   const colSet = new Set(cols.map((c) => c.name));
-  const addColumn = async (name: string, sqlType: string, dflt: string) => {
+
+  // Allowlist guards against accidental SQL injection if call sites ever change.
+  const ADDABLE_COLUMNS: ReadonlySet<string> = new Set([
+    "invoiceTemplateKey", "quotationTemplateKey", "jobCardTemplateKey", "receiptTemplateKey",
+  ]);
+  const addColumn = async (name: string, dflt: string) => {
+    if (!ADDABLE_COLUMNS.has(name)) return;
     if (colSet.has(name)) return;
-    await prisma.$executeRawUnsafe(`ALTER TABLE "DocumentBrandingSettings" ADD COLUMN "${name}" ${sqlType} DEFAULT ${dflt}`);
+    await prisma.$executeRawUnsafe(
+      `ALTER TABLE "DocumentBrandingSettings" ADD COLUMN "${name}" TEXT DEFAULT ${dflt}`,
+    );
     colSet.add(name);
   };
-  await addColumn("invoiceTemplateKey", "TEXT", "'invoice_classic'");
-  await addColumn("quotationTemplateKey", "TEXT", "'quote_classic'");
-  await addColumn("jobCardTemplateKey", "TEXT", "'job_card_classic'");
-  await addColumn("receiptTemplateKey", "TEXT", "'receipt_classic'");
+  await addColumn("invoiceTemplateKey", "'invoice_classic'");
+  await addColumn("quotationTemplateKey", "'quote_classic'");
+  await addColumn("jobCardTemplateKey", "'job_card_classic'");
+  await addColumn("receiptTemplateKey", "'receipt_classic'");
 
   rawTableEnsured = true;
 }
