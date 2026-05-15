@@ -1,4 +1,5 @@
 import Link from "next/link";
+import React from "react";
 
 import { PersistedDisclosure } from "@/components/mobile/PersistedDisclosure";
 import { StickyKpiRow } from "@/components/mobile/StickyKpiRow";
@@ -304,6 +305,7 @@ function DashboardHero({
   primaryLabel,
   secondaryHref,
   secondaryLabel,
+  icon,
 }: {
   title: string;
   summary: string;
@@ -311,26 +313,33 @@ function DashboardHero({
   primaryLabel: string;
   secondaryHref?: string;
   secondaryLabel?: string;
+  icon?: React.ReactNode;
 }) {
   return (
-    <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
+    <section className="panel-shadow rounded-[1.75rem] border border-[var(--line)] bg-[var(--panel)] p-4 sm:p-6">
       <div className="flex min-w-0 flex-wrap items-center justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Overview</p>
-          <p className="mt-0.5 text-sm font-bold text-[var(--ink)]">{title}</p>
-          <p className="mt-0.5 hidden text-[12px] leading-snug text-[var(--ink-muted)] 2xl:block">{summary}</p>
+        <div className="flex min-w-0 items-center gap-3">
+          {icon ? (
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-[var(--line)] bg-[var(--accent)]">
+              {icon}
+            </div>
+          ) : null}
+          <div className="min-w-0">
+            <p className="truncate text-xl font-black text-[var(--ink)]">{title}</p>
+            <p className="mt-0.5 truncate text-xs text-[var(--ink-muted)]">{summary}</p>
+          </div>
         </div>
         <div className="flex shrink-0 flex-wrap items-center gap-1.5">
           <Link
             href={primaryHref}
-            className="rounded-lg border border-[var(--accent)]/40 bg-[var(--accent)] px-3 py-1.5 text-[11px] font-bold text-white shadow-sm transition hover:bg-[var(--accent)]/90"
+            className="btn-premium rounded-full px-4 py-2 text-sm"
           >
             {primaryLabel}
           </Link>
           {secondaryHref && secondaryLabel ? (
             <Link
               href={secondaryHref}
-              className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1 text-[11px] font-semibold text-[var(--ink-muted)] transition hover:border-[var(--accent)]/30 hover:text-[var(--accent)]"
+              className="inline-flex items-center rounded-lg border border-[var(--line)] px-3 py-1.5 text-xs font-semibold text-[var(--ink)] transition hover:border-[var(--accent)]/50 hover:text-[var(--accent)]"
             >
               {secondaryLabel}
             </Link>
@@ -410,11 +419,12 @@ export default async function DashboardPage({
 
         <DashboardHero
           title="External Technician Control Board"
-          summary="Use this board to progress active work orders quickly and keep payout clearance in sync from one workspace."
+          summary="Progress work orders and keep payout clearance in sync from one workspace."
           primaryHref="/technicians"
           primaryLabel="Open Work Queue"
           secondaryHref="/technicians/payouts"
           secondaryLabel="Review Payouts"
+          icon={<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="black" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>}
         />
 
         <StickyKpiRow
@@ -574,11 +584,12 @@ export default async function DashboardPage({
 
         <DashboardHero
           title="Internal Bench Workspace"
-          summary="Keep diagnostics, repairs, and handoffs flowing from this workspace, then jump directly into the next action queue."
+          summary="Keep diagnostics, repairs, and handoffs flowing · jump directly into the next action queue."
           primaryHref="/jobs"
           primaryLabel="Open Assigned Jobs"
           secondaryHref={canUpdatePricing ? "/jobs?pricing=needs&status=AWAITING_APPROVAL,IN_REPAIR,READY_FOR_PICKUP" : "/jobs?status=DIAGNOSING"}
           secondaryLabel={canUpdatePricing ? "Resolve Pricing Queue" : "Focus Diagnosis Queue"}
+          icon={<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="black" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="7" height="9" rx="1"/><rect x="15" y="3" width="7" height="5" rx="1"/><rect x="15" y="12" width="7" height="9" rx="1"/><rect x="2" y="16" width="7" height="5" rx="1"/></svg>}
         />
 
         <div className="hidden 2xl:block">
@@ -605,7 +616,7 @@ export default async function DashboardPage({
               </Link>
               <Link href="/jobs?pricing=priced" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-center col-span-2 sm:col-span-1">
                 <p className="text-[10px] uppercase tracking-[0.08em] text-[var(--ink-muted)]">Margin</p>
-                <p className={`mt-1 text-sm font-semibold ${marginTotal >= 0 ? "text-[var(--accent)]" : "text-black"}`}>
+                <p className={`mt-1 text-sm font-semibold ${marginTotal >= 0 ? "text-[var(--accent)]" : "text-red-500"}`}>
                   {marginTotal >= 0 ? "+" : ""}{formatMoneyCompact(marginTotal, getAppCurrency())}
                 </p>
               </Link>
@@ -807,6 +818,16 @@ export default async function DashboardPage({
 
     return (
       <div className="space-y-4">
+        <DashboardHero
+          title="Admin Overview"
+          summary={`${receivedToday} in · ${completedToday} out today · ${overdueWithDays.length} overdue · ${awaitingApprovalCount} awaiting approval`}
+          primaryHref="/jobs/new"
+          primaryLabel="New Job"
+          secondaryHref="/reports"
+          secondaryLabel="Reports"
+          icon={<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="black" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>}
+        />
+
         {/* Alert Banner */}
         {hasAlerts ? (
           <section className="panel-shadow rounded-xl border border-[var(--accent)]/25 bg-[var(--panel)] px-4 py-3">
@@ -956,7 +977,7 @@ export default async function DashboardPage({
             <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
               <Link href={`/reports?period=month&month=${mtdLabel}`} className="rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 py-2 transition hover:border-[var(--accent)]/35">
                 <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Revenue MTD</p>
-                <p className="mt-0.5 text-sm font-semibold text-emerald-700">{formatMoney(revenueMtd, currency)}</p>
+                <p className="mt-0.5 text-sm font-semibold text-emerald-600">{formatMoney(revenueMtd, currency)}</p>
               </Link>
               <Link href="/payout-followups" className={`rounded-lg border px-3 py-2 transition ${clientUnpaidCount > 0 || payoutOutstanding > 0 ? "border-[var(--accent)]/35 bg-[var(--accent)]/10 hover:border-[var(--accent)]/60" : "border-[var(--line)] bg-[var(--panel)] hover:border-[var(--accent)]/35"}`}>
                 <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Unpaid Bills</p>
@@ -976,24 +997,24 @@ export default async function DashboardPage({
             <div className="mb-3 flex items-center justify-between gap-2">
               <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Needs Attention</p>
               {overdueWithDays.length > 0 || unassignedActiveCount > 0 ? (
-                <span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700">
+                <span className="rounded-full border border-amber-500/30 bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold text-amber-600">
                   {overdueWithDays.length + unassignedActiveCount}
                 </span>
               ) : null}
             </div>
             {overdueWithDays.length === 0 && unassignedActiveCount === 0 ? (
-              <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2.5">
-                <p className="text-[11px] font-medium text-emerald-700">All clear — no issues.</p>
+              <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/15 px-3 py-2.5">
+                <p className="text-[11px] font-medium text-emerald-600">All clear — no issues.</p>
               </div>
             ) : (
               <div className="space-y-1.5">
                 {unassignedActiveCount > 0 ? (
                   <Link
                     href="/jobs?assignedToId=unassigned"
-                    className="flex items-center justify-between rounded-lg border border-violet-200 bg-violet-50 px-3 py-2 transition hover:border-violet-300"
+                    className="flex items-center justify-between rounded-lg border border-violet-500/30 bg-violet-500/10 px-3 py-2 transition hover:border-violet-500/50"
                   >
-                    <p className="text-xs font-semibold text-violet-800">Unassigned active jobs</p>
-                    <span className="ml-2 shrink-0 rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-bold text-violet-700">{unassignedActiveCount}</span>
+                    <p className="text-xs font-semibold text-violet-400">Unassigned active jobs</p>
+                    <span className="ml-2 shrink-0 rounded-full bg-violet-500/20 px-2 py-0.5 text-[10px] font-bold text-violet-400">{unassignedActiveCount}</span>
                   </Link>
                 ) : null}
                 {overdueWithDays.map((job) => (
@@ -1010,7 +1031,7 @@ export default async function DashboardPage({
                         {statusLabel[job.status as keyof typeof statusLabel] ?? job.status}
                       </p>
                     </div>
-                    <span className={`ml-2 shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${job.ageDays >= 8 ? "bg-red-50 text-red-700" : "bg-amber-50 text-amber-700"}`}>
+                    <span className={`ml-2 shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${job.ageDays >= 8 ? "bg-red-500/15 text-red-400" : "bg-amber-500/15 text-amber-600"}`}>
                       {job.ageDays}d
                     </span>
                   </Link>
@@ -1033,7 +1054,7 @@ export default async function DashboardPage({
                         {tech.role === "TECHNICIAN_EXTERNAL" ? "External" : "Internal"}
                       </p>
                     </div>
-                    <span className={`ml-2 shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${tech.role === "TECHNICIAN_EXTERNAL" ? "bg-violet-50 text-violet-700" : "bg-blue-50 text-blue-700"}`}>
+                    <span className={`ml-2 shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${tech.role === "TECHNICIAN_EXTERNAL" ? "bg-violet-500/15 text-violet-400" : "bg-sky-500/15 text-sky-500"}`}>
                       {tech.count} active
                     </span>
                   </Link>
@@ -1099,6 +1120,16 @@ export default async function DashboardPage({
           selectorName={period === "year" ? "year" : "month"}
           selectorValue={selectedPeriodLabel}
           selectorOptions={selectablePeriods}
+        />
+
+        <DashboardHero
+          title="Operations Overview"
+          summary={`${completedThisMonth.length} completed · ${pendingBilling} pending billing · revenue ${formatMoneyCompact(monthRevenue, currency)}`}
+          primaryHref="/jobs"
+          primaryLabel="View Jobs"
+          secondaryHref={reportHref}
+          secondaryLabel="Reports"
+          icon={<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="black" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>}
         />
 
         <StickyKpiRow
@@ -1183,11 +1214,12 @@ export default async function DashboardPage({
 
         <DashboardHero
           title="Client Intake Console"
-          summary="Capture requests quickly, keep client communication consistent, and move each intake through approval to handover."
+          summary="Capture requests quickly and move each intake through approval to handover."
           primaryHref="/jobs/new"
           primaryLabel="Capture New Job"
           secondaryHref="/jobs?status=AWAITING_APPROVAL"
           secondaryLabel="Open Approval Queue"
+          icon={<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="black" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>}
         />
 
         <div className="hidden 2xl:block">
@@ -1261,11 +1293,12 @@ export default async function DashboardPage({
     <div className="space-y-4">
       <DashboardHero
         title="System Overview"
-        summary="Use this overview to orient team focus, then open the queue and reporting workspaces for deeper action."
+        summary="Orient team focus · open the queue and reporting workspaces for deeper action."
         primaryHref="/jobs"
         primaryLabel="Open Jobs"
         secondaryHref="/reports"
         secondaryLabel="Open Reports"
+        icon={<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="black" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>}
       />
 
       <StickyKpiRow

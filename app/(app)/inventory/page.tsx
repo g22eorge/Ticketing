@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache";
 
 import { formatMoney } from "@/lib/currency";
 import { prisma } from "@/lib/prisma";
-import { getCurrentUserRole } from "@/lib/session";
+import { requireOrgSession } from "@/lib/org-context";
+import { checkPartLimit } from "@/lib/plan-limits";
 
 type StockTxnType = "IN" | "OUT" | "ADJUST";
 
@@ -23,7 +24,7 @@ export default async function InventoryPage({
 }: {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const { user } = await getCurrentUserRole();
+  const { user, orgId } = await requireOrgSession();
   if (!["ADMIN", "OPS", "TECHNICIAN_INTERNAL"].includes(user.role)) {
     redirect("/dashboard");
   }
@@ -31,12 +32,13 @@ export default async function InventoryPage({
   const params = (((await searchParams?.catch(() => ({}))) ?? {}) as Record<string, string | string[] | undefined>);
   const created = String(params.created ?? "") === "1";
   const error = typeof params.error === "string" ? params.error : "";
+  const showAdd = String(params.add ?? "") === "1";
 
   const canManage = user.role === "ADMIN" || user.role === "OPS";
 
   async function createPartAction(formData: FormData) {
     "use server";
-    const { user } = await getCurrentUserRole();
+    const { user, orgId: createOrgId } = await requireOrgSession();
     if (!(user.role === "ADMIN" || user.role === "OPS")) return;
 
     const sku = String(formData.get("sku") ?? "").trim();
@@ -49,9 +51,15 @@ export default async function InventoryPage({
     const unitCost = unitCostRaw ? Number(unitCostRaw) : null;
     const reorderLevel = reorderRaw ? Math.max(0, Math.floor(Number(reorderRaw))) : 0;
 
+    const partLimit = await checkPartLimit(createOrgId);
+    if (!partLimit.allowed) {
+      redirect(`/inventory?error=${encodeURIComponent(partLimit.reason)}`);
+    }
+
     try {
       await prisma.part.create({
         data: {
+          orgId: createOrgId,
           sku,
           name,
           manufacturer: manufacturer || null,
@@ -72,7 +80,7 @@ export default async function InventoryPage({
 
   async function adjustStockAction(formData: FormData) {
     "use server";
-    const { session, user } = await getCurrentUserRole();
+    const { session, user, orgId: adjustOrgId } = await requireOrgSession();
     if (!(user.role === "ADMIN" || user.role === "OPS")) return;
 
     const partId = String(formData.get("partId") ?? "").trim();
@@ -85,7 +93,7 @@ export default async function InventoryPage({
     if (!Number.isFinite(qty) || qty === 0) return;
 
     await prisma.$transaction(async (tx) => {
-      const part = await tx.part.findUnique({ where: { id: partId }, select: { qtyOnHand: true, unitCost: true } });
+      const part = await tx.part.findUnique({ where: { id: partId, orgId: adjustOrgId }, select: { qtyOnHand: true, unitCost: true } });
       if (!part) return;
 
       const nextQty =
@@ -113,21 +121,21 @@ export default async function InventoryPage({
 
   async function togglePartActiveAction(formData: FormData) {
     "use server";
-    const { user } = await getCurrentUserRole();
+    const { user, orgId: toggleOrgId } = await requireOrgSession();
     if (!(user.role === "ADMIN" || user.role === "OPS")) return;
 
     const partId = String(formData.get("partId") ?? "").trim();
     const next = String(formData.get("next") ?? "").trim();
     if (!partId) return;
 
-    await prisma.part.update({ where: { id: partId }, data: { isActive: next === "1" } });
+    await prisma.part.update({ where: { id: partId, orgId: toggleOrgId }, data: { isActive: next === "1" } });
     revalidatePath("/inventory");
   }
 
   const [parts, reservationStats, reservedByPart] = await Promise.all([
     prisma.part
       .findMany({
-        where: { isActive: true },
+        where: { orgId, isActive: true },
         select: {
           id: true,
           sku: true,
@@ -165,114 +173,109 @@ export default async function InventoryPage({
 
   return (
     <div className="space-y-4">
-      {error ? (
-        <div className="panel-shadow rounded-xl border border-red-500/25 bg-red-500/10 px-4 py-3 text-sm text-red-200">
-          {error}
+      {/* Header */}
+      <div className="panel-shadow rounded-[1.75rem] border border-[var(--line)] bg-[var(--panel)] p-4 sm:p-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-[var(--line)] bg-[var(--accent)]">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="black" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 8h14M5 12h14M5 16h6"/><rect x="2" y="4" width="20" height="16" rx="2"/></svg>
+            </div>
+            <div className="min-w-0">
+              <p className="truncate text-xl font-black text-[var(--ink)]">Inventory</p>
+              <p className="mt-0.5 truncate text-xs text-[var(--ink-muted)]">Track parts · manage stock levels · reorder alerts</p>
+            </div>
+          </div>
+          {canManage && (
+            <div className="flex items-center gap-2">
+              <Link href="/inventory/suppliers" className="inline-flex items-center rounded-lg border border-[var(--line)] px-3 py-1.5 text-xs font-semibold text-[var(--ink)] transition hover:border-[var(--accent)]/50 hover:text-[var(--accent)]">
+                Suppliers
+              </Link>
+              <Link href="/inventory/purchase-orders" className="inline-flex items-center rounded-lg border border-[var(--line)] px-3 py-1.5 text-xs font-semibold text-[var(--ink)] transition hover:border-[var(--accent)]/50 hover:text-[var(--accent)]">
+                Purchase Orders
+              </Link>
+            </div>
+          )}
         </div>
+      </div>
+
+      {error ? (
+        <div className="rounded-xl border border-red-500/25 bg-red-500/10 px-4 py-3 text-sm text-red-500">{error}</div>
       ) : null}
       {created ? (
-        <div className="panel-shadow rounded-xl border border-emerald-500/25 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
-          Part added.
-        </div>
+        <div className="rounded-xl border border-emerald-500/25 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-600">Part added successfully.</div>
       ) : null}
-      <section className="grid grid-cols-2 gap-2 md:grid-cols-4">
-        <article className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2">
-          <div className="flex items-center justify-between gap-2">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Active Parts</p>
-            <p className="text-base font-semibold leading-none text-[var(--ink)]">{parts.length}</p>
-          </div>
-        </article>
-        <article className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2">
-          <div className="flex items-center justify-between gap-2">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Low Stock</p>
-            <p className="text-base font-semibold leading-none text-[var(--accent)]">{lowStock.length}</p>
-          </div>
-        </article>
-        <article className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2">
-          <div className="flex items-center justify-between gap-2">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Reserved</p>
-            <p className="text-base font-semibold leading-none text-[var(--ink)]">{reservedCount}</p>
-          </div>
-        </article>
-        <article className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2">
-          <div className="flex items-center justify-between gap-2">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Stock Value</p>
-            <p className="text-sm font-semibold leading-none text-[var(--ink)]">{formatMoney(totalValue)}</p>
-          </div>
-        </article>
-      </section>
 
-      {canManage ? (
-        <section id="add-part" className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
-          <header className="flex items-start justify-between gap-3 border-b border-[var(--line)] px-4 py-2.5">
-            <div>
-              <h2 className="text-sm font-semibold text-[var(--ink)]">Add Part</h2>
-              <p className="text-xs text-[var(--ink-muted)]">SKU and name are required.</p>
-            </div>
-            <span className="hidden rounded-full border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)] md:inline-flex">
-              Admin/OPS
-            </span>
-          </header>
-          <form action={createPartAction} className="space-y-2 p-3 md:p-4">
-            <div className="grid gap-2 md:grid-cols-12">
-              <input
-                name="sku"
-                placeholder="SKU"
-                required
-                className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm outline-none focus:border-[var(--accent)]/60 focus:ring-2 focus:ring-[var(--accent)]/14 md:col-span-3"
-              />
-              <input
-                name="name"
-                placeholder="Part name"
-                required
-                className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm outline-none focus:border-[var(--accent)]/60 focus:ring-2 focus:ring-[var(--accent)]/14 md:col-span-7"
-              />
-              <div className="md:col-span-2 flex justify-end">
-                <button type="submit" className="btn-premium w-full rounded-lg px-4 py-2 text-sm font-semibold md:w-auto">
-                  Add
-                </button>
-              </div>
+      {/* KPI tiles */}
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Active Parts</p>
+          <p className="mt-2 text-2xl font-black text-[var(--ink)]">{parts.length}</p>
+        </div>
+        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Low Stock</p>
+          <p className="mt-2 text-2xl font-black text-amber-600">{lowStock.length}</p>
+          <p className="mt-1 text-xs text-[var(--ink-muted)]">at or below reorder level</p>
+        </div>
+        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Reserved</p>
+          <p className="mt-2 text-2xl font-black text-[var(--ink)]">{reservedCount}</p>
+          <p className="mt-1 text-xs text-[var(--ink-muted)]">units held for jobs</p>
+        </div>
+        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Stock Value</p>
+          <p className="mt-2 text-2xl font-black text-[var(--ink)]">{formatMoney(totalValue)}</p>
+        </div>
+      </div>
+
+      {/* Add Part — shown only when ?add=1 */}
+      {canManage && showAdd ? (
+        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
+          <p className="mb-2.5 text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Add Part</p>
+          <form action={createPartAction}>
+            <div className="grid gap-2 sm:grid-cols-[1fr_2fr_auto]">
+              <input name="sku" placeholder="SKU *" required className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/60 focus:ring-2 focus:ring-[var(--accent)]/14" />
+              <input name="name" placeholder="Part name *" required className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/60 focus:ring-2 focus:ring-[var(--accent)]/14" />
+              <button type="submit" className="btn-premium rounded-lg px-4 py-1.5 text-[13px] font-semibold">Add Part</button>
             </div>
           </form>
-        </section>
+        </div>
       ) : null}
 
-      <section className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
-        <header className="flex items-center justify-between border-b border-[var(--line)] px-4 py-3">
-          <div>
-            <h2 className="text-sm font-semibold text-[var(--ink)]">Stock Monitor</h2>
-            <p className="text-xs text-[var(--ink-muted)]">Parts at or below reorder level are highlighted.</p>
-          </div>
-           <Link href="/jobs" className="btn-premium-secondary rounded-lg px-3 py-2 text-xs">
-             Open Jobs
-           </Link>
-         </header>
+      {/* Stock table */}
+      <div className="rounded-xl border border-[var(--line)]">
+        <div className="flex items-center justify-between gap-2 border-b border-[var(--line)] bg-[var(--panel)] px-4 py-3 rounded-t-xl">
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Stock Monitor</p>
+          {canManage ? (
+            <Link
+              href={showAdd ? "/inventory" : "/inventory?add=1"}
+              className={`rounded-lg border px-3 py-1.5 text-[12px] font-bold transition ${
+                showAdd
+                  ? "border-[var(--line)] text-[var(--ink-muted)] hover:text-[var(--ink)]"
+                  : "border-[var(--accent)]/40 bg-[var(--accent)] text-white hover:bg-[var(--accent)]/90"
+              }`}
+            >
+              {showAdd ? "✕ Cancel" : "+ Add Part"}
+            </Link>
+          ) : null}
+        </div>
 
         {parts.length === 0 ? (
-          <div className="px-4 py-10 text-sm text-[var(--ink-muted)]">
-            <p>No parts yet.</p>
-            {canManage ? (
-              <p className="mt-2">
-                <Link href="#add-part" className="text-[var(--accent)] underline-offset-2 hover:underline">
-                  Add your first part
-                </Link>{" "}
-                to start tracking stock and reservations.
-              </p>
-            ) : null}
+          <div className="px-4 py-12 text-center text-sm text-[var(--ink-muted)]">
+            No parts yet.{canManage ? <> <Link href="#add-part" className="text-[var(--accent)] hover:underline">Add your first part</Link> above.</> : null}
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full text-sm">
-              <thead className="bg-[var(--panel-strong)]/50 text-[10px] font-bold uppercase tracking-[0.15em] text-[var(--ink-muted)]">
+              <thead className="bg-[var(--panel-strong)] text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
                 <tr>
                   <th className="px-4 py-2.5 text-left">Part</th>
-                  <th className="px-4 py-2.5 text-left">SKU</th>
-                  <th className="px-4 py-2.5 text-left">Maker</th>
+                  <th className="hidden px-4 py-2.5 text-left sm:table-cell">SKU</th>
+                  <th className="hidden px-4 py-2.5 text-left lg:table-cell">Maker</th>
                   <th className="px-4 py-2.5 text-right">On Hand</th>
-                  <th className="px-4 py-2.5 text-right">Reserved</th>
+                  <th className="hidden px-4 py-2.5 text-right md:table-cell">Reserved</th>
                   <th className="px-4 py-2.5 text-right">Available</th>
-                  <th className="px-4 py-2.5 text-right">Reorder</th>
-                  {canManage ? <th className="px-4 py-2.5 text-right">Adjust</th> : null}
+                  <th className="hidden px-4 py-2.5 text-right sm:table-cell">Reorder</th>
+                  {canManage ? <th className="px-4 py-2.5 text-right">Actions</th> : null}
                 </tr>
               </thead>
               <tbody>
@@ -281,32 +284,46 @@ export default async function InventoryPage({
                   const reserved = reservedMap.get(part.id) ?? 0;
                   const available = part.qtyOnHand - reserved;
                   return (
-                    <tr key={part.id} className={"border-t border-[var(--line)] transition-colors " + (isLow ? "bg-[var(--accent)]/10" : "hover:bg-[var(--panel-strong)]/40")}>
-                      <td className="px-4 py-2.5 text-[var(--ink)]">{part.name}</td>
-                      <td className="px-4 py-2.5 text-[var(--ink-muted)]">{part.sku}</td>
-                      <td className="px-4 py-2.5 text-[var(--ink-muted)]">{part.manufacturer ?? "-"}</td>
-                      <td className="px-4 py-2.5 text-right text-[var(--ink)]">{part.qtyOnHand}</td>
-                      <td className="px-4 py-2.5 text-right text-[var(--ink-muted)]">{reserved}</td>
-                      <td className={"px-4 py-2.5 text-right " + (available < 0 ? "text-red-600" : "text-[var(--ink)]")}>{available}</td>
-                      <td className="px-4 py-2.5 text-right text-[var(--ink-muted)]">{part.reorderLevel}</td>
+                    <tr key={part.id} className={"border-t border-[var(--line)] " + (isLow ? "bg-amber-500/8" : "hover:bg-[var(--panel-strong)]/40")}>
+                      <td className="px-4 py-3">
+                        <p className="font-semibold text-[var(--ink)]">{part.name}</p>
+                        {isLow ? <p className="mt-0.5 text-[10px] font-semibold text-amber-600">Low stock</p> : null}
+                      </td>
+                      <td className="hidden px-4 py-3 text-[var(--ink-muted)] sm:table-cell">{part.sku}</td>
+                      <td className="hidden px-4 py-3 text-[var(--ink-muted)] lg:table-cell">{part.manufacturer ?? "—"}</td>
+                      <td className="px-4 py-3 text-right font-semibold text-[var(--ink)]">{part.qtyOnHand}</td>
+                      <td className="hidden px-4 py-3 text-right text-[var(--ink-muted)] md:table-cell">{reserved}</td>
+                      <td className={"px-4 py-3 text-right font-semibold " + (available < 0 ? "text-red-500" : available === 0 ? "text-amber-600" : "text-[var(--ink)]")}>{available}</td>
+                      <td className="hidden px-4 py-3 text-right text-[var(--ink-muted)] sm:table-cell">{part.reorderLevel}</td>
                       {canManage ? (
-                        <td className="px-4 py-2.5">
-                          <form action={adjustStockAction} className="flex items-center justify-end gap-2">
-                            <input type="hidden" name="partId" value={part.id} />
-                            <select name="type" defaultValue="IN" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-1 text-xs text-[var(--ink)] outline-none">
-                              <option value="IN">IN</option>
-                              <option value="OUT">OUT</option>
-                              <option value="ADJUST">ADJ</option>
-                            </select>
-                            <input name="quantity" inputMode="numeric" placeholder="Qty" className="w-20 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-1 text-xs outline-none" />
-                            <input name="reason" placeholder="Reason" className="hidden w-40 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-1 text-xs outline-none lg:block" />
-                            <button type="submit" className="btn-premium-secondary rounded-lg px-2.5 py-1 text-xs">Save</button>
-                          </form>
-                          <form action={togglePartActiveAction} className="mt-1 flex justify-end">
-                            <input type="hidden" name="partId" value={part.id} />
-                            <input type="hidden" name="next" value="0" />
-                            <button type="submit" className="text-[11px] text-[var(--ink-muted)] underline-offset-2 hover:underline">Deactivate</button>
-                          </form>
+                        <td className="px-4 py-3 text-right">
+                          <details className="relative inline-block">
+                            <summary className="inline-flex h-[30px] w-[30px] cursor-pointer list-none items-center justify-center rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)] transition hover:border-[var(--accent)]/40 hover:text-[var(--ink)]">
+                              <span className="sr-only">Actions</span>
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
+                            </summary>
+                            <div className="panel-shadow absolute right-0 bottom-full z-30 mb-1.5 w-56 rounded-xl border border-[var(--line)] bg-[var(--panel)]">
+                              <p className="border-b border-[var(--line)] px-4 py-2 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Adjust Stock</p>
+                              <form action={adjustStockAction} className="space-y-2 p-3">
+                                <input type="hidden" name="partId" value={part.id} />
+                                <div className="flex gap-2">
+                                  <select name="type" defaultValue="IN" className="rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-1.5 text-xs text-[var(--ink)] outline-none focus:border-[var(--accent)]/50">
+                                    <option value="IN">Stock In</option>
+                                    <option value="OUT">Stock Out</option>
+                                    <option value="ADJUST">Adjust</option>
+                                  </select>
+                                  <input name="quantity" inputMode="numeric" placeholder="Qty" className="min-w-0 flex-1 rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1.5 text-xs outline-none focus:border-[var(--accent)]/50" />
+                                </div>
+                                <input name="reason" placeholder="Reason (optional)" className="w-full rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1.5 text-xs outline-none focus:border-[var(--accent)]/50" />
+                                <button type="submit" className="btn-premium w-full rounded-lg px-3 py-1.5 text-xs font-semibold">Save</button>
+                              </form>
+                              <form action={togglePartActiveAction} className="border-t border-[var(--line)] px-3 py-2.5">
+                                <input type="hidden" name="partId" value={part.id} />
+                                <input type="hidden" name="next" value="0" />
+                                <button type="submit" className="text-xs font-semibold text-red-600 transition hover:text-red-700">Deactivate Part</button>
+                              </form>
+                            </div>
+                          </details>
                         </td>
                       ) : null}
                     </tr>
@@ -316,7 +333,7 @@ export default async function InventoryPage({
             </table>
           </div>
         )}
-      </section>
+      </div>
     </div>
   );
 }

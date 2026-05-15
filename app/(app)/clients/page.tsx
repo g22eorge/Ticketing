@@ -4,11 +4,13 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 
+import { SearchToggle } from "@/components/shared/SearchToggle";
+
 
 import { can } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { sanitizeOptionalText, sanitizeText } from "@/lib/sanitize";
-import { getCurrentUserRole } from "@/lib/session";
+import { requireOrgSession } from "@/lib/org-context";
 import { formatEATDate } from "@/lib/date-eat";
 
 const createClientSchema = z.object({
@@ -31,7 +33,7 @@ export default async function ClientsPage({
 }: {
   searchParams: Promise<SearchParams>;
 }) {
-  const { user } = await getCurrentUserRole();
+  const { user, orgId } = await requireOrgSession();
   if (!can.viewClientInfo(user)) {
     redirect("/dashboard");
   }
@@ -42,6 +44,7 @@ export default async function ClientsPage({
   const segment = filters.segment ?? "all";
 
   const where: Prisma.ClientWhereInput = {
+    orgId,
     ...(filters.q
       ? {
           OR: [
@@ -60,7 +63,7 @@ export default async function ClientsPage({
       include: { _count: { select: { jobs: true } } },
       orderBy: { updatedAt: "desc" },
     }),
-    prisma.client.findMany({ include: { _count: { select: { jobs: true } } } }),
+    prisma.client.findMany({ where: { orgId }, include: { _count: { select: { jobs: true } } } }),
   ]);
 
   type ClientRow = Prisma.ClientGetPayload<{
@@ -91,7 +94,7 @@ export default async function ClientsPage({
   async function createClientAction(formData: FormData) {
     "use server";
 
-    const { user: currentUser } = await getCurrentUserRole();
+    const { user: currentUser, orgId: createOrgId } = await requireOrgSession();
     if (!(currentUser.role === "ADMIN" || currentUser.role === "OPS")) return;
 
     const parsed = createClientSchema.safeParse({
@@ -112,7 +115,7 @@ export default async function ClientsPage({
 
     const normalizedPhone = sanitizeText(parsed.data.phone);
     const existingByPhone = await prisma.client.findFirst({
-      where: { phone: normalizedPhone },
+      where: { orgId: createOrgId, phone: normalizedPhone },
       select: { id: true },
     });
 
@@ -122,6 +125,7 @@ export default async function ClientsPage({
 
     await prisma.client.create({
       data: {
+        orgId: createOrgId,
         fullName: sanitizeText(parsed.data.fullName),
         phone: normalizedPhone,
         email: sanitizeOptionalText(parsed.data.email),
@@ -138,19 +142,19 @@ export default async function ClientsPage({
   async function deleteClientAction(formData: FormData) {
     "use server";
 
-    const { user: currentUser } = await getCurrentUserRole();
+    const { user: currentUser, orgId: deleteOrgId } = await requireOrgSession();
     if (currentUser.role !== "ADMIN") return;
 
     const id = String(formData.get("id") ?? "");
     if (!id) return;
 
     const clientWithJobs = await prisma.client.findUnique({
-      where: { id },
+      where: { id, orgId: deleteOrgId },
       include: { _count: { select: { jobs: true } } },
     });
 
     if (!clientWithJobs || clientWithJobs._count.jobs > 0) return;
-    await prisma.client.delete({ where: { id } });
+    await prisma.client.delete({ where: { id, orgId: deleteOrgId } });
     revalidatePath("/clients");
   }
 
@@ -245,76 +249,47 @@ export default async function ClientsPage({
             <span className={`font-bold ${segment === "high" ? "text-white" : "text-[var(--ink)]"}`}>{withManyJobs}</span> high activity
           </Link>
         </div>
-        {(user.role === "ADMIN" || user.role === "OPS") ? (
-          <Link
-            href="/clients?create=1"
-            className="shrink-0 rounded-lg border border-[var(--accent)]/40 bg-[var(--accent)] px-4 py-2.5 text-[12px] font-bold text-white shadow-sm transition hover:bg-[var(--accent)]/90"
-          >
-            + New Client
-          </Link>
-        ) : null}
-      </div>
-
-      {/* ── Filter panel ── */}
-      <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)]">
-        <form className="space-y-2.5 p-3">
-          {/* Row 1: search + action buttons */}
-          <div className="flex items-center gap-2">
-            <input
-              name="q"
-              defaultValue={filters.q}
-              aria-label="Search clients"
-              placeholder="Search by name, phone, email…"
-              className="min-w-0 flex-1 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-sm outline-none transition placeholder:text-[var(--ink-muted)] focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/15"
-            />
-            <button
-              type="submit"
-              className="btn-premium-secondary shrink-0 rounded-lg px-3 py-1.5 text-[12px] font-medium"
+        <div className="flex shrink-0 items-center gap-2">
+          <SearchToggle basePath="/clients" defaultValue={filters.q} placeholder="Search by name, phone, email…" preserve={{ segment: filters.segment !== "all" ? filters.segment : undefined }} />
+          {(user.role === "ADMIN" || user.role === "OPS") ? (
+            <Link
+              href={showCreate ? "/clients" : "/clients?create=1"}
+              className={`rounded-lg border px-3 py-1.5 text-[12px] font-bold transition ${
+                showCreate
+                  ? "border-[var(--line)] text-[var(--ink-muted)] hover:text-[var(--ink)]"
+                  : "border-[var(--accent)]/40 bg-[var(--accent)] text-white shadow-sm hover:bg-[var(--accent)]/90"
+              }`}
             >
-              Search
-            </button>
-            {hasClientFilters ? (
-              <Link
-                href="/clients"
-                className="shrink-0 rounded-lg border border-[var(--line)] px-3 py-1.5 text-[12px] text-[var(--ink-muted)] transition hover:text-[var(--ink)]"
-              >
-                Reset
-              </Link>
-            ) : null}
-          </div>
-        </form>
-
-        {/* Quick create form for OPS/ADMIN — collapsed by default */}
-        {(user.role === "ADMIN" || user.role === "OPS") ? (
-          <details open={showCreate} className="border-t border-[var(--line)]">
-            <summary className="flex cursor-pointer list-none items-center justify-between px-3 py-2.5 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)] hover:bg-[var(--panel-strong)]/30 [&::-webkit-details-marker]:hidden">
-              Quick create client
-              <span className="text-[11px] font-semibold text-[var(--accent)]">{showCreate ? "Hide" : "Show"}</span>
-            </summary>
-            <form action={createClientAction} noValidate className="px-3 pb-3">
-              {filters.createError ? (
-                <p className="mb-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-600">
-                  {filters.createError}
-                </p>
-              ) : null}
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                <input name="fullName" placeholder="Full name *" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2.5 text-sm outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/15" />
-                <input name="phone" placeholder="Phone *" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2.5 text-sm outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/15" />
-                <input name="email" placeholder="Email" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2.5 text-sm outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/15" />
-                <input name="organization" placeholder="Organization" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2.5 text-sm outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/15" />
-              </div>
-              <div className="mt-2 flex items-center gap-2">
-                <button className="rounded-lg border border-[var(--accent)]/40 bg-[var(--accent)] px-4 py-2.5 text-[13px] font-bold text-white shadow-sm transition hover:bg-[var(--accent)]/90">
-                  Create
-                </button>
-                <Link href="/clients" className="text-xs font-medium text-[var(--ink-muted)] underline-offset-2 hover:underline">
-                  Cancel
-                </Link>
-              </div>
-            </form>
-          </details>
-        ) : null}
+              {showCreate ? "✕ Cancel" : "+ New Client"}
+            </Link>
+          ) : null}
+        </div>
       </div>
+
+      {/* ── New Client form (shown only when ?create=1) ── */}
+      {showCreate && (user.role === "ADMIN" || user.role === "OPS") ? (
+        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
+          <p className="mb-2.5 text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">New Client</p>
+          <form action={createClientAction} noValidate>
+            {filters.createError ? (
+              <p className="mb-2 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-[13px] text-red-400">
+                {filters.createError}
+              </p>
+            ) : null}
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <input name="fullName" placeholder="Full name *" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-[13px] outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/15" />
+              <input name="phone" placeholder="Phone *" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-[13px] outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/15" />
+              <input name="email" placeholder="Email" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-[13px] outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/15" />
+              <input name="organization" placeholder="Organization" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-[13px] outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/15" />
+            </div>
+            <div className="mt-2">
+              <button className="btn-premium rounded-lg px-4 py-2 text-[13px] text-white">
+                Create Client
+              </button>
+            </div>
+          </form>
+        </div>
+      ) : null}
 
       {/* ── Clients table / cards ── */}
       {clients.length === 0 ? (

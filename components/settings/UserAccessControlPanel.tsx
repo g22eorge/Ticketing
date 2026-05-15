@@ -140,10 +140,9 @@ export function UserAccessControlPanel({
       <input type="hidden" name="q" value={queryText} />
       <input type="hidden" name="role" value={role} />
 
-      <section className="rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 panel-shadow">
-        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Role Assignment</p>
-        <p className="mt-1 text-xs text-[var(--ink-muted)]">Single-role mode is active in this deployment. Select one role, then customize permission grants.</p>
-        <div className="mt-3 grid gap-2 md:grid-cols-2 xl:grid-cols-3">
+      <section className="rounded-xl border border-[var(--line)] bg-[var(--panel)] p-3 panel-shadow">
+        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Role</p>
+        <div className="mt-2 grid gap-1.5 sm:grid-cols-2 xl:grid-cols-3">
           {roleOptions.map((option) => {
             const active = role === option.value;
             return (
@@ -160,23 +159,21 @@ export function UserAccessControlPanel({
                     : "border-[var(--line)] bg-[var(--panel-strong)] hover:border-[var(--accent)]/50"
                 }`}
               >
-                <p className="text-sm font-semibold text-[var(--ink)]">{option.label}</p>
-                <p className="mt-1 text-xs text-[var(--ink-muted)]">{option.description}</p>
+                <p className="text-[13px] font-semibold text-[var(--ink)]">{option.label}</p>
+                <p className="mt-0.5 text-[11px] leading-snug text-[var(--ink-muted)]">{option.description}</p>
               </button>
             );
           })}
         </div>
       </section>
 
-      <section className="rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 panel-shadow">
-        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Permissions Checklist</p>
-        <p className="mt-1 text-xs text-[var(--ink-muted)]">Inherited permissions are locked by role. Manual grants can be toggled and saved.</p>
-
-        <div className="mt-3 space-y-2">
-          {byGroup.map(([groupName, groupItems], index) => (
-            <details key={groupName} className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] p-3" open={index < 2}>
-              <summary className="cursor-pointer list-none text-sm font-semibold text-[var(--ink)]">{groupName}</summary>
-              <div className="mt-3 grid gap-2 md:grid-cols-2">
+      <section className="rounded-xl border border-[var(--line)] bg-[var(--panel)] panel-shadow">
+        <p className="px-3 pt-3 text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Permissions</p>
+        <div className="mt-2 space-y-0 divide-y divide-[var(--line)]">
+          {byGroup.map(([groupName, groupItems]) => (
+            <div key={groupName} className="px-3 py-2.5">
+              <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">{groupName}</p>
+              <div className="grid gap-1.5 sm:grid-cols-2">
                 {groupItems.map((item) => {
                   const inherited = Boolean(item.permission && defaultsForRole.includes(item.permission));
                   const checked = item.permission
@@ -185,11 +182,12 @@ export function UserAccessControlPanel({
                   const disabled = inherited || !item.mutable || !item.permission;
 
                   return (
-                    <label key={item.key} className="flex items-start gap-2 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] p-2.5">
+                    <label key={item.key} className={`flex items-start gap-2.5 rounded-lg border px-2.5 py-2 transition ${checked ? "border-[var(--accent)]/30 bg-[var(--accent)]/6" : "border-[var(--line)] bg-[var(--panel-strong)]"}`}>
                       <input
                         type="checkbox"
                         checked={checked}
                         disabled={disabled}
+                        className="mt-0.5 shrink-0"
                         onChange={(event) => {
                           const permission = item.permission;
                           if (!permission || inherited || !item.mutable) return;
@@ -202,37 +200,28 @@ export function UserAccessControlPanel({
                         }}
                       />
                       <div className="min-w-0">
-                        <p className="text-sm font-medium text-[var(--ink)]">
+                        <p className="text-[13px] font-medium leading-tight text-[var(--ink)]">
                           {item.label}
-                          <span className="ml-1 text-[11px] font-normal uppercase tracking-[0.08em] text-[var(--ink-muted)]">{item.action}</span>
+                          <span className="ml-1 text-[10px] font-normal uppercase tracking-[0.08em] text-[var(--ink-muted)]">{item.action}</span>
                         </p>
-                        <p className="mt-0.5 text-xs text-[var(--ink-muted)]">{item.description}</p>
-                        <p className="mt-1 text-[11px] text-[var(--ink-muted)]">
-                          {inherited
-                            ? "Inherited from role"
-                            : item.permission && selectedPermissions.has(item.permission)
-                              ? "Manual override"
-                              : item.mutable
-                                ? "Not granted"
-                                : "Role-controlled"}
-                        </p>
+                        <p className="mt-0.5 text-[11px] leading-snug text-[var(--ink-muted)]">{item.description}</p>
+                        {inherited ? <p className="mt-0.5 text-[10px] text-[var(--accent)]/70">Included in role</p> : null}
                       </div>
                     </label>
                   );
                 })}
               </div>
-            </details>
+            </div>
           ))}
         </div>
-
         {Array.from(selectedPermissions).map((permission) => (
           <input key={permission} type="hidden" name="permissions" value={permission} />
         ))}
       </section>
 
-      <section className="rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 panel-shadow">
-        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Permission Summary</p>
-        <p className="mt-2 text-sm text-[var(--ink)]">{summaryText}</p>
+      <section className="rounded-xl border border-[var(--line)] bg-[var(--panel)] p-3 panel-shadow">
+        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Summary</p>
+        <p className="mt-1.5 text-[13px] text-[var(--ink)]">{summaryText}</p>
       </section>
 
       <div className="flex items-center justify-end">

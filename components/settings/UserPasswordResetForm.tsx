@@ -63,7 +63,7 @@ export function UserPasswordResetForm({
       <form
         ref={formRef}
         action={formAction}
-        className="grid gap-2 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] p-3 md:grid-cols-[1fr_1fr_auto]"
+        className="grid gap-2 md:grid-cols-[1fr_1fr_auto]"
         onSubmit={(event) => {
           if (!confirmOpen) {
             event.preventDefault();
@@ -78,8 +78,8 @@ export function UserPasswordResetForm({
           minLength={8}
           type="password"
           name="password"
-          placeholder="New password (min 8 chars)"
-          className="rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 py-1.5 text-sm outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14"
+          placeholder="New password (min 8)"
+          className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14"
         />
         <input
           ref={confirmRef}
@@ -88,30 +88,24 @@ export function UserPasswordResetForm({
           type="password"
           name="confirm"
           placeholder="Confirm password"
-          className="rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 py-1.5 text-sm outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14"
+          className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14"
         />
-        <div className="flex items-center justify-end gap-2">
+        <div className="flex items-center gap-2">
           <button
             type="button"
             disabled={isGenerating}
-            onClick={() => {
-              void generateAndCopy();
-            }}
-            className="btn-premium-secondary rounded-lg px-3 py-1.5 text-sm"
-            title="Generates a temporary password and copies it"
+            onClick={() => { void generateAndCopy(); }}
+            className="btn-premium-secondary rounded-lg px-3 py-1.5 text-[13px]"
+            title="Generate a temp password and copy to clipboard"
           >
-            {isGenerating ? "Generating..." : "Generate & Copy"}
+            {isGenerating ? "…" : "Generate"}
           </button>
-          <button className="btn-premium rounded-lg px-3 py-1.5 text-sm text-white">
-            Reset Password
-          </button>
+          <button className="btn-premium rounded-lg px-3 py-1.5 text-[13px] text-white">Reset</button>
         </div>
 
-        {state.error ? <p className="text-sm text-[var(--ink)] md:col-span-3">{state.error}</p> : null}
-        {state.success ? <p className="text-sm text-[var(--accent)] md:col-span-3">{state.success}</p> : null}
-        <p className="text-[11px] text-[var(--ink-muted)] md:col-span-3">
-          Tip: use Generate & Copy, then paste the temporary password to the staff member over WhatsApp.
-        </p>
+        {state.error ? <p className="text-[13px] text-red-400 md:col-span-3">{state.error}</p> : null}
+        {state.success ? <p className="text-[13px] text-[var(--accent)] md:col-span-3">{state.success}</p> : null}
+        <p className="text-[11px] text-[var(--ink-muted)] md:col-span-3">Generate copies a temp password to clipboard — share it via WhatsApp.</p>
       </form>
     </>
   );

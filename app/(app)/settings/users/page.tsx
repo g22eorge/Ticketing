@@ -10,11 +10,19 @@ import { UserDetailsForm } from "@/components/settings/UserDetailsForm";
 import { UserPasswordResetForm } from "@/components/settings/UserPasswordResetForm";
 import { EXTRA_PERMISSIONS } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
-import { getCurrentUserRole } from "@/lib/session";
+import { requireOrgSession } from "@/lib/org-context";
+import { inviteSchema, INVITE_TTL_DAYS, type InviteState } from "@/lib/invites";
+import { InvitePanel } from "@/components/settings/InvitePanel";
+import { checkUserLimit, getLimitsForOrg } from "@/lib/plan-limits";
+import { PlanBanner } from "@/components/shared/PlanBanner";
+import { rateLimit } from "@/lib/rate-limit";
 
 type SearchParams = {
   q?: string;
   userId?: string;
+  limitError?: string;
+  add?: string;
+  tab?: string;
 };
 
 type UserDetailsState = {
@@ -63,10 +71,13 @@ type PermissionOption = {
 
 const roleOptions: Array<{ value: Role; label: string; description: string }> = [
   { value: Role.ADMIN, label: "Admin", description: "Full platform control including user management and financial approvals." },
+  { value: Role.MANAGER, label: "Manager", description: "Oversees operations, staff workload, and pipeline health across all departments." },
+  { value: Role.FINANCE, label: "Finance", description: "Reviews invoices, approves costs, manages settlements and financial reports." },
+  { value: Role.SALES, label: "Sales", description: "Handles intake, client approvals, quotes, and revenue pipeline tracking." },
+  { value: Role.OPS, label: "Operations/Accounts", description: "Coordinates workflow, billing, settlement, and daily operations." },
   { value: Role.FRONT_DESK, label: "Front Desk", description: "Handles front desk intake, customer details, and handover documents." },
   { value: Role.TECHNICIAN_INTERNAL, label: "Internal Technician", description: "Works diagnosis and in-house repair execution." },
   { value: Role.TECHNICIAN_EXTERNAL, label: "External Technician", description: "External workflow access without client identity or billing history." },
-  { value: Role.OPS, label: "Operations/Accounts", description: "Coordinates workflow, billing, settlement, and daily operations." },
 ];
 
 const roleDefaults: Record<Role, Array<(typeof EXTRA_PERMISSIONS)[number]>> = {
@@ -84,6 +95,35 @@ const roleDefaults: Record<Role, Array<(typeof EXTRA_PERMISSIONS)[number]>> = {
     "can_review_external_bills",
     "can_view_accounts_summary",
     "can_approve_invoices",
+  ],
+  MANAGER: [
+    "can_manage_intake",
+    "can_search_jobs",
+    "can_generate_job_cards",
+    "can_assign_jobs",
+    "can_view_approved_cost",
+    "can_view_external_updates",
+    "can_view_external_quotes",
+    "can_review_external_bills",
+    "can_view_accounts_summary",
+    "can_approve_invoices",
+  ],
+  FINANCE: [
+    "can_search_jobs",
+    "can_view_approved_cost",
+    "can_view_external_quotes",
+    "can_review_external_bills",
+    "can_view_accounts_summary",
+    "can_approve_invoices",
+  ],
+  SALES: [
+    "can_intake",
+    "can_manage_intake",
+    "can_search_jobs",
+    "can_generate_job_cards",
+    "can_view_job_progress",
+    "can_view_approved_cost",
+    "can_view_external_quotes",
   ],
   OPS: [
     "can_manage_intake",
@@ -138,6 +178,44 @@ const roleCapabilities: Record<Role, string[]> = {
     "settings_admin",
     "approval_cost",
     "delete_records",
+    "download_docs",
+  ],
+  MANAGER: [
+    "dashboard_view",
+    "jobs_view",
+    "jobs_assign",
+    "jobs_create",
+    "intake_manage",
+    "device_records",
+    "client_records",
+    "parts_bills",
+    "invoices_view",
+    "invoices_approve",
+    "reports_export",
+    "approval_cost",
+    "download_docs",
+  ],
+  FINANCE: [
+    "dashboard_view",
+    "jobs_view",
+    "client_records",
+    "parts_bills",
+    "invoices_view",
+    "invoices_approve",
+    "reports_export",
+    "approval_cost",
+    "download_docs",
+  ],
+  SALES: [
+    "dashboard_view",
+    "jobs_view",
+    "jobs_create",
+    "intake_manage",
+    "device_records",
+    "client_records",
+    "invoices_view",
+    "reports_export",
+    "approval_cost",
     "download_docs",
   ],
   OPS: [
@@ -214,6 +292,9 @@ function roleLabel(role: Role) {
   if (role === "TECHNICIAN_EXTERNAL") return "External Technician";
   if (role === "FRONT_DESK" || role === "INTAKE") return "Front Desk";
   if (role === "OPS") return "Operations/Accounts";
+  if (role === "MANAGER") return "Manager";
+  if (role === "FINANCE") return "Finance";
+  if (role === "SALES") return "Sales";
   return "Admin";
 }
 
@@ -244,7 +325,7 @@ export default async function UsersPage({
 }: {
   searchParams: Promise<SearchParams>;
 }) {
-  const { user } = await getCurrentUserRole();
+  const { user, orgId } = await requireOrgSession();
   if (user.role !== "ADMIN") {
     redirect("/dashboard");
   }
@@ -252,7 +333,7 @@ export default async function UsersPage({
   async function updateUserDetails(state: UserDetailsState, formData: FormData): Promise<UserDetailsState> {
     "use server";
 
-    const { session, user: actor } = await getCurrentUserRole();
+    const { session, user: actor, orgId: actorOrgId } = await requireOrgSession();
     if (actor.role !== "ADMIN") return { error: "Not authorized" };
 
     const parsed = updateUserDetailsSchema.safeParse({
@@ -264,8 +345,8 @@ export default async function UsersPage({
 
     if (!parsed.success) return { error: "Invalid user details" };
 
-    const existing = await prisma.user.findUnique({
-      where: { id: parsed.data.id },
+    const existing = await prisma.user.findFirst({
+      where: { id: parsed.data.id, orgId: actorOrgId },
       select: { id: true, name: true, email: true, phone: true },
     });
     if (!existing) return { error: "User not found" };
@@ -319,7 +400,7 @@ export default async function UsersPage({
   async function resetUserPassword(state: UserPasswordResetState, formData: FormData): Promise<UserPasswordResetState> {
     "use server";
 
-    const { session, user: actor } = await getCurrentUserRole();
+    const { session, user: actor } = await requireOrgSession();
     if (actor.role !== "ADMIN") return { error: "Not authorized" };
 
     const parsed = resetPasswordSchema.safeParse({
@@ -376,7 +457,7 @@ export default async function UsersPage({
   async function saveAccessChanges(formData: FormData) {
     "use server";
 
-    const { session, user: actor } = await getCurrentUserRole();
+    const { session, user: actor } = await requireOrgSession();
     if (actor.role !== "ADMIN") return;
 
     const targetUserId = String(formData.get("userId") ?? "").trim();
@@ -463,10 +544,57 @@ export default async function UsersPage({
     redirect(`/settings/users?${new URLSearchParams({ q, userId: targetUserId }).toString()}`);
   }
 
+  async function inviteUser(_prev: InviteState, formData: FormData): Promise<InviteState> {
+    "use server";
+
+    const { user: actor, orgId: actorOrgId } = await requireOrgSession();
+    if (actor.role !== "ADMIN") return { error: "Only admins can invite users." };
+
+    const rl = rateLimit.invite(actorOrgId);
+    if (!rl.allowed) return { error: "Too many invites sent recently. Please wait before generating more." };
+
+    const parsed = inviteSchema.safeParse({
+      email: String(formData.get("email") ?? "").trim().toLowerCase(),
+      role: String(formData.get("role") ?? "OPS"),
+    });
+    if (!parsed.success) return { fieldErrors: parsed.error.flatten().fieldErrors };
+
+    const { email, role } = parsed.data;
+
+    // Block if email already belongs to this org.
+    const existing = await prisma.user.findFirst({
+      where: { email, orgId: actorOrgId },
+      select: { id: true },
+    });
+    if (existing) return { error: "That email already has an account in this workspace." };
+
+    // Enforce plan user limit.
+    const userLimit = await checkUserLimit(actorOrgId);
+    if (!userLimit.allowed) return { error: userLimit.reason };
+
+    // Expire any previous pending invites for this email in this org.
+    await prisma.userInvite.updateMany({
+      where: { email, orgId: actorOrgId, usedAt: null },
+      data: { expiresAt: new Date() },
+    });
+
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + INVITE_TTL_DAYS);
+
+    const invite = await prisma.userInvite.create({
+      data: { email, role, orgId: actorOrgId, invitedById: actor.id, expiresAt },
+    });
+
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+    const inviteUrl = `${baseUrl}/invite/${invite.token}`;
+
+    return { inviteUrl };
+  }
+
   async function createUser(formData: FormData) {
     "use server";
 
-    const { user: actor } = await getCurrentUserRole();
+    const { user: actor, orgId: actorOrgId } = await requireOrgSession();
     if (actor.role !== "ADMIN") return;
 
     const parsed = createUserSchema.safeParse({
@@ -482,8 +610,15 @@ export default async function UsersPage({
       redirect("/settings/users");
     }
 
+    const userLimit = await checkUserLimit(actorOrgId);
+    if (!userLimit.allowed) {
+      // Can't return from a void server action — redirect with error param
+      redirect(`/settings/users?limitError=${encodeURIComponent(userLimit.reason)}`);
+    }
+
     const created = await prisma.user.create({
       data: {
+        orgId: actorOrgId,
         name: parsed.data.name,
         email: parsed.data.email,
         phone: parsed.data.phone || null,
@@ -505,6 +640,17 @@ export default async function UsersPage({
     redirect(`/settings/users?${new URLSearchParams({ userId: created.id }).toString()}`);
   }
 
+  // Fetch plan limits and current usage for the banner.
+  const planInfo = await getLimitsForOrg(orgId);
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const [activeUserCount, jobsThisMonth, partCount] = await Promise.all([
+    prisma.user.count({ where: { orgId, isActive: true } }),
+    prisma.job.count({ where: { orgId, receivedAt: { gte: monthStart } } }),
+    prisma.part.count({ where: { orgId, isActive: true } }),
+  ]);
+
+  const params = await searchParams;
   let q = "";
   let filteredUsers: Array<{
     id: string;
@@ -529,10 +675,10 @@ export default async function UsersPage({
   }> = [];
 
   try {
-    const params = await searchParams;
     q = typeof params.q === "string" ? params.q.trim() : "";
 
     const users = await prisma.user.findMany({
+      where: { orgId },
       orderBy: [{ isActive: "desc" }, { name: "asc" }],
       select: {
         id: true,
@@ -605,166 +751,200 @@ export default async function UsersPage({
     );
   }
 
-  return (
-    <div className="space-y-4">
-      <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Create User</p>
-        <form action={createUser} className="mt-2 grid gap-2 md:grid-cols-2 xl:grid-cols-5">
-          <input required name="name" placeholder="Name" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-sm outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
-          <input required type="email" name="email" placeholder="Email" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-sm outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
-          <input name="phone" placeholder="Phone" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-sm outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
-          <input required minLength={8} type="password" name="password" placeholder="Password" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-sm outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
-          <select name="role" defaultValue="OPS" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-sm outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14">
-            {roleOptions.map((option) => (
-              <option key={option.value} value={option.value}>{option.label}</option>
-            ))}
-          </select>
-          <button className="btn-premium rounded-lg px-3 py-1.5 text-sm text-white md:col-span-2 xl:col-span-1">Create User</button>
-        </form>
-      </section>
+  const limitError = typeof params.limitError === "string" ? params.limitError : null;
+  const showAdd = params.add === "1";
+  const tab = params.tab ?? "profile";
 
-      <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">User Selection</p>
-        <form method="GET" className="mt-2 grid gap-2 md:grid-cols-[1fr_auto]">
-          <input
-            name="q"
-            defaultValue={q}
-            placeholder="Search by name, phone, email, or role"
-            className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-sm outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14"
-          />
-          <div className="flex gap-2">
-            <button className="btn-premium-secondary rounded-lg px-3 py-1.5 text-sm">Search</button>
-            <Link href="/settings/users" className="rounded-lg border border-[var(--line)] px-3 py-1.5 text-sm text-[var(--ink-muted)] hover:text-[var(--ink)]">
-              Reset
+  function tabHref(t: string) {
+    return `/settings/users?${new URLSearchParams({ ...(q && { q }), ...(selectedUser && { userId: selectedUser.id }), tab: t }).toString()}`;
+  }
+
+  const tabs = [
+    { key: "profile", label: "Profile" },
+    { key: "access", label: "Access" },
+    { key: "security", label: "Security" },
+    { key: "log", label: "Log" },
+  ];
+
+  return (
+    <div className="space-y-3">
+      <PlanBanner plan={planInfo.plan} limits={planInfo} usage={{ users: activeUserCount, jobsThisMonth, parts: partCount }} />
+
+      {limitError && (
+        <p className="rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-[13px] text-red-400">
+          {limitError}
+        </p>
+      )}
+
+      {/* Add User — inline, toggled by URL param */}
+      {showAdd && (
+        <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-3">
+          <div className="mb-3 flex items-center justify-between">
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Add User</p>
+            <Link href="/settings/users" className="text-[11px] text-[var(--ink-muted)] hover:text-[var(--ink)]">✕ Close</Link>
+          </div>
+          <InvitePanel inviteAction={inviteUser} roleOptions={roleOptions} />
+          <div className="mt-3 border-t border-[var(--line)] pt-3">
+            <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">Or create directly</p>
+            <form action={createUser} className="grid gap-2 sm:grid-cols-2 xl:grid-cols-6">
+              <input required name="name" placeholder="Name" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
+              <input required type="email" name="email" placeholder="Email" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
+              <input name="phone" placeholder="Phone" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
+              <input required minLength={8} type="password" name="password" placeholder="Password (min 8)" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
+              <select name="role" defaultValue="OPS" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14">
+                {roleOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+              <button className="btn-premium rounded-lg px-3 py-1.5 text-[13px] text-white">Create</button>
+            </form>
+          </div>
+        </section>
+      )}
+
+      {/* Main two-column layout */}
+      <div className="grid gap-3 lg:grid-cols-[260px_1fr]">
+
+        {/* Left: search + user list */}
+        <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)]">
+          <div className="flex items-center justify-between border-b border-[var(--line)] px-3 py-2">
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Users</p>
+            <Link
+              href={showAdd ? "/settings/users" : "/settings/users?add=1"}
+              className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1 text-[11px] font-semibold text-[var(--ink-muted)] transition hover:border-[var(--accent)]/50 hover:text-[var(--accent)]"
+            >
+              {showAdd ? "Close" : "+ Add"}
             </Link>
           </div>
-        </form>
+          <form method="GET" className="flex gap-1 border-b border-[var(--line)] px-2 py-2">
+            <input
+              name="q"
+              defaultValue={q}
+              placeholder="Search…"
+              className="min-w-0 flex-1 rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50"
+            />
+            {q ? (
+              <Link href="/settings/users" className="flex items-center rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2 text-[13px] text-[var(--ink-muted)] hover:text-[var(--ink)]">✕</Link>
+            ) : null}
+          </form>
+          <div className="divide-y divide-[var(--line)]">
+            {filteredUsers.map((item) => (
+              <Link
+                key={item.id}
+                href={`/settings/users?${new URLSearchParams({ ...(q && { q }), userId: item.id }).toString()}`}
+                className={`flex items-center gap-2.5 px-3 py-2.5 transition ${selectedUser?.id === item.id ? "bg-[var(--accent)]/8" : "hover:bg-[var(--panel-strong)]/40"}`}
+              >
+                <span className={`h-5 w-0.5 shrink-0 rounded-full transition-all ${selectedUser?.id === item.id ? "bg-[var(--accent)]" : "bg-transparent"}`} />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[13px] font-medium text-[var(--ink)]">{item.name}</p>
+                  <p className="truncate text-[11px] text-[var(--ink-muted)]">{roleLabel(item.role)}</p>
+                </div>
+                {!item.isActive && (
+                  <span className="shrink-0 rounded-full border border-[var(--line)] px-1.5 py-0.5 text-[10px] text-[var(--ink-muted)]">Off</span>
+                )}
+              </Link>
+            ))}
+            {filteredUsers.length === 0 && (
+              <p className="px-3 py-5 text-center text-[13px] text-[var(--ink-muted)]">No users found.</p>
+            )}
+          </div>
+        </section>
 
-        <div className="mt-3 grid gap-2 md:grid-cols-2 xl:grid-cols-3">
-          {filteredUsers.map((item) => (
-            <Link
-              key={item.id}
-              href={`/settings/users?${new URLSearchParams({ q, userId: item.id }).toString()}`}
-              className={`rounded-lg border px-3 py-2 transition ${selectedUser?.id === item.id ? "border-[var(--accent)] bg-[var(--accent)]/10" : "border-[var(--line)] bg-[var(--panel-strong)] hover:border-[var(--accent)]/45"}`}
-            >
-              <p className="font-medium text-[var(--ink)]">{item.name}</p>
-              <p className="text-xs text-[var(--ink-muted)]">{item.email}</p>
-              <p className="mt-1 text-[11px] text-[var(--ink-muted)]">{roleLabel(item.role)} • {item.isActive ? "Active" : "Inactive"}</p>
-            </Link>
-          ))}
-        </div>
-      </section>
+        {/* Right: selected user */}
+        {selectedUser ? (
+          <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)]">
+            {/* User header */}
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--line)] px-3 py-2.5">
+              <div className="min-w-0">
+                <p className="truncate text-[13px] font-semibold text-[var(--ink)]">{selectedUser.name}</p>
+                <p className="truncate text-[11px] text-[var(--ink-muted)]">{selectedUser.email} · {roleLabel(selectedUser.role)}</p>
+              </div>
+              <div className="flex shrink-0 items-center gap-1.5">
+                <span className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${selectedUser.isActive ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400" : "border-[var(--line)] text-[var(--ink-muted)]"}`}>
+                  {selectedUser.isActive ? "Active" : "Inactive"}
+                </span>
+                <span className="text-[11px] text-[var(--ink-muted)]">
+                  Last seen {formatDateTime(selectedUser.sessions[0]?.updatedAt ?? selectedUser.auditLogs[0]?.createdAt ?? selectedUser.updatedAt)}
+                </span>
+              </div>
+            </div>
 
-      {selectedUser ? (
-        <>
-          <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Profile Summary</p>
-            <div className="mt-3 grid gap-2 md:grid-cols-2 xl:grid-cols-3">
-              <div className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] p-3">
-                <p className="text-[11px] uppercase tracking-[0.1em] text-[var(--ink-muted)]">Name</p>
-                <p className="mt-1 text-sm font-semibold text-[var(--ink)]">{selectedUser.name}</p>
-              </div>
-              <div className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] p-3">
-                <p className="text-[11px] uppercase tracking-[0.1em] text-[var(--ink-muted)]">Contact</p>
-                <p className="mt-1 text-sm text-[var(--ink)]">{selectedUser.email}</p>
-                <p className="text-xs text-[var(--ink-muted)]">{selectedUser.phone ?? "No phone on file"}</p>
-              </div>
-              <div className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] p-3">
-                <p className="text-[11px] uppercase tracking-[0.1em] text-[var(--ink-muted)]">Current Role</p>
-                <p className="mt-1 text-sm font-semibold text-[var(--ink)]">{roleLabel(selectedUser.role)}</p>
-              </div>
-              <div className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] p-3">
-                <p className="text-[11px] uppercase tracking-[0.1em] text-[var(--ink-muted)]">Status</p>
-                <p className="mt-1 text-sm font-semibold text-[var(--ink)]">{selectedUser.isActive ? "Active" : "Inactive"}</p>
-              </div>
-              <div className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] p-3">
-                <p className="text-[11px] uppercase tracking-[0.1em] text-[var(--ink-muted)]">Last Activity</p>
-                <p className="mt-1 text-sm text-[var(--ink)]">
-                  {formatDateTime(
-                    selectedUser.sessions[0]?.updatedAt
-                    ?? selectedUser.auditLogs[0]?.createdAt
-                    ?? selectedUser.updatedAt,
+            {/* Tab strip */}
+            <div className="flex border-b border-[var(--line)]">
+              {tabs.map(({ key, label }) => (
+                <Link
+                  key={key}
+                  href={tabHref(key)}
+                  className={`px-4 py-2.5 text-[13px] font-medium transition ${tab === key ? "border-b-2 border-[var(--accent)] text-[var(--ink)]" : "text-[var(--ink-muted)] hover:text-[var(--ink)]"}`}
+                >
+                  {label}
+                </Link>
+              ))}
+            </div>
+
+            {/* Tab content */}
+            <div className="p-3">
+              {tab === "profile" && (
+                <UserDetailsForm
+                  id={selectedUser.id}
+                  name={selectedUser.name}
+                  email={selectedUser.email}
+                  phone={selectedUser.phone}
+                  action={updateUserDetails}
+                />
+              )}
+              {tab === "access" && (
+                <UserAccessControlPanel
+                  key={selectedUser.id}
+                  userId={selectedUser.id}
+                  queryText={q}
+                  initialRole={selectedUser.role}
+                  initialPermissions={selectedUser.permissionGrants.map((g) => g.permission)}
+                  roleOptions={roleOptions}
+                  roleDefaultPermissions={roleDefaults}
+                  roleDefaultCapabilities={roleCapabilities}
+                  permissions={permissionOptions}
+                  saveAction={saveAccessChanges}
+                />
+              )}
+              {tab === "security" && (
+                <UserPasswordResetForm userId={selectedUser.id} action={resetUserPassword} />
+              )}
+              {tab === "log" && (
+                <div className="divide-y divide-[var(--line)]">
+                  {accessAudit.length > 0 ? (
+                    accessAudit.map((entry) => {
+                      let detail = "";
+                      try {
+                        const parsed = entry.detail ? JSON.parse(entry.detail) as { added?: string[]; removed?: string[]; fromRole?: string; toRole?: string } : null;
+                        const parts = [
+                          parsed?.fromRole !== parsed?.toRole ? `Role → ${parsed?.toRole}` : null,
+                          parsed?.added?.length ? `+${parsed.added.join(", ")}` : null,
+                          parsed?.removed?.length ? `−${parsed.removed.join(", ")}` : null,
+                        ].filter(Boolean);
+                        detail = parts.join(" · ");
+                      } catch {
+                        detail = entry.detail ?? "";
+                      }
+                      return (
+                        <div key={entry.id} className="py-2">
+                          <p className="text-[13px] font-medium text-[var(--ink)]">{entry.action}</p>
+                          <p className="mt-0.5 text-[11px] text-[var(--ink-muted)]">{entry.actorUser.name} · {entry.createdAt.toLocaleString()}</p>
+                          {detail ? <p className="mt-0.5 text-[11px] text-[var(--ink-muted)]">{detail}</p> : null}
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <p className="py-4 text-center text-[13px] text-[var(--ink-muted)]">No access changes recorded yet.</p>
                   )}
-                </p>
-              </div>
-              <div className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] p-3">
-                <p className="text-[11px] uppercase tracking-[0.1em] text-[var(--ink-muted)]">Branch / Location</p>
-                <p className="mt-1 text-sm text-[var(--ink)]">Not assigned</p>
-              </div>
-            </div>
-          </section>
-
-          <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Edit User Details</p>
-            <p className="mt-1 text-xs text-[var(--ink-muted)]">Update name, email, and phone. Email changes take effect immediately.</p>
-            <div className="mt-3">
-              <UserDetailsForm
-                id={selectedUser.id}
-                name={selectedUser.name}
-                email={selectedUser.email}
-                phone={selectedUser.phone}
-                action={updateUserDetails}
-              />
-            </div>
-          </section>
-
-          <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Reset Password</p>
-            <p className="mt-1 text-xs text-[var(--ink-muted)]">Use this when a user forgets their password. A reset signs them out everywhere.</p>
-            <div className="mt-3">
-              <UserPasswordResetForm userId={selectedUser.id} action={resetUserPassword} />
-            </div>
-          </section>
-
-          <UserAccessControlPanel
-            key={selectedUser.id}
-            userId={selectedUser.id}
-            queryText={q}
-            initialRole={selectedUser.role}
-            initialPermissions={selectedUser.permissionGrants.map((grant) => grant.permission)}
-            roleOptions={roleOptions}
-            roleDefaultPermissions={roleDefaults}
-            roleDefaultCapabilities={roleCapabilities}
-            permissions={permissionOptions}
-            saveAction={saveAccessChanges}
-          />
-
-          <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Access Audit Trail</p>
-            <div className="mt-3 space-y-2">
-              {accessAudit.length > 0 ? (
-                accessAudit.map((entry) => {
-                  let detail = "No detail";
-                  try {
-                    const parsed = entry.detail ? JSON.parse(entry.detail) as { added?: string[]; removed?: string[]; fromRole?: string; toRole?: string } : null;
-                    const roleLine = parsed && parsed.fromRole !== parsed.toRole
-                      ? `Role ${parsed.fromRole} -> ${parsed.toRole}`
-                      : "Role unchanged";
-                    const addedLine = parsed?.added?.length ? `Added: ${parsed.added.join(", ")}` : "Added: none";
-                    const removedLine = parsed?.removed?.length ? `Removed: ${parsed.removed.join(", ")}` : "Removed: none";
-                    detail = `${roleLine} • ${addedLine} • ${removedLine}`;
-                  } catch {
-                    detail = entry.detail ?? "No detail";
-                  }
-                  return (
-                    <div key={entry.id} className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] p-3 text-xs text-[var(--ink-muted)]">
-                      <p className="font-semibold text-[var(--ink)]">{entry.action}</p>
-                      <p className="mt-1">Changed by {entry.actorUser.name} • {entry.createdAt.toLocaleString()}</p>
-                      <p className="mt-1">{detail}</p>
-                    </div>
-                  );
-                })
-              ) : (
-                <p className="text-sm text-[var(--ink-muted)]">No access changes recorded yet for this user.</p>
+                </div>
               )}
             </div>
           </section>
-        </>
-      ) : (
-        <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-6 text-sm text-[var(--ink-muted)]">
-          No users match this search filter.
-        </section>
-      )}
+        ) : (
+          <div className="panel-shadow flex items-center justify-center rounded-xl border border-[var(--line)] bg-[var(--panel)] p-12 text-[13px] text-[var(--ink-muted)]">
+            Select a user to manage their profile and access.
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -4,12 +4,13 @@ import { revalidatePath } from "next/cache";
 import { notFound, redirect } from "next/navigation";
 import { z } from "zod";
 
+import { SearchToggle } from "@/components/shared/SearchToggle";
 import { JobStatusBadge, statusStripClass } from "@/components/jobs/JobStatusBadge";
 import { UI_JOB_STATUSES, JobStatus, normalizeJobStatus } from "@/lib/job-status";
 import { can } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { sanitizeOptionalText, sanitizeText } from "@/lib/sanitize";
-import { getCurrentUserRole } from "@/lib/session";
+import { requireOrgSession } from "@/lib/org-context";
 import { formatEATDate, formatEATDateTime } from "@/lib/date-eat";
 
 const updateClientSchema = z.object({
@@ -43,7 +44,7 @@ export default async function ClientDetailPage({
 }) {
   const { id } = await params;
   const filters = await searchParams;
-  const { user } = await getCurrentUserRole();
+  const { user, orgId } = await requireOrgSession();
   const canEdit = user.role === "ADMIN" || user.role === "OPS";
 
   if (!can.viewClientInfo(user)) {
@@ -55,7 +56,7 @@ export default async function ClientDetailPage({
 
   try {
     clientData = await prisma.client.findUnique({
-      where: { id },
+      where: { id, orgId },
       include: {
         jobs: {
           where: {
@@ -81,7 +82,7 @@ export default async function ClientDetailPage({
   } catch {
     notesFeatureAvailable = false;
     clientData = await prisma.client.findUnique({
-      where: { id },
+      where: { id, orgId },
       include: {
         jobs: {
           where: {
@@ -120,7 +121,7 @@ export default async function ClientDetailPage({
 
   async function updateClient(formData: FormData) {
     "use server";
-    const { user: currentUser } = await getCurrentUserRole();
+    const { user: currentUser, orgId: updateOrgId } = await requireOrgSession();
     if (!(currentUser.role === "ADMIN" || currentUser.role === "OPS")) {
       return;
     }
@@ -134,7 +135,7 @@ export default async function ClientDetailPage({
     if (!parsed.success) return;
 
     await prisma.client.update({
-      where: { id },
+      where: { id, orgId: updateOrgId },
       data: {
         fullName: sanitizeText(parsed.data.fullName),
         email: sanitizeOptionalText(parsed.data.email),
@@ -148,7 +149,7 @@ export default async function ClientDetailPage({
 
   async function addClientNote(formData: FormData) {
     "use server";
-    const { session, user: currentUser } = await getCurrentUserRole();
+    const { session, user: currentUser } = await requireOrgSession();
     if (!(currentUser.role === "ADMIN" || currentUser.role === "OPS")) {
       return;
     }
@@ -284,17 +285,33 @@ export default async function ClientDetailPage({
 
       <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-          <h2 className="font-semibold">Job History</h2>
-          <form className="flex flex-wrap gap-2">
-            <input name="q" defaultValue={filters.q} placeholder="Search job # / brand / model" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-sm outline-none transition focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
-            <select name="status" defaultValue={filters.status} className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-sm outline-none transition focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14">
-              <option value="">All statuses</option>
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Job History</p>
+          <div className="flex items-center gap-2">
+            {/* Status filter chips */}
+            <div className="flex items-center gap-1">
+              <Link
+                href={`/clients/${id}`}
+                className={`rounded-full border px-2.5 py-0.5 text-[11px] font-semibold transition ${!filters.status ? "border-[var(--accent)] bg-[var(--accent)] text-white" : "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)] hover:border-[var(--accent)]/30"}`}
+              >
+                All
+              </Link>
               {UI_JOB_STATUSES.map((status) => (
-                <option key={status} value={status}>{statusOptionLabel[status]}</option>
+                <Link
+                  key={status}
+                  href={`/clients/${id}?${new URLSearchParams({ ...(filters.q ? { q: filters.q } : {}), status }).toString()}`}
+                  className={`hidden rounded-full border px-2.5 py-0.5 text-[11px] font-semibold transition sm:block ${filters.status === status ? "border-[var(--accent)] bg-[var(--accent)] text-white" : "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)] hover:border-[var(--accent)]/30"}`}
+                >
+                  {statusOptionLabel[status]}
+                </Link>
               ))}
-            </select>
-            <button className="btn-premium-secondary rounded-lg px-3 py-2 text-sm">Filter</button>
-          </form>
+            </div>
+            <SearchToggle
+              basePath={`/clients/${id}`}
+              defaultValue={filters.q}
+              placeholder="Search job # or device"
+              preserve={{ status: filters.status }}
+            />
+          </div>
         </div>
 
         {client.jobs.length === 0 ? (
