@@ -73,6 +73,7 @@ model Organization {
   suppliers              Supplier[]
   purchaseOrders         PurchaseOrder[]
   userGroups             UserGroup[]
+  complaints             Complaint[]
 
   @@index([slug])
   @@index([isActive])
@@ -136,6 +137,7 @@ model User {
   accessAuditChanges      UserAccessAudit[]        @relation("AccessAuditActor")
   invitesSent             UserInvite[]             @relation("InvitedBy")
   groupMemberships        UserGroupMember[]
+  complaintsAssigned      Complaint[]      @relation("ComplaintAssignee")
 
   @@index([orgId])
 }
@@ -245,6 +247,7 @@ model Verification {
 enum Role {
   ADMIN
   MANAGER
+  TECH_MANAGER
   FINANCE
   SALES
   OPS
@@ -532,7 +535,8 @@ model Job {
   partReservations          PartReservation[]
   stockTransactions         PartStockTransaction[]
 
-  invoice Invoice?
+  invoice    Invoice?
+  complaints Complaint[]
 
   @@index([orgId])
   @@index([orgId, status])
@@ -1864,4 +1868,80 @@ model FileAsset {
 
   @@index([orgId, ownerType, ownerId])
   @@index([storageKey])
+}
+
+// ── COMPLAINTS (ISO 10002:2018) ───────────────────────────────────────────────
+
+enum ComplaintStatus {
+  RECEIVED
+  ACKNOWLEDGED
+  INVESTIGATING
+  RESOLVED
+  CLOSED
+}
+
+enum ComplaintCategory {
+  SERVICE_QUALITY
+  REPAIR_DELAY
+  BILLING
+  STAFF_CONDUCT
+  DAMAGE_CAUSED
+  UNRESOLVED_FAULT
+  OTHER
+}
+
+enum ComplaintChannel {
+  WEB
+  WALK_IN
+  PHONE
+  WHATSAPP
+  EMAIL
+}
+
+model Complaint {
+  id              String            @id @default(cuid())
+  orgId           String
+  org             Organization      @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  complaintNumber String            @unique // CMP-YYYY-XXXX
+  status          ComplaintStatus   @default(RECEIVED)
+  category        ComplaintCategory @default(OTHER)
+  channel         ComplaintChannel  @default(WEB)
+
+  // Linked reference (one or the other)
+  jobId  String?
+  job    Job?    @relation(fields: [jobId], references: [id], onDelete: SetNull)
+  saleId String?
+
+  // Complainant info
+  clientName  String
+  clientPhone String
+  clientEmail String?
+
+  // Complaint content
+  description        String
+  expectedResolution String?
+
+  // Internal workflow
+  assignedToId  String?
+  assignedTo    User?   @relation("ComplaintAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
+  internalNotes String?
+  resolution    String?
+
+  // ISO 10002 SLA timestamps
+  acknowledgedAt  DateTime?
+  investigatingAt DateTime?
+  resolvedAt      DateTime?
+  closedAt        DateTime?
+
+  // Satisfaction follow-up
+  satisfactionRating  Int?
+  satisfactionComment String?
+  ratedAt             DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([orgId, status, createdAt])
+  @@index([orgId, createdAt])
+  @@index([jobId])
 }

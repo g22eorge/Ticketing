@@ -29,36 +29,36 @@ function hasExtraPermission(user: PermissionUser, permission: ExtraPermission) {
 
 export const can = {
   viewClientInfo: (user: PermissionUser) =>
-    ["ADMIN", "MANAGER", "FINANCE", "SALES", "OPS", "FRONT_DESK"].includes(user.role) || hasExtraPermission(user, "can_intake"),
+    ["ADMIN", "MANAGER", "TECH_MANAGER", "FINANCE", "SALES", "OPS", "FRONT_DESK"].includes(user.role) || hasExtraPermission(user, "can_intake"),
   viewFinancials: (user: PermissionUser) =>
     ["ADMIN", "MANAGER", "FINANCE", "OPS"].includes(user.role)
     || hasExtraPermission(user, "can_review_external_bills")
     || hasExtraPermission(user, "can_approve_invoices"),
   createJob: (user: PermissionUser) =>
-    ["ADMIN", "MANAGER", "SALES", "OPS", "FRONT_DESK"].includes(user.role) || hasExtraPermission(user, "can_intake"),
+    ["ADMIN", "MANAGER", "TECH_MANAGER", "SALES", "OPS", "FRONT_DESK"].includes(user.role) || hasExtraPermission(user, "can_intake"),
   editDiagnosis: (user: PermissionUser) =>
     ["ADMIN", "TECHNICIAN_INTERNAL", "TECHNICIAN_EXTERNAL"].includes(user.role) || hasExtraPermission(user, "can_run_internal_repairs"),
   manageUsers: (user: PermissionUser) => user.role === "ADMIN",
   approveWork: (user: PermissionUser) =>
-    ["ADMIN", "MANAGER", "OPS"].includes(user.role) || hasExtraPermission(user, "can_assign_jobs"),
+    ["ADMIN", "MANAGER", "TECH_MANAGER", "OPS"].includes(user.role) || hasExtraPermission(user, "can_assign_jobs"),
   assignJobs: (user: PermissionUser) =>
-    ["ADMIN", "MANAGER", "OPS"].includes(user.role) || hasExtraPermission(user, "can_assign_jobs"),
+    ["ADMIN", "MANAGER", "TECH_MANAGER", "OPS"].includes(user.role) || hasExtraPermission(user, "can_assign_jobs"),
   searchJobs: (user: PermissionUser) =>
     user.role !== "TECHNICIAN_EXTERNAL" || hasExtraPermission(user, "can_search_jobs"),
   generateJobCards: (user: PermissionUser) =>
-    ["ADMIN", "MANAGER", "OPS", "FRONT_DESK", "TECHNICIAN_INTERNAL"].includes(user.role) || hasExtraPermission(user, "can_generate_job_cards"),
+    ["ADMIN", "MANAGER", "TECH_MANAGER", "OPS", "FRONT_DESK", "TECHNICIAN_INTERNAL"].includes(user.role) || hasExtraPermission(user, "can_generate_job_cards"),
   viewApprovedCost: (user: PermissionUser) =>
-    ["ADMIN", "MANAGER", "FINANCE", "OPS", "FRONT_DESK"].includes(user.role) || hasExtraPermission(user, "can_view_approved_cost"),
+    ["ADMIN", "MANAGER", "TECH_MANAGER", "FINANCE", "OPS", "FRONT_DESK"].includes(user.role) || hasExtraPermission(user, "can_view_approved_cost"),
   reviewExternalBills: (user: PermissionUser) =>
-    ["ADMIN", "MANAGER", "FINANCE"].includes(user.role) || hasExtraPermission(user, "can_review_external_bills"),
+    ["ADMIN", "MANAGER", "TECH_MANAGER", "FINANCE"].includes(user.role) || hasExtraPermission(user, "can_review_external_bills"),
   viewAccountsSummary: (user: PermissionUser) =>
     ["ADMIN", "MANAGER", "FINANCE", "OPS"].includes(user.role) || hasExtraPermission(user, "can_view_accounts_summary"),
   approveInvoices: (user: PermissionUser) =>
     ["ADMIN", "MANAGER", "FINANCE"].includes(user.role) || hasExtraPermission(user, "can_approve_invoices"),
   manageIntake: (user: PermissionUser) =>
-    ["ADMIN", "MANAGER", "OPS", "FRONT_DESK"].includes(user.role) || hasExtraPermission(user, "can_manage_intake"),
+    ["ADMIN", "MANAGER", "TECH_MANAGER", "OPS", "FRONT_DESK"].includes(user.role) || hasExtraPermission(user, "can_manage_intake"),
   viewIntake: (user: PermissionUser) =>
-    ["ADMIN", "MANAGER", "OPS", "FRONT_DESK"].includes(user.role) || hasExtraPermission(user, "can_intake") || hasExtraPermission(user, "can_manage_intake"),
+    ["ADMIN", "MANAGER", "TECH_MANAGER", "OPS", "FRONT_DESK"].includes(user.role) || hasExtraPermission(user, "can_intake") || hasExtraPermission(user, "can_manage_intake"),
   viewNotifications: (user: PermissionUser) =>
     user.role !== "FRONT_DESK",
 };
