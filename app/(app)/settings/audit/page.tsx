@@ -60,18 +60,14 @@ export default async function SettingsAuditPage({
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <p className="text-xs font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Settings</p>
-          <h1 className="mt-1 text-2xl font-black text-[var(--ink)]">Audit Timeline</h1>
-          <p className="mt-1 text-sm text-[var(--ink-muted)]">Commercial and operational events for this organisation only.</p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <a href={exportHref} className="rounded-lg border border-[var(--line)] px-3 py-2 text-xs font-semibold text-[var(--ink-muted)] hover:text-[var(--ink)]">
+      <div className="panel-shadow flex items-center justify-between gap-2 rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-2.5">
+        <p className="text-[13px] font-bold text-[var(--ink)]">Audit Timeline</p>
+        <div className="flex gap-2">
+          <a href={exportHref} className="rounded-lg border border-[var(--line)] px-3 py-1.5 text-xs font-semibold text-[var(--ink-muted)] hover:text-[var(--ink)]">
             Export CSV
           </a>
-          <Link href="/settings" className="rounded-lg border border-[var(--line)] px-3 py-2 text-xs font-semibold text-[var(--ink-muted)] hover:text-[var(--ink)]">
-            Settings Home
+          <Link href="/settings" className="rounded-lg border border-[var(--line)] px-3 py-1.5 text-xs font-semibold text-[var(--ink-muted)] hover:text-[var(--ink)]">
+            ← Settings
           </Link>
         </div>
       </div>

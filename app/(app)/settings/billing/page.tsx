@@ -184,11 +184,8 @@ export default async function BillingPage({
           <p className="mt-1 text-sm text-red-300/80">{alertBody}</p>
         </div>
 
-        <div>
-          <h1 className="text-xl font-bold text-[var(--ink)]">Choose a plan</h1>
-          <p className="mt-1 text-sm text-[var(--ink-muted)]">
-            Select a plan to restore access for <span className="font-medium text-[var(--ink)]">{org.name}</span>
-          </p>
+        <div className="panel-shadow flex items-center rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-2.5">
+          <p className="text-[13px] font-bold text-[var(--ink)]">Choose a plan</p>
         </div>
 
         {!isAdmin && (
@@ -357,11 +354,8 @@ export default async function BillingPage({
       ) : null}
 
       {/* Header */}
-      <div>
-        <h1 className="text-xl font-bold text-[var(--ink)]">Billing & Plan</h1>
-        <p className="mt-1 text-sm text-[var(--ink-muted)]">
-          Manage your subscription for <span className="font-medium text-[var(--ink)]">{org.name}</span>
-        </p>
+      <div className="panel-shadow flex items-center rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-2.5">
+        <p className="text-[13px] font-bold text-[var(--ink)]">Billing &amp; Plan</p>
       </div>
 
       {isAdmin ? (

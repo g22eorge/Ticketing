@@ -110,9 +110,8 @@ export default async function NotificationTemplatesPage({
 
   if (!supportsCommsTemplates()) {
     return (
-      <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 sm:p-5">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--accent)]">Settings</p>
-        <h1 className="mt-1 text-lg font-semibold text-[var(--ink)]">Templates</h1>
+      <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+        <p className="text-[13px] font-bold text-[var(--ink)]">Templates</p>
         <p className="mt-2 text-sm text-[var(--ink-muted)]">
           Templates are not available in this runtime (older database/client). Deploy the latest schema to enable them.
         </p>
@@ -515,9 +514,8 @@ export default async function NotificationTemplatesPage({
   return (
     <div className="space-y-4">
       {topNav}
-      <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 sm:p-5">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--accent)]">Settings</p>
-        <h1 className="mt-1 text-lg font-semibold text-[var(--ink)]">Templates</h1>
+      <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+        <p className="text-[13px] font-bold text-[var(--ink)]">Templates</p>
         <p className="mt-1 text-sm text-[var(--ink-muted)]">
           Use <code>{"{customerName}"}</code> and <code>{"{jobNumber}"}</code>.
         </p>

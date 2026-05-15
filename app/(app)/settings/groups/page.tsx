@@ -191,15 +191,9 @@ export default async function GroupsPage({ searchParams }: { searchParams: Promi
 
   return (
     <section className="space-y-4">
-      <div className="panel-shadow overflow-hidden rounded-2xl border border-[var(--line)] bg-gradient-to-r from-sky-100 via-white to-orange-100 p-4 text-slate-950 sm:p-6 dark:from-slate-900 dark:via-slate-950 dark:to-slate-900 dark:text-[var(--ink)]">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-700 dark:text-[var(--ink-muted)]">Settings</p>
-            <h1 className="mt-1 text-xl font-semibold">Groups</h1>
-            <p className="mt-1 text-sm text-slate-700 dark:text-[var(--ink-muted)]">Permission bundles you can assign to users.</p>
-          </div>
-          <Link href="/settings/users" className="btn-premium rounded-full px-4 py-2 text-sm text-white">Users</Link>
-        </div>
+      <div className="panel-shadow flex items-center justify-between gap-2 rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-2.5">
+        <p className="text-[13px] font-bold text-[var(--ink)]">Groups</p>
+        <Link href="/settings/users" className="btn-premium rounded-lg px-3 py-1.5 text-[12px]">Users</Link>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[360px_1fr]">

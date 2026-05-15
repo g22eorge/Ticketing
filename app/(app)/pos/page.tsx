@@ -169,28 +169,22 @@ export default async function PosPage() {
           </a>
         </section>
       ) : null}
-      <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 sm:p-5">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--accent)]">POS</p>
-        <h1 className="mt-1 text-lg font-semibold text-[var(--ink)]">Sales</h1>
-        <p className="mt-1 text-sm text-[var(--ink-muted)]">Create a sale and take partial payments.</p>
-
-        <form action={createSaleAction} className="mt-4 flex flex-wrap items-end gap-2">
-          <div>
-            <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Branch</p>
-            <select
-              name="branchId"
-              defaultValue={defaultBranchId ?? ""}
-              className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm outline-none focus:border-[var(--accent)]/50"
-            >
-              <option value="">No branch</option>
-              {branches.map((b) => (
-                <option key={b.id} value={b.id}>{b.name}</option>
-              ))}
-            </select>
-          </div>
-          <button className="btn-premium rounded-lg px-4 py-2 text-sm text-white">New Sale</button>
+      <div className="panel-shadow flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-2.5">
+        <p className="text-[13px] font-bold text-[var(--ink)]">Sales</p>
+        <form action={createSaleAction} className="flex flex-wrap items-center gap-2">
+          <select
+            name="branchId"
+            defaultValue={defaultBranchId ?? ""}
+            className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50"
+          >
+            <option value="">No branch</option>
+            {branches.map((b) => (
+              <option key={b.id} value={b.id}>{b.name}</option>
+            ))}
+          </select>
+          <button className="btn-premium rounded-lg px-3 py-1.5 text-[12px]">New Sale</button>
         </form>
-      </section>
+      </div>
 
       <section className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
         <div className="border-b border-[var(--line)] bg-[var(--panel-strong)] px-4 py-2.5">

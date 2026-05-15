@@ -316,37 +316,22 @@ function DashboardHero({
   icon?: React.ReactNode;
 }) {
   return (
-    <section className="panel-shadow rounded-[1.75rem] border border-[var(--line)] bg-[var(--panel)] p-4 sm:p-6">
-      <div className="flex min-w-0 flex-wrap items-center justify-between gap-3">
-        <div className="flex min-w-0 items-center gap-3">
-          {icon ? (
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-[var(--line)] bg-[var(--accent)]">
-              {icon}
-            </div>
-          ) : null}
-          <div className="min-w-0">
-            <p className="truncate text-xl font-black text-[var(--ink)]">{title}</p>
-            <p className="mt-0.5 truncate text-xs text-[var(--ink-muted)]">{summary}</p>
-          </div>
-        </div>
-        <div className="flex shrink-0 flex-wrap items-center gap-1.5">
+    <div className="panel-shadow flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-2.5">
+      <p className="text-[13px] font-bold text-[var(--ink)]">{title}</p>
+      <div className="flex flex-wrap items-center gap-2">
+        <Link href={primaryHref} className="btn-premium rounded-lg px-3 py-1.5 text-[12px]">
+          {primaryLabel}
+        </Link>
+        {secondaryHref && secondaryLabel ? (
           <Link
-            href={primaryHref}
-            className="btn-premium rounded-full px-4 py-2 text-sm"
+            href={secondaryHref}
+            className="inline-flex items-center rounded-lg border border-[var(--line)] px-3 py-1.5 text-xs font-semibold text-[var(--ink)] transition hover:border-[var(--accent)]/50 hover:text-[var(--accent)]"
           >
-            {primaryLabel}
+            {secondaryLabel}
           </Link>
-          {secondaryHref && secondaryLabel ? (
-            <Link
-              href={secondaryHref}
-              className="inline-flex items-center rounded-lg border border-[var(--line)] px-3 py-1.5 text-xs font-semibold text-[var(--ink)] transition hover:border-[var(--accent)]/50 hover:text-[var(--accent)]"
-            >
-              {secondaryLabel}
-            </Link>
-          ) : null}
-        </div>
+        ) : null}
       </div>
-    </section>
+    </div>
   );
 }
 

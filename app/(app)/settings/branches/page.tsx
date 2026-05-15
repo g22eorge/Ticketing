@@ -19,12 +19,9 @@ export default async function BranchesPage() {
   });
 
   return (
-    <div className="space-y-6 max-w-2xl">
-      <div>
-        <h1 className="text-xl font-bold text-[var(--ink)]">Branches</h1>
-        <p className="mt-0.5 text-sm text-[var(--ink-muted)]">
-          Manage physical locations. Assign users and track jobs per branch.
-        </p>
+    <div className="space-y-4 max-w-2xl">
+      <div className="panel-shadow flex items-center rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-2.5">
+        <p className="text-[13px] font-bold text-[var(--ink)]">Branches</p>
       </div>
 
       <BranchList branches={branches} />

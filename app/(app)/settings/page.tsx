@@ -36,9 +36,8 @@ export default async function SettingsHomePage() {
   if (user.role === "TECHNICIAN_EXTERNAL") {
     return (
       <section className="space-y-4">
-        <div className="panel-shadow overflow-hidden rounded-2xl border border-[var(--line)] bg-gradient-to-r from-sky-100 via-white to-orange-100 p-4 text-slate-950 sm:p-6 dark:from-slate-900 dark:via-slate-950 dark:to-slate-900 dark:text-[var(--ink)]">
-          <h1 className="text-xl font-semibold">Settings</h1>
-          <p className="mt-1 text-sm text-slate-700 dark:text-[var(--ink-muted)]">Account settings for your workspace.</p>
+        <div className="panel-shadow flex items-center rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-2.5">
+          <p className="text-[13px] font-bold text-[var(--ink)]">Settings</p>
         </div>
         <div className="grid gap-3 md:grid-cols-2">
           {TILES.filter((t) => ["/settings/profile", "/settings/notifications"].includes(t.href)).map((t) => (
@@ -60,18 +59,11 @@ export default async function SettingsHomePage() {
 
   return (
     <section className="space-y-4">
-      <div className="panel-shadow overflow-hidden rounded-2xl border border-[var(--line)] bg-gradient-to-r from-sky-100 via-white to-orange-100 p-4 text-slate-950 sm:p-6 dark:from-slate-900 dark:via-slate-950 dark:to-slate-900 dark:text-[var(--ink)]">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h1 className="text-xl font-semibold">Settings</h1>
-            <p className="mt-1 text-sm text-slate-700 dark:text-[var(--ink-muted)]">
-              {org.access.isSuspended ? "Workspace is read-only until billing is restored." : "Manage workspace configuration and your account."}
-            </p>
-          </div>
-          {showAdmin ? (
-            <Link href="/settings/billing" className="btn-premium rounded-full px-4 py-2 text-sm text-white">Billing</Link>
-          ) : null}
-        </div>
+      <div className="panel-shadow flex items-center justify-between gap-2 rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-2.5">
+        <p className="text-[13px] font-bold text-[var(--ink)]">Settings</p>
+        {showAdmin ? (
+          <Link href="/settings/billing" className="btn-premium rounded-lg px-3 py-1.5 text-[12px]">Billing</Link>
+        ) : null}
       </div>
 
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
