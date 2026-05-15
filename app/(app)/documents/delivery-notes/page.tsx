@@ -143,33 +143,24 @@ export default async function DeliveryNotesPage() {
 
   return (
     <section className="space-y-4">
-      <div className="panel-shadow overflow-hidden rounded-[1.75rem] border border-[var(--line)] bg-[var(--panel)] p-4 sm:p-6">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex min-w-0 items-center gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-[var(--line)] bg-[var(--accent)] text-xl font-black text-black">
-              D
-            </div>
-            <div className="min-w-0">
-              <p className="truncate text-xl font-black text-[var(--ink)]">Delivery Notes</p>
-              <p className="mt-0.5 truncate text-xs text-[var(--ink-muted)]">Proof of device handover · linked to paid invoices · downloadable PDFs</p>
-            </div>
+      <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
+        <div className="flex items-center justify-between gap-2 border-b border-[var(--line)] px-4 py-2.5">
+          <p className="text-[13px] font-bold text-[var(--ink)]">Delivery Notes</p>
+          <Link href="/documents/invoices" className="btn-premium rounded-lg px-3 py-1.5 text-[12px]">Open Invoices</Link>
+        </div>
+        <div className="grid grid-cols-2 divide-x divide-y divide-[var(--line)] sm:grid-cols-3 sm:divide-y-0">
+          <div className="px-4 py-2.5">
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Total Notes</p>
+            <p className="mt-0.5 text-xl font-black tabular-nums text-[var(--ink)]">{notes.length}</p>
           </div>
-          <Link href="/documents/invoices" className="btn-premium rounded-full px-4 py-2 text-sm">Open Invoices</Link>
-        </div>
-      </div>
-
-      <div className="grid gap-3 md:grid-cols-3">
-        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Total Notes</p>
-          <p className="mt-2 text-2xl font-bold text-[var(--ink)]">{notes.length}</p>
-        </div>
-        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">This Month</p>
-          <p className="mt-2 text-2xl font-bold text-[var(--ink)]">{thisMonth}</p>
-        </div>
-        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Unique Sources</p>
-          <p className="mt-2 text-2xl font-bold text-[var(--ink)]">{uniqueSources}</p>
+          <div className="px-4 py-2.5">
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">This Month</p>
+            <p className="mt-0.5 text-xl font-black tabular-nums text-[var(--ink)]">{thisMonth}</p>
+          </div>
+          <div className="px-4 py-2.5">
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Unique Sources</p>
+            <p className="mt-0.5 text-xl font-black tabular-nums text-[var(--ink)]">{uniqueSources}</p>
+          </div>
         </div>
       </div>
 

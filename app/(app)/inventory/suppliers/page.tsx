@@ -19,25 +19,17 @@ export default async function SuppliersPage() {
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="panel-shadow rounded-[1.75rem] border border-[var(--line)] bg-[var(--panel)] p-4 sm:p-6">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex min-w-0 items-center gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-[var(--line)] bg-[var(--accent)]">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="black" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-            </div>
-            <div className="min-w-0">
-              <p className="truncate text-xl font-black text-[var(--ink)]">Suppliers</p>
-              <p className="mt-0.5 truncate text-xs text-[var(--ink-muted)]">{suppliers.length} supplier{suppliers.length !== 1 ? "s" : ""} · manage purchase order contacts</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Link href="/inventory" className="inline-flex items-center rounded-lg border border-[var(--line)] px-3 py-1.5 text-xs font-semibold text-[var(--ink)] transition hover:border-[var(--accent)]/50 hover:text-[var(--accent)]">
-              ← Inventory
-            </Link>
-            <Link href="/inventory/suppliers/new" className="btn-premium rounded-full px-4 py-2 text-sm">
-              Add Supplier
-            </Link>
-          </div>
+      <div className="panel-shadow flex items-center justify-between gap-2 rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-2.5">
+        <p className="text-[13px] font-bold text-[var(--ink)]">
+          Suppliers · <span className="font-normal text-[var(--ink-muted)]">{suppliers.length}</span>
+        </p>
+        <div className="flex items-center gap-2">
+          <Link href="/inventory" className="inline-flex items-center rounded-lg border border-[var(--line)] px-3 py-1.5 text-xs font-semibold text-[var(--ink)] transition hover:border-[var(--accent)]/50 hover:text-[var(--accent)]">
+            ← Inventory
+          </Link>
+          <Link href="/inventory/suppliers/new" className="btn-premium rounded-lg px-3 py-1.5 text-[12px]">
+            Add Supplier
+          </Link>
         </div>
       </div>
 

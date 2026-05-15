@@ -33,25 +33,17 @@ export default async function PurchaseOrdersPage() {
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="panel-shadow rounded-[1.75rem] border border-[var(--line)] bg-[var(--panel)] p-4 sm:p-6">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex min-w-0 items-center gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-[var(--line)] bg-[var(--accent)]">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="black" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
-            </div>
-            <div className="min-w-0">
-              <p className="truncate text-xl font-black text-[var(--ink)]">Purchase Orders</p>
-              <p className="mt-0.5 truncate text-xs text-[var(--ink-muted)]">{orders.length} order{orders.length !== 1 ? "s" : ""} · track supplier stock requests</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Link href="/inventory" className="inline-flex items-center rounded-lg border border-[var(--line)] px-3 py-1.5 text-xs font-semibold text-[var(--ink)] transition hover:border-[var(--accent)]/50 hover:text-[var(--accent)]">
-              ← Inventory
-            </Link>
-            <Link href="/inventory/purchase-orders/new" className="btn-premium rounded-full px-4 py-2 text-sm">
-              New PO
-            </Link>
-          </div>
+      <div className="panel-shadow flex items-center justify-between gap-2 rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-2.5">
+        <p className="text-[13px] font-bold text-[var(--ink)]">
+          Purchase Orders · <span className="font-normal text-[var(--ink-muted)]">{orders.length}</span>
+        </p>
+        <div className="flex items-center gap-2">
+          <Link href="/inventory" className="inline-flex items-center rounded-lg border border-[var(--line)] px-3 py-1.5 text-xs font-semibold text-[var(--ink)] transition hover:border-[var(--accent)]/50 hover:text-[var(--accent)]">
+            ← Inventory
+          </Link>
+          <Link href="/inventory/purchase-orders/new" className="btn-premium rounded-lg px-3 py-1.5 text-[12px]">
+            New PO
+          </Link>
         </div>
       </div>
 

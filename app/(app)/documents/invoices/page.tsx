@@ -284,43 +284,30 @@ export default async function InvoicesPage() {
 
   return (
     <section className="space-y-4">
-      {/* Header */}
-      <div className="panel-shadow rounded-[1.75rem] border border-[var(--line)] bg-[var(--panel)] p-4 sm:p-6">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex min-w-0 items-center gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-[var(--line)] bg-[var(--accent)]">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="black" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
-            </div>
-            <div className="min-w-0">
-              <p className="truncate text-xl font-black text-[var(--ink)]">Invoices</p>
-              <p className="mt-0.5 truncate text-xs text-[var(--ink-muted)]">Generate · record payments · track outstanding balances</p>
-            </div>
+      {/* Header + KPI strip */}
+      <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
+        <div className="flex items-center justify-between gap-2 border-b border-[var(--line)] px-4 py-2.5">
+          <p className="text-[13px] font-bold text-[var(--ink)]">Invoices</p>
+          <Link href="/jobs/new" className="btn-premium rounded-lg px-3 py-1.5 text-[12px]">New Job</Link>
+        </div>
+        <div className="grid grid-cols-2 divide-x divide-y divide-[var(--line)] sm:grid-cols-4 sm:divide-y-0">
+          <div className="px-4 py-2.5">
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Total</p>
+            <p className="mt-0.5 text-xl font-black tabular-nums text-[var(--ink)]">{totalCount}</p>
+            <p className="text-[11px] text-[var(--ink-muted)]">this month: {thisMonthCount}</p>
           </div>
-          <Link href="/jobs/new" className="btn-premium rounded-full px-4 py-2 text-sm">New Job</Link>
-        </div>
-      </div>
-
-      {/* KPI tiles */}
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Total</p>
-          <p className="mt-2 text-2xl font-black text-[var(--ink)]">{totalCount}</p>
-          <p className="mt-1 text-xs text-[var(--ink-muted)]">This month: {thisMonthCount}</p>
-        </div>
-        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Outstanding</p>
-          <p className="mt-2 text-2xl font-black text-amber-600">{outstandingCount}</p>
-          <p className="mt-1 text-xs text-[var(--ink-muted)]">unpaid invoices</p>
-        </div>
-        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Amount Due</p>
-          <p className="mt-2 text-2xl font-black text-[var(--ink)]">{formatMoney(totalOutstanding, org.baseCurrency)}</p>
-          <p className="mt-1 text-xs text-[var(--ink-muted)]">{org.baseCurrency}</p>
-        </div>
-        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Ready to Invoice</p>
-          <p className="mt-2 text-2xl font-black text-[var(--accent)]">{readyJobs.length}</p>
-          <p className="mt-1 text-xs text-[var(--ink-muted)]">jobs awaiting</p>
+          <div className="px-4 py-2.5">
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Outstanding</p>
+            <p className="mt-0.5 text-xl font-black tabular-nums text-amber-600">{outstandingCount}</p>
+          </div>
+          <div className="px-4 py-2.5">
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Amount Due</p>
+            <p className="mt-0.5 text-xl font-black tabular-nums text-[var(--ink)]">{formatMoney(totalOutstanding, org.baseCurrency)}</p>
+          </div>
+          <div className="px-4 py-2.5">
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Ready to Invoice</p>
+            <p className="mt-0.5 text-xl font-black tabular-nums text-[var(--accent)]">{readyJobs.length}</p>
+          </div>
         </div>
       </div>
 
