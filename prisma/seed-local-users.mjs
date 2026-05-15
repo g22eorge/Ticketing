@@ -58,19 +58,22 @@ async function main() {
 
   // ── Users ─────────────────────────────────────────────────────────────────
   const userDefs = [
-    { name: "Admin",         email: "admin@local.test",         role: Role.ADMIN },
-    { name: "Ops",           email: "ops@local.test",           role: Role.OPS },
-    { name: "Front Desk",    email: "frontdesk@local.test",     role: Role.FRONT_DESK },
-    { name: "Internal Tech", email: "tech.internal@local.test", role: Role.TECHNICIAN_INTERNAL },
-    { name: "External Tech", email: "tech.external@local.test", role: Role.TECHNICIAN_EXTERNAL },
+    { name: "Admin",            email: "admin@local.test",          role: Role.ADMIN },
+    { name: "Ops",              email: "ops@local.test",            role: Role.OPS },
+    { name: "Front Desk",       email: "frontdesk@local.test",      role: Role.FRONT_DESK },
+    { name: "Internal Tech",    email: "tech.internal@local.test",  role: Role.TECHNICIAN_INTERNAL },
+    { name: "External Tech",    email: "tech.external@local.test",  role: Role.TECHNICIAN_EXTERNAL },
+    { name: "Sales Manager",    email: "sales.manager@local.test",  role: Role.SALES },
+    { name: "Tech Manager",     email: "tech.manager@local.test",   role: Role.TECH_MANAGER },
   ];
   const seededUsers = {};
   for (const u of userDefs) {
     seededUsers[u.email] = await ensureUser({ ...u, orgId, password });
   }
-  const adminId   = seededUsers["admin@local.test"].id;
-  const opsId     = seededUsers["ops@local.test"].id;
-  const intTechId = seededUsers["tech.internal@local.test"].id;
+  const adminId        = seededUsers["admin@local.test"].id;
+  const opsId          = seededUsers["ops@local.test"].id;
+  const salesManagerId = seededUsers["sales.manager@local.test"].id;
+  const intTechId      = seededUsers["tech.internal@local.test"].id;
   const extTechId = seededUsers["tech.external@local.test"].id;
 
   // ── Branches ──────────────────────────────────────────────────────────────
@@ -165,27 +168,39 @@ async function main() {
   ]);
 
   // ── Jobs ──────────────────────────────────────────────────────────────────
+  // Dates spread across Jan–May 2026 so trend chart has data every month
+  const d = (y, m, day) => new Date(y, m - 1, day); // month is 1-based
+
   const jobDefs = [
-    { n: "LOC-001", status: "COMPLETED",         client: 0,  dev: "PHONE_IPHONE",   brand: "Apple",   model: "iPhone 14",        issue: "Cracked screen, touch unresponsive",           diag: "LCD + digitizer replaced",         bill: 320000, work: "OEM screen fitted. 30-day warranty.", path: "IN_HOUSE",  assignee: intTechId, recv: daysAgo(14), comp: daysAgo(10) },
-    { n: "LOC-002", status: "IN_REPAIR",          client: 1,  dev: "WINDOWS_PC",     brand: "Dell",    model: "Latitude 5520",    issue: "Not booting, fans spin then stop",             diag: "Faulty RAM — replacing",           bill: null,   work: null,                              path: "IN_HOUSE",  assignee: intTechId, recv: daysAgo(4) },
-    { n: "LOC-003", status: "AWAITING_APPROVAL",  client: 2,  dev: "PHONE_ANDROID",  brand: "Samsung", model: "Galaxy A53",       issue: "Battery drains fast, overheats",               diag: "Battery health 41%, recommend replacement", bill: 85000, work: null, path: "IN_HOUSE", assignee: intTechId, recv: daysAgo(2) },
-    { n: "LOC-004", status: "RECEIVED",           client: 3,  dev: "MAC",            brand: "Apple",   model: "MacBook Air M1",   issue: "Some keys not working after liquid spill",      diag: null,                               bill: null,   work: null,                              path: null,        assignee: null,      recv: daysAgo(1) },
-    { n: "LOC-005", status: "COMPLETED",         client: 4,  dev: "PHONE_ANDROID",  brand: "Samsung", model: "Galaxy S21",        issue: "Charging port not working",                    diag: "USB-C port replaced",              bill: 95000, work: "New port soldered. Tested.", path: "IN_HOUSE", assignee: intTechId, recv: daysAgo(10), comp: daysAgo(7) },
-    { n: "LOC-006", status: "REFERRED",           client: 5,  dev: "WINDOWS_PC",     brand: "HP",      model: "ProBook 450",      issue: "Blue screen of death intermittently",           diag: "Motherboard fault suspected",      bill: null,   work: null,                              path: "EXTERNAL",  assignee: extTechId, recv: daysAgo(6) },
-    { n: "LOC-007", status: "COMPLETED",         client: 6,  dev: "PHONE_IPHONE",   brand: "Apple",   model: "iPhone 12",        issue: "Battery swollen, back glass cracked",           diag: "Battery + back glass replaced",    bill: 180000, work: "Parts sourced and fitted.", path: "IN_HOUSE", assignee: intTechId, recv: daysAgo(8), comp: daysAgo(5) },
-    { n: "LOC-008", status: "DIAGNOSING",         client: 7,  dev: "TABLET",         brand: "Samsung", model: "Tab S8",           issue: "Screen flickering, touch issues",               diag: "Running diagnostics",              bill: null,   work: null,                              path: "IN_HOUSE",  assignee: intTechId, recv: daysAgo(3) },
-    { n: "LOC-009", status: "READY_FOR_PICKUP",   client: 8,  dev: "WINDOWS_PC",     brand: "Lenovo",  model: "ThinkPad E14",     issue: "Keyboard keys sticking",                       diag: "Keyboard assembly replaced",       bill: 145000, work: "New keyboard fitted and tested.", path: "IN_HOUSE", assignee: intTechId, recv: daysAgo(7), comp: daysAgo(2) },
-    { n: "LOC-010", status: "COMPLETED",         client: 9,  dev: "PHONE_ANDROID",  brand: "Tecno",   model: "Spark 9",          issue: "Camera not working",                           diag: "Rear camera module replaced",      bill: 75000, work: "Camera replaced, all lenses tested.", path: "IN_HOUSE", assignee: intTechId, recv: daysAgo(9), comp: daysAgo(6) },
-    { n: "LOC-011", status: "CLOSED",            client: 10, dev: "WINDOWS_PC",     brand: "Asus",    model: "VivoBook 15",      issue: "Power button stuck",                           diag: "Client declined repair",           bill: 20000, work: null, path: "IN_HOUSE", assignee: null, recv: daysAgo(12), closed: daysAgo(9) },
-    { n: "LOC-012", status: "COMPLETED",         client: 11, dev: "MAC",            brand: "Apple",   model: "MacBook Pro 2019", issue: "Fan making loud noise",                        diag: "Thermal paste dried + fan clogged",bill: 95000, work: "Cleaned + new thermal paste.", path: "IN_HOUSE", assignee: intTechId, recv: daysAgo(11), comp: daysAgo(8) },
-    { n: "LOC-013", status: "IN_REPAIR",          client: 12, dev: "PHONE_IPHONE",   brand: "Apple",   model: "iPhone 15",        issue: "Face ID not working",                          diag: "TrueDepth camera damage confirmed",bill: 380000, work: null, path: "EXTERNAL", assignee: extTechId, recv: daysAgo(5) },
-    { n: "LOC-014", status: "COMPLETED",         client: 13, dev: "TABLET",         brand: "iPad",    model: "iPad Air 5",       issue: "Charging very slow",                           diag: "Charging IC fault",                bill: 220000, work: "IC replaced by specialist.", path: "EXTERNAL", assignee: extTechId, recv: daysAgo(15), comp: daysAgo(10), extBill: 150000, extPaid: false },
-    { n: "LOC-015", status: "AWAITING_APPROVAL",  client: 14, dev: "WINDOWS_PC",     brand: "Dell",    model: "XPS 15",           issue: "Display showing lines",                        diag: "LCD cable loose, screen cracked",  bill: 450000, work: null, path: "IN_HOUSE", assignee: intTechId, recv: daysAgo(3) },
-    { n: "LOC-016", status: "COMPLETED",         client: 15, dev: "PHONE_ANDROID",  brand: "Xiaomi",  model: "Redmi Note 12",    issue: "Speaker crackling at high volume",             diag: "Speaker module replaced",          bill: 65000, work: "New speaker fitted.", path: "IN_HOUSE", assignee: intTechId, recv: daysAgo(13), comp: daysAgo(9) },
-    { n: "LOC-017", status: "IN_REPAIR",          client: 16, dev: "WINDOWS_PC",     brand: "HP",      model: "Pavilion 15",      issue: "Running very slow",                            diag: "HDD failing — upgrading to SSD",   bill: 185000, work: null, path: "IN_HOUSE", assignee: intTechId, recv: daysAgo(2) },
-    { n: "LOC-018", status: "COMPLETED",         client: 17, dev: "PHONE_IPHONE",   brand: "Apple",   model: "iPhone SE 2022",   issue: "Won't turn on",                               diag: "Battery fully dead, replaced",     bill: 120000, work: "Battery replaced, phone booting.", path: "IN_HOUSE", assignee: intTechId, recv: daysAgo(16), comp: daysAgo(12) },
-    { n: "LOC-019", status: "RECEIVED",           client: 18, dev: "OTHER",          brand: "Canon",   model: "Pixma G3410",      issue: "Printer not printing, ink clogged",            diag: null,                               bill: null,   work: null, path: null, assignee: null, recv: daysAgo(1) },
-    { n: "LOC-020", status: "COMPLETED",         client: 19, dev: "WINDOWS_PC",     brand: "Acer",    model: "Aspire 5",         issue: "Overheating and shutting down",                diag: "Thermal paste + fan replacement",  bill: 110000, work: "Cooling system serviced.", path: "IN_HOUSE", assignee: intTechId, recv: daysAgo(18), comp: daysAgo(14), extBill: 80000, extPaid: true },
+    // ── January 2026 (3 completed) ────────────────────────────────────────
+    { n: "LOC-001", status: "COMPLETED",        client: 0,  dev: "PHONE_IPHONE",  brand: "Apple",   model: "iPhone 14",        issue: "Cracked screen, touch unresponsive",          diag: "LCD + digitizer replaced",          bill: 320000, work: "OEM screen fitted. 30-day warranty.", path: "IN_HOUSE", assignee: intTechId, recv: d(2026,1, 5), comp: d(2026,1,10) },
+    { n: "LOC-005", status: "COMPLETED",        client: 4,  dev: "PHONE_ANDROID", brand: "Samsung", model: "Galaxy S21",        issue: "Charging port not working",                  diag: "USB-C port replaced",               bill: 95000,  work: "New port soldered. Tested.",          path: "IN_HOUSE", assignee: intTechId, recv: d(2026,1,14), comp: d(2026,1,18) },
+    { n: "LOC-018", status: "COMPLETED",        client: 17, dev: "PHONE_IPHONE",  brand: "Apple",   model: "iPhone SE 2022",   issue: "Won't turn on",                              diag: "Battery fully dead, replaced",      bill: 120000, work: "Battery replaced, phone booting.",     path: "IN_HOUSE", assignee: intTechId, recv: d(2026,1,22), comp: d(2026,1,28) },
+
+    // ── February 2026 (3 completed) ───────────────────────────────────────
+    { n: "LOC-007", status: "COMPLETED",        client: 6,  dev: "PHONE_IPHONE",  brand: "Apple",   model: "iPhone 12",        issue: "Battery swollen, back glass cracked",         diag: "Battery + back glass replaced",     bill: 180000, work: "Parts sourced and fitted.",           path: "IN_HOUSE", assignee: intTechId, recv: d(2026,2, 3), comp: d(2026,2, 9) },
+    { n: "LOC-012", status: "COMPLETED",        client: 11, dev: "MAC",           brand: "Apple",   model: "MacBook Pro 2019", issue: "Fan making loud noise",                       diag: "Thermal paste dried + fan clogged", bill: 95000,  work: "Cleaned + new thermal paste.",        path: "IN_HOUSE", assignee: intTechId, recv: d(2026,2,12), comp: d(2026,2,18) },
+    { n: "LOC-016", status: "COMPLETED",        client: 15, dev: "PHONE_ANDROID", brand: "Xiaomi",  model: "Redmi Note 12",    issue: "Speaker crackling at high volume",            diag: "Speaker module replaced",           bill: 65000,  work: "New speaker fitted.",                 path: "IN_HOUSE", assignee: intTechId, recv: d(2026,2,20), comp: d(2026,2,26) },
+
+    // ── March 2026 (3 completed + 1 closed) ──────────────────────────────
+    { n: "LOC-010", status: "COMPLETED",        client: 9,  dev: "PHONE_ANDROID", brand: "Tecno",   model: "Spark 9",          issue: "Camera not working",                         diag: "Rear camera module replaced",       bill: 75000,  work: "Camera replaced, all lenses tested.", path: "IN_HOUSE", assignee: intTechId, recv: d(2026,3, 4), comp: d(2026,3,10) },
+    { n: "LOC-020", status: "COMPLETED",        client: 19, dev: "WINDOWS_PC",    brand: "Acer",    model: "Aspire 5",         issue: "Overheating and shutting down",               diag: "Thermal paste + fan replacement",   bill: 110000, work: "Cooling system serviced.",            path: "IN_HOUSE", assignee: intTechId, recv: d(2026,3,15), comp: d(2026,3,22), extBill: 80000, extPaid: true },
+    { n: "LOC-011", status: "CLOSED",           client: 10, dev: "WINDOWS_PC",    brand: "Asus",    model: "VivoBook 15",      issue: "Power button stuck",                         diag: "Client declined repair",            bill: 20000,  work: null,                                  path: "IN_HOUSE", assignee: null,      recv: d(2026,3,25), closed: d(2026,3,28) },
+
+    // ── April 2026 (2 completed + 4 open) ────────────────────────────────
+    { n: "LOC-014", status: "COMPLETED",        client: 13, dev: "TABLET",        brand: "iPad",    model: "iPad Air 5",       issue: "Charging very slow",                         diag: "Charging IC fault",                 bill: 220000, work: "IC replaced by specialist.",          path: "EXTERNAL", assignee: extTechId, recv: d(2026,4, 2), comp: d(2026,4,14), extBill: 150000, extPaid: false },
+    { n: "LOC-009", status: "READY_FOR_PICKUP", client: 8,  dev: "WINDOWS_PC",    brand: "Lenovo",  model: "ThinkPad E14",     issue: "Keyboard keys sticking",                     diag: "Keyboard assembly replaced",        bill: 145000, work: "New keyboard fitted and tested.",     path: "IN_HOUSE", assignee: intTechId, recv: d(2026,4, 7), comp: d(2026,4,20) },
+    { n: "LOC-006", status: "REFERRED",         client: 5,  dev: "WINDOWS_PC",    brand: "HP",      model: "ProBook 450",      issue: "Blue screen of death intermittently",         diag: "Motherboard fault suspected",       bill: null,   work: null,                                  path: "EXTERNAL", assignee: extTechId, recv: d(2026,4,10) },
+    { n: "LOC-008", status: "DIAGNOSING",        client: 7,  dev: "TABLET",        brand: "Samsung", model: "Tab S8",            issue: "Screen flickering, touch issues",             diag: "Running diagnostics",               bill: null,   work: null,                                  path: "IN_HOUSE", assignee: intTechId, recv: d(2026,4,18) },
+    { n: "LOC-013", status: "IN_REPAIR",         client: 12, dev: "PHONE_IPHONE",  brand: "Apple",   model: "iPhone 15",        issue: "Face ID not working",                        diag: "TrueDepth camera damage confirmed", bill: 380000, work: null,                                  path: "EXTERNAL", assignee: extTechId, recv: d(2026,4,22) },
+    { n: "LOC-015", status: "AWAITING_APPROVAL", client: 14, dev: "WINDOWS_PC",    brand: "Dell",    model: "XPS 15",           issue: "Display showing lines",                      diag: "LCD cable loose, screen cracked",   bill: 450000, work: null,                                  path: "IN_HOUSE", assignee: intTechId, recv: d(2026,4,25) },
+
+    // ── May 2026 (current — open jobs + 1 completed) ─────────────────────
+    { n: "LOC-002", status: "IN_REPAIR",         client: 1,  dev: "WINDOWS_PC",    brand: "Dell",    model: "Latitude 5520",    issue: "Not booting, fans spin then stop",            diag: "Faulty RAM — replacing",            bill: null,   work: null,                                  path: "IN_HOUSE", assignee: intTechId, recv: d(2026,5, 6) },
+    { n: "LOC-003", status: "AWAITING_APPROVAL", client: 2,  dev: "PHONE_ANDROID", brand: "Samsung", model: "Galaxy A53",        issue: "Battery drains fast, overheats",             diag: "Battery health 41%, recommend replacement", bill: 85000, work: null,                          path: "IN_HOUSE", assignee: intTechId, recv: d(2026,5, 9) },
+    { n: "LOC-017", status: "IN_REPAIR",         client: 16, dev: "WINDOWS_PC",    brand: "HP",      model: "Pavilion 15",      issue: "Running very slow",                          diag: "HDD failing — upgrading to SSD",    bill: 185000, work: null,                                  path: "IN_HOUSE", assignee: intTechId, recv: d(2026,5,12) },
+    { n: "LOC-004", status: "RECEIVED",          client: 3,  dev: "MAC",           brand: "Apple",   model: "MacBook Air M1",   issue: "Some keys not working after liquid spill",   diag: null,                                bill: null,   work: null,                                  path: null,       assignee: null,      recv: d(2026,5,13) },
+    { n: "LOC-019", status: "RECEIVED",          client: 18, dev: "OTHER",         brand: "Canon",   model: "Pixma G3410",      issue: "Printer not printing, ink clogged",          diag: null,                                bill: null,   work: null,                                  path: null,       assignee: null,      recv: d(2026,5,14) },
   ];
 
   const createdJobs = {};
@@ -261,13 +276,18 @@ async function main() {
   console.log("Seeded repair requests.");
 
   // ── Invoices ──────────────────────────────────────────────────────────────
-  // Invoices need a jobId (unique). Use completed jobs that don't already have one.
-  const completedJobNums = ["LOC-001","LOC-005","LOC-007","LOC-010","LOC-012","LOC-016","LOC-018","LOC-020"];
+  // Spread across Jan–May 2026 to match job completion dates
   const invoiceDefs = [
-    { num: "INV-LOC-001", jobKey: "LOC-001", status: "PAID",  amount: 320000, issuedAt: daysAgo(10), paidAt: daysAgo(8) },
-    { num: "INV-LOC-002", jobKey: "LOC-005", status: "PAID",  amount: 95000,  issuedAt: daysAgo(7),  paidAt: daysAgo(6) },
-    { num: "INV-LOC-003", jobKey: "LOC-007", status: "ISSUED",amount: 180000, issuedAt: daysAgo(5),  paidAt: null },
-    { num: "INV-LOC-004", jobKey: "LOC-010", status: "DRAFT", amount: 75000,  issuedAt: daysAgo(3),  paidAt: null },
+    { num: "INV-LOC-001", jobKey: "LOC-001", status: "PAID",  amount: 320000, issuedAt: d(2026,1,10), paidAt: d(2026,1,12) },
+    { num: "INV-LOC-002", jobKey: "LOC-005", status: "PAID",  amount: 95000,  issuedAt: d(2026,1,18), paidAt: d(2026,1,20) },
+    { num: "INV-LOC-003", jobKey: "LOC-018", status: "PAID",  amount: 120000, issuedAt: d(2026,1,28), paidAt: d(2026,1,30) },
+    { num: "INV-LOC-004", jobKey: "LOC-007", status: "PAID",  amount: 180000, issuedAt: d(2026,2, 9), paidAt: d(2026,2,11) },
+    { num: "INV-LOC-005", jobKey: "LOC-012", status: "PAID",  amount: 95000,  issuedAt: d(2026,2,18), paidAt: d(2026,2,20) },
+    { num: "INV-LOC-006", jobKey: "LOC-016", status: "ISSUED",amount: 65000,  issuedAt: d(2026,2,26), paidAt: null },
+    { num: "INV-LOC-007", jobKey: "LOC-010", status: "PAID",  amount: 75000,  issuedAt: d(2026,3,10), paidAt: d(2026,3,12) },
+    { num: "INV-LOC-008", jobKey: "LOC-020", status: "PAID",  amount: 110000, issuedAt: d(2026,3,22), paidAt: d(2026,3,24) },
+    { num: "INV-LOC-009", jobKey: "LOC-014", status: "PAID",  amount: 220000, issuedAt: d(2026,4,14), paidAt: d(2026,4,16) },
+    { num: "INV-LOC-010", jobKey: "LOC-009", status: "ISSUED",amount: 145000, issuedAt: d(2026,4,20), paidAt: null },
   ];
   const createdInvoices = {};
   for (const inv of invoiceDefs) {
@@ -309,11 +329,17 @@ async function main() {
 
   // ── Payments ──────────────────────────────────────────────────────────────
   const paymentDefs = [
-    { invoiceNum: "INV-LOC-001", amount: 320000, method: "CASH",          ref: "RCPT-LOC-001", at: daysAgo(8) },
-    { invoiceNum: "INV-LOC-002", amount: 95000,  method: "MOBILE_MONEY",  ref: "MM-789012345", at: daysAgo(6) },
-    { saleNum:    "SAL-LOC-001", amount: 45000,  method: "CASH",          ref: null,           at: daysAgo(4) },
-    { saleNum:    "SAL-LOC-002", amount: 120000, method: "CASH",          ref: null,           at: daysAgo(3) },
-    { saleNum:    "SAL-LOC-005", amount: 65000,  method: "BANK_TRANSFER", ref: "BNK-2026-4521",at: daysAgo(2) },
+    { invoiceNum: "INV-LOC-001", amount: 320000, method: "CASH",          ref: "RCPT-LOC-001",  at: d(2026,1,12) },
+    { invoiceNum: "INV-LOC-002", amount: 95000,  method: "MOBILE_MONEY",  ref: "MM-789012345",  at: d(2026,1,20) },
+    { invoiceNum: "INV-LOC-003", amount: 120000, method: "CASH",          ref: "RCPT-LOC-003",  at: d(2026,1,30) },
+    { invoiceNum: "INV-LOC-004", amount: 180000, method: "CASH",          ref: "RCPT-LOC-004",  at: d(2026,2,11) },
+    { invoiceNum: "INV-LOC-005", amount: 95000,  method: "MOBILE_MONEY",  ref: "MM-789099901",  at: d(2026,2,20) },
+    { invoiceNum: "INV-LOC-007", amount: 75000,  method: "CASH",          ref: "RCPT-LOC-007",  at: d(2026,3,12) },
+    { invoiceNum: "INV-LOC-008", amount: 110000, method: "MOBILE_MONEY",  ref: "MM-789055511",  at: d(2026,3,24) },
+    { invoiceNum: "INV-LOC-009", amount: 220000, method: "BANK_TRANSFER", ref: "BNK-2026-4521", at: d(2026,4,16) },
+    { saleNum:    "SAL-LOC-001", amount: 45000,  method: "CASH",          ref: null,            at: d(2026,4,10) },
+    { saleNum:    "SAL-LOC-002", amount: 120000, method: "CASH",          ref: null,            at: d(2026,4,15) },
+    { saleNum:    "SAL-LOC-005", amount: 65000,  method: "BANK_TRANSFER", ref: "BNK-2026-4999", at: d(2026,5, 2) },
   ];
   for (const p of paymentDefs) {
     const invoiceId = p.invoiceNum ? createdInvoices[p.invoiceNum]?.id ?? null : null;
@@ -328,18 +354,18 @@ async function main() {
 
   // ── Delivery Notes ────────────────────────────────────────────────────────
   const dnDefs = [
-    { num: "DN-LOC-001", invoiceNum: "INV-LOC-001", deliveredBy: "Brian Kavuma",     receivedBy: "Aisha Namukasa",   method: "PICKUP",   at: daysAgo(8) },
-    { num: "DN-LOC-002", invoiceNum: "INV-LOC-002", deliveredBy: "Ops Staff",        receivedBy: "Brian Kavuma",     method: "DELIVERY", at: daysAgo(6) },
-    { num: "DN-LOC-003", saleNum:    "SAL-LOC-001", deliveredBy: "Front Desk Staff", receivedBy: "Aisha Namukasa",   method: "PICKUP",   at: daysAgo(4) },
+    { num: "DN-LOC-001", invoiceNum: "INV-LOC-001", deliveredBy: "Brian Kavuma",     receivedBy: "Aisha Namukasa",   method: "PICKUP",   at: d(2026,1,12) },
+    { num: "DN-LOC-002", invoiceNum: "INV-LOC-002", deliveredBy: "Ops Staff",        receivedBy: "Brian Kavuma",     method: "DELIVERY", at: d(2026,1,20) },
+    { num: "DN-LOC-003", saleNum:    "SAL-LOC-001", deliveredBy: "Front Desk Staff", receivedBy: "Aisha Namukasa",   method: "PICKUP",   at: d(2026,4,10) },
   ];
-  for (const d of dnDefs) {
-    const ex = await prisma.deliveryNote.findUnique({ where: { deliveryNoteNumber: d.num } });
+  for (const dn of dnDefs) {
+    const ex = await prisma.deliveryNote.findUnique({ where: { deliveryNoteNumber: dn.num } });
     if (ex) continue;
-    const invoiceId = d.invoiceNum ? createdInvoices[d.invoiceNum]?.id ?? null : null;
-    const saleId    = d.saleNum    ? createdSales[d.saleNum]?.id    ?? null : null;
+    const invoiceId = dn.invoiceNum ? createdInvoices[dn.invoiceNum]?.id ?? null : null;
+    const saleId    = dn.saleNum    ? createdSales[dn.saleNum]?.id    ?? null : null;
     if (!invoiceId && !saleId) continue;
     await prisma.deliveryNote.create({
-      data: { orgId, deliveryNoteNumber: d.num, invoiceId, saleId, deliveredByName: d.deliveredBy, receivedByName: d.receivedBy, deliveryMethod: d.method, deliveredAt: d.at },
+      data: { orgId, deliveryNoteNumber: dn.num, invoiceId, saleId, deliveredByName: dn.deliveredBy, receivedByName: dn.receivedBy, deliveryMethod: dn.method, deliveredAt: dn.at },
     });
   }
   console.log("Seeded delivery notes.");
@@ -376,6 +402,37 @@ async function main() {
     });
   }
   console.log("Seeded communication templates.");
+
+  // ── Sales Targets ─────────────────────────────────────────────────────────
+  // Team-level targets (userId = null) + individual targets for OPS/Sales staff
+  async function ensureSalesTarget(userId, period, targetRevenue, targetJobs) {
+    const ex = await prisma.salesTarget.findUnique({
+      where: { orgId_userId_period: { orgId, userId: userId ?? "", period } },
+    }).catch(() => null);
+    // The unique constraint treats null userId specially; use findFirst for nulls
+    const existing = userId
+      ? await prisma.salesTarget.findFirst({ where: { orgId, userId, period } })
+      : await prisma.salesTarget.findFirst({ where: { orgId, userId: null, period } });
+    if (existing) return existing;
+    return prisma.salesTarget.create({
+      data: { orgId, userId: userId ?? null, period, targetRevenue, targetJobs },
+    });
+  }
+
+  const targetPeriods = ["2026-01","2026-02","2026-03","2026-04","2026-05"];
+  // Team targets (escalating month-on-month)
+  const teamTargets = [900000, 950000, 1000000, 1050000, 1100000];
+  for (let i = 0; i < targetPeriods.length; i++) {
+    await ensureSalesTarget(null, targetPeriods[i], teamTargets[i], 20);
+  }
+  // Individual targets — OPS and Sales Manager
+  const opsTargets  = [400000, 420000, 450000, 470000, 500000];
+  const salesTargets= [300000, 320000, 340000, 360000, 380000];
+  for (let i = 0; i < targetPeriods.length; i++) {
+    await ensureSalesTarget(opsId,          targetPeriods[i], opsTargets[i],   10);
+    await ensureSalesTarget(salesManagerId, targetPeriods[i], salesTargets[i],  8);
+  }
+  console.log("Seeded sales targets.");
 
   // ── Summary ───────────────────────────────────────────────────────────────
   console.log("\n══════════════════════════════════════════");

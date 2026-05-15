@@ -88,6 +88,20 @@ export default async function SettingsLayout({ children }: { children: ReactNode
               ),
             }
           : null,
+        (user.role === "ADMIN" || user.role === "SALES")
+          ? {
+              href: "/settings/targets",
+              label: "Sales Targets",
+              description: "Monthly revenue targets",
+              icon: (
+                <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4" aria-hidden="true">
+                  <circle cx="10" cy="10" r="7.5" stroke="currentColor" strokeWidth="1.5" fill="none" />
+                  <circle cx="10" cy="10" r="4" stroke="currentColor" strokeWidth="1.5" fill="none" />
+                  <circle cx="10" cy="10" r="1" fill="currentColor" />
+                </svg>
+              ),
+            }
+          : null,
         user.role === "ADMIN"
           ? {
               href: "/settings/branches",

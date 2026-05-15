@@ -83,7 +83,8 @@ function trendMonthsForYear(year: number, endMonth: number) {
   return monthSequence(year, safeMonth, count);
 }
 
-async function loadRevenueMarginTrend(trendMonths: { key: string; start: Date; end: Date }[]) {
+/** Repair revenue only — job clientBill on COMPLETED jobs (used by TECH_MANAGER) */
+async function loadRepairRevenueTrend(trendMonths: { key: string; start: Date; end: Date }[]) {
   const completed = await prisma.job.findMany({
     where: {
       status: "COMPLETED",
@@ -103,20 +104,65 @@ async function loadRevenueMarginTrend(trendMonths: { key: string; start: Date; e
   });
 }
 
+/** Sales revenue only — POS sales (paidAt) + invoices (paidAt) (used by SALES manager) */
+async function loadSalesRevenueTrend(trendMonths: { key: string; start: Date; end: Date }[]) {
+  const rangeStart = trendMonths[0].start;
+  const rangeEnd   = trendMonths[trendMonths.length - 1].end;
+
+  const [paidSales, paidInvoices] = await Promise.all([
+    prisma.sale.findMany({
+      where: { status: "PAID", paidAt: { gte: rangeStart, lte: rangeEnd } },
+      select: { totalAmount: true, paidAt: true },
+    }),
+    prisma.invoice.findMany({
+      where: { status: "PAID", paidAt: { gte: rangeStart, lte: rangeEnd } },
+      select: { totalAmount: true, paidAt: true },
+    }),
+  ]);
+
+  return trendMonths.map((m) => {
+    const salesRev   = paidSales.filter((s) => s.paidAt && s.paidAt >= m.start && s.paidAt <= m.end).reduce((sum, s) => sum + s.totalAmount, 0);
+    const invoiceRev = paidInvoices.filter((i) => i.paidAt && i.paidAt >= m.start && i.paidAt <= m.end).reduce((sum, i) => sum + i.totalAmount, 0);
+    const revenue = salesRev + invoiceRev;
+    return { key: m.key, revenue, margin: revenue }; // no tracked cost on sales side
+  });
+}
+
+/** Total revenue — repairs + POS + invoices combined (used by ADMIN) */
+async function loadTotalRevenueTrend(trendMonths: { key: string; start: Date; end: Date }[]) {
+  const [repairTrend, salesTrend] = await Promise.all([
+    loadRepairRevenueTrend(trendMonths),
+    loadSalesRevenueTrend(trendMonths),
+  ]);
+
+  return trendMonths.map((m, i) => ({
+    key: m.key,
+    revenue: (repairTrend[i]?.revenue ?? 0) + (salesTrend[i]?.revenue ?? 0),
+    margin:  (repairTrend[i]?.margin  ?? 0) + (salesTrend[i]?.margin  ?? 0),
+  }));
+}
+
+/** @deprecated use loadRepairRevenueTrend / loadSalesRevenueTrend / loadTotalRevenueTrend */
+const loadRevenueMarginTrend = loadRepairRevenueTrend;
+
 function RevenueMarginTrendSection({
   trendMonths,
   revenueTrend,
   currency,
+  label = "Revenue & Margin Trend",
+  emptyMessage = "No revenue yet for this period.",
 }: {
   trendMonths: { key: string; start: Date; end: Date }[];
   revenueTrend: { key: string; revenue: number; margin: number }[];
   currency: string;
+  label?: string;
+  emptyMessage?: string;
 }) {
   return (
     <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <div>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Revenue & Margin Trend</p>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">{label}</p>
           <p className="mt-0.5 text-sm font-semibold text-[var(--ink)]">
             {trendMonths[0]?.key} – {trendMonths[trendMonths.length - 1]?.key}
           </p>
@@ -135,7 +181,7 @@ function RevenueMarginTrendSection({
 
       {revenueTrend.every((m) => m.revenue === 0 && m.margin === 0) ? (
         <div className="mb-3 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm text-[var(--ink-muted)]">
-          No completed job revenue yet for this period.
+          {emptyMessage}
         </div>
       ) : null}
 
@@ -760,6 +806,10 @@ export default async function DashboardPage({
     const partsConsumed = partsActivity.filter(p => p.type === "OUT").reduce((s, p) => s + p.quantity, 0);
     const overdueWithDays = overdueJobs.map(j => ({ ...j, ageDays: Math.floor((today.getTime() - new Date(j.receivedAt).getTime()) / 86400000) }));
 
+    const trendMonths = trendMonthsSinceStartOfYear(today);
+    const repairTrend = await loadRepairRevenueTrend(trendMonths);
+    const currency = getAppCurrency();
+
     return (
       <div className="space-y-4">
         <DashboardHero
@@ -824,7 +874,7 @@ export default async function DashboardPage({
           </section>
 
           {/* Active workload */}
-          <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+          <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4" id="tech-workload">
             <div className="mb-3 flex items-center justify-between">
               <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Active Workload</p>
               {unassignedCount > 0 && <Link href="/jobs?assignedToId=unassigned" className="rounded-full border border-amber-500/30 bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold text-amber-600">{unassignedCount} unassigned</Link>}
@@ -857,6 +907,8 @@ export default async function DashboardPage({
             )}
           </section>
         </div>
+
+        <RevenueMarginTrendSection trendMonths={trendMonths} revenueTrend={repairTrend} currency={currency} label="Repair Revenue & Margin Trend" emptyMessage="No completed repair jobs yet for this period." />
       </div>
     );
   }
@@ -981,7 +1033,7 @@ export default async function DashboardPage({
     const mtdLabel = monthLabel(today.getFullYear(), today.getMonth() + 1);
 
     const trendMonths = trendMonthsSinceStartOfYear(today);
-    const revenueTrend = await loadRevenueMarginTrend(trendMonths);
+    const revenueTrend = await loadTotalRevenueTrend(trendMonths);
 
     return (
       <div className="space-y-4">
@@ -1020,7 +1072,7 @@ export default async function DashboardPage({
           </section>
         ) : null}
 
-        <RevenueMarginTrendSection trendMonths={trendMonths} revenueTrend={revenueTrend} currency={currency} />
+        <RevenueMarginTrendSection trendMonths={trendMonths} revenueTrend={revenueTrend} currency={currency} label="Total Revenue & Margin (Repairs + Sales)" emptyMessage="No revenue recorded yet for this period." />
 
         {/* Live Repair Pipeline — with today's stats and quick actions in the header */}
         <section className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
@@ -1258,7 +1310,7 @@ export default async function DashboardPage({
 
     const monthRevenue = completedThisMonth.reduce((sum, job) => sum + (getClientBill(job) ?? 0), 0);
 
-    const revenueTrend = await loadRevenueMarginTrend(trendMonths);
+    const revenueTrend = await loadRepairRevenueTrend(trendMonths);
 
     const payoutMap = await getJobPayoutsByIds(externalCompleted.map((job) => job.id)).catch(() => new Map());
     // externalCompleted already pre-filtered to externalPaid=false in the DB query
@@ -1316,7 +1368,7 @@ export default async function DashboardPage({
           </section>
         </div>
 
-        <RevenueMarginTrendSection trendMonths={trendMonths} revenueTrend={revenueTrend} currency={currency} />
+        <RevenueMarginTrendSection trendMonths={trendMonths} revenueTrend={revenueTrend} currency={currency} label="Repair Revenue & Margin Trend" emptyMessage="No completed repair jobs yet for this period." />
 
       </div>
     );
@@ -1472,7 +1524,7 @@ export default async function DashboardPage({
     }
     const techRows = [...techMap.values()].sort((a, b) => b.count - a.count).slice(0, 6);
     const trendMonths = trendMonthsSinceStartOfYear(today);
-    const revenueTrend = await loadRevenueMarginTrend(trendMonths);
+    const revenueTrend = await loadTotalRevenueTrend(trendMonths);
 
     return (
       <div className="space-y-4">
@@ -1511,7 +1563,7 @@ export default async function DashboardPage({
           ))}
         </div>
 
-        <RevenueMarginTrendSection trendMonths={trendMonths} revenueTrend={revenueTrend} currency={currency} />
+        <RevenueMarginTrendSection trendMonths={trendMonths} revenueTrend={revenueTrend} currency={currency} label="Total Revenue & Margin (Repairs + Sales)" emptyMessage="No revenue recorded yet for this period." />
 
         <div className="grid gap-3 lg:grid-cols-2">
           <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
@@ -1717,47 +1769,129 @@ export default async function DashboardPage({
   // ── SALES dashboard ────────────────────────────────────────────────────────
   if (user.role === "SALES") {
     const currency = getAppCurrency();
-    const today = new Date();
+    const today    = new Date();
+    const period   = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
     const mtdStart = new Date(today.getFullYear(), today.getMonth(), 1, 0, 0, 0, 0);
     const prevMonthStart = new Date(today.getFullYear(), today.getMonth() - 1, 1, 0, 0, 0, 0);
     const prevMonthEnd   = new Date(today.getFullYear(), today.getMonth(), 0, 23, 59, 59, 999);
+    const orgFilter = user.orgId ? { orgId: user.orgId } : {};
 
-    const [jobsMtd, prevMonthJobs, awaitingApproval, readyPickup, recentClients, quotedJobs] = await Promise.all([
+    const [
+      completedJobsMtd,
+      allJobsMtd,
+      prevMonthJobCount,
+      paidSalesMtd,
+      paidInvoicesMtd,
+      awaitingApproval,
+      readyPickup,
+      quotedJobs,
+      salesMtdByStaff,
+      jobsMtdByStaff,
+      teamTarget,
+      myTarget,
+    ] = await Promise.all([
+      // Completed jobs MTD for repair revenue
       prisma.job.findMany({
-        where: { receivedAt: { gte: mtdStart } },
-        select: { id: true, status: true, clientBill: true, client: { select: { fullName: true } }, receivedAt: true },
-        orderBy: { receivedAt: "desc" },
-        take: 30,
+        where: { ...orgFilter, status: "COMPLETED", completedAt: { gte: mtdStart } },
+        select: { id: true, clientBill: true, externalTechBill: true, createdById: true, createdBy: { select: { id: true, name: true } } },
       }),
-      prisma.job.count({ where: { receivedAt: { gte: prevMonthStart, lte: prevMonthEnd } } }),
-      prisma.job.count({ where: { status: "AWAITING_APPROVAL" } }),
-      prisma.job.count({ where: { status: "READY_FOR_PICKUP" } }),
-      prisma.client.findMany({
-        where: { orgId: user.orgId ?? undefined },
-        orderBy: { createdAt: "desc" },
-        take: 5,
-        select: { id: true, fullName: true, organization: true, createdAt: true },
+      // All jobs received MTD for funnel stats
+      prisma.job.count({ where: { ...orgFilter, receivedAt: { gte: mtdStart } } }),
+      prisma.job.count({ where: { ...orgFilter, receivedAt: { gte: prevMonthStart, lte: prevMonthEnd } } }),
+      // POS sales paid MTD
+      prisma.sale.findMany({
+        where: { ...orgFilter, status: "PAID", paidAt: { gte: mtdStart } },
+        select: { totalAmount: true, createdById: true, createdBy: { select: { id: true, name: true } } },
       }),
+      // Invoice payments MTD
+      prisma.invoice.findMany({
+        where: { ...orgFilter, status: "PAID", paidAt: { gte: mtdStart } },
+        select: { totalAmount: true, job: { select: { createdById: true, createdBy: { select: { id: true, name: true } } } } },
+      }),
+      prisma.job.count({ where: { ...orgFilter, status: "AWAITING_APPROVAL" } }),
+      prisma.job.count({ where: { ...orgFilter, status: "READY_FOR_PICKUP" } }),
       prisma.job.findMany({
-        where: { status: "AWAITING_APPROVAL" },
+        where: { ...orgFilter, status: "AWAITING_APPROVAL" },
         select: { id: true, jobNumber: true, clientBill: true, client: { select: { fullName: true } }, receivedAt: true },
         orderBy: { receivedAt: "asc" },
         take: 8,
       }),
+      // POS sales per staff this month
+      prisma.sale.groupBy({
+        by: ["createdById"],
+        where: { ...orgFilter, status: "PAID", paidAt: { gte: mtdStart }, createdById: { not: null } },
+        _sum: { totalAmount: true },
+        _count: { id: true },
+      }),
+      // Jobs created per staff this month (for repair revenue attribution)
+      prisma.job.findMany({
+        where: { ...orgFilter, status: "COMPLETED", completedAt: { gte: mtdStart }, createdById: { not: undefined } },
+        select: { createdById: true, createdBy: { select: { name: true } }, clientBill: true },
+      }),
+      // Team target for current month
+      prisma.salesTarget.findFirst({ where: { ...orgFilter, userId: null, period } }),
+      // My own target
+      user.id ? prisma.salesTarget.findFirst({ where: { ...orgFilter, userId: user.id, period } }) : Promise.resolve(null),
     ]);
 
-    const intakeMtd = jobsMtd.length;
-    const wonMtd    = jobsMtd.filter(j => ["COMPLETED", "READY_FOR_PICKUP"].includes(j.status)).length;
-    const revenueMtd = jobsMtd.filter(j => j.status === "COMPLETED").reduce((s, j) => s + (getClientBill(j) ?? 0), 0);
-    const conversionRate = intakeMtd > 0 ? Math.round((wonMtd / intakeMtd) * 100) : 0;
-    const trendMonths = trendMonthsSinceStartOfYear(today);
-    const revenueTrend = await loadRevenueMarginTrend(trendMonths);
+    // ── Revenue aggregation ─────────────────────────────────────────────────
+    const repairRevenueMtd = completedJobsMtd.reduce((s, j) => s + (getClientBill(j) ?? 0), 0);
+    const posRevenueMtd    = paidSalesMtd.reduce((s, r) => s + r.totalAmount, 0);
+    const invoiceRevenueMtd = paidInvoicesMtd.reduce((s, i) => s + i.totalAmount, 0);
+    const totalRevenueMtd  = repairRevenueMtd + posRevenueMtd + invoiceRevenueMtd;
+    const teamTargetRevenue = teamTarget?.targetRevenue ?? 0;
+    const targetPct = teamTargetRevenue > 0 ? Math.round((totalRevenueMtd / teamTargetRevenue) * 100) : null;
+    const myTargetRevenue = myTarget?.targetRevenue ?? 0;
+
+    // ── Per-staff performance ────────────────────────────────────────────────
+    // Build a map: staffId → { name, repairRev, posRev, totalRev, jobCount, saleCount }
+    const staffMap = new Map<string, { name: string; repairRev: number; posRev: number; totalRev: number; jobCount: number; saleCount: number; target: number }>();
+
+    for (const j of jobsMtdByStaff) {
+      if (!j.createdById || !j.createdBy) continue;
+      const e = staffMap.get(j.createdById) ?? { name: j.createdBy.name, repairRev: 0, posRev: 0, totalRev: 0, jobCount: 0, saleCount: 0, target: 0 };
+      e.repairRev += getClientBill(j) ?? 0;
+      e.jobCount  += 1;
+      e.totalRev   = e.repairRev + e.posRev;
+      staffMap.set(j.createdById, e);
+    }
+    for (const s of salesMtdByStaff) {
+      if (!s.createdById) continue;
+      // Need name — find from paidSalesMtd
+      const saleRecord = paidSalesMtd.find(r => r.createdById === s.createdById);
+      const name = saleRecord?.createdBy?.name ?? s.createdById;
+      const e = staffMap.get(s.createdById) ?? { name, repairRev: 0, posRev: 0, totalRev: 0, jobCount: 0, saleCount: 0, target: 0 };
+      e.posRev   += s._sum.totalAmount ?? 0;
+      e.saleCount += s._count.id;
+      e.totalRev  = e.repairRev + e.posRev;
+      staffMap.set(s.createdById, e);
+    }
+    // Fetch individual targets for all staff in map
+    const staffIds = [...staffMap.keys()];
+    if (staffIds.length > 0) {
+      const indivTargets = await prisma.salesTarget.findMany({
+        where: { ...orgFilter, userId: { in: staffIds }, period },
+        select: { userId: true, targetRevenue: true },
+      });
+      for (const t of indivTargets) {
+        if (!t.userId) continue;
+        const e = staffMap.get(t.userId);
+        if (e) { e.target = t.targetRevenue; staffMap.set(t.userId, e); }
+      }
+    }
+
+    const staffRows = [...staffMap.values()].sort((a, b) => b.totalRev - a.totalRev);
+    const wonMtd = completedJobsMtd.length;
+    const conversionRate = allJobsMtd > 0 ? Math.round((wonMtd / allJobsMtd) * 100) : 0;
+
+    const trendMonths  = trendMonthsSinceStartOfYear(today);
+    const revenueTrend = await loadTotalRevenueTrend(trendMonths);
 
     return (
       <div className="space-y-4">
         <DashboardHero
-          title="Sales & Pipeline"
-          summary={`${intakeMtd} jobs this month · ${conversionRate}% conversion · ${awaitingApproval} awaiting client approval`}
+          title="Sales Performance"
+          summary={`${formatMoneyCompact(totalRevenueMtd, currency)} total revenue MTD${teamTargetRevenue > 0 ? ` · ${targetPct}% of target` : ""} · ${awaitingApproval} awaiting approval`}
           primaryHref="/jobs/new"
           primaryLabel="New Job"
           secondaryHref="/jobs?status=AWAITING_APPROVAL"
@@ -1765,12 +1899,35 @@ export default async function DashboardPage({
           icon={<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="black" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>}
         />
 
+        {/* ── Team target progress bar ── */}
+        {teamTargetRevenue > 0 && (
+          <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
+            <div className="mb-2 flex items-center justify-between">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Team Target — {period}</p>
+              <span className={`text-sm font-black ${(targetPct ?? 0) >= 100 ? "text-emerald-600" : (targetPct ?? 0) >= 60 ? "text-[var(--accent)]" : "text-amber-600"}`}>
+                {targetPct ?? 0}%
+              </span>
+            </div>
+            <div className="h-2.5 w-full overflow-hidden rounded-full bg-[var(--panel-strong)]">
+              <div
+                className={`h-full rounded-full transition-all ${(targetPct ?? 0) >= 100 ? "bg-emerald-500" : "bg-[var(--accent)]"}`}
+                style={{ width: `${Math.min(100, targetPct ?? 0)}%` }}
+              />
+            </div>
+            <div className="mt-1.5 flex justify-between text-[10px] text-[var(--ink-muted)]">
+              <span>{formatMoneyCompact(totalRevenueMtd, currency)} achieved</span>
+              <span>target {formatMoneyCompact(teamTargetRevenue, currency)}</span>
+            </div>
+          </section>
+        )}
+
+        {/* ── 4 KPI tiles ── */}
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {[
-            { label: "Jobs In MTD",    val: String(intakeMtd),                         sub: `vs ${prevMonthJobs} last month`,   href: "/jobs", color: "text-[var(--ink)]" },
-            { label: "Conversion",     val: `${conversionRate}%`,                      sub: `${wonMtd} completed/ready`,         href: "/jobs?status=COMPLETED,READY_FOR_PICKUP", color: conversionRate >= 50 ? "text-emerald-600" : "text-amber-600" },
-            { label: "Pending Quotes", val: String(awaitingApproval),                  sub: "awaiting client decision",          href: "/jobs?status=AWAITING_APPROVAL", color: awaitingApproval > 0 ? "text-[var(--accent)]" : "text-[var(--ink-muted)]" },
-            { label: "Revenue MTD",    val: formatMoneyCompact(revenueMtd, currency),  sub: "from completed jobs",               href: "/reports", color: "text-[var(--accent)]" },
+            { label: "Total Revenue MTD",  val: formatMoneyCompact(totalRevenueMtd, currency),   sub: teamTargetRevenue > 0 ? `${targetPct}% of ${formatMoneyCompact(teamTargetRevenue, currency)} target` : "all channels",      href: "/reports",                                      color: "text-[var(--accent)]" },
+            { label: "Repair Revenue",     val: formatMoneyCompact(repairRevenueMtd, currency),  sub: `${wonMtd} completed jobs`,                                                                                                    href: "/jobs?status=COMPLETED",                        color: "text-sky-600" },
+            { label: "POS + Invoices",     val: formatMoneyCompact(posRevenueMtd + invoiceRevenueMtd, currency), sub: `${paidSalesMtd.length} sales · ${paidInvoicesMtd.length} invoices`,                                          href: "/documents/invoices",                           color: "text-violet-600" },
+            { label: "Conversion Rate",    val: `${conversionRate}%`,                            sub: `${wonMtd} won vs ${prevMonthJobCount} last month`,                                                                             href: "/jobs?status=COMPLETED,READY_FOR_PICKUP",       color: conversionRate >= 50 ? "text-emerald-600" : "text-amber-600" },
           ].map(t => (
             <Link key={t.label} href={t.href} className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px]">
               <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">{t.label}</p>
@@ -1781,56 +1938,127 @@ export default async function DashboardPage({
         </div>
 
         <div className="grid gap-3 lg:grid-cols-2">
+          {/* ── Individual staff performance ── */}
           <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
             <div className="mb-3 flex items-center justify-between">
-              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Pending Client Approvals</p>
-              <Link href="/jobs?status=AWAITING_APPROVAL" className="text-[11px] font-semibold text-[var(--accent)] hover:underline">All →</Link>
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Staff Performance — {period}</p>
+              <Link href="/reports" className="text-[11px] font-semibold text-[var(--accent)] hover:underline">Full report →</Link>
             </div>
-            {quotedJobs.length === 0 ? (
-              <p className="text-sm text-[var(--ink-muted)]">No quotes pending.</p>
+            {staffRows.length === 0 ? (
+              <p className="text-sm text-[var(--ink-muted)]">No sales activity this month yet.</p>
             ) : (
-              <div className="space-y-1.5">
-                {quotedJobs.map(j => {
-                  const waitDays = Math.floor((today.getTime() - j.receivedAt.getTime()) / 86400000);
+              <div className="space-y-2">
+                {staffRows.map((s, i) => {
+                  const pct = s.target > 0 ? Math.min(100, Math.round((s.totalRev / s.target) * 100)) : null;
                   return (
-                    <Link key={j.id} href={`/jobs/${j.id}`} className="flex items-center justify-between rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 transition hover:border-[var(--accent)]/35">
-                      <div className="min-w-0">
-                        <p className="mono truncate text-xs font-bold text-[var(--accent)]">{j.jobNumber}</p>
-                        <p className="truncate text-[10px] text-[var(--ink-muted)]">{j.client?.fullName ?? "—"}</p>
+                    <div key={s.name} className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="shrink-0 text-[10px] font-bold text-[var(--ink-muted)] w-4">{i + 1}</span>
+                          <p className="truncate text-xs font-semibold text-[var(--ink)]">{s.name}</p>
+                        </div>
+                        <div className="ml-3 shrink-0 flex items-center gap-2">
+                          {pct !== null && (
+                            <span className={`text-[10px] font-bold ${pct >= 100 ? "text-emerald-600" : pct >= 60 ? "text-[var(--accent)]" : "text-amber-600"}`}>{pct}%</span>
+                          )}
+                          <span className="text-xs font-bold text-[var(--ink)]">{formatMoneyCompact(s.totalRev, currency)}</span>
+                        </div>
                       </div>
-                      <div className="ml-3 shrink-0 text-right">
-                        {j.clientBill && <p className="text-xs font-semibold text-[var(--ink)]">{formatMoneyCompact(j.clientBill, currency)}</p>}
-                        <span className={`text-[10px] font-medium ${waitDays > 3 ? "text-amber-600" : "text-[var(--ink-muted)]"}`}>{waitDays}d wait</span>
+                      <div className="mt-1.5 flex items-center gap-3 text-[10px] text-[var(--ink-muted)]">
+                        <span className="text-sky-600">{formatMoneyCompact(s.repairRev, currency)} repair</span>
+                        <span className="text-violet-600">{formatMoneyCompact(s.posRev, currency)} POS</span>
+                        {s.target > 0 && (
+                          <>
+                            <span>·</span>
+                            <span>target {formatMoneyCompact(s.target, currency)}</span>
+                          </>
+                        )}
                       </div>
-                    </Link>
+                      {pct !== null && (
+                        <div className="mt-1.5 h-1 w-full overflow-hidden rounded-full bg-[var(--line)]">
+                          <div className={`h-full rounded-full ${pct >= 100 ? "bg-emerald-500" : "bg-[var(--accent)]"}`} style={{ width: `${pct}%` }} />
+                        </div>
+                      )}
+                    </div>
                   );
                 })}
               </div>
             )}
+            {/* My own target summary if viewer has a personal target */}
+            {myTargetRevenue > 0 && (
+              <div className="mt-3 rounded-lg border border-[var(--accent)]/30 bg-[var(--accent)]/5 px-3 py-2">
+                <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">My Target</p>
+                <p className="mt-0.5 text-xs text-[var(--ink)]">{formatMoneyCompact(myTargetRevenue, currency)} this month</p>
+              </div>
+            )}
           </section>
 
-          <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-            <div className="mb-3 flex items-center justify-between">
-              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Ready for Pickup</p>
-              <Link href="/jobs?status=READY_FOR_PICKUP" className="text-[11px] font-semibold text-[var(--accent)] hover:underline">All →</Link>
-            </div>
-            <div className="mb-3 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2.5 text-center">
-              <p className="text-2xl font-black text-emerald-600">{readyPickup}</p>
-              <p className="text-[11px] text-emerald-600">jobs ready — contact clients to collect</p>
-            </div>
-            <div className="mb-3 border-t border-[var(--line)] pt-3">
-              <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Newest Clients</p>
-              {recentClients.map(c => (
-                <div key={c.id} className="flex items-center justify-between py-1">
-                  <p className="truncate text-xs font-medium text-[var(--ink)]">{c.fullName}</p>
-                  <p className="ml-2 shrink-0 text-[10px] text-[var(--ink-muted)]">{c.organization ?? "Individual"}</p>
+          {/* ── Pending approvals + channel breakdown ── */}
+          <div className="space-y-3">
+            {/* Revenue by channel */}
+            <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+              <p className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Revenue by Channel MTD</p>
+              {[
+                { label: "Repair Jobs",       amount: repairRevenueMtd,                    color: "bg-sky-500",    textColor: "text-sky-600",    count: `${wonMtd} completed` },
+                { label: "POS Sales",         amount: posRevenueMtd,                       color: "bg-violet-500", textColor: "text-violet-600", count: `${paidSalesMtd.length} sales` },
+                { label: "Invoice Payments",  amount: invoiceRevenueMtd,                   color: "bg-emerald-500",textColor: "text-emerald-600",count: `${paidInvoicesMtd.length} invoices` },
+              ].map(ch => {
+                const pct = totalRevenueMtd > 0 ? Math.round((ch.amount / totalRevenueMtd) * 100) : 0;
+                return (
+                  <div key={ch.label} className="mb-2">
+                    <div className="flex items-center justify-between text-xs mb-1">
+                      <span className="font-medium text-[var(--ink)]">{ch.label}</span>
+                      <span className={`font-bold ${ch.textColor}`}>{formatMoneyCompact(ch.amount, currency)} <span className="font-normal text-[var(--ink-muted)]">({pct}%)</span></span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 h-1.5 overflow-hidden rounded-full bg-[var(--line)]">
+                        <div className={`h-full rounded-full ${ch.color}`} style={{ width: `${pct}%` }} />
+                      </div>
+                      <span className="shrink-0 text-[10px] text-[var(--ink-muted)]">{ch.count}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </section>
+
+            {/* Pending approvals */}
+            <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+              <div className="mb-2 flex items-center justify-between">
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Pending Approvals</p>
+                <Link href="/jobs?status=AWAITING_APPROVAL" className="text-[11px] font-semibold text-[var(--accent)] hover:underline">All →</Link>
+              </div>
+              {quotedJobs.length === 0 ? (
+                <p className="text-sm text-[var(--ink-muted)]">No quotes pending.</p>
+              ) : (
+                <div className="space-y-1.5">
+                  {quotedJobs.slice(0, 5).map(j => {
+                    const waitDays = Math.floor((today.getTime() - j.receivedAt.getTime()) / 86400000);
+                    return (
+                      <Link key={j.id} href={`/jobs/${j.id}`} className="flex items-center justify-between rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 transition hover:border-[var(--accent)]/35">
+                        <div className="min-w-0">
+                          <p className="mono truncate text-xs font-bold text-[var(--accent)]">{j.jobNumber}</p>
+                          <p className="truncate text-[10px] text-[var(--ink-muted)]">{j.client?.fullName ?? "—"}</p>
+                        </div>
+                        <div className="ml-3 shrink-0 text-right">
+                          {j.clientBill && <p className="text-xs font-semibold text-[var(--ink)]">{formatMoneyCompact(j.clientBill, currency)}</p>}
+                          <span className={`text-[10px] font-medium ${waitDays > 3 ? "text-amber-600" : "text-[var(--ink-muted)]"}`}>{waitDays}d wait</span>
+                        </div>
+                      </Link>
+                    );
+                  })}
+                  {readyPickup > 0 && (
+                    <Link href="/jobs?status=READY_FOR_PICKUP" className="flex items-center justify-between rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 transition hover:border-emerald-500/50">
+                      <p className="text-xs font-semibold text-emerald-600">{readyPickup} jobs ready for pickup</p>
+                      <span className="text-[11px] font-bold text-emerald-600">→</span>
+                    </Link>
+                  )}
                 </div>
-              ))}
-            </div>
-          </section>
+              )}
+            </section>
+          </div>
         </div>
 
-        <RevenueMarginTrendSection trendMonths={trendMonths} revenueTrend={revenueTrend} currency={currency} />
+        <RevenueMarginTrendSection trendMonths={trendMonths} revenueTrend={revenueTrend} currency={currency} label="Total Revenue Trend (All Channels)" emptyMessage="No revenue recorded yet for this period." />
       </div>
     );
   }

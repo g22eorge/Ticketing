@@ -74,6 +74,7 @@ model Organization {
   purchaseOrders         PurchaseOrder[]
   userGroups             UserGroup[]
   complaints             Complaint[]
+  salesTargets           SalesTarget[]
 
   @@index([slug])
   @@index([isActive])
@@ -138,6 +139,7 @@ model User {
   invitesSent             UserInvite[]             @relation("InvitedBy")
   groupMemberships        UserGroupMember[]
   complaintsAssigned      Complaint[]      @relation("ComplaintAssignee")
+  salesTargets            SalesTarget[]    @relation("SalesTargets")
 
   @@index([orgId])
 }
@@ -1944,4 +1946,28 @@ model Complaint {
   @@index([orgId, status, createdAt])
   @@index([orgId, createdAt])
   @@index([jobId])
+}
+
+// ── Sales Targets ───────────────────────────────────────────────────────────
+// Monthly revenue targets. userId = null means a team/org-level target.
+// period = "YYYY-MM" e.g. "2026-05"
+model SalesTarget {
+  id            String   @id @default(cuid())
+  orgId         String
+  org           Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  userId        String?
+  user          User?    @relation("SalesTargets", fields: [userId], references: [id], onDelete: SetNull)
+
+  period        String   // "YYYY-MM"
+  targetRevenue Float    @default(0)
+  targetJobs    Int      @default(0) // optional: target number of jobs/sales
+
+  notes         String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([orgId, userId, period])
+  @@index([orgId, period])
 }

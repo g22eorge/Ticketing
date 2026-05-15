@@ -486,6 +486,28 @@ export default async function ReportsPage({
     daysPending: Math.floor((nowTs.getTime() - job.updatedAt.getTime()) / (1000 * 60 * 60 * 24)),
   }));
 
+  const [salesByPeriod, invoicesByPeriod, salesTargetsForPeriod, staffJobRevenue] = await Promise.all([
+    // POS sales paid in selected period
+    prisma.sale.findMany({
+      where: { orgId, status: "PAID", paidAt: { gte: selectedRange.start, lte: selectedRange.end } },
+      select: { totalAmount: true, createdById: true, createdBy: { select: { id: true, name: true } } },
+    }).catch(() => [] as any[]),
+    // Invoices paid in selected period
+    prisma.invoice.findMany({
+      where: { orgId, status: "PAID", paidAt: { gte: selectedRange.start, lte: selectedRange.end } },
+      select: { totalAmount: true, job: { select: { createdById: true, createdBy: { select: { id: true, name: true } } } } },
+    }).catch(() => [] as any[]),
+    // Sales targets for selected period (team + individual)
+    prisma.salesTarget.findMany({
+      where: { orgId, period: selectedMonthString },
+    }).catch(() => [] as any[]),
+    // Completed jobs in period attributed to who created them
+    prisma.job.findMany({
+      where: { orgId, status: "COMPLETED", completedAt: { gte: selectedRange.start, lte: selectedRange.end } },
+      select: { clientBill: true, externalTechBill: true, createdById: true, createdBy: { select: { id: true, name: true } } },
+    }).catch(() => [] as any[]),
+  ]);
+
   const trendByDevice = new Map<string, Map<string, number>>();
   for (const job of trendJobs) {
     const device = deviceLabel[job.deviceType] ?? job.deviceType;
@@ -601,6 +623,45 @@ export default async function ReportsPage({
   const topDevices = deviceInsights.slice(0, 5).map((item) => ({ name: item.device, value: item.total }));
   const queuePressure = funnel.diagnosing + funnel.awaitingApproval + funnel.inRepair;
   const completionMomentum = completedSelected.length - completedPrev.length;
+
+  const posSalesTotal = (salesByPeriod as any[]).reduce((s: number, r: any) => s + r.totalAmount, 0);
+  const invoicesPaidTotal = (invoicesByPeriod as any[]).reduce((s: number, i: any) => s + i.totalAmount, 0);
+  const repairTotal = revenueSelected; // already computed
+  const totalAllChannels = repairTotal + posSalesTotal + invoicesPaidTotal;
+
+  // Per-staff revenue map
+  const staffRevenueMap = new Map<string, { name: string; repairRev: number; posRev: number; invoiceRev: number; total: number; target: number }>();
+
+  for (const j of staffJobRevenue as any[]) {
+    if (!j.createdById || !j.createdBy) continue;
+    const e = staffRevenueMap.get(j.createdById) ?? { name: j.createdBy.name, repairRev: 0, posRev: 0, invoiceRev: 0, total: 0, target: 0 };
+    e.repairRev += getClientBill(j) ?? 0;
+    e.total = e.repairRev + e.posRev + e.invoiceRev;
+    staffRevenueMap.set(j.createdById, e);
+  }
+  for (const s of salesByPeriod as any[]) {
+    if (!s.createdById || !s.createdBy) continue;
+    const e = staffRevenueMap.get(s.createdById) ?? { name: s.createdBy.name, repairRev: 0, posRev: 0, invoiceRev: 0, total: 0, target: 0 };
+    e.posRev += s.totalAmount;
+    e.total = e.repairRev + e.posRev + e.invoiceRev;
+    staffRevenueMap.set(s.createdById, e);
+  }
+  for (const inv of invoicesByPeriod as any[]) {
+    if (!inv.job?.createdById || !inv.job?.createdBy) continue;
+    const e = staffRevenueMap.get(inv.job.createdById) ?? { name: inv.job.createdBy.name, repairRev: 0, posRev: 0, invoiceRev: 0, total: 0, target: 0 };
+    e.invoiceRev += inv.totalAmount;
+    e.total = e.repairRev + e.posRev + e.invoiceRev;
+    staffRevenueMap.set(inv.job.createdById, e);
+  }
+  for (const t of salesTargetsForPeriod as any[]) {
+    if (!t.userId) continue;
+    const e = staffRevenueMap.get(t.userId);
+    if (e) { e.target = t.targetRevenue; staffRevenueMap.set(t.userId, e); }
+  }
+  const staffRevRows = [...staffRevenueMap.values()].sort((a, b) => b.total - a.total);
+  const teamTarget = (salesTargetsForPeriod as any[]).find((t: any) => !t.userId);
+  const teamTargetRevenue = teamTarget?.targetRevenue ?? 0;
+  const teamTargetPct = teamTargetRevenue > 0 ? Math.round((totalAllChannels / teamTargetRevenue) * 100) : null;
 
   const exportItems = [
     {
@@ -1259,7 +1320,114 @@ export default async function ReportsPage({
         </div>
       </section>
 
-      {/* 10. INSIGHT FOOTER */}
+      {/* 10. SALES BY CHANNEL */}
+      <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Revenue by Channel</p>
+            <p className="mt-0.5 text-sm font-semibold text-[var(--ink)]">{selectedMonthString}</p>
+          </div>
+          {teamTargetRevenue > 0 && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-[var(--ink-muted)]">Team target</span>
+              <span className={`text-sm font-bold ${(teamTargetPct ?? 0) >= 100 ? "text-emerald-600" : "text-[var(--accent)]"}`}>{teamTargetPct}%</span>
+              <span className="text-xs text-[var(--ink-muted)]">of {formatMoneyCompact(teamTargetRevenue, currency)}</span>
+            </div>
+          )}
+        </div>
+
+        {teamTargetRevenue > 0 && (
+          <div className="mb-4">
+            <div className="h-2 w-full overflow-hidden rounded-full bg-[var(--panel-strong)]">
+              <div className={`h-full rounded-full ${(teamTargetPct ?? 0) >= 100 ? "bg-emerald-500" : "bg-[var(--accent)]"}`} style={{ width: `${Math.min(100, teamTargetPct ?? 0)}%` }} />
+            </div>
+            <div className="mt-1 flex justify-between text-[10px] text-[var(--ink-muted)]">
+              <span>{formatMoneyCompact(totalAllChannels, currency)} achieved</span>
+              <span>target {formatMoneyCompact(teamTargetRevenue, currency)}</span>
+            </div>
+          </div>
+        )}
+
+        <div className="grid gap-3 sm:grid-cols-3">
+          {[
+            { label: "Repair Jobs", amount: repairTotal, color: "bg-sky-500", textColor: "text-sky-600", count: `${completedSelected.length} completed`, href: `/jobs?status=COMPLETED` },
+            { label: "POS Sales", amount: posSalesTotal, color: "bg-violet-500", textColor: "text-violet-600", count: `${(salesByPeriod as any[]).length} sales`, href: `/pos` },
+            { label: "Invoice Payments", amount: invoicesPaidTotal, color: "bg-emerald-500", textColor: "text-emerald-600", count: `${(invoicesByPeriod as any[]).length} invoices`, href: `/documents/invoices` },
+          ].map(ch => {
+            const pct = totalAllChannels > 0 ? Math.round((ch.amount / totalAllChannels) * 100) : 0;
+            return (
+              <Link key={ch.label} href={ch.href} className="rounded-xl border border-[var(--line)] bg-[var(--panel-strong)] p-3 transition hover:border-[var(--accent)]/40">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className={`inline-block h-2 w-2 rounded-full ${ch.color}`} />
+                  <p className="text-xs font-medium text-[var(--ink)]">{ch.label}</p>
+                </div>
+                <p className={`text-xl font-black ${ch.textColor}`}>{formatMoneyCompact(ch.amount, currency)}</p>
+                <div className="mt-2 flex items-center justify-between">
+                  <span className="text-[10px] text-[var(--ink-muted)]">{ch.count}</span>
+                  <span className="text-[10px] font-bold text-[var(--ink-muted)]">{pct}%</span>
+                </div>
+                <div className="mt-1.5 h-1 w-full overflow-hidden rounded-full bg-[var(--line)]">
+                  <div className={`h-full rounded-full ${ch.color}`} style={{ width: `${pct}%` }} />
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+
+        <div className="mt-3 flex items-center justify-between rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2">
+          <p className="text-xs font-semibold text-[var(--ink)]">Total — All Channels</p>
+          <p className="text-sm font-black text-[var(--accent)]">{formatMoney(totalAllChannels, currency)}</p>
+        </div>
+      </section>
+
+      {/* 11. STAFF SALES PERFORMANCE */}
+      {staffRevRows.length > 0 && (
+        <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+          <p className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Staff Sales Performance — {selectedMonthString}</p>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="border-b border-[var(--line)]">
+                  {["Staff", "Repair Rev", "POS Rev", "Invoice Rev", "Total", "vs Target"].map(h => (
+                    <th key={h} className="pb-2 text-left text-[10px] font-semibold uppercase tracking-[0.1em] text-[var(--ink-muted)] pr-4 last:pr-0">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {staffRevRows.map((s, i) => {
+                  const pct = s.target > 0 ? Math.round((s.total / s.target) * 100) : null;
+                  return (
+                    <tr key={s.name} className={i < staffRevRows.length - 1 ? "border-b border-[var(--line)]" : ""}>
+                      <td className="py-2 pr-4 font-semibold text-[var(--ink)]">{s.name}</td>
+                      <td className="py-2 pr-4 text-sky-600">{s.repairRev > 0 ? formatMoneyCompact(s.repairRev, currency) : "—"}</td>
+                      <td className="py-2 pr-4 text-violet-600">{s.posRev > 0 ? formatMoneyCompact(s.posRev, currency) : "—"}</td>
+                      <td className="py-2 pr-4 text-emerald-600">{s.invoiceRev > 0 ? formatMoneyCompact(s.invoiceRev, currency) : "—"}</td>
+                      <td className="py-2 pr-4 font-bold text-[var(--accent)]">{formatMoneyCompact(s.total, currency)}</td>
+                      <td className="py-2">
+                        {pct !== null ? (
+                          <div className="flex items-center gap-2">
+                            <div className="w-16 h-1.5 overflow-hidden rounded-full bg-[var(--line)]">
+                              <div className={`h-full rounded-full ${pct >= 100 ? "bg-emerald-500" : "bg-[var(--accent)]"}`} style={{ width: `${Math.min(100, pct)}%` }} />
+                            </div>
+                            <span className={`font-bold ${pct >= 100 ? "text-emerald-600" : pct >= 60 ? "text-[var(--accent)]" : "text-amber-600"}`}>{pct}%</span>
+                          </div>
+                        ) : <span className="text-[var(--ink-muted)]">—</span>}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          {period === "month" && (
+            <p className="mt-2 text-[10px] text-[var(--ink-muted)]">
+              Targets are set in <Link href="/settings/targets" className="text-[var(--accent)] hover:underline">Settings → Sales Targets</Link>.
+            </p>
+          )}
+        </section>
+      )}
+
+      {/* 12. INSIGHT FOOTER */}
       <div className="rounded-lg border border-[var(--line)] bg-[var(--panel)] px-4 py-3 text-xs text-[var(--ink-muted)]">
         <span className="font-medium text-[var(--ink)]">Margin health:</span>{" "}
         {marginSelected >= 0

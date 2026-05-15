@@ -1,85 +1,264 @@
+"use server";
+
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
+import { JobStatusBadge } from "@/components/jobs/JobStatusBadge";
+import { CopyButton } from "@/components/shared/CopyButton";
 import { can } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { requireOrgSession } from "@/lib/org-context";
+import { formatEATDate } from "@/lib/date-eat";
+import { normalizeJobStatus } from "@/lib/job-status";
 
-export default async function JobCardsPage() {
+const deviceIcon: Record<string, string> = {
+  PHONE_ANDROID: "📱",
+  PHONE_IPHONE: "📱",
+  TABLET: "📟",
+  WINDOWS_PC: "💻",
+  MAC: "🍎",
+  OTHER: "🔧",
+};
+
+type SearchParams = { q?: string; status?: string };
+
+export default async function JobCardsPage({
+  searchParams,
+}: {
+  searchParams: Promise<SearchParams>;
+}) {
   const { user, orgId } = await requireOrgSession();
-  if (!can.generateJobCards(user)) {
-    redirect("/dashboard");
-  }
+  if (!can.generateJobCards(user)) redirect("/dashboard");
+
+  const { q, status: statusFilter } = await searchParams;
 
   const jobs = await prisma.job.findMany({
-    where: { orgId },
+    where: {
+      orgId,
+      ...(statusFilter ? { status: statusFilter as never } : {}),
+      ...(q
+        ? {
+            OR: [
+              { jobNumber: { contains: q } },
+              { client: { fullName: { contains: q } } },
+              { brand: { contains: q } },
+              { model: { contains: q } },
+            ],
+          }
+        : {}),
+    },
     orderBy: { receivedAt: "desc" },
-    take: 80,
+    take: 100,
     select: {
       id: true,
       jobNumber: true,
       status: true,
       brand: true,
       model: true,
+      deviceType: true,
+      issueDescription: true,
       receivedAt: true,
-      client: { select: { fullName: true } },
+      client: { select: { fullName: true, phone: true } },
     },
   });
 
+  const appUrl =
+    process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+
+  const STATUS_OPTIONS = [
+    "RECEIVED",
+    "DIAGNOSING",
+    "AWAITING_APPROVAL",
+    "IN_REPAIR",
+    "READY_FOR_PICKUP",
+    "COMPLETED",
+  ];
+
   return (
     <section className="space-y-4">
-      <div className="panel-shadow flex items-center justify-between gap-2 rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-2.5">
+      {/* Header bar */}
+      <div className="panel-shadow flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-2.5">
         <p className="text-[13px] font-bold text-[var(--ink)]">
-          Job Cards · <span className="font-normal text-[var(--ink-muted)]">{jobs.length}</span>
+          Job Cards{" "}
+          <span className="font-normal text-[var(--ink-muted)]">
+            · {jobs.length}
+          </span>
         </p>
-        <Link href="/jobs/new" className="btn-premium rounded-lg px-3 py-1.5 text-[12px]">New Job</Link>
+        <Link href="/jobs/new" className="btn-premium rounded-lg px-3 py-1.5 text-[12px]">
+          + New Job
+        </Link>
       </div>
-      <div className="rounded-xl border border-[var(--line)]">
+
+      {/* Search + filter */}
+      <form method="GET" className="flex flex-wrap gap-2">
+        <input
+          name="q"
+          defaultValue={q ?? ""}
+          placeholder="Search job #, client, device…"
+          className="flex-1 min-w-[180px] rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm text-[var(--ink)] placeholder-[var(--ink-muted)] outline-none focus:border-[var(--accent)]/50"
+        />
+        <select
+          name="status"
+          defaultValue={statusFilter ?? ""}
+          className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm text-[var(--ink)] outline-none focus:border-[var(--accent)]/50"
+        >
+          <option value="">All statuses</option>
+          {STATUS_OPTIONS.map((s) => (
+            <option key={s} value={s}>
+              {s.replaceAll("_", " ")}
+            </option>
+          ))}
+        </select>
+        <button
+          type="submit"
+          className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-4 py-2 text-sm font-semibold text-[var(--ink)] transition hover:border-[var(--accent)]/40"
+        >
+          Filter
+        </button>
+        {(q || statusFilter) && (
+          <Link
+            href="/documents/job-cards"
+            className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-4 py-2 text-sm text-[var(--ink-muted)] transition hover:text-[var(--ink)]"
+          >
+            Clear
+          </Link>
+        )}
+      </form>
+
+      {/* Table */}
+      <div className="overflow-hidden rounded-xl border border-[var(--line)]">
         <table className="w-full text-left text-sm">
           <thead className="bg-[var(--panel-strong)] text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
             <tr>
               <th className="px-3 py-2.5">Job</th>
-              <th className="hidden px-3 py-2.5 md:table-cell">Client</th>
-              <th className="hidden px-3 py-2.5 lg:table-cell">Device</th>
+              <th className="hidden px-3 py-2.5 sm:table-cell">Client</th>
+              <th className="hidden px-3 py-2.5 md:table-cell">Device</th>
               <th className="px-3 py-2.5">Status</th>
               <th className="hidden px-3 py-2.5 lg:table-cell">Received</th>
-              <th className="px-3 py-2.5">Action</th>
+              <th className="px-3 py-2.5 text-right">Actions</th>
             </tr>
           </thead>
           <tbody>
-            {jobs.map((job) => (
-              <tr key={job.id} className="border-t border-[var(--line)]">
-                <td className="px-3 py-2">
-                  <Link className="mono font-bold text-[var(--ink)] transition-colors hover:text-[var(--accent)]" href={`/jobs/${job.id}`}>
-                    {job.jobNumber}
-                  </Link>
-                </td>
-                <td className="hidden px-3 py-2 text-[var(--ink-muted)] md:table-cell">{job.client.fullName}</td>
-                <td className="hidden px-3 py-2 text-[var(--ink-muted)] lg:table-cell">{job.brand} {job.model}</td>
-                <td className="px-3 py-2 text-[var(--ink-muted)]">{job.status.replaceAll("_", " ")}</td>
-                <td className="hidden px-3 py-2 text-[var(--ink-muted)] lg:table-cell">{job.receivedAt.toLocaleDateString()}</td>
-                <td className="px-3 py-2">
-                  <a
-                    href={`/api/jobs/${job.id}/job-card`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="btn-premium-secondary inline-flex rounded-md px-2.5 py-1.5 text-xs"
-                  >
-                    Generate
-                  </a>
-                </td>
-              </tr>
-            ))}
             {jobs.length === 0 ? (
-              <tr className="border-t border-[var(--line)]">
-                <td className="px-3 py-6 text-sm text-[var(--ink-muted)]" colSpan={6}>
-                  No jobs yet. Create a job first to generate its job card.
+              <tr>
+                <td
+                  colSpan={6}
+                  className="px-4 py-8 text-center text-sm text-[var(--ink-muted)]"
+                >
+                  {q || statusFilter
+                    ? "No jobs match your filter."
+                    : "No jobs yet. Create a job first."}
                 </td>
               </tr>
-            ) : null}
+            ) : (
+              jobs.map((job) => {
+                const pdfUrl = `${appUrl}/api/jobs/${job.id}/job-card`;
+                const jobUrl = `${appUrl}/jobs/${job.id}`;
+                const clientPhone = job.client.phone.replace(/\D/g, "");
+                const waPhone = clientPhone.startsWith("0")
+                  ? "256" + clientPhone.slice(1)
+                  : clientPhone;
+                const waText = encodeURIComponent(
+                  `Hi ${job.client.fullName}, your device (${job.brand} ${job.model}) has been received at our workshop.\n\nJob #: ${job.jobNumber}\nIssue noted: ${job.issueDescription.slice(0, 80)}${job.issueDescription.length > 80 ? "…" : ""}\n\nWe'll update you as soon as diagnosis is complete.`,
+                );
+                const normalStatus = normalizeJobStatus(job.status as never);
+
+                return (
+                  <tr
+                    key={job.id}
+                    className="border-t border-[var(--line)] transition hover:bg-[var(--panel-strong)]/40"
+                  >
+                    {/* Job # */}
+                    <td className="px-3 py-2.5">
+                      <Link
+                        href={`/jobs/${job.id}`}
+                        className="mono text-xs font-bold text-[var(--accent)] hover:underline"
+                      >
+                        {job.jobNumber}
+                      </Link>
+                      <p className="mt-0.5 text-[10px] text-[var(--ink-muted)] sm:hidden">
+                        {job.client.fullName}
+                      </p>
+                    </td>
+
+                    {/* Client */}
+                    <td className="hidden px-3 py-2.5 sm:table-cell">
+                      <p className="text-xs font-medium text-[var(--ink)]">
+                        {job.client.fullName}
+                      </p>
+                      <p className="text-[10px] text-[var(--ink-muted)]">
+                        {job.client.phone}
+                      </p>
+                    </td>
+
+                    {/* Device */}
+                    <td className="hidden px-3 py-2.5 md:table-cell">
+                      <span className="mr-1.5">
+                        {deviceIcon[job.deviceType] ?? "🔧"}
+                      </span>
+                      <span className="text-xs text-[var(--ink)]">
+                        {job.brand} {job.model}
+                      </span>
+                    </td>
+
+                    {/* Status */}
+                    <td className="px-3 py-2.5">
+                      <JobStatusBadge status={normalStatus} />
+                    </td>
+
+                    {/* Received */}
+                    <td className="hidden px-3 py-2.5 text-xs text-[var(--ink-muted)] lg:table-cell">
+                      {formatEATDate(job.receivedAt)}
+                    </td>
+
+                    {/* Actions */}
+                    <td className="px-3 py-2.5">
+                      <div className="flex items-center justify-end gap-1.5 flex-wrap">
+                        {/* Print PDF */}
+                        <a
+                          href={pdfUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          title="Open job card PDF"
+                          className="inline-flex items-center gap-1 rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1.5 text-[11px] font-semibold text-[var(--ink)] transition hover:border-[var(--accent)]/40 hover:text-[var(--accent)]"
+                        >
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                          Print
+                        </a>
+
+                        {/* Copy job link */}
+                        <CopyButton
+                          text={jobUrl}
+                          label="Copy link"
+                          title="Copy job page link"
+                        />
+
+                        {/* WhatsApp */}
+                        <a
+                          href={`https://wa.me/${waPhone}?text=${waText}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          title="Send job receipt via WhatsApp"
+                          className="inline-flex items-center gap-1 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1.5 text-[11px] font-semibold text-emerald-600 transition hover:bg-emerald-500/20"
+                        >
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347"/></svg>
+                          WA
+                        </a>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })
+            )}
           </tbody>
         </table>
       </div>
+
+      {jobs.length >= 100 && (
+        <p className="text-center text-xs text-[var(--ink-muted)]">
+          Showing first 100 results — use the filter above to narrow down.
+        </p>
+      )}
     </section>
   );
 }

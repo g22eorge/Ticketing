@@ -61,6 +61,8 @@ export const can = {
     ["ADMIN", "MANAGER", "TECH_MANAGER", "OPS", "FRONT_DESK"].includes(user.role) || hasExtraPermission(user, "can_intake") || hasExtraPermission(user, "can_manage_intake"),
   viewNotifications: (user: PermissionUser) =>
     user.role !== "FRONT_DESK",
+  manageSalesTargets: (user: PermissionUser) =>
+    ["ADMIN", "SALES"].includes(user.role),
 };
 
 export function asPermissionUser(role: Role, permissions?: string[]): PermissionUser {
