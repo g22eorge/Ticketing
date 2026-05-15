@@ -112,7 +112,7 @@ export default async function AppLayout({
       ? { orgId, status: "RECEIVED" as JobStatus, assignedToId: session.user.id }
       : { orgId, status: "RECEIVED" as JobStatus };
 
-  const [activeJobsCount, partsForReorder, paymentFollowupCount, receivedJobsCount, pendingRequestsCount] = await Promise.all([
+  const [activeJobsCount, partsForReorder, paymentFollowupCount, receivedJobsCount, pendingRequestsCount, openComplaintsCount] = await Promise.all([
     prisma.job.count({ where: jobsWhere }),
     prisma.part.findMany({
       where: { orgId, isActive: true, reorderLevel: { gt: 0 } },
@@ -122,6 +122,9 @@ export default async function AppLayout({
     prisma.job.count({ where: receivedWhere }),
     can.viewIntake(user)
       ? prisma.repairRequest.count({ where: { orgId, requestStatus: { in: ["PENDING_FRONT_DESK", "PENDING_INTAKE"] } } }).catch(() => 0)
+      : Promise.resolve(0),
+    ["ADMIN", "MANAGER", "TECH_MANAGER", "OPS"].includes(user.role)
+      ? prisma.complaint.count({ where: { orgId, status: { in: ["RECEIVED", "ACKNOWLEDGED", "INVESTIGATING"] } } }).catch(() => 0)
       : Promise.resolve(0),
   ]);
 
@@ -138,6 +141,7 @@ export default async function AppLayout({
           inventory: lowStockCount,
           paymentFollowups: paymentFollowupCount,
           pendingRequests: pendingRequestsCount,
+          complaints: openComplaintsCount,
         }}
       />
       <div className="relative flex min-h-screen min-w-0 flex-1 flex-col overflow-x-clip md:h-full md:min-h-0">
@@ -173,6 +177,7 @@ export default async function AppLayout({
           inventory: lowStockCount,
           paymentFollowups: paymentFollowupCount,
           pendingRequests: pendingRequestsCount,
+          complaints: openComplaintsCount,
         }}
       />
       <QuickActionFAB actions={isSuspended ? [] : buildFabActions(user)} />

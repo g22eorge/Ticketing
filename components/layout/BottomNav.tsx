@@ -194,6 +194,7 @@ export function BottomNav({
     inventory?: number;
     paymentFollowups?: number;
     pendingRequests?: number;
+    complaints?: number;
   };
 }) {
   const pathname = usePathname();
