@@ -1,7 +1,6 @@
 import Link from "next/link";
 
 import { SearchToggle } from "@/components/shared/SearchToggle";
-import { StickyKpiRow } from "@/components/mobile/StickyKpiRow";
 import { JobStatusBadge, statusStripClass } from "@/components/jobs/JobStatusBadge";
 import { JOB_STATUSES, UI_JOB_STATUSES, JobStatus, normalizeJobStatus } from "@/lib/job-status";
 import { formatEATDate } from "@/lib/date-eat";
@@ -220,18 +219,35 @@ export default async function TechniciansPage({
 
   return (
     <div className="space-y-4">
-      {/* KPI Row */}
-      <StickyKpiRow
-        items={[
-          { label: "Assigned", value: String(assignedCount), href: "/technicians", tone: "default" },
-          { label: "Ready", value: String(readyCount), href: "/technicians?ready=1", tone: readyCount > 0 ? "brand" : "default" },
-          { label: "In Repair", value: String(inRepairCount), href: "/technicians?status=IN_REPAIR", tone: "default" },
-          { label: "Overdue", value: String(overdueCount), tone: overdueCount > 0 ? "warning" : "default" },
-        ]}
-        className="lg:grid-cols-4"
-      />
+      {/* ── Header strip: title · inline KPIs · action ── */}
+      <div className="panel-shadow flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-2.5">
+        {/* Title + KPI pills */}
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          <p className="text-[13px] font-bold text-[var(--ink)]">Tech Board</p>
+          <span className="h-3.5 w-px bg-[var(--line)]" aria-hidden="true" />
+          <Link href="/technicians" className="text-[11px] text-[var(--ink-muted)] hover:text-[var(--ink)]">
+            Assigned <span className="font-bold text-[var(--ink)]">{assignedCount}</span>
+          </Link>
+          <Link href="/technicians?ready=1" className="text-[11px] text-[var(--ink-muted)] hover:text-[var(--ink)]">
+            Ready <span className={`font-bold ${readyCount > 0 ? "text-[var(--accent)]" : "text-[var(--ink)]"}`}>{readyCount}</span>
+          </Link>
+          <Link href="/technicians?status=IN_REPAIR" className="text-[11px] text-[var(--ink-muted)] hover:text-[var(--ink)]">
+            In Repair <span className="font-bold text-[var(--ink)]">{inRepairCount}</span>
+          </Link>
+          <span className="text-[11px] text-[var(--ink-muted)]">
+            Overdue <span className={`font-bold ${overdueCount > 0 ? "text-amber-500" : "text-[var(--ink)]"}`}>{overdueCount}</span>
+          </span>
+        </div>
+        {/* Action */}
+        <Link
+          href={user.role === "TECHNICIAN_EXTERNAL" ? "/technicians/payouts" : `/jobs?status=IN_REPAIR&returnTo=${encodeURIComponent(boardReturnTo)}`}
+          className="btn-premium-secondary shrink-0 rounded-lg px-3 py-1.5 text-xs"
+        >
+          {user.role === "TECHNICIAN_EXTERNAL" ? "My Payouts →" : "Timeline Notes →"}
+        </Link>
+      </div>
 
-      {/* Filter + Quick Actions — unified panel */}
+      {/* ── Filter strip: status pills · quick chips · search ── */}
       <section className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
         {(() => {
           function statusHref(nextStatus: string) {
@@ -250,63 +266,58 @@ export default async function TechniciansPage({
             : "";
 
           return (
-            <div className="flex items-center gap-2 px-3 py-2">
-              <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto [scrollbar-width:none]">
-                <Link
-                  href={statusHref("")}
-                  className={`shrink-0 rounded-full border px-3 py-1 text-[11px] font-semibold transition ${
-                    activeStatus ? "border-[var(--line)] bg-[var(--panel)] text-[var(--ink-muted)] hover:border-[var(--accent)]/30" : "border-[var(--accent)] bg-[var(--accent)] text-white"
-                  }`}
-                >
-                  All
-                </Link>
-                {UI_JOB_STATUSES.map((status) => (
+            <>
+              {/* Status pills row */}
+              <div className="flex items-center gap-2 border-b border-[var(--line)] px-3 py-2">
+                <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto [scrollbar-width:none]">
                   <Link
-                    key={status}
-                    href={statusHref(status)}
+                    href={statusHref("")}
                     className={`shrink-0 rounded-full border px-3 py-1 text-[11px] font-semibold transition ${
-                      activeStatus === status ? "border-[var(--accent)] bg-[var(--accent)] text-white" : "border-[var(--line)] bg-[var(--panel)] text-[var(--ink-muted)] hover:border-[var(--accent)]/30"
+                      activeStatus ? "border-[var(--line)] bg-[var(--panel)] text-[var(--ink-muted)] hover:border-[var(--accent)]/30" : "border-[var(--accent)] bg-[var(--accent)] text-white"
                     }`}
                   >
-                    {statusOptionLabel[status]}
+                    All
+                  </Link>
+                  {UI_JOB_STATUSES.map((status) => (
+                    <Link
+                      key={status}
+                      href={statusHref(status)}
+                      className={`shrink-0 rounded-full border px-3 py-1 text-[11px] font-semibold transition ${
+                        activeStatus === status ? "border-[var(--accent)] bg-[var(--accent)] text-white" : "border-[var(--line)] bg-[var(--panel)] text-[var(--ink-muted)] hover:border-[var(--accent)]/30"
+                      }`}
+                    >
+                      {statusOptionLabel[status]}
+                    </Link>
+                  ))}
+                </div>
+                <SearchToggle
+                  basePath="/technicians"
+                  defaultValue={filters.q}
+                  placeholder="Search job # or device"
+                  preserve={{ status: filters.status, ready: filters.ready }}
+                />
+              </div>
+
+              {/* Quick chips row */}
+              <div className="flex flex-wrap items-center gap-1.5 px-3 py-2">
+                {quickActions.map((action) => (
+                  <Link
+                    key={action.label}
+                    href={action.href}
+                    className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold transition ${action.active ? "border-[var(--accent)] bg-[var(--accent)] text-white" : "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink)] hover:border-[var(--accent)]/30"}`}
+                  >
+                    {action.label} <span className={action.active ? "opacity-80" : "text-[var(--ink-muted)]"}>({action.count})</span>
                   </Link>
                 ))}
+                {hasActiveFilters && (
+                  <Link href="/technicians" className="rounded-full border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1 text-[11px] font-semibold text-[var(--ink-muted)] hover:border-red-400/40 hover:text-red-500">
+                    ✕ Clear
+                  </Link>
+                )}
               </div>
-              <SearchToggle
-                basePath="/technicians"
-                defaultValue={filters.q}
-                placeholder="Search job # or device"
-                preserve={{ status: filters.status, ready: filters.ready }}
-              />
-            </div>
+            </>
           );
         })()}
-
-        {/* Quick filter chips + secondary action */}
-        <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2">
-          <div className="flex flex-wrap gap-1.5">
-            {quickActions.map((action) => (
-              <Link
-                key={action.label}
-                href={action.href}
-                className={`rounded-full border px-3 py-2 text-[11px] font-semibold transition ${action.active ? "border-[var(--accent)] bg-[var(--accent)] text-white" : "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink)] hover:border-[var(--accent)]/30"}`}
-              >
-                {action.label} <span className={action.active ? "opacity-80" : "text-[var(--ink-muted)]"}>({action.count})</span>
-              </Link>
-            ))}
-            {hasActiveFilters ? (
-              <Link href="/technicians" className="rounded-full border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-[11px] font-semibold text-[var(--ink-muted)] hover:border-red-200 hover:text-red-600">
-                Clear filters
-              </Link>
-            ) : null}
-          </div>
-          <Link
-            href={user.role === "TECHNICIAN_EXTERNAL" ? "/technicians/payouts" : `/jobs?status=IN_REPAIR&returnTo=${encodeURIComponent(boardReturnTo)}`}
-            className="btn-premium-secondary shrink-0 rounded-lg px-3 py-1.5 text-xs"
-          >
-            {user.role === "TECHNICIAN_EXTERNAL" ? "My Payouts →" : "Timeline Notes →"}
-          </Link>
-        </div>
       </section>
 
       {/* Priority Spotlight */}

@@ -2,7 +2,6 @@ import Link from "next/link";
 import React from "react";
 
 import { PersistedDisclosure } from "@/components/mobile/PersistedDisclosure";
-import { StickyKpiRow } from "@/components/mobile/StickyKpiRow";
 import { MonthSelectForm } from "@/components/shared/MonthSelectForm";
 import { RevenueLineChart } from "@/components/reports/ReportsCharts";
 import { getClientBill, resolveTechCost } from "@/lib/billing";
@@ -404,21 +403,12 @@ export default async function DashboardPage({
 
         <DashboardHero
           title="External Technician Control Board"
-          summary="Progress work orders and keep payout clearance in sync from one workspace."
+          summary={`${jobs.length} assigned · ${openCount} open · ${completedCount} completed · ${formatMoneyCompact(outstandingTotal, currency)} payout pending`}
           primaryHref="/technicians"
           primaryLabel="Open Work Queue"
           secondaryHref="/technicians/payouts"
           secondaryLabel="Review Payouts"
           icon={<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="black" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>}
-        />
-
-        <StickyKpiRow
-          items={[
-            { label: "Assigned", value: String(jobs.length), href: "/technicians" },
-            { label: "Open", value: String(openCount), href: "/technicians?ready=1", tone: "brand" },
-            { label: "Completed", value: String(completedCount), href: "/jobs?status=COMPLETED", tone: "success" },
-            { label: "Outstanding", value: formatMoneyCompact(outstandingTotal, currency), href: "/technicians/payouts", tone: "warning" },
-          ]}
         />
 
         <div className="hidden gap-3 2xl:grid 2xl:grid-cols-4">
@@ -1301,21 +1291,12 @@ export default async function DashboardPage({
 
         <DashboardHero
           title="Operations Overview"
-          summary={`${completedThisMonth.length} completed · ${pendingBilling} pending billing · revenue ${formatMoneyCompact(monthRevenue, currency)}`}
+          summary={`${completedThisMonth.length} completed · ${pendingBilling} pending billing · revenue ${formatMoneyCompact(monthRevenue, currency)} · payouts ${formatMoneyCompact(payoutOutstanding, currency)}`}
           primaryHref="/jobs"
           primaryLabel="View Jobs"
           secondaryHref={reportHref}
           secondaryLabel="Reports"
           icon={<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="black" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>}
-        />
-
-        <StickyKpiRow
-          items={[
-            { label: "Revenue", value: formatMoneyCompact(monthRevenue, currency), href: "/reports" },
-            { label: "Pending", value: String(pendingBilling), href: "/jobs?status=IN_REPAIR,READY_FOR_PICKUP,AWAITING_APPROVAL", tone: "warning" },
-            { label: "Payouts", value: formatMoneyCompact(payoutOutstanding, currency), href: "/reports", tone: "brand" },
-            { label: "Completed", value: String(completedThisMonth.length), href: "/jobs?status=COMPLETED", tone: "success" },
-          ]}
         />
 
         <div className="grid gap-3 lg:grid-cols-2">
@@ -1406,50 +1387,34 @@ export default async function DashboardPage({
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-3 lg:hidden">
-          <Link href="/jobs/new" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 text-center transition hover:-translate-y-[1px]">
-            <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Captured</p>
-            <p className="mt-1 text-3xl font-semibold">{capturedThisMonth}</p>
-            <p className="mt-1 text-[11px] font-medium text-[var(--accent)]">New intake →</p>
-          </Link>
-          <Link href="/jobs?status=RECEIVED,DIAGNOSING,AWAITING_APPROVAL,IN_REPAIR,READY_FOR_PICKUP" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 text-center transition hover:-translate-y-[1px]">
-            <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Open</p>
-            <p className="mt-1 text-3xl font-semibold text-[var(--accent)]">{openFromIntake}</p>
-            <p className="mt-1 text-[11px] font-medium text-[var(--accent)]">In progress →</p>
-          </Link>
-          <Link href="/jobs?status=AWAITING_APPROVAL" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 text-center transition hover:-translate-y-[1px]">
-            <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Approval</p>
-            <p className="mt-1 text-3xl font-semibold text-[var(--accent)]">{awaitingApproval}</p>
-            <p className="mt-1 text-[11px] font-medium text-[var(--accent)]">Follow up →</p>
-          </Link>
-          <Link href="/jobs?status=READY_FOR_PICKUP" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 text-center transition hover:-translate-y-[1px]">
-            <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Ready</p>
-            <p className="mt-1 text-3xl font-semibold text-[var(--accent)]">{readyForPickup}</p>
-            <p className="mt-1 text-[11px] font-medium text-[var(--accent)]">Pickup →</p>
-          </Link>
+        {/* Compact inline KPI strip — replaces 2×2 mobile card grid */}
+        <div className="panel-shadow grid grid-cols-4 divide-x divide-[var(--line)] overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)] lg:hidden">
+          {[
+            { label: "Captured",  value: capturedThisMonth, href: "/jobs/new",                                                                          color: "text-[var(--ink)]" },
+            { label: "Open",      value: openFromIntake,    href: "/jobs?status=RECEIVED,DIAGNOSING,AWAITING_APPROVAL,IN_REPAIR,READY_FOR_PICKUP",       color: "text-[var(--accent)]" },
+            { label: "Approval",  value: awaitingApproval,  href: "/jobs?status=AWAITING_APPROVAL",                                                      color: awaitingApproval > 0 ? "text-amber-500" : "text-[var(--ink-muted)]" },
+            { label: "Ready",     value: readyForPickup,    href: "/jobs?status=READY_FOR_PICKUP",                                                       color: readyForPickup > 0 ? "text-[var(--accent)]" : "text-[var(--ink-muted)]" },
+          ].map((item) => (
+            <Link key={item.label} href={item.href} className="flex flex-col items-center justify-center gap-0.5 py-3 transition hover:bg-[var(--panel-strong)]">
+              <p className={`text-lg font-bold ${item.color}`}>{item.value}</p>
+              <p className="text-[9px] uppercase tracking-[0.12em] text-[var(--ink-muted)]">{item.label}</p>
+            </Link>
+          ))}
         </div>
 
-        <div className="grid gap-3 lg:grid-cols-2">
-          <Link href="/jobs/new" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px] sm:p-5">
-            <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Captured ({selectedPeriodLabel})</p>
-            <p className="mt-2 text-3xl font-semibold">{capturedThisMonth}</p>
-            <p className="mt-2 text-xs font-medium text-[var(--accent)]">Open intake form →</p>
-          </Link>
-          <Link href="/jobs?status=RECEIVED,DIAGNOSING,AWAITING_APPROVAL,IN_REPAIR,READY_FOR_PICKUP" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px] sm:p-5">
-            <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Open client queue</p>
-            <p className="mt-2 text-3xl font-semibold text-[var(--accent)]">{openFromIntake}</p>
-            <p className="mt-2 text-xs font-medium text-[var(--accent)]">View open jobs →</p>
-          </Link>
-          <Link href="/jobs?status=AWAITING_APPROVAL" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px] sm:p-5">
-            <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Awaiting approval</p>
-            <p className="mt-2 text-3xl font-semibold text-[var(--accent)]">{awaitingApproval}</p>
-            <p className="mt-2 text-xs font-medium text-[var(--accent)]">Open approval queue →</p>
-          </Link>
-          <Link href="/jobs?status=READY_FOR_PICKUP" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px] sm:p-5">
-            <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Ready for pickup</p>
-            <p className="mt-2 text-3xl font-semibold text-[var(--accent)]">{readyForPickup}</p>
-            <p className="mt-2 text-xs font-medium text-[var(--accent)]">Open pickup list →</p>
-          </Link>
+        {/* Compact 4-stat strip for desktop */}
+        <div className="panel-shadow hidden grid-cols-4 divide-x divide-[var(--line)] overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)] lg:grid">
+          {[
+            { label: `Captured (${selectedPeriodLabel})`, value: capturedThisMonth, href: "/jobs/new",                                                                          color: "text-[var(--ink)]" },
+            { label: "Open queue",                        value: openFromIntake,    href: "/jobs?status=RECEIVED,DIAGNOSING,AWAITING_APPROVAL,IN_REPAIR,READY_FOR_PICKUP",       color: "text-[var(--accent)]" },
+            { label: "Awaiting approval",                 value: awaitingApproval,  href: "/jobs?status=AWAITING_APPROVAL",                                                      color: awaitingApproval > 0 ? "text-amber-500" : "text-[var(--ink-muted)]" },
+            { label: "Ready for pickup",                  value: readyForPickup,    href: "/jobs?status=READY_FOR_PICKUP",                                                       color: readyForPickup > 0 ? "text-[var(--accent)]" : "text-[var(--ink-muted)]" },
+          ].map((item) => (
+            <Link key={item.label} href={item.href} className="flex flex-col items-center justify-center gap-0.5 py-3 transition hover:bg-[var(--panel-strong)]">
+              <p className={`text-lg font-bold ${item.color}`}>{item.value}</p>
+              <p className="text-[9px] uppercase tracking-[0.12em] text-[var(--ink-muted)]">{item.label}</p>
+            </Link>
+          ))}
         </div>
       </div>
     );
@@ -1898,7 +1863,7 @@ export default async function DashboardPage({
     <div className="space-y-4">
       <DashboardHero
         title="System Overview"
-        summary="Orient team focus · open the queue and reporting workspaces for deeper action."
+        summary={`${totalJobs} total jobs · ${openJobs} open · ${completedJobs} completed`}
         primaryHref="/jobs"
         primaryLabel="Open Jobs"
         secondaryHref="/reports"
@@ -1906,36 +1871,18 @@ export default async function DashboardPage({
         icon={<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="black" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>}
       />
 
-      <StickyKpiRow
-        items={[
-          { label: "Total", value: String(totalJobs), href: "/jobs" },
-          { label: "Open", value: String(openJobs), href: "/jobs?status=RECEIVED,DIAGNOSING,AWAITING_APPROVAL,IN_REPAIR,READY_FOR_PICKUP", tone: "brand" },
-          { label: "Completed", value: String(completedJobs), href: "/jobs?status=COMPLETED", tone: "success" },
-        ]}
-      />
-
-      <div className="grid gap-3 lg:grid-cols-3">
-        <Link href="/jobs" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px] sm:p-5">
-          <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Total Jobs</p>
-          <p className="mt-2 text-3xl font-semibold">{totalJobs}</p>
-          <p className="mt-2 text-xs font-medium text-[var(--accent)]">View all jobs →</p>
-        </Link>
-        <Link
-          href="/jobs?status=RECEIVED,DIAGNOSING,AWAITING_APPROVAL,IN_REPAIR,READY_FOR_PICKUP"
-          className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px] sm:p-5"
-        >
-          <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Open Jobs</p>
-          <p className="mt-2 text-3xl font-semibold text-[var(--accent)]">{openJobs}</p>
-          <p className="mt-2 text-xs font-medium text-[var(--accent)]">View open queue →</p>
-        </Link>
-        <Link
-          href="/jobs?status=COMPLETED"
-          className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px] sm:p-5"
-        >
-          <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Completed</p>
-          <p className="mt-2 text-3xl font-semibold text-[var(--accent)]">{completedJobs}</p>
-          <p className="mt-2 text-xs font-medium text-[var(--accent)]">View completed jobs →</p>
-        </Link>
+      {/* Quick-link row */}
+      <div className="panel-shadow grid grid-cols-3 divide-x divide-[var(--line)] overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
+        {[
+          { label: "Total Jobs",  value: String(totalJobs),    href: "/jobs",                                                                              color: "text-[var(--ink)]" },
+          { label: "Open",        value: String(openJobs),     href: "/jobs?status=RECEIVED,DIAGNOSING,AWAITING_APPROVAL,IN_REPAIR,READY_FOR_PICKUP",       color: "text-[var(--accent)]" },
+          { label: "Completed",   value: String(completedJobs),href: "/jobs?status=COMPLETED",                                                              color: "text-emerald-600" },
+        ].map((item) => (
+          <Link key={item.label} href={item.href} className="flex flex-col items-center justify-center gap-0.5 py-3 transition hover:bg-[var(--panel-strong)]">
+            <p className={`text-lg font-bold ${item.color}`}>{item.value}</p>
+            <p className="text-[10px] uppercase tracking-[0.12em] text-[var(--ink-muted)]">{item.label}</p>
+          </Link>
+        ))}
       </div>
 
     </div>
