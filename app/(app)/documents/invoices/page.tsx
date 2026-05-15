@@ -284,70 +284,63 @@ export default async function InvoicesPage() {
 
   return (
     <section className="space-y-4">
-      <div className="panel-shadow overflow-hidden rounded-[1.75rem] border border-[var(--line)] bg-[var(--panel)] p-4 sm:p-6">
+      {/* Header */}
+      <div className="panel-shadow rounded-[1.75rem] border border-[var(--line)] bg-[var(--panel)] p-4 sm:p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex min-w-0 items-center gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-[var(--line)] bg-[var(--accent)] text-xl font-black text-black">
-              ₹
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-[var(--line)] bg-[var(--accent)]">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="black" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
             </div>
             <div className="min-w-0">
               <p className="truncate text-xl font-black text-[var(--ink)]">Invoices</p>
-              <p className="mt-0.5 truncate text-xs text-[var(--ink-muted)]">Generate invoices · record payments · track outstanding balances</p>
+              <p className="mt-0.5 truncate text-xs text-[var(--ink-muted)]">Generate · record payments · track outstanding balances</p>
             </div>
           </div>
           <Link href="/jobs/new" className="btn-premium rounded-full px-4 py-2 text-sm">New Job</Link>
         </div>
       </div>
 
-      <div className="grid gap-3 md:grid-cols-4">
+      {/* KPI tiles */}
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Total Invoices</p>
-          <p className="mt-2 text-2xl font-semibold text-[var(--ink)]">{totalCount}</p>
+          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Total</p>
+          <p className="mt-2 text-2xl font-black text-[var(--ink)]">{totalCount}</p>
           <p className="mt-1 text-xs text-[var(--ink-muted)]">This month: {thisMonthCount}</p>
         </div>
         <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Outstanding</p>
-          <p className="mt-2 text-2xl font-semibold text-[var(--ink)]">{outstandingCount}</p>
+          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Outstanding</p>
+          <p className="mt-2 text-2xl font-black text-amber-600">{outstandingCount}</p>
+          <p className="mt-1 text-xs text-[var(--ink-muted)]">unpaid invoices</p>
         </div>
         <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Outstanding Amount</p>
-          <p className="mt-2 text-2xl font-semibold text-[var(--ink)]">{formatMoney(totalOutstanding, org.baseCurrency)}</p>
+          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Amount Due</p>
+          <p className="mt-2 text-2xl font-black text-[var(--ink)]">{formatMoney(totalOutstanding, org.baseCurrency)}</p>
+          <p className="mt-1 text-xs text-[var(--ink-muted)]">{org.baseCurrency}</p>
         </div>
         <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Ready Jobs</p>
-          <p className="mt-2 text-2xl font-semibold text-[var(--ink)]">{readyJobs.length}</p>
+          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Ready to Invoice</p>
+          <p className="mt-2 text-2xl font-black text-[var(--accent)]">{readyJobs.length}</p>
+          <p className="mt-1 text-xs text-[var(--ink-muted)]">jobs awaiting</p>
         </div>
       </div>
 
       {dbNeedsFix ? (
-        <div className="mt-4 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
-          <p className="font-semibold text-amber-50">Invoice tables are missing in the database.</p>
-          <p className="mt-1 text-amber-100/90">
-            Run <span className="mono">/api/admin/db-fix</span> as the platform admin to create <span className="mono">Invoice</span> and <span className="mono">Payment</span>.
-          </p>
-          <a
-            className="mt-3 inline-flex rounded-lg border border-amber-500/30 bg-black/20 px-3 py-2 text-xs font-semibold text-amber-50 hover:bg-black/30"
-            href="/api/admin/db-fix"
-            target="_blank"
-            rel="noreferrer"
-          >
-            Open DB Fix
-          </a>
+        <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm">
+          <p className="font-semibold text-amber-600">Invoice tables are missing in the database.</p>
+          <p className="mt-1 text-xs text-[var(--ink-muted)]">Run <span className="mono">/api/admin/db-fix</span> as platform admin.</p>
+          <a className="mt-3 inline-flex rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs font-semibold text-amber-700 hover:bg-amber-500/20" href="/api/admin/db-fix" target="_blank" rel="noreferrer">Open DB Fix</a>
         </div>
       ) : null}
 
       {readyJobs.length > 0 ? (
-        <div className="mt-4 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] p-3">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Ready</p>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {readyJobs.slice(0, 10).map((job) => (
-              <a
-                key={job.id}
-                href={`/api/jobs/${job.id}/invoice`}
-                target="_blank"
-                rel="noreferrer"
-                className="rounded-full border border-[var(--line)] bg-[var(--panel)] px-3 py-1.5 text-xs font-semibold text-[var(--ink)] hover:border-[var(--accent)]/40"
-              >
+        <div className="rounded-xl border border-[var(--accent)]/20 bg-[var(--accent)]/5 p-4">
+          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--accent)]">Generate Invoice</p>
+          <p className="mt-0.5 text-xs text-[var(--ink-muted)]">These jobs are ready — click to open the invoice PDF</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {readyJobs.slice(0, 12).map((job) => (
+              <a key={job.id} href={`/api/jobs/${job.id}/invoice`} target="_blank" rel="noreferrer"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--accent)]/30 bg-[var(--panel)] px-3 py-1.5 text-xs font-semibold text-[var(--ink)] transition hover:border-[var(--accent)]/60 hover:text-[var(--accent)]">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
                 {job.jobNumber}
               </a>
             ))}
@@ -355,17 +348,17 @@ export default async function InvoicesPage() {
         </div>
       ) : null}
 
-      <div className="mt-4 overflow-hidden rounded-xl border border-[var(--line)]">
+      {/* Table */}
+      <div className="rounded-xl border border-[var(--line)]">
         <table className="w-full text-left text-sm">
           <thead className="bg-[var(--panel-strong)] text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
             <tr>
-              <th className="px-3 py-2.5">Invoice</th>
-              <th className="hidden px-3 py-2.5 md:table-cell">Job</th>
-              <th className="px-3 py-2.5">Status</th>
-              <th className="px-3 py-2.5">Total</th>
-              <th className="hidden px-3 py-2.5 md:table-cell">Paid</th>
-              <th className="hidden px-3 py-2.5 lg:table-cell">Balance</th>
-              <th className="px-3 py-2.5">Action</th>
+              <th className="px-4 py-3">Invoice</th>
+              <th className="hidden px-4 py-3 md:table-cell">Job · Client</th>
+              <th className="px-4 py-3">Status</th>
+              <th className="px-4 py-3">Total</th>
+              <th className="hidden px-4 py-3 lg:table-cell">Balance</th>
+              <th className="px-4 py-3 text-right">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -373,7 +366,7 @@ export default async function InvoicesPage() {
               const balance = Math.max(0, inv.totalAmount - inv.paidAmount);
               const invoiceCurrency = normalizeCurrency(inv.currency, org.baseCurrency);
               const isPaid = balance <= 0;
-              const statusBadge = isPaid
+              const statusCls = isPaid
                 ? "bg-emerald-500/15 text-emerald-700 border-emerald-500/30"
                 : inv.status === "VOID"
                   ? "bg-red-500/10 text-red-600 border-red-500/20"
@@ -383,157 +376,110 @@ export default async function InvoicesPage() {
               const statusLabel = isPaid ? "Paid" : inv.status === "VOID" ? "Void" : inv.status === "DRAFT" ? "Draft" : "Outstanding";
               return (
                 <tr key={inv.id} className="border-t border-[var(--line)] align-middle hover:bg-[var(--panel-strong)]/40">
-                  <td className="px-3 py-2.5">
-                    <p className="mono font-bold text-[var(--ink)]">{inv.invoiceNumber}</p>
-                    <p className="text-xs text-[var(--ink-muted)]">{inv.issuedAt.toLocaleDateString()}</p>
+                  <td className="px-4 py-3">
+                    <p className="mono text-sm font-bold text-[var(--ink)]">{inv.invoiceNumber}</p>
+                    <p className="mt-0.5 text-[11px] text-[var(--ink-muted)]">{inv.issuedAt.toLocaleDateString()}</p>
                   </td>
-                  <td className="hidden px-3 py-2.5 md:table-cell">
-                    <Link className="mono font-bold text-[var(--ink)] transition-colors hover:text-[var(--accent)]" href={`/jobs/${inv.job.id}`}>
+                  <td className="hidden px-4 py-3 md:table-cell">
+                    <Link className="mono text-sm font-bold text-[var(--ink)] transition-colors hover:text-[var(--accent)]" href={`/jobs/${inv.job.id}`}>
                       {inv.job.jobNumber}
                     </Link>
-                    <p className="text-xs text-[var(--ink-muted)]">{inv.job.client.fullName}</p>
+                    <p className="mt-0.5 text-[11px] text-[var(--ink-muted)]">{inv.job.client.fullName}</p>
                   </td>
-                  <td className="px-3 py-2.5">
-                    <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${statusBadge}`}>{statusLabel}</span>
+                  <td className="px-4 py-3">
+                    <span className={`rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${statusCls}`}>{statusLabel}</span>
                   </td>
-                  <td className="px-3 py-2.5 font-semibold text-[var(--ink)]">{formatMoney(inv.totalAmount, invoiceCurrency)}</td>
-                  <td className="hidden px-3 py-2.5 text-[var(--ink-muted)] md:table-cell">
-                    {inv.paidAmount > 0 ? formatMoney(inv.paidAmount, invoiceCurrency) : "-"}
+                  <td className="px-4 py-3">
+                    <p className="font-bold text-[var(--ink)]">{formatMoney(inv.totalAmount, invoiceCurrency)}</p>
+                    {inv.paidAmount > 0 && !isPaid ? (
+                      <p className="mt-0.5 text-[11px] text-emerald-700">{formatMoney(inv.paidAmount, invoiceCurrency)} paid</p>
+                    ) : null}
                   </td>
-                  <td className="hidden px-3 py-2.5 lg:table-cell">
+                  <td className="hidden px-4 py-3 lg:table-cell">
                     {isPaid
-                      ? <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">Cleared</span>
-                      : <span className="font-medium text-amber-700">{formatMoney(balance, invoiceCurrency)}</span>
+                      ? <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-700">Cleared</span>
+                      : <span className="font-semibold text-amber-700">{formatMoney(balance, invoiceCurrency)}</span>
                     }
                   </td>
-                  <td className="px-3 py-2">
-                    <div className="flex flex-wrap items-center gap-2">
+                  <td className="px-4 py-3">
+                    <div className="flex items-center justify-end gap-1.5">
+                      <Link href={`/jobs/${inv.job.id}`} className="inline-flex items-center rounded-lg border border-[var(--line)] px-2.5 py-1.5 text-xs font-medium text-[var(--ink)] transition hover:border-[var(--accent)]/50 hover:text-[var(--accent)]">
+                        View
+                      </Link>
+                      {canGenerateInvoiceForStatus(inv.job.status) ? (
+                        <a href={`/api/jobs/${inv.job.id}/invoice`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 rounded-lg border border-[var(--accent)]/40 bg-[var(--accent)]/10 px-2.5 py-1.5 text-xs font-semibold text-[var(--accent)] transition hover:bg-[var(--accent)]/20">
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+                          PDF
+                        </a>
+                      ) : null}
+                      {inv.payments[0]?.id ? (
+                        <a href={`/api/payments/${inv.payments[0].id}/receipt`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-2.5 py-1.5 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-500/20">
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 2h16v20l-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M9 7h6M9 11h6M9 15h4"/></svg>
+                          Receipt
+                        </a>
+                      ) : null}
                       <details className="relative inline-block">
-                        <summary className="inline-flex h-9 w-9 cursor-pointer list-none items-center justify-center rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink)] transition hover:border-[var(--accent)]/40">
-                          <span className="sr-only">Actions</span>
-                          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                            <circle cx="5" cy="12" r="1.8" />
-                            <circle cx="12" cy="12" r="1.8" />
-                            <circle cx="19" cy="12" r="1.8" />
-                          </svg>
+                        <summary className="inline-flex h-[30px] w-[30px] cursor-pointer list-none items-center justify-center rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)] transition hover:border-[var(--accent)]/40 hover:text-[var(--ink)]">
+                          <span className="sr-only">More</span>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
                         </summary>
-                        <div className="panel-shadow absolute right-0 z-20 mt-2 w-48 overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
-                          <div className="py-1">
-                            <Link href={`/jobs/${inv.job.id}`} className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm font-medium text-[var(--ink)] transition hover:bg-[var(--panel-strong)]">
-                              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
-                              View
-                            </Link>
-                            {canGenerateInvoiceForStatus(inv.job.status) ? (
-                              <a href={`/api/jobs/${inv.job.id}/invoice`} target="_blank" rel="noreferrer" className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm font-medium text-[var(--ink)] transition hover:bg-[var(--panel-strong)]">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
-                                Download Invoice PDF
-                              </a>
-                            ) : (
-                              <span className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm font-medium text-[var(--ink-muted)]">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
-                                Download Invoice PDF
-                              </span>
-                            )}
-                            {inv.payments[0]?.id ? (
-                              <a href={`/api/payments/${inv.payments[0].id}/receipt`} target="_blank" rel="noreferrer" className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm font-medium text-emerald-700 transition hover:bg-[var(--panel-strong)]">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M4 2h16v20l-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M9 7h6M9 11h6M9 15h4"/></svg>
-                                Download Receipt PDF
-                              </a>
-                            ) : null}
-                            {balance <= 0 ? (
-                              <details className="border-t border-[var(--line)]">
-                                <summary className="flex w-full cursor-pointer list-none items-center gap-2 px-4 py-3 text-left text-sm font-medium text-[var(--ink)] transition hover:bg-[var(--panel-strong)]">
-                                  Create Delivery Note
-                                </summary>
-                                <form action={createDeliveryNoteAction} className="space-y-2 px-4 pb-3">
-                                  <input type="hidden" name="invoiceId" value={inv.id} />
-                                  <input name="deliveredByName" placeholder="Delivered by" className="w-full rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-1.5 text-xs outline-none focus:border-[var(--accent)]/50" />
-                                  <input name="receivedByName" placeholder="Received by" className="w-full rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-1.5 text-xs outline-none focus:border-[var(--accent)]/50" />
-                                  <input name="receivedBySignatureText" placeholder="Signature text" className="w-full rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-1.5 text-xs outline-none focus:border-[var(--accent)]/50" />
-                                  <select name="deliveryMethod" defaultValue="" className="w-full rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-1.5 text-xs outline-none focus:border-[var(--accent)]/50">
-                                    <option value="">No method</option>
-                                    {DELIVERY_METHODS.map((m) => <option key={m} value={m}>{m.replaceAll("_", " ")}</option>)}
+                        <div className="panel-shadow absolute right-0 bottom-full z-30 mb-1.5 w-64 rounded-xl border border-[var(--line)] bg-[var(--panel)]">
+                          {balance > 0 ? (
+                            <>
+                              <p className="border-b border-[var(--line)] px-4 py-2 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Record Payment</p>
+                              <form action={addPaymentAction} className="space-y-2 p-3">
+                                <input type="hidden" name="invoiceId" value={inv.id} />
+                                <div className="flex gap-2">
+                                  <input name="amount" inputMode="decimal" placeholder="Amount" className="min-w-0 flex-1 rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1.5 text-xs outline-none focus:border-[var(--accent)]/50" />
+                                  <select name="currency" defaultValue={invoiceCurrency} className="rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-1.5 text-xs outline-none focus:border-[var(--accent)]/50">
+                                    {org.supportedCurrencies.map((c) => <option key={c} value={c}>{c}</option>)}
                                   </select>
-                                  <textarea name="note" placeholder="Delivery note" className="min-h-16 w-full rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-1.5 text-xs outline-none focus:border-[var(--accent)]/50" />
-                                  <button className="btn-premium w-full rounded-md px-2.5 py-1.5 text-xs text-white">Create</button>
-                                </form>
-                              </details>
-                            ) : null}
-                            <details className="border-t border-[var(--line)]">
-                              <summary className="flex w-full cursor-pointer list-none items-center gap-2 px-4 py-3 text-left text-sm font-medium text-[var(--ink)] transition hover:bg-[var(--panel-strong)]">
-                                Edit Invoice
-                              </summary>
-                              <form action={updateInvoiceAction} className="space-y-2 px-4 pb-3">
+                                </div>
+                                {invoiceCurrency !== org.baseCurrency ? (
+                                  <input name="exchangeRateToBase" inputMode="decimal" placeholder={`1 ${invoiceCurrency} = ? ${org.baseCurrency}`} className="w-full rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1.5 text-xs outline-none focus:border-[var(--accent)]/50" />
+                                ) : null}
+                                <div className="flex gap-2">
+                                  <select name="method" defaultValue="CASH" className="flex-1 rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-1.5 text-xs outline-none focus:border-[var(--accent)]/50">
+                                    {PAYMENT_METHODS.map((m) => <option key={m} value={m}>{m.replaceAll("_", " ")}</option>)}
+                                  </select>
+                                  <input name="reference" placeholder="Ref" className="min-w-0 flex-1 rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1.5 text-xs outline-none focus:border-[var(--accent)]/50" />
+                                </div>
+                                <button className="btn-premium w-full rounded-lg px-3 py-1.5 text-xs font-semibold">Record Payment</button>
+                              </form>
+                            </>
+                          ) : null}
+                          {balance <= 0 ? (
+                            <>
+                              <p className="border-b border-[var(--line)] px-4 py-2 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Delivery Note</p>
+                              <form action={createDeliveryNoteAction} className="space-y-2 p-3">
                                 <input type="hidden" name="invoiceId" value={inv.id} />
-                                <select name="status" defaultValue={inv.status} className="w-full rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-1.5 text-xs outline-none focus:border-[var(--accent)]/50">
-                                  {INVOICE_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+                                <input name="deliveredByName" placeholder="Delivered by" className="w-full rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1.5 text-xs outline-none focus:border-[var(--accent)]/50" />
+                                <input name="receivedByName" placeholder="Received by" className="w-full rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1.5 text-xs outline-none focus:border-[var(--accent)]/50" />
+                                <select name="deliveryMethod" defaultValue="" className="w-full rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1.5 text-xs outline-none focus:border-[var(--accent)]/50">
+                                  <option value="">No method</option>
+                                  {DELIVERY_METHODS.map((m) => <option key={m} value={m}>{m.replaceAll("_", " ")}</option>)}
                                 </select>
-                                <textarea name="notes" defaultValue={inv.notes ?? ""} placeholder="Invoice notes" className="min-h-16 w-full rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-1.5 text-xs outline-none focus:border-[var(--accent)]/50" />
-                                <button className="btn-premium w-full rounded-md px-2.5 py-1.5 text-xs text-white">Save</button>
+                                <button className="btn-premium w-full rounded-lg px-3 py-1.5 text-xs font-semibold">Create Note</button>
                               </form>
-                            </details>
-                            {inv.payments.length === 0 && inv.deliveryNotes.length === 0 ? (
-                              <form action={deleteInvoiceAction} className="border-t border-[var(--line)] px-4 py-3">
-                                <input type="hidden" name="invoiceId" value={inv.id} />
-                                <ConfirmSubmitButton message="Delete this invoice? This cannot be undone." className="text-left text-sm font-semibold text-red-600 transition hover:text-red-700">Delete Invoice</ConfirmSubmitButton>
-                              </form>
-                            ) : null}
-                          </div>
+                            </>
+                          ) : null}
+                          <p className="border-b border-[var(--line)] px-4 py-2 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Edit</p>
+                          <form action={updateInvoiceAction} className="space-y-2 p-3">
+                            <input type="hidden" name="invoiceId" value={inv.id} />
+                            <select name="status" defaultValue={inv.status} className="w-full rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1.5 text-xs outline-none focus:border-[var(--accent)]/50">
+                              {INVOICE_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+                            </select>
+                            <textarea name="notes" defaultValue={inv.notes ?? ""} placeholder="Notes" className="min-h-12 w-full rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1.5 text-xs outline-none focus:border-[var(--accent)]/50" />
+                            <button className="btn-premium w-full rounded-lg px-3 py-1.5 text-xs font-semibold">Save</button>
+                          </form>
+                          {inv.payments.length === 0 && inv.deliveryNotes.length === 0 ? (
+                            <form action={deleteInvoiceAction} className="border-t border-[var(--line)] px-3 py-2.5">
+                              <input type="hidden" name="invoiceId" value={inv.id} />
+                              <ConfirmSubmitButton message="Delete this invoice? This cannot be undone." className="text-xs font-semibold text-red-600 transition hover:text-red-700">Delete Invoice</ConfirmSubmitButton>
+                            </form>
+                          ) : null}
                         </div>
                       </details>
-
-                      {balance > 0 ? (
-                        <form action={addPaymentAction} className="flex items-center gap-1">
-                          <input type="hidden" name="invoiceId" value={inv.id} />
-                          <input
-                            name="amount"
-                            inputMode="decimal"
-                            placeholder="Amt"
-                            className="w-24 rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-1 text-xs outline-none focus:border-[var(--accent)]/50"
-                          />
-                          <select
-                            name="currency"
-                            defaultValue={invoiceCurrency}
-                            className="rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-1 text-xs outline-none focus:border-[var(--accent)]/50"
-                            title={invoiceCurrency === org.baseCurrency ? "" : "If not base currency, also provide exchange rate"}
-                          >
-                            {org.supportedCurrencies.map((c) => (
-                              <option key={c} value={c}>{c}</option>
-                            ))}
-                          </select>
-                          <input
-                            name="exchangeRateToBase"
-                            inputMode="decimal"
-                            placeholder={invoiceCurrency === org.baseCurrency ? "Rate" : `1 ${invoiceCurrency} = ? ${org.baseCurrency}`}
-                            className="w-36 rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-1 text-xs outline-none focus:border-[var(--accent)]/50"
-                            title={`Only required when currency differs from ${org.baseCurrency}`}
-                          />
-                          <select
-                            name="method"
-                            defaultValue="CASH"
-                            className="rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-1 text-xs outline-none focus:border-[var(--accent)]/50"
-                          >
-                            {PAYMENT_METHODS.map((m) => (
-                              <option key={m} value={m}>{m.replaceAll("_", " ")}</option>
-                            ))}
-                          </select>
-                          <input
-                            name="reference"
-                            placeholder="Ref"
-                            className="hidden w-28 rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-1 text-xs outline-none focus:border-[var(--accent)]/50 md:block"
-                          />
-                          <button className="btn-premium rounded-md px-2.5 py-1 text-xs text-white">Record Payment</button>
-                        </form>
-                      ) : (
-                        <div className="flex items-center gap-2">
-                          <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700">Paid</span>
-                          {inv.payments[0]?.id && (
-                            <a href={`/api/payments/${inv.payments[0].id}/receipt`} target="_blank" rel="noreferrer" className="rounded-full border border-emerald-200 px-2.5 py-1 text-xs font-semibold text-emerald-700 hover:bg-emerald-50">
-                              Receipt ↓
-                            </a>
-                          )}
-                        </div>
-                      )}
                     </div>
                   </td>
                 </tr>
@@ -542,8 +488,8 @@ export default async function InvoicesPage() {
 
             {invoices.length === 0 ? (
               <tr className="border-t border-[var(--line)]">
-                <td className="px-3 py-6 text-sm text-[var(--ink-muted)]" colSpan={6}>
-                  No invoices yet.
+                <td className="px-4 py-10 text-center text-sm text-[var(--ink-muted)]" colSpan={6}>
+                  No invoices yet. Generate one from a completed job above.
                 </td>
               </tr>
             ) : null}

@@ -244,6 +244,9 @@ model Verification {
 
 enum Role {
   ADMIN
+  MANAGER
+  FINANCE
+  SALES
   OPS
   TECHNICIAN_INTERNAL
   TECHNICIAN_EXTERNAL

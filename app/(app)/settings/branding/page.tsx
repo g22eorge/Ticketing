@@ -282,161 +282,98 @@ export default async function BrandingPage({
         </div>
       ) : null}
 
-      <form action={saveBrandingAction} className="panel-shadow space-y-3 overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 [&_*]:min-w-0">
-        <details className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] p-3" open>
-          <summary className="text-sm font-semibold text-[var(--ink)]">Company & Numbering</summary>
-          <div className="mt-3 grid gap-2 lg:grid-cols-2">
-          <input name="companyName" defaultValue={settings.companyName} placeholder="Company name" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-sm outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
-          <input name="companyTagline" defaultValue={settings.companyTagline ?? ""} placeholder="Tagline" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-sm outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
-          <input name="companyAddressLine1" defaultValue={settings.companyAddressLine1} placeholder="Address line 1" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-sm outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
-          <input name="companyAddressLine2" defaultValue={settings.companyAddressLine2} placeholder="Address line 2" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-sm outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
-          <input name="companyContacts" defaultValue={settings.companyContacts} placeholder="Contacts" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-sm outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
-          <input name="companyEmail" defaultValue={settings.companyEmail ?? ""} placeholder="Company email" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-sm outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
-          <input name="companyWebsite" defaultValue={settings.companyWebsite ?? ""} placeholder="Company website" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-sm outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
-          <input name="documentTitle" defaultValue={settings.documentTitle} placeholder="Document title" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-sm outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
-          <input name="quotePrefix" defaultValue={settings.quotePrefix} placeholder="Quote prefix" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-sm outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
-          <input name="quoteFormat" defaultValue={settings.quoteFormat} placeholder="Quote format" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-sm outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
-            <p className="text-xs text-[var(--ink-muted)] [overflow-wrap:anywhere] lg:col-span-2">
-            Preview: <span className="font-medium text-[var(--ink)]">{quotePreview}</span>
-          </p>
-          <input type="number" name="quoteValidityDays" defaultValue={settings.quoteValidityDays} placeholder="Validity days" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-sm outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
-          <input type="number" name="sequencePadLength" defaultValue={settings.sequencePadLength} placeholder="Sequence pad length" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-sm outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
+      <form action={saveBrandingAction} className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)] [&_*]:min-w-0">
+        {/* Company & Numbering */}
+        <div className="border-b border-[var(--line)] p-4">
+          <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Company &amp; Numbering</p>
+          <div className="grid gap-2 lg:grid-cols-2">
+            <input name="companyName" defaultValue={settings.companyName} placeholder="Company name" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
+            <input name="companyTagline" defaultValue={settings.companyTagline ?? ""} placeholder="Tagline" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
+            <input name="companyAddressLine1" defaultValue={settings.companyAddressLine1} placeholder="Address line 1" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
+            <input name="companyAddressLine2" defaultValue={settings.companyAddressLine2} placeholder="Address line 2" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
+            <input name="companyContacts" defaultValue={settings.companyContacts} placeholder="Contacts" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
+            <input name="companyEmail" defaultValue={settings.companyEmail ?? ""} placeholder="Company email" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
+            <input name="companyWebsite" defaultValue={settings.companyWebsite ?? ""} placeholder="Company website" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
+            <input name="documentTitle" defaultValue={settings.documentTitle} placeholder="Document title" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
+            <input name="quotePrefix" defaultValue={settings.quotePrefix} placeholder="Quote prefix" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
+            <input name="quoteFormat" defaultValue={settings.quoteFormat} placeholder="Quote format" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
+            <p className="text-[11px] text-[var(--ink-muted)] [overflow-wrap:anywhere] lg:col-span-2">
+              Preview: <span className="font-medium text-[var(--ink)]">{quotePreview}</span>
+            </p>
+            <input type="number" name="quoteValidityDays" defaultValue={settings.quoteValidityDays} placeholder="Validity days" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
+            <input type="number" name="sequencePadLength" defaultValue={settings.sequencePadLength} placeholder="Sequence pad length" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
           </div>
-        </details>
+        </div>
 
-        <details className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] p-3" open>
-          <summary className="text-sm font-semibold text-[var(--ink)]">Document Templates</summary>
-          <p className="mt-2 text-xs text-[var(--ink-muted)]">
-            Available templates depend on your plan ({planLabel(plan)}). Locked templates show the required upgrade.
-          </p>
-          <div className="mt-3 grid gap-2 lg:grid-cols-2">
-            <div>
-              <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Invoice Template</p>
-              <select
-                name="invoiceTemplateKey"
-                defaultValue={selectedInvoiceKey}
-                className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-sm outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14"
-              >
-                {invoiceTemplates.allowed.map((t) => (
-                  <option key={t.key} value={t.key}>{t.label}</option>
-                ))}
-                {invoiceTemplates.locked.map((t) => (
-                  <option key={t.key} value={t.key} disabled>
-                    {t.label} (Upgrade to {planLabel(t.minPlan)})
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Quotation Template</p>
-              <select
-                name="quotationTemplateKey"
-                defaultValue={selectedQuoteKey}
-                className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-sm outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14"
-              >
-                {quotationTemplates.allowed.map((t) => (
-                  <option key={t.key} value={t.key}>{t.label}</option>
-                ))}
-                {quotationTemplates.locked.map((t) => (
-                  <option key={t.key} value={t.key} disabled>
-                    {t.label} (Upgrade to {planLabel(t.minPlan)})
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Job Card Template</p>
-              <select
-                name="jobCardTemplateKey"
-                defaultValue={selectedJobCardKey}
-                className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-sm outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14"
-              >
-                {jobCardTemplates.allowed.map((t) => (
-                  <option key={t.key} value={t.key}>{t.label}</option>
-                ))}
-                {jobCardTemplates.locked.map((t) => (
-                  <option key={t.key} value={t.key} disabled>
-                    {t.label} (Upgrade to {planLabel(t.minPlan)})
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Receipt Template</p>
-              <select
-                name="receiptTemplateKey"
-                defaultValue={selectedReceiptKey}
-                className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-sm outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14"
-              >
-                {receiptTemplates.allowed.map((t) => (
-                  <option key={t.key} value={t.key}>{t.label}</option>
-                ))}
-                {receiptTemplates.locked.map((t) => (
-                  <option key={t.key} value={t.key} disabled>
-                    {t.label} (Upgrade to {planLabel(t.minPlan)})
-                  </option>
-                ))}
-              </select>
-            </div>
+        {/* Document Templates */}
+        <div className="border-b border-[var(--line)] p-4">
+          <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Document Templates</p>
+          <p className="mb-3 text-[11px] text-[var(--ink-muted)]">Available templates depend on your plan ({planLabel(plan)}).</p>
+          <div className="grid gap-3 lg:grid-cols-2">
+            {[
+              { label: "Invoice", name: "invoiceTemplateKey", value: selectedInvoiceKey, allowed: invoiceTemplates.allowed, locked: invoiceTemplates.locked },
+              { label: "Quotation", name: "quotationTemplateKey", value: selectedQuoteKey, allowed: quotationTemplates.allowed, locked: quotationTemplates.locked },
+              { label: "Job Card", name: "jobCardTemplateKey", value: selectedJobCardKey, allowed: jobCardTemplates.allowed, locked: jobCardTemplates.locked },
+              { label: "Receipt", name: "receiptTemplateKey", value: selectedReceiptKey, allowed: receiptTemplates.allowed, locked: receiptTemplates.locked },
+            ].map(({ label, name, value, allowed, locked }) => (
+              <div key={name}>
+                <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">{label}</p>
+                <select name={name} defaultValue={value} className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14">
+                  {allowed.map((t) => <option key={t.key} value={t.key}>{t.label}</option>)}
+                  {locked.map((t) => <option key={t.key} value={t.key} disabled>{t.label} (Upgrade to {planLabel(t.minPlan)})</option>)}
+                </select>
+              </div>
+            ))}
           </div>
-        </details>
+        </div>
 
-        <details className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] p-3">
-          <summary className="text-sm font-semibold text-[var(--ink)]">VAT & Sign-off</summary>
-          <div className="mt-3 grid gap-2 lg:grid-cols-2">
-          <select name="vatDefaultApplicable" defaultValue={settings.vatDefaultApplicable ? "true" : "false"} className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-sm outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14">
-            <option value="true">VAT default: applicable</option>
-            <option value="false">VAT default: not applicable</option>
-          </select>
-          <input type="number" step="0.01" name="vatRatePercent" defaultValue={settings.vatRatePercent} placeholder="VAT rate" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-sm outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
-          <input name="vatLabel" defaultValue={settings.vatLabel} placeholder="VAT label" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-sm outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
-            <input name="signatureCompanyLabel" defaultValue={settings.signatureCompanyLabel} placeholder="Company signature label" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-sm outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
-            <input name="signatureClientLabel" defaultValue={settings.signatureClientLabel} placeholder="Client signature label" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-sm outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
+        {/* VAT & Sign-off */}
+        <div className="border-b border-[var(--line)] p-4">
+          <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">VAT &amp; Sign-off</p>
+          <div className="grid gap-2 lg:grid-cols-2">
+            <select name="vatDefaultApplicable" defaultValue={settings.vatDefaultApplicable ? "true" : "false"} className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14">
+              <option value="true">VAT default: applicable</option>
+              <option value="false">VAT default: not applicable</option>
+            </select>
+            <input type="number" step="0.01" name="vatRatePercent" defaultValue={settings.vatRatePercent} placeholder="VAT rate" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
+            <input name="vatLabel" defaultValue={settings.vatLabel} placeholder="VAT label" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
+            <input name="signatureCompanyLabel" defaultValue={settings.signatureCompanyLabel} placeholder="Company signature label" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
+            <input name="signatureClientLabel" defaultValue={settings.signatureClientLabel} placeholder="Client signature label" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
           </div>
-        </details>
+        </div>
 
-        <details className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] p-3">
-          <summary className="text-sm font-semibold text-[var(--ink)]">Colors</summary>
-          <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-            <div className="flex items-center gap-2">
-              <input type="color" name="primaryColor" defaultValue={settings.primaryColor} className="h-9 w-12 rounded border cursor-pointer" />
-              <span className="text-xs text-[var(--ink-muted)]">Primary</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <input type="color" name="secondaryColor" defaultValue={settings.secondaryColor} className="h-9 w-12 rounded border cursor-pointer" />
-              <span className="text-xs text-[var(--ink-muted)]">Secondary</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <input type="color" name="accentColor" defaultValue={settings.accentColor} className="h-9 w-12 rounded border cursor-pointer" />
-              <span className="text-xs text-[var(--ink-muted)]">Accent</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <input type="color" name="backgroundColor" defaultValue={settings.backgroundColor} className="h-9 w-12 rounded border cursor-pointer" />
-              <span className="text-xs text-[var(--ink-muted)]">Background</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <input type="color" name="surfaceColor" defaultValue={settings.surfaceColor} className="h-9 w-12 rounded border cursor-pointer" />
-              <span className="text-xs text-[var(--ink-muted)]">Surface</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <input type="color" name="borderColor" defaultValue={settings.borderColor} className="h-9 w-12 rounded border cursor-pointer" />
-              <span className="text-xs text-[var(--ink-muted)]">Border</span>
-            </div>
+        {/* Colors */}
+        <div className="border-b border-[var(--line)] p-4">
+          <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Colors</p>
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {[
+              { name: "primaryColor", label: "Primary", value: settings.primaryColor },
+              { name: "secondaryColor", label: "Secondary", value: settings.secondaryColor },
+              { name: "accentColor", label: "Accent", value: settings.accentColor },
+              { name: "backgroundColor", label: "Background", value: settings.backgroundColor },
+              { name: "surfaceColor", label: "Surface", value: settings.surfaceColor },
+              { name: "borderColor", label: "Border", value: settings.borderColor },
+            ].map(({ name, label, value }) => (
+              <div key={name} className="flex items-center gap-2">
+                <input type="color" name={name} defaultValue={value} className="h-8 w-10 cursor-pointer rounded border" />
+                <span className="text-[13px] text-[var(--ink-muted)]">{label}</span>
+              </div>
+            ))}
           </div>
-        </details>
+        </div>
 
-        <details className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] p-3">
-          <summary className="text-sm font-semibold text-[var(--ink)]">Terms & Footer</summary>
-          <div className="mt-3 grid gap-2">
-            <textarea name="termsText" defaultValue={settings.termsText} className="min-h-28 w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-sm outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
-            <input name="footerText" defaultValue={settings.footerText} placeholder="Footer text" className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-sm outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
+        {/* Terms & Footer */}
+        <div className="p-4">
+          <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Terms &amp; Footer</p>
+          <div className="grid gap-2">
+            <textarea name="termsText" defaultValue={settings.termsText} className="min-h-28 w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
+            <input name="footerText" defaultValue={settings.footerText} placeholder="Footer text" className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
           </div>
-        </details>
+        </div>
 
-        <button className="btn-premium w-full rounded-lg px-3 py-1.5 text-sm lg:w-auto">Save Document Settings</button>
+        <div className="border-t border-[var(--line)] px-4 py-3">
+          <button className="btn-premium rounded-lg px-4 py-1.5 text-[13px]">Save Document Settings</button>
+        </div>
       </form>
 
       <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">

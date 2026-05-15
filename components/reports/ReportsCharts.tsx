@@ -125,15 +125,9 @@ export function RevenueLineChart({
   data: { key: string; revenue: number; margin: number }[];
   currency: string;
 }) {
-  const [shouldRender, setShouldRender] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
-  useEffect(() => {
-    const media = window.matchMedia("(min-width: 640px)");
-    const sync = () => setShouldRender(media.matches);
-    sync();
-    media.addEventListener("change", sync);
-    return () => media.removeEventListener("change", sync);
-  }, []);
+  useEffect(() => { setMounted(true); }, []);
 
   const tooltipStyle = {
     backgroundColor: "var(--panel)",
@@ -143,17 +137,21 @@ export function RevenueLineChart({
     color: "var(--ink)",
   } as const;
 
-  if (!shouldRender || data.length === 0) {
+  if (!mounted) {
+    return <div className="h-64 w-full rounded-xl border border-[var(--line)] bg-[var(--panel-strong)] animate-pulse" />;
+  }
+
+  if (data.length === 0) {
     return (
       <div className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] p-3 text-sm text-[var(--ink-muted)]">
-        Revenue trend chart loads on wider screens.
+        No revenue data for this period.
       </div>
     );
   }
 
   return (
-    <div className="panel-shadow h-64 w-full rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-      <ResponsiveContainer width="100%" height="100%" minWidth={280} minHeight={180}>
+    <div className="h-64 w-full">
+      <ResponsiveContainer width="100%" height="100%" minWidth={200} minHeight={180}>
         <LineChart data={data} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="var(--line)" />
           <XAxis dataKey="key" tick={{ fontSize: 11, fill: "var(--ink-muted)" }} axisLine={{ stroke: "var(--line)" }} tickLine={{ stroke: "var(--line)" }} />

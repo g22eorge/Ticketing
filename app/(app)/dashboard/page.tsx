@@ -1,20 +1,19 @@
 import Link from "next/link";
+import React from "react";
 
 import { PersistedDisclosure } from "@/components/mobile/PersistedDisclosure";
 import { StickyKpiRow } from "@/components/mobile/StickyKpiRow";
 import { MonthSelectForm } from "@/components/shared/MonthSelectForm";
-import { OnboardingChecklist, OnboardingComplete } from "@/components/shared/OnboardingChecklist";
 import { RevenueLineChart } from "@/components/reports/ReportsCharts";
 import { getClientBill, resolveTechCost } from "@/lib/billing";
-import { formatMoney, formatMoneyCompact, toBaseAmount } from "@/lib/currency";
+import { formatMoney, formatMoneyCompact, getAppCurrency } from "@/lib/currency";
 import { formatEATMonthLabel } from "@/lib/date-eat";
 import { UI_JOB_STATUSES, JobStatus, normalizeJobStatus } from "@/lib/job-status";
 import { filterSupportedJobStatuses } from "@/lib/job-status-server";
 import { can } from "@/lib/permissions";
 import { getJobPayoutsByIds } from "@/lib/payouts";
 import { prisma } from "@/lib/prisma";
-import { requireOrgSession } from "@/lib/org-context";
-import { getOnboardingStatus } from "@/lib/onboarding-checklist";
+import { getCurrentUserRole } from "@/lib/session";
 
 type SearchParams = {
   month?: string;
@@ -72,11 +71,10 @@ function monthCountInclusive(startYear: number, startMonth: number, endYear: num
   return Math.max(1, endIndex - startIndex + 1);
 }
 
-function trendMonthsSinceStartOfYear(end: Date, startMonthOverride?: number) {
+function trendMonthsSinceStartOfYear(end: Date) {
   const endYear = end.getFullYear();
   const endMonth = end.getMonth() + 1;
-  const startMonth = Math.min(endMonth, Math.max(1, startMonthOverride ?? 1));
-  const count = monthCountInclusive(endYear, startMonth, endYear, endMonth);
+  const count = monthCountInclusive(endYear, 1, endYear, endMonth);
   return monthSequence(endYear, endMonth, count);
 }
 
@@ -86,10 +84,9 @@ function trendMonthsForYear(year: number, endMonth: number) {
   return monthSequence(year, safeMonth, count);
 }
 
-async function loadRevenueMarginTrend(trendMonths: { key: string; start: Date; end: Date }[], orgId: string) {
+async function loadRevenueMarginTrend(trendMonths: { key: string; start: Date; end: Date }[]) {
   const completed = await prisma.job.findMany({
     where: {
-      orgId,
       status: "COMPLETED",
       completedAt: { gte: trendMonths[0].start, lte: trendMonths[trendMonths.length - 1].end },
     },
@@ -167,20 +164,6 @@ function RevenueMarginTrendSection({
       </div>
     </section>
   );
-}
-
-function trimLeadingZeroTrend(
-  trendMonths: { key: string; start: Date; end: Date }[],
-  revenueTrend: { key: string; revenue: number; margin: number }[],
-) {
-  // Drop leading months where both revenue and margin are 0.
-  // If everything is 0, keep just the last month so the UI doesn't render a wall of empty boxes.
-  const firstNonZero = revenueTrend.findIndex((m) => m.revenue !== 0 || m.margin !== 0);
-  const startIndex = firstNonZero === -1 ? Math.max(0, revenueTrend.length - 1) : firstNonZero;
-  return {
-    trendMonths: trendMonths.slice(startIndex),
-    revenueTrend: revenueTrend.slice(startIndex),
-  };
 }
 
 function monthOptions(count: number) {
@@ -322,6 +305,7 @@ function DashboardHero({
   primaryLabel,
   secondaryHref,
   secondaryLabel,
+  icon,
 }: {
   title: string;
   summary: string;
@@ -329,26 +313,33 @@ function DashboardHero({
   primaryLabel: string;
   secondaryHref?: string;
   secondaryLabel?: string;
+  icon?: React.ReactNode;
 }) {
   return (
-    <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
+    <section className="panel-shadow rounded-[1.75rem] border border-[var(--line)] bg-[var(--panel)] p-4 sm:p-6">
       <div className="flex min-w-0 flex-wrap items-center justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Overview</p>
-          <p className="mt-0.5 text-sm font-bold text-[var(--ink)]">{title}</p>
-          <p className="mt-0.5 hidden text-[12px] leading-snug text-[var(--ink-muted)] 2xl:block">{summary}</p>
+        <div className="flex min-w-0 items-center gap-3">
+          {icon ? (
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-[var(--line)] bg-[var(--accent)]">
+              {icon}
+            </div>
+          ) : null}
+          <div className="min-w-0">
+            <p className="truncate text-xl font-black text-[var(--ink)]">{title}</p>
+            <p className="mt-0.5 truncate text-xs text-[var(--ink-muted)]">{summary}</p>
+          </div>
         </div>
         <div className="flex shrink-0 flex-wrap items-center gap-1.5">
           <Link
             href={primaryHref}
-            className="rounded-lg border border-[var(--accent)]/40 bg-[var(--accent)] px-3 py-1.5 text-[11px] font-bold text-white shadow-sm transition hover:bg-[var(--accent)]/90"
+            className="btn-premium rounded-full px-4 py-2 text-sm"
           >
             {primaryLabel}
           </Link>
           {secondaryHref && secondaryLabel ? (
             <Link
               href={secondaryHref}
-              className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1 text-[11px] font-semibold text-[var(--ink-muted)] transition hover:border-[var(--accent)]/30 hover:text-[var(--accent)]"
+              className="inline-flex items-center rounded-lg border border-[var(--line)] px-3 py-1.5 text-xs font-semibold text-[var(--ink)] transition hover:border-[var(--accent)]/50 hover:text-[var(--accent)]"
             >
               {secondaryLabel}
             </Link>
@@ -364,13 +355,10 @@ export default async function DashboardPage({
 }: {
   searchParams: Promise<SearchParams>;
 }) {
-  const { session, user, orgId, org } = await requireOrgSession();
+  const { session, user } = await getCurrentUserRole();
   const permissionUser = { role: user.role, permissions: user.permissions };
   const filters = await searchParams;
   const period: "month" | "year" = filters.period === "year" ? "year" : "month";
-
-  // Only fetch onboarding status for ADMIN users (they're the ones who act on it).
-  const onboarding = user.role === "ADMIN" ? await getOnboardingStatus(orgId) : null;
 
   if (user.role === "TECHNICIAN_EXTERNAL") {
     const selectedMonth = parseMonth(filters.month);
@@ -381,7 +369,6 @@ export default async function DashboardPage({
 
     const jobs = await prisma.job.findMany({
       where: {
-        orgId,
         assignedToId: session.user.id,
         OR: [
           { receivedAt: { gte: selectedRange.start, lte: selectedRange.end } },
@@ -401,7 +388,7 @@ export default async function DashboardPage({
 
     const payouts = await getJobPayoutsByIds(jobs.map((job) => job.id)).catch(() => new Map());
 
-    const currency = org.baseCurrency;
+    const currency = getAppCurrency();
     const openCount = jobs.filter((job) => [
       "RECEIVED",
       "DIAGNOSING",
@@ -432,11 +419,12 @@ export default async function DashboardPage({
 
         <DashboardHero
           title="External Technician Control Board"
-          summary="Use this board to progress active work orders quickly and keep payout clearance in sync from one workspace."
+          summary="Progress work orders and keep payout clearance in sync from one workspace."
           primaryHref="/technicians"
           primaryLabel="Open Work Queue"
           secondaryHref="/technicians/payouts"
           secondaryLabel="Review Payouts"
+          icon={<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="black" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>}
         />
 
         <StickyKpiRow
@@ -517,7 +505,6 @@ export default async function DashboardPage({
 
     const assignedJobs = await prisma.job.findMany({
       where: {
-        orgId,
         assignedToId: session.user.id,
         OR: [
           { receivedAt: { gte: selectedRange.start, lte: selectedRange.end } },
@@ -530,7 +517,6 @@ export default async function DashboardPage({
     }).catch(async () => {
       const fallback = await prisma.job.findMany({
         where: {
-          orgId,
           assignedToId: session.user.id,
           OR: [
             { receivedAt: { gte: selectedRange.start, lte: selectedRange.end } },
@@ -550,7 +536,6 @@ export default async function DashboardPage({
     const completed = assignedJobs.filter((job) => job.status === "COMPLETED").length;
     const canUpdatePricing = can.approveInvoices(permissionUser);
     const pricingScopeWhere = {
-      orgId,
       ...(canUpdatePricing ? {} : { assignedToId: session.user.id }),
     };
     const [pricingPendingCount, pricedCount, assignedFinancials] = canUpdatePricing
@@ -599,11 +584,12 @@ export default async function DashboardPage({
 
         <DashboardHero
           title="Internal Bench Workspace"
-          summary="Keep diagnostics, repairs, and handoffs flowing from this workspace, then jump directly into the next action queue."
+          summary="Keep diagnostics, repairs, and handoffs flowing · jump directly into the next action queue."
           primaryHref="/jobs"
           primaryLabel="Open Assigned Jobs"
           secondaryHref={canUpdatePricing ? "/jobs?pricing=needs&status=AWAITING_APPROVAL,IN_REPAIR,READY_FOR_PICKUP" : "/jobs?status=DIAGNOSING"}
           secondaryLabel={canUpdatePricing ? "Resolve Pricing Queue" : "Focus Diagnosis Queue"}
+          icon={<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="black" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="7" height="9" rx="1"/><rect x="15" y="3" width="7" height="5" rx="1"/><rect x="15" y="12" width="7" height="9" rx="1"/><rect x="2" y="16" width="7" height="5" rx="1"/></svg>}
         />
 
         <div className="hidden 2xl:block">
@@ -630,8 +616,8 @@ export default async function DashboardPage({
               </Link>
               <Link href="/jobs?pricing=priced" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-center col-span-2 sm:col-span-1">
                 <p className="text-[10px] uppercase tracking-[0.08em] text-[var(--ink-muted)]">Margin</p>
-                <p className={`mt-1 text-sm font-semibold ${marginTotal >= 0 ? "text-[var(--accent)]" : "text-black"}`}>
-                  {marginTotal >= 0 ? "+" : ""}{formatMoneyCompact(marginTotal, org.baseCurrency)}
+                <p className={`mt-1 text-sm font-semibold ${marginTotal >= 0 ? "text-[var(--accent)]" : "text-red-500"}`}>
+                  {marginTotal >= 0 ? "+" : ""}{formatMoneyCompact(marginTotal, getAppCurrency())}
                 </p>
               </Link>
             </div>
@@ -709,7 +695,7 @@ export default async function DashboardPage({
   }
 
   if (user.role === "ADMIN") {
-    const currency = org.baseCurrency;
+    const currency = getAppCurrency();
     const today = new Date();
     const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0, 0);
     const threeDaysAgo = new Date(today.getTime() - 3 * 24 * 60 * 60 * 1000);
@@ -720,8 +706,6 @@ export default async function DashboardPage({
       completedMtd,
       externalCompleted,
       clientUnpaidCount,
-      paymentsMtd,
-      earliestJob,
       receivedToday,
       completedToday,
       pendingRequests,
@@ -729,14 +713,13 @@ export default async function DashboardPage({
       techWorkloadJobs,
       unassignedActiveCount,
     ] = await Promise.all([
-      prisma.job.groupBy({ by: ["status"], where: { orgId }, _count: { status: true } }),
+      prisma.job.groupBy({ by: ["status"], _count: { status: true } }),
       prisma.job.findMany({
-        where: { orgId, status: "COMPLETED", completedAt: { gte: mtdStart, lte: today } },
+        where: { status: "COMPLETED", completedAt: { gte: mtdStart, lte: today } },
         select: { clientBill: true },
       }),
       prisma.job.findMany({
         where: {
-          orgId,
           repairPath: "EXTERNAL",
           externalPaid: false,
           status: { in: ["READY_FOR_PICKUP", "COMPLETED", "DELIVERED"] },
@@ -744,19 +727,13 @@ export default async function DashboardPage({
         select: { id: true, externalTechBill: true },
       }),
       prisma.job.count({
-        where: { orgId, clientBill: { gt: 0 }, clientPaid: false, status: { in: ["READY_FOR_PICKUP", "COMPLETED", "DELIVERED"] } },
+        where: { clientBill: { gt: 0 }, clientPaid: false, status: { in: ["READY_FOR_PICKUP", "COMPLETED", "DELIVERED"] } },
       }).catch(() => 0),
-      prisma.payment.findMany({
-        where: { orgId, receivedAt: { gte: mtdStart, lte: today } },
-        select: { amount: true, currency: true, exchangeRateToBase: true, saleId: true, invoiceId: true },
-      }).catch(() => []),
-      prisma.job.findFirst({ where: { orgId }, orderBy: { receivedAt: "asc" }, select: { receivedAt: true } }).catch(() => null),
-      prisma.job.count({ where: { orgId, receivedAt: { gte: todayStart } } }),
-      prisma.job.count({ where: { orgId, completedAt: { gte: todayStart } } }),
-      prisma.repairRequest.count({ where: { orgId, requestStatus: { in: ["PENDING_FRONT_DESK", "PENDING_INTAKE"] } } }).catch(() => 0),
+      prisma.job.count({ where: { receivedAt: { gte: todayStart } } }),
+      prisma.job.count({ where: { completedAt: { gte: todayStart } } }),
+      prisma.repairRequest.count({ where: { requestStatus: { in: ["PENDING_FRONT_DESK", "PENDING_INTAKE"] } } }).catch(() => 0),
       prisma.job.findMany({
         where: {
-          orgId,
           status: { in: filterSupportedJobStatuses(["RECEIVED", "DIAGNOSING", "REFERRED", "AWAITING_APPROVAL", "IN_REPAIR", "IN_EXTERNAL_REPAIR", "WAITING_FOR_PARTS", "RETURNED_FROM_EXTERNAL"]) as JobStatus[] },
           receivedAt: { lt: threeDaysAgo },
         },
@@ -766,7 +743,6 @@ export default async function DashboardPage({
       }).catch(async () => {
         const fallback = await prisma.job.findMany({
           where: {
-            orgId,
             status: { in: filterSupportedJobStatuses(["RECEIVED", "DIAGNOSING", "REFERRED", "AWAITING_APPROVAL", "IN_REPAIR", "IN_EXTERNAL_REPAIR", "WAITING_FOR_PARTS", "RETURNED_FROM_EXTERNAL"]) as JobStatus[] },
             receivedAt: { lt: threeDaysAgo },
           },
@@ -779,7 +755,6 @@ export default async function DashboardPage({
       }),
       prisma.job.findMany({
         where: {
-          orgId,
           status: { in: filterSupportedJobStatuses(["RECEIVED", "DIAGNOSING", "REFERRED", "IN_EXTERNAL_REPAIR", "WAITING_FOR_PARTS", "RETURNED_FROM_EXTERNAL", "AWAITING_APPROVAL", "IN_REPAIR", "READY_FOR_PICKUP"]) as JobStatus[] },
           assignedToId: { not: null },
         },
@@ -787,7 +762,6 @@ export default async function DashboardPage({
       }),
       prisma.job.count({
         where: {
-          orgId,
           status: { in: filterSupportedJobStatuses(["RECEIVED", "DIAGNOSING", "REFERRED", "IN_REPAIR", "IN_EXTERNAL_REPAIR", "WAITING_FOR_PARTS", "RETURNED_FROM_EXTERNAL"]) as JobStatus[] },
           assignedToId: null,
         },
@@ -803,17 +777,6 @@ export default async function DashboardPage({
     const revenueMtd = completedMtd
       .filter((job) => getClientBill(job) !== null)
       .reduce((sum, job) => sum + (getClientBill(job) ?? 0), 0);
-
-    const cashInMtd = paymentsMtd.reduce(
-      (sum, p) => sum + toBaseAmount({ amount: p.amount, currency: p.currency, baseCurrency: org.baseCurrency, exchangeRateToBase: p.exchangeRateToBase }),
-      0,
-    );
-    const posCashInMtd = paymentsMtd
-      .filter((p) => p.saleId)
-      .reduce(
-        (sum, p) => sum + toBaseAmount({ amount: p.amount, currency: p.currency, baseCurrency: org.baseCurrency, exchangeRateToBase: p.exchangeRateToBase }),
-        0,
-      );
 
     const statusCount = new Map<string, number>();
     for (const item of statusGroup) {
@@ -850,29 +813,20 @@ export default async function DashboardPage({
     const hasAlerts = overdueWithDays.length > 0 || awaitingApprovalCount > 0 || pendingRequests > 0 || unassignedActiveCount > 0;
     const mtdLabel = monthLabel(today.getFullYear(), today.getMonth() + 1);
 
-    const startMonthOverride = earliestJob?.receivedAt && earliestJob.receivedAt.getFullYear() === today.getFullYear()
-      ? earliestJob.receivedAt.getMonth() + 1
-      : 1;
-    const trendMonths = trendMonthsSinceStartOfYear(today, startMonthOverride);
-    const revenueTrendRaw = await loadRevenueMarginTrend(trendMonths, orgId);
-    const { trendMonths: trimmedMonths, revenueTrend } = trimLeadingZeroTrend(trendMonths, revenueTrendRaw);
+    const trendMonths = trendMonthsSinceStartOfYear(today);
+    const revenueTrend = await loadRevenueMarginTrend(trendMonths);
 
     return (
       <div className="space-y-4">
-        {/* Onboarding checklist — shown to ADMIN on new workspaces */}
-        {onboarding?.show && (
-          <OnboardingChecklist
-            orgId={orgId}
-            steps={onboarding.steps}
-            doneCount={onboarding.doneCount}
-            totalCount={onboarding.totalCount}
-          />
-        )}
-        {/* All steps done — one-time celebration */}
-        {onboarding && !onboarding.show &&
-          onboarding.doneCount === onboarding.totalCount && (
-          <OnboardingComplete orgId={orgId} />
-        )}
+        <DashboardHero
+          title="Admin Overview"
+          summary={`${receivedToday} in · ${completedToday} out today · ${overdueWithDays.length} overdue · ${awaitingApprovalCount} awaiting approval`}
+          primaryHref="/jobs/new"
+          primaryLabel="New Job"
+          secondaryHref="/reports"
+          secondaryLabel="Reports"
+          icon={<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="black" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>}
+        />
 
         {/* Alert Banner */}
         {hasAlerts ? (
@@ -912,7 +866,7 @@ export default async function DashboardPage({
           </section>
         ) : null}
 
-        <RevenueMarginTrendSection trendMonths={trimmedMonths} revenueTrend={revenueTrend} currency={currency} />
+        <RevenueMarginTrendSection trendMonths={trendMonths} revenueTrend={revenueTrend} currency={currency} />
 
         {/* Live Repair Pipeline — with today's stats and quick actions in the header */}
         <section className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
@@ -937,13 +891,7 @@ export default async function DashboardPage({
                 href="/reports"
                 className="rounded-lg border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-1.5 text-[11px] font-semibold text-emerald-300 transition hover:border-emerald-500/40"
               >
-                Cash in {formatMoney(cashInMtd, currency)}
-              </Link>
-              <Link
-                href="/pos"
-                className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1.5 text-[11px] font-semibold text-[var(--ink-muted)] transition hover:border-[var(--accent)]/30 hover:text-[var(--ink)]"
-              >
-                POS {formatMoney(posCashInMtd, currency)}
+                Revenue {formatMoney(revenueMtd, currency)}
               </Link>
               <Link
                 href="/payout-followups"
@@ -1029,7 +977,7 @@ export default async function DashboardPage({
             <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
               <Link href={`/reports?period=month&month=${mtdLabel}`} className="rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 py-2 transition hover:border-[var(--accent)]/35">
                 <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Revenue MTD</p>
-                <p className="mt-0.5 text-sm font-semibold text-emerald-700">{formatMoney(revenueMtd, currency)}</p>
+                <p className="mt-0.5 text-sm font-semibold text-emerald-600">{formatMoney(revenueMtd, currency)}</p>
               </Link>
               <Link href="/payout-followups" className={`rounded-lg border px-3 py-2 transition ${clientUnpaidCount > 0 || payoutOutstanding > 0 ? "border-[var(--accent)]/35 bg-[var(--accent)]/10 hover:border-[var(--accent)]/60" : "border-[var(--line)] bg-[var(--panel)] hover:border-[var(--accent)]/35"}`}>
                 <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Unpaid Bills</p>
@@ -1049,24 +997,24 @@ export default async function DashboardPage({
             <div className="mb-3 flex items-center justify-between gap-2">
               <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Needs Attention</p>
               {overdueWithDays.length > 0 || unassignedActiveCount > 0 ? (
-                <span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700">
+                <span className="rounded-full border border-amber-500/30 bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold text-amber-600">
                   {overdueWithDays.length + unassignedActiveCount}
                 </span>
               ) : null}
             </div>
             {overdueWithDays.length === 0 && unassignedActiveCount === 0 ? (
-              <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2.5">
-                <p className="text-[11px] font-medium text-emerald-700">All clear — no issues.</p>
+              <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/15 px-3 py-2.5">
+                <p className="text-[11px] font-medium text-emerald-600">All clear — no issues.</p>
               </div>
             ) : (
               <div className="space-y-1.5">
                 {unassignedActiveCount > 0 ? (
                   <Link
                     href="/jobs?assignedToId=unassigned"
-                    className="flex items-center justify-between rounded-lg border border-violet-200 bg-violet-50 px-3 py-2 transition hover:border-violet-300"
+                    className="flex items-center justify-between rounded-lg border border-violet-500/30 bg-violet-500/10 px-3 py-2 transition hover:border-violet-500/50"
                   >
-                    <p className="text-xs font-semibold text-violet-800">Unassigned active jobs</p>
-                    <span className="ml-2 shrink-0 rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-bold text-violet-700">{unassignedActiveCount}</span>
+                    <p className="text-xs font-semibold text-violet-400">Unassigned active jobs</p>
+                    <span className="ml-2 shrink-0 rounded-full bg-violet-500/20 px-2 py-0.5 text-[10px] font-bold text-violet-400">{unassignedActiveCount}</span>
                   </Link>
                 ) : null}
                 {overdueWithDays.map((job) => (
@@ -1083,7 +1031,7 @@ export default async function DashboardPage({
                         {statusLabel[job.status as keyof typeof statusLabel] ?? job.status}
                       </p>
                     </div>
-                    <span className={`ml-2 shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${job.ageDays >= 8 ? "bg-red-50 text-red-700" : "bg-amber-50 text-amber-700"}`}>
+                    <span className={`ml-2 shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${job.ageDays >= 8 ? "bg-red-500/15 text-red-400" : "bg-amber-500/15 text-amber-600"}`}>
                       {job.ageDays}d
                     </span>
                   </Link>
@@ -1106,7 +1054,7 @@ export default async function DashboardPage({
                         {tech.role === "TECHNICIAN_EXTERNAL" ? "External" : "Internal"}
                       </p>
                     </div>
-                    <span className={`ml-2 shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${tech.role === "TECHNICIAN_EXTERNAL" ? "bg-violet-50 text-violet-700" : "bg-blue-50 text-blue-700"}`}>
+                    <span className={`ml-2 shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${tech.role === "TECHNICIAN_EXTERNAL" ? "bg-violet-500/15 text-violet-400" : "bg-sky-500/15 text-sky-500"}`}>
                       {tech.count} active
                     </span>
                   </Link>
@@ -1121,7 +1069,7 @@ export default async function DashboardPage({
   }
 
   if (user.role === "OPS") {
-    const currency = org.baseCurrency;
+    const currency = getAppCurrency();
     const selectedMonth = parseMonth(filters.month);
     const selectedYear = Number(filters.year) || new Date().getFullYear();
     const selectedRange = period === "year" ? yearRange(selectedYear) : monthRange(selectedMonth.year, selectedMonth.month);
@@ -1134,65 +1082,29 @@ export default async function DashboardPage({
 
     const trendMonths = trendMonthsForYear(selectedRange.start.getFullYear(), period === "year" ? 12 : selectedMonth.month);
 
-    const [completedThisMonth, pendingBilling, externalCompleted, paymentsSelected, invoiceAgg, saleAgg] = await Promise.all([
+    const [completedThisMonth, pendingBilling, externalCompleted] = await Promise.all([
       prisma.job.findMany({
-        where: { orgId, status: "COMPLETED", completedAt: { gte: selectedRange.start, lte: selectedRange.end } },
+        where: { status: "COMPLETED", completedAt: { gte: selectedRange.start, lte: selectedRange.end } },
         select: { id: true, jobNumber: true, completedAt: true, clientBill: true },
       }),
       prisma.job.count({
         where: {
-          orgId,
           status: { in: ["IN_REPAIR", "READY_FOR_PICKUP", "AWAITING_APPROVAL"] },
         },
       }),
       prisma.job.findMany({
         where: {
-          orgId,
           repairPath: "EXTERNAL",
           externalPaid: false,
           status: { in: ["READY_FOR_PICKUP", "COMPLETED", "DELIVERED"] },
         },
         select: { id: true, externalTechBill: true },
       }),
-      prisma.payment.findMany({
-        where: { orgId, receivedAt: { gte: selectedRange.start, lte: selectedRange.end } },
-        select: { amount: true, currency: true, exchangeRateToBase: true, saleId: true, invoiceId: true },
-      }).catch(() => []),
-      prisma.invoice.aggregate({
-        where: { orgId, issuedAt: { gte: selectedRange.start, lte: selectedRange.end } },
-        _sum: { totalAmount: true, paidAmount: true },
-      }).catch(() => ({ _sum: { totalAmount: 0, paidAmount: 0 } })),
-      prisma.sale.aggregate({
-        where: { orgId, createdAt: { gte: selectedRange.start, lte: selectedRange.end }, status: { not: "VOID" } },
-        _sum: { totalAmount: true, paidAmount: true },
-      }).catch(() => ({ _sum: { totalAmount: 0, paidAmount: 0 } })),
     ]);
 
-    const cashIn = paymentsSelected.reduce(
-      (sum, p) => sum + toBaseAmount({ amount: p.amount, currency: p.currency, baseCurrency: org.baseCurrency, exchangeRateToBase: p.exchangeRateToBase }),
-      0,
-    );
-    const repairCashIn = paymentsSelected
-      .filter((p) => p.invoiceId)
-      .reduce(
-        (sum, p) => sum + toBaseAmount({ amount: p.amount, currency: p.currency, baseCurrency: org.baseCurrency, exchangeRateToBase: p.exchangeRateToBase }),
-        0,
-      );
-    const posCashIn = paymentsSelected
-      .filter((p) => p.saleId)
-      .reduce(
-        (sum, p) => sum + toBaseAmount({ amount: p.amount, currency: p.currency, baseCurrency: org.baseCurrency, exchangeRateToBase: p.exchangeRateToBase }),
-        0,
-      );
-    const invoiceIssued = invoiceAgg._sum.totalAmount ?? 0;
-    const invoiceIssuedPaid = invoiceAgg._sum.paidAmount ?? 0;
-    const invoiceIssuedBalance = Math.max(0, invoiceIssued - invoiceIssuedPaid);
-    const posTotal = saleAgg._sum.totalAmount ?? 0;
-    const posPaid = saleAgg._sum.paidAmount ?? 0;
-    const posBalance = Math.max(0, posTotal - posPaid);
+    const monthRevenue = completedThisMonth.reduce((sum, job) => sum + (getClientBill(job) ?? 0), 0);
 
-    const revenueTrend = await loadRevenueMarginTrend(trendMonths, orgId);
-    const trimmed = trimLeadingZeroTrend(trendMonths, revenueTrend);
+    const revenueTrend = await loadRevenueMarginTrend(trendMonths);
 
     const payoutMap = await getJobPayoutsByIds(externalCompleted.map((job) => job.id)).catch(() => new Map());
     // externalCompleted already pre-filtered to externalPaid=false in the DB query
@@ -1210,9 +1122,19 @@ export default async function DashboardPage({
           selectorOptions={selectablePeriods}
         />
 
+        <DashboardHero
+          title="Operations Overview"
+          summary={`${completedThisMonth.length} completed · ${pendingBilling} pending billing · revenue ${formatMoneyCompact(monthRevenue, currency)}`}
+          primaryHref="/jobs"
+          primaryLabel="View Jobs"
+          secondaryHref={reportHref}
+          secondaryLabel="Reports"
+          icon={<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="black" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>}
+        />
+
         <StickyKpiRow
           items={[
-            { label: "Cash In", value: formatMoneyCompact(cashIn, currency), href: reportHref },
+            { label: "Revenue", value: formatMoneyCompact(monthRevenue, currency), href: "/reports" },
             { label: "Pending", value: String(pendingBilling), href: "/jobs?status=IN_REPAIR,READY_FOR_PICKUP,AWAITING_APPROVAL", tone: "warning" },
             { label: "Payouts", value: formatMoneyCompact(payoutOutstanding, currency), href: "/reports", tone: "brand" },
             { label: "Completed", value: String(completedThisMonth.length), href: "/jobs?status=COMPLETED", tone: "success" },
@@ -1237,28 +1159,8 @@ export default async function DashboardPage({
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Cash Exposure</p>
             <div className="mt-3 space-y-2">
               <div className="flex items-center justify-between rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm">
-                <span>Cash in ({selectedPeriodLabel})</span>
-                <span className="font-semibold">{formatMoneyCompact(cashIn, currency)}</span>
-              </div>
-              <div className="grid gap-2 sm:grid-cols-2">
-                <div className="flex items-center justify-between rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm">
-                  <span>Repairs cash in</span>
-                  <span className="font-semibold">{formatMoneyCompact(repairCashIn, currency)}</span>
-                </div>
-                <div className="flex items-center justify-between rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm">
-                  <span>POS cash in</span>
-                  <span className="font-semibold">{formatMoneyCompact(posCashIn, currency)}</span>
-                </div>
-              </div>
-              <div className="grid gap-2 sm:grid-cols-2">
-                <div className="flex items-center justify-between rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm">
-                  <span>Invoice balance</span>
-                  <span className="font-semibold">{formatMoneyCompact(invoiceIssuedBalance, currency)}</span>
-                </div>
-                <div className="flex items-center justify-between rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm">
-                  <span>POS balance</span>
-                  <span className="font-semibold">{formatMoneyCompact(posBalance, currency)}</span>
-                </div>
+                <span>Revenue ({selectedPeriodLabel})</span>
+                <span className="font-semibold">{formatMoneyCompact(monthRevenue, currency)}</span>
               </div>
               <div className="flex items-center justify-between rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm">
                 <span>External payouts due</span>
@@ -1269,7 +1171,7 @@ export default async function DashboardPage({
           </section>
         </div>
 
-        <RevenueMarginTrendSection trendMonths={trimmed.trendMonths} revenueTrend={trimmed.revenueTrend} currency={currency} />
+        <RevenueMarginTrendSection trendMonths={trendMonths} revenueTrend={revenueTrend} currency={currency} />
 
       </div>
     );
@@ -1285,20 +1187,18 @@ export default async function DashboardPage({
     const [capturedThisMonth, openFromIntake, awaitingApproval, readyForPickup] = await Promise.all([
       prisma.job.count({
         where: {
-          orgId,
           createdById: session.user.id,
           receivedAt: { gte: selectedRange.start, lte: selectedRange.end },
         },
       }),
       prisma.job.count({
         where: {
-          orgId,
           createdById: session.user.id,
           status: { in: filterSupportedJobStatuses(["RECEIVED", "DIAGNOSING", "REFERRED", "IN_EXTERNAL_REPAIR", "AWAITING_APPROVAL", "IN_REPAIR", "READY_FOR_PICKUP"]) as JobStatus[] },
         },
       }),
-      prisma.job.count({ where: { orgId, status: "AWAITING_APPROVAL" } }),
-      prisma.job.count({ where: { orgId, status: "READY_FOR_PICKUP" } }),
+      prisma.job.count({ where: { status: "AWAITING_APPROVAL" } }),
+      prisma.job.count({ where: { status: "READY_FOR_PICKUP" } }),
     ]);
 
     return (
@@ -1314,11 +1214,12 @@ export default async function DashboardPage({
 
         <DashboardHero
           title="Client Intake Console"
-          summary="Capture requests quickly, keep client communication consistent, and move each intake through approval to handover."
+          summary="Capture requests quickly and move each intake through approval to handover."
           primaryHref="/jobs/new"
           primaryLabel="Capture New Job"
           secondaryHref="/jobs?status=AWAITING_APPROVAL"
           secondaryLabel="Open Approval Queue"
+          icon={<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="black" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>}
         />
 
         <div className="hidden 2xl:block">
@@ -1377,15 +1278,442 @@ export default async function DashboardPage({
     );
   }
 
+  // ── MANAGER dashboard ─────────────────────────────────────────────────────
+  if (user.role === "MANAGER") {
+    const currency = getAppCurrency();
+    const today = new Date();
+    const mtdStart = new Date(today.getFullYear(), today.getMonth(), 1, 0, 0, 0, 0);
+    const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0, 0);
+    const threeDaysAgo = new Date(today.getTime() - 3 * 24 * 60 * 60 * 1000);
+    const mtdLabel = monthLabel(today.getFullYear(), today.getMonth() + 1);
+
+    const [statusGroup, completedMtd, overdueJobs, techWorkloadJobs, unassignedCount, receivedToday, completedToday, awaitingApprovalCount] = await Promise.all([
+      prisma.job.groupBy({ by: ["status"], _count: { status: true } }),
+      prisma.job.findMany({
+        where: { status: "COMPLETED", completedAt: { gte: mtdStart } },
+        select: { clientBill: true },
+      }),
+      prisma.job.findMany({
+        where: {
+          status: { in: filterSupportedJobStatuses(["RECEIVED", "DIAGNOSING", "REFERRED", "AWAITING_APPROVAL", "IN_REPAIR"]) as JobStatus[] },
+          receivedAt: { lt: threeDaysAgo },
+        },
+        select: { id: true, jobNumber: true, status: true, receivedAt: true, device: { select: { brand: true, model: true } } },
+        orderBy: { receivedAt: "asc" },
+        take: 8,
+      }).catch(async () => {
+        const fb = await prisma.job.findMany({
+          where: { status: { in: filterSupportedJobStatuses(["RECEIVED", "DIAGNOSING", "REFERRED", "AWAITING_APPROVAL", "IN_REPAIR"]) as JobStatus[] }, receivedAt: { lt: threeDaysAgo } },
+          select: { id: true, jobNumber: true, status: true, receivedAt: true },
+          orderBy: { receivedAt: "asc" }, take: 8,
+        });
+        return fb.map(j => ({ ...j, device: null }));
+      }),
+      prisma.job.findMany({
+        where: {
+          status: { in: filterSupportedJobStatuses(["DIAGNOSING", "IN_REPAIR", "REFERRED", "AWAITING_APPROVAL", "READY_FOR_PICKUP"]) as JobStatus[] },
+          assignedToId: { not: null },
+        },
+        select: { assignedTo: { select: { id: true, name: true, role: true } } },
+      }),
+      prisma.job.count({
+        where: {
+          status: { in: filterSupportedJobStatuses(["RECEIVED", "DIAGNOSING", "REFERRED", "IN_REPAIR"]) as JobStatus[] },
+          assignedToId: null,
+        },
+      }),
+      prisma.job.count({ where: { receivedAt: { gte: todayStart } } }),
+      prisma.job.count({ where: { completedAt: { gte: todayStart } } }),
+      prisma.job.count({ where: { status: "AWAITING_APPROVAL" } }),
+    ]);
+
+    const revenueMtd = completedMtd.reduce((sum, j) => sum + (getClientBill(j) ?? 0), 0);
+    const statusCount = new Map<string, number>();
+    for (const item of statusGroup) {
+      const key = normalizeJobStatus(item.status as JobStatus);
+      statusCount.set(key, (statusCount.get(key) ?? 0) + item._count.status);
+    }
+    const overdueWithDays = overdueJobs.map(j => ({ ...j, ageDays: Math.floor((today.getTime() - j.receivedAt.getTime()) / 86400000) }));
+    const techMap = new Map<string, { id: string; name: string; role: string; count: number }>();
+    for (const j of techWorkloadJobs) {
+      if (!j.assignedTo) continue;
+      const e = techMap.get(j.assignedTo.id) ?? { ...j.assignedTo, count: 0 };
+      e.count += 1;
+      techMap.set(j.assignedTo.id, e);
+    }
+    const techRows = [...techMap.values()].sort((a, b) => b.count - a.count).slice(0, 6);
+    const trendMonths = trendMonthsSinceStartOfYear(today);
+    const revenueTrend = await loadRevenueMarginTrend(trendMonths);
+
+    return (
+      <div className="space-y-4">
+        <DashboardHero
+          title="Manager Overview"
+          summary={`${receivedToday} in · ${completedToday} out today · ${overdueWithDays.length} overdue · revenue ${formatMoneyCompact(revenueMtd, currency)} MTD`}
+          primaryHref="/reports"
+          primaryLabel="Full Reports"
+          secondaryHref="/jobs"
+          secondaryLabel="All Jobs"
+          icon={<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="black" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>}
+        />
+
+        {(overdueWithDays.length > 0 || awaitingApprovalCount > 0 || unassignedCount > 0) && (
+          <section className="panel-shadow rounded-xl border border-[var(--accent)]/25 bg-[var(--panel)] px-4 py-3">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
+              <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--accent)]">Attention Required</span>
+              {awaitingApprovalCount > 0 && <Link href="/jobs?status=AWAITING_APPROVAL" className="rounded-full border border-[var(--accent)]/30 bg-[var(--accent)]/10 px-2.5 py-1 text-[11px] font-medium text-[var(--accent)]">{awaitingApprovalCount} awaiting approval</Link>}
+              {overdueWithDays.length > 0 && <span className="rounded-full border border-white/10 bg-[#0b0b0b] px-2.5 py-1 text-[11px] font-medium text-white/90">{overdueWithDays.length} overdue 3+ days</span>}
+              {unassignedCount > 0 && <Link href="/jobs?assignedToId=unassigned" className="rounded-full border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1 text-[11px] font-medium text-[var(--ink)]">{unassignedCount} unassigned</Link>}
+            </div>
+          </section>
+        )}
+
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {[
+            { label: "Revenue MTD", val: formatMoneyCompact(revenueMtd, currency), href: `/reports?period=month&month=${mtdLabel}`, color: "text-[var(--accent)]" },
+            { label: "Completed MTD", val: String(completedMtd.length), href: "/jobs?status=COMPLETED", color: "text-emerald-600" },
+            { label: "In Pipeline", val: String((statusCount.get("DIAGNOSING") ?? 0) + (statusCount.get("IN_REPAIR") ?? 0) + (statusCount.get("AWAITING_APPROVAL") ?? 0)), href: "/jobs?status=DIAGNOSING,IN_REPAIR,AWAITING_APPROVAL", color: "text-[var(--ink)]" },
+            { label: "Ready Pickup", val: String(statusCount.get("READY_FOR_PICKUP") ?? 0), href: "/jobs?status=READY_FOR_PICKUP", color: "text-[var(--accent)]" },
+          ].map(t => (
+            <Link key={t.label} href={t.href} className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px]">
+              <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">{t.label}</p>
+              <p className={`mt-2 text-2xl font-black ${t.color}`}>{t.val}</p>
+            </Link>
+          ))}
+        </div>
+
+        <RevenueMarginTrendSection trendMonths={trendMonths} revenueTrend={revenueTrend} currency={currency} />
+
+        <div className="grid gap-3 lg:grid-cols-2">
+          <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+            <p className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Live Pipeline</p>
+            <div className="space-y-1.5">
+              {UI_JOB_STATUSES.filter(s => s !== "CLOSED" && s !== "COMPLETED").map(s => {
+                const count = statusCount.get(s) ?? 0;
+                return (
+                  <Link key={s} href={`/jobs?status=${s}`} className="flex items-center justify-between rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 transition hover:border-[var(--accent)]/35">
+                    <p className="text-xs font-medium text-[var(--ink)]">{statusLabel[s]}</p>
+                    <span className={`text-sm font-bold ${count > 0 ? "text-[var(--accent)]" : "text-[var(--ink-muted)]"}`}>{count}</span>
+                  </Link>
+                );
+              })}
+            </div>
+          </section>
+          <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+            <div className="mb-3 flex items-center justify-between">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Staff Workload</p>
+              {unassignedCount > 0 && <Link href="/jobs?assignedToId=unassigned" className="rounded-full border border-amber-500/30 bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold text-amber-600">{unassignedCount} unassigned</Link>}
+            </div>
+            {techRows.length === 0 ? (
+              <p className="text-sm text-[var(--ink-muted)]">No active assignments.</p>
+            ) : (
+              <div className="space-y-1.5">
+                {techRows.map(t => (
+                  <Link key={t.id} href={`/jobs?assignedToId=${t.id}`} className="group flex items-center justify-between rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 transition hover:border-[var(--accent)]/35">
+                    <div className="min-w-0">
+                      <p className="truncate text-xs font-semibold group-hover:text-[var(--accent)] transition-colors">{t.name}</p>
+                      <p className="text-[10px] text-[var(--ink-muted)]">{t.role === "TECHNICIAN_EXTERNAL" ? "External" : t.role === "TECHNICIAN_INTERNAL" ? "Internal" : t.role}</p>
+                    </div>
+                    <span className={`ml-2 shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${t.role === "TECHNICIAN_EXTERNAL" ? "bg-violet-500/15 text-violet-400" : "bg-sky-500/15 text-sky-500"}`}>{t.count} active</span>
+                  </Link>
+                ))}
+                {overdueWithDays.length > 0 && (
+                  <div className="mt-2 border-t border-[var(--line)] pt-2">
+                    <p className="mb-1.5 text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Overdue Jobs</p>
+                    {overdueWithDays.slice(0, 4).map(j => (
+                      <Link key={j.id} href={`/jobs/${j.id}`} className="flex items-center justify-between rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 transition hover:border-amber-500/30 mb-1">
+                        <div className="min-w-0">
+                          <p className="mono truncate text-xs font-bold text-[var(--accent)]">{j.jobNumber}</p>
+                          <p className="truncate text-[10px] text-[var(--ink-muted)]">{statusLabel[j.status as keyof typeof statusLabel] ?? j.status}</p>
+                        </div>
+                        <span className={`ml-2 shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${j.ageDays >= 8 ? "bg-red-500/15 text-red-400" : "bg-amber-500/15 text-amber-600"}`}>{j.ageDays}d</span>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </section>
+        </div>
+      </div>
+    );
+  }
+
+  // ── FINANCE dashboard ──────────────────────────────────────────────────────
+  if (user.role === "FINANCE") {
+    const currency = getAppCurrency();
+    const today = new Date();
+    const mtdStart = new Date(today.getFullYear(), today.getMonth(), 1, 0, 0, 0, 0);
+    const mtdLabel = monthLabel(today.getFullYear(), today.getMonth() + 1);
+    const thirtyDaysAgo = new Date(today.getTime() - 30 * 86400000);
+    const sixtyDaysAgo  = new Date(today.getTime() - 60 * 86400000);
+
+    const [invoices, recentPayments, salesRevenue] = await Promise.all([
+      prisma.invoice.findMany({
+        select: { id: true, invoiceNumber: true, status: true, totalAmount: true, paidAmount: true, issuedAt: true, job: { select: { jobNumber: true, client: { select: { fullName: true } } } } },
+        orderBy: { issuedAt: "desc" },
+        take: 50,
+      }),
+      prisma.payment.findMany({
+        where: { createdAt: { gte: mtdStart } },
+        select: { amount: true, method: true, receivedAt: true, currency: true },
+        orderBy: { receivedAt: "desc" },
+        take: 20,
+      }),
+      prisma.sale.findMany({
+        where: { status: "PAID", paidAt: { gte: mtdStart } },
+        select: { totalAmount: true },
+      }),
+    ]);
+
+    const totalInvoiced = invoices.reduce((s, i) => s + i.totalAmount, 0);
+    const totalCollected = invoices.reduce((s, i) => s + i.paidAmount, 0);
+    const totalOutstanding = totalInvoiced - totalCollected;
+    const overdueCount = invoices.filter(i => i.status !== "PAID" && i.issuedAt < thirtyDaysAgo).length;
+    const ageingCurrent  = invoices.filter(i => i.status !== "PAID" && i.issuedAt >= thirtyDaysAgo).reduce((s, i) => s + (i.totalAmount - i.paidAmount), 0);
+    const ageing30to60   = invoices.filter(i => i.status !== "PAID" && i.issuedAt >= sixtyDaysAgo && i.issuedAt < thirtyDaysAgo).reduce((s, i) => s + (i.totalAmount - i.paidAmount), 0);
+    const ageing60plus   = invoices.filter(i => i.status !== "PAID" && i.issuedAt < sixtyDaysAgo).reduce((s, i) => s + (i.totalAmount - i.paidAmount), 0);
+    const posRevenueMtd  = salesRevenue.reduce((s, r) => s + r.totalAmount, 0);
+    const invoiceRevenueMtd = invoices.filter(i => i.status === "PAID" && i.issuedAt >= mtdStart).reduce((s, i) => s + i.totalAmount, 0);
+    const mtdPayments = recentPayments.reduce((s, p) => s + p.amount, 0);
+    const methodTotals = recentPayments.reduce((acc, p) => { acc[p.method] = (acc[p.method] ?? 0) + p.amount; return acc; }, {} as Record<string, number>);
+    const unpaidInvoices = invoices.filter(i => i.status !== "PAID" && i.status !== "VOID");
+
+    return (
+      <div className="space-y-4">
+        <DashboardHero
+          title="Finance & Accounts"
+          summary={`${formatMoneyCompact(totalOutstanding, currency)} outstanding · ${overdueCount} overdue invoices · ${formatMoneyCompact(mtdPayments, currency)} collected MTD`}
+          primaryHref="/documents/invoices"
+          primaryLabel="Invoices"
+          secondaryHref="/reports"
+          secondaryLabel="Reports"
+          icon={<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="black" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>}
+        />
+
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {[
+            { label: "Total Invoiced", val: formatMoneyCompact(totalInvoiced, currency), href: "/documents/invoices", color: "text-[var(--ink)]" },
+            { label: "Collected",      val: formatMoneyCompact(totalCollected, currency), href: "/documents/invoices?status=PAID", color: "text-emerald-600" },
+            { label: "Outstanding",    val: formatMoneyCompact(totalOutstanding, currency), href: "/documents/invoices?status=ISSUED", color: totalOutstanding > 0 ? "text-[var(--accent)]" : "text-emerald-600" },
+            { label: "Overdue (30d+)", val: String(overdueCount), href: "/documents/invoices", color: overdueCount > 0 ? "text-red-400" : "text-[var(--ink-muted)]" },
+          ].map(t => (
+            <Link key={t.label} href={t.href} className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px]">
+              <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">{t.label}</p>
+              <p className={`mt-2 text-2xl font-black ${t.color}`}>{t.val}</p>
+            </Link>
+          ))}
+        </div>
+
+        <div className="grid gap-3 lg:grid-cols-2">
+          <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+            <p className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Invoice Ageing</p>
+            <div className="space-y-2">
+              {[
+                { label: "Current (0–30 days)", amount: ageingCurrent, color: "bg-[var(--accent)]/10 border-[var(--accent)]/20 text-[var(--accent)]" },
+                { label: "30–60 days",          amount: ageing30to60, color: "bg-amber-500/10 border-amber-500/25 text-amber-600" },
+                { label: "60+ days (overdue)",  amount: ageing60plus, color: "bg-red-500/10 border-red-500/20 text-red-400" },
+              ].map(row => (
+                <div key={row.label} className={`flex items-center justify-between rounded-lg border px-3 py-2.5 ${row.color}`}>
+                  <p className="text-xs font-medium">{row.label}</p>
+                  <p className="text-sm font-bold">{formatMoneyCompact(row.amount, currency)}</p>
+                </div>
+              ))}
+              <div className="mt-2 flex items-center justify-between rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2.5">
+                <p className="text-xs font-semibold text-[var(--ink)]">Total Outstanding</p>
+                <p className="text-sm font-black text-[var(--ink)]">{formatMoneyCompact(totalOutstanding, currency)}</p>
+              </div>
+            </div>
+          </section>
+
+          <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+            <p className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">MTD Cash In — {mtdLabel}</p>
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2.5">
+                <p className="text-xs text-[var(--ink-muted)]">Invoice payments</p>
+                <p className="text-sm font-bold text-emerald-600">{formatMoneyCompact(invoiceRevenueMtd, currency)}</p>
+              </div>
+              <div className="flex items-center justify-between rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2.5">
+                <p className="text-xs text-[var(--ink-muted)]">POS / cash sales</p>
+                <p className="text-sm font-bold text-emerald-600">{formatMoneyCompact(posRevenueMtd, currency)}</p>
+              </div>
+              {Object.entries(methodTotals).map(([method, amount]) => (
+                <div key={method} className="flex items-center justify-between rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2">
+                  <p className="text-xs text-[var(--ink-muted)]">{method.replace(/_/g, " ")}</p>
+                  <p className="text-sm font-semibold text-[var(--ink)]">{formatMoneyCompact(amount, currency)}</p>
+                </div>
+              ))}
+              <div className="mt-1 flex items-center justify-between rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2.5">
+                <p className="text-xs font-bold text-emerald-600">Total in MTD</p>
+                <p className="text-sm font-black text-emerald-600">{formatMoneyCompact(mtdPayments + posRevenueMtd, currency)}</p>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+          <div className="mb-3 flex items-center justify-between">
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Unpaid Invoices</p>
+            <Link href="/documents/invoices" className="text-[11px] font-semibold text-[var(--accent)] hover:underline">View all →</Link>
+          </div>
+          {unpaidInvoices.length === 0 ? (
+            <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2.5">
+              <p className="text-[11px] font-medium text-emerald-600">All invoices paid — nothing outstanding.</p>
+            </div>
+          ) : (
+            <div className="space-y-1.5">
+              {unpaidInvoices.slice(0, 8).map(inv => {
+                const balance = inv.totalAmount - inv.paidAmount;
+                const ageDays = Math.floor((today.getTime() - inv.issuedAt.getTime()) / 86400000);
+                return (
+                  <div key={inv.id} className="flex items-center justify-between rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2">
+                    <div className="min-w-0">
+                      <p className="mono truncate text-xs font-bold text-[var(--ink)]">{inv.invoiceNumber}</p>
+                      <p className="truncate text-[10px] text-[var(--ink-muted)]">{inv.job?.client?.fullName ?? "—"} · {inv.job?.jobNumber ?? "—"}</p>
+                    </div>
+                    <div className="ml-3 shrink-0 text-right">
+                      <p className="text-xs font-semibold text-[var(--accent)]">{formatMoneyCompact(balance, currency)}</p>
+                      <span className={`text-[10px] font-medium ${ageDays > 60 ? "text-red-400" : ageDays > 30 ? "text-amber-600" : "text-[var(--ink-muted)]"}`}>{ageDays}d</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </section>
+      </div>
+    );
+  }
+
+  // ── SALES dashboard ────────────────────────────────────────────────────────
+  if (user.role === "SALES") {
+    const currency = getAppCurrency();
+    const today = new Date();
+    const mtdStart = new Date(today.getFullYear(), today.getMonth(), 1, 0, 0, 0, 0);
+    const prevMonthStart = new Date(today.getFullYear(), today.getMonth() - 1, 1, 0, 0, 0, 0);
+    const prevMonthEnd   = new Date(today.getFullYear(), today.getMonth(), 0, 23, 59, 59, 999);
+
+    const [jobsMtd, prevMonthJobs, awaitingApproval, readyPickup, recentClients, quotedJobs] = await Promise.all([
+      prisma.job.findMany({
+        where: { receivedAt: { gte: mtdStart } },
+        select: { id: true, status: true, clientBill: true, client: { select: { fullName: true } }, receivedAt: true },
+        orderBy: { receivedAt: "desc" },
+        take: 30,
+      }),
+      prisma.job.count({ where: { receivedAt: { gte: prevMonthStart, lte: prevMonthEnd } } }),
+      prisma.job.count({ where: { status: "AWAITING_APPROVAL" } }),
+      prisma.job.count({ where: { status: "READY_FOR_PICKUP" } }),
+      prisma.client.findMany({
+        where: { orgId: user.orgId ?? undefined },
+        orderBy: { createdAt: "desc" },
+        take: 5,
+        select: { id: true, fullName: true, organization: true, createdAt: true },
+      }),
+      prisma.job.findMany({
+        where: { status: "AWAITING_APPROVAL" },
+        select: { id: true, jobNumber: true, clientBill: true, client: { select: { fullName: true } }, receivedAt: true },
+        orderBy: { receivedAt: "asc" },
+        take: 8,
+      }),
+    ]);
+
+    const intakeMtd = jobsMtd.length;
+    const wonMtd    = jobsMtd.filter(j => ["COMPLETED", "READY_FOR_PICKUP"].includes(j.status)).length;
+    const revenueMtd = jobsMtd.filter(j => j.status === "COMPLETED").reduce((s, j) => s + (getClientBill(j) ?? 0), 0);
+    const conversionRate = intakeMtd > 0 ? Math.round((wonMtd / intakeMtd) * 100) : 0;
+    const trendMonths = trendMonthsSinceStartOfYear(today);
+    const revenueTrend = await loadRevenueMarginTrend(trendMonths);
+
+    return (
+      <div className="space-y-4">
+        <DashboardHero
+          title="Sales & Pipeline"
+          summary={`${intakeMtd} jobs this month · ${conversionRate}% conversion · ${awaitingApproval} awaiting client approval`}
+          primaryHref="/jobs/new"
+          primaryLabel="New Job"
+          secondaryHref="/jobs?status=AWAITING_APPROVAL"
+          secondaryLabel="Approval Queue"
+          icon={<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="black" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>}
+        />
+
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {[
+            { label: "Jobs In MTD",    val: String(intakeMtd),                         sub: `vs ${prevMonthJobs} last month`,   href: "/jobs", color: "text-[var(--ink)]" },
+            { label: "Conversion",     val: `${conversionRate}%`,                      sub: `${wonMtd} completed/ready`,         href: "/jobs?status=COMPLETED,READY_FOR_PICKUP", color: conversionRate >= 50 ? "text-emerald-600" : "text-amber-600" },
+            { label: "Pending Quotes", val: String(awaitingApproval),                  sub: "awaiting client decision",          href: "/jobs?status=AWAITING_APPROVAL", color: awaitingApproval > 0 ? "text-[var(--accent)]" : "text-[var(--ink-muted)]" },
+            { label: "Revenue MTD",    val: formatMoneyCompact(revenueMtd, currency),  sub: "from completed jobs",               href: "/reports", color: "text-[var(--accent)]" },
+          ].map(t => (
+            <Link key={t.label} href={t.href} className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px]">
+              <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">{t.label}</p>
+              <p className={`mt-2 text-2xl font-black ${t.color}`}>{t.val}</p>
+              <p className="mt-1 text-[10px] text-[var(--ink-muted)]">{t.sub}</p>
+            </Link>
+          ))}
+        </div>
+
+        <div className="grid gap-3 lg:grid-cols-2">
+          <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+            <div className="mb-3 flex items-center justify-between">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Pending Client Approvals</p>
+              <Link href="/jobs?status=AWAITING_APPROVAL" className="text-[11px] font-semibold text-[var(--accent)] hover:underline">All →</Link>
+            </div>
+            {quotedJobs.length === 0 ? (
+              <p className="text-sm text-[var(--ink-muted)]">No quotes pending.</p>
+            ) : (
+              <div className="space-y-1.5">
+                {quotedJobs.map(j => {
+                  const waitDays = Math.floor((today.getTime() - j.receivedAt.getTime()) / 86400000);
+                  return (
+                    <Link key={j.id} href={`/jobs/${j.id}`} className="flex items-center justify-between rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 transition hover:border-[var(--accent)]/35">
+                      <div className="min-w-0">
+                        <p className="mono truncate text-xs font-bold text-[var(--accent)]">{j.jobNumber}</p>
+                        <p className="truncate text-[10px] text-[var(--ink-muted)]">{j.client?.fullName ?? "—"}</p>
+                      </div>
+                      <div className="ml-3 shrink-0 text-right">
+                        {j.clientBill && <p className="text-xs font-semibold text-[var(--ink)]">{formatMoneyCompact(j.clientBill, currency)}</p>}
+                        <span className={`text-[10px] font-medium ${waitDays > 3 ? "text-amber-600" : "text-[var(--ink-muted)]"}`}>{waitDays}d wait</span>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+
+          <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+            <div className="mb-3 flex items-center justify-between">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Ready for Pickup</p>
+              <Link href="/jobs?status=READY_FOR_PICKUP" className="text-[11px] font-semibold text-[var(--accent)] hover:underline">All →</Link>
+            </div>
+            <div className="mb-3 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2.5 text-center">
+              <p className="text-2xl font-black text-emerald-600">{readyPickup}</p>
+              <p className="text-[11px] text-emerald-600">jobs ready — contact clients to collect</p>
+            </div>
+            <div className="mb-3 border-t border-[var(--line)] pt-3">
+              <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Newest Clients</p>
+              {recentClients.map(c => (
+                <div key={c.id} className="flex items-center justify-between py-1">
+                  <p className="truncate text-xs font-medium text-[var(--ink)]">{c.fullName}</p>
+                  <p className="ml-2 shrink-0 text-[10px] text-[var(--ink-muted)]">{c.organization ?? "Individual"}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+        </div>
+
+        <RevenueMarginTrendSection trendMonths={trendMonths} revenueTrend={revenueTrend} currency={currency} />
+      </div>
+    );
+  }
+
   const [totalJobs, openJobs, completedJobs] = await Promise.all([
-    prisma.job.count({ where: { orgId } }),
+    prisma.job.count(),
     prisma.job.count({
       where: {
-        orgId,
         status: { in: filterSupportedJobStatuses(["RECEIVED", "DIAGNOSING", "REFERRED", "IN_EXTERNAL_REPAIR", "IN_REPAIR", "READY_FOR_PICKUP", "AWAITING_APPROVAL"]) as JobStatus[] },
       },
     }),
-    prisma.job.count({ where: { orgId, status: "COMPLETED" } }),
+    prisma.job.count({ where: { status: "COMPLETED" } }),
   ]);
 
 
@@ -1393,11 +1721,12 @@ export default async function DashboardPage({
     <div className="space-y-4">
       <DashboardHero
         title="System Overview"
-        summary="Use this overview to orient team focus, then open the queue and reporting workspaces for deeper action."
+        summary="Orient team focus · open the queue and reporting workspaces for deeper action."
         primaryHref="/jobs"
         primaryLabel="Open Jobs"
         secondaryHref="/reports"
         secondaryLabel="Open Reports"
+        icon={<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="black" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>}
       />
 
       <StickyKpiRow

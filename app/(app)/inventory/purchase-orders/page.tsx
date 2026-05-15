@@ -7,11 +7,11 @@ import { can } from "@/lib/permissions";
 export const dynamic = "force-dynamic";
 
 const STATUS_COLORS: Record<string, string> = {
-  DRAFT:     "bg-gray-100 text-gray-600",
-  ORDERED:   "bg-blue-100 text-blue-700",
-  PARTIAL:   "bg-amber-100 text-amber-700",
-  RECEIVED:  "bg-green-100 text-green-700",
-  CANCELLED: "bg-red-100 text-red-600",
+  DRAFT:     "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]",
+  ORDERED:   "border-sky-500/30 bg-sky-500/15 text-sky-700",
+  PARTIAL:   "border-amber-400/30 bg-amber-400/15 text-amber-700",
+  RECEIVED:  "border-emerald-500/30 bg-emerald-500/15 text-emerald-700",
+  CANCELLED: "border-red-500/20 bg-red-500/10 text-red-600",
 };
 
 export default async function PurchaseOrdersPage() {
@@ -32,55 +32,65 @@ export default async function PurchaseOrdersPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-bold text-[var(--ink)]">Purchase Orders</h1>
-          <p className="mt-0.5 text-sm text-[var(--ink-muted)]">{orders.length} order{orders.length !== 1 ? "s" : ""}</p>
+      {/* Header */}
+      <div className="panel-shadow rounded-[1.75rem] border border-[var(--line)] bg-[var(--panel)] p-4 sm:p-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-[var(--line)] bg-[var(--accent)]">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="black" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+            </div>
+            <div className="min-w-0">
+              <p className="truncate text-xl font-black text-[var(--ink)]">Purchase Orders</p>
+              <p className="mt-0.5 truncate text-xs text-[var(--ink-muted)]">{orders.length} order{orders.length !== 1 ? "s" : ""} · track supplier stock requests</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Link href="/inventory" className="inline-flex items-center rounded-lg border border-[var(--line)] px-3 py-1.5 text-xs font-semibold text-[var(--ink)] transition hover:border-[var(--accent)]/50 hover:text-[var(--accent)]">
+              ← Inventory
+            </Link>
+            <Link href="/inventory/purchase-orders/new" className="btn-premium rounded-full px-4 py-2 text-sm">
+              New PO
+            </Link>
+          </div>
         </div>
-        <Link
-          href="/inventory/purchase-orders/new"
-          className="btn-premium rounded-lg px-4 py-2 text-sm font-semibold"
-        >
-          + New PO
-        </Link>
       </div>
 
-      <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] overflow-hidden">
+      <div className="rounded-xl border border-[var(--line)]">
         {orders.length === 0 ? (
           <div className="py-16 text-center text-sm text-[var(--ink-muted)]">
             No purchase orders yet. Create one to start ordering stock.
           </div>
         ) : (
           <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-[var(--line)] text-xs font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
+            <thead className="bg-[var(--panel-strong)] text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
+              <tr>
                 <th className="px-4 py-2.5 text-left">Reference</th>
                 <th className="px-4 py-2.5 text-left">Supplier</th>
                 <th className="px-4 py-2.5 text-left">Status</th>
-                <th className="px-4 py-2.5 text-left hidden sm:table-cell">Ordered</th>
-                <th className="px-4 py-2.5 text-left hidden md:table-cell">Expected</th>
+                <th className="hidden px-4 py-2.5 text-left sm:table-cell">Ordered</th>
+                <th className="hidden px-4 py-2.5 text-left md:table-cell">Expected</th>
                 <th className="px-4 py-2.5 text-center">Items</th>
                 <th className="px-4 py-2.5" />
               </tr>
             </thead>
-            <tbody className="divide-y divide-[var(--line)]">
+            <tbody>
               {orders.map((po) => (
-                <tr key={po.id} className="hover:bg-[var(--gold)]/5">
-                  <td className="px-4 py-2.5 font-mono text-xs text-[var(--ink)]">
-                    {po.reference ?? po.id.slice(-6).toUpperCase()}
+                <tr key={po.id} className="border-t border-[var(--line)] align-middle hover:bg-[var(--panel-strong)]/40">
+                  <td className="px-4 py-3">
+                    <p className="mono text-sm font-bold text-[var(--ink)]">{po.reference ?? po.id.slice(-6).toUpperCase()}</p>
                   </td>
-                  <td className="px-4 py-2.5 font-medium text-[var(--ink)]">{po.supplier.name}</td>
-                  <td className="px-4 py-2.5">
-                    <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${STATUS_COLORS[po.status] ?? ""}`}>
+                  <td className="px-4 py-3 font-medium text-[var(--ink)]">{po.supplier.name}</td>
+                  <td className="px-4 py-3">
+                    <span className={`rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${STATUS_COLORS[po.status] ?? "border-[var(--line)] text-[var(--ink-muted)]"}`}>
                       {po.status}
                     </span>
                   </td>
-                  <td className="px-4 py-2.5 text-[var(--ink-muted)] hidden sm:table-cell">{fmt(po.orderedAt)}</td>
-                  <td className="px-4 py-2.5 text-[var(--ink-muted)] hidden md:table-cell">{fmt(po.expectedAt)}</td>
-                  <td className="px-4 py-2.5 text-center text-[var(--ink-muted)]">{po._count.items}</td>
-                  <td className="px-4 py-2.5 text-right">
-                    <Link href={`/inventory/purchase-orders/${po.id}`} className="text-xs font-semibold text-[var(--gold)] hover:underline">
-                      View →
+                  <td className="hidden px-4 py-3 text-[var(--ink-muted)] sm:table-cell">{fmt(po.orderedAt)}</td>
+                  <td className="hidden px-4 py-3 text-[var(--ink-muted)] md:table-cell">{fmt(po.expectedAt)}</td>
+                  <td className="px-4 py-3 text-center text-[var(--ink-muted)]">{po._count.items}</td>
+                  <td className="px-4 py-3 text-right">
+                    <Link href={`/inventory/purchase-orders/${po.id}`} className="inline-flex items-center rounded-lg border border-[var(--line)] px-2.5 py-1.5 text-xs font-medium text-[var(--ink)] transition hover:border-[var(--accent)]/50 hover:text-[var(--accent)]">
+                      View
                     </Link>
                   </td>
                 </tr>

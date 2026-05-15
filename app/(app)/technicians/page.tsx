@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-
+import { SearchToggle } from "@/components/shared/SearchToggle";
 import { StickyKpiRow } from "@/components/mobile/StickyKpiRow";
 import { JobStatusBadge, statusStripClass } from "@/components/jobs/JobStatusBadge";
 import { JOB_STATUSES, UI_JOB_STATUSES, JobStatus, normalizeJobStatus } from "@/lib/job-status";
@@ -250,67 +250,37 @@ export default async function TechniciansPage({
             : "";
 
           return (
-            <div className="border-b border-[var(--line)] bg-[var(--panel-strong)]/35 px-3 py-2">
-              <div className="flex items-center gap-1.5 overflow-x-auto [scrollbar-width:none]">
+            <div className="flex items-center gap-2 px-3 py-2">
+              <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto [scrollbar-width:none]">
                 <Link
                   href={statusHref("")}
-                  className={`shrink-0 rounded-full border px-3 py-1.5 text-[11px] font-semibold transition ${
-                    activeStatus
-                      ? "border-[var(--line)] bg-[var(--panel)] text-[var(--ink-muted)] hover:border-[var(--accent)]/30"
-                      : "border-[var(--accent)] bg-[var(--accent)] text-white"
+                  className={`shrink-0 rounded-full border px-3 py-1 text-[11px] font-semibold transition ${
+                    activeStatus ? "border-[var(--line)] bg-[var(--panel)] text-[var(--ink-muted)] hover:border-[var(--accent)]/30" : "border-[var(--accent)] bg-[var(--accent)] text-white"
                   }`}
                 >
                   All
                 </Link>
-                {UI_JOB_STATUSES.map((status) => {
-                  const active = activeStatus === status;
-                  return (
-                    <Link
-                      key={status}
-                      href={statusHref(status)}
-                      className={`shrink-0 rounded-full border px-3 py-1.5 text-[11px] font-semibold transition ${
-                        active
-                          ? "border-[var(--accent)] bg-[var(--accent)] text-white"
-                          : "border-[var(--line)] bg-[var(--panel)] text-[var(--ink-muted)] hover:border-[var(--accent)]/30"
-                      }`}
-                    >
-                      {statusOptionLabel[status]}
-                    </Link>
-                  );
-                })}
+                {UI_JOB_STATUSES.map((status) => (
+                  <Link
+                    key={status}
+                    href={statusHref(status)}
+                    className={`shrink-0 rounded-full border px-3 py-1 text-[11px] font-semibold transition ${
+                      activeStatus === status ? "border-[var(--accent)] bg-[var(--accent)] text-white" : "border-[var(--line)] bg-[var(--panel)] text-[var(--ink-muted)] hover:border-[var(--accent)]/30"
+                    }`}
+                  >
+                    {statusOptionLabel[status]}
+                  </Link>
+                ))}
               </div>
+              <SearchToggle
+                basePath="/technicians"
+                defaultValue={filters.q}
+                placeholder="Search job # or device"
+                preserve={{ status: filters.status, ready: filters.ready }}
+              />
             </div>
           );
         })()}
-        {/* Auto-hide search after applying */}
-        <details className="group border-b border-[var(--line)]" open={!filters.q}>
-          <summary className="flex cursor-pointer list-none items-center justify-between px-3 py-2.5 text-[11px] font-semibold text-[var(--ink-muted)] hover:bg-[var(--panel-strong)]/30 [&::-webkit-details-marker]:hidden">
-            <span className="truncate">
-              Search
-              {filters.q ? (
-                <span className="ml-2 rounded-full border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-0.5 text-[10px] font-semibold text-[var(--ink)]">
-                  {filters.q}
-                </span>
-              ) : null}
-            </span>
-            <span className="text-[var(--accent)] group-open:hidden">Show</span>
-            <span className="hidden text-[var(--accent)] group-open:inline">Hide</span>
-          </summary>
-          <form>
-            <div className="space-y-2 px-3 pb-3">
-              <input
-                name="q"
-                defaultValue={filters.q}
-                placeholder="Search job # or device"
-                className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2.5 text-sm outline-none transition focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/20"
-              />
-              <div className="flex items-center gap-2">
-                <button className="btn-premium-secondary shrink-0 rounded-lg px-3 py-2.5 text-sm">Apply</button>
-                <Link href="/technicians" className="btn-premium-secondary shrink-0 rounded-lg px-3 py-2.5 text-sm">Reset</Link>
-              </div>
-            </div>
-          </form>
-        </details>
 
         {/* Quick filter chips + secondary action */}
         <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2">

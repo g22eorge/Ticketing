@@ -8,7 +8,7 @@ import { prisma } from "@/lib/prisma";
 import { EXTRA_PERMISSIONS } from "@/lib/permissions";
 import { assertOrgCanMutate } from "@/lib/org-write";
 
-type SearchParams = { groupId?: string };
+type SearchParams = { groupId?: string; new?: string };
 
 const createGroupSchema = z.object({
   name: z.string().min(2).max(60),
@@ -205,18 +205,23 @@ export default async function GroupsPage({ searchParams }: { searchParams: Promi
       <div className="grid gap-4 lg:grid-cols-[360px_1fr]">
         <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
           <div className="flex items-center justify-between gap-2">
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Groups</p>
-            <details>
-              <summary className="btn-premium-secondary cursor-pointer list-none rounded-lg px-3 py-2 text-sm">New</summary>
-              <div className="mt-2 rounded-xl border border-[var(--line)] bg-[var(--panel)] p-3">
-                <form action={createGroupAction} className="space-y-2">
-                  <input name="name" placeholder="Group name" className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm outline-none" required />
-                  <input name="description" placeholder="Description (optional)" className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm outline-none" />
-                  <button className="btn-premium w-full rounded-lg px-3 py-2 text-sm text-white">Create</button>
-                </form>
-              </div>
-            </details>
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Groups</p>
+            <Link
+              href={params.new === "1" ? `/settings/groups${params.groupId ? `?groupId=${params.groupId}` : ""}` : `/settings/groups?${new URLSearchParams({ ...(params.groupId ? { groupId: params.groupId } : {}), new: "1" }).toString()}`}
+              className={`rounded-lg border px-3 py-1.5 text-[12px] font-semibold transition ${params.new === "1" ? "border-[var(--line)] text-[var(--ink-muted)] hover:text-[var(--ink)]" : "border-[var(--accent)]/40 bg-[var(--accent)] text-white hover:bg-[var(--accent)]/90"}`}
+            >
+              {params.new === "1" ? "✕ Cancel" : "+ New"}
+            </Link>
           </div>
+          {params.new === "1" ? (
+            <div className="mt-3 border-t border-[var(--line)] pt-3">
+              <form action={createGroupAction} className="space-y-2">
+                <input name="name" placeholder="Group name" className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-[13px] outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/15" required />
+                <input name="description" placeholder="Description (optional)" className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-[13px] outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/15" />
+                <button className="btn-premium rounded-lg px-4 py-2 text-[13px] text-white">Create Group</button>
+              </form>
+            </div>
+          ) : null}
 
           <div className="mt-3 space-y-2">
             {groups.map((g) => (

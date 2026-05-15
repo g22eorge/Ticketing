@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 
+import { SearchToggle } from "@/components/shared/SearchToggle";
 import { JobTable, JobRow } from "@/components/jobs/JobTable";
 import { JobBoardView } from "@/components/jobs/JobBoardView";
 import { UI_JOB_STATUSES, JobStatus, normalizeJobStatus } from "@/lib/job-status";
@@ -25,6 +26,7 @@ type SearchParams = {
   page?: string;
   sort?: string;
   view?: string;
+  adv?: string;
 };
 
 type JobWithClient = Prisma.JobGetPayload<{
@@ -365,8 +367,9 @@ export default async function JobsPage({
 
   const hasAdvancedFilters = Boolean(filters.deviceType || filters.repairPath || filters.pricing || filters.from || filters.to || sort === "job_number_desc");
   const hasAnyFilter = Boolean(filters.q || filters.status || hasAdvancedFilters);
+  const showAdv = filters.adv === "1" || hasAdvancedFilters;
 
-  const ctrlClass = "rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-sm text-[var(--ink)] outline-none transition focus:border-[var(--accent)]/60 focus:ring-2 focus:ring-[var(--accent)]/14";
+  const ctrlClass = "rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] text-[var(--ink)] outline-none transition focus:border-[var(--accent)]/60 focus:ring-2 focus:ring-[var(--accent)]/14";
 
   const preservedWithoutStatus = Object.fromEntries(
     Object.entries(preserved).filter(([key]) => key !== "status" && key !== "page"),
@@ -378,50 +381,17 @@ export default async function JobsPage({
     return query ? `/jobs?${query}` : "/jobs";
   }
 
+  const advToggleHref = (() => {
+    const params = new URLSearchParams(preserved);
+    if (filters.adv === "1") params.delete("adv"); else params.set("adv", "1");
+    const qs = params.toString();
+    return qs ? `/jobs?${qs}` : "/jobs";
+  })();
+
   return (
     <div className="space-y-4 pb-[calc(env(safe-area-inset-bottom)+5.25rem)] sm:pb-4">
 
-      {/* Top actions bar */}
-      <div className="flex items-center justify-between gap-2">
-        {/* View toggle */}
-        <div className="hidden items-center rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] p-0.5 sm:flex">
-          {(["table", "board"] as const).map((v) => {
-            const active = v === (isBoard ? "board" : "table");
-            const params = new URLSearchParams({ ...preserved, view: v === "table" ? "" : v });
-            if (v === "table") params.delete("view");
-            return (
-              <Link
-                key={v}
-                href={`/jobs?${params.toString()}`}
-                className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[11px] font-semibold transition ${
-                  active
-                    ? "bg-[var(--panel)] text-[var(--ink)] shadow-sm"
-                    : "text-[var(--ink-muted)] hover:text-[var(--ink)]"
-                }`}
-              >
-                {v === "table" ? (
-                  <svg viewBox="0 0 16 16" fill="currentColor" className="h-3.5 w-3.5" aria-hidden="true">
-                    <path d="M0 3a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H1a1 1 0 0 1-1-1V3zm0 5a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H1a1 1 0 0 1-1-1V8zm1 4a1 1 0 0 0-1 1v2a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1H1z"/>
-                  </svg>
-                ) : (
-                  <svg viewBox="0 0 16 16" fill="currentColor" className="h-3.5 w-3.5" aria-hidden="true">
-                    <path d="M1 2a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V2zm5 0a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V2zm5 0a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1V2z"/>
-                  </svg>
-                )}
-                {v === "table" ? "Table" : "Board"}
-              </Link>
-            );
-          })}
-        </div>
-
-        {can.createJob(user) ? (
-          <Link href="/jobs/new" className="btn-premium hidden rounded-lg px-4 py-2 text-sm font-semibold sm:inline-flex">
-            + New Job
-          </Link>
-        ) : <span />}
-      </div>
-
-      {/* ── FAB: New Job — mobile only, floats above bottom nav ── */}
+      {/* ── FAB: New Job — mobile only ── */}
       {can.createJob(user) ? (
         <Link
           href="/jobs/new"
@@ -444,110 +414,111 @@ export default async function JobsPage({
         </div>
       ) : null}
 
-      {/* ── Filter panel ── */}
-      <form className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
-        {/* Primary filter: 2-row on mobile, 1-row on sm+ */}
-        <div className="space-y-2 p-3">
-          {/* Search — full width on mobile */}
-          <div className="relative min-w-0">
-            <svg viewBox="0 0 20 20" fill="currentColor" className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--ink-muted)]" aria-hidden="true">
-              <path fillRule="evenodd" d="M9 3.5a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11ZM2 9a7 7 0 1 1 12.452 4.391l3.328 3.329a.75.75 0 1 1-1.06 1.06l-3.329-3.328A7 7 0 0 1 2 9Z" clipRule="evenodd" />
-            </svg>
-            <input
-              name="q"
-              defaultValue={filters.q}
-              placeholder={
-                isExternalTech ? "Search job #" : lookupByPhone ? "Search job #, name, or phone…" : "Search job # or client…"
-              }
-              className={`${ctrlClass} w-full pl-9`}
-            />
+      {/* ── Filter bar ── */}
+      <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
+        {/* Row: view toggle | status chips | actions */}
+        <div className="flex items-center gap-2 px-3 py-2">
+          {/* View toggle */}
+          <div className="hidden items-center rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] p-0.5 sm:flex">
+            {(["table", "board"] as const).map((v) => {
+              const active = v === (isBoard ? "board" : "table");
+              const params = new URLSearchParams({ ...preserved, view: v === "table" ? "" : v });
+              if (v === "table") params.delete("view");
+              return (
+                <Link
+                  key={v}
+                  href={`/jobs?${params.toString()}`}
+                  className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[11px] font-semibold transition ${
+                    active ? "bg-[var(--panel)] text-[var(--ink)] shadow-sm" : "text-[var(--ink-muted)] hover:text-[var(--ink)]"
+                  }`}
+                >
+                  {v === "table" ? (
+                    <svg viewBox="0 0 16 16" fill="currentColor" className="h-3 w-3" aria-hidden="true">
+                      <path d="M0 3a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H1a1 1 0 0 1-1-1V3zm0 5a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H1a1 1 0 0 1-1-1V8zm1 4a1 1 0 0 0-1 1v2a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1H1z"/>
+                    </svg>
+                  ) : (
+                    <svg viewBox="0 0 16 16" fill="currentColor" className="h-3 w-3" aria-hidden="true">
+                      <path d="M1 2a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V2zm5 0a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V2zm5 0a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1V2z"/>
+                    </svg>
+                  )}
+                  {v === "table" ? "Table" : "Board"}
+                </Link>
+              );
+            })}
           </div>
-          {/* Actions row */}
-          <div className="flex items-center justify-end gap-2">
-            <button type="submit" className="btn-premium-secondary shrink-0 rounded-lg px-3 py-1.5 text-sm font-medium">
-              Apply
-            </button>
-            {hasAnyFilter ? (
-              <Link href="/jobs" className="btn-premium-secondary shrink-0 rounded-lg px-3 py-1.5 text-center text-sm font-medium">
-                Reset
+
+          {/* Status chips — scrollable */}
+          <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto [scrollbar-width:none]">
+            <Link
+              href={statusChipHref("")}
+              className={`shrink-0 rounded-full border px-3 py-1 text-[11px] font-semibold transition ${
+                statusValue ? "border-[var(--line)] bg-[var(--panel)] text-[var(--ink-muted)] hover:border-[var(--accent)]/30" : "border-[var(--accent)] bg-[var(--accent)] text-white"
+              }`}
+            >
+              All
+            </Link>
+            {UI_JOB_STATUSES.map((s) => (
+              <Link
+                key={s}
+                href={statusChipHref(s)}
+                className={`shrink-0 rounded-full border px-3 py-1 text-[11px] font-semibold transition ${
+                  statusValue === s ? "border-[var(--accent)] bg-[var(--accent)] text-white" : "border-[var(--line)] bg-[var(--panel)] text-[var(--ink-muted)] hover:border-[var(--accent)]/30"
+                }`}
+              >
+                {statusOptionLabel[s]}
+              </Link>
+            ))}
+          </div>
+
+          {/* Right actions */}
+          <div className="flex shrink-0 items-center gap-1.5">
+            <SearchToggle
+              basePath="/jobs"
+              defaultValue={filters.q}
+              placeholder={isExternalTech ? "Search job #" : lookupByPhone ? "Search job #, name, phone…" : "Search job #…"}
+              preserve={{
+                status: filters.status,
+                view: filters.view,
+                deviceType: filters.deviceType,
+                repairPath: filters.repairPath,
+                pricing: filters.pricing,
+                sort: sort !== "received_desc" ? sort : undefined,
+                from: filters.from,
+                to: filters.to,
+              }}
+            />
+            {!isExternalTech ? (
+              <Link
+                href={advToggleHref}
+                aria-label="Toggle advanced filters"
+                className={`relative flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border transition ${
+                  hasAdvancedFilters
+                    ? "border-[var(--accent)]/50 bg-[var(--accent)]/10 text-[var(--accent)]"
+                    : "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)] hover:border-[var(--accent)]/40 hover:text-[var(--ink)]"
+                }`}
+              >
+                <svg viewBox="0 0 16 16" fill="none" className="h-3.5 w-3.5" aria-hidden="true">
+                  <path d="M2 4h12M4 8h8M6 12h4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                </svg>
+                {hasAdvancedFilters ? <span className="absolute right-0.5 top-0.5 h-1.5 w-1.5 rounded-full bg-[var(--accent)]" /> : null}
+              </Link>
+            ) : null}
+            {can.createJob(user) ? (
+              <Link href="/jobs/new" className="btn-premium hidden rounded-lg px-3 py-1.5 text-[13px] font-semibold sm:inline-flex">
+                + New Job
               </Link>
             ) : null}
           </div>
         </div>
 
-        {/* Status filter buttons */}
-        <div className="border-t border-[var(--line)] bg-[var(--panel-strong)]/40 px-3 py-2">
-          <div className="flex items-center gap-1.5 overflow-x-auto [scrollbar-width:none]">
-            <Link
-              href={statusChipHref("")}
-              className={`shrink-0 rounded-full border px-3 py-1.5 text-[11px] font-semibold transition ${
-                statusValue
-                  ? "border-[var(--line)] bg-[var(--panel)] text-[var(--ink-muted)] hover:border-[var(--accent)]/30"
-                  : "border-[var(--accent)] bg-[var(--accent)] text-white"
-              }`}
-            >
-              All
-            </Link>
-            {UI_JOB_STATUSES.map((s) => {
-              const active = statusValue === s;
-              return (
-                <Link
-                  key={s}
-                  href={statusChipHref(s)}
-                  className={`shrink-0 rounded-full border px-3 py-1.5 text-[11px] font-semibold transition ${
-                    active
-                      ? "border-[var(--accent)] bg-[var(--accent)] text-white"
-                      : "border-[var(--line)] bg-[var(--panel)] text-[var(--ink-muted)] hover:border-[var(--accent)]/30"
-                  }`}
-                >
-                  {statusOptionLabel[s]}
-                </Link>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Pricing quick pills (for approvers) — hidden on mobile, use Advanced Filters instead */}
-        {!isExternalTech && can.approveInvoices(user) ? (
-          <div className="hidden items-center gap-2 border-t border-[var(--line)] bg-[var(--panel-strong)]/50 px-3 py-2 sm:flex">
-            <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Pricing</span>
-            <Link
-              href="/jobs?pricing=needs&status=AWAITING_APPROVAL,IN_REPAIR,READY_FOR_PICKUP"
-              className={`rounded-full border px-2.5 py-0.5 text-xs transition ${
-                pricingFilter === "needs"
-                  ? "border-[var(--accent)]/60 bg-[var(--accent)]/12 font-semibold text-[#9A7A00]"
-                  : "border-[var(--line)] bg-[var(--panel)] text-[var(--ink-muted)] hover:border-[var(--accent)]/30"
-              }`}
-            >
-              Needs pricing
-            </Link>
-            <Link
-              href="/jobs?pricing=priced"
-              className={`rounded-full border px-2.5 py-0.5 text-xs transition ${
-                pricingFilter === "priced"
-                  ? "border-[var(--accent)]/60 bg-[var(--accent)]/12 font-semibold text-[#9A7A00]"
-                  : "border-[var(--line)] bg-[var(--panel)] text-[var(--ink-muted)] hover:border-[var(--accent)]/30"
-              }`}
-            >
-              Priced
-            </Link>
-            {pricingFilter ? (
-              <Link href="/jobs" className="text-[11px] text-[var(--ink-muted)] underline-offset-2 hover:underline">Clear</Link>
-            ) : null}
-          </div>
-        ) : null}
-
-        {/* Advanced filters */}
-        <details open={hasAdvancedFilters} className="group">
-          <summary className="flex cursor-pointer select-none list-none items-center justify-between border-t border-[var(--line)] px-3 py-1.5 hover:bg-[var(--panel-strong)]/40 transition-colors">
-            <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Advanced filters</span>
-            <span className="text-[11px] text-[var(--accent)]">Device · Path · Date</span>
-          </summary>
-          <div className={`border-t border-[var(--line)] bg-[var(--panel-strong)]/40 p-3 ${
-            !isExternalTech && can.approveInvoices(user)
-              ? "grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6"
-              : "grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5"
+        {/* Advanced filters — only when toggled or active */}
+        {showAdv ? (
+          <form className={`border-t border-[var(--line)] bg-[var(--panel-strong)]/40 p-3 grid grid-cols-2 gap-2 sm:grid-cols-3 ${
+            !isExternalTech && can.approveInvoices(user) ? "lg:grid-cols-6" : "lg:grid-cols-5"
           }`}>
+            {filters.q ? <input type="hidden" name="q" value={filters.q} /> : null}
+            {filters.status ? <input type="hidden" name="status" value={filters.status} /> : null}
+            {filters.view ? <input type="hidden" name="view" value={filters.view} /> : null}
             <select name="deviceType" defaultValue={filters.deviceType} className={ctrlClass}>
               <option value="">All devices</option>
               <option value="PHONE_ANDROID">Android Phone</option>
@@ -575,17 +546,19 @@ export default async function JobsPage({
             </select>
             <input type="date" name="from" defaultValue={filters.from} className={ctrlClass} />
             <input type="date" name="to" defaultValue={filters.to} className={ctrlClass} />
-            {filters.dateField ? (
-              <input type="hidden" name="dateField" value={filters.dateField} />
-            ) : null}
-          </div>
-          {filters.dateField === "completedAt" && (filters.from || filters.to) ? (
-            <p className="border-t border-[var(--line)] bg-[var(--accent)]/5 px-3 py-1.5 text-[11px] text-[var(--accent)]">
-              Date range is filtering by <strong>completion date</strong> — showing jobs completed in this period.
-            </p>
-          ) : null}
-        </details>
-      </form>
+            {filters.dateField ? <input type="hidden" name="dateField" value={filters.dateField} /> : null}
+            <div className="col-span-2 flex items-center gap-2 sm:col-span-3 lg:col-span-full">
+              <button type="submit" className="btn-premium-secondary rounded-lg px-3 py-1.5 text-[13px]">Apply</button>
+              {hasAnyFilter ? <Link href="/jobs" className="text-[13px] text-[var(--ink-muted)] hover:text-[var(--ink)]">Reset</Link> : null}
+            </div>
+          </form>
+        ) : null}
+        {filters.dateField === "completedAt" && (filters.from || filters.to) ? (
+          <p className="border-t border-[var(--line)] bg-[var(--accent)]/5 px-3 py-1.5 text-[11px] text-[var(--accent)]">
+            Date range is filtering by <strong>completion date</strong>.
+          </p>
+        ) : null}
+      </div>
 
       {/* ── Results ── */}
       {isBoard ? (

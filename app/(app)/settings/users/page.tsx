@@ -21,6 +21,8 @@ type SearchParams = {
   q?: string;
   userId?: string;
   limitError?: string;
+  add?: string;
+  tab?: string;
 };
 
 type UserDetailsState = {
@@ -69,10 +71,13 @@ type PermissionOption = {
 
 const roleOptions: Array<{ value: Role; label: string; description: string }> = [
   { value: Role.ADMIN, label: "Admin", description: "Full platform control including user management and financial approvals." },
+  { value: Role.MANAGER, label: "Manager", description: "Oversees operations, staff workload, and pipeline health across all departments." },
+  { value: Role.FINANCE, label: "Finance", description: "Reviews invoices, approves costs, manages settlements and financial reports." },
+  { value: Role.SALES, label: "Sales", description: "Handles intake, client approvals, quotes, and revenue pipeline tracking." },
+  { value: Role.OPS, label: "Operations/Accounts", description: "Coordinates workflow, billing, settlement, and daily operations." },
   { value: Role.FRONT_DESK, label: "Front Desk", description: "Handles front desk intake, customer details, and handover documents." },
   { value: Role.TECHNICIAN_INTERNAL, label: "Internal Technician", description: "Works diagnosis and in-house repair execution." },
   { value: Role.TECHNICIAN_EXTERNAL, label: "External Technician", description: "External workflow access without client identity or billing history." },
-  { value: Role.OPS, label: "Operations/Accounts", description: "Coordinates workflow, billing, settlement, and daily operations." },
 ];
 
 const roleDefaults: Record<Role, Array<(typeof EXTRA_PERMISSIONS)[number]>> = {
@@ -90,6 +95,35 @@ const roleDefaults: Record<Role, Array<(typeof EXTRA_PERMISSIONS)[number]>> = {
     "can_review_external_bills",
     "can_view_accounts_summary",
     "can_approve_invoices",
+  ],
+  MANAGER: [
+    "can_manage_intake",
+    "can_search_jobs",
+    "can_generate_job_cards",
+    "can_assign_jobs",
+    "can_view_approved_cost",
+    "can_view_external_updates",
+    "can_view_external_quotes",
+    "can_review_external_bills",
+    "can_view_accounts_summary",
+    "can_approve_invoices",
+  ],
+  FINANCE: [
+    "can_search_jobs",
+    "can_view_approved_cost",
+    "can_view_external_quotes",
+    "can_review_external_bills",
+    "can_view_accounts_summary",
+    "can_approve_invoices",
+  ],
+  SALES: [
+    "can_intake",
+    "can_manage_intake",
+    "can_search_jobs",
+    "can_generate_job_cards",
+    "can_view_job_progress",
+    "can_view_approved_cost",
+    "can_view_external_quotes",
   ],
   OPS: [
     "can_manage_intake",
@@ -144,6 +178,44 @@ const roleCapabilities: Record<Role, string[]> = {
     "settings_admin",
     "approval_cost",
     "delete_records",
+    "download_docs",
+  ],
+  MANAGER: [
+    "dashboard_view",
+    "jobs_view",
+    "jobs_assign",
+    "jobs_create",
+    "intake_manage",
+    "device_records",
+    "client_records",
+    "parts_bills",
+    "invoices_view",
+    "invoices_approve",
+    "reports_export",
+    "approval_cost",
+    "download_docs",
+  ],
+  FINANCE: [
+    "dashboard_view",
+    "jobs_view",
+    "client_records",
+    "parts_bills",
+    "invoices_view",
+    "invoices_approve",
+    "reports_export",
+    "approval_cost",
+    "download_docs",
+  ],
+  SALES: [
+    "dashboard_view",
+    "jobs_view",
+    "jobs_create",
+    "intake_manage",
+    "device_records",
+    "client_records",
+    "invoices_view",
+    "reports_export",
+    "approval_cost",
     "download_docs",
   ],
   OPS: [
@@ -220,6 +292,9 @@ function roleLabel(role: Role) {
   if (role === "TECHNICIAN_EXTERNAL") return "External Technician";
   if (role === "FRONT_DESK" || role === "INTAKE") return "Front Desk";
   if (role === "OPS") return "Operations/Accounts";
+  if (role === "MANAGER") return "Manager";
+  if (role === "FINANCE") return "Finance";
+  if (role === "SALES") return "Sales";
   return "Admin";
 }
 
@@ -575,6 +650,7 @@ export default async function UsersPage({
     prisma.part.count({ where: { orgId, isActive: true } }),
   ]);
 
+  const params = await searchParams;
   let q = "";
   let filteredUsers: Array<{
     id: string;
@@ -599,7 +675,6 @@ export default async function UsersPage({
   }> = [];
 
   try {
-    const params = await searchParams;
     q = typeof params.q === "string" ? params.q.trim() : "";
 
     const users = await prisma.user.findMany({
@@ -676,199 +751,200 @@ export default async function UsersPage({
     );
   }
 
-  const params = await searchParams;
   const limitError = typeof params.limitError === "string" ? params.limitError : null;
+  const showAdd = params.add === "1";
+  const tab = params.tab ?? "profile";
+
+  function tabHref(t: string) {
+    return `/settings/users?${new URLSearchParams({ ...(q && { q }), ...(selectedUser && { userId: selectedUser.id }), tab: t }).toString()}`;
+  }
+
+  const tabs = [
+    { key: "profile", label: "Profile" },
+    { key: "access", label: "Access" },
+    { key: "security", label: "Security" },
+    { key: "log", label: "Log" },
+  ];
 
   return (
-    <div className="space-y-4">
-      {/* Plan usage banner */}
-      <PlanBanner
-        plan={planInfo.plan}
-        limits={planInfo}
-        usage={{ users: activeUserCount, jobsThisMonth, parts: partCount }}
-      />
+    <div className="space-y-3">
+      <PlanBanner plan={planInfo.plan} limits={planInfo} usage={{ users: activeUserCount, jobsThisMonth, parts: partCount }} />
 
       {limitError && (
-        <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600 dark:border-red-900 dark:bg-red-900/20 dark:text-red-400">
+        <p className="rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-[13px] text-red-400">
           {limitError}
         </p>
       )}
 
-      <details className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4" open={false}>
-        <summary className="cursor-pointer list-none text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
-          Add User
-        </summary>
-        <div className="mt-3 space-y-3">
-          {/* Invite panel — generates a shareable link */}
-          <InvitePanel inviteAction={inviteUser} roleOptions={roleOptions} />
-
-          <section className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] p-3">
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">New User</p>
-            <form action={createUser} className="mt-2 grid gap-2 md:grid-cols-2 xl:grid-cols-5">
-              <input required name="name" placeholder="Name" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-sm outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
-              <input required type="email" name="email" placeholder="Email" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-sm outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
-              <input name="phone" placeholder="Phone" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-sm outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
-              <input required minLength={8} type="password" name="password" placeholder="Password" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-sm outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
-              <select name="role" defaultValue="OPS" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-sm outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14">
-                {roleOptions.map((option) => (
-                  <option key={option.value} value={option.value}>{option.label}</option>
-                ))}
-              </select>
-              <button className="btn-premium rounded-lg px-3 py-1.5 text-sm text-white md:col-span-2 xl:col-span-1">Create</button>
-            </form>
-          </section>
-        </div>
-      </details>
-
-      <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Users</p>
-        <form method="GET" className="mt-2 grid gap-2 md:grid-cols-[1fr_auto]">
-          <input
-            name="q"
-            defaultValue={q}
-            placeholder="Search name, email, phone"
-            className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-sm outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14"
-          />
-          <div className="flex gap-2">
-            <button className="btn-premium-secondary rounded-lg px-3 py-1.5 text-sm">Search</button>
-            <Link href="/settings/users" className="rounded-lg border border-[var(--line)] px-3 py-1.5 text-sm text-[var(--ink-muted)] hover:text-[var(--ink)]">
-              Clear
-            </Link>
+      {/* Add User — inline, toggled by URL param */}
+      {showAdd && (
+        <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-3">
+          <div className="mb-3 flex items-center justify-between">
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Add User</p>
+            <Link href="/settings/users" className="text-[11px] text-[var(--ink-muted)] hover:text-[var(--ink)]">✕ Close</Link>
           </div>
-        </form>
-
-        <div className="mt-3 grid gap-2 md:grid-cols-2 xl:grid-cols-3">
-          {filteredUsers.map((item) => (
-            <Link
-              key={item.id}
-              href={`/settings/users?${new URLSearchParams({ q, userId: item.id }).toString()}`}
-              className={`rounded-lg border px-3 py-2 transition ${selectedUser?.id === item.id ? "border-[var(--accent)] bg-[var(--accent)]/10" : "border-[var(--line)] bg-[var(--panel-strong)] hover:border-[var(--accent)]/45"}`}
-            >
-              <p className="font-medium text-[var(--ink)]">{item.name}</p>
-              <p className="text-xs text-[var(--ink-muted)]">{item.email}</p>
-              <p className="mt-1 text-[11px] text-[var(--ink-muted)]">{roleLabel(item.role)} • {item.isActive ? "Active" : "Inactive"}</p>
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      {selectedUser ? (
-        <>
-           <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">User</p>
-             <div className="mt-3 grid gap-2 md:grid-cols-2 xl:grid-cols-3">
-              <div className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] p-3">
-                <p className="text-[11px] uppercase tracking-[0.1em] text-[var(--ink-muted)]">Name</p>
-                <p className="mt-1 text-sm font-semibold text-[var(--ink)]">{selectedUser.name}</p>
-              </div>
-              <div className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] p-3">
-                <p className="text-[11px] uppercase tracking-[0.1em] text-[var(--ink-muted)]">Contact</p>
-                <p className="mt-1 text-sm text-[var(--ink)]">{selectedUser.email}</p>
-                <p className="text-xs text-[var(--ink-muted)]">{selectedUser.phone ?? "No phone on file"}</p>
-              </div>
-              <div className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] p-3">
-                <p className="text-[11px] uppercase tracking-[0.1em] text-[var(--ink-muted)]">Current Role</p>
-                <p className="mt-1 text-sm font-semibold text-[var(--ink)]">{roleLabel(selectedUser.role)}</p>
-              </div>
-              <div className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] p-3">
-                <p className="text-[11px] uppercase tracking-[0.1em] text-[var(--ink-muted)]">Status</p>
-                <p className="mt-1 text-sm font-semibold text-[var(--ink)]">{selectedUser.isActive ? "Active" : "Inactive"}</p>
-              </div>
-              <div className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] p-3">
-                <p className="text-[11px] uppercase tracking-[0.1em] text-[var(--ink-muted)]">Last Activity</p>
-                <p className="mt-1 text-sm text-[var(--ink)]">
-                  {formatDateTime(
-                    selectedUser.sessions[0]?.updatedAt
-                    ?? selectedUser.auditLogs[0]?.createdAt
-                    ?? selectedUser.updatedAt,
-                  )}
-                </p>
-              </div>
-             </div>
-           </section>
-
-           <details className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4" open>
-             <summary className="cursor-pointer list-none text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
-               Edit
-             </summary>
-             <div className="mt-3">
-               <UserDetailsForm
-                 id={selectedUser.id}
-                 name={selectedUser.name}
-                 email={selectedUser.email}
-                 phone={selectedUser.phone}
-                 action={updateUserDetails}
-               />
-             </div>
-           </details>
-
-           <details className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4" open={false}>
-             <summary className="cursor-pointer list-none text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
-               Password
-             </summary>
-             <div className="mt-3">
-               <UserPasswordResetForm userId={selectedUser.id} action={resetUserPassword} />
-             </div>
-           </details>
-
-           <details className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4" open={false}>
-             <summary className="cursor-pointer list-none text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
-               Access
-             </summary>
-             <div className="mt-3">
-               <UserAccessControlPanel
-                 key={selectedUser.id}
-                 userId={selectedUser.id}
-                 queryText={q}
-                 initialRole={selectedUser.role}
-                 initialPermissions={selectedUser.permissionGrants.map((grant) => grant.permission)}
-                 roleOptions={roleOptions}
-                 roleDefaultPermissions={roleDefaults}
-                 roleDefaultCapabilities={roleCapabilities}
-                 permissions={permissionOptions}
-                 saveAction={saveAccessChanges}
-               />
-             </div>
-           </details>
-
-           <details className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4" open={false}>
-             <summary className="cursor-pointer list-none text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
-               Audit
-             </summary>
-             <div className="mt-3 space-y-2">
-               {accessAudit.length > 0 ? (
-                 accessAudit.map((entry) => {
-                  let detail = "No detail";
-                  try {
-                    const parsed = entry.detail ? JSON.parse(entry.detail) as { added?: string[]; removed?: string[]; fromRole?: string; toRole?: string } : null;
-                    const roleLine = parsed && parsed.fromRole !== parsed.toRole
-                      ? `Role ${parsed.fromRole} -> ${parsed.toRole}`
-                      : "Role unchanged";
-                    const addedLine = parsed?.added?.length ? `Added: ${parsed.added.join(", ")}` : "Added: none";
-                    const removedLine = parsed?.removed?.length ? `Removed: ${parsed.removed.join(", ")}` : "Removed: none";
-                    detail = `${roleLine} • ${addedLine} • ${removedLine}`;
-                  } catch {
-                    detail = entry.detail ?? "No detail";
-                  }
-                  return (
-                    <div key={entry.id} className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] p-3 text-xs text-[var(--ink-muted)]">
-                      <p className="font-semibold text-[var(--ink)]">{entry.action}</p>
-                      <p className="mt-1">Changed by {entry.actorUser.name} • {entry.createdAt.toLocaleString()}</p>
-                      <p className="mt-1">{detail}</p>
-                    </div>
-                  );
-                  })
-                ) : (
-                  <p className="text-sm text-[var(--ink-muted)]">No access changes recorded yet for this user.</p>
-                )}
-             </div>
-           </details>
-        </>
-      ) : (
-        <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-6 text-sm text-[var(--ink-muted)]">
-          No users match this search filter.
+          <InvitePanel inviteAction={inviteUser} roleOptions={roleOptions} />
+          <div className="mt-3 border-t border-[var(--line)] pt-3">
+            <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">Or create directly</p>
+            <form action={createUser} className="grid gap-2 sm:grid-cols-2 xl:grid-cols-6">
+              <input required name="name" placeholder="Name" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
+              <input required type="email" name="email" placeholder="Email" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
+              <input name="phone" placeholder="Phone" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
+              <input required minLength={8} type="password" name="password" placeholder="Password (min 8)" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
+              <select name="role" defaultValue="OPS" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14">
+                {roleOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+              <button className="btn-premium rounded-lg px-3 py-1.5 text-[13px] text-white">Create</button>
+            </form>
+          </div>
         </section>
       )}
+
+      {/* Main two-column layout */}
+      <div className="grid gap-3 lg:grid-cols-[260px_1fr]">
+
+        {/* Left: search + user list */}
+        <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)]">
+          <div className="flex items-center justify-between border-b border-[var(--line)] px-3 py-2">
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Users</p>
+            <Link
+              href={showAdd ? "/settings/users" : "/settings/users?add=1"}
+              className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1 text-[11px] font-semibold text-[var(--ink-muted)] transition hover:border-[var(--accent)]/50 hover:text-[var(--accent)]"
+            >
+              {showAdd ? "Close" : "+ Add"}
+            </Link>
+          </div>
+          <form method="GET" className="flex gap-1 border-b border-[var(--line)] px-2 py-2">
+            <input
+              name="q"
+              defaultValue={q}
+              placeholder="Search…"
+              className="min-w-0 flex-1 rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50"
+            />
+            {q ? (
+              <Link href="/settings/users" className="flex items-center rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2 text-[13px] text-[var(--ink-muted)] hover:text-[var(--ink)]">✕</Link>
+            ) : null}
+          </form>
+          <div className="divide-y divide-[var(--line)]">
+            {filteredUsers.map((item) => (
+              <Link
+                key={item.id}
+                href={`/settings/users?${new URLSearchParams({ ...(q && { q }), userId: item.id }).toString()}`}
+                className={`flex items-center gap-2.5 px-3 py-2.5 transition ${selectedUser?.id === item.id ? "bg-[var(--accent)]/8" : "hover:bg-[var(--panel-strong)]/40"}`}
+              >
+                <span className={`h-5 w-0.5 shrink-0 rounded-full transition-all ${selectedUser?.id === item.id ? "bg-[var(--accent)]" : "bg-transparent"}`} />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[13px] font-medium text-[var(--ink)]">{item.name}</p>
+                  <p className="truncate text-[11px] text-[var(--ink-muted)]">{roleLabel(item.role)}</p>
+                </div>
+                {!item.isActive && (
+                  <span className="shrink-0 rounded-full border border-[var(--line)] px-1.5 py-0.5 text-[10px] text-[var(--ink-muted)]">Off</span>
+                )}
+              </Link>
+            ))}
+            {filteredUsers.length === 0 && (
+              <p className="px-3 py-5 text-center text-[13px] text-[var(--ink-muted)]">No users found.</p>
+            )}
+          </div>
+        </section>
+
+        {/* Right: selected user */}
+        {selectedUser ? (
+          <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)]">
+            {/* User header */}
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--line)] px-3 py-2.5">
+              <div className="min-w-0">
+                <p className="truncate text-[13px] font-semibold text-[var(--ink)]">{selectedUser.name}</p>
+                <p className="truncate text-[11px] text-[var(--ink-muted)]">{selectedUser.email} · {roleLabel(selectedUser.role)}</p>
+              </div>
+              <div className="flex shrink-0 items-center gap-1.5">
+                <span className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${selectedUser.isActive ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400" : "border-[var(--line)] text-[var(--ink-muted)]"}`}>
+                  {selectedUser.isActive ? "Active" : "Inactive"}
+                </span>
+                <span className="text-[11px] text-[var(--ink-muted)]">
+                  Last seen {formatDateTime(selectedUser.sessions[0]?.updatedAt ?? selectedUser.auditLogs[0]?.createdAt ?? selectedUser.updatedAt)}
+                </span>
+              </div>
+            </div>
+
+            {/* Tab strip */}
+            <div className="flex border-b border-[var(--line)]">
+              {tabs.map(({ key, label }) => (
+                <Link
+                  key={key}
+                  href={tabHref(key)}
+                  className={`px-4 py-2.5 text-[13px] font-medium transition ${tab === key ? "border-b-2 border-[var(--accent)] text-[var(--ink)]" : "text-[var(--ink-muted)] hover:text-[var(--ink)]"}`}
+                >
+                  {label}
+                </Link>
+              ))}
+            </div>
+
+            {/* Tab content */}
+            <div className="p-3">
+              {tab === "profile" && (
+                <UserDetailsForm
+                  id={selectedUser.id}
+                  name={selectedUser.name}
+                  email={selectedUser.email}
+                  phone={selectedUser.phone}
+                  action={updateUserDetails}
+                />
+              )}
+              {tab === "access" && (
+                <UserAccessControlPanel
+                  key={selectedUser.id}
+                  userId={selectedUser.id}
+                  queryText={q}
+                  initialRole={selectedUser.role}
+                  initialPermissions={selectedUser.permissionGrants.map((g) => g.permission)}
+                  roleOptions={roleOptions}
+                  roleDefaultPermissions={roleDefaults}
+                  roleDefaultCapabilities={roleCapabilities}
+                  permissions={permissionOptions}
+                  saveAction={saveAccessChanges}
+                />
+              )}
+              {tab === "security" && (
+                <UserPasswordResetForm userId={selectedUser.id} action={resetUserPassword} />
+              )}
+              {tab === "log" && (
+                <div className="divide-y divide-[var(--line)]">
+                  {accessAudit.length > 0 ? (
+                    accessAudit.map((entry) => {
+                      let detail = "";
+                      try {
+                        const parsed = entry.detail ? JSON.parse(entry.detail) as { added?: string[]; removed?: string[]; fromRole?: string; toRole?: string } : null;
+                        const parts = [
+                          parsed?.fromRole !== parsed?.toRole ? `Role → ${parsed?.toRole}` : null,
+                          parsed?.added?.length ? `+${parsed.added.join(", ")}` : null,
+                          parsed?.removed?.length ? `−${parsed.removed.join(", ")}` : null,
+                        ].filter(Boolean);
+                        detail = parts.join(" · ");
+                      } catch {
+                        detail = entry.detail ?? "";
+                      }
+                      return (
+                        <div key={entry.id} className="py-2">
+                          <p className="text-[13px] font-medium text-[var(--ink)]">{entry.action}</p>
+                          <p className="mt-0.5 text-[11px] text-[var(--ink-muted)]">{entry.actorUser.name} · {entry.createdAt.toLocaleString()}</p>
+                          {detail ? <p className="mt-0.5 text-[11px] text-[var(--ink-muted)]">{detail}</p> : null}
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <p className="py-4 text-center text-[13px] text-[var(--ink-muted)]">No access changes recorded yet.</p>
+                  )}
+                </div>
+              )}
+            </div>
+          </section>
+        ) : (
+          <div className="panel-shadow flex items-center justify-center rounded-xl border border-[var(--line)] bg-[var(--panel)] p-12 text-[13px] text-[var(--ink-muted)]">
+            Select a user to manage their profile and access.
+          </div>
+        )}
+      </div>
     </div>
   );
 }

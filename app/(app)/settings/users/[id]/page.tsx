@@ -52,10 +52,13 @@ type PermissionOption = {
 
 const roleOptions: Array<{ value: Role; label: string; description: string }> = [
   { value: Role.ADMIN, label: "Admin", description: "Full platform control including user management and financial approvals." },
+  { value: Role.MANAGER, label: "Manager", description: "Oversees operations, staff workload, and pipeline health across all departments." },
+  { value: Role.FINANCE, label: "Finance", description: "Reviews invoices, approves costs, manages settlements and financial reports." },
+  { value: Role.SALES, label: "Sales", description: "Handles intake, client approvals, quotes, and revenue pipeline tracking." },
+  { value: Role.OPS, label: "Operations/Accounts", description: "Coordinates workflow, billing, settlement, and daily operations." },
   { value: Role.FRONT_DESK, label: "Front Desk", description: "Handles front desk intake, customer details, and handover documents." },
   { value: Role.TECHNICIAN_INTERNAL, label: "Internal Technician", description: "Works diagnosis and in-house repair execution." },
   { value: Role.TECHNICIAN_EXTERNAL, label: "External Technician", description: "External workflow access without client identity or billing history." },
-  { value: Role.OPS, label: "Operations/Accounts", description: "Coordinates workflow, billing, settlement, and daily operations." },
 ];
 
 const roleDefaults: Record<Role, Array<(typeof EXTRA_PERMISSIONS)[number]>> = {
@@ -73,6 +76,35 @@ const roleDefaults: Record<Role, Array<(typeof EXTRA_PERMISSIONS)[number]>> = {
     "can_review_external_bills",
     "can_view_accounts_summary",
     "can_approve_invoices",
+  ],
+  MANAGER: [
+    "can_manage_intake",
+    "can_search_jobs",
+    "can_generate_job_cards",
+    "can_assign_jobs",
+    "can_view_approved_cost",
+    "can_view_external_updates",
+    "can_view_external_quotes",
+    "can_review_external_bills",
+    "can_view_accounts_summary",
+    "can_approve_invoices",
+  ],
+  FINANCE: [
+    "can_search_jobs",
+    "can_view_approved_cost",
+    "can_view_external_quotes",
+    "can_review_external_bills",
+    "can_view_accounts_summary",
+    "can_approve_invoices",
+  ],
+  SALES: [
+    "can_intake",
+    "can_manage_intake",
+    "can_search_jobs",
+    "can_generate_job_cards",
+    "can_view_job_progress",
+    "can_view_approved_cost",
+    "can_view_external_quotes",
   ],
   OPS: [
     "can_manage_intake",
@@ -127,6 +159,44 @@ const roleCapabilities: Record<Role, string[]> = {
     "settings_admin",
     "approval_cost",
     "delete_records",
+    "download_docs",
+  ],
+  MANAGER: [
+    "dashboard_view",
+    "jobs_view",
+    "jobs_assign",
+    "jobs_create",
+    "intake_manage",
+    "device_records",
+    "client_records",
+    "parts_bills",
+    "invoices_view",
+    "invoices_approve",
+    "reports_export",
+    "approval_cost",
+    "download_docs",
+  ],
+  FINANCE: [
+    "dashboard_view",
+    "jobs_view",
+    "client_records",
+    "parts_bills",
+    "invoices_view",
+    "invoices_approve",
+    "reports_export",
+    "approval_cost",
+    "download_docs",
+  ],
+  SALES: [
+    "dashboard_view",
+    "jobs_view",
+    "jobs_create",
+    "intake_manage",
+    "device_records",
+    "client_records",
+    "invoices_view",
+    "reports_export",
+    "approval_cost",
     "download_docs",
   ],
   OPS: [
@@ -192,6 +262,9 @@ function roleLabel(role: Role) {
   if (role === "TECHNICIAN_EXTERNAL") return "External Technician";
   if (role === "FRONT_DESK" || role === "INTAKE") return "Front Desk";
   if (role === "OPS") return "Operations/Accounts";
+  if (role === "MANAGER") return "Manager";
+  if (role === "FINANCE") return "Finance";
+  if (role === "SALES") return "Sales";
   return "Admin";
 }
 
@@ -463,98 +536,86 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
   );
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
-          <Link href="/settings/users" className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)] hover:text-[var(--ink)]">
-            ← Users
-          </Link>
-          <h2 className="mt-2 truncate text-2xl font-semibold text-[var(--ink)]">{target.name}</h2>
-          <p className="mt-1 text-sm text-[var(--ink-muted)]">{target.email} · Last activity {lastActivity}</p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="rounded-full border border-[var(--line)]/55 bg-[var(--panel-strong)] px-3 py-1 text-xs font-semibold text-[var(--ink-muted)]">
-            {roleLabel(target.role)}
-          </span>
-          <span className="rounded-full border border-[var(--line)]/55 bg-[var(--panel-strong)] px-3 py-1 text-xs font-semibold text-[var(--ink-muted)]">
-            {accessMode === "READ_ONLY" ? "Read-only" : "Full"}
-          </span>
-          <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${target.isActive ? "border-emerald-200/40 bg-emerald-500/10 text-emerald-200" : "border-[var(--line)]/55 bg-[var(--panel-strong)] text-[var(--ink-muted)]"}`}>
-            {target.isActive ? "Active" : "Inactive"}
-          </span>
-        </div>
-      </div>
-
-      <div className="space-y-4">
-        <details open className="rounded-xl border border-[var(--line)]/55 bg-[var(--panel)] p-4">
-          <summary className="cursor-pointer list-none text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Profile</summary>
-          <div className="mt-3">
+    <div className="space-y-3">
+      <div className="grid gap-3 lg:grid-cols-2">
+        {/* Left column */}
+        <div className="space-y-3">
+          <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-3">
+            <div className="mb-3 flex items-start justify-between gap-2">
+              <div>
+                <Link href="/settings/users" className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60 hover:text-[var(--ink-muted)]">← Users</Link>
+                <p className="mt-1 text-[13px] font-semibold text-[var(--ink)]">{target.name}</p>
+                <p className="text-[11px] text-[var(--ink-muted)]">{target.email}</p>
+              </div>
+              <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                <span className="rounded-full border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-0.5 text-[10px] font-semibold text-[var(--ink-muted)]">{roleLabel(target.role)}</span>
+                <span className="rounded-full border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-0.5 text-[10px] font-semibold text-[var(--ink-muted)]">{accessMode === "READ_ONLY" ? "Read-only" : "Full"}</span>
+                <span className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${target.isActive ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400" : "border-[var(--line)] text-[var(--ink-muted)]"}`}>{target.isActive ? "Active" : "Inactive"}</span>
+              </div>
+            </div>
+            <p className="mb-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Profile</p>
             <UserDetailsForm id={target.id} name={target.name} email={target.email} phone={target.phone} action={updateUserDetails} />
-          </div>
-        </details>
+          </section>
 
-        <details open className="rounded-xl border border-[var(--line)]/55 bg-[var(--panel)] p-4">
-          <summary className="cursor-pointer list-none text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Permissions</summary>
-          <div className="mt-3">
-            <UserAccessControlPanel
-              key={target.id}
-              userId={target.id}
-              queryText=""
-              initialRole={target.role}
-              initialPermissions={initialPermissions}
-              roleOptions={roleOptions}
-              roleDefaultPermissions={roleDefaults}
-              roleDefaultCapabilities={roleCapabilities}
-              permissions={permissionOptions}
-              saveAction={saveAccessChanges}
-            />
-          </div>
-        </details>
-
-        <details open={false} className="rounded-xl border border-[var(--line)]/55 bg-[var(--panel)] p-4">
-          <summary className="cursor-pointer list-none text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Access Mode</summary>
-          <div className="mt-3 rounded-xl border border-[var(--line)] bg-[var(--panel-strong)] p-4">
+          <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-3">
+            <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Access Mode</p>
             <form action={setUserAccessMode} className="flex flex-wrap items-center gap-2">
               <input type="hidden" name="userId" value={target.id} />
               <select
                 name="accessMode"
                 defaultValue={accessMode}
-                className="min-w-[220px] rounded-lg border border-[var(--line)]/55 bg-[var(--panel)] px-3 py-2 text-sm outline-none"
+                className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50"
                 disabled={target.id === actor.id}
               >
                 <option value="FULL">Full access</option>
                 <option value="READ_ONLY">Read-only</option>
               </select>
-              <button className="btn-premium-secondary rounded-lg px-4 py-2 text-sm">Apply</button>
+              <button className="btn-premium-secondary rounded-lg px-3 py-1.5 text-[13px]" disabled={target.id === actor.id}>Apply</button>
               {target.id === actor.id ? (
-                <p className="text-xs text-[var(--ink-muted)]">You cannot change your own access mode.</p>
+                <p className="text-[11px] text-[var(--ink-muted)]">Cannot change your own mode.</p>
               ) : null}
             </form>
-          </div>
-        </details>
+          </section>
 
-        <details open={false} className="rounded-xl border border-[var(--line)]/55 bg-[var(--panel)] p-4">
-          <summary className="cursor-pointer list-none text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Password Reset</summary>
-          <div className="mt-3">
+          <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-3">
+            <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Reset Password</p>
             <UserPasswordResetForm userId={target.id} action={resetUserPassword} />
-          </div>
-        </details>
+          </section>
 
-        <details open={false} className="rounded-xl border border-[var(--line)]/55 bg-[var(--panel)] p-4">
-          <summary className="cursor-pointer list-none text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Audit</summary>
-          <div className="mt-3 space-y-2">
-            {accessAudit.length > 0 ? (
-              accessAudit.map((entry) => (
-                <div key={entry.id} className="rounded-xl border border-[var(--line)] bg-[var(--panel-strong)] p-3 text-xs text-[var(--ink-muted)]">
-                  <p className="font-semibold text-[var(--ink)]">{entry.action}</p>
-                  <p className="mt-1">{entry.actorUser.name} · {entry.createdAt.toLocaleString()}</p>
-                </div>
-              ))
-            ) : (
-              <p className="text-sm text-[var(--ink-muted)]">No access changes recorded yet for this user.</p>
-            )}
-          </div>
-        </details>
+          {/* Audit log */}
+          <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)]">
+            <p className="px-3 pt-3 text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Access Log</p>
+            <div className="mt-1 divide-y divide-[var(--line)]">
+              {accessAudit.length > 0 ? (
+                accessAudit.map((entry) => (
+                  <div key={entry.id} className="px-3 py-2">
+                    <p className="text-[13px] font-medium text-[var(--ink)]">{entry.action}</p>
+                    <p className="mt-0.5 text-[11px] text-[var(--ink-muted)]">{entry.actorUser.name} · {entry.createdAt.toLocaleString()}</p>
+                  </div>
+                ))
+              ) : (
+                <p className="px-3 py-3 text-[13px] text-[var(--ink-muted)]">No access changes recorded yet.</p>
+              )}
+            </div>
+          </section>
+        </div>
+
+        {/* Right column: Permissions */}
+        <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-3">
+          <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Permissions</p>
+          <UserAccessControlPanel
+            key={target.id}
+            userId={target.id}
+            queryText=""
+            initialRole={target.role}
+            initialPermissions={initialPermissions}
+            roleOptions={roleOptions}
+            roleDefaultPermissions={roleDefaults}
+            roleDefaultCapabilities={roleCapabilities}
+            permissions={permissionOptions}
+            saveAction={saveAccessChanges}
+          />
+        </section>
       </div>
     </div>
   );

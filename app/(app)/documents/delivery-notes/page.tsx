@@ -173,7 +173,7 @@ export default async function DeliveryNotesPage() {
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-[var(--line)]">
+      <div className="rounded-xl border border-[var(--line)]">
         <table className="w-full text-left text-sm">
           <thead className="bg-[var(--panel-strong)] text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
             <tr>
@@ -213,49 +213,40 @@ export default async function DeliveryNotesPage() {
                   ) : "-"}
                 </td>
                 <td className="px-3 py-2">
-                  <details className="relative inline-block">
-                    <summary className="inline-flex h-9 w-9 cursor-pointer list-none items-center justify-center rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink)] transition hover:border-[var(--accent)]/40">
-                      <span className="sr-only">Actions</span>
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                        <circle cx="5" cy="12" r="1.8" />
-                        <circle cx="12" cy="12" r="1.8" />
-                        <circle cx="19" cy="12" r="1.8" />
-                      </svg>
-                    </summary>
-                    <div className="panel-shadow absolute right-0 z-20 mt-2 w-48 overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
-                      <div className="py-1">
-                        <Link href={n.invoice ? `/jobs/${n.invoice.job.id}` : n.sale ? `/pos/${n.sale.id}` : "/documents/delivery-notes"} className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm font-medium text-[var(--ink)] transition hover:bg-[var(--panel-strong)]">
-                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
-                          View
-                        </Link>
-                        <a href={`/api/delivery-notes/${n.id}`} target="_blank" rel="noreferrer" className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm font-medium text-[var(--ink)] transition hover:bg-[var(--panel-strong)]">
-                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
-                          Download PDF
-                        </a>
-                        <details className="border-t border-[var(--line)]">
-                          <summary className="flex w-full cursor-pointer list-none items-center gap-2 px-4 py-3 text-left text-sm font-medium text-[var(--ink)] transition hover:bg-[var(--panel-strong)]">
-                            Edit Delivery Note
-                          </summary>
-                          <form action={updateDeliveryNoteAction} className="space-y-2 px-4 pb-3">
-                            <input type="hidden" name="deliveryNoteId" value={n.id} />
-                            <input name="deliveredByName" defaultValue={n.deliveredByName} placeholder="Delivered by" className="w-full rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-1.5 text-xs outline-none focus:border-[var(--accent)]/50" />
-                            <input name="receivedByName" defaultValue={n.receivedByName} placeholder="Received by" className="w-full rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-1.5 text-xs outline-none focus:border-[var(--accent)]/50" />
-                            <input name="receivedBySignatureText" defaultValue={n.receivedBySignatureText ?? ""} placeholder="Signature text" className="w-full rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-1.5 text-xs outline-none focus:border-[var(--accent)]/50" />
-                            <select name="deliveryMethod" defaultValue={n.deliveryMethod ?? ""} className="w-full rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-1.5 text-xs outline-none focus:border-[var(--accent)]/50">
-                              <option value="">No method</option>
-                              {DELIVERY_METHODS.map((m) => <option key={m} value={m}>{m.replaceAll("_", " ")}</option>)}
-                            </select>
-                            <textarea name="note" defaultValue={n.note ?? ""} placeholder="Delivery note" className="min-h-16 w-full rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-1.5 text-xs outline-none focus:border-[var(--accent)]/50" />
-                            <button className="btn-premium w-full rounded-md px-2.5 py-1.5 text-xs text-white">Save</button>
-                          </form>
-                        </details>
-                        <form action={deleteDeliveryNoteAction} className="border-t border-[var(--line)] px-4 py-3">
+                  <div className="flex items-center gap-1.5">
+                    <Link href={n.invoice ? `/jobs/${n.invoice.job.id}` : n.sale ? `/pos/${n.sale.id}` : "/documents/delivery-notes"} className="inline-flex items-center rounded-lg border border-[var(--line)] px-2.5 py-1.5 text-xs font-medium text-[var(--ink)] transition hover:border-[var(--accent)]/50 hover:text-[var(--accent)]">
+                      View
+                    </Link>
+                    <a href={`/api/delivery-notes/${n.id}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 rounded-lg border border-[var(--accent)]/40 bg-[var(--accent)]/10 px-2.5 py-1.5 text-xs font-semibold text-[var(--accent)] transition hover:bg-[var(--accent)]/20">
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+                      PDF
+                    </a>
+                    <details className="relative inline-block">
+                      <summary className="inline-flex h-[30px] w-[30px] cursor-pointer list-none items-center justify-center rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)] transition hover:border-[var(--accent)]/40 hover:text-[var(--ink)]">
+                        <span className="sr-only">More</span>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
+                      </summary>
+                      <div className="panel-shadow absolute right-0 bottom-full z-30 mb-1.5 w-56 rounded-xl border border-[var(--line)] bg-[var(--panel)]">
+                        <p className="border-b border-[var(--line)] px-4 py-2 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Edit Delivery Note</p>
+                        <form action={updateDeliveryNoteAction} className="space-y-2 p-3">
                           <input type="hidden" name="deliveryNoteId" value={n.id} />
-                          <ConfirmSubmitButton message="Delete this delivery note? This cannot be undone." className="text-left text-sm font-semibold text-red-600 transition hover:text-red-700">Delete Delivery Note</ConfirmSubmitButton>
+                          <input name="deliveredByName" defaultValue={n.deliveredByName} placeholder="Delivered by" className="w-full rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1.5 text-xs outline-none focus:border-[var(--accent)]/50" />
+                          <input name="receivedByName" defaultValue={n.receivedByName} placeholder="Received by" className="w-full rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1.5 text-xs outline-none focus:border-[var(--accent)]/50" />
+                          <input name="receivedBySignatureText" defaultValue={n.receivedBySignatureText ?? ""} placeholder="Signature text" className="w-full rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1.5 text-xs outline-none focus:border-[var(--accent)]/50" />
+                          <select name="deliveryMethod" defaultValue={n.deliveryMethod ?? ""} className="w-full rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1.5 text-xs outline-none focus:border-[var(--accent)]/50">
+                            <option value="">No method</option>
+                            {DELIVERY_METHODS.map((m) => <option key={m} value={m}>{m.replaceAll("_", " ")}</option>)}
+                          </select>
+                          <textarea name="note" defaultValue={n.note ?? ""} placeholder="Note" className="min-h-14 w-full rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1.5 text-xs outline-none focus:border-[var(--accent)]/50" />
+                          <button className="btn-premium w-full rounded-lg px-3 py-1.5 text-xs font-semibold">Save</button>
+                        </form>
+                        <form action={deleteDeliveryNoteAction} className="border-t border-[var(--line)] px-3 py-2.5">
+                          <input type="hidden" name="deliveryNoteId" value={n.id} />
+                          <ConfirmSubmitButton message="Delete this delivery note? This cannot be undone." className="text-xs font-semibold text-red-600 transition hover:text-red-700">Delete Delivery Note</ConfirmSubmitButton>
                         </form>
                       </div>
-                    </div>
-                  </details>
+                    </details>
+                  </div>
                 </td>
               </tr>
             ))}

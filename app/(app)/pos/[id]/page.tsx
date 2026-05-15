@@ -15,6 +15,43 @@ import { writeSystemAuditEvent } from "@/lib/commercial/audit";
 
 const METHODS = Object.values(PaymentMethod);
 
+async function recalcSaleTotals(
+  tx: Prisma.TransactionClient,
+  saleId: string,
+  includeVat: boolean,
+  orgId: string,
+) {
+  const itemsAgg = await tx.saleItem.aggregate({ where: { saleId }, _sum: { lineTotal: true } });
+  const subtotal = itemsAgg._sum.lineTotal ?? 0;
+  const current = await tx.sale.findUnique({ where: { id: saleId }, select: { discountAmount: true } });
+  const discountAmount = Math.max(0, Math.min(current?.discountAmount ?? 0, subtotal));
+  const taxable = Math.max(0, subtotal - discountAmount);
+  let vatRate = 0;
+  if (includeVat) {
+    const branding = await tx.documentBrandingSettings.findFirst({ where: { orgId }, select: { vatRatePercent: true } });
+    vatRate = Math.max(0, branding?.vatRatePercent ?? 18) / 100;
+  }
+  const vatAmount = taxable * vatRate;
+  const totalAmount = taxable + vatAmount;
+
+  const payAgg = await tx.payment.aggregate({ where: { saleId, orgId }, _sum: { amount: true } });
+  const paidAmount = payAgg._sum.amount ?? 0;
+  const isPaid = totalAmount > 0 && paidAmount >= totalAmount;
+
+  await tx.sale.update({
+    where: { id: saleId },
+    data: {
+      subtotal,
+      discountAmount,
+      vatAmount,
+      totalAmount,
+      paidAmount,
+      paidAt: isPaid ? new Date() : null,
+      status: isPaid ? "PAID" : "OPEN",
+    },
+  });
+}
+
 export default async function SalePage({ params }: { params: Promise<{ id: string }> }) {
   const { user, orgId, org } = await requireOrgSession();
   if (!(can.viewFinancials(user) || ["ADMIN", "OPS", "FRONT_DESK"].includes(user.role))) {
@@ -196,33 +233,6 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
     take: 300,
   }).catch(() => []);
 
-  async function recalcSaleTotals(tx: Prisma.TransactionClient, saleId: string, includeVat: boolean) {
-    const itemsAgg = await tx.saleItem.aggregate({ where: { saleId }, _sum: { lineTotal: true } });
-    const subtotal = itemsAgg._sum.lineTotal ?? 0;
-    const current = await tx.sale.findUnique({ where: { id: saleId }, select: { discountAmount: true } });
-    const discountAmount = Math.max(0, Math.min(current?.discountAmount ?? 0, subtotal));
-    const taxable = Math.max(0, subtotal - discountAmount);
-    const vatAmount = includeVat ? taxable * vatRate : 0;
-    const totalAmount = taxable + vatAmount;
-
-    const payAgg = await tx.payment.aggregate({ where: { saleId, orgId }, _sum: { amount: true } });
-    const paidAmount = payAgg._sum.amount ?? 0;
-    const isPaid = totalAmount > 0 && paidAmount >= totalAmount;
-
-    await tx.sale.update({
-      where: { id: saleId },
-      data: {
-        subtotal,
-        discountAmount,
-        vatAmount,
-        totalAmount,
-        paidAmount,
-        paidAt: isPaid ? new Date() : null,
-        status: isPaid ? "PAID" : "OPEN",
-      },
-    });
-  }
-
   async function updateSaleAction(formData: FormData) {
     "use server";
     const { user, orgId, org } = await requireOrgSession();
@@ -338,7 +348,7 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
       }
 
       await tx.saleItem.update({ where: { id: item.id }, data: { description, quantity, unitPrice, lineTotal: quantity * unitPrice } });
-      await recalcSaleTotals(tx, saleId, true);
+      await recalcSaleTotals(tx, saleId, true, orgId);
     });
     await writeSystemAuditEvent({ orgId, actorUserId: user.id, entityType: "SaleItem", entityId: itemId, action: "POS_ITEM_UPDATED", summary: "POS sale item updated" });
 
@@ -380,7 +390,7 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
       }
 
       await tx.saleItem.delete({ where: { id: item.id } });
-      await recalcSaleTotals(tx, saleId, true);
+      await recalcSaleTotals(tx, saleId, true, orgId);
     });
     await writeSystemAuditEvent({ orgId, actorUserId: user.id, entityType: "SaleItem", entityId: itemId, action: "POS_ITEM_DELETED", summary: "POS sale item deleted" });
 
@@ -439,7 +449,7 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
         data: { saleId, partId: resolvedPartId, description: resolvedDescription, quantity: qty, unitPrice, lineTotal },
       });
 
-      await recalcSaleTotals(tx, saleId, vat);
+      await recalcSaleTotals(tx, saleId, vat, orgId);
     });
 
     revalidatePath(`/pos/${saleId}`);
@@ -868,7 +878,7 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
                 const subtotal = itemsAgg._sum.lineTotal ?? 0;
                 const capped = Math.max(0, Math.min(discountAmount, subtotal));
                 await tx.sale.update({ where: { id: saleId }, data: { discountAmount: capped } });
-                await recalcSaleTotals(tx, saleId, true);
+                await recalcSaleTotals(tx, saleId, true, orgId);
               });
 
               revalidatePath(`/pos/${saleId}`);
