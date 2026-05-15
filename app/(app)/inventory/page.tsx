@@ -32,6 +32,7 @@ export default async function InventoryPage({
   const params = (((await searchParams?.catch(() => ({}))) ?? {}) as Record<string, string | string[] | undefined>);
   const created = String(params.created ?? "") === "1";
   const error = typeof params.error === "string" ? params.error : "";
+  const showAdd = String(params.add ?? "") === "1";
 
   const canManage = user.role === "ADMIN" || user.role === "OPS";
 
@@ -226,18 +227,15 @@ export default async function InventoryPage({
         </div>
       </div>
 
-      {/* Add Part */}
-      {canManage ? (
-        <div id="add-part" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)]">
-          <div className="border-b border-[var(--line)] px-4 py-3">
-            <p className="text-sm font-bold text-[var(--ink)]">Add Part</p>
-            <p className="mt-0.5 text-xs text-[var(--ink-muted)]">SKU and name are required</p>
-          </div>
-          <form action={createPartAction} className="p-4">
+      {/* Add Part — shown only when ?add=1 */}
+      {canManage && showAdd ? (
+        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
+          <p className="mb-2.5 text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Add Part</p>
+          <form action={createPartAction}>
             <div className="grid gap-2 sm:grid-cols-[1fr_2fr_auto]">
-              <input name="sku" placeholder="SKU *" required className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm text-[var(--ink)] outline-none focus:border-[var(--accent)]/60" />
-              <input name="name" placeholder="Part name *" required className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm text-[var(--ink)] outline-none focus:border-[var(--accent)]/60" />
-              <button type="submit" className="btn-premium rounded-lg px-5 py-2 text-sm font-semibold">Add Part</button>
+              <input name="sku" placeholder="SKU *" required className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/60 focus:ring-2 focus:ring-[var(--accent)]/14" />
+              <input name="name" placeholder="Part name *" required className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/60 focus:ring-2 focus:ring-[var(--accent)]/14" />
+              <button type="submit" className="btn-premium rounded-lg px-4 py-1.5 text-[13px] font-semibold">Add Part</button>
             </div>
           </form>
         </div>
@@ -245,11 +243,20 @@ export default async function InventoryPage({
 
       {/* Stock table */}
       <div className="rounded-xl border border-[var(--line)]">
-        <div className="flex items-center justify-between border-b border-[var(--line)] bg-[var(--panel)] px-4 py-3 rounded-t-xl">
-          <div>
-            <p className="text-sm font-bold text-[var(--ink)]">Stock Monitor</p>
-            <p className="mt-0.5 text-xs text-[var(--ink-muted)]">Amber rows are at or below reorder level</p>
-          </div>
+        <div className="flex items-center justify-between gap-2 border-b border-[var(--line)] bg-[var(--panel)] px-4 py-3 rounded-t-xl">
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Stock Monitor</p>
+          {canManage ? (
+            <Link
+              href={showAdd ? "/inventory" : "/inventory?add=1"}
+              className={`rounded-lg border px-3 py-1.5 text-[12px] font-bold transition ${
+                showAdd
+                  ? "border-[var(--line)] text-[var(--ink-muted)] hover:text-[var(--ink)]"
+                  : "border-[var(--accent)]/40 bg-[var(--accent)] text-white hover:bg-[var(--accent)]/90"
+              }`}
+            >
+              {showAdd ? "✕ Cancel" : "+ Add Part"}
+            </Link>
+          ) : null}
         </div>
 
         {parts.length === 0 ? (

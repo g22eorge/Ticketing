@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import Link from "next/link";
 
+import { SearchToggle } from "@/components/shared/SearchToggle";
+
 import { Prisma, OutboundMessageChannel, OutboundMessageStatus, OutboundMessageType } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
@@ -178,60 +180,44 @@ export default async function OutboxPage({
         </div>
       </div>
 
-      {/* Summary bar */}
-      <div className="panel-shadow flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
-        <div className="flex flex-wrap items-center gap-2">
+      {/* Summary + filter bar */}
+      <div className="panel-shadow flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
+        {/* Status chips */}
+        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
           {[
-            { label: "sent", key: "SENT", style: "border-emerald-200 bg-emerald-50 text-emerald-700" },
-            { label: "pending", key: "PENDING", style: "border-amber-200 bg-amber-50 text-amber-700" },
-            { label: "failed", key: "FAILED", style: "border-red-200 bg-red-50 text-red-700" },
-            { label: "dead", key: "DEAD", style: "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]" },
-          ].map(({ label, key, style }) => (
-            <span key={key} className={`rounded-full border px-2.5 py-0.5 text-[11px] font-semibold tabular-nums ${style}`}>
-              {byStatus[key] ?? 0} {label}
-            </span>
-          ))}
-          <span className="text-[11px] text-[var(--ink-muted)]">· showing {rows.length} of 200</span>
+            { label: "All", key: "" },
+            { label: "Sent", key: "SENT" },
+            { label: "Pending", key: "PENDING" },
+            { label: "Failed", key: "FAILED" },
+            { label: "Dead", key: "DEAD" },
+          ].map(({ label, key }) => {
+            const active = (status ?? "") === key;
+            const href = `/settings/notifications/outbox?${new URLSearchParams({ ...(channel ? { channel } : {}), ...(q ? { q } : {}), ...(key ? { status: key } : {}) }).toString()}`;
+            return (
+              <Link
+                key={key || "all"}
+                href={href}
+                className={`shrink-0 rounded-full border px-3 py-1 text-[11px] font-semibold transition ${
+                  active ? "border-[var(--accent)] bg-[var(--accent)] text-white" : "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)] hover:border-[var(--accent)]/30"
+                }`}
+              >
+                {label}{key ? ` · ${byStatus[key] ?? 0}` : ""}
+              </Link>
+            );
+          })}
         </div>
-        <form action={retryNowAction}>
-          <button className="btn-premium rounded-lg px-3 py-1.5 text-sm">
-            Run Retry
-          </button>
-        </form>
-      </div>
-
-      {/* Filters */}
-      <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
-        <form className="flex flex-wrap items-end gap-2" method="GET">
-          <select
-            name="channel"
-            defaultValue={channel ?? ""}
-            className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-sm outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14"
-          >
-            <option value="">All channels</option>
-            {CHANNELS.map((c) => <option key={c} value={c}>{c}</option>)}
-          </select>
-          <select
-            name="status"
-            defaultValue={status ?? ""}
-            className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-sm outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14"
-          >
-            <option value="">All statuses</option>
-            {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
-          </select>
-          <input
-            name="q"
+        {/* Right actions */}
+        <div className="flex shrink-0 items-center gap-2">
+          <SearchToggle
+            basePath="/settings/notifications/outbox"
             defaultValue={q}
             placeholder="Search recipient / error / ID"
-            className="min-w-[200px] flex-1 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-sm outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14"
+            preserve={{ channel: channel ?? undefined, status: status ?? undefined }}
           />
-          <button className="btn-premium-secondary rounded-lg px-3 py-1.5 text-sm">Filter</button>
-          {(channel || status || q) ? (
-            <a href="/settings/notifications/outbox" className="rounded-lg px-3 py-1.5 text-sm text-[var(--ink-muted)] hover:text-[var(--ink)]">
-              Clear
-            </a>
-          ) : null}
-        </form>
+          <form action={retryNowAction}>
+            <button className="btn-premium rounded-lg px-3 py-1.5 text-[13px]">Run Retry</button>
+          </form>
+        </div>
       </div>
 
       {/* Table */}
