@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { StatusLookupForm } from "@/components/shared/StatusLookupForm";
 
 import { getSession } from "@/lib/session";
 import { PLAN_PRICES, CURRENCY } from "@/lib/pesapal";
@@ -148,6 +149,7 @@ export default async function LandingPage() {
           <nav className="hidden items-center gap-6 sm:flex">
             <a href="#features" className="text-sm text-white/50 transition-colors hover:text-white">Features</a>
             <a href="#pricing" className="text-sm text-white/50 transition-colors hover:text-white">Pricing</a>
+            <a href="#track" className="text-sm text-white/50 transition-colors hover:text-white">Track repair</a>
           </nav>
           <div className="flex items-center gap-2">
             <Link href="/login" className="rounded-lg px-3.5 py-1.5 text-sm font-medium text-white/60 transition-colors hover:text-white">
@@ -348,6 +350,17 @@ export default async function LandingPage() {
             </Link>
           </div>
         </section>
+        {/* ── Status lookup ── */}
+        <section id="track" className="border-t border-white/8 px-4 py-16 md:px-6">
+          <div className="mx-auto max-w-lg text-center">
+            <p className="mb-1 text-[11px] font-bold uppercase tracking-[0.18em] text-[#D4AF37]/70">For clients</p>
+            <h2 className="mb-2 text-xl font-bold text-white">Track your repair</h2>
+            <p className="mb-6 text-sm text-white/45">
+              Have a job number? Check your device&apos;s repair status in real time — no login required.
+            </p>
+            <StatusLookupForm />
+          </div>
+        </section>
       </main>
 
       {/* ── Footer ── */}
@@ -361,6 +374,7 @@ export default async function LandingPage() {
             <nav className="flex flex-wrap gap-x-5 gap-y-2">
               <a href="#features" className="text-sm text-white/40 transition-colors hover:text-white">Features</a>
               <a href="#pricing" className="text-sm text-white/40 transition-colors hover:text-white">Pricing</a>
+              <a href="#track" className="text-sm text-white/40 transition-colors hover:text-white">Track repair</a>
               <Link href="/login" className="text-sm text-white/40 transition-colors hover:text-white">Log in</Link>
               <Link href="/terms" className="text-sm text-white/40 transition-colors hover:text-white">Terms</Link>
               <Link href="/privacy" className="text-sm text-white/40 transition-colors hover:text-white">Privacy</Link>

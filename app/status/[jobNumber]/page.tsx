@@ -217,9 +217,20 @@ export default async function PublicStatusPage({
           )}
         </div>
 
-        <p className="text-center text-xs text-gray-400">
-          This page is publicly accessible via your job number only. No personal information is displayed.
-        </p>
+        <div className="space-y-2 text-center">
+          <p className="text-xs text-gray-400">
+            This page is publicly accessible via your job number only. No personal information is displayed.
+          </p>
+          <p className="text-xs text-gray-500">
+            Not satisfied with your repair?{" "}
+            <a
+              href={`/feedback?ref=${jobNumber}`}
+              className="font-medium text-amber-500 underline-offset-2 hover:underline"
+            >
+              Submit a complaint →
+            </a>
+          </p>
+        </div>
       </div>
     </div>
   );
