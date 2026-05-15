@@ -997,38 +997,25 @@ export default async function DashboardPage({
 
         {/* Alert Banner */}
         {hasAlerts ? (
-          <section className="panel-shadow rounded-xl border border-[var(--accent)]/25 bg-[var(--panel)] px-4 py-3">
-            <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
-              <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--accent)]">Attention Required</span>
-              {awaitingApprovalCount > 0 ? (
-                <Link
-                  href="/jobs?status=AWAITING_APPROVAL"
-                  className="rounded-full border border-[var(--accent)]/30 bg-[var(--accent)]/10 px-2.5 py-1 text-[11px] font-medium text-[var(--accent)] transition hover:border-[var(--accent)]/50"
-                >
-                  {awaitingApprovalCount} awaiting approval
-                </Link>
-              ) : null}
-              {overdueWithDays.length > 0 ? (
-                <span className="rounded-full border border-white/10 bg-[#0b0b0b] px-2.5 py-1 text-[11px] font-medium text-white/90">
-                  {overdueWithDays.length} overdue (3+ days)
-                </span>
-              ) : null}
-              {unassignedActiveCount > 0 ? (
-                <Link
-                  href="/jobs?assignedToId=unassigned"
-                  className="rounded-full border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1 text-[11px] font-medium text-[var(--ink)] transition hover:border-[var(--accent)]/35"
-                >
-                  {unassignedActiveCount} unassigned
-                </Link>
-              ) : null}
-              {pendingRequests > 0 ? (
-                <Link
-                  href="/intake"
-                  className="rounded-full border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1 text-[11px] font-medium text-[var(--ink)] transition hover:border-[var(--accent)]/35"
-                >
-                  {pendingRequests} pending requests
-                </Link>
-              ) : null}
+          <section className="panel-shadow rounded-xl border border-[var(--accent)]/25 bg-[var(--panel)] px-4 py-2.5">
+            <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
+              <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--accent)]">Needs attention —</span>
+              {[
+                awaitingApprovalCount > 0 && { label: `${awaitingApprovalCount} awaiting approval`, href: "/jobs?status=AWAITING_APPROVAL" },
+                overdueWithDays.length > 0 && { label: `${overdueWithDays.length} overdue (3+ days)`, href: "/jobs" },
+                unassignedActiveCount > 0 && { label: `${unassignedActiveCount} unassigned`, href: "/jobs?assignedToId=unassigned" },
+                pendingRequests > 0 && { label: `${pendingRequests} pending requests`, href: "/intake" },
+              ].filter(Boolean).map((item, i, arr) => {
+                const { label, href } = item as { label: string; href: string };
+                return (
+                  <span key={href} className="inline-flex items-center gap-1">
+                    <Link href={href} className="text-[12px] font-medium text-[var(--ink)] underline-offset-2 hover:text-[var(--accent)] hover:underline">
+                      {label}
+                    </Link>
+                    {i < arr.length - 1 && <span className="text-[var(--ink-muted)]">·</span>}
+                  </span>
+                );
+              })}
             </div>
           </section>
         ) : null}

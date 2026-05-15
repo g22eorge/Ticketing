@@ -244,12 +244,26 @@ export async function seedCommercialData() {
   });
 
   const tfClients = await Promise.all([
-    createClient(techfix.id, "Aisha Namukasa",  "+256701001001", "aisha@gmail.com"),
-    createClient(techfix.id, "Brian Kavuma",     "+256701001002"),
-    createClient(techfix.id, "Cynthia Tendo",   "+256701001003", "cynthia@work.co.ug"),
-    createClient(techfix.id, "Daniel Sentongo",  "+256701001004"),
-    createClient(techfix.id, "Esther Namata",   "+256701001005"),
-    createClient(techfix.id, "Frank Wasswa",    "+256701001006"),
+    createClient(techfix.id, "Aisha Namukasa",    "+256701001001", "aisha@gmail.com"),
+    createClient(techfix.id, "Brian Kavuma",       "+256701001002"),
+    createClient(techfix.id, "Cynthia Tendo",     "+256701001003", "cynthia@work.co.ug"),
+    createClient(techfix.id, "Daniel Sentongo",    "+256701001004"),
+    createClient(techfix.id, "Esther Namata",     "+256701001005"),
+    createClient(techfix.id, "Frank Wasswa",      "+256701001006"),
+    createClient(techfix.id, "Grace Nakimuli",    "+256701001007", "grace.n@email.com"),
+    createClient(techfix.id, "Hassan Ssembuusi",  "+256701001008"),
+    createClient(techfix.id, "Irene Akello",      "+256701001009", "irene@corp.ug"),
+    createClient(techfix.id, "James Mukiibi",     "+256701001010"),
+    createClient(techfix.id, "Kampala Tech Hub",  "+256701001011", "info@kth.ug"),
+    createClient(techfix.id, "Lydia Nambatya",    "+256701001012", "lydia.n@gmail.com"),
+    createClient(techfix.id, "Moses Kiggundu",    "+256701001013"),
+    createClient(techfix.id, "Norah Atim",        "+256701001014", "norah@school.ac.ug"),
+    createClient(techfix.id, "Patrick Onyango",   "+256701001015"),
+    createClient(techfix.id, "Rita Nakabuubi",    "+256701001016", "rita.k@business.ug"),
+    createClient(techfix.id, "Samuel Ochieng",    "+256701001017"),
+    createClient(techfix.id, "Tabitha Nantongo",  "+256701001018", "tabitha@home.ug"),
+    createClient(techfix.id, "Uganda Moto Parts", "+256701001019", "orders@ugmoto.ug"),
+    createClient(techfix.id, "Victoria Nassali",  "+256701001020"),
   ]);
 
   const tfJobs = [
@@ -495,14 +509,29 @@ export async function seedCommercialData() {
   }
 
   const tfParts = {
-    lcdIp14:  await ensurePart(techfix.id, "LCD-IP14",      "LCD iPhone 14 Screen",          180000, 5),
-    batSa53:  await ensurePart(techfix.id, "BAT-SA53",      "Samsung A53 Battery",            45000, 12),
-    portUsbc: await ensurePart(techfix.id, "PORT-USBC",     "USB-C Charging Port",            15000, 20),
-    kbMbpM1: await ensurePart(techfix.id, "KB-MBP-M1",     "MacBook Keyboard",               95000,  3),
-    ssd512:   await ensurePart(techfix.id, "SSD-512-NVMe",  "HP 512GB NVMe SSD",             120000,  8),
-    batIp12:  await ensurePart(techfix.id, "BAT-IP12",      "iPhone 12 Battery",              55000,  9),
-    pasteTx:  await ensurePart(techfix.id, "PASTE-TX",      "Thermal Paste",                   8000, 25),
-    portTabS7: await ensurePart(techfix.id, "PORT-TABS7",   "Samsung Tab S7 Charger Port",    22000,  6),
+    lcdIp14:   await ensurePart(techfix.id, "LCD-IP14",       "LCD iPhone 14 Screen",            180000,  5),
+    batSa53:   await ensurePart(techfix.id, "BAT-SA53",       "Samsung A53 Battery",              45000, 12),
+    portUsbc:  await ensurePart(techfix.id, "PORT-USBC",      "USB-C Charging Port",              15000, 20),
+    kbMbpM1:   await ensurePart(techfix.id, "KB-MBP-M1",      "MacBook Keyboard",                 95000,  3),
+    ssd512:    await ensurePart(techfix.id, "SSD-512-NVMe",   "HP 512GB NVMe SSD",               120000,  8),
+    batIp12:   await ensurePart(techfix.id, "BAT-IP12",       "iPhone 12 Battery",                55000,  9),
+    pasteTx:   await ensurePart(techfix.id, "PASTE-TX",       "Thermal Paste",                     8000, 25),
+    portTabS7: await ensurePart(techfix.id, "PORT-TABS7",     "Samsung Tab S7 Charger Port",      22000,  6),
+    // Additional parts
+    lcdSa23:   await ensurePart(techfix.id, "LCD-SA23",       "Samsung A23 Display Assembly",     95000,  7),
+    lcdIp13:   await ensurePart(techfix.id, "LCD-IP13",       "LCD iPhone 13 Screen",            155000,  4),
+    batDellL:  await ensurePart(techfix.id, "BAT-DELL-LAT",   "Dell Latitude 65Wh Battery",       88000,  6),
+    ramDdr4:   await ensurePart(techfix.id, "RAM-DDR4-8GB",   "8GB DDR4 Laptop RAM",              65000, 10),
+    hdmi:      await ensurePart(techfix.id, "CABLE-HDMI",     "HDMI Cable 2m",                     8500, 30),
+    screwKit:  await ensurePart(techfix.id, "TOOL-SCREW-KIT", "Precision Screwdriver Set",        25000,  4),
+    flexIp14:  await ensurePart(techfix.id, "FLEX-IP14-PWRBTN","iPhone 14 Power Button Flex",     18000,  8),
+    fanDell:   await ensurePart(techfix.id, "FAN-DELL-5520",  "Dell 5520 CPU Cooling Fan",        42000,  5),
+    dcJack:    await ensurePart(techfix.id, "DC-JACK-UNIV",   "Universal DC Power Jack",          12000, 15),
+    lensIp14:  await ensurePart(techfix.id, "LENS-IP14-REAR", "iPhone 14 Rear Camera Lens",       35000,  6),
+    portLenIp: await ensurePart(techfix.id, "PORT-LEN-TB",    "Lenovo ThinkPad Charging Port",    28000,  9),
+    ssd256:    await ensurePart(techfix.id, "SSD-256-NVMe",   "256GB NVMe SSD",                   72000, 11),
+    isopropyl: await ensurePart(techfix.id, "CHEM-IPA-99",    "IPA 99% Cleaning Solution 500ml",   9500, 18),
+    screenProtector: await ensurePart(techfix.id, "ACC-SCRN-PROT", "Universal Screen Protector",   3500, 50),
   };
 
   // Supplier
@@ -516,6 +545,58 @@ export async function seedCommercialData() {
         contactName: "Isaac Buyondo",
         phone: "+256752100200",
         email: "orders@sparehub.ug",
+      },
+    });
+  })();
+
+  // Second supplier
+  const tfSupplier2 = await (async () => {
+    const existing = await prisma.supplier.findFirst({ where: { orgId: techfix.id, name: "AppleParts EA" } });
+    if (existing) return existing;
+    return prisma.supplier.create({
+      data: {
+        orgId: techfix.id,
+        name: "AppleParts EA",
+        contactName: "Diana Koech",
+        phone: "+254722300400",
+        email: "supply@appleparts.co.ke",
+      },
+    });
+  })();
+
+  // Third supplier
+  await (async () => {
+    const existing = await prisma.supplier.findFirst({ where: { orgId: techfix.id, name: "TechStock KLA" } });
+    if (existing) return existing;
+    return prisma.supplier.create({
+      data: {
+        orgId: techfix.id,
+        name: "TechStock KLA",
+        contactName: "Ronald Kato",
+        phone: "+256775500600",
+        email: "kato@techstock.ug",
+      },
+    });
+  })();
+
+  // Second purchase order (PENDING)
+  await (async () => {
+    const existing = await prisma.purchaseOrder.findFirst({ where: { orgId: techfix.id, reference: "PO-TFX-002" } });
+    if (existing) return existing;
+    return prisma.purchaseOrder.create({
+      data: {
+        orgId: techfix.id,
+        supplierId: tfSupplier2.id,
+        status: "ORDERED",
+        reference: "PO-TFX-002",
+        orderedAt: daysAgo(3),
+        items: {
+          create: [
+            { partId: tfParts.lcdIp13.id,  description: "LCD iPhone 13 Screen",  qtyOrdered: 4, qtyReceived: 0, unitCost: 155000 },
+            { partId: tfParts.lcdSa23.id,  description: "Samsung A23 Display",    qtyOrdered: 6, qtyReceived: 0, unitCost: 95000 },
+            { partId: tfParts.flexIp14.id, description: "iPhone 14 Power Flex",   qtyOrdered: 8, qtyReceived: 0, unitCost: 18000 },
+          ],
+        },
       },
     });
   })();
