@@ -431,27 +431,382 @@ export async function seedCommercialData() {
 
   console.log(`✓ FixIt Fast Ghana — ${ffJobs.length} jobs, 5 users (ENTERPRISE / ACTIVE)\n`);
 
+  // ────────────────────────────────────────────────────────────────────────────
+  // EXPANSION — TechFix Uganda: extra users, branches, groups, parts, supplier,
+  //             purchase order, stock txns, sales, invoices, payments, complaints
+  // ────────────────────────────────────────────────────────────────────────────
+
+  // Extra users
+  await Promise.all([
+    upsertUser({ orgId: techfix.id, name: "Patricia Namutebi", email: "techmanager@techfix.ug", role: "TECH_MANAGER" }),
+    upsertUser({ orgId: techfix.id, name: "Ronald Kiggundu",   email: "manager@techfix.ug",     role: "MANAGER" }),
+    upsertUser({ orgId: techfix.id, name: "Sandra Akello",     email: "sales@techfix.ug",        role: "SALES" }),
+    upsertUser({ orgId: techfix.id, name: "James Lubega",      email: "fd@techfix.ug",           role: "FRONT_DESK" }),
+  ]);
+
+  // Branches
+  async function ensureBranch(orgId: string, name: string, address: string, isDefault: boolean) {
+    const existing = await prisma.branch.findFirst({ where: { orgId, name } });
+    if (existing) return existing;
+    return prisma.branch.create({ data: { orgId, name, address, isDefault } });
+  }
+
+  const tfMainBranch = await ensureBranch(techfix.id, "Main Branch", "Plot 45, Nakivubo Road, Kampala", true);
+  await ensureBranch(techfix.id, "Ntinda Branch", "Ntinda Complex, Kampala", false);
+
+  // User Groups
+  async function ensureUserGroup(orgId: string, name: string, description: string, permissions: string[]) {
+    const existing = await prisma.userGroup.findUnique({ where: { orgId_name: { orgId, name } } });
+    const group = existing
+      ? existing
+      : await prisma.userGroup.create({ data: { orgId, name, description } });
+    // Ensure permissions are set
+    for (const permission of permissions) {
+      await prisma.userGroupPermission.upsert({
+        where: { groupId_permission: { groupId: group.id, permission } },
+        update: {},
+        create: { groupId: group.id, permission },
+      });
+    }
+    return group;
+  }
+
+  await ensureUserGroup(techfix.id, "Field Technicians", "Technicians doing on-site and in-house repairs", [
+    "can_run_internal_repairs",
+    "can_view_job_progress",
+  ]);
+  await ensureUserGroup(techfix.id, "Senior Ops", "Senior operations staff managing intake and job flow", [
+    "can_intake",
+    "can_manage_intake",
+    "can_assign_jobs",
+    "can_approve_invoices",
+  ]);
+  await ensureUserGroup(techfix.id, "Finance Team", "Finance staff overseeing accounts and billing", [
+    "can_view_accounts_summary",
+    "can_approve_invoices",
+    "can_review_external_bills",
+  ]);
+
+  // Parts
+  async function ensurePart(orgId: string, sku: string, name: string, unitCost: number, qtyOnHand: number) {
+    const existing = await prisma.part.findUnique({ where: { sku_orgId: { sku, orgId } } });
+    if (existing) return existing;
+    return prisma.part.create({ data: { orgId, sku, name, unitCost, qtyOnHand } });
+  }
+
+  const tfParts = {
+    lcdIp14:  await ensurePart(techfix.id, "LCD-IP14",      "LCD iPhone 14 Screen",          180000, 5),
+    batSa53:  await ensurePart(techfix.id, "BAT-SA53",      "Samsung A53 Battery",            45000, 12),
+    portUsbc: await ensurePart(techfix.id, "PORT-USBC",     "USB-C Charging Port",            15000, 20),
+    kbMbpM1: await ensurePart(techfix.id, "KB-MBP-M1",     "MacBook Keyboard",               95000,  3),
+    ssd512:   await ensurePart(techfix.id, "SSD-512-NVMe",  "HP 512GB NVMe SSD",             120000,  8),
+    batIp12:  await ensurePart(techfix.id, "BAT-IP12",      "iPhone 12 Battery",              55000,  9),
+    pasteTx:  await ensurePart(techfix.id, "PASTE-TX",      "Thermal Paste",                   8000, 25),
+    portTabS7: await ensurePart(techfix.id, "PORT-TABS7",   "Samsung Tab S7 Charger Port",    22000,  6),
+  };
+
+  // Supplier
+  const tfSupplier = await (async () => {
+    const existing = await prisma.supplier.findFirst({ where: { orgId: techfix.id, name: "SpareHub Uganda" } });
+    if (existing) return existing;
+    return prisma.supplier.create({
+      data: {
+        orgId: techfix.id,
+        name: "SpareHub Uganda",
+        contactName: "Isaac Buyondo",
+        phone: "+256752100200",
+        email: "orders@sparehub.ug",
+      },
+    });
+  })();
+
+  // Purchase Order
+  const tfPo = await (async () => {
+    const existing = await prisma.purchaseOrder.findFirst({ where: { orgId: techfix.id, reference: "PO-TFX-001" } });
+    if (existing) return existing;
+    return prisma.purchaseOrder.create({
+      data: {
+        orgId: techfix.id,
+        supplierId: tfSupplier.id,
+        status: "RECEIVED",
+        reference: "PO-TFX-001",
+        orderedAt: daysAgo(15),
+        receivedAt: daysAgo(10),
+        items: {
+          create: [
+            { partId: tfParts.lcdIp14.id,  description: "LCD iPhone 14 Screen",  qtyOrdered: 5,  qtyReceived: 5,  unitCost: 180000 },
+            { partId: tfParts.batSa53.id,  description: "Samsung A53 Battery",    qtyOrdered: 12, qtyReceived: 12, unitCost: 45000 },
+            { partId: tfParts.ssd512.id,   description: "HP 512GB NVMe SSD",      qtyOrdered: 8,  qtyReceived: 8,  unitCost: 120000 },
+          ],
+        },
+      },
+    });
+  })();
+  void tfPo; // used for reference in reason strings below
+
+  // Stock transactions
+  async function ensureStockTxn(partId: string, type: "IN" | "OUT", quantity: number, reason: string, jobId?: string) {
+    const existing = await prisma.partStockTransaction.findFirst({ where: { partId, type, reason } });
+    if (existing) return existing;
+    return prisma.partStockTransaction.create({ data: { partId, type, quantity, reason, jobId: jobId ?? null } });
+  }
+
+  // Resolve jobIds for TFX-001 and TFX-007
+  const tfJob001 = await prisma.job.findUnique({ where: { jobNumber: "TFX-001" }, select: { id: true } });
+  const tfJob007 = await prisma.job.findUnique({ where: { jobNumber: "TFX-007" }, select: { id: true } });
+
+  await ensureStockTxn(tfParts.lcdIp14.id,  "IN",  5,  "PO-TFX-001 receipt");
+  await ensureStockTxn(tfParts.batSa53.id,  "IN", 12,  "PO-TFX-001 receipt");
+  await ensureStockTxn(tfParts.ssd512.id,   "IN",  8,  "PO-TFX-001 receipt");
+  if (tfJob001) await ensureStockTxn(tfParts.lcdIp14.id, "OUT", 1, "Used in repair", tfJob001.id);
+  if (tfJob007) await ensureStockTxn(tfParts.ssd512.id,  "OUT", 1, "Used in repair", tfJob007.id);
+
+  // Sales
+  async function ensureSale(
+    orgId: string,
+    saleNumber: string,
+    clientId: string | null,
+    branchId: string | null,
+    billingMode: "CASH" | "INVOICE",
+    totalAmount: number,
+    paidAmount: number,
+    currency: string,
+    items: Array<{ description: string; qty: number; unitPrice: number; lineTotal: number }>,
+  ) {
+    const existing = await prisma.sale.findUnique({ where: { saleNumber } });
+    if (existing) return existing;
+    return prisma.sale.create({
+      data: {
+        orgId,
+        saleNumber,
+        clientId,
+        branchId,
+        status: "PAID",
+        billingMode,
+        currency,
+        subtotal: totalAmount,
+        totalAmount,
+        paidAmount,
+        paidAt: daysAgo(1),
+        items: {
+          create: items.map((i) => ({
+            description: i.description,
+            quantity: i.qty,
+            unitPrice: i.unitPrice,
+            lineTotal: i.lineTotal,
+          })),
+        },
+      },
+    });
+  }
+
+  const tfSale1 = await ensureSale(
+    techfix.id, "SAL-TFX-001",
+    tfClients[0].id, tfMainBranch.id, "CASH",
+    320000, 320000, "UGX",
+    [{ description: "iPhone 14 Screen Replacement", qty: 1, unitPrice: 320000, lineTotal: 320000 }],
+  );
+  const tfSale2 = await ensureSale(
+    techfix.id, "SAL-TFX-002",
+    tfClients[1].id, null, "CASH",
+    85000, 85000, "UGX",
+    [{ description: "Samsung A53 Battery Replacement", qty: 1, unitPrice: 85000, lineTotal: 85000 }],
+  );
+  const tfSale3 = await ensureSale(
+    techfix.id, "SAL-TFX-003",
+    tfClients[0].id, null, "CASH",
+    280000, 280000, "UGX",
+    [{ description: "HP 512GB NVMe SSD Replacement + OS Reinstall", qty: 1, unitPrice: 280000, lineTotal: 280000 }],
+  );
+  void tfSale2; void tfSale3;
+
+  // Payments for Sales
+  async function ensureSalePayment(orgId: string, saleId: string, amount: number, method: "CASH" | "MOBILE_MONEY", currency: string) {
+    const existing = await prisma.payment.findFirst({ where: { saleId, orgId } });
+    if (existing) return existing;
+    return prisma.payment.create({ data: { orgId, saleId, amount, method, currency, receivedAt: daysAgo(1) } });
+  }
+
+  await ensureSalePayment(techfix.id, tfSale1.id, 320000, "CASH",         "UGX");
+  await ensureSalePayment(techfix.id, tfSale2.id,  85000, "MOBILE_MONEY", "UGX");
+  await ensureSalePayment(techfix.id, tfSale3.id, 280000, "CASH",         "UGX");
+
+  // Invoices for completed jobs
+  async function ensureInvoice(
+    orgId: string,
+    jobNumber: string,
+    invoiceNumber: string,
+    totalAmount: number,
+    paidAmount: number,
+    currency: string,
+    paymentMethod: "CASH" | "MOBILE_MONEY",
+  ) {
+    const job = await prisma.job.findUnique({ where: { jobNumber }, select: { id: true } });
+    if (!job) return;
+    const existing = await prisma.invoice.findUnique({ where: { jobId: job.id } });
+    const inv = existing
+      ? existing
+      : await prisma.invoice.create({
+          data: {
+            orgId,
+            jobId: job.id,
+            invoiceNumber,
+            currency,
+            status: "PAID",
+            totalAmount,
+            paidAmount,
+            paidAt: daysAgo(2),
+          },
+        });
+    // Ensure payment for invoice
+    const existingPmt = await prisma.payment.findFirst({ where: { invoiceId: inv.id, orgId } });
+    if (!existingPmt) {
+      await prisma.payment.create({
+        data: { orgId, invoiceId: inv.id, amount: paidAmount, method: paymentMethod, currency, receivedAt: daysAgo(2) },
+      });
+    }
+    return inv;
+  }
+
+  await ensureInvoice(techfix.id, "TFX-001", "INV-TFX-001", 320000, 320000, "UGX", "CASH");
+  await ensureInvoice(techfix.id, "TFX-005", "INV-TFX-005", 120000, 120000, "UGX", "MOBILE_MONEY");
+  await ensureInvoice(techfix.id, "TFX-007", "INV-TFX-007", 280000, 280000, "UGX", "CASH");
+
+  // Complaints
+  async function ensureComplaint(data: {
+    orgId: string;
+    complaintNumber: string;
+    status: "RECEIVED" | "ACKNOWLEDGED" | "INVESTIGATING" | "RESOLVED" | "CLOSED";
+    category: "SERVICE_QUALITY" | "REPAIR_DELAY" | "BILLING" | "STAFF_CONDUCT" | "DAMAGE_CAUSED" | "UNRESOLVED_FAULT" | "OTHER";
+    clientName: string;
+    clientPhone: string;
+    description: string;
+    resolution?: string;
+    resolvedAt?: Date;
+  }) {
+    const existing = await prisma.complaint.findUnique({ where: { complaintNumber: data.complaintNumber } });
+    if (existing) return existing;
+    return prisma.complaint.create({
+      data: {
+        orgId: data.orgId,
+        complaintNumber: data.complaintNumber,
+        status: data.status,
+        category: data.category,
+        clientName: data.clientName,
+        clientPhone: data.clientPhone,
+        description: data.description,
+        resolution: data.resolution ?? null,
+        resolvedAt: data.resolvedAt ?? null,
+      },
+    });
+  }
+
+  await ensureComplaint({
+    orgId: techfix.id,
+    complaintNumber: "CMP-2025-0001",
+    status: "RESOLVED",
+    category: "REPAIR_DELAY",
+    clientName: "Aisha Namukasa",
+    clientPhone: "+256701001001",
+    description: "My phone repair took 2 weeks instead of 3 days as promised",
+    resolution: "Apologised, offered 10% discount on next repair",
+    resolvedAt: daysAgo(3),
+  });
+  await ensureComplaint({
+    orgId: techfix.id,
+    complaintNumber: "CMP-2025-0002",
+    status: "INVESTIGATING",
+    category: "SERVICE_QUALITY",
+    clientName: "Brian Kavuma",
+    clientPhone: "+256701001002",
+    description: "Laptop returned but keyboard still sticking after supposed repair",
+  });
+  await ensureComplaint({
+    orgId: techfix.id,
+    complaintNumber: "CMP-2025-0003",
+    status: "RECEIVED",
+    category: "BILLING",
+    clientName: "Cynthia Tendo",
+    clientPhone: "+256701001003",
+    description: "Was quoted 100k but charged 120k without explanation",
+  });
+
+  console.log("✓ TechFix Uganda — expanded: branches, groups, parts, supplier, PO, stock, sales, invoices, payments, complaints");
+
+  // ────────────────────────────────────────────────────────────────────────────
+  // EXPANSION — FixIt Fast Ghana: extra users, branches, parts, supplier,
+  //             invoices, payments, complaint
+  // ────────────────────────────────────────────────────────────────────────────
+
+  await Promise.all([
+    upsertUser({ orgId: fixitfast.id, name: "Efua Asare",    email: "techmanager@fixitfast.gh", role: "TECH_MANAGER" }),
+    upsertUser({ orgId: fixitfast.id, name: "Esi Boateng",   email: "manager@fixitfast.gh",     role: "MANAGER" }),
+  ]);
+
+  await ensureBranch(fixitfast.id, "Osu Branch",  "Osu Oxford Street, Accra",    true);
+  await ensureBranch(fixitfast.id, "Tema Branch", "Tema Community 1, Accra",     false);
+
+  const ffParts = {
+    lcdSa73:   await ensurePart(fixitfast.id, "LCD-SA73",    "Samsung A73 AMOLED",            350,  4),
+    lbMbp16:   await ensurePart(fixitfast.id, "LB-MBP16",    "MacBook Pro Logic Board",      1800,  2),
+    lcdIp15pm: await ensurePart(fixitfast.id, "LCD-IP15PM",  "iPhone 15 Pro Max Display",    2200,  2),
+    bgPx8:     await ensurePart(fixitfast.id, "BG-PX8",      "Pixel 8 Back Glass",            280,  5),
+    micIp13m:  await ensurePart(fixitfast.id, "MIC-IP13M",   "iPhone 13 mini Mic Module",     180,  8),
+  };
+  void ffParts;
+
+  await (async () => {
+    const existing = await prisma.supplier.findFirst({ where: { orgId: fixitfast.id, name: "GhanaSpares Ltd" } });
+    if (!existing) {
+      await prisma.supplier.create({
+        data: { orgId: fixitfast.id, name: "GhanaSpares Ltd", phone: "+233501234567" },
+      });
+    }
+  })();
+
+  await ensureInvoice(fixitfast.id, "FIF-001", "INV-FIF-001", 550,  550,  "GHS", "CASH");
+  await ensureInvoice(fixitfast.id, "FIF-002", "INV-FIF-002", 2800, 2800, "GHS", "MOBILE_MONEY");
+  await ensureInvoice(fixitfast.id, "FIF-009", "INV-FIF-009", 380,  380,  "GHS", "CASH");
+
+  await ensureComplaint({
+    orgId: fixitfast.id,
+    complaintNumber: "CMP-GH-0001",
+    status: "ACKNOWLEDGED",
+    category: "DAMAGE_CAUSED",
+    clientName: "Kojo Mensah",
+    clientPhone: "+233240301002",
+    description: "Deep scratch on laptop lid that wasn't there before repair",
+  });
+
+  console.log("✓ FixIt Fast Ghana — expanded: branches, parts, supplier, invoices, payments, complaint\n");
+
   // ── Summary ─────────────────────────────────────────────────────────────────
   console.log("═══════════════════════════════════════════════════════");
   console.log("  DEMO LOGIN CREDENTIALS  (password: Demo1234!)");
   console.log("═══════════════════════════════════════════════════════");
   console.log("");
   console.log("  TechFix Uganda  (Growth plan — active)");
-  console.log("    admin@techfix.ug    → Admin");
-  console.log("    ops@techfix.ug     → Ops");
-  console.log("    tech@techfix.ug    → Internal Tech");
-  console.log("    ext@techfix.ug     → External Tech");
+  console.log("    admin@techfix.ug        → Admin");
+  console.log("    ops@techfix.ug          → Ops");
+  console.log("    tech@techfix.ug         → Internal Tech");
+  console.log("    ext@techfix.ug          → External Tech");
+  console.log("    techmanager@techfix.ug  → Tech Manager");
+  console.log("    manager@techfix.ug      → Manager");
+  console.log("    sales@techfix.ug        → Sales");
+  console.log("    fd@techfix.ug           → Front Desk");
   console.log("");
   console.log("  iRepair Kenya  (Starter — trial, 5 days left)");
   console.log("    admin@irepair.ke   → Admin");
   console.log("    ops@irepair.ke     → Ops");
   console.log("");
   console.log("  FixIt Fast Ghana  (Enterprise plan — active)");
-  console.log("    admin@fixitfast.gh → Admin");
-  console.log("    ops@fixitfast.gh   → Ops");
-  console.log("    ops2@fixitfast.gh  → Ops (second)");
-  console.log("    tech@fixitfast.gh  → Internal Tech");
-  console.log("    ext@fixitfast.gh   → External Tech");
+  console.log("    admin@fixitfast.gh       → Admin");
+  console.log("    ops@fixitfast.gh         → Ops");
+  console.log("    ops2@fixitfast.gh        → Ops (second)");
+  console.log("    tech@fixitfast.gh        → Internal Tech");
+  console.log("    ext@fixitfast.gh         → External Tech");
+  console.log("    techmanager@fixitfast.gh → Tech Manager");
+  console.log("    manager@fixitfast.gh     → Manager");
   console.log("");
   console.log("═══════════════════════════════════════════════════════");
 }

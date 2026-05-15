@@ -9,10 +9,10 @@ import { JobStatus } from "@prisma/client";
 import { filterSupportedJobStatuses } from "@/lib/job-status-server";
 import { can } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
-import { getCurrentUserRole } from "@/lib/session";
+import { requireOrgSession } from "@/lib/org-context";
 
 export default async function QuotationsPage() {
-  const { user } = await getCurrentUserRole();
+  const { user, orgId } = await requireOrgSession();
   if (!(["ADMIN", "OPS", "TECHNICIAN_INTERNAL"].includes(user.role) || can.viewFinancials(user))) {
     redirect("/dashboard");
   }
@@ -20,6 +20,7 @@ export default async function QuotationsPage() {
   const [jobs, branding] = await Promise.all([
     prisma.job.findMany({
       where: {
+        orgId,
         status: {
           in: filterSupportedJobStatuses([
             "DIAGNOSING",

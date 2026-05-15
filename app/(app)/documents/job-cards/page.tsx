@@ -3,15 +3,16 @@ import { redirect } from "next/navigation";
 
 import { can } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
-import { getCurrentUserRole } from "@/lib/session";
+import { requireOrgSession } from "@/lib/org-context";
 
 export default async function JobCardsPage() {
-  const { user } = await getCurrentUserRole();
+  const { user, orgId } = await requireOrgSession();
   if (!can.generateJobCards(user)) {
     redirect("/dashboard");
   }
 
   const jobs = await prisma.job.findMany({
+    where: { orgId },
     orderBy: { receivedAt: "desc" },
     take: 80,
     select: {

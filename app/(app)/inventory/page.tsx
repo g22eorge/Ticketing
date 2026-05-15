@@ -25,7 +25,7 @@ export default async function InventoryPage({
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { user, orgId } = await requireOrgSession();
-  if (!["ADMIN", "OPS", "TECHNICIAN_INTERNAL"].includes(user.role)) {
+  if (!["ADMIN", "MANAGER", "TECH_MANAGER", "OPS", "TECHNICIAN_INTERNAL"].includes(user.role)) {
     redirect("/dashboard");
   }
 
