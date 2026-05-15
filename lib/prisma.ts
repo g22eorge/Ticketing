@@ -75,6 +75,20 @@ function createPrismaClient() {
   });
 }
 
+// If a cached singleton is missing recently-added models (stale hot-reload cache),
+// discard it so a fresh client is created with the current generated schema.
+function isStaleSingleton(client: PrismaClient | undefined): boolean {
+  if (!client) return false;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const c = client as any;
+  return !c.complaint || !c.userGroup || !c.branch || !c.supplier;
+}
+
+if (isStaleSingleton(globalForPrisma.prisma)) {
+  try { void globalForPrisma.prisma?.$disconnect(); } catch { /* ignore */ }
+  globalForPrisma.prisma = undefined;
+}
+
 export const prisma =
   globalForPrisma.prisma ??
   createPrismaClient();

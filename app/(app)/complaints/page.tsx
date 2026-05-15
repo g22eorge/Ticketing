@@ -84,15 +84,15 @@ export default async function ComplaintsPage({
         createdAt: true,
         job: { select: { id: true, jobNumber: true } },
       },
-    }),
+    }).catch(() => [] as never[]),
     prisma.complaint.groupBy({
       by: ["status"],
       _count: { status: true },
       where: { orgId },
-    }),
+    }).catch(() => [] as Array<{ status: ComplaintStatus; _count: { status: number } }>),
   ]);
 
-  const byStatus = Object.fromEntries(counts.map((c) => [c.status, c._count.status]));
+  const byStatus = Object.fromEntries(counts.map((c) => [c.status, c._count?.status ?? 0]));
   const now = new Date();
 
   function slaStatus(complaint: (typeof complaints)[0]) {
@@ -110,7 +110,7 @@ export default async function ComplaintsPage({
 
   const totalOpen = counts
     .filter((c) => c.status !== "CLOSED" && c.status !== "RESOLVED")
-    .reduce((sum, c) => sum + c._count.status, 0);
+    .reduce((sum, c) => sum + (c._count?.status ?? 0), 0);
 
   return (
     <div className="space-y-4">

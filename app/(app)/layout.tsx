@@ -123,9 +123,16 @@ export default async function AppLayout({
     can.viewIntake(user)
       ? prisma.repairRequest.count({ where: { orgId, requestStatus: { in: ["PENDING_FRONT_DESK", "PENDING_INTAKE"] } } }).catch(() => 0)
       : Promise.resolve(0),
-    ["ADMIN", "MANAGER", "TECH_MANAGER", "OPS"].includes(user.role)
-      ? prisma.complaint.count({ where: { orgId, status: { in: ["RECEIVED", "ACKNOWLEDGED", "INVESTIGATING"] } } }).catch(() => 0)
-      : Promise.resolve(0),
+    (async () => {
+      if (!["ADMIN", "MANAGER", "TECH_MANAGER", "OPS"].includes(user.role)) return 0;
+      try {
+        // Guard: complaint model may be absent if Prisma client is a stale hot-reload cache
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const model = (prisma as any).complaint;
+        if (!model?.count) return 0;
+        return await model.count({ where: { orgId, status: { in: ["RECEIVED", "ACKNOWLEDGED", "INVESTIGATING"] } } });
+      } catch { return 0; }
+    })(),
   ]);
 
   const lowStockCount = partsForReorder.filter((part) => part.qtyOnHand <= part.reorderLevel).length;
