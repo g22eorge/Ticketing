@@ -733,6 +733,433 @@ export async function seedCommercialData() {
 
   console.log("✓ TechFix Uganda — expanded: branches, groups, parts, supplier, PO, stock, sales, invoices, payments, complaints");
 
+  // ── TechFix Uganda: Repair Requests (intake page) ────────────────────────
+  async function ensureRepairRequest(data: {
+    orgId: string;
+    requestNumber: string;
+    requestStatus: "PENDING_FRONT_DESK" | "PENDING_INTAKE" | "APPROVED" | "CONVERTED_TO_JOB";
+    customerName: string;
+    phone: string;
+    deviceType: DeviceType;
+    brand: string;
+    model: string;
+    problemDescription: string;
+  }) {
+    const existing = await prisma.repairRequest.findUnique({ where: { requestNumber: data.requestNumber } });
+    if (existing) return existing;
+    return prisma.repairRequest.create({
+      data: {
+        orgId: data.orgId,
+        requestNumber: data.requestNumber,
+        requestStatus: data.requestStatus,
+        customerName: data.customerName,
+        phone: data.phone,
+        deviceType: data.deviceType,
+        brand: data.brand,
+        model: data.model,
+        problemDescription: data.problemDescription,
+        handoverMethod: "SELF_DROPOFF",
+        preferredContactMethod: "WHATSAPP",
+      },
+    });
+  }
+
+  await ensureRepairRequest({ orgId: techfix.id, requestNumber: "RR-TFX-2026-0001", requestStatus: "PENDING_FRONT_DESK", customerName: "Josephine Nalwoga", phone: "+256702001001", deviceType: "PHONE_IPHONE", brand: "Apple", model: "iPhone 13", problemDescription: "Phone fell in water, now shows apple logo then turns off" });
+  await ensureRepairRequest({ orgId: techfix.id, requestNumber: "RR-TFX-2026-0002", requestStatus: "PENDING_FRONT_DESK", customerName: "Robert Ssekabira", phone: "+256702001002", deviceType: "WINDOWS_PC", brand: "Lenovo", model: "ThinkPad X1 Carbon", problemDescription: "Laptop screen has vertical lines and flickering" });
+  await ensureRepairRequest({ orgId: techfix.id, requestNumber: "RR-TFX-2026-0003", requestStatus: "PENDING_INTAKE", customerName: "Agnes Atim", phone: "+256702001003", deviceType: "PHONE_ANDROID", brand: "Tecno", model: "Spark 10", problemDescription: "Phone not charging at all, tried different cables" });
+  await ensureRepairRequest({ orgId: techfix.id, requestNumber: "RR-TFX-2026-0004", requestStatus: "PENDING_INTAKE", customerName: "Emmanuel Opio", phone: "+256702001004", deviceType: "TABLET", brand: "Samsung", model: "Galaxy Tab A8", problemDescription: "Tablet screen cracked after drop from table" });
+  await ensureRepairRequest({ orgId: techfix.id, requestNumber: "RR-TFX-2026-0005", requestStatus: "APPROVED", customerName: "Patience Nakibuuka", phone: "+256702001005", deviceType: "MAC", brand: "Apple", model: "MacBook Pro 13 M2", problemDescription: "Keyboard liquid spill, multiple keys not registering" });
+  await ensureRepairRequest({ orgId: techfix.id, requestNumber: "RR-TFX-2026-0006", requestStatus: "CONVERTED_TO_JOB", customerName: "Timothy Byaruhanga", phone: "+256702001006", deviceType: "PHONE_ANDROID", brand: "Samsung", model: "Galaxy S23", problemDescription: "Battery inflated and back glass popping open" });
+
+  // ── TechFix Uganda: External jobs for payouts page ───────────────────────
+  // Resolve the ext user
+  const tfExtUser = await prisma.user.findUnique({ where: { email: "ext@techfix.ug" }, select: { id: true } });
+
+  if (tfExtUser) {
+    const extClientA = await createClient(techfix.id, "Harriet Nabwire",  "+256703001001", "harriet@biz.ug");
+    const extClientB = await createClient(techfix.id, "Samuel Kawooya",   "+256703001002");
+    const extClientC = await createClient(techfix.id, "Lydia Nakirya",    "+256703001003", "lydia@work.ug");
+    const extClientD = await createClient(techfix.id, "Patrick Mukaaya",  "+256703001004");
+
+    const extJobs = [
+      { n: "TFX-EXT-001", clientId: extClientA.id, device: "MAC" as DeviceType, brand: "Apple", model: "MacBook Pro 14 M3", issue: "Logic board failure, water damage from spill", diagnosis: "Board-level repair completed", bill: 450000, received: daysAgo(20), completed: daysAgo(14) },
+      { n: "TFX-EXT-002", clientId: extClientB.id, device: "PHONE_IPHONE" as DeviceType, brand: "Apple", model: "iPhone 15 Pro", issue: "Face ID not working, proximity sensor fault", diagnosis: "Face ID module replaced by specialist", bill: 280000, received: daysAgo(18), completed: daysAgo(11) },
+      { n: "TFX-EXT-003", clientId: extClientC.id, device: "WINDOWS_PC" as DeviceType, brand: "Dell", model: "XPS 15 9530", issue: "GPU failure, artifacting on screen", diagnosis: "GPU reball completed, thermal compound replaced", bill: 390000, received: daysAgo(15), completed: daysAgo(8) },
+      { n: "TFX-EXT-004", clientId: extClientD.id, device: "PHONE_ANDROID" as DeviceType, brand: "Huawei", model: "P60 Pro", issue: "Baseband issue, no network signal", diagnosis: "Baseband IC replaced by specialist", bill: 220000, received: daysAgo(10), completed: daysAgo(5) },
+      { n: "TFX-EXT-005", clientId: extClientA.id, device: "MAC" as DeviceType, brand: "Apple", model: "Mac Mini M2", issue: "SSD failure, data recovery needed", diagnosis: "SSD chip-level data recovery done", bill: 350000, received: daysAgo(8), completed: daysAgo(3) },
+    ];
+
+    for (const j of extJobs) {
+      const job = await createJob({
+        orgId: techfix.id,
+        jobNumber: j.n,
+        status: "COMPLETED" as JobStatus,
+        repairPath: "EXTERNAL",
+        clientId: j.clientId,
+        createdById: tfOps.id,
+        assignedToId: tfExtUser.id,
+        deviceType: j.device,
+        brand: j.brand,
+        model: j.model,
+        issueDescription: j.issue,
+        diagnosisNotes: j.diagnosis,
+        clientBill: j.bill,
+        workDone: j.diagnosis,
+        receivedAt: j.received,
+        completedAt: j.completed,
+      });
+      await ensureAudit(job.id, tfOps.id, "JOB_CREATED", { seeded: true, org: "techfix-ug", jobNumber: j.n });
+    }
+  }
+
+  // ── TechFix Uganda: Additional invoices (invoices page) ──────────────────
+  // Create extra jobs to attach invoices to (invoices need unique jobIds)
+  const invClientA = await createClient(techfix.id, "Gloria Namusoke",  "+256704001001", "gloria@ngo.ug");
+  const invClientB = await createClient(techfix.id, "Ivan Mukiibi",     "+256704001002");
+
+  async function ensureJobForInvoice(
+    orgId: string,
+    jobNumber: string,
+    clientId: string,
+    createdById: string,
+    device: DeviceType,
+    brand: string,
+    model: string,
+    issue: string,
+    diagnosis: string,
+    bill: number,
+    received: Date,
+    completed: Date,
+  ) {
+    const existing = await prisma.job.findUnique({ where: { jobNumber }, select: { id: true } });
+    if (existing) return existing;
+    return prisma.job.create({
+      data: {
+        orgId,
+        jobNumber,
+        status: "COMPLETED",
+        repairPath: "IN_HOUSE",
+        clientId,
+        createdById,
+        deviceType: device,
+        brand,
+        model,
+        issueDescription: issue,
+        diagnosisNotes: diagnosis,
+        clientBill: bill,
+        workDone: diagnosis,
+        receivedAt: received,
+        completedAt: completed,
+      },
+    });
+  }
+
+  const invJob1 = await ensureJobForInvoice(techfix.id, "TFX-INV-J001", invClientA.id, tfOps.id, "PHONE_IPHONE", "Apple", "iPhone 12 mini", "Home button flex replacement", "Home button flex cable replaced", 95000, daysAgo(30), daysAgo(27));
+  const invJob2 = await ensureJobForInvoice(techfix.id, "TFX-INV-J002", invClientB.id, tfOps.id, "WINDOWS_PC", "HP", "Pavilion 15", "Motherboard cleaning after dust buildup", "Full motherboard cleaning, thermal paste replaced", 75000, daysAgo(25), daysAgo(22));
+  const invJob3 = await ensureJobForInvoice(techfix.id, "TFX-INV-J003", invClientA.id, tfOps.id, "PHONE_ANDROID", "Infinix", "Hot 40 Pro", "Speaker replacement, no audio during calls", "Speaker module replaced, audio restored", 55000, daysAgo(22), daysAgo(19));
+
+  async function ensureInvoiceWithStatus(
+    orgId: string,
+    jobId: string,
+    invoiceNumber: string,
+    totalAmount: number,
+    paidAmount: number,
+    currency: string,
+    status: "DRAFT" | "ISSUED" | "PAID" | "VOID",
+    paymentMethod?: "CASH" | "MOBILE_MONEY" | "BANK_TRANSFER",
+    issuedDaysAgo?: number,
+  ) {
+    const existing = await prisma.invoice.findUnique({ where: { jobId } });
+    if (existing) return existing;
+    const inv = await prisma.invoice.create({
+      data: {
+        orgId,
+        jobId,
+        invoiceNumber,
+        currency,
+        status,
+        totalAmount,
+        paidAmount,
+        paidAt: status === "PAID" ? daysAgo(issuedDaysAgo ? issuedDaysAgo - 1 : 1) : null,
+        issuedAt: daysAgo(issuedDaysAgo ?? 2),
+      },
+    });
+    if (status === "PAID" && paymentMethod && paidAmount > 0) {
+      const existingPmt = await prisma.payment.findFirst({ where: { invoiceId: inv.id, orgId } });
+      if (!existingPmt) {
+        await prisma.payment.create({
+          data: { orgId, invoiceId: inv.id, amount: paidAmount, method: paymentMethod, currency, receivedAt: daysAgo(issuedDaysAgo ? issuedDaysAgo - 1 : 1) },
+        });
+      }
+    }
+    return inv;
+  }
+
+  await ensureInvoiceWithStatus(techfix.id, invJob1.id, "INV-TFX-101", 95000,  95000, "UGX", "PAID",   "MOBILE_MONEY", 27);
+  await ensureInvoiceWithStatus(techfix.id, invJob2.id, "INV-TFX-102", 75000,  75000, "UGX", "PAID",   "CASH",         22);
+  await ensureInvoiceWithStatus(techfix.id, invJob3.id, "INV-TFX-103", 55000,  0,     "UGX", "DRAFT");
+
+  // A couple more jobs with ISSUED (outstanding) invoices
+  const invJob4 = await ensureJobForInvoice(techfix.id, "TFX-INV-J004", invClientB.id, tfOps.id, "PHONE_IPHONE", "Apple", "iPhone 11 Pro", "Camera module replacement", "Rear triple camera replaced", 185000, daysAgo(10), daysAgo(7));
+  const invJob5 = await ensureJobForInvoice(techfix.id, "TFX-INV-J005", invClientA.id, tfOps.id, "WINDOWS_PC", "Acer", "Aspire 5", "Display hinge broken", "Display hinge and bezel replaced", 130000, daysAgo(8), daysAgo(5));
+
+  await ensureInvoiceWithStatus(techfix.id, invJob4.id, "INV-TFX-104", 185000, 0, "UGX", "ISSUED", undefined, 7);
+  await ensureInvoiceWithStatus(techfix.id, invJob5.id, "INV-TFX-105", 130000, 0, "UGX", "ISSUED", undefined, 5);
+
+  // ── TechFix Uganda: Additional payments (receipts page) ──────────────────
+  // Add standalone sale payments with varied methods
+  async function ensureStandaloneSalePayment(orgId: string, saleId: string, amount: number, method: "CASH" | "MOBILE_MONEY" | "BANK_TRANSFER", reference: string | null, receivedDaysAgo: number) {
+    const existing = await prisma.payment.findFirst({ where: { saleId, orgId, method } });
+    if (existing) return existing;
+    return prisma.payment.create({ data: { orgId, saleId, amount, method, reference, currency: "UGX", receivedAt: daysAgo(receivedDaysAgo) } });
+  }
+
+  // Add a bank transfer and card sale for variety
+  const tfSale4 = await (async () => {
+    const existing = await prisma.sale.findUnique({ where: { saleNumber: "SAL-TFX-004" } });
+    if (existing) return existing;
+    return prisma.sale.create({
+      data: {
+        orgId: techfix.id, saleNumber: "SAL-TFX-004", clientId: invClientA.id, branchId: tfMainBranch.id,
+        status: "PAID", billingMode: "CASH", currency: "UGX",
+        subtotal: 160000, totalAmount: 160000, paidAmount: 160000, paidAt: daysAgo(5),
+        items: { create: [{ description: "USB-C Charger + Screen Guard Bundle", quantity: 2, unitPrice: 80000, lineTotal: 160000 }] },
+      },
+    });
+  })();
+
+  const tfSale5 = await (async () => {
+    const existing = await prisma.sale.findUnique({ where: { saleNumber: "SAL-TFX-005" } });
+    if (existing) return existing;
+    return prisma.sale.create({
+      data: {
+        orgId: techfix.id, saleNumber: "SAL-TFX-005", clientId: invClientB.id, branchId: null,
+        status: "PAID", billingMode: "CASH", currency: "UGX",
+        subtotal: 45000, totalAmount: 45000, paidAmount: 45000, paidAt: daysAgo(3),
+        items: { create: [{ description: "Samsung A53 Tempered Glass + Case", quantity: 1, unitPrice: 45000, lineTotal: 45000 }] },
+      },
+    });
+  })();
+
+  await ensureStandaloneSalePayment(techfix.id, tfSale4.id, 160000, "BANK_TRANSFER", "TXN-BK-20260501", 5);
+  await ensureStandaloneSalePayment(techfix.id, tfSale5.id,  45000, "MOBILE_MONEY",  "MTN-7689034",     3);
+
+  // ── TechFix Uganda: Delivery Notes (delivery-notes page) ─────────────────
+  async function ensureDeliveryNote(data: {
+    orgId: string;
+    deliveryNoteNumber: string;
+    invoiceId?: string;
+    saleId?: string;
+    deliveredByName: string;
+    receivedByName: string;
+    deliveredDaysAgo: number;
+    items: Array<{ description: string; quantity: number }>;
+  }) {
+    const existing = await prisma.deliveryNote.findUnique({ where: { deliveryNoteNumber: data.deliveryNoteNumber } });
+    if (existing) return existing;
+    return prisma.deliveryNote.create({
+      data: {
+        orgId: data.orgId,
+        deliveryNoteNumber: data.deliveryNoteNumber,
+        invoiceId: data.invoiceId ?? null,
+        saleId: data.saleId ?? null,
+        deliveredByName: data.deliveredByName,
+        receivedByName: data.receivedByName,
+        deliveredAt: daysAgo(data.deliveredDaysAgo),
+        items: { create: data.items.map((i) => ({ description: i.description, quantity: i.quantity })) },
+      },
+    });
+  }
+
+  // Fetch invoice IDs for completed invoices
+  const invTfx001 = await prisma.invoice.findUnique({ where: { invoiceNumber: "INV-TFX-001" }, select: { id: true } });
+  const invTfx005 = await prisma.invoice.findUnique({ where: { invoiceNumber: "INV-TFX-005" }, select: { id: true } });
+  const invTfx101 = await prisma.invoice.findUnique({ where: { invoiceNumber: "INV-TFX-101" }, select: { id: true } });
+
+  if (invTfx001) {
+    await ensureDeliveryNote({
+      orgId: techfix.id, deliveryNoteNumber: "DN-TFX-2026-001",
+      invoiceId: invTfx001.id,
+      deliveredByName: "Moses Ssemakula", receivedByName: "Aisha Namukasa",
+      deliveredDaysAgo: 8,
+      items: [{ description: "Apple iPhone 14 (repaired — screen replaced)", quantity: 1 }],
+    });
+  }
+
+  if (invTfx005) {
+    await ensureDeliveryNote({
+      orgId: techfix.id, deliveryNoteNumber: "DN-TFX-2026-002",
+      invoiceId: invTfx005.id,
+      deliveredByName: "David Ochieng", receivedByName: "Esther Namata",
+      deliveredDaysAgo: 4,
+      items: [{ description: "Samsung Galaxy Tab S7 (repaired — charging port replaced)", quantity: 1 }],
+    });
+  }
+
+  if (invTfx101) {
+    await ensureDeliveryNote({
+      orgId: techfix.id, deliveryNoteNumber: "DN-TFX-2026-003",
+      invoiceId: invTfx101.id,
+      deliveredByName: "Moses Ssemakula", receivedByName: "Gloria Namusoke",
+      deliveredDaysAgo: 26,
+      items: [{ description: "Apple iPhone 12 mini (repaired — home button flex replaced)", quantity: 1 }],
+    });
+  }
+
+  await ensureDeliveryNote({
+    orgId: techfix.id, deliveryNoteNumber: "DN-TFX-2026-004",
+    saleId: tfSale4.id,
+    deliveredByName: "Sandra Akello", receivedByName: "Gloria Namusoke",
+    deliveredDaysAgo: 5,
+    items: [
+      { description: "USB-C Charger", quantity: 1 },
+      { description: "Screen Protector (Tempered Glass)", quantity: 1 },
+    ],
+  });
+
+  // ── TechFix Uganda: POS Sales (pos page) ─────────────────────────────────
+  const posClients = await Promise.all([
+    createClient(techfix.id, "Winnie Nakabugo",  "+256705001001"),
+    createClient(techfix.id, "Charles Sempijja", "+256705001002"),
+    createClient(techfix.id, "Deborah Acom",     "+256705001003"),
+  ]);
+
+  async function ensurePosSale(
+    orgId: string,
+    saleNumber: string,
+    clientId: string | null,
+    branchId: string | null,
+    status: "OPEN" | "PAID" | "VOID",
+    totalAmount: number,
+    paidAmount: number,
+    currency: string,
+    paidDaysAgo: number | null,
+    items: Array<{ description: string; quantity: number; unitPrice: number; lineTotal: number }>,
+    paymentMethod?: "CASH" | "MOBILE_MONEY" | "BANK_TRANSFER",
+  ) {
+    const existing = await prisma.sale.findUnique({ where: { saleNumber } });
+    if (existing) return existing;
+    const sale = await prisma.sale.create({
+      data: {
+        orgId, saleNumber, clientId, branchId,
+        status, billingMode: "CASH", currency,
+        subtotal: totalAmount, totalAmount, paidAmount,
+        paidAt: paidDaysAgo !== null ? daysAgo(paidDaysAgo) : null,
+        items: { create: items },
+      },
+    });
+    if (status === "PAID" && paymentMethod && paidDaysAgo !== null) {
+      const existingPmt = await prisma.payment.findFirst({ where: { saleId: sale.id, orgId } });
+      if (!existingPmt) {
+        await prisma.payment.create({ data: { orgId, saleId: sale.id, amount: paidAmount, method: paymentMethod, currency, receivedAt: daysAgo(paidDaysAgo) } });
+      }
+    }
+    return sale;
+  }
+
+  await ensurePosSale(techfix.id, "SAL-TFX-POS-001", posClients[0].id, tfMainBranch.id, "PAID", 120000, 120000, "UGX", 6,
+    [{ description: "iPhone 14 Pro Tempered Glass (OEM)", quantity: 2, unitPrice: 35000, lineTotal: 70000 }, { description: "iPhone Charging Cable (Lightning)", quantity: 1, unitPrice: 50000, lineTotal: 50000 }], "CASH");
+
+  await ensurePosSale(techfix.id, "SAL-TFX-POS-002", posClients[1].id, tfMainBranch.id, "PAID", 85000, 85000, "UGX", 5,
+    [{ description: "Samsung Galaxy A54 Flip Case", quantity: 1, unitPrice: 45000, lineTotal: 45000 }, { description: "Micro USB to USB-C Adapter (x2)", quantity: 2, unitPrice: 20000, lineTotal: 40000 }], "MOBILE_MONEY");
+
+  await ensurePosSale(techfix.id, "SAL-TFX-POS-003", posClients[2].id, null, "PAID", 200000, 200000, "UGX", 4,
+    [{ description: "Generic Laptop Cooling Pad", quantity: 1, unitPrice: 80000, lineTotal: 80000 }, { description: "USB Hub 4-Port", quantity: 2, unitPrice: 60000, lineTotal: 120000 }], "BANK_TRANSFER");
+
+  await ensurePosSale(techfix.id, "SAL-TFX-POS-004", null, tfMainBranch.id, "PAID", 30000, 30000, "UGX", 2,
+    [{ description: "Screen Cleaning Kit", quantity: 3, unitPrice: 10000, lineTotal: 30000 }], "CASH");
+
+  await ensurePosSale(techfix.id, "SAL-TFX-POS-005", posClients[0].id, tfMainBranch.id, "OPEN", 150000, 0, "UGX", null,
+    [{ description: "Laptop Bag (15.6-inch)", quantity: 1, unitPrice: 150000, lineTotal: 150000 }]);
+
+  // ── TechFix Uganda: Outbound Messages (notifications outbox page) ─────────
+  async function ensureOutboundMessage(data: {
+    orgId: string;
+    channel: "WHATSAPP" | "EMAIL";
+    type: "JOB_CREATED" | "JOB_COMPLETED" | "JOB_STATUS_UPDATE" | "REPAIR_REQUEST_CONFIRMATION" | "FRONT_DESK_APPROVED" | "ADMIN_TEST";
+    status: "PENDING" | "SENT" | "FAILED" | "DEAD";
+    to: string;
+    body: string;
+    subject?: string;
+    sentDaysAgo?: number;
+    jobId?: string;
+  }) {
+    const existing = await prisma.outboundMessage.findFirst({
+      where: { orgId: data.orgId, to: data.to, type: data.type, body: data.body },
+    });
+    if (existing) return existing;
+    return prisma.outboundMessage.create({
+      data: {
+        orgId: data.orgId,
+        channel: data.channel,
+        type: data.type,
+        status: data.status,
+        to: data.to,
+        body: data.body,
+        subject: data.subject ?? null,
+        sentAt: data.sentDaysAgo !== undefined ? daysAgo(data.sentDaysAgo) : null,
+        jobId: data.jobId ?? null,
+        attemptCount: data.status === "PENDING" ? 0 : 1,
+        lastAttemptAt: data.sentDaysAgo !== undefined ? daysAgo(data.sentDaysAgo) : null,
+        nextAttemptAt: data.status === "PENDING" ? now : daysAgo(0),
+      },
+    });
+  }
+
+  const tfJob001Row = await prisma.job.findUnique({ where: { jobNumber: "TFX-001" }, select: { id: true } });
+  const tfJob005Row = await prisma.job.findUnique({ where: { jobNumber: "TFX-005" }, select: { id: true } });
+  const tfJob007Row = await prisma.job.findUnique({ where: { jobNumber: "TFX-007" }, select: { id: true } });
+
+  await ensureOutboundMessage({ orgId: techfix.id, channel: "WHATSAPP", type: "JOB_CREATED", status: "SENT", to: "+256701001001", body: "Dear Aisha, your repair job TFX-001 has been received. We will keep you updated.", sentDaysAgo: 12, jobId: tfJob001Row?.id });
+  await ensureOutboundMessage({ orgId: techfix.id, channel: "WHATSAPP", type: "JOB_COMPLETED", status: "SENT", to: "+256701001001", body: "Good news! Your iPhone 14 is ready for pickup. Job TFX-001.", sentDaysAgo: 8, jobId: tfJob001Row?.id });
+  await ensureOutboundMessage({ orgId: techfix.id, channel: "WHATSAPP", type: "JOB_CREATED", status: "SENT", to: "+256701001005", body: "Dear Esther, your repair job TFX-005 has been received. We will keep you updated.", sentDaysAgo: 7, jobId: tfJob005Row?.id });
+  await ensureOutboundMessage({ orgId: techfix.id, channel: "WHATSAPP", type: "JOB_COMPLETED", status: "SENT", to: "+256701001005", body: "Your Samsung Tab S7 charging port has been repaired. Job TFX-005 ready for pickup!", sentDaysAgo: 4, jobId: tfJob005Row?.id });
+  await ensureOutboundMessage({ orgId: techfix.id, channel: "WHATSAPP", type: "JOB_STATUS_UPDATE", status: "FAILED", to: "+256701001001", body: "Your HP EliteBook SSD replacement is complete. Job TFX-007 — please collect at your earliest.", sentDaysAgo: 1, jobId: tfJob007Row?.id });
+  await ensureOutboundMessage({ orgId: techfix.id, channel: "EMAIL", type: "JOB_CREATED", status: "SENT", to: "aisha@gmail.com", subject: "Repair Job Received — TFX-001", body: "Dear Aisha Namukasa,\n\nYour repair request for an iPhone 14 has been received. Job reference: TFX-001.\n\nWe will contact you once diagnosis is complete.\n\nTechFix Uganda", sentDaysAgo: 12, jobId: tfJob001Row?.id });
+  await ensureOutboundMessage({ orgId: techfix.id, channel: "WHATSAPP", type: "REPAIR_REQUEST_CONFIRMATION", status: "SENT", to: "+256702001001", body: "Thank you Josephine! We have received your repair request RR-TFX-2026-0001. Our team will review it shortly.", sentDaysAgo: 2 });
+  await ensureOutboundMessage({ orgId: techfix.id, channel: "WHATSAPP", type: "ADMIN_TEST", status: "PENDING", to: "+256700111222", body: "Test message from TechFix Uganda notification system." });
+  await ensureOutboundMessage({ orgId: techfix.id, channel: "EMAIL", type: "JOB_STATUS_UPDATE", status: "FAILED", to: "cynthia@work.co.ug", subject: "Update on your Repair — TFX-003", body: "Dear Cynthia, we have a cost estimate ready for your Samsung Galaxy A53 battery replacement. Please call us to approve.", sentDaysAgo: 2 });
+
+  // ── TechFix Uganda: Communication Templates (templates page) ─────────────
+  async function ensureCommunicationTemplate(data: {
+    orgId: string;
+    key: string;
+    channel: "WHATSAPP" | "EMAIL";
+    label: string;
+    subject?: string;
+    body: string;
+    variables?: string;
+    isActive?: boolean;
+  }) {
+    const existing = await prisma.communicationTemplate.findFirst({
+      where: { key: data.key, channel: data.channel, orgId: data.orgId },
+    });
+    if (existing) return existing;
+    return prisma.communicationTemplate.create({
+      data: {
+        orgId: data.orgId,
+        key: data.key,
+        channel: data.channel,
+        label: data.label,
+        subject: data.subject ?? null,
+        body: data.body,
+        variables: data.variables ?? null,
+        isActive: data.isActive ?? true,
+      },
+    });
+  }
+
+  await ensureCommunicationTemplate({ orgId: techfix.id, key: "job_created_wa", channel: "WHATSAPP", label: "Job Created (WhatsApp)", body: "Dear {{customerName}}, your repair job {{jobNumber}} for {{deviceBrand}} {{deviceModel}} has been received at TechFix Uganda. We will contact you once diagnosis is complete.", variables: '["customerName","jobNumber","deviceBrand","deviceModel"]' });
+  await ensureCommunicationTemplate({ orgId: techfix.id, key: "job_completed_wa", channel: "WHATSAPP", label: "Job Completed (WhatsApp)", body: "Great news {{customerName}}! Your {{deviceBrand}} {{deviceModel}} has been repaired. Job {{jobNumber}} is ready for pickup. Our address: Plot 45, Nakivubo Road, Kampala.", variables: '["customerName","deviceBrand","deviceModel","jobNumber"]' });
+  await ensureCommunicationTemplate({ orgId: techfix.id, key: "awaiting_approval_wa", channel: "WHATSAPP", label: "Awaiting Approval (WhatsApp)", body: "Hello {{customerName}}, we have completed the diagnosis for your {{deviceBrand}} {{deviceModel}} (Job {{jobNumber}}). Estimated repair cost: UGX {{costEstimate}}. Please reply YES to approve or NO to decline.", variables: '["customerName","deviceBrand","deviceModel","jobNumber","costEstimate"]' });
+  await ensureCommunicationTemplate({ orgId: techfix.id, key: "job_created_email", channel: "EMAIL", label: "Job Created (Email)", subject: "Repair Job Received — {{jobNumber}}", body: "Dear {{customerName}},\n\nThank you for bringing your {{deviceBrand}} {{deviceModel}} to TechFix Uganda.\n\nYour job reference is: {{jobNumber}}\n\nWe will notify you once our technician has completed the initial diagnosis.\n\nBest regards,\nTechFix Uganda Team", variables: '["customerName","deviceBrand","deviceModel","jobNumber"]' });
+  await ensureCommunicationTemplate({ orgId: techfix.id, key: "repair_request_confirm_wa", channel: "WHATSAPP", label: "Repair Request Confirmation (WhatsApp)", body: "Hi {{customerName}}, we have received your online repair request (Ref: {{requestNumber}}) for your {{deviceBrand}}. Our front desk team will contact you shortly to confirm the appointment.", variables: '["customerName","requestNumber","deviceBrand"]' });
+
+  // ── TechFix Uganda: Third branch ─────────────────────────────────────────
+  await ensureBranch(techfix.id, "Mbarara Branch", "Ntare Road, Mbarara City", false);
+
+  console.log("✓ TechFix Uganda — added: repair requests, external jobs, invoices, delivery notes, POS sales, outbound messages, templates, third branch");
+
   // ────────────────────────────────────────────────────────────────────────────
   // EXPANSION — FixIt Fast Ghana: extra users, branches, parts, supplier,
   //             invoices, payments, complaint
