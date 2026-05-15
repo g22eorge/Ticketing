@@ -3,17 +3,18 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireOrgSession } from "@/lib/org-context";
-import { ComplaintStatus } from "@prisma/client";
+import type { ComplaintStatus } from "@prisma/client";
 import {
   COMPLAINT_CATEGORY_LABELS,
   COMPLAINT_STATUS_LABELS,
   COMPLAINT_STATUS_STYLES,
+  COMPLAINT_STATUSES,
   SLA_HOURS,
 } from "@/lib/complaints";
 
 export const dynamic = "force-dynamic";
 
-const STATUSES = Object.values(ComplaintStatus);
+const STATUSES = COMPLAINT_STATUSES as unknown as ComplaintStatus[];
 const ALLOWED_ROLES = ["ADMIN", "MANAGER", "TECH_MANAGER", "OPS"] as const;
 
 export default async function ComplaintsPage({

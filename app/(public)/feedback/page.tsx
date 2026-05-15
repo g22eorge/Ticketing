@@ -1,11 +1,16 @@
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { generateComplaintNumber, COMPLAINT_CATEGORY_LABELS } from "@/lib/complaints";
-import { ComplaintCategory, ComplaintChannel } from "@prisma/client";
+import {
+  generateComplaintNumber,
+  COMPLAINT_CATEGORY_LABELS,
+  COMPLAINT_CATEGORIES,
+  COMPLAINT_CHANNEL_WEB,
+} from "@/lib/complaints";
+import type { ComplaintCategory } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
 
-const CATEGORIES = Object.values(ComplaintCategory);
+const CATEGORIES = COMPLAINT_CATEGORIES as unknown as ComplaintCategory[];
 
 export default async function FeedbackPage({
   searchParams,
@@ -74,7 +79,7 @@ export default async function FeedbackPage({
 
     const category = CATEGORIES.includes(categoryRaw as ComplaintCategory)
       ? (categoryRaw as ComplaintCategory)
-      : ComplaintCategory.OTHER;
+      : ("OTHER" as ComplaintCategory);
 
     const complaintNumber = await generateComplaintNumber(job.orgId);
 
@@ -83,7 +88,7 @@ export default async function FeedbackPage({
         orgId: job.orgId,
         complaintNumber,
         category,
-        channel: ComplaintChannel.WEB,
+        channel: COMPLAINT_CHANNEL_WEB,
         jobId: job.id,
         clientName,
         clientPhone,

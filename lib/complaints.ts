@@ -36,3 +36,27 @@ export const SLA_HOURS = {
   acknowledgement: 24,
   resolution: 72,
 };
+
+// Plain arrays — avoids Turbopack/Prisma enum-undefined runtime error
+export const COMPLAINT_STATUSES = [
+  "RECEIVED",
+  "ACKNOWLEDGED",
+  "INVESTIGATING",
+  "RESOLVED",
+  "CLOSED",
+] as const;
+
+export const COMPLAINT_CATEGORIES = [
+  "SERVICE_QUALITY",
+  "REPAIR_DELAY",
+  "BILLING",
+  "STAFF_CONDUCT",
+  "DAMAGE_CAUSED",
+  "UNRESOLVED_FAULT",
+  "OTHER",
+] as const;
+
+export const COMPLAINT_CHANNEL_WEB = "WEB" as const;
+
+export type ComplaintStatusValue = (typeof COMPLAINT_STATUSES)[number];
+export type ComplaintCategoryValue = (typeof COMPLAINT_CATEGORIES)[number];
