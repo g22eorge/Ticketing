@@ -47,22 +47,24 @@ export default async function QuotationsPage({
     prisma.job.findMany({
       where: {
         orgId,
-        status: {
-          in: filterSupportedJobStatuses([
-            "DIAGNOSING",
-            "REFERRED",
-            "IN_EXTERNAL_REPAIR",
-            "WAITING_FOR_PARTS",
-            "RETURNED_FROM_EXTERNAL",
-            "AWAITING_APPROVAL",
-            "IN_REPAIR",
-            "READY_FOR_PICKUP",
-            "COMPLETED",
-            "CLOSED",
-          ]) as JobStatus[],
-        },
+        status: approvalFilter === "pending"
+          ? ("AWAITING_APPROVAL" as JobStatus)
+          : {
+              in: filterSupportedJobStatuses([
+                "DIAGNOSING",
+                "REFERRED",
+                "IN_EXTERNAL_REPAIR",
+                "WAITING_FOR_PARTS",
+                "RETURNED_FROM_EXTERNAL",
+                "AWAITING_APPROVAL",
+                "IN_REPAIR",
+                "READY_FOR_PICKUP",
+                "COMPLETED",
+                "CLOSED",
+              ]) as JobStatus[],
+            },
         ...(approvalFilter === "pending"
-          ? { clientApproved: null, status: "AWAITING_APPROVAL" as JobStatus }
+          ? { clientApproved: null }
           : approvalFilter === "approved"
           ? { clientApproved: true }
           : approvalFilter === "declined"
