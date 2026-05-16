@@ -1,56 +1,89 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { createPortal } from "react-dom";
 
 const CLOSE_EVENT = "row-menu:close-all";
+
+interface Rect { top: number; left: number; right: number; bottom: number; width: number; height: number }
 
 interface RowActionsMenuProps {
   children: React.ReactNode;
   label?: string;
-  /** Open upward by default; pass "down" for rows near the top */
-  direction?: "up" | "down";
 }
 
-export function RowActionsMenu({ children, label = "Actions", direction = "up" }: RowActionsMenuProps) {
+export function RowActionsMenu({ children, label = "Actions" }: RowActionsMenuProps) {
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  const [rect, setRect] = useState<Rect | null>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
+
+  const close = useCallback(() => setOpen(false), []);
 
   // Close on outside click / Escape
   useEffect(() => {
     if (!open) return;
     function onMouse(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      const popup = document.getElementById("row-menu-portal-active");
+      if (
+        btnRef.current && !btnRef.current.contains(e.target as Node) &&
+        popup && !popup.contains(e.target as Node)
+      ) setOpen(false);
     }
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") setOpen(false);
     }
+    function onScroll() { setOpen(false); }
     document.addEventListener("mousedown", onMouse);
     document.addEventListener("keydown", onKey);
+    window.addEventListener("scroll", onScroll, true);
     return () => {
       document.removeEventListener("mousedown", onMouse);
       document.removeEventListener("keydown", onKey);
+      window.removeEventListener("scroll", onScroll, true);
     };
   }, [open]);
 
   // Close when any other RowActionsMenu opens
   useEffect(() => {
-    function onClose() { setOpen(false); }
-    document.addEventListener(CLOSE_EVENT, onClose);
-    return () => document.removeEventListener(CLOSE_EVENT, onClose);
-  }, []);
+    document.addEventListener(CLOSE_EVENT, close);
+    return () => document.removeEventListener(CLOSE_EVENT, close);
+  }, [close]);
 
   function toggle() {
-    if (!open) document.dispatchEvent(new Event(CLOSE_EVENT));
+    if (!open) {
+      document.dispatchEvent(new Event(CLOSE_EVENT));
+      if (btnRef.current) setRect(btnRef.current.getBoundingClientRect());
+    }
     setOpen((v) => !v);
   }
 
-  const popoverPos = direction === "down"
-    ? "top-full mt-1.5"
-    : "bottom-full mb-1.5";
+  // Decide whether to open upward or downward based on available space
+  const spaceBelow = rect ? window.innerHeight - rect.bottom : 0;
+  const openDown = spaceBelow > 260;
+  const popupTop = rect
+    ? openDown
+      ? rect.bottom + 6
+      : rect.top - 6  // will be offset upward via transform
+    : 0;
+  const popupRight = rect ? window.innerWidth - rect.right : 0;
+
+  const popupStyle: React.CSSProperties = rect
+    ? {
+        position: "fixed",
+        right: popupRight,
+        ...(openDown
+          ? { top: popupTop }
+          : { bottom: window.innerHeight - rect.top + 6 }),
+        zIndex: 9999,
+        minWidth: 220,
+        maxWidth: 300,
+      }
+    : {};
 
   return (
-    <div ref={ref} className="relative inline-block">
+    <>
       <button
+        ref={btnRef}
         type="button"
         onClick={toggle}
         aria-label={label}
@@ -68,22 +101,23 @@ export function RowActionsMenu({ children, label = "Actions", direction = "up" }
         </svg>
       </button>
 
-      {open && (
+      {open && typeof document !== "undefined" && createPortal(
         <div
-          className={`panel-shadow absolute right-0 ${popoverPos} z-50 min-w-[220px] max-w-[280px] overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]`}
-          style={{ animation: "rowMenuIn 100ms ease-out both" }}
+          id="row-menu-portal-active"
+          className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]"
+          style={{ ...popupStyle, animation: "rowMenuIn 100ms ease-out both" }}
         >
           {children}
-        </div>
+          <style>{`
+            @keyframes rowMenuIn {
+              from { opacity: 0; transform: scale(0.96) translateY(${openDown ? "-4px" : "4px"}); }
+              to   { opacity: 1; transform: scale(1)    translateY(0); }
+            }
+          `}</style>
+        </div>,
+        document.body,
       )}
-
-      <style>{`
-        @keyframes rowMenuIn {
-          from { opacity: 0; transform: scale(0.95) translateY(4px); }
-          to   { opacity: 1; transform: scale(1)    translateY(0); }
-        }
-      `}</style>
-    </div>
+    </>
   );
 }
 
