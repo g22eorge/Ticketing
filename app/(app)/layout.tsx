@@ -24,7 +24,7 @@ export default async function AppLayout({
 
   const isPlatformAdmin =
     !!process.env.PLATFORM_ADMIN_EMAIL &&
-    user.email === process.env.PLATFORM_ADMIN_EMAIL;
+    user.email.toLowerCase() === process.env.PLATFORM_ADMIN_EMAIL.toLowerCase();
 
   // ── Billing enforcement ───────────────────────────────────────────────────
   const org = await prisma.organization.findUnique({
