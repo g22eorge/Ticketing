@@ -17,6 +17,8 @@ const PUBLIC_PATHS = [
   "/api/login",
   "/api/webhooks",
   "/api/repair-requests",
+  "/api/billing/callback", // Pesapal payment redirect (arrives without session)
+  "/api/cron",             // Scheduled jobs triggered by Vercel cron
 
   // Public forms & pages
   "/repair-request",
@@ -28,6 +30,8 @@ const PUBLIC_PATHS = [
   "/terms",
   "/privacy",
   "/status",
+  "/onboarding",           // New-user org setup flow
+  "/feedback",             // Public feedback widget
 
   // Public metadata assets
   "/opengraph-image",
