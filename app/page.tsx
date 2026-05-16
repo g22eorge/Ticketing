@@ -14,7 +14,7 @@ export const metadata: Metadata = {
   alternates: { canonical: "/" },
 };
 
-// ── Static data ───────────────────────────────────────────────────────────────
+// ── Static data ─────────────────────────────────────────────────────────────────────────────────
 
 const features = [
   {
@@ -200,7 +200,7 @@ function formatPrice(n: number) {
   return n.toLocaleString("en-UG");
 }
 
-// ── Page ──────────────────────────────────────────────────────────────────────
+// ── Page ──────────────────────────────────────────────────────────────────────────────────
 
 export default async function LandingPage() {
   const session = await getSession();
@@ -450,7 +450,7 @@ export default async function LandingPage() {
               Your clients stay informed — automatically
             </h2>
             <p className="mx-auto mb-14 max-w-xl text-center text-sm leading-relaxed text-white/45">
-              No more "what&apos;s the status of my repair?" calls. Clients track their own jobs and submit feedback directly — no login required.
+              No more &ldquo;what&apos;s the status of my repair?&rdquo; calls. Clients track their own jobs and submit feedback directly — no login required.
             </p>
 
             <div className="grid gap-6 md:grid-cols-2">
@@ -555,7 +555,7 @@ export default async function LandingPage() {
             </nav>
           </div>
           <div className="border-t border-white/6 pt-5 text-[12px] text-white/25">
-            © {new Date().getFullYear()} Nexus. All rights reserved.
+            &copy; {new Date().getFullYear()} Nexus. All rights reserved.
           </div>
         </div>
       </footer>
