@@ -10,6 +10,7 @@ import { requireOrgSession } from "@/lib/org-context";
 import { assertOrgCanMutate } from "@/lib/org-write";
 import { ConfirmSubmitButton } from "@/components/shared/ConfirmSubmitButton";
 import { writeSystemAuditEvent } from "@/lib/commercial/audit";
+import { RowActionsMenu, MenuSection, MenuDestructiveRow } from "@/components/shared/RowActionsMenu";
 
 const PAYMENT_METHODS = Object.values(PaymentMethod);
 
@@ -261,29 +262,25 @@ export default async function ReceiptsPage() {
                         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
                         PDF
                       </a>
-                      <details className="relative inline-block">
-                        <summary className="inline-flex h-[30px] w-[30px] cursor-pointer list-none items-center justify-center rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)] transition hover:border-[var(--accent)]/40 hover:text-[var(--ink)]">
-                          <span className="sr-only">More</span>
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
-                        </summary>
-                        <div className="panel-shadow absolute right-0 bottom-full z-30 mb-1.5 w-56 rounded-xl border border-[var(--line)] bg-[var(--panel)]">
-                          <p className="border-b border-[var(--line)] px-4 py-2 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Edit Receipt</p>
-                          <form action={updateReceiptAction} className="space-y-2 p-3">
-                            <input type="hidden" name="paymentId" value={p.id} />
-                            <input name="amount" inputMode="decimal" defaultValue={p.amount} className="w-full rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1.5 text-xs outline-none focus:border-[var(--accent)]/50" />
-                            <select name="method" defaultValue={p.method} className="w-full rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1.5 text-xs outline-none focus:border-[var(--accent)]/50">
-                              {PAYMENT_METHODS.map((m) => <option key={m} value={m}>{m.replaceAll("_", " ")}</option>)}
-                            </select>
-                            <input name="reference" defaultValue={p.reference ?? ""} placeholder="Reference" className="w-full rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1.5 text-xs outline-none focus:border-[var(--accent)]/50" />
-                            <textarea name="note" defaultValue={p.note ?? ""} placeholder="Note" className="min-h-14 w-full rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1.5 text-xs outline-none focus:border-[var(--accent)]/50" />
-                            <button className="btn-premium w-full rounded-lg px-3 py-1.5 text-xs font-semibold">Save</button>
-                          </form>
-                          <form action={deleteReceiptAction} className="border-t border-[var(--line)] px-3 py-2.5">
+                      <RowActionsMenu label="Receipt actions">
+                        <MenuSection label="Edit Receipt" />
+                        <form action={updateReceiptAction} className="space-y-2 p-3">
+                          <input type="hidden" name="paymentId" value={p.id} />
+                          <input name="amount" inputMode="decimal" defaultValue={p.amount} className="w-full rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1.5 text-xs outline-none focus:border-[var(--accent)]/50" />
+                          <select name="method" defaultValue={p.method} className="w-full rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1.5 text-xs outline-none focus:border-[var(--accent)]/50">
+                            {PAYMENT_METHODS.map((m) => <option key={m} value={m}>{m.replaceAll("_", " ")}</option>)}
+                          </select>
+                          <input name="reference" defaultValue={p.reference ?? ""} placeholder="Reference" className="w-full rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1.5 text-xs outline-none focus:border-[var(--accent)]/50" />
+                          <textarea name="note" defaultValue={p.note ?? ""} placeholder="Note" className="min-h-14 w-full rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1.5 text-xs outline-none focus:border-[var(--accent)]/50" />
+                          <button className="btn-premium w-full rounded-lg px-3 py-1.5 text-xs font-semibold">Save</button>
+                        </form>
+                        <MenuDestructiveRow>
+                          <form action={deleteReceiptAction}>
                             <input type="hidden" name="paymentId" value={p.id} />
                             <ConfirmSubmitButton message="Delete this receipt/payment? Totals will be recalculated." className="text-xs font-semibold text-red-600 transition hover:text-red-700">Delete Receipt</ConfirmSubmitButton>
                           </form>
-                        </div>
-                      </details>
+                        </MenuDestructiveRow>
+                      </RowActionsMenu>
                     </div>
                   </td>
                 </tr>

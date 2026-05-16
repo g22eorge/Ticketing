@@ -11,6 +11,7 @@ import {
   COMPLAINT_STATUSES,
   SLA_HOURS,
 } from "@/lib/complaints";
+import { RowActionsMenu, MenuSection } from "@/components/shared/RowActionsMenu";
 
 export const dynamic = "force-dynamic";
 
@@ -246,54 +247,40 @@ export default async function ComplaintsPage({
                         )}
                       </td>
                       <td className="px-4 py-3">
-                        <details className="relative">
-                          <summary className="inline-flex cursor-pointer list-none items-center gap-1 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1.5 text-xs font-medium text-[var(--ink)] hover:border-[var(--accent)]/40">
-                            Update
-                            <svg
-                              width="10"
-                              height="10"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2.5"
+                        <RowActionsMenu label="Update complaint" direction="down">
+                          <MenuSection label="Update Status" />
+                          <form action={updateStatusAction} className="space-y-2 p-3">
+                            <input type="hidden" name="id" value={c.id} />
+                            <select
+                              name="status"
+                              defaultValue={c.status}
+                              className="w-full rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1.5 text-xs outline-none"
                             >
-                              <polyline points="6 9 12 15 18 9" />
-                            </svg>
-                          </summary>
-                          <div className="panel-shadow absolute right-0 z-30 mt-1 w-64 rounded-xl border border-[var(--line)] bg-[var(--panel)]">
-                            <form action={updateStatusAction} className="space-y-2 p-3">
-                              <input type="hidden" name="id" value={c.id} />
-                              <select
-                                name="status"
-                                defaultValue={c.status}
-                                className="w-full rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1.5 text-xs outline-none"
-                              >
-                                {STATUSES.map((s) => (
-                                  <option key={s} value={s}>
-                                    {COMPLAINT_STATUS_LABELS[s]}
-                                  </option>
-                                ))}
-                              </select>
-                              <textarea
-                                name="resolution"
-                                defaultValue={c.resolution ?? ""}
-                                placeholder="Resolution (shown to client)"
-                                rows={2}
-                                className="w-full rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1.5 text-xs outline-none resize-none"
-                              />
-                              <textarea
-                                name="internalNotes"
-                                defaultValue={c.internalNotes ?? ""}
-                                placeholder="Internal notes"
-                                rows={2}
-                                className="w-full rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1.5 text-xs outline-none resize-none"
-                              />
-                              <button className="btn-premium w-full rounded-lg px-3 py-1.5 text-xs">
-                                Save
-                              </button>
-                            </form>
-                          </div>
-                        </details>
+                              {STATUSES.map((s) => (
+                                <option key={s} value={s}>
+                                  {COMPLAINT_STATUS_LABELS[s]}
+                                </option>
+                              ))}
+                            </select>
+                            <textarea
+                              name="resolution"
+                              defaultValue={c.resolution ?? ""}
+                              placeholder="Resolution (shown to client)"
+                              rows={2}
+                              className="w-full rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1.5 text-xs outline-none resize-none"
+                            />
+                            <textarea
+                              name="internalNotes"
+                              defaultValue={c.internalNotes ?? ""}
+                              placeholder="Internal notes"
+                              rows={2}
+                              className="w-full rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1.5 text-xs outline-none resize-none"
+                            />
+                            <button className="btn-premium w-full rounded-lg px-3 py-1.5 text-xs">
+                              Save
+                            </button>
+                          </form>
+                        </RowActionsMenu>
                       </td>
                     </tr>
                   );

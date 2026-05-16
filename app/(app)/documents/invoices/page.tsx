@@ -13,6 +13,7 @@ import { requireOrgSession } from "@/lib/org-context";
 import { assertOrgCanMutate } from "@/lib/org-write";
 import { ConfirmSubmitButton } from "@/components/shared/ConfirmSubmitButton";
 import { writeSystemAuditEvent } from "@/lib/commercial/audit";
+import { RowActionsMenu, MenuSection, MenuDestructiveRow } from "@/components/shared/RowActionsMenu";
 
 const PAYMENT_METHODS = Object.values(PaymentMethod);
 const INVOICE_STATUSES = Object.values(InvoiceStatus);
@@ -405,68 +406,64 @@ export default async function InvoicesPage() {
                           Receipt
                         </a>
                       ) : null}
-                      <details className="relative inline-block">
-                        <summary className="inline-flex h-[30px] w-[30px] cursor-pointer list-none items-center justify-center rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)] transition hover:border-[var(--accent)]/40 hover:text-[var(--ink)]">
-                          <span className="sr-only">More</span>
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
-                        </summary>
-                        <div className="panel-shadow absolute right-0 bottom-full z-30 mb-1.5 w-64 rounded-xl border border-[var(--line)] bg-[var(--panel)]">
-                          {balance > 0 ? (
-                            <>
-                              <p className="border-b border-[var(--line)] px-4 py-2 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Record Payment</p>
-                              <form action={addPaymentAction} className="space-y-2 p-3">
-                                <input type="hidden" name="invoiceId" value={inv.id} />
-                                <div className="flex gap-2">
-                                  <input name="amount" inputMode="decimal" placeholder="Amount" className="min-w-0 flex-1 rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1.5 text-xs outline-none focus:border-[var(--accent)]/50" />
-                                  <select name="currency" defaultValue={invoiceCurrency} className="rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-1.5 text-xs outline-none focus:border-[var(--accent)]/50">
-                                    {org.supportedCurrencies.map((c) => <option key={c} value={c}>{c}</option>)}
-                                  </select>
-                                </div>
-                                {invoiceCurrency !== org.baseCurrency ? (
-                                  <input name="exchangeRateToBase" inputMode="decimal" placeholder={`1 ${invoiceCurrency} = ? ${org.baseCurrency}`} className="w-full rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1.5 text-xs outline-none focus:border-[var(--accent)]/50" />
-                                ) : null}
-                                <div className="flex gap-2">
-                                  <select name="method" defaultValue="CASH" className="flex-1 rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-1.5 text-xs outline-none focus:border-[var(--accent)]/50">
-                                    {PAYMENT_METHODS.map((m) => <option key={m} value={m}>{m.replaceAll("_", " ")}</option>)}
-                                  </select>
-                                  <input name="reference" placeholder="Ref" className="min-w-0 flex-1 rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1.5 text-xs outline-none focus:border-[var(--accent)]/50" />
-                                </div>
-                                <button className="btn-premium w-full rounded-lg px-3 py-1.5 text-xs font-semibold">Record Payment</button>
-                              </form>
-                            </>
-                          ) : null}
-                          {balance <= 0 ? (
-                            <>
-                              <p className="border-b border-[var(--line)] px-4 py-2 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Delivery Note</p>
-                              <form action={createDeliveryNoteAction} className="space-y-2 p-3">
-                                <input type="hidden" name="invoiceId" value={inv.id} />
-                                <input name="deliveredByName" placeholder="Delivered by" className="w-full rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1.5 text-xs outline-none focus:border-[var(--accent)]/50" />
-                                <input name="receivedByName" placeholder="Received by" className="w-full rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1.5 text-xs outline-none focus:border-[var(--accent)]/50" />
-                                <select name="deliveryMethod" defaultValue="" className="w-full rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1.5 text-xs outline-none focus:border-[var(--accent)]/50">
-                                  <option value="">No method</option>
-                                  {DELIVERY_METHODS.map((m) => <option key={m} value={m}>{m.replaceAll("_", " ")}</option>)}
+                      <RowActionsMenu label="Invoice actions">
+                        {balance > 0 ? (
+                          <>
+                            <MenuSection label="Record Payment" />
+                            <form action={addPaymentAction} className="space-y-2 p-3">
+                              <input type="hidden" name="invoiceId" value={inv.id} />
+                              <div className="flex gap-2">
+                                <input name="amount" inputMode="decimal" placeholder="Amount" className="min-w-0 flex-1 rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1.5 text-xs outline-none focus:border-[var(--accent)]/50" />
+                                <select name="currency" defaultValue={invoiceCurrency} className="rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-1.5 text-xs outline-none focus:border-[var(--accent)]/50">
+                                  {org.supportedCurrencies.map((c) => <option key={c} value={c}>{c}</option>)}
                                 </select>
-                                <button className="btn-premium w-full rounded-lg px-3 py-1.5 text-xs font-semibold">Create Note</button>
-                              </form>
-                            </>
-                          ) : null}
-                          <p className="border-b border-[var(--line)] px-4 py-2 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Edit</p>
-                          <form action={updateInvoiceAction} className="space-y-2 p-3">
-                            <input type="hidden" name="invoiceId" value={inv.id} />
-                            <select name="status" defaultValue={inv.status} className="w-full rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1.5 text-xs outline-none focus:border-[var(--accent)]/50">
-                              {INVOICE_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
-                            </select>
-                            <textarea name="notes" defaultValue={inv.notes ?? ""} placeholder="Notes" className="min-h-12 w-full rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1.5 text-xs outline-none focus:border-[var(--accent)]/50" />
-                            <button className="btn-premium w-full rounded-lg px-3 py-1.5 text-xs font-semibold">Save</button>
-                          </form>
-                          {inv.payments.length === 0 && inv.deliveryNotes.length === 0 ? (
-                            <form action={deleteInvoiceAction} className="border-t border-[var(--line)] px-3 py-2.5">
+                              </div>
+                              {invoiceCurrency !== org.baseCurrency ? (
+                                <input name="exchangeRateToBase" inputMode="decimal" placeholder={`1 ${invoiceCurrency} = ? ${org.baseCurrency}`} className="w-full rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1.5 text-xs outline-none focus:border-[var(--accent)]/50" />
+                              ) : null}
+                              <div className="flex gap-2">
+                                <select name="method" defaultValue="CASH" className="flex-1 rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-1.5 text-xs outline-none focus:border-[var(--accent)]/50">
+                                  {PAYMENT_METHODS.map((m) => <option key={m} value={m}>{m.replaceAll("_", " ")}</option>)}
+                                </select>
+                                <input name="reference" placeholder="Ref" className="min-w-0 flex-1 rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1.5 text-xs outline-none focus:border-[var(--accent)]/50" />
+                              </div>
+                              <button className="btn-premium w-full rounded-lg px-3 py-1.5 text-xs font-semibold">Record Payment</button>
+                            </form>
+                          </>
+                        ) : null}
+                        {balance <= 0 ? (
+                          <>
+                            <MenuSection label="Delivery Note" />
+                            <form action={createDeliveryNoteAction} className="space-y-2 p-3">
+                              <input type="hidden" name="invoiceId" value={inv.id} />
+                              <input name="deliveredByName" placeholder="Delivered by" className="w-full rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1.5 text-xs outline-none focus:border-[var(--accent)]/50" />
+                              <input name="receivedByName" placeholder="Received by" className="w-full rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1.5 text-xs outline-none focus:border-[var(--accent)]/50" />
+                              <select name="deliveryMethod" defaultValue="" className="w-full rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1.5 text-xs outline-none focus:border-[var(--accent)]/50">
+                                <option value="">No method</option>
+                                {DELIVERY_METHODS.map((m) => <option key={m} value={m}>{m.replaceAll("_", " ")}</option>)}
+                              </select>
+                              <button className="btn-premium w-full rounded-lg px-3 py-1.5 text-xs font-semibold">Create Note</button>
+                            </form>
+                          </>
+                        ) : null}
+                        <MenuSection label="Edit" />
+                        <form action={updateInvoiceAction} className="space-y-2 p-3">
+                          <input type="hidden" name="invoiceId" value={inv.id} />
+                          <select name="status" defaultValue={inv.status} className="w-full rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1.5 text-xs outline-none focus:border-[var(--accent)]/50">
+                            {INVOICE_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+                          </select>
+                          <textarea name="notes" defaultValue={inv.notes ?? ""} placeholder="Notes" className="min-h-12 w-full rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1.5 text-xs outline-none focus:border-[var(--accent)]/50" />
+                          <button className="btn-premium w-full rounded-lg px-3 py-1.5 text-xs font-semibold">Save</button>
+                        </form>
+                        {inv.payments.length === 0 && inv.deliveryNotes.length === 0 ? (
+                          <MenuDestructiveRow>
+                            <form action={deleteInvoiceAction}>
                               <input type="hidden" name="invoiceId" value={inv.id} />
                               <ConfirmSubmitButton message="Delete this invoice? This cannot be undone." className="text-xs font-semibold text-red-600 transition hover:text-red-700">Delete Invoice</ConfirmSubmitButton>
                             </form>
-                          ) : null}
-                        </div>
-                      </details>
+                          </MenuDestructiveRow>
+                        ) : null}
+                      </RowActionsMenu>
                     </div>
                   </td>
                 </tr>
