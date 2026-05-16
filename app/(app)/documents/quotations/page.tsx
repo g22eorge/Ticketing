@@ -24,7 +24,7 @@ export default async function QuotationsPage({
   searchParams: Promise<SearchParams>;
 }) {
   const { user, orgId } = await requireOrgSession();
-  if (!(["ADMIN", "OPS", "MANAGER", "SALES", "TECHNICIAN_INTERNAL"].includes(user.role) || can.viewFinancials(user))) {
+  if (!((["ADMIN", "OPS", "MANAGER", "SALES", "TECHNICIAN_INTERNAL"].includes(user.role) || can.viewFinancials(user)))) {
     redirect("/dashboard");
   }
 
@@ -117,6 +117,8 @@ export default async function QuotationsPage({
   const pendingCount = jobs.filter(
     (j) => j.status === "AWAITING_APPROVAL" && j.clientApproved === null,
   ).length;
+  // eslint-disable-next-line react-hooks/purity
+  const nowMs = Date.now();
 
   return (
     <section className="space-y-4">
@@ -238,7 +240,7 @@ export default async function QuotationsPage({
                 const daysPending =
                   job.status === "AWAITING_APPROVAL"
                     ? Math.floor(
-                        (Date.now() - job.updatedAt.getTime()) / 86400000,
+                        (nowMs - job.updatedAt.getTime()) / 86400000,
                       )
                     : null;
 

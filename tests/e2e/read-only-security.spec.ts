@@ -65,7 +65,7 @@ async function login(page: Page, email: string) {
     await new Promise((resolve) => setTimeout(resolve, response?.status === 429 ? 2000 : 350));
   }
   expect(response?.ok, failureNote).toBeTruthy();
-  await page.context().addCookies(response.headers.getSetCookie().map((entry) => parseSetCookie(entry, origin)));
+  await page.context().addCookies(response!.headers.getSetCookie().map((entry) => parseSetCookie(entry, origin)));
 }
 
 async function seedReadOnlyFixture() {
