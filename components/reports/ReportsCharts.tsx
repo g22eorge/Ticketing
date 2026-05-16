@@ -150,8 +150,7 @@ export function RevenueLineChart({
     );
   }
 
-  // Only show the margin line when it differs from revenue (i.e. external tech costs exist).
-  const showMargin = data.some((d) => d.margin !== d.revenue);
+  const showMargin = data.some((d) => d.revenue > 0 || d.margin > 0);
 
   return (
     <div className="h-64 w-full">
