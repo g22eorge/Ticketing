@@ -29,9 +29,11 @@ export type TemplateDef = {
 };
 
 const PLAN_ORDER: Record<OrgPlan, number> = {
-  STARTER: 1,
-  GROWTH: 2,
-  ENTERPRISE: 3,
+  STARTER:    1,
+  STANDARD:   2,
+  GROWTH:     3,
+  PREMIUM:    4,
+  ENTERPRISE: 5,
 };
 
 function planAllows(current: OrgPlan, minPlan: OrgPlan) {

@@ -2,8 +2,10 @@ import { prisma } from "@/lib/prisma";
 import { OrgPlan } from "@prisma/client";
 
 export const SMS_PLAN_QUOTAS: Record<OrgPlan, number> = {
-  STARTER: 200,
-  GROWTH: 1000,
+  STARTER:    200,
+  STANDARD:   500,
+  GROWTH:    1000,
+  PREMIUM:   3000,
   ENTERPRISE: 5000,
 };
 
