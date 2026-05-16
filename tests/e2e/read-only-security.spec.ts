@@ -1,5 +1,5 @@
 import { expect, test, type Cookie, type Page } from "@playwright/test";
-import { PrismaClient } from "@prisma/client";
+import { OrgModule, PrismaClient } from "@prisma/client";
 import { hashPassword } from "better-auth/crypto";
 
 process.env.DATABASE_URL = process.env.E2E_DATABASE_URL ?? process.env.DATABASE_URL;
@@ -74,6 +74,8 @@ async function seedReadOnlyFixture() {
     update: { name: "E2E Read Only Org", billingStatus: "ACTIVE", plan: "STARTER" },
     create: { slug: "e2e-read-only-org", name: "E2E Read Only Org", billingStatus: "ACTIVE", plan: "STARTER" },
   });
+  await prisma.orgModuleGrant.deleteMany({ where: { orgId: org.id } });
+  await prisma.orgModuleGrant.createMany({ data: Object.values(OrgModule).map((module) => ({ orgId: org.id, module })) });
   const user = await prisma.user.upsert({
     where: { email: "read-only-admin@example.invalid" },
     update: { orgId: org.id, role: "ADMIN", accessMode: "READ_ONLY", isActive: true, emailVerified: true },
