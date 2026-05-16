@@ -172,10 +172,12 @@ function RevenueMarginTrendSection({
             <span className="inline-block h-2 w-4 rounded-full bg-[var(--accent)]" />
             Revenue
           </span>
-          <span className="flex items-center gap-1.5">
-            <span className="inline-block h-0.5 w-4 border-t-2 border-dashed border-emerald-400/90" />
-            Margin
-          </span>
+          {revenueTrend.some((m) => m.margin !== m.revenue) && (
+            <span className="flex items-center gap-1.5">
+              <span className="inline-block h-0.5 w-4 border-t-2 border-dashed border-emerald-400/90" />
+              Margin
+            </span>
+          )}
         </div>
       </div>
 

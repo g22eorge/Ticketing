@@ -150,6 +150,9 @@ export function RevenueLineChart({
     );
   }
 
+  // Only show the margin line when it differs from revenue (i.e. external tech costs exist).
+  const showMargin = data.some((d) => d.margin !== d.revenue);
+
   return (
     <div className="h-64 w-full">
       <ResponsiveContainer width="100%" height="100%" minWidth={200} minHeight={180}>
@@ -178,16 +181,18 @@ export function RevenueLineChart({
             dot={{ fill: "var(--accent)", strokeWidth: 0, r: 4 }}
             name="Revenue"
           />
-          <Line
-            type="monotone"
-            dataKey="margin"
-            stroke="#10b981"
-            strokeOpacity={0.9}
-            strokeWidth={2}
-            strokeDasharray="4 2"
-            dot={{ fill: "#10b981", strokeWidth: 0, r: 3 }}
-            name="Margin"
-          />
+          {showMargin && (
+            <Line
+              type="monotone"
+              dataKey="margin"
+              stroke="#10b981"
+              strokeOpacity={0.9}
+              strokeWidth={2}
+              strokeDasharray="4 2"
+              dot={{ fill: "#10b981", strokeWidth: 0, r: 3 }}
+              name="Margin"
+            />
+          )}
         </LineChart>
       </ResponsiveContainer>
     </div>
