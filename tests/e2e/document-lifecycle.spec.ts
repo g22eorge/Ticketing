@@ -1,5 +1,5 @@
 import { expect, test, type Cookie, type Page } from "@playwright/test";
-import { PrismaClient } from "@prisma/client";
+import { OrgModule, PrismaClient } from "@prisma/client";
 import { hashPassword } from "better-auth/crypto";
 
 process.env.DATABASE_URL = process.env.E2E_DATABASE_URL ?? process.env.DATABASE_URL;
@@ -63,6 +63,8 @@ async function seedLifecycleFixture() {
     update: { name: "E2E Document Lifecycle", billingStatus: "ACTIVE", plan: "GROWTH", baseCurrency: "UGX", supportedCurrencies: "UGX" },
     create: { slug: "e2e-document-lifecycle", name: "E2E Document Lifecycle", billingStatus: "ACTIVE", plan: "GROWTH", baseCurrency: "UGX", supportedCurrencies: "UGX" },
   });
+  await prisma.orgModuleGrant.deleteMany({ where: { orgId: org.id } });
+  await prisma.orgModuleGrant.createMany({ data: Object.values(OrgModule).map((module) => ({ orgId: org.id, module })) });
   const user = await prisma.user.upsert({
     where: { email: "document-lifecycle-admin@example.invalid" },
     update: { orgId: org.id, role: "ADMIN", isActive: true, emailVerified: true },

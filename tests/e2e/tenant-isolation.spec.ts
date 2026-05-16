@@ -1,5 +1,5 @@
 import { expect, test, type Cookie, type Page } from "@playwright/test";
-import { PrismaClient } from "@prisma/client";
+import { OrgModule, PrismaClient } from "@prisma/client";
 import { hashPassword } from "better-auth/crypto";
 
 process.env.DATABASE_URL = process.env.E2E_DATABASE_URL ?? process.env.DATABASE_URL;
@@ -62,6 +62,15 @@ async function seedTenantFixture() {
       update: { name: "E2E Tenant B", billingStatus: "ACTIVE", plan: "STARTER" },
       create: { slug: "e2e-tenant-b", name: "E2E Tenant B", billingStatus: "ACTIVE", plan: "STARTER" },
     }),
+  ]);
+
+  await Promise.all([
+    prisma.orgModuleGrant.deleteMany({ where: { orgId: orgA.id } }),
+    prisma.orgModuleGrant.deleteMany({ where: { orgId: orgB.id } }),
+  ]);
+  await Promise.all([
+    prisma.orgModuleGrant.createMany({ data: Object.values(OrgModule).map((module) => ({ orgId: orgA.id, module })) }),
+    prisma.orgModuleGrant.createMany({ data: Object.values(OrgModule).map((module) => ({ orgId: orgB.id, module })) }),
   ]);
 
   const [userA, userB] = await Promise.all([
