@@ -330,9 +330,11 @@ export function AppSidebar({
   role,
   permissions = [],
   badges,
+  isPlatformAdmin = false,
 }: {
   role: Role;
   permissions?: string[];
+  isPlatformAdmin?: boolean;
   badges?: {
     jobs?: number;
     receivedJobs?: number;
@@ -451,9 +453,33 @@ export function AppSidebar({
         ))}
       </nav>
 
+      {/* ── Platform admin section ── */}
+      {isPlatformAdmin && (
+        <div className="border-t border-[var(--line)] px-3 py-2">
+          <p className="mb-1 px-2 text-[9px] font-bold uppercase tracking-[0.18em] text-amber-500/70">
+            Platform Admin
+          </p>
+          <Link
+            href="/admin/orgs"
+            className={`flex items-center gap-2 rounded-lg px-2 py-1.5 text-[12px] font-medium transition-colors ${
+              pathname.startsWith("/admin/orgs")
+                ? "bg-amber-500/15 text-amber-600"
+                : "text-[var(--ink-muted)] hover:bg-[var(--panel-strong)] hover:text-[var(--ink)]"
+            }`}
+          >
+            <span className="flex h-[1.375rem] w-[1.375rem] shrink-0 items-center justify-center rounded-md bg-amber-500/10 text-amber-500">
+              <svg viewBox="0 0 20 20" fill="currentColor" className="h-3.5 w-3.5" aria-hidden="true">
+                <path fillRule="evenodd" d="M8 7a5 5 0 1 1 10 0A5 5 0 0 1 8 7ZM2.293 9.707a1 1 0 0 1 1.414-1.414l4.586 4.586a1 1 0 0 1-1.414 1.414L2.293 9.707Z" clipRule="evenodd" />
+              </svg>
+            </span>
+            Module Access
+          </Link>
+        </div>
+      )}
+
       {/* ── Footer ── */}
       <div className="border-t border-[var(--line)] px-5 py-3">
-        <p className="text-[10px] text-[var(--ink-muted)]/50 tracking-wide">Repair Manager</p>
+        <p className="text-[10px] text-[var(--ink-muted)]/50 tracking-wide">Nexus</p>
       </div>
     </aside>
   );

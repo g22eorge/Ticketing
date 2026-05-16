@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { formatMoneyCompact, normalizeCurrency } from "@/lib/currency";
 import { prisma } from "@/lib/prisma";
 import { requireOrgSession } from "@/lib/org-context";
+import { requireModule, OrgModule } from "@/lib/module-access";
 import { can } from "@/lib/permissions";
 import { assertOrgCanMutate } from "@/lib/org-write";
 import { ConfirmSubmitButton } from "@/components/shared/ConfirmSubmitButton";
@@ -28,6 +29,7 @@ async function nextSaleNumber(orgId: string) {
 }
 
 export default async function PosPage() {
+  await requireModule(OrgModule.POS);
   const { user, orgId, org } = await requireOrgSession();
   if (!(can.viewFinancials(user) || ["ADMIN", "OPS", "FRONT_DESK"].includes(user.role))) {
     redirect("/dashboard");

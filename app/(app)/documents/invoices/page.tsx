@@ -10,6 +10,7 @@ import { JobStatus } from "@/lib/job-status";
 import { can } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { requireOrgSession } from "@/lib/org-context";
+import { requireModule, OrgModule } from "@/lib/module-access";
 import { assertOrgCanMutate } from "@/lib/org-write";
 import { ConfirmSubmitButton } from "@/components/shared/ConfirmSubmitButton";
 import { writeSystemAuditEvent } from "@/lib/commercial/audit";
@@ -20,6 +21,7 @@ const INVOICE_STATUSES = Object.values(InvoiceStatus);
 const DELIVERY_METHODS = Object.values(DeliveryMethod);
 
 export default async function InvoicesPage() {
+  await requireModule(OrgModule.INVOICING);
   const { user, orgId, org } = await requireOrgSession();
   if (!("ADMIN" === user.role || "OPS" === user.role || can.approveInvoices(user))) {
     redirect("/dashboard");

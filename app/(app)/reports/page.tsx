@@ -13,6 +13,7 @@ import { can } from "@/lib/permissions";
 import { getJobPayoutsByIds } from "@/lib/payouts";
 import { prisma } from "@/lib/prisma";
 import { requireOrgSession } from "@/lib/org-context";
+import { requireModule, OrgModule } from "@/lib/module-access";
 
 type SearchParams = {
   month?: string;
@@ -106,6 +107,7 @@ export default async function ReportsPage({
 }: {
   searchParams: Promise<SearchParams>;
 }) {
+  await requireModule(OrgModule.REPORTS);
   const filters = await searchParams;
   const { user, orgId, org } = await requireOrgSession();
   const period: "month" | "year" = filters.period === "year" ? "year" : "month";

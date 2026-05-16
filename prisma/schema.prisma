@@ -77,9 +77,29 @@ model Organization {
   userGroups             UserGroup[]
   complaints             Complaint[]
   salesTargets           SalesTarget[]
+  moduleGrants           OrgModuleGrant[]
 
   @@index([slug])
   @@index([isActive])
+}
+
+enum OrgModule {
+  JOBS
+  INVENTORY
+  POS
+  PURCHASE_ORDERS
+  INVOICING
+  COMPLAINTS
+  REPORTS
+}
+
+model OrgModuleGrant {
+  orgId  String
+  module OrgModule
+  org    Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@id([orgId, module])
+  @@index([orgId])
 }
 
 model UserInvite {

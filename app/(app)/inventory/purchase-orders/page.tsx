@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireOrgSession } from "@/lib/org-context";
+import { requireModule, OrgModule } from "@/lib/module-access";
 import { can } from "@/lib/permissions";
 
 export const dynamic = "force-dynamic";
@@ -15,6 +16,7 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export default async function PurchaseOrdersPage() {
+  await requireModule(OrgModule.PURCHASE_ORDERS);
   const { user, orgId } = await requireOrgSession();
   if (!can.manageUsers(user)) redirect("/inventory");
 

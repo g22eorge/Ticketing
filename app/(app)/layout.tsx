@@ -142,6 +142,7 @@ export default async function AppLayout({
       <AppSidebar
         role={user.role}
         permissions={user.permissions}
+        isPlatformAdmin={isPlatformAdmin}
         badges={{
           jobs: activeJobsCount,
           receivedJobs: receivedJobsCount,

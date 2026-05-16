@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { formatMoney } from "@/lib/currency";
 import { prisma } from "@/lib/prisma";
 import { requireOrgSession } from "@/lib/org-context";
+import { requireModule, OrgModule } from "@/lib/module-access";
 import { checkPartLimit } from "@/lib/plan-limits";
 import { RowActionsMenu, MenuSection, MenuDestructiveRow } from "@/components/shared/RowActionsMenu";
 
@@ -25,6 +26,7 @@ export default async function InventoryPage({
 }: {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  await requireModule(OrgModule.INVENTORY);
   const { user, orgId } = await requireOrgSession();
   if (!["ADMIN", "MANAGER", "TECH_MANAGER", "OPS", "TECHNICIAN_INTERNAL"].includes(user.role)) {
     redirect("/dashboard");

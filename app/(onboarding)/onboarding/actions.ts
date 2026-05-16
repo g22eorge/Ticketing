@@ -6,6 +6,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/session";
 import { sendWelcomeEmail } from "@/lib/email";
+import { ALL_MODULES } from "@/lib/module-access";
 
 const schema = z.object({
   businessName: z.string().min(2, "Business name must be at least 2 characters").max(100),
@@ -89,6 +90,12 @@ export async function createOrganization(
     // Seed default branding settings for this org.
     await tx.documentBrandingSettings.create({
       data: { orgId: org.id },
+    });
+
+    // Grant all modules to new orgs by default.
+    await tx.orgModuleGrant.createMany({
+      data: ALL_MODULES.map((module) => ({ orgId: org.id, module })),
+      skipDuplicates: true,
     });
   });
 

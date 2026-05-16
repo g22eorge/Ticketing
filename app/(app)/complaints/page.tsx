@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireOrgSession } from "@/lib/org-context";
+import { requireModule, OrgModule } from "@/lib/module-access";
 import type { ComplaintStatus } from "@prisma/client";
 import {
   COMPLAINT_CATEGORY_LABELS,
@@ -23,6 +24,7 @@ export default async function ComplaintsPage({
 }: {
   searchParams: Promise<Record<string, string>>;
 }) {
+  await requireModule(OrgModule.COMPLAINTS);
   const { user, orgId } = await requireOrgSession();
   if (!(ALLOWED_ROLES as readonly string[]).includes(user.role)) {
     redirect("/dashboard");
