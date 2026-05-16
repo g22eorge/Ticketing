@@ -291,22 +291,22 @@ export default async function InvoicesPage() {
           <Link href="/jobs/new" className="btn-premium rounded-lg px-3 py-1.5 text-[12px]">New Job</Link>
         </div>
         <div className="grid grid-cols-2 divide-x divide-y divide-[var(--line)] sm:grid-cols-4 sm:divide-y-0">
-          <div className="px-4 py-2.5">
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Total</p>
-            <p className="mt-0.5 text-xl font-black tabular-nums text-[var(--ink)]">{totalCount}</p>
-            <p className="text-[11px] text-[var(--ink-muted)]">this month: {thisMonthCount}</p>
+          <div className="px-4 py-2">
+            <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">Total</p>
+            <p className="text-[15px] font-black tabular-nums leading-tight text-[var(--ink)]">{totalCount}</p>
+            <p className="text-[10px] text-[var(--ink-muted)]">this month: {thisMonthCount}</p>
           </div>
-          <div className="px-4 py-2.5">
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Outstanding</p>
-            <p className="mt-0.5 text-xl font-black tabular-nums text-amber-600">{outstandingCount}</p>
+          <div className="px-4 py-2">
+            <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">Outstanding</p>
+            <p className="text-[15px] font-black tabular-nums leading-tight text-amber-600">{outstandingCount}</p>
           </div>
-          <div className="px-4 py-2.5">
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Amount Due</p>
-            <p className="mt-0.5 text-xl font-black tabular-nums text-[var(--ink)]">{formatMoney(totalOutstanding, org.baseCurrency)}</p>
+          <div className="px-4 py-2">
+            <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">Amount Due</p>
+            <p className="text-[15px] font-black tabular-nums leading-tight text-[var(--ink)]">{formatMoney(totalOutstanding, org.baseCurrency)}</p>
           </div>
-          <div className="px-4 py-2.5">
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Ready to Invoice</p>
-            <p className="mt-0.5 text-xl font-black tabular-nums text-[var(--accent)]">{readyJobs.length}</p>
+          <div className="px-4 py-2">
+            <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">Ready to Invoice</p>
+            <p className="text-[15px] font-black tabular-nums leading-tight text-[var(--accent)]">{readyJobs.length}</p>
           </div>
         </div>
       </div>

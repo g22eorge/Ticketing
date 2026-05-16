@@ -208,21 +208,21 @@ export default async function ClientDetailPage({
           <p className="shrink-0 text-[11px] text-[var(--ink-muted)]">Last: {formatEATDateTime(latestActivity)}</p>
         </div>
         <div className="grid grid-cols-2 divide-x divide-y divide-[var(--line)] sm:grid-cols-4 sm:divide-y-0">
-          <div className="px-4 py-2.5">
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Total Jobs</p>
-            <p className="mt-0.5 text-xl font-black tabular-nums text-[var(--ink)]">{totalJobs}</p>
+          <div className="px-4 py-2">
+            <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">Total Jobs</p>
+            <p className="text-[15px] font-black tabular-nums leading-tight text-[var(--ink)]">{totalJobs}</p>
           </div>
-          <div className="px-4 py-2.5">
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Open</p>
-            <p className="mt-0.5 text-xl font-black tabular-nums text-[var(--accent)]">{openJobs}</p>
+          <div className="px-4 py-2">
+            <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">Open</p>
+            <p className="text-[15px] font-black tabular-nums leading-tight text-[var(--accent)]">{openJobs}</p>
           </div>
-          <div className="px-4 py-2.5">
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Completed</p>
-            <p className="mt-0.5 text-xl font-black tabular-nums text-[var(--ink)]">{completedJobs}</p>
+          <div className="px-4 py-2">
+            <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">Completed</p>
+            <p className="text-[15px] font-black tabular-nums leading-tight text-[var(--ink)]">{completedJobs}</p>
           </div>
-          <div className="px-4 py-2.5">
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Rate</p>
-            <p className="mt-0.5 text-xl font-black tabular-nums text-[var(--ink)]">{completionRate.toFixed(0)}%</p>
+          <div className="px-4 py-2">
+            <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">Rate</p>
+            <p className="text-[15px] font-black tabular-nums leading-tight text-[var(--ink)]">{completionRate.toFixed(0)}%</p>
           </div>
         </div>
       </div>

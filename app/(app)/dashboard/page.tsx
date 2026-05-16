@@ -832,7 +832,7 @@ export default async function DashboardPage({
           ].map(t => (
             <Link key={t.label} href={t.href} className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px]">
               <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">{t.label}</p>
-              <p className={`mt-2 text-2xl font-black ${t.color}`}>{t.val}</p>
+              <p className={`mt-1 text-[15px] font-black leading-tight ${t.color}`}>{t.val}</p>
               <p className="mt-1 text-[10px] text-[var(--ink-muted)]">{t.sub}</p>
             </Link>
           ))}
@@ -1558,7 +1558,7 @@ export default async function DashboardPage({
           ].map(t => (
             <Link key={t.label} href={t.href} className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px]">
               <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">{t.label}</p>
-              <p className={`mt-2 text-2xl font-black ${t.color}`}>{t.val}</p>
+              <p className={`mt-1 text-[15px] font-black leading-tight ${t.color}`}>{t.val}</p>
             </Link>
           ))}
         </div>
@@ -1681,7 +1681,7 @@ export default async function DashboardPage({
           ].map(t => (
             <Link key={t.label} href={t.href} className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px]">
               <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">{t.label}</p>
-              <p className={`mt-2 text-2xl font-black ${t.color}`}>{t.val}</p>
+              <p className={`mt-1 text-[15px] font-black leading-tight ${t.color}`}>{t.val}</p>
             </Link>
           ))}
         </div>
@@ -1931,7 +1931,7 @@ export default async function DashboardPage({
           ].map(t => (
             <Link key={t.label} href={t.href} className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px]">
               <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">{t.label}</p>
-              <p className={`mt-2 text-2xl font-black ${t.color}`}>{t.val}</p>
+              <p className={`mt-1 text-[15px] font-black leading-tight ${t.color}`}>{t.val}</p>
               <p className="mt-1 text-[10px] text-[var(--ink-muted)]">{t.sub}</p>
             </Link>
           ))}

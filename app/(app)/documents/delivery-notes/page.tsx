@@ -149,17 +149,17 @@ export default async function DeliveryNotesPage() {
           <Link href="/documents/invoices" className="btn-premium rounded-lg px-3 py-1.5 text-[12px]">Open Invoices</Link>
         </div>
         <div className="grid grid-cols-2 divide-x divide-y divide-[var(--line)] sm:grid-cols-3 sm:divide-y-0">
-          <div className="px-4 py-2.5">
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Total Notes</p>
-            <p className="mt-0.5 text-xl font-black tabular-nums text-[var(--ink)]">{notes.length}</p>
+          <div className="px-4 py-2">
+            <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">Total Notes</p>
+            <p className="text-[15px] font-black tabular-nums leading-tight text-[var(--ink)]">{notes.length}</p>
           </div>
-          <div className="px-4 py-2.5">
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">This Month</p>
-            <p className="mt-0.5 text-xl font-black tabular-nums text-[var(--ink)]">{thisMonth}</p>
+          <div className="px-4 py-2">
+            <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">This Month</p>
+            <p className="text-[15px] font-black tabular-nums leading-tight text-[var(--ink)]">{thisMonth}</p>
           </div>
-          <div className="px-4 py-2.5">
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Unique Sources</p>
-            <p className="mt-0.5 text-xl font-black tabular-nums text-[var(--ink)]">{uniqueSources}</p>
+          <div className="px-4 py-2">
+            <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">Unique Sources</p>
+            <p className="text-[15px] font-black tabular-nums leading-tight text-[var(--ink)]">{uniqueSources}</p>
           </div>
         </div>
       </div>

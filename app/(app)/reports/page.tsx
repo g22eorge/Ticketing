@@ -1361,7 +1361,7 @@ export default async function ReportsPage({
                   <span className={`inline-block h-2 w-2 rounded-full ${ch.color}`} />
                   <p className="text-xs font-medium text-[var(--ink)]">{ch.label}</p>
                 </div>
-                <p className={`text-xl font-black ${ch.textColor}`}>{formatMoneyCompact(ch.amount, currency)}</p>
+                <p className={`text-[15px] font-black leading-tight ${ch.textColor}`}>{formatMoneyCompact(ch.amount, currency)}</p>
                 <div className="mt-2 flex items-center justify-between">
                   <span className="text-[10px] text-[var(--ink-muted)]">{ch.count}</span>
                   <span className="text-[10px] font-bold text-[var(--ink-muted)]">{pct}%</span>

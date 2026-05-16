@@ -182,22 +182,22 @@ export default async function ReceiptsPage() {
           <Link href="/jobs/new" className="btn-premium rounded-lg px-3 py-1.5 text-[12px]">New Job</Link>
         </div>
         <div className="grid grid-cols-2 divide-x divide-y divide-[var(--line)] sm:grid-cols-4 sm:divide-y-0">
-          <div className="px-4 py-2.5">
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Total</p>
-            <p className="mt-0.5 text-xl font-black tabular-nums text-[var(--ink)]">{receiptsTotal}</p>
-            <p className="text-[11px] text-[var(--ink-muted)]">this month: {thisMonth.length}</p>
+          <div className="px-4 py-2">
+            <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">Total</p>
+            <p className="text-[15px] font-black tabular-nums leading-tight text-[var(--ink)]">{receiptsTotal}</p>
+            <p className="text-[10px] text-[var(--ink-muted)]">this month: {thisMonth.length}</p>
           </div>
-          <div className="px-4 py-2.5">
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Total Amount</p>
-            <p className="mt-0.5 text-xl font-black tabular-nums text-[var(--ink)]">{formatMoney(totalAmountBase, org.baseCurrency)}</p>
+          <div className="px-4 py-2">
+            <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">Total Amount</p>
+            <p className="text-[15px] font-black tabular-nums leading-tight text-[var(--ink)]">{formatMoney(totalAmountBase, org.baseCurrency)}</p>
           </div>
-          <div className="px-4 py-2.5">
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">This Month</p>
-            <p className="mt-0.5 text-xl font-black tabular-nums text-[var(--accent)]">{formatMoney(thisMonthAmountBase, org.baseCurrency)}</p>
+          <div className="px-4 py-2">
+            <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">This Month</p>
+            <p className="text-[15px] font-black tabular-nums leading-tight text-[var(--accent)]">{formatMoney(thisMonthAmountBase, org.baseCurrency)}</p>
           </div>
-          <div className="px-4 py-2.5">
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Cash</p>
-            <p className="mt-0.5 text-xl font-black tabular-nums text-[var(--ink)]">{cashPaymentsCount}</p>
+          <div className="px-4 py-2">
+            <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">Cash</p>
+            <p className="text-[15px] font-black tabular-nums leading-tight text-[var(--ink)]">{cashPaymentsCount}</p>
           </div>
         </div>
       </div>
