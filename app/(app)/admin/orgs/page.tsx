@@ -29,7 +29,6 @@ async function setModulesAction(formData: FormData) {
     prisma.orgModuleGrant.deleteMany({ where: { orgId } }),
     prisma.orgModuleGrant.createMany({
       data: granted.map((module) => ({ orgId, module })),
-      skipDuplicates: true,
     }),
   ]);
 

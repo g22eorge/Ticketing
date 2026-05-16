@@ -1,7 +1,9 @@
 import { hashPassword } from "better-auth/crypto";
-import { DeviceType, JobStatus, Prisma, RepairPath, Role } from "@prisma/client";
+import { DeviceType, JobStatus, OrgModule, Prisma, RepairPath, Role } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
+
+const ALL_MODULES = Object.values(OrgModule) as OrgModule[];
 
 function supportsCommsTemplates() {
   return Boolean(Prisma.dmmf.datamodel.models.find((m) => m.name === "CommunicationTemplate"));
@@ -301,6 +303,10 @@ async function main() {
     where: { orgId: seedOrg.id },
     update: {},
     create: { orgId: seedOrg.id },
+  });
+  await prisma.orgModuleGrant.deleteMany({ where: { orgId: seedOrg.id } });
+  await prisma.orgModuleGrant.createMany({
+    data: ALL_MODULES.map((module) => ({ orgId: seedOrg.id, module })),
   });
   const orgId = seedOrg.id;
 

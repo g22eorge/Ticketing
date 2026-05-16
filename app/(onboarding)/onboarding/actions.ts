@@ -95,7 +95,6 @@ export async function createOrganization(
     // Grant all modules to new orgs by default.
     await tx.orgModuleGrant.createMany({
       data: ALL_MODULES.map((module) => ({ orgId: org.id, module })),
-      skipDuplicates: true,
     });
   });
 
