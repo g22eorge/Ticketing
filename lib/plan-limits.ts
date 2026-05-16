@@ -36,6 +36,18 @@ export const PLAN_LIMITS: Record<OrgPlan, PlanLimits> = {
     customBranding: false,
     inviteLinks: false,
   },
+  STANDARD: {
+    maxUsers: 5,
+    maxJobsPerMonth: 100,
+    maxParts: 100,
+    maxBranches: 1,
+    maxSuppliers: 25,
+    maxSalesPerMonth: 200,
+    maxPurchaseOrdersPerMonth: 30,
+    maxRepairRequestsPerMonth: 200,
+    customBranding: false,
+    inviteLinks: true,
+  },
   GROWTH: {
     maxUsers: 15,
     maxJobsPerMonth: 500,
@@ -45,6 +57,18 @@ export const PLAN_LIMITS: Record<OrgPlan, PlanLimits> = {
     maxSalesPerMonth: 1000,
     maxPurchaseOrdersPerMonth: 200,
     maxRepairRequestsPerMonth: 1000,
+    customBranding: true,
+    inviteLinks: true,
+  },
+  PREMIUM: {
+    maxUsers: 30,
+    maxJobsPerMonth: 2000,
+    maxParts: 1000,
+    maxBranches: 8,
+    maxSuppliers: 300,
+    maxSalesPerMonth: 5000,
+    maxPurchaseOrdersPerMonth: 500,
+    maxRepairRequestsPerMonth: 5000,
     customBranding: true,
     inviteLinks: true,
   },
@@ -63,14 +87,18 @@ export const PLAN_LIMITS: Record<OrgPlan, PlanLimits> = {
 };
 
 export const PLAN_LABELS: Record<OrgPlan, string> = {
-  STARTER:    "Starter",
-  GROWTH:     "Growth",
+  STARTER:    "Free",
+  STANDARD:   "Standard",
+  GROWTH:     "Professional",
+  PREMIUM:    "Premium",
   ENTERPRISE: "Enterprise",
 };
 
 export const UPGRADE_PLAN: Partial<Record<OrgPlan, OrgPlan>> = {
-  STARTER:  "GROWTH",
-  GROWTH:   "ENTERPRISE",
+  STARTER:  "STANDARD",
+  STANDARD: "GROWTH",
+  GROWTH:   "PREMIUM",
+  PREMIUM:  "ENTERPRISE",
 };
 
 // ── Runtime helpers ───────────────────────────────────────────────────────────

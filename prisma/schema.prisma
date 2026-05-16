@@ -14,7 +14,9 @@ datasource db {
 
 enum OrgPlan {
   STARTER
+  STANDARD
   GROWTH
+  PREMIUM
   ENTERPRISE
 }
 

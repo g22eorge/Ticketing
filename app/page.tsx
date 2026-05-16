@@ -117,51 +117,81 @@ const industries = [
 const plans = [
   {
     key: "STARTER" as const,
-    label: "Starter",
+    label: "Free",
     price: null as number | null,
-    desc: "Everything a small team needs to manage jobs and clients, free forever.",
+    desc: "Try Nexus with no commitment. Good for solo operators just getting started.",
     features: [
-      `Up to ${PLAN_LIMITS.STARTER.maxUsers} team members`,
-      `${PLAN_LIMITS.STARTER.maxJobsPerMonth} service jobs per month`,
+      `${PLAN_LIMITS.STARTER.maxUsers} team members`,
+      `${PLAN_LIMITS.STARTER.maxJobsPerMonth} jobs / month`,
       `${PLAN_LIMITS.STARTER.maxParts} inventory SKUs`,
-      "Job tracking & audit trail",
-      "Client management",
+      "Job tracking & client records",
       "Public intake form",
-      "WhatsApp notifications",
     ],
     cta: "Start free",
     highlight: false,
   },
   {
-    key: "GROWTH" as const,
-    label: "Growth",
-    price: PLAN_PRICES.GROWTH,
-    desc: "For growing operations that need more capacity, branding, and analytics.",
+    key: "STANDARD" as const,
+    label: "Standard",
+    price: PLAN_PRICES.STANDARD,
+    desc: "For small teams ready to run their full operation on one platform.",
     features: [
-      `Up to ${PLAN_LIMITS.GROWTH.maxUsers} team members`,
-      `${PLAN_LIMITS.GROWTH.maxJobsPerMonth} service jobs per month`,
+      `${PLAN_LIMITS.STANDARD.maxUsers} team members`,
+      `${PLAN_LIMITS.STANDARD.maxJobsPerMonth} jobs / month`,
+      `${PLAN_LIMITS.STANDARD.maxParts} inventory SKUs`,
+      "Invite links",
+      "All modules unlocked",
+      "WhatsApp notifications",
+    ],
+    cta: "Get started",
+    highlight: false,
+  },
+  {
+    key: "GROWTH" as const,
+    label: "Professional",
+    price: PLAN_PRICES.GROWTH,
+    desc: "For growing businesses that want branded documents and more capacity.",
+    features: [
+      `${PLAN_LIMITS.GROWTH.maxUsers} team members`,
+      `${PLAN_LIMITS.GROWTH.maxJobsPerMonth} jobs / month`,
       `${PLAN_LIMITS.GROWTH.maxParts} inventory SKUs`,
-      "Everything in Starter",
-      "Custom branding on invoices",
+      "Custom branding on documents",
+      "Everything in Standard",
       "Priority support",
     ],
     cta: "Try free for 14 days",
     highlight: true,
   },
   {
+    key: "PREMIUM" as const,
+    label: "Premium",
+    price: PLAN_PRICES.PREMIUM,
+    desc: "For high-volume operations with multiple branches and advanced reporting.",
+    features: [
+      `${PLAN_LIMITS.PREMIUM.maxUsers} team members`,
+      `${PLAN_LIMITS.PREMIUM.maxJobsPerMonth} jobs / month`,
+      `${PLAN_LIMITS.PREMIUM.maxParts} inventory SKUs`,
+      "Advanced reports & analytics",
+      "Multi-branch support",
+      "Everything in Professional",
+    ],
+    cta: "Try free for 14 days",
+    highlight: false,
+  },
+  {
     key: "ENTERPRISE" as const,
     label: "Enterprise",
     price: PLAN_PRICES.ENTERPRISE,
-    desc: "Unlimited scale for multi-location or high-volume service businesses.",
+    desc: "Unlimited scale. Dedicated support. SLA. For operations that can't afford downtime.",
     features: [
       "Unlimited team members",
-      "Unlimited jobs",
-      "Unlimited inventory",
-      "Everything in Growth",
-      "Dedicated support",
+      "Unlimited jobs & inventory",
+      "White-label branding",
+      "Dedicated account manager",
       "SLA agreement",
+      "Everything in Premium",
     ],
-    cta: "Try free for 14 days",
+    cta: "Contact us",
     highlight: false,
   },
 ];
@@ -332,7 +362,7 @@ export default async function LandingPage() {
             <h2 className="mb-2 text-center text-2xl font-bold text-white md:text-3xl">Start free, scale when ready</h2>
             <p className="mb-12 text-center text-sm text-white/40">Start with a 30-day free trial. Growth plan includes an optional 14-day trial before paying.</p>
 
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5">
               {plans.map((plan) => (
                 <div
                   key={plan.key}

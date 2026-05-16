@@ -43,8 +43,8 @@ async function subscribeToPlan(formData: FormData) {
   const { user, orgId } = await requireOrgSession();
   if (!can.manageUsers(user)) redirect("/settings/billing");
 
-  const targetPlan = formData.get("plan") as "GROWTH" | "ENTERPRISE";
-  if (!["GROWTH", "ENTERPRISE"].includes(targetPlan)) redirect("/settings/billing");
+  const targetPlan = formData.get("plan") as "STANDARD" | "GROWTH" | "PREMIUM" | "ENTERPRISE";
+  if (!["STANDARD", "GROWTH", "PREMIUM", "ENTERPRISE"].includes(targetPlan)) redirect("/settings/billing");
 
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
   const merchantRef = buildMerchantRef(orgId, targetPlan);
@@ -298,9 +298,10 @@ export default async function BillingPage({
 
   // ── Normal billing page (active trial or paid) ─────────────────────────────
   const plans: Array<{
-    key: "STARTER" | "GROWTH" | "ENTERPRISE";
+    key: "STARTER" | "STANDARD" | "GROWTH" | "PREMIUM" | "ENTERPRISE";
     price: number | null;
     features: string[];
+    highlight?: boolean;
   }> = [
     {
       key: "STARTER",
@@ -309,13 +310,25 @@ export default async function BillingPage({
         `${PLAN_LIMITS.STARTER.maxUsers} team members`,
         `${PLAN_LIMITS.STARTER.maxJobsPerMonth} jobs / month`,
         `${PLAN_LIMITS.STARTER.maxParts} inventory SKUs`,
+        "Basic operations",
+        "No custom branding",
+      ],
+    },
+    {
+      key: "STANDARD",
+      price: PLAN_PRICES.STANDARD,
+      features: [
+        `${PLAN_LIMITS.STANDARD.maxUsers} team members`,
+        `${PLAN_LIMITS.STANDARD.maxJobsPerMonth} jobs / month`,
+        `${PLAN_LIMITS.STANDARD.maxParts} inventory SKUs`,
         "Invite links",
-        "Standard branding",
+        "Full module access",
       ],
     },
     {
       key: "GROWTH",
       price: PLAN_PRICES.GROWTH,
+      highlight: true,
       features: [
         `${PLAN_LIMITS.GROWTH.maxUsers} team members`,
         `${PLAN_LIMITS.GROWTH.maxJobsPerMonth} jobs / month`,
@@ -325,13 +338,23 @@ export default async function BillingPage({
       ],
     },
     {
+      key: "PREMIUM",
+      price: PLAN_PRICES.PREMIUM,
+      features: [
+        `${PLAN_LIMITS.PREMIUM.maxUsers} team members`,
+        `${PLAN_LIMITS.PREMIUM.maxJobsPerMonth} jobs / month`,
+        `${PLAN_LIMITS.PREMIUM.maxParts} inventory SKUs`,
+        "Advanced reporting",
+        "Multi-branch support",
+      ],
+    },
+    {
       key: "ENTERPRISE",
       price: PLAN_PRICES.ENTERPRISE,
       features: [
         "Unlimited team members",
-        "Unlimited jobs",
-        "Unlimited inventory",
-        "Custom branding",
+        "Unlimited jobs & inventory",
+        "Custom branding & white-label",
         "Dedicated support",
         "SLA agreement",
       ],
@@ -442,7 +465,7 @@ export default async function BillingPage({
       </section>
 
       {/* Plan cards — hide Starter upgrade (it's the free tier, no upgrade path back to it) */}
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         {plans.map(({ key, price, features }) => {
           const isCurrent = org.plan === key;
           const isDowngrade = key === "STARTER";

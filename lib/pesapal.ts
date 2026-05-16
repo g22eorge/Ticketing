@@ -16,8 +16,10 @@ export const PESAPAL_BASE =
 // ── Plan prices (UGX) ─────────────────────────────────────────────────────────
 
 export const PLAN_PRICES: Record<string, number> = {
-  GROWTH: 85_000,
-  ENTERPRISE: 149_000,
+  STANDARD:   35_000,
+  GROWTH:     75_000,
+  PREMIUM:   120_000,
+  ENTERPRISE: 200_000,
 };
 
 export const CURRENCY = "UGX";
@@ -160,21 +162,21 @@ export async function getTransactionStatus(orderTrackingId: string): Promise<Pes
 
 // ── Merchant reference encoding ───────────────────────────────────────────────
 
-const PLAN_CODE: Record<string, string> = { GROWTH: "G", ENTERPRISE: "E" };
-const PLAN_FROM_CODE: Record<string, string> = { G: "GROWTH", E: "ENTERPRISE" };
+const PLAN_CODE: Record<string, string> = { STANDARD: "S", GROWTH: "P", PREMIUM: "M", ENTERPRISE: "E" };
+const PLAN_FROM_CODE: Record<string, string> = { S: "STANDARD", P: "GROWTH", M: "PREMIUM", E: "ENTERPRISE" };
 
 /** Build a unique merchant reference encoding orgId and plan. Max ~35 chars. */
-export function buildMerchantRef(orgId: string, plan: "GROWTH" | "ENTERPRISE"): string {
+export function buildMerchantRef(orgId: string, plan: "STANDARD" | "GROWTH" | "PREMIUM" | "ENTERPRISE"): string {
   const rand = Math.floor(10000 + Math.random() * 90000);
   return `${orgId}-${rand}-${PLAN_CODE[plan]}`;
 }
 
 /** Parse orgId and plan from a merchant reference built with buildMerchantRef. */
-export function parseMerchantRef(ref: string): { orgId: string; plan: "GROWTH" | "ENTERPRISE" } | null {
+export function parseMerchantRef(ref: string): { orgId: string; plan: "STANDARD" | "GROWTH" | "PREMIUM" | "ENTERPRISE" } | null {
   const parts = ref.split("-");
   if (parts.length < 3) return null;
   const planCode = parts[parts.length - 1];
-  const plan = PLAN_FROM_CODE[planCode] as "GROWTH" | "ENTERPRISE" | undefined;
+  const plan = PLAN_FROM_CODE[planCode] as "STANDARD" | "GROWTH" | "PREMIUM" | "ENTERPRISE" | undefined;
   if (!plan) return null;
   const orgId = parts.slice(0, parts.length - 2).join("-");
   return orgId ? { orgId, plan } : null;
