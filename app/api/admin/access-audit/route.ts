@@ -2,18 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { Role } from "@prisma/client";
 
 import { can } from "@/lib/permissions";
+import { assertPlatformAdmin } from "@/lib/platform-admin";
 import { prisma } from "@/lib/prisma";
-import { getCurrentUserRole } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
-
-async function requirePlatformAdmin() {
-  const { user } = await getCurrentUserRole();
-  const platformEmail = process.env.PLATFORM_ADMIN_EMAIL;
-  if (!platformEmail || !user?.email || user.email !== platformEmail) return null;
-  if (user.role !== "ADMIN") return null;
-  return user;
-}
 
 type AccessMatrix = {
   jobs: boolean;
@@ -57,7 +49,7 @@ function buildAccess(role: Role, isActive: boolean, permissions: string[]): Acce
 }
 
 export async function GET(req: NextRequest) {
-  const actor = await requirePlatformAdmin();
+  const actor = await assertPlatformAdmin();
   if (!actor) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }

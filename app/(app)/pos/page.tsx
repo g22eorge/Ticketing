@@ -48,7 +48,7 @@ export default async function PosPage() {
   async function createSaleAction(formData: FormData) {
     "use server";
     const { user, orgId, session, org } = await requireOrgSession();
-    if (!(can.viewFinancials(user) || ["ADMIN", "OPS", "FRONT_DESK"].includes(user.role))) return;
+    if (!(can.viewFinancials(user) || ["ADMIN", "OPS", "FRONT_DESK"].includes(user.role))) redirect("/dashboard");
     assertOrgCanMutate({ access: org.access, userRole: user.role, userAccessMode: user.accessMode, kind: "GENERAL" });
 
     const branchId = String(formData.get("branchId") ?? "").trim() || null;
@@ -72,7 +72,7 @@ export default async function PosPage() {
   async function deleteSaleAction(formData: FormData) {
     "use server";
     const { user, orgId, org } = await requireOrgSession();
-    if (user.role !== "ADMIN") return;
+    if (user.role !== "ADMIN") redirect("/dashboard");
     assertOrgCanMutate({ access: org.access, userRole: user.role, userAccessMode: user.accessMode, kind: "GENERAL" });
 
     const saleId = String(formData.get("saleId") ?? "").trim();

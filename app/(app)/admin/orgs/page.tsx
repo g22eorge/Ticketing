@@ -4,21 +4,15 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireOrgSession } from "@/lib/org-context";
 import { ALL_MODULES, MODULE_LABELS, MODULE_ICONS } from "@/lib/module-access";
+import { assertPlatformAdmin, checkIsPlatformAdmin } from "@/lib/platform-admin";
 import type { OrgModule } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
 
-async function isPlatformAdmin(userId: string) {
-  const adminEmail = process.env.PLATFORM_ADMIN_EMAIL?.toLowerCase();
-  if (!adminEmail) return false;
-  const user = await prisma.user.findUnique({ where: { id: userId }, select: { email: true } });
-  return user?.email?.toLowerCase() === adminEmail;
-}
-
 async function setModulesAction(formData: FormData) {
   "use server";
-  const { user } = await requireOrgSession();
-  if (!(await isPlatformAdmin(user.id))) return;
+  const admin = await assertPlatformAdmin();
+  if (!admin) return;
 
   const orgId = String(formData.get("orgId") ?? "");
   if (!orgId) return;
@@ -37,7 +31,7 @@ async function setModulesAction(formData: FormData) {
 
 export default async function AdminOrgsPage() {
   const { user } = await requireOrgSession();
-  if (!(await isPlatformAdmin(user.id))) redirect("/dashboard");
+  if (!checkIsPlatformAdmin(user.email)) redirect("/dashboard");
 
   const orgs = await prisma.organization.findMany({
     orderBy: { createdAt: "asc" },

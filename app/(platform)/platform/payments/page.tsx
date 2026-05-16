@@ -1,14 +1,11 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
-import { getCurrentUserRole } from "@/lib/session";
 import { getRecentBillingEvents, getTotalRevenue, getMonthlyRevenue } from "@/lib/billing-events";
+import { requirePlatformAdmin } from "@/lib/platform-admin";
 
 export const dynamic = "force-dynamic";
 
 export default async function PaymentsPage() {
-  const { user } = await getCurrentUserRole();
-  const platformEmail = process.env.PLATFORM_ADMIN_EMAIL;
-  if (!platformEmail || user!.email !== platformEmail) redirect("/dashboard");
+  await requirePlatformAdmin();
 
   const [events, totalRevenue, monthRevenue] = await Promise.all([
     getRecentBillingEvents(100),

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 
@@ -329,7 +330,7 @@ export default async function JobsPage({
   async function deleteJobAction(formData: FormData) {
     "use server";
     const { user, orgId: deleteOrgId } = await requireOrgSession();
-    if (user.role !== "ADMIN") return;
+    if (user.role !== "ADMIN") redirect("/dashboard");
     const id = String(formData.get("id") ?? "");
     if (!id) return;
     await prisma.job.delete({ where: { id, orgId: deleteOrgId } });

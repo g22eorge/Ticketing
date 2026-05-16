@@ -1,17 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
-import { getCurrentUserRole } from "@/lib/session";
 import { setPlatformSetting, deletePlatformSetting } from "@/lib/platform-settings";
 import { registerIpn, getRegisteredIpns } from "@/lib/pesapal";
-
-async function requirePlatformAdmin() {
-  const { user } = await getCurrentUserRole();
-  const platformEmail = process.env.PLATFORM_ADMIN_EMAIL;
-  if (!platformEmail || user!.email !== platformEmail) redirect("/dashboard");
-  return user!;
-}
+import { requirePlatformAdmin } from "@/lib/platform-admin";
 
 export async function savePesapalSettingsAction(
   _prev: { ok: boolean; error?: string } | null,

@@ -42,8 +42,7 @@ export default async function InventoryPage({
   async function createPartAction(formData: FormData) {
     "use server";
     const { user, orgId: createOrgId } = await requireOrgSession();
-    if (!(user.role === "ADMIN" || user.role === "OPS")) return;
-
+    if (!(user.role === "ADMIN" || user.role === "OPS")) redirect("/dashboard");
     const sku = String(formData.get("sku") ?? "").trim();
     const name = String(formData.get("name") ?? "").trim();
     const manufacturer = String(formData.get("manufacturer") ?? "").trim();
@@ -84,8 +83,7 @@ export default async function InventoryPage({
   async function adjustStockAction(formData: FormData) {
     "use server";
     const { session, user, orgId: adjustOrgId } = await requireOrgSession();
-    if (!(user.role === "ADMIN" || user.role === "OPS")) return;
-
+    if (!(user.role === "ADMIN" || user.role === "OPS")) redirect("/dashboard");
     const partId = String(formData.get("partId") ?? "").trim();
     const type = String(formData.get("type") ?? "").trim().toUpperCase() as StockTxnType;
     const qty = Math.floor(Number(String(formData.get("quantity") ?? "0").trim()));
@@ -125,8 +123,7 @@ export default async function InventoryPage({
   async function togglePartActiveAction(formData: FormData) {
     "use server";
     const { user, orgId: toggleOrgId } = await requireOrgSession();
-    if (!(user.role === "ADMIN" || user.role === "OPS")) return;
-
+    if (!(user.role === "ADMIN" || user.role === "OPS")) redirect("/dashboard");
     const partId = String(formData.get("partId") ?? "").trim();
     const next = String(formData.get("next") ?? "").trim();
     if (!partId) return;

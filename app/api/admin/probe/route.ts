@@ -1,19 +1,11 @@
 import { NextResponse } from "next/server";
 
+import { assertPlatformAdmin } from "@/lib/platform-admin";
 import { prisma } from "@/lib/prisma";
-import { getCurrentUserRole } from "@/lib/session";
 import { whatsappConfigSummary } from "@/lib/notifications/whatsapp";
 import { emailIsConfigured } from "@/lib/notifications/email";
 
 export const dynamic = "force-dynamic";
-
-async function requirePlatformAdmin() {
-  const { user } = await getCurrentUserRole();
-  const platformEmail = process.env.PLATFORM_ADMIN_EMAIL;
-  if (!platformEmail || !user?.email || user.email !== platformEmail) return null;
-  if (user.role !== "ADMIN") return null;
-  return user;
-}
 
 function serializeError(error: unknown) {
   if (error instanceof Error) {
@@ -27,7 +19,7 @@ function serializeError(error: unknown) {
 }
 
 export async function GET() {
-  const user = await requirePlatformAdmin();
+  const user = await assertPlatformAdmin();
   if (!user) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }

@@ -1,7 +1,6 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
-import { getCurrentUserRole } from "@/lib/session";
 import { SignOutButton } from "@/components/shared/SignOutButton";
+import { requirePlatformAdmin } from "@/lib/platform-admin";
 
 const NAV = [
   { href: "/platform", label: "Organisations" },
@@ -10,11 +9,7 @@ const NAV = [
 ];
 
 export default async function PlatformLayout({ children }: { children: React.ReactNode }) {
-  const { user } = await getCurrentUserRole();
-  const platformEmail = process.env.PLATFORM_ADMIN_EMAIL;
-  if (!platformEmail || user!.email !== platformEmail) {
-    redirect("/dashboard");
-  }
+  const user = await requirePlatformAdmin();
   return (
     <div className="min-h-dvh bg-[var(--bg)] text-[var(--ink)]">
       <div className="border-b border-[var(--line)] bg-[var(--panel)] px-6 py-0 flex items-center justify-between gap-4">

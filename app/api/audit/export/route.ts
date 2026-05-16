@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserRoleOptional } from "@/lib/session";
+import { checkIsPlatformAdmin } from "@/lib/platform-admin";
 
 function csvEscape(value: unknown) {
   const raw = value === null || value === undefined ? "" : String(value);
@@ -23,8 +24,7 @@ export async function GET(req: NextRequest) {
   const { user } = await getCurrentUserRoleOptional();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const platformEmail = process.env.PLATFORM_ADMIN_EMAIL;
-  const isPlatformAdmin = Boolean(platformEmail && user.email === platformEmail && user.role === "ADMIN");
+  const isPlatformAdmin = checkIsPlatformAdmin(user.email) && user.role === "ADMIN";
   const scope = req.nextUrl.searchParams.get("scope") ?? "org";
   const action = req.nextUrl.searchParams.get("action")?.trim() ?? "";
   const requestedOrgId = req.nextUrl.searchParams.get("orgId")?.trim() ?? "";

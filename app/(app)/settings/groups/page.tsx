@@ -33,7 +33,7 @@ export default async function GroupsPage({ searchParams }: { searchParams: Promi
   async function createGroupAction(formData: FormData) {
     "use server";
     const { user, orgId, org } = await requireOrgSession();
-    if (user.role !== "ADMIN") return;
+    if (user.role !== "ADMIN") redirect("/dashboard");
     assertOrgCanMutate({ access: org.access, userRole: user.role, userAccessMode: user.accessMode, kind: "GENERAL" });
 
     const parsed = createGroupSchema.safeParse({
@@ -58,7 +58,7 @@ export default async function GroupsPage({ searchParams }: { searchParams: Promi
   async function updateGroupAction(formData: FormData) {
     "use server";
     const { user, orgId: _orgId, org } = await requireOrgSession();
-    if (user.role !== "ADMIN") return;
+    if (user.role !== "ADMIN") redirect("/dashboard");
     assertOrgCanMutate({ access: org.access, userRole: user.role, userAccessMode: user.accessMode, kind: "GENERAL" });
 
     const parsed = updateGroupSchema.safeParse({
@@ -83,7 +83,7 @@ export default async function GroupsPage({ searchParams }: { searchParams: Promi
   async function deleteGroupAction(formData: FormData) {
     "use server";
     const { user, orgId, org } = await requireOrgSession();
-    if (user.role !== "ADMIN") return;
+    if (user.role !== "ADMIN") redirect("/dashboard");
     assertOrgCanMutate({ access: org.access, userRole: user.role, userAccessMode: user.accessMode, kind: "GENERAL" });
     const id = String(formData.get("id") ?? "").trim();
     if (!id) return;
@@ -95,7 +95,7 @@ export default async function GroupsPage({ searchParams }: { searchParams: Promi
   async function saveGroupPermissionsAction(formData: FormData) {
     "use server";
     const { user, orgId, org } = await requireOrgSession();
-    if (user.role !== "ADMIN") return;
+    if (user.role !== "ADMIN") redirect("/dashboard");
     assertOrgCanMutate({ access: org.access, userRole: user.role, userAccessMode: user.accessMode, kind: "GENERAL" });
 
     const id = String(formData.get("id") ?? "").trim();
@@ -125,7 +125,7 @@ export default async function GroupsPage({ searchParams }: { searchParams: Promi
   async function addMemberAction(formData: FormData) {
     "use server";
     const { user, orgId, org } = await requireOrgSession();
-    if (user.role !== "ADMIN") return;
+    if (user.role !== "ADMIN") redirect("/dashboard");
     assertOrgCanMutate({ access: org.access, userRole: user.role, userAccessMode: user.accessMode, kind: "GENERAL" });
     const parsed = updateMembersSchema.safeParse({
       id: String(formData.get("id") ?? "").trim(),
@@ -146,7 +146,7 @@ export default async function GroupsPage({ searchParams }: { searchParams: Promi
   async function removeMemberAction(formData: FormData) {
     "use server";
     const { user, orgId, org } = await requireOrgSession();
-    if (user.role !== "ADMIN") return;
+    if (user.role !== "ADMIN") redirect("/dashboard");
     assertOrgCanMutate({ access: org.access, userRole: user.role, userAccessMode: user.accessMode, kind: "GENERAL" });
     const id = String(formData.get("id") ?? "").trim();
     const memberId = String(formData.get("memberId") ?? "").trim();

@@ -236,7 +236,7 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
   async function updateSaleAction(formData: FormData) {
     "use server";
     const { user, orgId, org } = await requireOrgSession();
-    if (!(can.viewFinancials(user) || ["ADMIN", "OPS", "FRONT_DESK"].includes(user.role))) return;
+    if (!(can.viewFinancials(user) || ["ADMIN", "OPS", "FRONT_DESK"].includes(user.role))) redirect("/dashboard");
     assertOrgCanMutate({ access: org.access, userRole: user.role, userAccessMode: user.accessMode, kind: "GENERAL" });
 
     const saleId = String(formData.get("saleId") ?? "").trim();
@@ -262,7 +262,7 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
   async function deleteSaleAction(formData: FormData) {
     "use server";
     const { user, orgId, org } = await requireOrgSession();
-    if (user.role !== "ADMIN") return;
+    if (user.role !== "ADMIN") redirect("/dashboard");
     assertOrgCanMutate({ access: org.access, userRole: user.role, userAccessMode: user.accessMode, kind: "GENERAL" });
 
     const saleId = String(formData.get("saleId") ?? "").trim();
@@ -311,7 +311,7 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
   async function updateItemAction(formData: FormData) {
     "use server";
     const { user, orgId, org } = await requireOrgSession();
-    if (!(can.viewFinancials(user) || ["ADMIN", "OPS", "FRONT_DESK"].includes(user.role))) return;
+    if (!(can.viewFinancials(user) || ["ADMIN", "OPS", "FRONT_DESK"].includes(user.role))) redirect("/dashboard");
     assertOrgCanMutate({ access: org.access, userRole: user.role, userAccessMode: user.accessMode, kind: "GENERAL" });
 
     const saleId = String(formData.get("saleId") ?? "").trim();
@@ -358,7 +358,7 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
   async function deleteItemAction(formData: FormData) {
     "use server";
     const { user, orgId, org } = await requireOrgSession();
-    if (!(can.viewFinancials(user) || ["ADMIN", "OPS", "FRONT_DESK"].includes(user.role))) return;
+    if (!(can.viewFinancials(user) || ["ADMIN", "OPS", "FRONT_DESK"].includes(user.role))) redirect("/dashboard");
     assertOrgCanMutate({ access: org.access, userRole: user.role, userAccessMode: user.accessMode, kind: "GENERAL" });
 
     const saleId = String(formData.get("saleId") ?? "").trim();
@@ -400,8 +400,7 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
   async function addItemAction(formData: FormData) {
     "use server";
     const { user, orgId, org } = await requireOrgSession();
-    if (!(can.viewFinancials(user) || ["ADMIN", "OPS", "FRONT_DESK"].includes(user.role))) return;
-
+    if (!(can.viewFinancials(user) || ["ADMIN", "OPS", "FRONT_DESK"].includes(user.role))) redirect("/dashboard");
     assertOrgCanMutate({ access: org.access, userRole: user.role, userAccessMode: user.accessMode, kind: "GENERAL" });
 
     const saleId = String(formData.get("saleId") ?? "").trim();
@@ -458,7 +457,7 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
   async function addPaymentAction(formData: FormData) {
     "use server";
     const { user, orgId, session, org } = await requireOrgSession();
-    if (!(can.viewFinancials(user) || ["ADMIN", "OPS", "FRONT_DESK"].includes(user.role))) return;
+    if (!(can.viewFinancials(user) || ["ADMIN", "OPS", "FRONT_DESK"].includes(user.role))) redirect("/dashboard");
     assertOrgCanMutate({ access: org.access, userRole: user.role, userAccessMode: user.accessMode, kind: "PAYMENT" });
 
     const saleId = String(formData.get("saleId") ?? "").trim();
@@ -520,7 +519,7 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
   async function createCreditNoteAction(formData: FormData) {
     "use server";
     const { user, orgId, org, session } = await requireOrgSession();
-    if (!(can.viewFinancials(user) || ["ADMIN", "OPS"].includes(user.role))) return;
+    if (!(can.viewFinancials(user) || ["ADMIN", "OPS"].includes(user.role))) redirect("/dashboard");
     // Expired workspaces are read-only except for payment entry.
     assertOrgCanMutate({ access: org.access, userRole: user.role, userAccessMode: user.accessMode, kind: "GENERAL" });
 
@@ -614,7 +613,7 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
   async function markItemsReceivedBackAction(formData: FormData) {
     "use server";
     const { user, orgId, session, org } = await requireOrgSession();
-    if (!(can.viewFinancials(user) || ["ADMIN", "OPS"].includes(user.role))) return;
+    if (!(can.viewFinancials(user) || ["ADMIN", "OPS"].includes(user.role))) redirect("/dashboard");
     assertOrgCanMutate({ access: org.access, userRole: user.role, userAccessMode: user.accessMode, kind: "GENERAL" });
 
     const saleId = String(formData.get("saleId") ?? "").trim();
@@ -664,7 +663,7 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
   async function createRefundAction(formData: FormData) {
     "use server";
     const { user, orgId, org, session } = await requireOrgSession();
-    if (!(can.viewFinancials(user) || ["ADMIN", "OPS"].includes(user.role))) return;
+    if (!(can.viewFinancials(user) || ["ADMIN", "OPS"].includes(user.role))) redirect("/dashboard");
     // Expired workspaces are read-only except for payment entry.
     assertOrgCanMutate({ access: org.access, userRole: user.role, userAccessMode: user.accessMode, kind: "GENERAL" });
 
@@ -863,7 +862,7 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
             action={async (formData: FormData) => {
               "use server";
               const { user, orgId } = await requireOrgSession();
-              if (!(can.viewFinancials(user) || ["ADMIN", "OPS", "FRONT_DESK"].includes(user.role))) return;
+              if (!(can.viewFinancials(user) || ["ADMIN", "OPS", "FRONT_DESK"].includes(user.role))) redirect("/dashboard");
               const saleId = String(formData.get("saleId") ?? "").trim();
               const raw = String(formData.get("discountAmount") ?? "").trim();
               if (!saleId) return;

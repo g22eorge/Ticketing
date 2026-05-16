@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { prisma } from "@/lib/prisma";
-import { getCurrentUserRole } from "@/lib/session";
+import { requirePlatformAdmin } from "@/lib/platform-admin";
 
 export const dynamic = "force-dynamic";
 
@@ -20,9 +20,7 @@ export default async function PlatformAuditPage({
 }: {
   searchParams: Promise<{ orgId?: string; action?: string }>;
 }) {
-  const { user } = await getCurrentUserRole();
-  const platformEmail = process.env.PLATFORM_ADMIN_EMAIL;
-  if (!platformEmail || user!.email !== platformEmail) redirect("/dashboard");
+  await requirePlatformAdmin();
 
   const params = await searchParams;
   const orgId = typeof params.orgId === "string" ? params.orgId.trim() : "";

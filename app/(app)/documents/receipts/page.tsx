@@ -25,7 +25,7 @@ export default async function ReceiptsPage() {
   async function updateReceiptAction(formData: FormData) {
     "use server";
     const { user, orgId, org } = await requireOrgSession();
-    if (!(can.viewFinancials(user) || ["ADMIN", "OPS"].includes(user.role))) return;
+    if (!(can.viewFinancials(user) || ["ADMIN", "OPS"].includes(user.role))) redirect("/dashboard");
     assertOrgCanMutate({ access: org.access, userRole: user.role, userAccessMode: user.accessMode, kind: "PAYMENT" });
 
     const paymentId = String(formData.get("paymentId") ?? "").trim();

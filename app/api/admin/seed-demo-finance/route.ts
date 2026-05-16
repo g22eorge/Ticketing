@@ -1,25 +1,17 @@
 import { NextResponse } from "next/server";
 
+import { assertPlatformAdmin } from "@/lib/platform-admin";
 import { prisma } from "@/lib/prisma";
-import { getCurrentUserRole } from "@/lib/session";
 import { normalizeCurrency } from "@/lib/currency";
 
 export const dynamic = "force-dynamic";
-
-async function requirePlatformAdmin() {
-  const { user } = await getCurrentUserRole();
-  const platformEmail = process.env.PLATFORM_ADMIN_EMAIL;
-  if (!platformEmail || !user?.email || user.email !== platformEmail) return null;
-  if (user.role !== "ADMIN") return null;
-  return user;
-}
 
 function suffix() {
   return `${Date.now()}${Math.floor(Math.random() * 1000)}`;
 }
 
 export async function POST(req: Request) {
-  const user = await requirePlatformAdmin();
+  const user = await assertPlatformAdmin();
   if (!user) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const url = new URL(req.url);

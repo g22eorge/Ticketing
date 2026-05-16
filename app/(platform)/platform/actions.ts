@@ -1,18 +1,10 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { getCurrentUserRole } from "@/lib/session";
 import { OrgPlan } from "@prisma/client";
 import { setOrgAtSenderId } from "@/lib/org-whatsapp-config";
-
-async function requirePlatformAdmin() {
-  const { user } = await getCurrentUserRole();
-  const platformEmail = process.env.PLATFORM_ADMIN_EMAIL;
-  if (!platformEmail || user!.email !== platformEmail) redirect("/dashboard");
-  return user!;
-}
+import { requirePlatformAdmin } from "@/lib/platform-admin";
 
 export async function setPlanAction(formData: FormData) {
   await requirePlatformAdmin();

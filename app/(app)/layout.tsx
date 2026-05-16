@@ -10,6 +10,7 @@ import { prisma } from "@/lib/prisma";
 import { requireOrgSession } from "@/lib/org-context";
 import { filterSupportedJobStatuses } from "@/lib/job-status-server";
 import { sendTrialExpiryWarning } from "@/lib/email";
+import { checkIsPlatformAdmin } from "@/lib/platform-admin";
 import Link from "next/link";
 
 // Module-level dedup: only send trial warning email once per server instance per org.
@@ -22,9 +23,7 @@ export default async function AppLayout({
 }) {
   const { session, user, orgId } = await requireOrgSession();
 
-  const isPlatformAdmin =
-    !!process.env.PLATFORM_ADMIN_EMAIL &&
-    user.email.toLowerCase() === process.env.PLATFORM_ADMIN_EMAIL.toLowerCase();
+  const isPlatformAdmin = checkIsPlatformAdmin(user.email);
 
   // ── Billing enforcement ───────────────────────────────────────────────────
   const org = await prisma.organization.findUnique({

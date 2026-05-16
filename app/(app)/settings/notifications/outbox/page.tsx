@@ -130,7 +130,7 @@ export default async function OutboxPage({
   async function retryNowAction() {
     "use server";
     const { user, orgId } = await requireOrgSession();
-    if (!(user.role === "ADMIN" || user.role === "OPS")) return;
+    if (!(user.role === "ADMIN" || user.role === "OPS")) redirect("/dashboard");
     await retryDueOutboundMessages(getOutboxRetryLimit(25), { orgId });
     revalidatePath("/settings/notifications/outbox");
   }
@@ -138,7 +138,7 @@ export default async function OutboxPage({
   async function retryOneAction(formData: FormData) {
     "use server";
     const { user, orgId } = await requireOrgSession();
-    if (!(user.role === "ADMIN" || user.role === "OPS")) return;
+    if (!(user.role === "ADMIN" || user.role === "OPS")) redirect("/dashboard");
     const id = String(formData.get("id") ?? "");
     if (!id) return;
     await deliverOutboundMessageForOrg(id, orgId);
@@ -148,7 +148,7 @@ export default async function OutboxPage({
   async function markDeadAction(formData: FormData) {
     "use server";
     const { user, orgId } = await requireOrgSession();
-    if (!(user.role === "ADMIN" || user.role === "OPS")) return;
+    if (!(user.role === "ADMIN" || user.role === "OPS")) redirect("/dashboard");
     const id = String(formData.get("id") ?? "");
     if (!id) return;
     await prisma.outboundMessage.updateMany({

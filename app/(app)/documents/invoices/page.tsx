@@ -169,7 +169,7 @@ export default async function InvoicesPage() {
   async function createDeliveryNoteAction(formData: FormData) {
     "use server";
     const { user, orgId, org, session } = await requireOrgSession();
-    if (!(can.viewFinancials(user) || ["ADMIN", "OPS"].includes(user.role))) return;
+    if (!(can.viewFinancials(user) || ["ADMIN", "OPS"].includes(user.role))) redirect("/dashboard");
     assertOrgCanMutate({ access: org.access, userRole: user.role, userAccessMode: user.accessMode, kind: "GENERAL" });
 
     const invoiceId = String(formData.get("invoiceId") ?? "").trim();

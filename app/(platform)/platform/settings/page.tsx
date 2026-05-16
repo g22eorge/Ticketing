@@ -1,6 +1,5 @@
-import { redirect } from "next/navigation";
-import { getCurrentUserRole } from "@/lib/session";
 import { getPlatformSettings, getPlatformSetting } from "@/lib/platform-settings";
+import { requirePlatformAdmin } from "@/lib/platform-admin";
 import { PesapalSettingsForm } from "@/components/platform/PesapalSettingsForm";
 import { ATSmsPlatformSettingsForm } from "@/components/platform/ATSmsPlatformSettingsForm";
 import { PLAN_PRICES } from "@/lib/pesapal";
@@ -9,9 +8,7 @@ import { formatMoney } from "@/lib/currency";
 export const dynamic = "force-dynamic";
 
 export default async function PlatformSettingsPage() {
-  const { user } = await getCurrentUserRole();
-  const platformEmail = process.env.PLATFORM_ADMIN_EMAIL;
-  if (!platformEmail || user!.email !== platformEmail) redirect("/dashboard");
+  await requirePlatformAdmin();
 
   const [stored, ipnId] = await Promise.all([
     getPlatformSettings([

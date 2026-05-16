@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { assertPlatformAdmin } from "@/lib/platform-admin";
 import { prisma } from "@/lib/prisma";
-import { getCurrentUserRole } from "@/lib/session";
 
 const CHANNELS = ["WHATSAPP", "EMAIL"] as const;
 const STATUSES = ["PENDING", "SENT", "FAILED", "DEAD"] as const;
@@ -19,16 +19,8 @@ const TYPES = [
 
 export const dynamic = "force-dynamic";
 
-async function requirePlatformAdmin() {
-  const { user } = await getCurrentUserRole();
-  const platformEmail = process.env.PLATFORM_ADMIN_EMAIL;
-  if (!platformEmail || !user?.email || user.email !== platformEmail) return null;
-  if (user.role !== "ADMIN") return null;
-  return user;
-}
-
 export async function GET(request: NextRequest) {
-  const user = await requirePlatformAdmin();
+  const user = await assertPlatformAdmin();
   if (!user) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }

@@ -1,8 +1,8 @@
 import Link from "next/link";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { getCurrentUserRole } from "@/lib/session";
 import { getBillingEventsByOrg } from "@/lib/billing-events";
+import { requirePlatformAdmin } from "@/lib/platform-admin";
 import { setBillingStatusAction, setPlanAction, extendTrialAction, setOrgSmsSenderAction } from "../../actions";
 import { getSmsUsage, SMS_PLAN_QUOTAS } from "@/lib/notifications/sms-quota";
 import { getOrgWhatsAppConfig } from "@/lib/org-whatsapp-config";
@@ -18,9 +18,7 @@ export const dynamic = "force-dynamic";
 
 export default async function OrgDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { user } = await getCurrentUserRole();
-  const platformEmail = process.env.PLATFORM_ADMIN_EMAIL;
-  if (!platformEmail || user!.email !== platformEmail) redirect("/dashboard");
+  await requirePlatformAdmin();
 
   const org = await prisma.organization.findUnique({
     where: { id },

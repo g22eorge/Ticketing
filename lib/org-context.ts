@@ -17,13 +17,14 @@ import { getAppCurrency, normalizeCurrency, parseSupportedCurrencies } from "@/l
 import { getOrgAccess } from "@/lib/billing-access";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserRole, getCurrentUserRoleOptional } from "@/lib/session";
+import { checkIsPlatformAdmin } from "@/lib/platform-admin";
 
 /** Use in server components and server actions that require a full org context. */
 export async function requireOrgSession() {
   const { session, user } = await getCurrentUserRole();
 
   if (!user!.orgId) {
-    if (process.env.PLATFORM_ADMIN_EMAIL && user!.email === process.env.PLATFORM_ADMIN_EMAIL) {
+    if (checkIsPlatformAdmin(user!.email)) {
       redirect("/platform");
     }
     redirect("/onboarding");
