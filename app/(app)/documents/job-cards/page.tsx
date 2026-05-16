@@ -6,6 +6,7 @@ import { CopyButton } from "@/components/shared/CopyButton";
 import { can } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { requireOrgSession } from "@/lib/org-context";
+import { requireModule, OrgModule } from "@/lib/module-access";
 import { formatEATDate } from "@/lib/date-eat";
 import { normalizeJobStatus } from "@/lib/job-status";
 
@@ -27,6 +28,7 @@ export default async function JobCardsPage({
 }) {
   const { user, orgId } = await requireOrgSession();
   if (!can.generateJobCards(user)) redirect("/dashboard");
+  await requireModule(OrgModule.JOBS);
 
   const { q, status: statusFilter } = await searchParams;
 

@@ -14,6 +14,7 @@ import { filterSupportedJobStatuses } from "@/lib/job-status-server";
 import { can } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { requireOrgSession } from "@/lib/org-context";
+import { requireModule, OrgModule } from "@/lib/module-access";
 import { JobStatus } from "@prisma/client";
 
 type SearchParams = { q?: string; approval?: string };
@@ -27,6 +28,7 @@ export default async function QuotationsPage({
   if (!((["ADMIN", "OPS", "MANAGER", "SALES", "TECHNICIAN_INTERNAL"].includes(user.role) || can.viewFinancials(user)))) {
     redirect("/dashboard");
   }
+  await requireModule(OrgModule.INVOICING);
 
   const { q, approval: approvalFilter } = await searchParams;
   const currency = getAppCurrency();

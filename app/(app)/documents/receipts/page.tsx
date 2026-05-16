@@ -7,6 +7,7 @@ import { formatMoney, normalizeCurrency, toBaseAmount } from "@/lib/currency";
 import { can } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { requireOrgSession } from "@/lib/org-context";
+import { requireModule, OrgModule } from "@/lib/module-access";
 import { assertOrgCanMutate } from "@/lib/org-write";
 import { ConfirmSubmitButton } from "@/components/shared/ConfirmSubmitButton";
 import { writeSystemAuditEvent } from "@/lib/commercial/audit";
@@ -19,6 +20,7 @@ export default async function ReceiptsPage() {
   if (!(can.viewFinancials(user) || ["ADMIN", "OPS", "FRONT_DESK"].includes(user.role))) {
     redirect("/dashboard");
   }
+  await requireModule(OrgModule.INVOICING);
 
   async function updateReceiptAction(formData: FormData) {
     "use server";

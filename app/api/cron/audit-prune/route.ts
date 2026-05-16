@@ -2,21 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { getAuditRetentionDays, pruneSystemAuditEvents } from "@/lib/commercial/audit-retention";
 import { writeSystemAuditEvent } from "@/lib/commercial/audit";
+import { assertCronAuthorized } from "@/lib/cron-auth";
 
 export const dynamic = "force-dynamic";
 
-function isCronAuthorized(request: NextRequest) {
-  const secret = process.env.CRON_SECRET?.trim();
-  const provided = request.nextUrl.searchParams.get("secret") ?? request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
-
-  if (secret) return provided === secret;
-  return process.env.NODE_ENV !== "production" && request.headers.get("x-vercel-cron") === "1";
-}
-
 export async function POST(request: NextRequest) {
-  if (!isCronAuthorized(request)) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
+  const authError = assertCronAuthorized(request);
+  if (authError) return authError;
 
   const days = await getAuditRetentionDays();
   const result = await pruneSystemAuditEvents(days);
