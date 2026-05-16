@@ -25,11 +25,11 @@ const isProduction = process.env.NODE_ENV === "production";
 
 const CSP = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' https://vercel.live",
+  "script-src 'self' 'unsafe-inline' https://vercel.live https://va.vercel-scripts.com",
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https:",
   "font-src 'self' data:",
-  "connect-src 'self' https://vercel.live wss://ws-us3.pusher.com https://*.turso.io",
+  "connect-src 'self' https://vercel.live wss://ws-us3.pusher.com https://*.turso.io https://va.vercel-analytics.com",
   "frame-src 'none'",
   "object-src 'none'",
   "base-uri 'self'",

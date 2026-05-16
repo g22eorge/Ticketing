@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Manrope, Sora } from "next/font/google";
 import { cookies } from "next/headers";
 import { Toaster } from "sonner";
+import { Analytics } from "@vercel/analytics/next";
 
 import { ThemeProvider } from "@/components/layout/ThemeProvider";
 import "./globals.css";
@@ -82,6 +83,7 @@ export default async function RootLayout({
           {children}
           <Toaster richColors />
         </ThemeProvider>
+        <Analytics />
       </body>
     </html>
   );
