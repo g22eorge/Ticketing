@@ -486,26 +486,31 @@ export default async function ReportsPage({
     daysPending: Math.floor((nowTs.getTime() - job.updatedAt.getTime()) / (1000 * 60 * 60 * 24)),
   }));
 
+  type SalePeriodItem = { totalAmount: number; createdById: string | null; createdBy: { id: string; name: string } | null };
+  type InvoicePeriodItem = { totalAmount: number; job: { createdById: string | null; createdBy: { id: string; name: string } | null } | null };
+  type SalesTargetItem = { id: string; orgId: string; userId: string | null; period: string; targetRevenue: number; targetJobs: number; notes: string | null; createdAt: Date; updatedAt: Date };
+  type StaffJobItem = { clientBill: number | null; externalTechBill: number | null; createdById: string | null; createdBy: { id: string; name: string } | null };
+
   const [salesByPeriod, invoicesByPeriod, salesTargetsForPeriod, staffJobRevenue] = await Promise.all([
     // POS sales paid in selected period
     prisma.sale.findMany({
       where: { orgId, status: "PAID", paidAt: { gte: selectedRange.start, lte: selectedRange.end } },
       select: { totalAmount: true, createdById: true, createdBy: { select: { id: true, name: true } } },
-    }).catch(() => [] as any[]),
+    }).catch((): SalePeriodItem[] => []),
     // Invoices paid in selected period
     prisma.invoice.findMany({
       where: { orgId, status: "PAID", paidAt: { gte: selectedRange.start, lte: selectedRange.end } },
       select: { totalAmount: true, job: { select: { createdById: true, createdBy: { select: { id: true, name: true } } } } },
-    }).catch(() => [] as any[]),
+    }).catch((): InvoicePeriodItem[] => []),
     // Sales targets for selected period (team + individual)
     prisma.salesTarget.findMany({
       where: { orgId, period: selectedMonthString },
-    }).catch(() => [] as any[]),
+    }).catch((): SalesTargetItem[] => []),
     // Completed jobs in period attributed to who created them
     prisma.job.findMany({
       where: { orgId, status: "COMPLETED", completedAt: { gte: selectedRange.start, lte: selectedRange.end } },
       select: { clientBill: true, externalTechBill: true, createdById: true, createdBy: { select: { id: true, name: true } } },
-    }).catch(() => [] as any[]),
+    }).catch((): StaffJobItem[] => []),
   ]);
 
   const trendByDevice = new Map<string, Map<string, number>>();
@@ -624,42 +629,42 @@ export default async function ReportsPage({
   const queuePressure = funnel.diagnosing + funnel.awaitingApproval + funnel.inRepair;
   const completionMomentum = completedSelected.length - completedPrev.length;
 
-  const posSalesTotal = (salesByPeriod as any[]).reduce((s: number, r: any) => s + r.totalAmount, 0);
-  const invoicesPaidTotal = (invoicesByPeriod as any[]).reduce((s: number, i: any) => s + i.totalAmount, 0);
+  const posSalesTotal = salesByPeriod.reduce((s, r) => s + r.totalAmount, 0);
+  const invoicesPaidTotal = invoicesByPeriod.reduce((s, i) => s + i.totalAmount, 0);
   const repairTotal = revenueSelected; // already computed
   const totalAllChannels = repairTotal + posSalesTotal + invoicesPaidTotal;
 
   // Per-staff revenue map
   const staffRevenueMap = new Map<string, { name: string; repairRev: number; posRev: number; invoiceRev: number; total: number; target: number }>();
 
-  for (const j of staffJobRevenue as any[]) {
+  for (const j of staffJobRevenue) {
     if (!j.createdById || !j.createdBy) continue;
     const e = staffRevenueMap.get(j.createdById) ?? { name: j.createdBy.name, repairRev: 0, posRev: 0, invoiceRev: 0, total: 0, target: 0 };
     e.repairRev += getClientBill(j) ?? 0;
     e.total = e.repairRev + e.posRev + e.invoiceRev;
     staffRevenueMap.set(j.createdById, e);
   }
-  for (const s of salesByPeriod as any[]) {
+  for (const s of salesByPeriod) {
     if (!s.createdById || !s.createdBy) continue;
     const e = staffRevenueMap.get(s.createdById) ?? { name: s.createdBy.name, repairRev: 0, posRev: 0, invoiceRev: 0, total: 0, target: 0 };
     e.posRev += s.totalAmount;
     e.total = e.repairRev + e.posRev + e.invoiceRev;
     staffRevenueMap.set(s.createdById, e);
   }
-  for (const inv of invoicesByPeriod as any[]) {
+  for (const inv of invoicesByPeriod) {
     if (!inv.job?.createdById || !inv.job?.createdBy) continue;
     const e = staffRevenueMap.get(inv.job.createdById) ?? { name: inv.job.createdBy.name, repairRev: 0, posRev: 0, invoiceRev: 0, total: 0, target: 0 };
     e.invoiceRev += inv.totalAmount;
     e.total = e.repairRev + e.posRev + e.invoiceRev;
     staffRevenueMap.set(inv.job.createdById, e);
   }
-  for (const t of salesTargetsForPeriod as any[]) {
+  for (const t of salesTargetsForPeriod) {
     if (!t.userId) continue;
     const e = staffRevenueMap.get(t.userId);
     if (e) { e.target = t.targetRevenue; staffRevenueMap.set(t.userId, e); }
   }
   const staffRevRows = [...staffRevenueMap.values()].sort((a, b) => b.total - a.total);
-  const teamTarget = (salesTargetsForPeriod as any[]).find((t: any) => !t.userId);
+  const teamTarget = salesTargetsForPeriod.find((t) => !t.userId);
   const teamTargetRevenue = teamTarget?.targetRevenue ?? 0;
   const teamTargetPct = teamTargetRevenue > 0 ? Math.round((totalAllChannels / teamTargetRevenue) * 100) : null;
 
@@ -1351,8 +1356,8 @@ export default async function ReportsPage({
         <div className="grid gap-3 sm:grid-cols-3">
           {[
             { label: "Repair Jobs", amount: repairTotal, color: "bg-sky-500", textColor: "text-sky-600", count: `${completedSelected.length} completed`, href: `/jobs?status=COMPLETED` },
-            { label: "POS Sales", amount: posSalesTotal, color: "bg-violet-500", textColor: "text-violet-600", count: `${(salesByPeriod as any[]).length} sales`, href: `/pos` },
-            { label: "Invoice Payments", amount: invoicesPaidTotal, color: "bg-emerald-500", textColor: "text-emerald-600", count: `${(invoicesByPeriod as any[]).length} invoices`, href: `/documents/invoices` },
+            { label: "POS Sales", amount: posSalesTotal, color: "bg-violet-500", textColor: "text-violet-600", count: `${salesByPeriod.length} sales`, href: `/pos` },
+            { label: "Invoice Payments", amount: invoicesPaidTotal, color: "bg-emerald-500", textColor: "text-emerald-600", count: `${invoicesByPeriod.length} invoices`, href: `/documents/invoices` },
           ].map(ch => {
             const pct = totalAllChannels > 0 ? Math.round((ch.amount / totalAllChannels) * 100) : 0;
             return (
