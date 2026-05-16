@@ -172,7 +172,7 @@ test("external technician job APIs do not expose client PII or billing history",
   expect(jobs.length, "Seed data should assign at least one job to a seeded external technician.").toBeGreaterThan(0);
   assertNoForbiddenData(jobs);
 
-  const firstJobId = jobs[0]?.id;
+  const firstJobId = (jobs[0] as { id?: string })?.id;
   expect(typeof firstJobId).toBe("string");
 
   const job = await page.evaluate(async (id) => {
