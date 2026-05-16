@@ -625,7 +625,7 @@ export function NewJobStepper({ receivedByName }: { receivedByName: string }) {
         <div className="rounded-xl border border-[var(--line)] bg-[var(--panel-strong)] p-4 text-sm">
           <p className="font-semibold text-[var(--ink)]">Service Assurance</p>
           <p className="mt-1 text-[var(--ink-muted)]">
-            Your repair will be handled by Eagle Info Solutions. For specialized cases, we may engage verified technical
+            Your repair will be handled by our team. For specialized cases, we may engage verified technical
             partners under our supervision.
           </p>
           <p className="mt-1 text-[var(--ink-muted)]">
@@ -639,7 +639,7 @@ export function NewJobStepper({ receivedByName }: { receivedByName: string }) {
               className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--accent)]"
             />
             <span className="text-[var(--ink-muted)]">
-              I understand and agree that Eagle Info Solutions manages all repairs, including those handled by verified
+              I understand and agree that our team manages all repairs, including those handled by verified
               partner technicians.
             </span>
           </label>

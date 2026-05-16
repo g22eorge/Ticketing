@@ -12,7 +12,21 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Playwright artifacts (may or may not exist; avoid ESLint glob crashes)
+    "test-results/**",
+    "playwright-report/**",
+    // Local agent/assistant artifacts
+    ".claude/**",
   ]),
+  {
+    rules: {
+      "@typescript-eslint/no-unused-vars": ["warn", {
+        argsIgnorePattern: "^_",
+        varsIgnorePattern: "^_",
+        caughtErrorsIgnorePattern: "^_",
+      }],
+    },
+  },
 ]);
 
 export default eslintConfig;

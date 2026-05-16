@@ -5,7 +5,7 @@ import { formatMoney, getAppCurrency } from "@/lib/currency";
 import { formatEATDate } from "@/lib/date-eat";
 import { getJobPayoutsByIds, hasJobPayoutColumns } from "@/lib/payouts";
 import { prisma } from "@/lib/prisma";
-import { getCurrentUserRole } from "@/lib/session";
+import { requireOrgSession } from "@/lib/org-context";
 
 type SearchParams = {
   q?: string;
@@ -42,7 +42,7 @@ export default async function TechnicianPayoutsPage({
 }: {
   searchParams: Promise<SearchParams>;
 }) {
-  const { session, user } = await getCurrentUserRole();
+  const { session, user, orgId } = await requireOrgSession();
   if (user.role !== "TECHNICIAN_EXTERNAL") {
     redirect("/dashboard");
   }
@@ -52,6 +52,7 @@ export default async function TechnicianPayoutsPage({
 
   const jobs = await prisma.job.findMany({
     where: {
+      orgId,
       assignedToId: session.user.id,
       repairPath: "EXTERNAL",
       ...(filters.q

@@ -1,24 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { prisma } from "@/lib/prisma";
-import { getCurrentUserRoleOptional } from "@/lib/session";
+import { requireOrgSession } from "@/lib/org-context";
 
 export async function GET(
   _req: NextRequest,
   context: { params: Promise<{ id: string }> },
 ) {
   const { id } = await context.params;
-  const { user } = await getCurrentUserRoleOptional();
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const { user, orgId } = await requireOrgSession();
 
   if (user.role === "TECHNICIAN_EXTERNAL" || user.role === "TECHNICIAN_INTERNAL") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const client = await prisma.client.findUnique({
-    where: { id },
+  const client = await prisma.client.findFirst({
+    where: { id, orgId },
     select: { fullName: true },
   });
 

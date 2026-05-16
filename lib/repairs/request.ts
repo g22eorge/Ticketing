@@ -1,7 +1,9 @@
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
+import { randomUUID } from "node:crypto";
 
 interface CreateRepairRequestInput {
+  orgId?: string;
   customerName: string;
   phone: string;
   email?: string;
@@ -33,19 +35,34 @@ interface CreateRepairRequestInput {
   submissionIp?: string;
 }
 
-async function allocateRequestNumber(): Promise<string> {
+async function allocateRequestNumber(orgId?: string | null): Promise<string> {
   const year = new Date().getFullYear();
   const prefix = `REQ-${year}-`;
+
+  // Repair requests are tenant-scoped; sequences must not use NULL orgIds because
+  // SQLite UNIQUE constraints treat NULLs as distinct (breaking atomic upserts).
+  //
+  // Do NOT fall back to "first org". That is nondeterministic and can route public
+  // repair requests into the wrong tenant. Require explicit orgId or DEFAULT_ORG_ID.
+  if (!orgId) orgId = process.env.DEFAULT_ORG_ID?.trim() ?? null;
+  if (!orgId) throw new Error("Missing orgId for repair requests. Provide orgId or set DEFAULT_ORG_ID.");
 
   const ensureSequenceTable = async () => {
     // Some environments (e.g. Turso drift) may be missing this table.
     // This is safe to run repeatedly.
+    // Keep this aligned with prisma/schema.prisma model RepairRequestSequence.
+    // This also makes the code resilient to DB drift in production.
     await prisma.$executeRawUnsafe(`
       CREATE TABLE IF NOT EXISTS "RepairRequestSequence" (
-        "year" INTEGER NOT NULL PRIMARY KEY,
+        "id" TEXT PRIMARY KEY NOT NULL,
+        "orgId" TEXT,
+        "year" INTEGER NOT NULL,
         "value" INTEGER NOT NULL DEFAULT 0,
         "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
       )
+    `);
+    await prisma.$executeRawUnsafe(`
+      CREATE UNIQUE INDEX IF NOT EXISTS "RepairRequestSequence_orgId_year_key" ON "RepairRequestSequence"("orgId", "year")
     `);
   };
 
@@ -64,42 +81,32 @@ async function allocateRequestNumber(): Promise<string> {
   // Always ensure the table exists before touching it (CREATE TABLE IF NOT EXISTS is a no-op when present).
   await ensureSequenceTable();
 
-  const existingSeq = await prisma.repairRequestSequence.findUnique({
-    where: { year },
-    select: { value: true },
-  });
+  // Ensure sequence row exists and is caught up to the max observed number.
+  const maxExisting = await getMaxExisting();
 
-  if (!existingSeq) {
-    const maxExisting = await getMaxExisting();
-    try {
-      await prisma.repairRequestSequence.create({ data: { year, value: maxExisting } });
-    } catch {
-      // Another request likely created it concurrently.
-    }
-  } else {
-    const maxExisting = await getMaxExisting();
-    if (existingSeq.value < maxExisting) {
-      // Monotonic catch-up under concurrency (never move the counter backwards).
-      await prisma.repairRequestSequence.updateMany({
-        where: { year, value: { lt: maxExisting } },
-        data: { value: maxExisting },
-      });
-    }
-  }
-
-  const seq = await prisma.repairRequestSequence.update({
-    where: { year },
-    data: { value: { increment: 1 } },
-    select: { value: true },
-  });
-
-  return `${prefix}${String(seq.value).padStart(4, "0")}`;
+  // Allocate the next number atomically.
+  // We also catch up to the max observed request number to stay monotonic.
+  const rows = await prisma.$queryRaw<Array<{ value: number }>>`
+    INSERT INTO "RepairRequestSequence" (id, orgId, year, value, updatedAt)
+    VALUES (${randomUUID()}, ${orgId}, ${year}, ${maxExisting + 1}, CURRENT_TIMESTAMP)
+    ON CONFLICT(orgId, year) DO UPDATE SET value = (CASE WHEN value < ${maxExisting} THEN ${maxExisting} ELSE value END) + 1, updatedAt = CURRENT_TIMESTAMP
+    RETURNING value
+  `;
+  const nextVal = rows[0]?.value ?? 1;
+  return `${prefix}${String(nextVal).padStart(4, "0")}`;
 }
 
 export async function createRepairRequest(
   input: CreateRepairRequestInput
 ): Promise<{ success: boolean; requestId?: string; requestNumber?: string; error?: string }> {
   try {
+    // Public repair requests must be bound to a single tenant.
+    // Never pick an org implicitly from the DB.
+    const resolvedOrgId = input.orgId?.trim() || process.env.DEFAULT_ORG_ID?.trim() || null;
+    if (!resolvedOrgId) {
+      return { success: false, error: "Missing orgId for repair request. Provide orgId or set DEFAULT_ORG_ID." };
+    }
+
     // Request numbers must be human-friendly but also safe under concurrency.
     // We allocate from a per-year sequence table, and still retry in case the
     // requestNumber uniqueness constraint is hit for any unexpected reason.
@@ -111,13 +118,14 @@ export async function createRepairRequest(
       | null = null;
 
     for (let attempt = 0; attempt < 8; attempt += 1) {
-      const requestNumber = await allocateRequestNumber();
+      const requestNumber = await allocateRequestNumber(resolvedOrgId);
       try {
         request = await prisma.repairRequest.create({
           data: {
             requestNumber,
             requestStatus: "PENDING_FRONT_DESK",
             handoverStatus: "PENDING",
+            orgId: resolvedOrgId,
             customerName: input.customerName,
             phone: input.phone,
             email: input.email,

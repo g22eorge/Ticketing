@@ -5,13 +5,13 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 
 import { getClientBill } from "@/lib/billing";
-import { formatMoney, getAppCurrency } from "@/lib/currency";
+import { formatMoney, normalizeCurrency } from "@/lib/currency";
 import { getDocumentBrandingSettings } from "@/lib/document-branding";
 import { canGenerateQuotationForStatus, formatQuotationNumber } from "@/lib/documents";
 import { can } from "@/lib/permissions";
-import { QuotationDocument } from "@/lib/pdf/QuotationDocument";
+import { QuotationTemplateComponent, resolveTemplateKey } from "@/lib/pdf/templates";
 import { prisma } from "@/lib/prisma";
-import { getCurrentUserRole } from "@/lib/session";
+import { requireOrgSession } from "@/lib/org-context";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -96,7 +96,7 @@ export async function GET(
   context: { params: Promise<{ id: string }> },
 ) {
   const { id } = await context.params;
-  const { session, user } = await getCurrentUserRole();
+  const { session, user, orgId, org: orgCtx } = await requireOrgSession();
   const permissionUser = { role: user.role, permissions: user.permissions };
 
   if (
@@ -110,7 +110,7 @@ export async function GET(
   }
 
   const job = await prisma.job.findUnique({
-    where: { id },
+    where: { id, orgId },
     select: {
       id: true,
       jobNumber: true,
@@ -147,8 +147,23 @@ export async function GET(
     return NextResponse.json({ error: "Quotation can only be generated after diagnosis starts." }, { status: 409 });
   }
 
-  const currency = getAppCurrency();
-  const branding = await getDocumentBrandingSettings();
+  const isReadOnly = orgCtx.access.isSuspended || user.accessMode === "READ_ONLY";
+  if (isReadOnly && !job.quotedAt) {
+    return NextResponse.json(
+      { error: "Workspace is read-only. Generating new quotations is disabled until billing is restored." },
+      { status: 402 },
+    );
+  }
+
+  const org = await prisma.organization.findUnique({ where: { id: orgId }, select: { plan: true, baseCurrency: true } }).catch(() => null);
+  const currency = normalizeCurrency(org?.baseCurrency, "UGX");
+  const branding = await getDocumentBrandingSettings(orgId);
+  const templateKey = resolveTemplateKey({
+    kind: "QUOTATION",
+    requestedKey: (branding as unknown as { quotationTemplateKey?: string | null }).quotationTemplateKey,
+    plan: org?.plan ?? "STARTER",
+  });
+  const QuoteDoc = QuotationTemplateComponent(templateKey);
   const bill = getClientBill(job) ?? 0;
   const vatApplicable = (job as { vatApplicable?: boolean }).vatApplicable ?? true;
   const vatRate = Math.max(0, branding.vatRatePercent) / 100;
@@ -166,19 +181,20 @@ export async function GET(
     branding.sequencePadLength,
   );
 
-  if (!job.quotedAt) {
-    await prisma.job.update({ where: { id: job.id }, data: { quotedAt: issuedAtDate } });
+  if (!isReadOnly && !job.quotedAt) {
+    await prisma.job.update({ where: { id: job.id, orgId }, data: { quotedAt: issuedAtDate } });
     await prisma.auditLog.create({
       data: {
         jobId: job.id,
         userId: session.user.id,
         action: "QUOTATION_GENERATED",
         detail: JSON.stringify({ quotationNumber }),
+        orgId,
       },
     });
   }
 
-  const docElement = createElement(QuotationDocument, {
+  const docElement = createElement(QuoteDoc as never, {
     companyName: branding.companyName,
     companyTagline: branding.companyTagline ?? "",
     companyAddressLine1: branding.companyAddressLine1,

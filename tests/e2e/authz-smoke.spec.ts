@@ -89,5 +89,10 @@ test("admin sees admin navigation and can open user settings", async ({ page }) 
 
   await page.getByRole("link", { name: "Users" }).first().click();
   await page.waitForURL("**/settings/users");
-  await expect(page.getByRole("button", { name: "Create User" })).toBeVisible();
+
+  // "Create" button lives inside the collapsed "Add User" <details> panel.
+  const addUserSummary = page.locator("summary", { hasText: "Add User" });
+  await addUserSummary.scrollIntoViewIfNeeded();
+  await addUserSummary.click();
+  await expect(page.getByRole("button", { name: "Create" }).first()).toBeVisible();
 });

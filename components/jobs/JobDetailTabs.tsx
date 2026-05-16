@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
 
-import { markMessagesReadAction, sendManualReplyAction, sendQuotationViaWhatsAppAction, sendInvoiceViaWhatsAppAction, sendJobCardViaWhatsAppAction, updateJobAction, updateOneTimeExternalAssignmentAction } from "@/app/(app)/jobs/[id]/actions";
+import { markMessagesReadAction, sendManualReplyAction, sendQuotationViaWhatsAppAction, sendInvoiceViaWhatsAppAction, sendJobCardViaWhatsAppAction, updateJobAction, updateOneTimeExternalAssignmentAction, recordClientPaymentAction } from "@/app/(app)/jobs/[id]/actions";
 import { JobStatusBadge } from "@/components/jobs/JobStatusBadge";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { AuditTimeline } from "@/components/shared/AuditTimeline";
@@ -390,6 +390,8 @@ function MessagesTab({
 type Props = {
   role: Role;
   permissions?: string[];
+  orgBaseCurrency: string;
+  supportedCurrencies: string[];
   returnTo?: string;
   returnLabel?: string;
   initialTab?: string;
@@ -521,7 +523,7 @@ type Props = {
   };
 };
 
-export function JobDetailTabs({ role, permissions = [], job, technicians, deviceHistory = [], returnTo = "/jobs", returnLabel = "All jobs", initialTab }: Props) {
+export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, supportedCurrencies, job, technicians, deviceHistory = [], returnTo = "/jobs", returnLabel = "All jobs", initialTab }: Props) {
   const inboundMessages = job.inboundMessages ?? [];
   const outboundMessages = job.outboundMessages ?? [];
   const unreadCount = inboundMessages.filter((m) => !m.isRead).length;
@@ -533,6 +535,7 @@ export function JobDetailTabs({ role, permissions = [], job, technicians, device
     return "overview";
   });
   const [savedSection, setSavedSection] = useState<string | null>(null);
+  const [clientPaymentCurrency, setClientPaymentCurrency] = useState(orgBaseCurrency);
   const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
   const [showOneTimeForm, setShowOneTimeForm] = useState(false);
   const [isDiagnosisPending, startDiagnosisTransition] = useTransition();
@@ -831,7 +834,10 @@ export function JobDetailTabs({ role, permissions = [], job, technicians, device
             {[job.deviceType, job.brand, job.model].filter(v => v && v !== "Unknown").join(" / ")}
           </p>
         </div>
-        <JobStatusBadge status={job.status} />
+        <div className="flex shrink-0 items-center gap-2">
+          <StatusShareButton jobNumber={job.jobNumber} compact />
+          <JobStatusBadge status={job.status} />
+        </div>
       </div>
       {/* Desktop job header — full card */}
       <div className={`hidden sm:block ${panelShellClass}`}>
@@ -870,50 +876,51 @@ export function JobDetailTabs({ role, permissions = [], job, technicians, device
         ))}
       </div>
 
-      <div className="hidden min-[1025px]:block rounded-xl border border-[var(--line)] bg-[var(--panel)] p-3">
-          <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--ink-muted)]">Documents</p>
-          <div className="flex flex-wrap gap-2">
-            {showJobCardAction ? (
-              <a
-                href={`/api/jobs/${job.id}/job-card`}
-                target="_blank"
-                rel="noreferrer"
-                className="btn-premium-secondary inline-flex shrink-0 items-center justify-center rounded-lg px-3 py-1.5 text-[13px] sm:inline-block sm:w-auto sm:py-2 sm:text-sm"
-              >
-                Generate Job Card
-              </a>
-            ) : null}
-            {showQuotationAction ? (
-              <a
-                href={`/api/jobs/${job.id}/quotation`}
-                target="_blank"
-                rel="noreferrer"
-                className="btn-premium-secondary inline-flex shrink-0 items-center justify-center rounded-lg px-3 py-1.5 text-[13px] sm:inline-block sm:w-auto sm:py-2 sm:text-sm"
-              >
-                Generate Quotation
-              </a>
-            ) : null}
-            {showInvoiceAction ? (
-              <a
-                href={`/api/jobs/${job.id}/invoice`}
-                target="_blank"
-                rel="noreferrer"
-                className="btn-premium-secondary inline-flex shrink-0 items-center justify-center rounded-lg px-3 py-1.5 text-[13px] sm:inline-block sm:w-auto sm:py-2 sm:text-sm"
-              >
-                Generate Invoice
-              </a>
-            ) : null}
-          </div>
-          {documentHints.length > 0 ? (
-            <div className="mt-2 space-y-1">
-              {documentHints.map((hint) => (
-                <p key={hint} className="text-xs text-[var(--ink-muted)]">
-                  {hint}
-                </p>
-              ))}
-            </div>
-          ) : null}
-        </div>
+       <div className="hidden min-[1025px]:block rounded-xl border border-[var(--line)] bg-[var(--panel)] p-3">
+         <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--ink-muted)]">Documents</p>
+         <div className="flex flex-wrap items-center gap-2">
+           {/* Share status link */}
+           <StatusShareButton jobNumber={job.jobNumber} />
+           {showJobCardAction || showQuotationAction || showInvoiceAction ? (
+             <details className="relative">
+               <summary className="btn-premium-secondary inline-flex cursor-pointer list-none items-center justify-center gap-2 rounded-lg px-3 py-1.5 text-[13px] sm:py-2 sm:text-sm">
+                 <span>Open</span>
+                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+               </summary>
+               <div className="panel-shadow absolute right-0 z-20 mt-2 w-56 overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
+                 <div className="py-1">
+                   {showJobCardAction ? (
+                     <a href={`/api/jobs/${job.id}/job-card`} target="_blank" rel="noreferrer" className="flex w-full items-center gap-2.5 px-4 py-3 text-left text-sm font-medium text-[var(--ink)] transition hover:bg-[var(--panel-strong)]">
+                       Job Card PDF
+                     </a>
+                   ) : null}
+                   {showQuotationAction ? (
+                     <a href={`/api/jobs/${job.id}/quotation`} target="_blank" rel="noreferrer" className="flex w-full items-center gap-2.5 px-4 py-3 text-left text-sm font-medium text-[var(--ink)] transition hover:bg-[var(--panel-strong)]">
+                       Quotation PDF
+                     </a>
+                   ) : null}
+                   {showInvoiceAction ? (
+                     <a href={`/api/jobs/${job.id}/invoice`} target="_blank" rel="noreferrer" className="flex w-full items-center gap-2.5 px-4 py-3 text-left text-sm font-medium text-[var(--ink)] transition hover:bg-[var(--panel-strong)]">
+                       Invoice PDF
+                     </a>
+                   ) : null}
+                 </div>
+               </div>
+             </details>
+           ) : (
+             <p className="text-sm text-[var(--ink-muted)]">No documents available.</p>
+           )}
+         </div>
+         {documentHints.length > 0 ? (
+           <div className="mt-2 space-y-1">
+             {documentHints.map((hint) => (
+               <p key={hint} className="text-xs text-[var(--ink-muted)]">
+                 {hint}
+               </p>
+             ))}
+           </div>
+         ) : null}
+       </div>
 
       {active === "overview" ? (
         <div className={panelShellClass}>
@@ -1393,52 +1400,66 @@ export function JobDetailTabs({ role, permissions = [], job, technicians, device
           }}
           className={`${panelShellClass} space-y-3 [&_*]:min-w-0`}
         >
-          <p className="text-xs font-semibold uppercase tracking-wide text-[var(--ink-muted)]">Billing</p>
-          <input
-            name="externalTechBill"
-            type="number"
-            step="0.01"
-            defaultValue={job.externalTechBill ?? undefined}
-            placeholder={repairCostLabel}
-            className={fieldClass}
-          />
-          {!canManageFinancials ? (
-            <p className="text-xs text-[var(--ink-muted)]">
-              Client billing and payout controls are admin-only.
-            </p>
-          ) : null}
-          {canManageFinancials ? (
-            <input
-              name="clientBill"
-              type="number"
-              step="0.01"
-              defaultValue={job.clientBill ?? undefined}
-              placeholder="Our bill to client"
-              className={fieldClass}
-            />
-          ) : null}
-          {canManageFinancials ? (
-            <label className="flex items-center gap-2 text-sm text-[var(--ink)]">
-              <input
-                type="checkbox"
-                name="vatApplicable"
-                value="true"
-                defaultChecked={vatApplicable}
-              />
-              <input type="hidden" name="vatApplicable" value="false" />
-              VAT applicable (18%)
-            </label>
-          ) : null}
-          {canManageFinancials ? (
-            <p className="text-xs text-[var(--ink-muted)]">
-              Repair cost: {formatBillAmount(repairCostBeforeVat)} | VAT: {formatBillAmount(vatAmount)} | Total: {formatBillAmount(clientBillValue)}
-            </p>
-          ) : null}
-          {canManageFinancials ? (
-              <p className={`text-xs [overflow-wrap:anywhere] ${existingMargin !== null && existingMargin >= 0 ? "text-[var(--accent)]" : "text-black"}`}>
-                Repair margin: {existingMargin === null ? "Set external tech bill and client bill" : `${existingMargin >= 0 ? "+" : ""}${formatBillAmount(existingMargin)}`}
+          <div className={softSectionClass}>
+            <p className="text-xs font-semibold uppercase tracking-wide text-[var(--ink-muted)]">Billing</p>
+            <div className="grid gap-2 sm:grid-cols-2">
+              <div>
+                <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">{repairCostLabel}</label>
+                <input
+                  name="externalTechBill"
+                  type="number"
+                  step="0.01"
+                  defaultValue={job.externalTechBill ?? undefined}
+                  placeholder="0.00"
+                  className={fieldClass}
+                />
+              </div>
+              {canManageFinancials ? (
+                <div>
+                  <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">Client bill</label>
+                  <input
+                    name="clientBill"
+                    type="number"
+                    step="0.01"
+                    defaultValue={job.clientBill ?? undefined}
+                    placeholder="0.00"
+                    className={fieldClass}
+                  />
+                </div>
+              ) : null}
+            </div>
+            {canManageFinancials ? (
+              <label className="flex items-center gap-2 text-sm text-[var(--ink)]">
+                <input type="checkbox" name="vatApplicable" value="true" defaultChecked={vatApplicable} />
+                <input type="hidden" name="vatApplicable" value="false" />
+                VAT applicable (18%)
+              </label>
+            ) : null}
+            {canManageFinancials ? (
+              <div className="grid grid-cols-3 gap-2 rounded-lg bg-[var(--panel-strong)] p-2 text-center">
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">Pre-VAT</p>
+                  <p className="mt-0.5 text-sm font-bold text-[var(--ink)]">{formatBillAmount(repairCostBeforeVat)}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">VAT</p>
+                  <p className="mt-0.5 text-sm font-bold text-[var(--ink)]">{formatBillAmount(vatAmount)}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">Total</p>
+                  <p className="mt-0.5 text-sm font-bold text-[var(--ink)]">{formatBillAmount(clientBillValue)}</p>
+                </div>
+              </div>
+            ) : null}
+            {canManageFinancials ? (
+              <p className={`text-xs font-medium [overflow-wrap:anywhere] ${existingMargin === null ? "text-[var(--ink-muted)]" : existingMargin >= 0 ? "text-[var(--accent)]" : "text-red-500"}`}>
+                Margin: {existingMargin === null ? "Set both bills to calculate" : `${existingMargin >= 0 ? "+" : ""}${formatBillAmount(existingMargin)}`}
               </p>
-          ) : null}
+            ) : null}
+            {!canManageFinancials ? (
+              <p className="text-xs text-[var(--ink-muted)]">Client billing and payout controls are admin-only.</p>
+            ) : null}
+          </div>
 
           {/* ── Client payment section ──────────────────────────────────── */}
           {canManageFinancials && typeof job.clientBill === "number" && job.clientBill > 0 ? (
@@ -1467,6 +1488,83 @@ export function JobDetailTabs({ role, permissions = [], job, technicians, device
                 placeholder="Payment reference / receipt # (optional)"
                 className={fieldClass}
               />
+
+              <div className="rounded-lg border border-[var(--line)] bg-[var(--panel)] p-2">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Record payment</p>
+                <form
+                  action={(fd) => {
+                    fd.set("jobId", job.id);
+                    // Default reference to whatever is in the ref input (if any).
+                    const existingRef = String(fd.get("reference") ?? "").trim();
+                    if (!existingRef && job.clientPaymentRef) {
+                      fd.set("reference", job.clientPaymentRef);
+                    }
+                    startFinancialTransition(async () => {
+                      const res = await recordClientPaymentAction(fd);
+                      if (res.error) {
+                        toast.error(res.error);
+                        return;
+                      }
+                      toast.success("Payment recorded");
+                      router.refresh();
+                    });
+                  }}
+                  className="mt-2 grid gap-2 sm:grid-cols-[160px_200px_180px_1fr_auto]"
+                >
+                  <input
+                    name="amount"
+                    inputMode="decimal"
+                    placeholder="Amount"
+                    className={fieldClass}
+                    required
+                  />
+                  <select name="method" defaultValue="CASH" className={fieldClass}>
+                    <option value="CASH">CASH</option>
+                    <option value="MOBILE_MONEY">MOBILE MONEY</option>
+                    <option value="CARD">CARD</option>
+                    <option value="BANK_TRANSFER">BANK TRANSFER</option>
+                    <option value="OTHER">OTHER</option>
+                  </select>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    <select
+                      name="currency"
+                      value={clientPaymentCurrency}
+                      onChange={(e) => setClientPaymentCurrency(e.target.value)}
+                      className={fieldClass}
+                      title={clientPaymentCurrency === orgBaseCurrency ? "" : `Provide exchange rate to ${orgBaseCurrency}`}
+                    >
+                      {supportedCurrencies.map((c) => (
+                        <option key={c} value={c}>{c}</option>
+                      ))}
+                    </select>
+                    <input
+                      name="exchangeRateToBase"
+                      inputMode="decimal"
+                      placeholder={`1 ${clientPaymentCurrency} = ? ${orgBaseCurrency}`}
+                      className={fieldClass}
+                      required={clientPaymentCurrency !== orgBaseCurrency}
+                      disabled={clientPaymentCurrency === orgBaseCurrency}
+                      title={`Required when currency differs from ${orgBaseCurrency}`}
+                    />
+                  </div>
+                  <input
+                    name="reference"
+                    placeholder="Ref (optional)"
+                    className={fieldClass}
+                  />
+                  <button
+                    type="submit"
+                    disabled={isFinancialPending}
+                    className="btn-premium w-full rounded-lg px-3 py-1.5 text-[13px] disabled:opacity-60 sm:w-auto sm:py-2 sm:text-sm"
+                  >
+                    Add payment
+                  </button>
+                </form>
+                <p className="mt-2 text-xs text-[var(--ink-muted)]">
+                  Use this instead of “Mark Paid” so cash-in dashboards stay accurate.
+                </p>
+              </div>
+
               <div className="flex flex-wrap gap-2">
                 <button
                   type="submit"
@@ -1926,5 +2024,83 @@ export function JobDetailTabs({ role, permissions = [], job, technicians, device
         </div>
       </div>
     </div>
+  );
+}
+
+// ── Status share button ───────────────────────────────────────────────────────
+
+function StatusShareButton({ jobNumber, compact = false }: { jobNumber: string; compact?: boolean }) {
+  const [copied, setCopied] = useState(false);
+
+  function getUrl() {
+    return `${window.location.origin}/status/${jobNumber}`;
+  }
+
+  function handleCopy() {
+    navigator.clipboard.writeText(getUrl()).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }
+
+  function handleWhatsApp() {
+    const url = getUrl();
+    const text = `Hi! Here's the live status link for your repair job ${jobNumber}: ${url}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
+  }
+
+  if (compact) {
+    return (
+      <button
+        type="button"
+        onClick={handleCopy}
+        title="Copy client status link"
+        className="flex items-center gap-1 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-1 text-[11px] font-medium text-[var(--ink-muted)] transition hover:border-[var(--accent)]/40 hover:text-[var(--ink)]"
+      >
+        {copied ? (
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+        ) : (
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+        )}
+        {copied ? "Copied" : "Share"}
+      </button>
+    );
+  }
+
+  return (
+    <details className="relative">
+      <summary className="btn-premium-secondary inline-flex cursor-pointer list-none items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-[13px] sm:py-2 sm:text-sm">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+        <span>Share Status</span>
+      </summary>
+      <div className="panel-shadow absolute left-0 z-20 mt-2 w-52 overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
+        <div className="p-3 space-y-2">
+          <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Client status link</p>
+          <p className="break-all rounded bg-[var(--panel-strong)] px-2 py-1.5 font-mono text-[10px] text-[var(--ink-muted)]">
+            /status/{jobNumber}
+          </p>
+          <button
+            type="button"
+            onClick={handleCopy}
+            className="flex w-full items-center gap-2 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-left text-[13px] font-medium text-[var(--ink)] transition hover:bg-[var(--accent)]/10"
+          >
+            {copied ? (
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+            ) : (
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+            )}
+            {copied ? "Copied!" : "Copy link"}
+          </button>
+          <button
+            type="button"
+            onClick={handleWhatsApp}
+            className="flex w-full items-center gap-2 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-left text-[13px] font-medium text-[var(--ink)] transition hover:bg-emerald-500/10"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" className="text-emerald-500"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+            Send via WhatsApp
+          </button>
+        </div>
+      </div>
+    </details>
   );
 }

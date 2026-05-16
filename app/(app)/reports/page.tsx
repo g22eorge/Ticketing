@@ -5,14 +5,14 @@ import { PersistedDisclosure } from "@/components/mobile/PersistedDisclosure";
 import { TechnicianBarChart } from "@/components/reports/ReportsCharts";
 import { MonthSelectForm } from "@/components/shared/MonthSelectForm";
 import { getClientBill, getExternalTechBill, resolveTechCost } from "@/lib/billing";
-import { formatMoney, formatMoneyCompact, getAppCurrency } from "@/lib/currency";
+import { formatMoney, formatMoneyCompact, toBaseAmount } from "@/lib/currency";
 import { formatEATMonthLabel } from "@/lib/date-eat";
 import { UI_JOB_STATUSES, JobStatus, normalizeJobStatus } from "@/lib/job-status";
 import { filterSupportedJobStatuses } from "@/lib/job-status-server";
 import { can } from "@/lib/permissions";
 import { getJobPayoutsByIds } from "@/lib/payouts";
 import { prisma } from "@/lib/prisma";
-import { getCurrentUserRole } from "@/lib/session";
+import { requireOrgSession } from "@/lib/org-context";
 
 type SearchParams = {
   month?: string;
@@ -71,12 +71,14 @@ function monthOptions(count: number) {
   });
 }
 
-function yearOptions(count: number) {
-  const now = new Date();
-  return Array.from({ length: count }, (_, index) => {
-    const year = now.getFullYear() - index;
-    return { value: String(year), label: `${year} Annual Package` };
-  });
+function yearOptions(startYear: number, endYear: number) {
+  const safeStart = Math.min(startYear, endYear);
+  const safeEnd = Math.max(startYear, endYear);
+  const out = [] as Array<{ value: string; label: string }>;
+  for (let year = safeEnd; year >= safeStart; year--) {
+    out.push({ value: String(year), label: `${year} Annual Package` });
+  }
+  return out;
 }
 
 const statusLabel: Record<ReturnType<typeof normalizeJobStatus>, string> = {
@@ -105,11 +107,13 @@ export default async function ReportsPage({
   searchParams: Promise<SearchParams>;
 }) {
   const filters = await searchParams;
-  const { user } = await getCurrentUserRole();
+  const { user, orgId, org } = await requireOrgSession();
   const period: "month" | "year" = filters.period === "year" ? "year" : "month";
   if (!can.viewAccountsSummary(user)) {
     redirect("/dashboard");
   }
+
+  let dbNeedsFix = false;
 
   const selectedMonth = parseMonth(filters.month);
   const selectedYear = Number(filters.year) || new Date().getFullYear();
@@ -128,27 +132,33 @@ export default async function ReportsPage({
     externalCount,
     inHouseCount,
     externalPayoutOutstandingJobs,
+    paidExternalJobs,
+    earliestJob,
+    latestJob,
   ] = await Promise.all([
-    prisma.job.groupBy({ by: ["status"], _count: { status: true } }),
+    prisma.job.groupBy({ by: ["status"], where: { orgId }, _count: { status: true } }),
     // Bug fix #2: narrow select to only fields we actually use
     prisma.job.findMany({
-      where: { status: "COMPLETED" },
+      where: { orgId, status: "COMPLETED" },
       select: { completedAt: true, receivedAt: true, diagnosisNotes: true, externalDiagnosis: true },
     }),
     prisma.job.findMany({
       where: {
+        orgId,
         status: "COMPLETED",
         completedAt: { gte: selectedRange.start, lte: selectedRange.end },
       },
     }),
     prisma.job.findMany({
       where: {
+        orgId,
         status: "COMPLETED",
         completedAt: { gte: prevRange.start, lte: prevRange.end },
       },
     }),
     prisma.job.findMany({
       where: {
+        orgId,
         status: {
           in: filterSupportedJobStatuses([
             "RECEIVED",
@@ -166,17 +176,64 @@ export default async function ReportsPage({
       },
       select: { jobNumber: true, status: true, receivedAt: true, updatedAt: true },
     }),
-    prisma.job.count({ where: { repairPath: "EXTERNAL", status: "COMPLETED", completedAt: { gte: selectedRange.start, lte: selectedRange.end } } }),
-    prisma.job.count({ where: { repairPath: "IN_HOUSE", status: "COMPLETED", completedAt: { gte: selectedRange.start, lte: selectedRange.end } } }),
+    prisma.job.count({ where: { orgId, repairPath: "EXTERNAL", status: "COMPLETED", completedAt: { gte: selectedRange.start, lte: selectedRange.end } } }),
+    prisma.job.count({ where: { orgId, repairPath: "IN_HOUSE", status: "COMPLETED", completedAt: { gte: selectedRange.start, lte: selectedRange.end } } }),
     // Bug fix #1: remove assignedTo filter, add READY_FOR_PICKUP and DELIVERED statuses
     prisma.job.findMany({
       where: {
+        orgId,
         repairPath: "EXTERNAL",
         status: { in: ["READY_FOR_PICKUP", "COMPLETED", "DELIVERED"] as JobStatus[] },
       },
       select: { id: true, externalTechBill: true },
     }),
+    prisma.job.findMany({
+      where: { orgId, externalPaid: true, externalPaidAt: { gte: selectedRange.start, lte: selectedRange.end } },
+      select: { externalTechFee: true, externalTechBill: true },
+    }),
+    prisma.job.findFirst({ where: { orgId }, orderBy: { receivedAt: "asc" }, select: { receivedAt: true } }),
+    prisma.job.findFirst({ where: { orgId }, orderBy: { receivedAt: "desc" }, select: { receivedAt: true } }),
   ]);
+
+  let payments: Array<{ amount: number; currency: string | null; exchangeRateToBase: number | null }> = [];
+  try {
+    payments = await prisma.payment.findMany({
+      where: { orgId, receivedAt: { gte: selectedRange.start, lte: selectedRange.end } },
+      select: { amount: true, currency: true, exchangeRateToBase: true },
+    });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (msg.includes("no such table") && msg.includes("Payment")) dbNeedsFix = true;
+    payments = [];
+  }
+
+  let refunds: Array<{ amount: number; currency: string | null; exchangeRateToBase: number | null }> = [];
+  try {
+    refunds = await prisma.refund.findMany({
+      where: { orgId, refundedAt: { gte: selectedRange.start, lte: selectedRange.end } },
+      select: { amount: true, currency: true, exchangeRateToBase: true },
+    });
+  } catch {
+    refunds = [];
+  }
+
+  let invoicesAgg: { _sum: { totalAmount: number | null; paidAmount: number | null } } = {
+    _sum: { totalAmount: 0, paidAmount: 0 },
+  };
+  try {
+    invoicesAgg = await prisma.invoice.aggregate({
+      where: { orgId, issuedAt: { gte: selectedRange.start, lte: selectedRange.end } },
+      _sum: { totalAmount: true, paidAmount: true },
+    });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (msg.includes("no such table") && msg.includes("Invoice")) dbNeedsFix = true;
+    invoicesAgg = { _sum: { totalAmount: 0, paidAmount: 0 } };
+  }
+
+  const currentYear = new Date().getFullYear();
+  const minYear = earliestJob?.receivedAt?.getFullYear() ?? currentYear;
+  const maxYear = Math.max(currentYear, latestJob?.receivedAt?.getFullYear() ?? currentYear);
 
   const externalPayoutMap = await getJobPayoutsByIds(externalPayoutOutstandingJobs.map((job) => job.id));
   const unpaidPayouts = externalPayoutOutstandingJobs
@@ -185,7 +242,7 @@ export default async function ReportsPage({
       amount: resolveTechCost(externalPayoutMap.get(job.id)?.externalTechFee, job.externalTechBill),
     }));
 
-  const externalPayoutOutstandingTotal = unpaidPayouts.reduce((sum, payout) => sum + payout.amount, 0);
+  const _externalPayoutOutstandingTotal = unpaidPayouts.reduce((sum, payout) => sum + payout.amount, 0);
 
   const statusCount = new Map(statusGroup.map((s) => [normalizeJobStatus(s.status as JobStatus), s._count.status]));
   const statusData = UI_JOB_STATUSES.map((status) => ({
@@ -206,6 +263,24 @@ export default async function ReportsPage({
     (sum, job) => sum + ((getClientBill(job) ?? 0) - (getExternalTechBill(job) ?? 0)),
     0,
   );
+
+  // Cashflow (payments + external payouts).
+  const cashIn = payments.reduce(
+    (sum, p) => sum + toBaseAmount({ amount: p.amount, currency: p.currency, baseCurrency: org.baseCurrency, exchangeRateToBase: p.exchangeRateToBase }),
+    0,
+  );
+  const cashOutRefunds = refunds.reduce(
+    (sum, r) => sum + toBaseAmount({ amount: r.amount, currency: r.currency, baseCurrency: org.baseCurrency, exchangeRateToBase: r.exchangeRateToBase }),
+    0,
+  );
+  const cashOutExternal = paidExternalJobs.reduce(
+    (sum, job) => sum + resolveTechCost(job.externalTechFee, job.externalTechBill),
+    0,
+  );
+  const cashNet = cashIn - cashOutExternal - cashOutRefunds;
+  const issuedTotal = invoicesAgg._sum.totalAmount ?? 0;
+  const issuedPaid = invoicesAgg._sum.paidAmount ?? 0;
+  const issuedBalance = Math.max(0, issuedTotal - issuedPaid);
   const averageRepairTimeHours = (() => {
     const values = completedAll
       .filter((job) => job.completedAt)
@@ -260,6 +335,23 @@ export default async function ReportsPage({
     return [...freq.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8);
   })();
 
+  const dbFixBanner = dbNeedsFix ? (
+    <section className="panel-shadow rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-100">
+      <p className="font-semibold text-amber-50">Finance tables are missing in the database.</p>
+      <p className="mt-1 text-amber-100/90">
+        Run <span className="mono">/api/admin/db-fix</span> as the platform admin to create <span className="mono">Invoice</span> and <span className="mono">Payment</span>.
+      </p>
+      <a
+        className="mt-3 inline-flex rounded-lg border border-amber-500/30 bg-black/20 px-3 py-2 text-xs font-semibold text-amber-50 hover:bg-black/30"
+        href="/api/admin/db-fix"
+        target="_blank"
+        rel="noreferrer"
+      >
+        Open DB Fix
+      </a>
+    </section>
+  ) : null;
+
   const totalPath = inHouseCount + externalCount;
   const externalRatio = totalPath > 0 ? (externalCount / totalPath) * 100 : 0;
 
@@ -303,8 +395,8 @@ export default async function ReportsPage({
     period === "year"
       ? String(selectedYear - 1)
       : monthLabel(new Date(selectedMonth.year, selectedMonth.month - 2, 1).getFullYear(), new Date(selectedMonth.year, selectedMonth.month - 2, 1).getMonth() + 1);
-  const currency = getAppCurrency();
-  const selectableMonths = period === "year" ? yearOptions(6) : monthOptions(18);
+  const currency = org.baseCurrency;
+  const selectableMonths = period === "year" ? yearOptions(minYear, maxYear) : monthOptions(18);
   const monthlyExportMonth = monthLabel(selectedMonth.year, selectedMonth.month);
   const trendNow = new Date();
   const yearToDateMonthCount = trendNow.getMonth() + 1;
@@ -393,6 +485,28 @@ export default async function ReportsPage({
     ...job,
     daysPending: Math.floor((nowTs.getTime() - job.updatedAt.getTime()) / (1000 * 60 * 60 * 24)),
   }));
+
+  const [salesByPeriod, invoicesByPeriod, salesTargetsForPeriod, staffJobRevenue] = await Promise.all([
+    // POS sales paid in selected period
+    prisma.sale.findMany({
+      where: { orgId, status: "PAID", paidAt: { gte: selectedRange.start, lte: selectedRange.end } },
+      select: { totalAmount: true, createdById: true, createdBy: { select: { id: true, name: true } } },
+    }).catch(() => [] as any[]),
+    // Invoices paid in selected period
+    prisma.invoice.findMany({
+      where: { orgId, status: "PAID", paidAt: { gte: selectedRange.start, lte: selectedRange.end } },
+      select: { totalAmount: true, job: { select: { createdById: true, createdBy: { select: { id: true, name: true } } } } },
+    }).catch(() => [] as any[]),
+    // Sales targets for selected period (team + individual)
+    prisma.salesTarget.findMany({
+      where: { orgId, period: selectedMonthString },
+    }).catch(() => [] as any[]),
+    // Completed jobs in period attributed to who created them
+    prisma.job.findMany({
+      where: { orgId, status: "COMPLETED", completedAt: { gte: selectedRange.start, lte: selectedRange.end } },
+      select: { clientBill: true, externalTechBill: true, createdById: true, createdBy: { select: { id: true, name: true } } },
+    }).catch(() => [] as any[]),
+  ]);
 
   const trendByDevice = new Map<string, Map<string, number>>();
   for (const job of trendJobs) {
@@ -510,6 +624,45 @@ export default async function ReportsPage({
   const queuePressure = funnel.diagnosing + funnel.awaitingApproval + funnel.inRepair;
   const completionMomentum = completedSelected.length - completedPrev.length;
 
+  const posSalesTotal = (salesByPeriod as any[]).reduce((s: number, r: any) => s + r.totalAmount, 0);
+  const invoicesPaidTotal = (invoicesByPeriod as any[]).reduce((s: number, i: any) => s + i.totalAmount, 0);
+  const repairTotal = revenueSelected; // already computed
+  const totalAllChannels = repairTotal + posSalesTotal + invoicesPaidTotal;
+
+  // Per-staff revenue map
+  const staffRevenueMap = new Map<string, { name: string; repairRev: number; posRev: number; invoiceRev: number; total: number; target: number }>();
+
+  for (const j of staffJobRevenue as any[]) {
+    if (!j.createdById || !j.createdBy) continue;
+    const e = staffRevenueMap.get(j.createdById) ?? { name: j.createdBy.name, repairRev: 0, posRev: 0, invoiceRev: 0, total: 0, target: 0 };
+    e.repairRev += getClientBill(j) ?? 0;
+    e.total = e.repairRev + e.posRev + e.invoiceRev;
+    staffRevenueMap.set(j.createdById, e);
+  }
+  for (const s of salesByPeriod as any[]) {
+    if (!s.createdById || !s.createdBy) continue;
+    const e = staffRevenueMap.get(s.createdById) ?? { name: s.createdBy.name, repairRev: 0, posRev: 0, invoiceRev: 0, total: 0, target: 0 };
+    e.posRev += s.totalAmount;
+    e.total = e.repairRev + e.posRev + e.invoiceRev;
+    staffRevenueMap.set(s.createdById, e);
+  }
+  for (const inv of invoicesByPeriod as any[]) {
+    if (!inv.job?.createdById || !inv.job?.createdBy) continue;
+    const e = staffRevenueMap.get(inv.job.createdById) ?? { name: inv.job.createdBy.name, repairRev: 0, posRev: 0, invoiceRev: 0, total: 0, target: 0 };
+    e.invoiceRev += inv.totalAmount;
+    e.total = e.repairRev + e.posRev + e.invoiceRev;
+    staffRevenueMap.set(inv.job.createdById, e);
+  }
+  for (const t of salesTargetsForPeriod as any[]) {
+    if (!t.userId) continue;
+    const e = staffRevenueMap.get(t.userId);
+    if (e) { e.target = t.targetRevenue; staffRevenueMap.set(t.userId, e); }
+  }
+  const staffRevRows = [...staffRevenueMap.values()].sort((a, b) => b.total - a.total);
+  const teamTarget = (salesTargetsForPeriod as any[]).find((t: any) => !t.userId);
+  const teamTargetRevenue = teamTarget?.targetRevenue ?? 0;
+  const teamTargetPct = teamTargetRevenue > 0 ? Math.round((totalAllChannels / teamTargetRevenue) * 100) : null;
+
   const exportItems = [
     {
       title: "Pipeline Aging",
@@ -565,6 +718,7 @@ export default async function ReportsPage({
 
   return (
     <div className="space-y-5">
+      {dbFixBanner}
 
       {/* 1. COMMAND HEADER */}
       <section className="panel-shadow flex flex-wrap items-center gap-3 rounded-xl border border-[var(--line)] bg-[var(--panel)] px-5 py-4">
@@ -616,25 +770,45 @@ export default async function ReportsPage({
 
       {/* 2. FINANCIAL COMMAND CENTER — 4 premium KPI tiles (clickable) */}
       <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        {/* Revenue */}
         <Link
-          href={`/jobs?status=COMPLETED&dateField=completedAt&from=${selectedRange.start.toISOString().slice(0,10)}&to=${selectedRange.end.toISOString().slice(0,10)}`}
-          className="panel-shadow relative overflow-hidden rounded-xl border border-[var(--accent)]/30 bg-[var(--panel)] p-4 transition hover:-translate-y-[2px] hover:border-[var(--accent)]/60"
+          href="/documents/invoices"
+          className="panel-shadow relative overflow-hidden rounded-xl border border-emerald-200/60 bg-[var(--panel)] p-4 transition hover:-translate-y-[2px] hover:border-emerald-400/60"
         >
-          <div className="absolute inset-0 bg-gradient-to-br from-[var(--accent)]/5 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-br from-emerald-50/30 to-transparent" />
           <div className="relative">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Revenue</p>
-            <p className="mt-1.5 text-2xl font-bold text-[var(--ink)]">{formatMoneyCompact(revenueSelected, currency)}</p>
-            <div className="mt-2 flex items-center gap-1.5">
-              <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold ${revenueDelta >= 0 ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-600"}`}>
-                {revenueDelta >= 0 ? "+" : ""}{formatMoneyCompact(Math.abs(revenueDelta), currency)}
-              </span>
-              <span className="text-[10px] text-[var(--ink-muted)]">vs {prevMonthString}</span>
-            </div>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Cash In</p>
+            <p className="mt-1.5 text-2xl font-bold text-emerald-700">{formatMoneyCompact(cashIn, currency)}</p>
+            <p className="mt-2 text-[10px] text-[var(--ink-muted)]">
+              Balance {formatMoneyCompact(issuedBalance, currency)}
+            </p>
           </div>
         </Link>
 
-        {/* Margin */}
+        <Link
+          href="/payout-followups"
+          className="panel-shadow relative overflow-hidden rounded-xl border border-amber-200/60 bg-[var(--panel)] p-4 transition hover:-translate-y-[2px] hover:border-amber-400/60"
+        >
+          <div className="absolute inset-0 bg-gradient-to-br from-amber-50/30 to-transparent" />
+          <div className="relative">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Cash Out</p>
+            <p className="mt-1.5 text-2xl font-bold text-amber-700">{formatMoneyCompact(cashOutExternal + cashOutRefunds, currency)}</p>
+            <p className="mt-2 text-[10px] text-[var(--ink-muted)]">
+              payouts {formatMoneyCompact(cashOutExternal, currency)} · refunds {formatMoneyCompact(cashOutRefunds, currency)}
+            </p>
+          </div>
+        </Link>
+
+        <div className={`panel-shadow relative overflow-hidden rounded-xl border bg-[var(--panel)] p-4 ${cashNet >= 0 ? "border-blue-200/60" : "border-red-200/60"}`}>
+          <div className={`absolute inset-0 bg-gradient-to-br ${cashNet >= 0 ? "from-blue-50/30" : "from-red-50/30"} to-transparent`} />
+          <div className="relative">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Net</p>
+            <p className={`mt-1.5 text-2xl font-bold ${cashNet >= 0 ? "text-blue-700" : "text-red-600"}`}>
+              {formatMoneyCompact(cashNet, currency)}
+            </p>
+            <p className="mt-2 text-[10px] text-[var(--ink-muted)]">cash in minus out</p>
+          </div>
+        </div>
+
         <Link
           href={`/api/reports/export?type=revenue-variance&month=${monthlyExportMonth}`}
           className={`panel-shadow relative overflow-hidden rounded-xl border bg-[var(--panel)] p-4 transition hover:-translate-y-[2px] ${marginSelected >= 0 ? "border-emerald-200/60 hover:border-emerald-400/60" : "border-red-200/60 hover:border-red-400/60"}`}
@@ -649,36 +823,6 @@ export default async function ReportsPage({
               {completedSelected.length > 0
                 ? `${formatMoneyCompact(marginSelected / completedSelected.length, currency)} avg / job`
                 : "No completed jobs"}
-            </p>
-          </div>
-        </Link>
-
-        {/* Completed */}
-        <Link
-          href={`/jobs?status=COMPLETED&dateField=completedAt&from=${selectedRange.start.toISOString().slice(0,10)}&to=${selectedRange.end.toISOString().slice(0,10)}`}
-          className="panel-shadow relative overflow-hidden rounded-xl border border-blue-200/60 bg-[var(--panel)] p-4 transition hover:-translate-y-[2px] hover:border-blue-400/60"
-        >
-          <div className="absolute inset-0 bg-gradient-to-br from-blue-50/30 to-transparent" />
-          <div className="relative">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Completed</p>
-            <p className="mt-1.5 text-2xl font-bold text-[var(--ink)]">{completedSelected.length}</p>
-            <p className="mt-2 text-[10px] text-[var(--ink-muted)]">
-              {completionMomentum >= 0 ? "+" : ""}{completionMomentum} vs {prevMonthString}
-            </p>
-          </div>
-        </Link>
-
-        {/* Payouts Due */}
-        <Link
-          href="/payout-followups"
-          className="panel-shadow relative overflow-hidden rounded-xl border border-amber-200/60 bg-[var(--panel)] p-4 transition hover:-translate-y-[2px] hover:border-amber-400/60"
-        >
-          <div className="absolute inset-0 bg-gradient-to-br from-amber-50/30 to-transparent" />
-          <div className="relative">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Payouts Due</p>
-            <p className="mt-1.5 text-2xl font-bold text-amber-700">{formatMoneyCompact(externalPayoutOutstandingTotal, currency)}</p>
-            <p className="mt-2 text-[10px] text-[var(--ink-muted)]">
-              {unpaidPayouts.length} unpaid external {unpaidPayouts.length === 1 ? "job" : "jobs"}
             </p>
           </div>
         </Link>
@@ -1141,7 +1285,7 @@ export default async function ReportsPage({
       </div>
 
       {/* 9. EXPORT CENTER */}
-      <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-5">
+      <section id="export-center" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-5">
         <div className="mb-4 flex items-center justify-between gap-2">
           <div>
             <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Export Center</p>
@@ -1176,7 +1320,114 @@ export default async function ReportsPage({
         </div>
       </section>
 
-      {/* 10. INSIGHT FOOTER */}
+      {/* 10. SALES BY CHANNEL */}
+      <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Revenue by Channel</p>
+            <p className="mt-0.5 text-sm font-semibold text-[var(--ink)]">{selectedMonthString}</p>
+          </div>
+          {teamTargetRevenue > 0 && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-[var(--ink-muted)]">Team target</span>
+              <span className={`text-sm font-bold ${(teamTargetPct ?? 0) >= 100 ? "text-emerald-600" : "text-[var(--accent)]"}`}>{teamTargetPct}%</span>
+              <span className="text-xs text-[var(--ink-muted)]">of {formatMoneyCompact(teamTargetRevenue, currency)}</span>
+            </div>
+          )}
+        </div>
+
+        {teamTargetRevenue > 0 && (
+          <div className="mb-4">
+            <div className="h-2 w-full overflow-hidden rounded-full bg-[var(--panel-strong)]">
+              <div className={`h-full rounded-full ${(teamTargetPct ?? 0) >= 100 ? "bg-emerald-500" : "bg-[var(--accent)]"}`} style={{ width: `${Math.min(100, teamTargetPct ?? 0)}%` }} />
+            </div>
+            <div className="mt-1 flex justify-between text-[10px] text-[var(--ink-muted)]">
+              <span>{formatMoneyCompact(totalAllChannels, currency)} achieved</span>
+              <span>target {formatMoneyCompact(teamTargetRevenue, currency)}</span>
+            </div>
+          </div>
+        )}
+
+        <div className="grid gap-3 sm:grid-cols-3">
+          {[
+            { label: "Repair Jobs", amount: repairTotal, color: "bg-sky-500", textColor: "text-sky-600", count: `${completedSelected.length} completed`, href: `/jobs?status=COMPLETED` },
+            { label: "POS Sales", amount: posSalesTotal, color: "bg-violet-500", textColor: "text-violet-600", count: `${(salesByPeriod as any[]).length} sales`, href: `/pos` },
+            { label: "Invoice Payments", amount: invoicesPaidTotal, color: "bg-emerald-500", textColor: "text-emerald-600", count: `${(invoicesByPeriod as any[]).length} invoices`, href: `/documents/invoices` },
+          ].map(ch => {
+            const pct = totalAllChannels > 0 ? Math.round((ch.amount / totalAllChannels) * 100) : 0;
+            return (
+              <Link key={ch.label} href={ch.href} className="rounded-xl border border-[var(--line)] bg-[var(--panel-strong)] p-3 transition hover:border-[var(--accent)]/40">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className={`inline-block h-2 w-2 rounded-full ${ch.color}`} />
+                  <p className="text-xs font-medium text-[var(--ink)]">{ch.label}</p>
+                </div>
+                <p className={`text-[15px] font-black leading-tight ${ch.textColor}`}>{formatMoneyCompact(ch.amount, currency)}</p>
+                <div className="mt-2 flex items-center justify-between">
+                  <span className="text-[10px] text-[var(--ink-muted)]">{ch.count}</span>
+                  <span className="text-[10px] font-bold text-[var(--ink-muted)]">{pct}%</span>
+                </div>
+                <div className="mt-1.5 h-1 w-full overflow-hidden rounded-full bg-[var(--line)]">
+                  <div className={`h-full rounded-full ${ch.color}`} style={{ width: `${pct}%` }} />
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+
+        <div className="mt-3 flex items-center justify-between rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2">
+          <p className="text-xs font-semibold text-[var(--ink)]">Total — All Channels</p>
+          <p className="text-sm font-black text-[var(--accent)]">{formatMoney(totalAllChannels, currency)}</p>
+        </div>
+      </section>
+
+      {/* 11. STAFF SALES PERFORMANCE */}
+      {staffRevRows.length > 0 && (
+        <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+          <p className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Staff Sales Performance — {selectedMonthString}</p>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="border-b border-[var(--line)]">
+                  {["Staff", "Repair Rev", "POS Rev", "Invoice Rev", "Total", "vs Target"].map(h => (
+                    <th key={h} className="pb-2 text-left text-[10px] font-semibold uppercase tracking-[0.1em] text-[var(--ink-muted)] pr-4 last:pr-0">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {staffRevRows.map((s, i) => {
+                  const pct = s.target > 0 ? Math.round((s.total / s.target) * 100) : null;
+                  return (
+                    <tr key={s.name} className={i < staffRevRows.length - 1 ? "border-b border-[var(--line)]" : ""}>
+                      <td className="py-2 pr-4 font-semibold text-[var(--ink)]">{s.name}</td>
+                      <td className="py-2 pr-4 text-sky-600">{s.repairRev > 0 ? formatMoneyCompact(s.repairRev, currency) : "—"}</td>
+                      <td className="py-2 pr-4 text-violet-600">{s.posRev > 0 ? formatMoneyCompact(s.posRev, currency) : "—"}</td>
+                      <td className="py-2 pr-4 text-emerald-600">{s.invoiceRev > 0 ? formatMoneyCompact(s.invoiceRev, currency) : "—"}</td>
+                      <td className="py-2 pr-4 font-bold text-[var(--accent)]">{formatMoneyCompact(s.total, currency)}</td>
+                      <td className="py-2">
+                        {pct !== null ? (
+                          <div className="flex items-center gap-2">
+                            <div className="w-16 h-1.5 overflow-hidden rounded-full bg-[var(--line)]">
+                              <div className={`h-full rounded-full ${pct >= 100 ? "bg-emerald-500" : "bg-[var(--accent)]"}`} style={{ width: `${Math.min(100, pct)}%` }} />
+                            </div>
+                            <span className={`font-bold ${pct >= 100 ? "text-emerald-600" : pct >= 60 ? "text-[var(--accent)]" : "text-amber-600"}`}>{pct}%</span>
+                          </div>
+                        ) : <span className="text-[var(--ink-muted)]">—</span>}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          {period === "month" && (
+            <p className="mt-2 text-[10px] text-[var(--ink-muted)]">
+              Targets are set in <Link href="/settings/targets" className="text-[var(--accent)] hover:underline">Settings → Sales Targets</Link>.
+            </p>
+          )}
+        </section>
+      )}
+
+      {/* 12. INSIGHT FOOTER */}
       <div className="rounded-lg border border-[var(--line)] bg-[var(--panel)] px-4 py-3 text-xs text-[var(--ink-muted)]">
         <span className="font-medium text-[var(--ink)]">Margin health:</span>{" "}
         {marginSelected >= 0
@@ -1185,10 +1436,10 @@ export default async function ReportsPage({
         {user.role === "ADMIN" ? (
           <>
             {" "}Use{" "}
-            <Link href={`/api/reports/export?type=revenue-variance&month=${monthlyExportMonth}`} className="text-[var(--accent)] hover:underline">
+            <Link href="#export-center" className="text-[var(--accent)] hover:underline">
               Repair Margin CSV
             </Link>
-            {" "}to investigate client bill vs external tech bill variance.
+            {" "}above to investigate client bill vs external tech bill variance.
           </>
         ) : (
           <> Use Pipeline Aging and Device Performance CSVs to drill into operational bottlenecks.</>

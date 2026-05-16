@@ -2,11 +2,11 @@ import { prisma } from "@/lib/prisma";
 
 export const defaultBranding = {
   id: "singleton",
-  companyName: "Eagle Info Solutions",
-  companyTagline: "SMC LIMITED",
-  companyAddressLine1: "Nalubega Complex, 1st Floor",
-  companyAddressLine2: "Shop L28, Bombo Road Opposite Watoto Church",
-  companyContacts: "+256772 006 344 | +256754 006 344",
+  companyName: "",
+  companyTagline: "",
+  companyAddressLine1: "",
+  companyAddressLine2: "",
+  companyContacts: "",
   companyEmail: "",
   companyWebsite: "",
   documentTitle: "Job Card",
@@ -14,13 +14,13 @@ export const defaultBranding = {
   quoteFormat: "{PREFIX} {M}/{YYYY}/{SEQ}",
   quoteValidityDays: 30,
   sequencePadLength: 4,
-  vatDefaultApplicable: true,
+  vatDefaultApplicable: false,
   vatRatePercent: 18,
   vatLabel: "VAT",
   termsText:
     "Quotation valid for 30 days from date issued.\nRepair work begins only after approval is recorded.\nParts availability may affect final timeline.\nHidden pre-existing faults may affect final outcome.\nUncollected devices may attract storage fees after notice.",
-  footerText: "System built by Almeida @ 2026 all rights reserved.",
-  signatureCompanyLabel: "Signed by: Eagle Info Solutions",
+  footerText: "",
+  signatureCompanyLabel: "Signed by: Company",
   signatureClientLabel: "Signed by: Client",
   // Color scheme - Black, Gold & White
   primaryColor: "#000000",
@@ -29,6 +29,12 @@ export const defaultBranding = {
   backgroundColor: "#FFFFFF",
   surfaceColor: "#F5F5F5",
   borderColor: "#E5E5E5",
+
+  // Template selections
+  invoiceTemplateKey: "invoice_classic",
+  quotationTemplateKey: "quote_classic",
+  jobCardTemplateKey: "job_card_classic",
+  receiptTemplateKey: "receipt_classic",
 };
 
 type BrandingSettings = typeof defaultBranding;
@@ -67,6 +73,11 @@ function coerceRow(row: Record<string, unknown>): BrandingSettings {
     backgroundColor: String(row.backgroundColor ?? defaultBranding.backgroundColor),
     surfaceColor: String(row.surfaceColor ?? defaultBranding.surfaceColor),
     borderColor: String(row.borderColor ?? defaultBranding.borderColor),
+
+    invoiceTemplateKey: String(row.invoiceTemplateKey ?? defaultBranding.invoiceTemplateKey),
+    quotationTemplateKey: String(row.quotationTemplateKey ?? defaultBranding.quotationTemplateKey),
+    jobCardTemplateKey: String(row.jobCardTemplateKey ?? defaultBranding.jobCardTemplateKey),
+    receiptTemplateKey: String(row.receiptTemplateKey ?? defaultBranding.receiptTemplateKey),
   };
 }
 
@@ -95,9 +106,37 @@ async function ensureRawTable() {
       footerText TEXT NOT NULL,
       signatureCompanyLabel TEXT NOT NULL,
       signatureClientLabel TEXT NOT NULL,
+      invoiceTemplateKey TEXT NOT NULL DEFAULT 'invoice_classic',
+      quotationTemplateKey TEXT NOT NULL DEFAULT 'quote_classic',
+      jobCardTemplateKey TEXT NOT NULL DEFAULT 'job_card_classic',
+      receiptTemplateKey TEXT NOT NULL DEFAULT 'receipt_classic',
       updatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
     )
   `);
+
+  // Older installs may have the table without the newer template columns.
+  // Keep this local to branding to avoid hard dependency on /api/admin/db-fix.
+  const cols = await prisma.$queryRaw<Array<{ name: string }>>`
+    PRAGMA table_info('DocumentBrandingSettings')
+  `.catch(() => []);
+  const colSet = new Set(cols.map((c) => c.name));
+
+  // Allowlist guards against accidental SQL injection if call sites ever change.
+  const ADDABLE_COLUMNS: ReadonlySet<string> = new Set([
+    "invoiceTemplateKey", "quotationTemplateKey", "jobCardTemplateKey", "receiptTemplateKey",
+  ]);
+  const addColumn = async (name: string, dflt: string) => {
+    if (!ADDABLE_COLUMNS.has(name)) return;
+    if (colSet.has(name)) return;
+    await prisma.$executeRawUnsafe(
+      `ALTER TABLE "DocumentBrandingSettings" ADD COLUMN "${name}" TEXT DEFAULT ${dflt}`,
+    );
+    colSet.add(name);
+  };
+  await addColumn("invoiceTemplateKey", "'invoice_classic'");
+  await addColumn("quotationTemplateKey", "'quote_classic'");
+  await addColumn("jobCardTemplateKey", "'job_card_classic'");
+  await addColumn("receiptTemplateKey", "'receipt_classic'");
 
   rawTableEnsured = true;
 }
@@ -117,7 +156,9 @@ async function getViaRaw() {
           companyContacts, companyEmail, companyWebsite, documentTitle,
           quotePrefix, quoteFormat, quoteValidityDays, sequencePadLength,
           vatDefaultApplicable, vatRatePercent, vatLabel, termsText,
-          footerText, signatureCompanyLabel, signatureClientLabel, updatedAt
+          footerText, signatureCompanyLabel, signatureClientLabel,
+          invoiceTemplateKey, quotationTemplateKey, jobCardTemplateKey, receiptTemplateKey,
+          updatedAt
         ) VALUES (
           ${defaultBranding.id}, ${defaultBranding.companyName}, ${defaultBranding.companyTagline},
           ${defaultBranding.companyAddressLine1}, ${defaultBranding.companyAddressLine2},
@@ -126,7 +167,9 @@ async function getViaRaw() {
           ${defaultBranding.quoteValidityDays}, ${defaultBranding.sequencePadLength},
           ${defaultBranding.vatDefaultApplicable}, ${defaultBranding.vatRatePercent}, ${defaultBranding.vatLabel},
           ${defaultBranding.termsText}, ${defaultBranding.footerText},
-          ${defaultBranding.signatureCompanyLabel}, ${defaultBranding.signatureClientLabel}, CURRENT_TIMESTAMP
+          ${defaultBranding.signatureCompanyLabel}, ${defaultBranding.signatureClientLabel},
+          ${defaultBranding.invoiceTemplateKey}, ${defaultBranding.quotationTemplateKey}, ${defaultBranding.jobCardTemplateKey}, ${defaultBranding.receiptTemplateKey},
+          CURRENT_TIMESTAMP
         )
       `;
       return defaultBranding;
@@ -138,21 +181,21 @@ async function getViaRaw() {
   }
 }
 
-export async function saveDocumentBrandingSettings(data: BrandingSettings) {
+export async function saveDocumentBrandingSettings(orgId: string, data: BrandingSettings) {
   if (hasDelegate()) {
     const delegate = (prisma as unknown as {
       documentBrandingSettings: {
         upsert: (args: {
-          where: { id: string };
-          create: BrandingSettings;
+          where: { orgId: string } | { id: string };
+          create: BrandingSettings & { orgId?: string };
           update: BrandingSettings;
         }) => Promise<unknown>;
       };
     }).documentBrandingSettings;
 
     await delegate.upsert({
-      where: { id: "singleton" },
-      create: data,
+      where: { orgId },
+      create: { ...data, orgId },
       update: data,
     });
     return;
@@ -166,7 +209,9 @@ export async function saveDocumentBrandingSettings(data: BrandingSettings) {
       companyContacts, companyEmail, companyWebsite, documentTitle,
       quotePrefix, quoteFormat, quoteValidityDays, sequencePadLength,
       vatDefaultApplicable, vatRatePercent, vatLabel, termsText,
-      footerText, signatureCompanyLabel, signatureClientLabel, updatedAt
+      footerText, signatureCompanyLabel, signatureClientLabel,
+      invoiceTemplateKey, quotationTemplateKey, jobCardTemplateKey, receiptTemplateKey,
+      updatedAt
     ) VALUES (
       ${data.id}, ${data.companyName}, ${data.companyTagline},
       ${data.companyAddressLine1}, ${data.companyAddressLine2},
@@ -175,7 +220,9 @@ export async function saveDocumentBrandingSettings(data: BrandingSettings) {
       ${data.quoteValidityDays}, ${data.sequencePadLength},
       ${data.vatDefaultApplicable}, ${data.vatRatePercent}, ${data.vatLabel},
       ${data.termsText}, ${data.footerText}, ${data.signatureCompanyLabel},
-      ${data.signatureClientLabel}, CURRENT_TIMESTAMP
+      ${data.signatureClientLabel},
+      ${data.invoiceTemplateKey}, ${data.quotationTemplateKey}, ${data.jobCardTemplateKey}, ${data.receiptTemplateKey},
+      CURRENT_TIMESTAMP
     )
     ON CONFLICT(id) DO UPDATE SET
       companyName = excluded.companyName,
@@ -197,22 +244,32 @@ export async function saveDocumentBrandingSettings(data: BrandingSettings) {
       footerText = excluded.footerText,
       signatureCompanyLabel = excluded.signatureCompanyLabel,
       signatureClientLabel = excluded.signatureClientLabel,
+      invoiceTemplateKey = excluded.invoiceTemplateKey,
+      quotationTemplateKey = excluded.quotationTemplateKey,
+      jobCardTemplateKey = excluded.jobCardTemplateKey,
+      receiptTemplateKey = excluded.receiptTemplateKey,
       updatedAt = CURRENT_TIMESTAMP
   `;
 }
 
-export async function getDocumentBrandingSettings() {
+export async function getDocumentBrandingSettings(orgId?: string) {
   if (hasDelegate()) {
     const delegate = (prisma as unknown as {
       documentBrandingSettings: {
-        findUnique: (args: { where: { id: string } }) => Promise<Record<string, unknown> | null>;
-        create: (args: { data: BrandingSettings }) => Promise<Record<string, unknown>>;
+        findFirst: (args: { where: { orgId?: string } | { id: string } }) => Promise<Record<string, unknown> | null>;
+        create: (args: { data: BrandingSettings & { orgId?: string } }) => Promise<Record<string, unknown>>;
       };
     }).documentBrandingSettings;
 
-    const existing = await delegate.findUnique({ where: { id: "singleton" } });
+    const existing = await delegate.findFirst({ where: orgId ? { orgId } : { id: "singleton" } });
     if (existing) {
       return coerceRow(existing);
+    }
+
+    if (orgId) {
+      const { id: _id, ...brandingDefaults } = defaultBranding;
+      const created = await delegate.create({ data: { ...brandingDefaults, orgId } as BrandingSettings & { orgId: string } });
+      return coerceRow(created);
     }
 
     const created = await delegate.create({ data: defaultBranding });

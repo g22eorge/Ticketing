@@ -51,21 +51,17 @@ export default async function DataHealPage({
 
   return (
     <div className="space-y-4">
-      <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Data Heal</p>
-        <h1 className="mt-1 text-lg font-semibold text-[var(--ink)]">Device Placeholder Recovery</h1>
-        <p className="mt-1 text-sm text-[var(--ink-muted)]">
-          Repairs jobs with placeholder values (`Unknown` / `OTHER`) using linked device and repair request data.
-        </p>
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          <span className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${unresolved > 0 ? "border-amber-200 bg-amber-50 text-amber-800" : "border-emerald-200 bg-emerald-50 text-emerald-700"}`}>
+      <div className="panel-shadow flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-2.5">
+        <p className="text-[13px] font-bold text-[var(--ink)]">Data Heal</p>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className={`rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${unresolved > 0 ? "border-amber-200 bg-amber-50 text-amber-800" : "border-emerald-200 bg-emerald-50 text-emerald-700"}`}>
             {unresolved} unresolved
           </span>
-          <span className="rounded-full border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1 text-[11px] text-[var(--ink-muted)]">
-            Last heal: {lastHealedAt ? new Date(lastHealedAt.createdAt).toLocaleString() : "Never"}
+          <span className="rounded-full border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-0.5 text-[11px] text-[var(--ink-muted)]">
+            Last: {lastHealedAt ? new Date(lastHealedAt.createdAt).toLocaleString() : "Never"}
           </span>
         </div>
-      </section>
+      </div>
 
       <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
         {feedback.mode ? (

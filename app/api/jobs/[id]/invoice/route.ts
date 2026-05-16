@@ -5,13 +5,14 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 
 import { getClientBill } from "@/lib/billing";
-import { formatMoney, getAppCurrency } from "@/lib/currency";
+import { formatMoney, normalizeCurrency } from "@/lib/currency";
 import { getDocumentBrandingSettings } from "@/lib/document-branding";
 import { canGenerateInvoiceForStatus, formatQuotationNumber } from "@/lib/documents";
 import { can } from "@/lib/permissions";
-import { InvoiceDocumentV2 } from "@/lib/pdf/InvoiceDocumentV2";
+import { InvoiceTemplateComponent, resolveTemplateKey } from "@/lib/pdf/templates";
 import { prisma } from "@/lib/prisma";
-import { getCurrentUserRole } from "@/lib/session";
+import { requireOrgSession } from "@/lib/org-context";
+import { assertOrgCanMutate } from "@/lib/org-write";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -113,18 +114,20 @@ export async function GET(
   context: { params: Promise<{ id: string }> },
 ) {
   const { id } = await context.params;
-  const { session, user } = await getCurrentUserRole();
+  const { session, user, orgId, org: orgCtx } = await requireOrgSession();
 
   if (!( ["ADMIN", "OPS"].includes(user.role) || can.approveInvoices(user) )) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const job = await prisma.job.findUnique({
-    where: { id },
+    where: { id, orgId },
     select: {
       id: true,
       jobNumber: true,
       status: true,
+      invoiceNumber: true,
+      invoiceIssuedAt: true,
       repairPath: true,
       deviceType: true,
       brand: true,
@@ -182,8 +185,23 @@ export async function GET(
     );
   }
 
-  const currency = getAppCurrency();
-  const branding = await getDocumentBrandingSettings();
+  const isReadOnly = orgCtx.access.isSuspended || user.accessMode === "READ_ONLY";
+  if (isReadOnly && !job.invoiceNumber) {
+    return NextResponse.json(
+      { error: "Workspace is read-only. Generating new invoices is disabled until billing is restored." },
+      { status: 402 },
+    );
+  }
+
+  const org = await prisma.organization.findUnique({ where: { id: orgId }, select: { plan: true, baseCurrency: true } }).catch(() => null);
+  const currency = normalizeCurrency(org?.baseCurrency, "UGX");
+  const branding = await getDocumentBrandingSettings(orgId);
+  const templateKey = resolveTemplateKey({
+    kind: "INVOICE",
+    requestedKey: (branding as unknown as { invoiceTemplateKey?: string | null }).invoiceTemplateKey,
+    plan: org?.plan ?? "STARTER",
+  });
+  const InvoiceDoc = InvoiceTemplateComponent(templateKey);
   const clientBill = getClientBill(job) ?? 0;
   const vatApplicable = (job as { vatApplicable?: boolean }).vatApplicable ?? true;
   const vatRate = Math.max(0, branding.vatRatePercent) / 100;
@@ -193,39 +211,65 @@ export async function GET(
   const dueDate = new Date(issuedAtDate);
   dueDate.setDate(dueDate.getDate() + branding.quoteValidityDays);
   const logoUrl = await resolveInvoiceLogo();
-  const normalizedFooterText =
-    branding.footerText
-      .replace("Eagle InfoSolutions SMC Limited", "Eagle Info Solutions SMC Limited")
-      .trim() === "System built by Almeida @ 2026 all rights reserved."
-      ? "System built by Almeida @ 2026 all rights reserved."
-      : branding.footerText.replace("Eagle InfoSolutions SMC Limited", "Eagle Info Solutions SMC Limited");
+  const normalizedFooterText = (branding.footerText ?? "").trim();
+  const issuedAtForNumber = job.invoiceIssuedAt ?? issuedAtDate;
   const quotationNumber = formatQuotationNumber(
     job.jobNumber,
-    issuedAtDate,
+    issuedAtForNumber,
     branding.quotePrefix,
     branding.quoteFormat,
     branding.sequencePadLength,
   );
-  const invoiceNumber = `INV-${quotationNumber.replace(/\s+/g, "-")}`;
+  const invoiceNumber = job.invoiceNumber?.trim() || `INV-${quotationNumber.replace(/\s+/g, "-")}`;
 
-  await prisma.job.update({
-    where: { id: job.id },
-    data: {
-      invoiceIssuedAt: issuedAtDate,
-      invoiceNumber,
-    },
-  });
+  const invoiceTotal = clientBill;
 
-  await prisma.auditLog.create({
-    data: {
-      jobId: job.id,
-      userId: session.user.id,
-      action: "INVOICE_GENERATED",
-      detail: JSON.stringify({ invoiceNumber }),
-    },
-  });
+  if (!isReadOnly) {
+    try {
+      assertOrgCanMutate({ access: orgCtx.access, userRole: user.role, userAccessMode: user.accessMode, kind: "GENERAL" });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Workspace is read-only.";
+      return NextResponse.json({ error: message }, { status: 403 });
+    }
+    await prisma.job.update({
+      where: { id: job.id },
+      data: {
+        invoiceIssuedAt: issuedAtDate,
+        invoiceNumber,
+      },
+    });
 
-  const invoiceElement = createElement(InvoiceDocumentV2, {
+    // Create/update invoice record for partial payments.
+    await prisma.invoice.upsert({
+      where: { jobId: job.id },
+      update: {
+        invoiceNumber,
+        issuedAt: issuedAtDate,
+        totalAmount: invoiceTotal,
+        status: invoiceTotal <= 0 ? "PAID" : "ISSUED",
+      },
+      create: {
+        orgId,
+        jobId: job.id,
+        invoiceNumber,
+        issuedAt: issuedAtDate,
+        totalAmount: invoiceTotal,
+        status: invoiceTotal <= 0 ? "PAID" : "ISSUED",
+      },
+    });
+
+    await prisma.auditLog.create({
+      data: {
+        jobId: job.id,
+        userId: session.user.id,
+        action: "INVOICE_GENERATED",
+        detail: JSON.stringify({ invoiceNumber }),
+        orgId,
+      },
+    });
+  }
+
+  const invoiceElement = createElement(InvoiceDoc as never, {
     companyName: branding.companyName,
     companyTagline: branding.companyTagline ?? "",
     companyAddressLine1: branding.companyAddressLine1,
@@ -234,8 +278,11 @@ export async function GET(
     companyEmail: branding.companyEmail ?? "",
     companyWebsite: branding.companyWebsite ?? "",
     companyLogoUrl: logoUrl,
+    documentTitle: "INVOICE",
+    quotationNumber,
     invoiceNumber,
     dateIssued: formatInvoiceDate(issuedAtDate),
+    validUntil: formatInvoiceDate(dueDate),
     repairId: job.jobNumber,
     preparedByName: user.name,
     preparedByRole: user.role,
@@ -246,21 +293,29 @@ export async function GET(
     deviceType: prettyEnum(job.deviceType),
     deviceLabel: compactText(`${job.brand} ${job.model}`, 45),
     serialOrImei: compactText(job.serialOrImei, 30),
+    accessories: compactText(job.accessories, 60),
+    physicalCondition: compactText(job.physicalNotes, 80),
+    customerIssue: compactListText(job.issueDescription, 180),
     diagnosisSummary: compactListText(job.diagnosisNotes ?? job.externalDiagnosis, 180),
+    scopeOfWork: compactListText(job.recommendedRepair ?? job.workDone, 180),
     workDone: compactListText(job.workDone, 180),
     partsReplaced: compactListText(job.partsReplaced, 180),
     repairCost: formatMoney(repairCost, currency),
     vatApplicable,
-    vatLabel: `${branding.vatLabel} (${branding.vatRatePercent}%)`,
+    vatLabel: `${branding.vatLabel ?? "VAT"} (${branding.vatRatePercent ?? 0}%)`,
     vatAmount: formatMoney(vatAmount, currency),
     totalAmountPayable: formatMoney(clientBill, currency),
+    estimatedDuration: compactText(job.repairTimeline ?? job.timelineNote, 60),
+    approvalStatus: job.clientApproved === true ? "Approved" : "Not recorded",
+    recommendation: compactText(job.recommendationOption ?? job.recommendedRepair, 80),
+    notes: compactListText(job.technicianNotes ?? job.statusNote, 160),
     isPaid: job.clientApproved === true,
     status: prettyEnum(job.status),
     currency,
-    termsText: branding.termsText,
+    termsText: branding.termsText ?? "",
     footerText: normalizedFooterText,
-    signatureCompanyLabel: branding.signatureCompanyLabel,
-    signatureClientLabel: branding.signatureClientLabel,
+    signatureCompanyLabel: branding.signatureCompanyLabel ?? "Company",
+    signatureClientLabel: branding.signatureClientLabel ?? "Client",
   });
 
   let body: Uint8Array;

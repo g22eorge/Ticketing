@@ -48,6 +48,18 @@ bun run dev
 - Ship gate checks: `bun run predeploy:check`
 - CI release gate (requires HTTPS + QA base URL): `bun run predeploy:ci`
 
+## Workspace Notes
+
+- Use `bun.lock` as the project lockfile. Do not add a project-level `package-lock.json`.
+- If Next.js warns about `/Users/mac/github/package-lock.json`, that file is outside this workspace. The app pins `turbopack.root` to this repo and `.gitignore` excludes project `package-lock.json` files.
+- Keep `.claude/worktrees/` untracked; it is ignored because those directories are parallel-agent scratch worktrees, not active source.
+
+## Document Model Notes
+
+- Invoices, receipts/payments, and delivery notes are persisted records and expose row-level CRUD where business rules allow it.
+- Job cards and quotations are generated from the current `Job` record. Their lifecycle is intentionally source-driven: create/open the job, edit the job to update generated output, download the PDF, and delete the job only through guarded job deletion.
+- If legal/audit requirements later need immutable quote/job-card revisions, add a persisted document registry instead of overloading the generated PDF routes.
+
 ## Revenue Logic
 
 Default display currency is controlled by `APP_CURRENCY`.
@@ -66,6 +78,14 @@ If `clientBill` is never filled in job financials, revenue remains `0`.
 ## Deployment
 
 This project supports local SQLite and Turso (libSQL).
+
+Schema changes are explicit. Build scripts only run `prisma generate` and `next build`; they do not mutate the database. Before relying on new document, POS, audit, commercial, or entitlement tables in an environment, run the approved schema deploy/sync step:
+
+```bash
+bun run db:deploy
+# or, for local/dev SQLite only:
+bun run db:push && bun run prisma:generate
+```
 
 ### Turso (recommended for production)
 

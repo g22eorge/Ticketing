@@ -35,17 +35,17 @@ export default async function LoginPage() {
           <div className="relative">
             <div className="flex items-center gap-3">
               <div className="overflow-hidden rounded-xl border border-white/10">
-                <Image src="/eagle-info-logo.png" alt="Eagle Info" width={36} height={36} className="h-9 w-9 object-cover" priority />
+                <Image src="/eagle-info-logo.png" alt="Logo" width={36} height={36} className="h-9 w-9 object-cover" priority />
               </div>
-              <span className="text-xs font-semibold uppercase tracking-[0.22em] text-white/50">Eagle Info Solutions</span>
+              <span className="text-xs font-semibold uppercase tracking-[0.22em] text-white/50">Nexus</span>
             </div>
           </div>
 
           <div className="relative space-y-8">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#D4AF37]/70">Repair Management</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#D4AF37]/70">Business OS</p>
               <h1 className="mt-3 text-3xl font-semibold leading-snug text-white xl:text-4xl">
-                Repair jobs,<br />without the chaos
+                Operations,<br />without the chaos
               </h1>
               <p className="mt-4 max-w-sm text-sm leading-relaxed text-white/55">
                 Staff access for intake, technicians, and operations. Clear status, clear accountability.
@@ -66,7 +66,7 @@ export default async function LoginPage() {
           </div>
 
           <div className="relative">
-            <p className="text-[11px] text-white/25">© {new Date().getFullYear()} Eagle Info Solutions</p>
+            <p className="text-[11px] text-white/25">© {new Date().getFullYear()} Nexus</p>
           </div>
         </section>
 
@@ -77,17 +77,17 @@ export default async function LoginPage() {
             {/* Mobile-only logo */}
             <div className="mb-8 flex flex-col items-center lg:hidden">
               <div className="overflow-hidden rounded-2xl border border-white/10 shadow-lg shadow-black/40">
-                <Image src="/eagle-info-logo.png" alt="Eagle Info" width={56} height={56} className="h-14 w-14 object-cover" priority />
+                <Image src="/eagle-info-logo.png" alt="Logo" width={56} height={56} className="h-14 w-14 object-cover" priority />
               </div>
-              <p className="mt-3 text-xs font-semibold uppercase tracking-[0.22em] text-white/40">Eagle Info Solutions</p>
+              <p className="mt-3 text-xs font-semibold uppercase tracking-[0.22em] text-white/40">Nexus</p>
             </div>
 
             {/* Desktop logo row */}
             <div className="mb-8 hidden items-center gap-3 lg:flex">
               <div className="overflow-hidden rounded-xl border border-white/10">
-                <Image src="/eagle-info-logo.png" alt="Eagle Info" width={36} height={36} className="h-9 w-9 object-cover" priority />
+                <Image src="/eagle-info-logo.png" alt="Logo" width={36} height={36} className="h-9 w-9 object-cover" priority />
               </div>
-              <span className="text-xs font-semibold uppercase tracking-[0.22em] text-white/40">Eagle Info Solutions</span>
+              <span className="text-xs font-semibold uppercase tracking-[0.22em] text-white/40">Nexus</span>
             </div>
 
             <h2 className="text-2xl font-semibold text-white">Sign in</h2>

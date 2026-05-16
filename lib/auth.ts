@@ -16,14 +16,19 @@ function normalizeOrigin(value: string | undefined) {
 
 function collectTrustedOrigins() {
   const hardcoded = [
-    "https://care.eagleinfosolutions.com",
+    "https://care.eagleinfosolutions.com",   // main (single-tenant)
+    "https://app.eagleinfosolutions.com",    // commercial (multi-tenant)
+    "https://mrms-f8wt.vercel.app",         // commercial Vercel deployment
     "https://mrms-eight.vercel.app",
+    "https://mrms-apga.vercel.app",         // commercial Vercel deployment (apga)
   ];
 
   const fromSingleEnv = [
     normalizeOrigin(process.env.BETTER_AUTH_URL),
     normalizeOrigin(process.env.NEXT_PUBLIC_APP_URL),
     normalizeOrigin(process.env.AUTH_URL),
+    // Vercel injects VERCEL_URL (without protocol) for every deployment — preview and production.
+    process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null,
   ].filter((origin): origin is string => Boolean(origin));
 
   const fromListEnv = (process.env.BETTER_AUTH_TRUSTED_ORIGINS ?? "")
@@ -54,6 +59,11 @@ export const auth = betterAuth({
         type: "boolean",
         required: true,
         defaultValue: true,
+        input: false,
+      },
+      orgId: {
+        type: "string",
+        required: false,
         input: false,
       },
     },

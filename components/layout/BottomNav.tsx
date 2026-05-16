@@ -104,21 +104,24 @@ const invoiceIcon = (
 const ITEMS = {
   dashboard:   { href: "/dashboard",            label: "Home",      icon: homeIcon },
   jobs:        { href: "/jobs",                  label: "Queue",     icon: jobsIcon },
-  board:       { href: "/technicians",           label: "Board",     icon: boardIcon },
-  intake:      { href: "/intake",                label: "Requests",  icon: intakeIcon },
+  board:       { href: "/technicians",           label: "Techs",     icon: boardIcon },
+  intake:      { href: "/intake",                label: "Intake",    icon: intakeIcon },
   clients:     { href: "/clients",               label: "Clients",   icon: clientsIcon },
   reports:     { href: "/reports",               label: "Reports",   icon: reportsIcon },
+  pos:         { href: "/pos",                   label: "POS",       icon: invoiceIcon },
   inventory:   { href: "/inventory",             label: "Inventory", icon: inventoryIcon },
-  payoutFollowups: { href: "/payout-followups",  label: "Payment Follow-up", icon: payoutsIcon },
+  payoutFollowups: { href: "/payout-followups",  label: "Payments", icon: payoutsIcon },
   payouts:     { href: "/technicians/payouts",   label: "Payouts",   icon: payoutsIcon },
   users:       { href: "/settings/users",        label: "Users",     icon: usersIcon },
   branding:    { href: "/settings/branding",     label: "Branding",  icon: brandingIcon },
-  commsTemplates: { href: "/settings/notifications/templates", label: "Comms", icon: messagesIcon },
+  commsTemplates: { href: "/settings/notifications/templates", label: "Templates", icon: messagesIcon },
   notifications: { href: "/settings/notifications", label: "Notifications", icon: notificationsIcon },
   profile:     { href: "/settings/profile",      label: "Profile",   icon: profileIcon },
-  jobCards:    { href: "/documents/job-cards",   label: "Intake Inv", icon: invoiceIcon },
+  jobCards:    { href: "/documents/job-cards",   label: "Job Cards",  icon: invoiceIcon },
   quotations:  { href: "/documents/quotations",  label: "Quotes",    icon: invoiceIcon },
   invoiceDocs: { href: "/documents/invoices",    label: "Invoices",  icon: invoiceIcon },
+  receipts:    { href: "/documents/receipts",    label: "Receipts",  icon: invoiceIcon },
+  deliveryNotes:{ href: "/documents/delivery-notes", label: "Delivery", icon: invoiceIcon },
 } satisfies Record<string, NavItem>;
 
 /* ── role-based nav config ── */
@@ -136,9 +139,12 @@ function getMoreGroups(role: Role, permissions: string[]): NavGroup[] {
   const allow = (href: string) => {
     if (href === ITEMS.clients.href) return can.viewClientInfo(permUser);
     if (href === ITEMS.reports.href) return can.viewAccountsSummary(permUser);
+    if (href === ITEMS.pos.href) return ["ADMIN", "OPS", "FRONT_DESK"].includes(role);
     if (href === ITEMS.invoiceDocs.href) return can.viewFinancials(permUser);
     if (href === ITEMS.quotations.href) return can.viewFinancials(permUser) || role === "TECHNICIAN_INTERNAL";
     if (href === ITEMS.jobCards.href) return can.generateJobCards(permUser);
+    if (href === ITEMS.receipts.href) return can.viewFinancials(permUser);
+    if (href === ITEMS.deliveryNotes.href) return can.viewFinancials(permUser) || ["OPS", "FRONT_DESK", "ADMIN"].includes(role);
     if (href === ITEMS.payoutFollowups.href) return can.reviewExternalBills(permUser) || can.approveInvoices(permUser);
     if (href === ITEMS.users.href || href === ITEMS.branding.href) return role === "ADMIN";
     if (href === ITEMS.inventory.href) return ["ADMIN", "OPS", "TECHNICIAN_INTERNAL"].includes(role);
@@ -151,7 +157,7 @@ function getMoreGroups(role: Role, permissions: string[]): NavGroup[] {
   const groups: NavGroup[] = [
     {
       title: "Documents",
-      items: [ITEMS.jobCards, ITEMS.quotations, ITEMS.invoiceDocs],
+      items: [ITEMS.jobCards, ITEMS.quotations, ITEMS.invoiceDocs, ITEMS.receipts, ITEMS.deliveryNotes],
     },
     {
       title: "Operations",
@@ -159,7 +165,7 @@ function getMoreGroups(role: Role, permissions: string[]): NavGroup[] {
     },
     {
       title: "Management",
-      items: [ITEMS.users, ITEMS.reports, ITEMS.branding, ITEMS.notifications],
+      items: [ITEMS.users, ITEMS.reports, ITEMS.pos, ITEMS.branding, ITEMS.notifications],
     },
     {
       title: "Communication",
@@ -188,6 +194,7 @@ export function BottomNav({
     inventory?: number;
     paymentFollowups?: number;
     pendingRequests?: number;
+    complaints?: number;
   };
 }) {
   const pathname = usePathname();

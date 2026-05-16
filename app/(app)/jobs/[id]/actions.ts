@@ -7,6 +7,7 @@ import {
   RecommendationOption,
   RepairPath,
   Role,
+  PaymentMethod,
 } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
@@ -15,7 +16,8 @@ import { prisma } from "@/lib/prisma";
 import { can } from "@/lib/permissions";
 import { hasJobPayoutColumns } from "@/lib/payouts";
 import { sanitizeOptionalText } from "@/lib/sanitize";
-import { getCurrentUserRole } from "@/lib/session";
+import { requireOrgSession } from "@/lib/org-context";
+import { assertOrgCanMutate } from "@/lib/org-write";
 import {
   notifyStatusChange,
   notifyJobAssigned,
@@ -27,6 +29,9 @@ import { uploadWhatsAppMedia, sendWhatsAppDocument } from "@/lib/notifications/w
 import { generateQuotationBuffer } from "@/lib/pdf/generate-quotation";
 import { generateInvoiceBuffer } from "@/lib/pdf/generate-invoice";
 import { generateJobCardBuffer } from "@/lib/pdf/generate-job-card";
+import { getDocumentBrandingSettings } from "@/lib/document-branding";
+import { formatQuotationNumber } from "@/lib/documents";
+import { isSupportedCurrency, normalizeCurrency, toBaseAmount } from "@/lib/currency";
 
 const workflowReasonValues = [
   "NONE",
@@ -70,6 +75,22 @@ const updateSchema = z.object({
   nextStatus: z.nativeEnum(JobStatus).optional(),
   deliveryMethod: z.enum(["PICKUP", "DELIVERY", "COURIER"]).optional(),
   deliveredTo: z.string().optional(),
+});
+
+const recordClientPaymentSchema = z.object({
+  jobId: z.string().min(1),
+  amount: z.coerce.number().positive(),
+  method: z.string().optional(),
+  reference: z.string().optional(),
+  currency: z.string().optional(),
+  exchangeRateToBase: z.preprocess(
+    (value) => {
+      const raw = typeof value === "string" ? value.trim() : "";
+      if (!raw) return undefined;
+      return Number(raw);
+    },
+    z.number().positive().optional(),
+  ),
 });
 
 const oneTimeExternalSchema = z.object({
@@ -128,7 +149,8 @@ function buildTimeline(payload: z.infer<typeof updateSchema>) {
 }
 
 export async function updateJobAction(formData: FormData) {
-  const { session, user } = await getCurrentUserRole();
+  const { session, user, orgId, org } = await requireOrgSession();
+  assertOrgCanMutate({ access: org.access, userRole: user.role, userAccessMode: user.accessMode, kind: "GENERAL" });
   const permissionUser = { role: user.role, permissions: user.permissions };
   // FRONT_DESK users are read-only by default (they create jobs, not edit them).
   // Exception: users who have been granted specific elevated permissions
@@ -188,7 +210,7 @@ export async function updateJobAction(formData: FormData) {
 
   const existing = await prisma.job
     .findUnique({
-      where: { id: payload.jobId },
+      where: { id: payload.jobId, orgId },
       select: {
         ...selectExistingBase,
         serviceType: true,
@@ -198,7 +220,7 @@ export async function updateJobAction(formData: FormData) {
       const message = error instanceof Error ? error.message : "";
       if (message.includes("serviceType")) {
         return prisma.job.findUnique({
-          where: { id: payload.jobId },
+          where: { id: payload.jobId, orgId },
           select: selectExistingBase,
         }) as unknown as Promise<(typeof selectExistingBase & { id: string }) | null>;
       }
@@ -412,6 +434,7 @@ export async function updateJobAction(formData: FormData) {
         const assignee = await prisma.user.findFirst({
           where: {
             id: assigneeId,
+            orgId,
             isActive: true,
             role: { in: [Role.TECHNICIAN_INTERNAL, Role.TECHNICIAN_EXTERNAL] },
           },
@@ -535,7 +558,7 @@ export async function updateJobAction(formData: FormData) {
   let updated;
   try {
     updated = await prisma.job.update({
-      where: { id: payload.jobId },
+      where: { id: payload.jobId, orgId },
       data,
     });
   } catch (error) {
@@ -603,6 +626,7 @@ export async function updateJobAction(formData: FormData) {
 
   await prisma.auditLog.create({
     data: {
+      orgId,
       jobId: updated.id,
       userId: session.user.id,
       action: payload.nextStatus ? "STATUS_CHANGED" : "JOB_UPDATED",
@@ -611,7 +635,7 @@ export async function updateJobAction(formData: FormData) {
   });
 
   const job = await prisma.job.findUnique({
-    where: { id: payload.jobId },
+    where: { id: payload.jobId, orgId },
     select: {
       id: true,
       jobNumber: true,
@@ -633,21 +657,21 @@ export async function updateJobAction(formData: FormData) {
   // Notifications must compare against the pre-update snapshot.
   // `job` is fetched after the update, so compare to `existing`.
   if (existing.status !== job.status) {
-    await notifyStatusChange(job.id, existing.status, job.status, job.jobNumber, job.client.fullName);
+    await notifyStatusChange(orgId, job.id, existing.status, job.status, job.jobNumber, job.client.fullName);
   }
 
   if (existing.assignedToId !== job.assignedToId && job.assignedToId) {
-    await notifyJobAssigned(job.id, job.jobNumber, `${job.brand} ${job.model}`, job.assignedToId);
+    await notifyJobAssigned(orgId, job.id, job.jobNumber, `${job.brand} ${job.model}`, job.assignedToId);
   }
 
   if (existing.repairTimeline !== job.repairTimeline && job.repairTimeline) {
-    await notifyTimelineUpdate(job.id, job.jobNumber, `${job.brand} ${job.model}`, job.repairTimeline);
+    await notifyTimelineUpdate(orgId, job.id, job.jobNumber, `${job.brand} ${job.model}`, job.repairTimeline);
   }
 
   if (existing.timelineNote !== (job as typeof job & { timelineNote?: string | null }).timelineNote) {
     const nextNote = (job as typeof job & { timelineNote?: string | null }).timelineNote;
     if (nextNote) {
-      await notifyDelayNote(job.id, job.jobNumber, `${job.brand} ${job.model}`, nextNote);
+      await notifyDelayNote(orgId, job.id, job.jobNumber, `${job.brand} ${job.model}`, nextNote);
     }
   }
 
@@ -659,12 +683,156 @@ export async function updateJobAction(formData: FormData) {
   return { success: true };
 }
 
-export async function updateOneTimeExternalAssignmentAction(formData: FormData) {
-  const { session, user } = await getCurrentUserRole();
+export async function recordClientPaymentAction(formData: FormData) {
+  const { session, user, orgId, org } = await requireOrgSession();
+  assertOrgCanMutate({ access: org.access, userRole: user.role, userAccessMode: user.accessMode, kind: "PAYMENT" });
   const permissionUser = { role: user.role, permissions: user.permissions };
-  const isRest = user.email?.toLowerCase() === "rest@eagle.tech";
+  if (!can.approveInvoices(permissionUser)) {
+    return { error: "Forbidden" };
+  }
 
-  if (!(user.role === "ADMIN" || user.role === "OPS" || isRest || can.assignJobs(permissionUser))) {
+  const parsed = recordClientPaymentSchema.safeParse(Object.fromEntries(formData.entries()));
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Invalid payment" };
+  }
+
+  const payload = parsed.data;
+
+  const baseCurrency = org.baseCurrency;
+  const currency = normalizeCurrency(payload.currency, baseCurrency);
+  if (!isSupportedCurrency(currency)) {
+    return { error: "Unsupported currency" };
+  }
+  const exchangeRateToBase = currency === baseCurrency ? null : (payload.exchangeRateToBase ?? null);
+  if (currency !== baseCurrency) {
+    if (!exchangeRateToBase || !Number.isFinite(exchangeRateToBase) || exchangeRateToBase <= 0) {
+      return { error: `Exchange rate is required for ${currency} payments` };
+    }
+  }
+
+  const job = await prisma.job.findUnique({
+    where: { id: payload.jobId, orgId },
+    select: {
+      id: true,
+      jobNumber: true,
+      status: true,
+      clientBill: true,
+      invoiceNumber: true,
+      invoiceIssuedAt: true,
+    },
+  });
+  if (!job) return { error: "Job not found" };
+  const totalAmount = typeof job.clientBill === "number" ? job.clientBill : 0;
+  if (!Number.isFinite(totalAmount) || totalAmount <= 0) {
+    return { error: "Set client bill before recording payment" };
+  }
+
+  const rawMethod = String(payload.method ?? "CASH").trim();
+  const safeMethod: PaymentMethod = (Object.values(PaymentMethod) as string[]).includes(rawMethod)
+    ? (rawMethod as PaymentMethod)
+    : PaymentMethod.OTHER;
+  const reference = (payload.reference ?? "").trim();
+
+  // Ensure invoice exists (upsert by jobId). If no invoiceNumber stamped on job yet,
+  // generate one using org branding settings.
+  const issuedAt = job.invoiceIssuedAt ?? new Date();
+  const branding = await getDocumentBrandingSettings(orgId).catch(() => null);
+  const quotePrefix = branding?.quotePrefix ?? "EIS";
+  const quoteFormat = branding?.quoteFormat ?? "{PREFIX} {M}/{YYYY}/{SEQ}";
+  const padLength = branding?.sequencePadLength ?? 4;
+  const derivedQuotation = formatQuotationNumber(job.jobNumber, issuedAt, quotePrefix, quoteFormat, padLength);
+  const derivedInvoiceNumber = `INV-${derivedQuotation.replace(/\s+/g, "-")}`;
+  const invoiceNumber = job.invoiceNumber?.trim() || derivedInvoiceNumber;
+
+  try {
+    const result = await prisma.$transaction(async (tx) => {
+      const invoice = await tx.invoice.upsert({
+        where: { jobId: job.id },
+        create: {
+          orgId,
+          jobId: job.id,
+          invoiceNumber,
+          issuedAt,
+          currency: baseCurrency,
+          totalAmount,
+          paidAmount: 0,
+          status: "ISSUED",
+        },
+        update: {
+          invoiceNumber,
+          issuedAt,
+          currency: baseCurrency,
+          totalAmount,
+        },
+        select: { id: true, totalAmount: true },
+      });
+
+      await tx.payment.create({
+        data: {
+          orgId,
+          invoiceId: invoice.id,
+          saleId: null,
+          currency,
+          exchangeRateToBase,
+          amount: payload.amount,
+          method: safeMethod,
+          reference: reference || null,
+          createdById: session.user.id,
+        },
+      });
+
+       const payments = await tx.payment.findMany({
+         where: { orgId, invoiceId: invoice.id },
+         select: { amount: true, currency: true, exchangeRateToBase: true },
+       });
+       const paidAmount = payments.reduce(
+         (sum, p) => sum + toBaseAmount({ amount: p.amount, currency: p.currency, baseCurrency, exchangeRateToBase: p.exchangeRateToBase }),
+         0,
+       );
+       const isPaid = invoice.totalAmount > 0 && paidAmount >= invoice.totalAmount;
+
+      await tx.invoice.update({
+        where: { id: invoice.id },
+        data: {
+          paidAmount,
+          paidAt: isPaid ? new Date() : null,
+          status: invoice.totalAmount <= 0 ? "PAID" : isPaid ? "PAID" : "ISSUED",
+        },
+      });
+
+      // Keep legacy job flags in sync for existing queues.
+      await tx.job.update({
+        where: { id: job.id },
+        data: {
+          clientPaid: isPaid,
+          clientPaidAt: isPaid ? new Date() : null,
+          clientPaidById: isPaid ? session.user.id : null,
+          clientPaymentRef: reference || null,
+          invoiceNumber,
+          invoiceIssuedAt: issuedAt,
+        },
+      });
+
+      return { paidAmount, isPaid, invoiceNumber };
+    });
+
+    revalidatePath(`/jobs/${job.id}`);
+    revalidatePath("/documents/invoices");
+    revalidatePath("/reports");
+    revalidatePath("/dashboard");
+    return { ok: true, ...result };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to record payment";
+    return { error: message };
+  }
+}
+
+export async function updateOneTimeExternalAssignmentAction(formData: FormData) {
+  const { session, user, orgId, org } = await requireOrgSession();
+  assertOrgCanMutate({ access: org.access, userRole: user.role, userAccessMode: user.accessMode, kind: "GENERAL" });
+  const permissionUser = { role: user.role, permissions: user.permissions };
+
+  if (!(user.role === "ADMIN" || user.role === "OPS" || can.assignJobs(permissionUser))) {
     return { error: "Forbidden" };
   }
 
@@ -688,14 +856,14 @@ export async function updateOneTimeExternalAssignmentAction(formData: FormData) 
 
   const existing = await prisma.job
     .findUnique({
-      where: { id: payload.jobId },
+      where: { id: payload.jobId, orgId },
       select: { id: true, updatedAt: true, status: true, serviceType: true },
     })
     .catch((error) => {
       const message = error instanceof Error ? error.message : "";
       if (message.includes("serviceType")) {
         return prisma.job.findUnique({
-          where: { id: payload.jobId },
+          where: { id: payload.jobId, orgId },
           select: { id: true, updatedAt: true, status: true },
         }) as unknown as Promise<({ id: string; updatedAt: Date; status: JobStatus } & { serviceType?: string }) | null>;
       }
@@ -785,9 +953,10 @@ export async function updateOneTimeExternalAssignmentAction(formData: FormData) 
         create: { jobId: payload.jobId, ...createAssignmentData },
         update: updateAssignmentData,
       }),
-      prisma.job.update({ where: { id: payload.jobId }, data: jobUpdate }),
+      prisma.job.update({ where: { id: payload.jobId, orgId }, data: jobUpdate }),
       prisma.auditLog.create({
         data: {
+          orgId,
           jobId: payload.jobId,
           userId: session.user.id,
           action: "ONE_TIME_EXTERNAL_UPDATED",
@@ -811,7 +980,8 @@ export async function updateOneTimeExternalAssignmentAction(formData: FormData) 
 }
 
 export async function markMessagesReadAction(jobId: string): Promise<void> {
-  const { user } = await getCurrentUserRole();
+  const { user, org } = await requireOrgSession();
+  assertOrgCanMutate({ access: org.access, userRole: user.role, userAccessMode: user.accessMode, kind: "GENERAL" });
   if (!["ADMIN", "OPS", "FRONT_DESK"].includes(user.role)) return;
 
   try {
@@ -830,7 +1000,8 @@ export async function sendManualReplyAction(
   jobId: string,
   message: string
 ): Promise<{ success: boolean; error?: string }> {
-  const { user } = await getCurrentUserRole();
+  const { user, org } = await requireOrgSession();
+  assertOrgCanMutate({ access: org.access, userRole: user.role, userAccessMode: user.accessMode, kind: "GENERAL" });
   if (!["ADMIN", "OPS", "FRONT_DESK"].includes(user.role)) {
     return { success: false, error: "Not authorised" };
   }
@@ -905,16 +1076,17 @@ async function sendPdfViaWhatsApp(opts: {
 export async function sendQuotationViaWhatsAppAction(
   jobId: string,
 ): Promise<{ success: boolean; error?: string }> {
-  const { user } = await getCurrentUserRole();
+  const { user, org, orgId } = await requireOrgSession();
+  assertOrgCanMutate({ access: org.access, userRole: user.role, userAccessMode: user.accessMode, kind: "GENERAL" });
   if (!["ADMIN", "OPS", "FRONT_DESK"].includes(user.role)) {
     return { success: false, error: "Not authorised" };
   }
-  const result = await generateQuotationBuffer(jobId, user.name, user.role, true, user.id);
+  const result = await generateQuotationBuffer(jobId, user.name, user.role, true, user.id, orgId);
   if (!result.ok) return { success: false, error: result.error };
   return sendPdfViaWhatsApp({
     jobId, userId: user.id,
     buffer: result.buffer, filename: result.filename, clientPhone: result.clientPhone,
-    caption: `Please find your quotation (${result.quotationNumber}) attached. — Eagle Info Solutions`,
+    caption: `Please find your quotation (${result.quotationNumber}) attached.`,
     outboxBody: `[Quotation PDF] ${result.quotationNumber}`,
     auditAction: "QUOTATION_SENT_WHATSAPP",
     auditDetail: { quotationNumber: result.quotationNumber },
@@ -924,16 +1096,17 @@ export async function sendQuotationViaWhatsAppAction(
 export async function sendInvoiceViaWhatsAppAction(
   jobId: string,
 ): Promise<{ success: boolean; error?: string }> {
-  const { user } = await getCurrentUserRole();
+  const { user, org, orgId } = await requireOrgSession();
+  assertOrgCanMutate({ access: org.access, userRole: user.role, userAccessMode: user.accessMode, kind: "GENERAL" });
   if (!["ADMIN", "OPS"].includes(user.role) && !can.approveInvoices({ role: user.role, permissions: user.permissions })) {
     return { success: false, error: "Not authorised" };
   }
-  const result = await generateInvoiceBuffer(jobId, user.name, user.role, user.id);
+  const result = await generateInvoiceBuffer(jobId, user.name, user.role, user.id, orgId);
   if (!result.ok) return { success: false, error: result.error };
   return sendPdfViaWhatsApp({
     jobId, userId: user.id,
     buffer: result.buffer, filename: result.filename, clientPhone: result.clientPhone,
-    caption: `Please find your invoice (${result.invoiceNumber}) attached. — Eagle Info Solutions`,
+    caption: `Please find your invoice (${result.invoiceNumber}) attached.`,
     outboxBody: `[Invoice PDF] ${result.invoiceNumber}`,
     auditAction: "INVOICE_SENT_WHATSAPP",
     auditDetail: { invoiceNumber: result.invoiceNumber },
@@ -943,16 +1116,17 @@ export async function sendInvoiceViaWhatsAppAction(
 export async function sendJobCardViaWhatsAppAction(
   jobId: string,
 ): Promise<{ success: boolean; error?: string }> {
-  const { user } = await getCurrentUserRole();
+  const { user, org, orgId } = await requireOrgSession();
+  assertOrgCanMutate({ access: org.access, userRole: user.role, userAccessMode: user.accessMode, kind: "GENERAL" });
   if (!["ADMIN", "OPS"].includes(user.role) && !can.generateJobCards({ role: user.role, permissions: user.permissions })) {
     return { success: false, error: "Not authorised" };
   }
-  const result = await generateJobCardBuffer(jobId, user.name, user.role, user.id);
+  const result = await generateJobCardBuffer(jobId, user.name, user.role, user.id, orgId);
   if (!result.ok) return { success: false, error: result.error };
   return sendPdfViaWhatsApp({
     jobId, userId: user.id,
     buffer: result.buffer, filename: result.filename, clientPhone: result.clientPhone,
-    caption: `Please find your job card (${result.documentNumber}) attached. — Eagle Info Solutions`,
+    caption: `Please find your job card (${result.documentNumber}) attached.`,
     outboxBody: `[Job Card PDF] ${result.documentNumber}`,
     auditAction: "JOB_CARD_SENT_WHATSAPP",
     auditDetail: { documentNumber: result.documentNumber },

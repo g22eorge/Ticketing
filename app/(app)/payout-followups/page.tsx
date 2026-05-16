@@ -6,7 +6,7 @@ import { resolveTechCost } from "@/lib/billing";
 import { formatMoneyCompact, getAppCurrency } from "@/lib/currency";
 import { can } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
-import { getCurrentUserRole } from "@/lib/session";
+import { requireOrgSession } from "@/lib/org-context";
 
 type SearchParams = {
   q?: string;
@@ -33,7 +33,7 @@ export default async function PayoutFollowupsPage({
 }: {
   searchParams: Promise<SearchParams>;
 }) {
-  const { user } = await getCurrentUserRole();
+  const { user, orgId } = await requireOrgSession();
   if (!(can.approveInvoices(user) || can.reviewExternalBills(user))) {
     redirect("/dashboard");
   }
@@ -46,6 +46,7 @@ export default async function PayoutFollowupsPage({
 
   // ── Section 1: outstanding client payments (any repair path) ──────────────
   const clientWhere: Prisma.JobWhereInput = {
+    orgId,
     clientBill: { gt: 0 },
     clientPaid: false,
     status: { in: TERMINAL },
@@ -55,6 +56,7 @@ export default async function PayoutFollowupsPage({
 
   // ── Section 2: external tech payouts not yet settled ──────────────────────
   const techWhere: Prisma.JobWhereInput = {
+    orgId,
     repairPath: "EXTERNAL",
     externalPaid: false,
     status: { in: TERMINAL },
@@ -103,7 +105,7 @@ export default async function PayoutFollowupsPage({
     }),
     prisma.job.count({ where: techWhere }),
     prisma.user.findMany({
-      where: { role: { in: ["TECHNICIAN_EXTERNAL", "TECHNICIAN_INTERNAL"] } },
+      where: { orgId, role: { in: ["TECHNICIAN_EXTERNAL", "TECHNICIAN_INTERNAL"] } },
       orderBy: { name: "asc" },
       select: { id: true, name: true },
     }),

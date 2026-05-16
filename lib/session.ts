@@ -47,9 +47,11 @@ export async function getCurrentUserRole() {
         id: string;
         role: Role;
         isActive: boolean;
+        accessMode: "FULL" | "READ_ONLY";
         name: string;
         email: string;
         phone: string | null;
+        orgId: string | null;
         permissions: string[];
       }
     | null = null;
@@ -61,9 +63,11 @@ export async function getCurrentUserRole() {
         id: true,
         role: true,
         isActive: true,
+        accessMode: true,
         name: true,
         email: true,
         phone: true,
+        orgId: true,
         permissionGrants: { select: { permission: true } },
       },
     });
@@ -73,9 +77,11 @@ export async function getCurrentUserRole() {
           id: row.id,
           role: normalizeRole(row.role),
           isActive: row.isActive,
+          accessMode: (row.accessMode as unknown as "FULL" | "READ_ONLY") ?? "FULL",
           name: row.name,
           email: row.email,
           phone: row.phone ?? null,
+          orgId: row.orgId ?? null,
           permissions: row.permissionGrants
             .map((p) => p.permission)
             .filter((permission): permission is string => typeof permission === "string" && permission.length > 0),
@@ -85,25 +91,26 @@ export async function getCurrentUserRole() {
     // Fallback for partially migrated DBs (older deployments).
     const baseUser = await prisma.user.findUnique({
       where: { id: session.user.id },
-      select: {
-        id: true,
-        role: true,
-        isActive: true,
-        name: true,
-        email: true,
-      },
+      select: { id: true, role: true, isActive: true, name: true, email: true },
     });
 
     let phone: string | null = null;
+    let orgId: string | null = null;
     let permissions: string[] = [];
+    let accessMode: "FULL" | "READ_ONLY" = "FULL";
+
     if (baseUser) {
       try {
-        const phoneRows = await prisma.$queryRaw<Array<{ phone: string | null }>>`
-          SELECT phone FROM "User" WHERE id = ${session.user.id} LIMIT 1
+        const rows = await prisma.$queryRaw<Array<{ phone: string | null; orgId: string | null; accessMode: string | null }>>`
+          SELECT phone, orgId, accessMode FROM "User" WHERE id = ${session.user.id} LIMIT 1
         `;
-        phone = phoneRows[0]?.phone ?? null;
+        phone = rows[0]?.phone ?? null;
+        orgId = rows[0]?.orgId ?? null;
+        accessMode = rows[0]?.accessMode === "READ_ONLY" ? "READ_ONLY" : "FULL";
       } catch {
         phone = null;
+        orgId = null;
+        accessMode = "FULL";
       }
 
       try {
@@ -112,19 +119,14 @@ export async function getCurrentUserRole() {
         `;
         permissions = permissionRows
           .map((row) => row.permission)
-          .filter((permission): permission is string => typeof permission === "string" && permission.length > 0);
+          .filter((p): p is string => typeof p === "string" && p.length > 0);
       } catch {
         permissions = [];
       }
     }
 
     user = baseUser
-      ? {
-        ...baseUser,
-        role: normalizeRole(baseUser.role),
-        phone,
-        permissions,
-      }
+      ? { ...baseUser, role: normalizeRole(baseUser.role), phone, orgId, permissions, accessMode }
       : null;
   }
 
@@ -149,9 +151,11 @@ export async function getCurrentUserRoleOptional() {
         id: true,
         role: true,
         isActive: true,
+        accessMode: true,
         name: true,
         email: true,
         phone: true,
+        orgId: true,
         permissionGrants: { select: { permission: true } },
       },
     });
@@ -166,16 +170,17 @@ export async function getCurrentUserRoleOptional() {
         id: row.id,
         role: normalizeRole(row.role),
         isActive: row.isActive,
+        accessMode: (row.accessMode as unknown as "FULL" | "READ_ONLY") ?? "FULL",
         name: row.name,
         email: row.email,
         phone: row.phone ?? null,
+        orgId: row.orgId ?? null,
         permissions: row.permissionGrants
           .map((p) => p.permission)
-          .filter((permission): permission is string => typeof permission === "string" && permission.length > 0),
+          .filter((p): p is string => typeof p === "string" && p.length > 0),
       },
     };
   } catch {
-    // Older DB fallback
     const baseUser = await prisma.user.findUnique({
       where: { id: session.user.id },
       select: { id: true, role: true, isActive: true, name: true, email: true },
@@ -191,6 +196,8 @@ export async function getCurrentUserRoleOptional() {
         ...baseUser,
         role: normalizeRole(baseUser.role),
         phone: null,
+        orgId: null,
+        accessMode: "FULL" as const,
         permissions: [],
       },
     };

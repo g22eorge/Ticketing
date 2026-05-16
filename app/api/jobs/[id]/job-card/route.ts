@@ -3,12 +3,13 @@ import { renderToBuffer } from "@react-pdf/renderer";
 import { createElement } from "react";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
+import QRCode from "qrcode";
 
 import { getDocumentBrandingSettings } from "@/lib/document-branding";
 import { can } from "@/lib/permissions";
-import { JobCardDocument } from "@/lib/pdf/JobCardDocument";
+import { JobCardTemplateComponent, resolveTemplateKey } from "@/lib/pdf/templates";
 import { prisma } from "@/lib/prisma";
-import { getCurrentUserRole } from "@/lib/session";
+import { requireOrgSession } from "@/lib/org-context";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -93,7 +94,7 @@ export async function GET(
   context: { params: Promise<{ id: string }> },
 ) {
   const { id } = await context.params;
-  const { session, user } = await getCurrentUserRole();
+  const { session, user, orgId, org: orgCtx } = await requireOrgSession();
   const permissionUser = { role: user.role, permissions: user.permissions };
 
   if (!can.generateJobCards(permissionUser)) {
@@ -101,7 +102,7 @@ export async function GET(
   }
 
   const job = await prisma.job.findUnique({
-    where: { id },
+    where: { id, orgId },
     select: {
       id: true,
       jobNumber: true,
@@ -129,20 +130,36 @@ export async function GET(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  const branding = await getDocumentBrandingSettings();
+  const org = await prisma.organization.findUnique({ where: { id: orgId }, select: { plan: true } }).catch(() => null);
+  const branding = await getDocumentBrandingSettings(orgId);
+  const templateKey = resolveTemplateKey({
+    kind: "JOB_CARD",
+    requestedKey: (branding as unknown as { jobCardTemplateKey?: string | null }).jobCardTemplateKey,
+    plan: org?.plan ?? "STARTER",
+  });
+  const JobCardDoc = JobCardTemplateComponent(templateKey);
   const logoUrl = await resolveLogo();
   const documentNumber = `JC-${job.jobNumber}`;
 
-  await prisma.auditLog.create({
-    data: {
-      jobId: job.id,
-      userId: session.user.id,
-      action: "JOB_CARD_GENERATED",
-      detail: JSON.stringify({ documentNumber }),
-    },
-  });
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "";
+  const statusQrDataUrl = baseUrl
+    ? await QRCode.toDataURL(`${baseUrl}/status/${job.jobNumber}`, { width: 120, margin: 1 }).catch(() => undefined)
+    : undefined;
 
-  const docElement = createElement(JobCardDocument, {
+  // Read-only mode: allow download without mutating state.
+  if (!orgCtx.access.isSuspended && user.accessMode !== "READ_ONLY") {
+    await prisma.auditLog.create({
+      data: {
+        jobId: job.id,
+        userId: session.user.id,
+        action: "JOB_CARD_GENERATED",
+        detail: JSON.stringify({ documentNumber }),
+        orgId,
+      },
+    });
+  }
+
+  const docElement = createElement(JobCardDoc as never, {
     companyName: branding.companyName,
     companyTagline: branding.companyTagline ?? "",
     companyAddressLine1: branding.companyAddressLine1,
@@ -173,6 +190,7 @@ export async function GET(
     footerText: branding.footerText,
     signatureCompanyLabel: branding.signatureCompanyLabel,
     signatureClientLabel: branding.signatureClientLabel,
+    statusQrDataUrl,
   });
 
   try {

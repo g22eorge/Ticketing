@@ -72,6 +72,7 @@ type PermissionOption = {
 const roleOptions: Array<{ value: Role; label: string; description: string }> = [
   { value: Role.ADMIN, label: "Admin", description: "Full platform control including user management and financial approvals." },
   { value: Role.MANAGER, label: "Manager", description: "Oversees operations, staff workload, and pipeline health across all departments." },
+  { value: Role.TECH_MANAGER, label: "Tech Manager", description: "Oversees technician performance, repair turnaround, workload balance, and quality metrics." },
   { value: Role.FINANCE, label: "Finance", description: "Reviews invoices, approves costs, manages settlements and financial reports." },
   { value: Role.SALES, label: "Sales", description: "Handles intake, client approvals, quotes, and revenue pipeline tracking." },
   { value: Role.OPS, label: "Operations/Accounts", description: "Coordinates workflow, billing, settlement, and daily operations." },
@@ -107,6 +108,18 @@ const roleDefaults: Record<Role, Array<(typeof EXTRA_PERMISSIONS)[number]>> = {
     "can_review_external_bills",
     "can_view_accounts_summary",
     "can_approve_invoices",
+  ],
+  TECH_MANAGER: [
+    "can_run_internal_repairs",
+    "can_manage_intake",
+    "can_search_jobs",
+    "can_generate_job_cards",
+    "can_assign_jobs",
+    "can_view_job_progress",
+    "can_view_approved_cost",
+    "can_view_external_updates",
+    "can_view_external_quotes",
+    "can_review_external_bills",
   ],
   FINANCE: [
     "can_search_jobs",
@@ -192,6 +205,19 @@ const roleCapabilities: Record<Role, string[]> = {
     "invoices_view",
     "invoices_approve",
     "reports_export",
+    "approval_cost",
+    "download_docs",
+  ],
+  TECH_MANAGER: [
+    "dashboard_view",
+    "jobs_view",
+    "jobs_assign",
+    "jobs_create",
+    "intake_manage",
+    "device_records",
+    "client_records",
+    "tech_notes",
+    "parts_bills",
     "approval_cost",
     "download_docs",
   ],
@@ -293,6 +319,7 @@ function roleLabel(role: Role) {
   if (role === "FRONT_DESK" || role === "INTAKE") return "Front Desk";
   if (role === "OPS") return "Operations/Accounts";
   if (role === "MANAGER") return "Manager";
+  if (role === "TECH_MANAGER") return "Tech Manager";
   if (role === "FINANCE") return "Finance";
   if (role === "SALES") return "Sales";
   return "Admin";

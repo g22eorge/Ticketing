@@ -37,8 +37,6 @@ export function EmailLayout({
 
           <Hr style={hr} />
           <Text style={footer}>
-            Eagle Info Solutions
-            <br />
             This message was generated automatically.
           </Text>
         </Container>

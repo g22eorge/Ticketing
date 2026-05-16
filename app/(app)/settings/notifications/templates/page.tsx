@@ -3,10 +3,9 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { JobStatus, OutboundMessageChannel, OutboundMessageType, Prisma } from "@prisma/client";
 
-import { getCurrentUserRole } from "@/lib/session";
+import { requireOrgSession } from "@/lib/org-context";
 import { prisma } from "@/lib/prisma";
 import { extractTemplateVariables } from "@/lib/notifications/templates";
-import { upsertDefaultCommunicationPolicies, upsertDefaultCommunicationTemplates } from "@/lib/notifications/default-templates";
 import { UI_JOB_STATUSES, normalizeJobStatus, type JobStatus as LegacyJobStatus } from "@/lib/job-status";
 import { revalidatePath } from "next/cache";
 
@@ -51,7 +50,7 @@ export default async function NotificationTemplatesPage({
 }: {
   searchParams: Promise<{ saved?: string; error?: string }>;
 }) {
-  const { user } = await getCurrentUserRole();
+  const { user, orgId } = await requireOrgSession();
   if (!["ADMIN", "OPS"].includes(user.role)) {
     redirect("/dashboard");
   }
@@ -60,11 +59,59 @@ export default async function NotificationTemplatesPage({
   const saved = params.saved ? String(params.saved) : "";
   const error = params.error ? String(params.error) : "";
 
+  async function bulkReplaceBrandName() {
+    "use server";
+
+    const { user: actor, orgId: replaceOrgId } = await requireOrgSession();
+    if (actor.role !== "ADMIN") redirect("/dashboard");
+
+    const branding = await prisma.documentBrandingSettings
+      .findFirst({ where: { orgId: replaceOrgId }, select: { companyName: true } })
+      .catch(() => null);
+    const companyName = (branding?.companyName ?? "").trim();
+    if (!companyName) {
+      redirect("/settings/notifications/templates?error=Set+company+name+first+in+Settings+%E2%86%92+Branding");
+    }
+
+    const rows = await prisma.communicationTemplate.findMany({
+      where: {
+        orgId: replaceOrgId,
+        OR: [
+          { body: { contains: "Eagle Info Solutions" } },
+          { body: { contains: "Your Repair Team" } },
+          { subject: { contains: "Eagle Info Solutions" } },
+          { subject: { contains: "Your Repair Team" } },
+        ],
+      },
+      select: { id: true, body: true, subject: true },
+    });
+
+    let updated = 0;
+    for (const t of rows) {
+      const nextBody = t.body
+        .replaceAll("Eagle Info Solutions", companyName)
+        .replaceAll("Your Repair Team", companyName);
+      const nextSubject = t.subject
+        ? t.subject
+            .replaceAll("Eagle Info Solutions", companyName)
+            .replaceAll("Your Repair Team", companyName)
+        : null;
+      if (nextBody === t.body && nextSubject === t.subject) continue;
+      await prisma.communicationTemplate.update({
+        where: { id: t.id },
+        data: { body: nextBody, subject: nextSubject },
+      });
+      updated += 1;
+    }
+
+    revalidatePath("/settings/notifications/templates");
+    redirect(`/settings/notifications/templates?saved=${encodeURIComponent(`brand+replaced+(${updated})`)}`);
+  }
+
   if (!supportsCommsTemplates()) {
     return (
-      <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 sm:p-5">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--accent)]">Settings</p>
-        <h1 className="mt-1 text-lg font-semibold text-[var(--ink)]">Communication Templates</h1>
+      <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+        <p className="text-[13px] font-bold text-[var(--ink)]">Templates</p>
         <p className="mt-2 text-sm text-[var(--ink-muted)]">
           Templates are not available in this runtime (older database/client). Deploy the latest schema to enable them.
         </p>
@@ -72,21 +119,45 @@ export default async function NotificationTemplatesPage({
     );
   }
 
-  async function seedDefaults() {
-    "use server";
-    const { user: actor } = await getCurrentUserRole();
-    if (actor.role !== "ADMIN") return;
-    await Promise.all([
-      upsertDefaultCommunicationTemplates(),
-      upsertDefaultCommunicationPolicies(),
-    ]);
-    revalidatePath("/settings/notifications/templates");
-    redirect("/settings/notifications/templates?saved=defaults+seeded");
-  }
+  // Top nav
+  const topNav = (
+    <div className="flex flex-wrap items-center justify-between gap-2">
+      <Link
+        href="/settings/notifications"
+        className="inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--ink-muted)] transition-colors hover:text-[var(--ink)]"
+      >
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        Notifications
+      </Link>
+      <div className="flex flex-wrap gap-2">
+        {user.role === "ADMIN" ? (
+          <form action={bulkReplaceBrandName}>
+            <button
+              className="btn-premium-secondary rounded-lg px-3 py-1.5 text-sm"
+              type="submit"
+              title='Replace "Eagle Info Solutions"/"Your Repair Team" with your company name'
+            >
+              Replace Brand Name
+            </button>
+          </form>
+        ) : null}
+        <Link href="/settings/notifications/outbox" className="btn-premium-secondary rounded-lg px-3 py-1.5 text-sm">
+          Outbox
+        </Link>
+        {user.role === "ADMIN" ? (
+          <Link href="/settings/notifications/whatsapp" className="btn-premium-secondary rounded-lg px-3 py-1.5 text-sm">
+            WhatsApp
+          </Link>
+        ) : null}
+      </div>
+    </div>
+  );
+
+  // No default template seeding. Orgs define their own templates.
 
   async function createTemplate(formData: FormData) {
     "use server";
-    const { user: actor } = await getCurrentUserRole();
+    const { user: actor, orgId: createOrgId } = await requireOrgSession();
     if (!["ADMIN", "OPS"].includes(actor.role)) redirect("/dashboard");
 
     const parsed = templateSchema.safeParse({
@@ -109,6 +180,7 @@ export default async function NotificationTemplatesPage({
     try {
       await prisma.communicationTemplate.create({
         data: {
+          orgId: createOrgId,
           key: parsed.data.key,
           channel: parsed.data.channel,
           label: parsed.data.label,
@@ -134,7 +206,7 @@ export default async function NotificationTemplatesPage({
 
   async function updateTemplate(formData: FormData) {
     "use server";
-    const { user: actor } = await getCurrentUserRole();
+    const { user: actor, orgId: updateOrgId } = await requireOrgSession();
     if (!["ADMIN", "OPS"].includes(actor.role)) redirect("/dashboard");
 
     const parsed = templateSchema.safeParse({
@@ -156,6 +228,15 @@ export default async function NotificationTemplatesPage({
     const vars = extractTemplateVariables(`${parsed.data.subject ?? ""}\n${parsed.data.body}`);
     const metaName = parsed.data.metaTemplateName ?? null;
     const metaLang = metaName ? (parsed.data.metaLanguageCode || "en") : null;
+
+    // Verify template belongs to this org
+    const existing = await prisma.communicationTemplate.findFirst({
+      where: { id: parsed.data.id, orgId: updateOrgId },
+      select: { id: true },
+    }).catch(() => null);
+    if (!existing) {
+      redirect("/settings/notifications/templates?error=Template+not+found");
+    }
 
     // Try full update first; if meta columns are missing in DB, fall back to updating without them.
     let saved = false;
@@ -213,7 +294,7 @@ export default async function NotificationTemplatesPage({
 
   async function applyMetaMigration() {
     "use server";
-    const { user: actor } = await getCurrentUserRole();
+    const { user: actor } = await requireOrgSession();
     if (actor.role !== "ADMIN") redirect("/dashboard");
 
     const statements = [
@@ -248,22 +329,23 @@ export default async function NotificationTemplatesPage({
 
   async function deleteTemplate(formData: FormData) {
     "use server";
-    const { user: actor } = await getCurrentUserRole();
+    const { user: actor, orgId: deleteOrgId } = await requireOrgSession();
     if (actor.role !== "ADMIN") redirect("/dashboard");
     const id = String(formData.get("id") ?? "").trim();
     if (!id) redirect("/settings/notifications/templates?error=Missing+template+id");
 
-    await prisma.communicationTemplate.delete({ where: { id } }).catch(() => null);
+    await prisma.communicationTemplate.deleteMany({ where: { id, orgId: deleteOrgId } }).catch(() => null);
     revalidatePath("/settings/notifications/templates");
     redirect("/settings/notifications/templates?saved=deleted");
   }
 
   async function deduplicateTemplates() {
     "use server";
-    const { user: actor } = await getCurrentUserRole();
+    const { user: actor, orgId: dedupeOrgId } = await requireOrgSession();
     if (actor.role !== "ADMIN") redirect("/dashboard");
 
     const all = await prisma.communicationTemplate.findMany({
+      where: { orgId: dedupeOrgId },
       orderBy: { updatedAt: "desc" },
       select: { id: true, key: true, channel: true },
     });
@@ -280,7 +362,7 @@ export default async function NotificationTemplatesPage({
     }
 
     if (toDelete.length > 0) {
-      await prisma.communicationTemplate.deleteMany({ where: { id: { in: toDelete } } });
+      await prisma.communicationTemplate.deleteMany({ where: { id: { in: toDelete }, orgId: dedupeOrgId } });
     }
 
     revalidatePath("/settings/notifications/templates");
@@ -289,7 +371,7 @@ export default async function NotificationTemplatesPage({
 
   async function upsertPolicy(formData: FormData) {
     "use server";
-    const { user: actor } = await getCurrentUserRole();
+    const { user: actor, orgId: policyOrgId } = await requireOrgSession();
     if (!["ADMIN", "OPS"].includes(actor.role)) redirect("/dashboard");
 
     const parsed = policySchema.safeParse({
@@ -315,8 +397,9 @@ export default async function NotificationTemplatesPage({
     const normalizedStatus = normalizeJobStatus(parsed.data.status as unknown as LegacyJobStatus) as unknown as JobStatus;
 
     await prisma.communicationPolicy.upsert({
-      where: { status: normalizedStatus },
+      where: { status_orgId: { status: normalizedStatus, orgId: policyOrgId } },
       create: {
+        orgId: policyOrgId,
         status: normalizedStatus,
         dashboardEnabled: Boolean(parsed.data.dashboardEnabled),
         whatsappEnabled: Boolean(parsed.data.whatsappEnabled),
@@ -365,6 +448,7 @@ export default async function NotificationTemplatesPage({
 
   try {
     templates = await prisma.communicationTemplate.findMany({
+      where: { orgId },
       orderBy: [{ isActive: "desc" }, { updatedAt: "desc" }],
       select: {
         id: true,
@@ -384,6 +468,7 @@ export default async function NotificationTemplatesPage({
     // Production DB may not have the new meta columns yet — fall back without them.
     try {
       const rows = await prisma.communicationTemplate.findMany({
+        where: { orgId },
         orderBy: [{ isActive: "desc" }, { updatedAt: "desc" }],
         select: {
           id: true,
@@ -405,6 +490,7 @@ export default async function NotificationTemplatesPage({
 
   try {
     policies = await prisma.communicationPolicy.findMany({
+      where: { orgId },
       select: {
         status: true,
         dashboardEnabled: true,
@@ -427,25 +513,15 @@ export default async function NotificationTemplatesPage({
 
   return (
     <div className="space-y-4">
-      <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 sm:p-5">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--accent)]">Settings</p>
-        <h1 className="mt-1 text-lg font-semibold text-[var(--ink)]">Comms Templates</h1>
+      {topNav}
+      <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+        <p className="text-[13px] font-bold text-[var(--ink)]">Templates</p>
         <p className="mt-1 text-sm text-[var(--ink-muted)]">
-          Manage reusable WhatsApp and email message templates. Use placeholders like <code>{"{customerName}"}</code> or <code>{"{jobNumber}"}</code>.
+          Use <code>{"{customerName}"}</code> and <code>{"{jobNumber}"}</code>.
         </p>
         {saved ? <p className="mt-3 text-sm text-[var(--accent)]">Saved: {saved}</p> : null}
         {error ? <p className="mt-3 text-sm text-red-600">{error}</p> : null}
         <div className="mt-4 flex flex-wrap gap-2">
-          <Link href="/settings/notifications" className="btn-premium-secondary rounded-lg px-3 py-2 text-sm">
-            Notification Center
-          </Link>
-          {user.role === "ADMIN" ? (
-            <form action={seedDefaults}>
-              <button className="btn-premium rounded-lg px-3 py-2 text-sm">
-                {templates.length === 0 ? "Create Default Templates" : "Re-seed Defaults"}
-              </button>
-            </form>
-          ) : null}
           {user.role === "ADMIN" ? (
             <form action={deduplicateTemplates}>
               <button className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-100">

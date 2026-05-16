@@ -1,15 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getCurrentUserRoleOptional } from "@/lib/session";
+import { requireOrgSession } from "@/lib/org-context";
 import { markNotificationAsRead, markAllNotificationsAsRead } from "@/lib/notifications";
 
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { user } = await getCurrentUserRoleOptional();
-  if (!user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const { user } = await requireOrgSession();
 
   try {
     const { id } = await params;
@@ -19,7 +16,7 @@ export async function POST(
       return NextResponse.json({ success: true });
     }
 
-    await markNotificationAsRead(id);
+    await markNotificationAsRead(user.id, id);
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Failed to mark notification as read", error);

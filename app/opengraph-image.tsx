@@ -1,8 +1,6 @@
 import { ImageResponse } from "next/og";
 import { eagleLogo } from "@/lib/eagle-logo";
 
-export const runtime = "edge";
-
 export const size = {
   width: 1200,
   height: 630,
@@ -113,7 +111,7 @@ export default function OpenGraphImage() {
                 background: "rgba(0,0,0,0.35)",
               }}
             >
-              eagleinfosolutions.com
+              Repair Manager
             </div>
           </div>
         </div>

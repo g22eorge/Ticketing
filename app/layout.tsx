@@ -18,45 +18,29 @@ const sora = Sora({
   display: "swap",
 });
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || "https://care.eagleinfosolutions.com";
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || "https://localhost:3000";
 const ogImage = `${siteUrl}/eagle-info-logo.png`;
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "Eagle Info Solutions — Device Repair in Kampala, Uganda",
-    template: "%s | Eagle Info Solutions",
+    default: "Repair Manager",
+    template: "%s | Repair Manager",
   },
-  description:
-    "Professional repair for phones, laptops, tablets & software in Kampala, Uganda. Transparent pricing, no-fix-no-fee guarantee, 30-day warranty. Request a repair online.",
-  keywords: [
-    "device repair Kampala",
-    "phone repair Uganda",
-    "laptop repair Kampala",
-    "Apple repair Uganda",
-    "computer repair Kampala",
-    "Eagle Info Solutions",
-    "screen repair Uganda",
-    "software repair Kampala",
-  ],
-  authors: [{ name: "Eagle Info Solutions SMC Limited", url: "https://eagleinfosolutions.com" }],
-  creator: "Eagle Info Solutions SMC Limited",
-  publisher: "Eagle Info Solutions SMC Limited",
+  description: "Device repair management platform. Track jobs, manage clients, and communicate with technicians.",
   alternates: { canonical: "/" },
   openGraph: {
-    title: "Eagle Info Solutions — Device Repair in Kampala, Uganda",
-    description:
-      "Professional repair for phones, laptops & tablets in Kampala. Transparent pricing, no-fix-no-fee, 30-day warranty.",
+    title: "Repair Manager",
+    description: "Device repair management platform.",
     url: "/",
-    siteName: "Eagle Info Solutions",
+    siteName: "Repair Manager",
     type: "website",
-    locale: "en_UG",
-    images: [{ url: ogImage, width: 512, height: 512, alt: "Eagle Info Solutions" }],
+    images: [{ url: ogImage, width: 512, height: 512, alt: "Repair Manager" }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Eagle Info Solutions — Device Repair in Kampala",
-    description: "Professional repair for phones, laptops & tablets. No-fix-no-fee · 30-day warranty.",
+    title: "Repair Manager",
+    description: "Device repair management platform.",
     images: [ogImage],
   },
   icons: {

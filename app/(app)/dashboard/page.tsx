@@ -2,7 +2,6 @@ import Link from "next/link";
 import React from "react";
 
 import { PersistedDisclosure } from "@/components/mobile/PersistedDisclosure";
-import { StickyKpiRow } from "@/components/mobile/StickyKpiRow";
 import { MonthSelectForm } from "@/components/shared/MonthSelectForm";
 import { RevenueLineChart } from "@/components/reports/ReportsCharts";
 import { getClientBill, resolveTechCost } from "@/lib/billing";
@@ -84,7 +83,8 @@ function trendMonthsForYear(year: number, endMonth: number) {
   return monthSequence(year, safeMonth, count);
 }
 
-async function loadRevenueMarginTrend(trendMonths: { key: string; start: Date; end: Date }[]) {
+/** Repair revenue only — job clientBill on COMPLETED jobs (used by TECH_MANAGER) */
+async function loadRepairRevenueTrend(trendMonths: { key: string; start: Date; end: Date }[]) {
   const completed = await prisma.job.findMany({
     where: {
       status: "COMPLETED",
@@ -104,20 +104,65 @@ async function loadRevenueMarginTrend(trendMonths: { key: string; start: Date; e
   });
 }
 
+/** Sales revenue only — POS sales (paidAt) + invoices (paidAt) (used by SALES manager) */
+async function loadSalesRevenueTrend(trendMonths: { key: string; start: Date; end: Date }[]) {
+  const rangeStart = trendMonths[0].start;
+  const rangeEnd   = trendMonths[trendMonths.length - 1].end;
+
+  const [paidSales, paidInvoices] = await Promise.all([
+    prisma.sale.findMany({
+      where: { status: "PAID", paidAt: { gte: rangeStart, lte: rangeEnd } },
+      select: { totalAmount: true, paidAt: true },
+    }),
+    prisma.invoice.findMany({
+      where: { status: "PAID", paidAt: { gte: rangeStart, lte: rangeEnd } },
+      select: { totalAmount: true, paidAt: true },
+    }),
+  ]);
+
+  return trendMonths.map((m) => {
+    const salesRev   = paidSales.filter((s) => s.paidAt && s.paidAt >= m.start && s.paidAt <= m.end).reduce((sum, s) => sum + s.totalAmount, 0);
+    const invoiceRev = paidInvoices.filter((i) => i.paidAt && i.paidAt >= m.start && i.paidAt <= m.end).reduce((sum, i) => sum + i.totalAmount, 0);
+    const revenue = salesRev + invoiceRev;
+    return { key: m.key, revenue, margin: revenue }; // no tracked cost on sales side
+  });
+}
+
+/** Total revenue — repairs + POS + invoices combined (used by ADMIN) */
+async function loadTotalRevenueTrend(trendMonths: { key: string; start: Date; end: Date }[]) {
+  const [repairTrend, salesTrend] = await Promise.all([
+    loadRepairRevenueTrend(trendMonths),
+    loadSalesRevenueTrend(trendMonths),
+  ]);
+
+  return trendMonths.map((m, i) => ({
+    key: m.key,
+    revenue: (repairTrend[i]?.revenue ?? 0) + (salesTrend[i]?.revenue ?? 0),
+    margin:  (repairTrend[i]?.margin  ?? 0) + (salesTrend[i]?.margin  ?? 0),
+  }));
+}
+
+/** @deprecated use loadRepairRevenueTrend / loadSalesRevenueTrend / loadTotalRevenueTrend */
+const loadRevenueMarginTrend = loadRepairRevenueTrend;
+
 function RevenueMarginTrendSection({
   trendMonths,
   revenueTrend,
   currency,
+  label = "Revenue & Margin Trend",
+  emptyMessage = "No revenue yet for this period.",
 }: {
   trendMonths: { key: string; start: Date; end: Date }[];
   revenueTrend: { key: string; revenue: number; margin: number }[];
   currency: string;
+  label?: string;
+  emptyMessage?: string;
 }) {
   return (
     <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <div>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Revenue & Margin Trend</p>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">{label}</p>
           <p className="mt-0.5 text-sm font-semibold text-[var(--ink)]">
             {trendMonths[0]?.key} – {trendMonths[trendMonths.length - 1]?.key}
           </p>
@@ -136,7 +181,7 @@ function RevenueMarginTrendSection({
 
       {revenueTrend.every((m) => m.revenue === 0 && m.margin === 0) ? (
         <div className="mb-3 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm text-[var(--ink-muted)]">
-          No completed job revenue yet for this period.
+          {emptyMessage}
         </div>
       ) : null}
 
@@ -316,37 +361,22 @@ function DashboardHero({
   icon?: React.ReactNode;
 }) {
   return (
-    <section className="panel-shadow rounded-[1.75rem] border border-[var(--line)] bg-[var(--panel)] p-4 sm:p-6">
-      <div className="flex min-w-0 flex-wrap items-center justify-between gap-3">
-        <div className="flex min-w-0 items-center gap-3">
-          {icon ? (
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-[var(--line)] bg-[var(--accent)]">
-              {icon}
-            </div>
-          ) : null}
-          <div className="min-w-0">
-            <p className="truncate text-xl font-black text-[var(--ink)]">{title}</p>
-            <p className="mt-0.5 truncate text-xs text-[var(--ink-muted)]">{summary}</p>
-          </div>
-        </div>
-        <div className="flex shrink-0 flex-wrap items-center gap-1.5">
+    <div className="panel-shadow flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-2.5">
+      <p className="text-[13px] font-bold text-[var(--ink)]">{title}</p>
+      <div className="flex flex-wrap items-center gap-2">
+        <Link href={primaryHref} className="btn-premium rounded-lg px-3 py-1.5 text-[12px]">
+          {primaryLabel}
+        </Link>
+        {secondaryHref && secondaryLabel ? (
           <Link
-            href={primaryHref}
-            className="btn-premium rounded-full px-4 py-2 text-sm"
+            href={secondaryHref}
+            className="inline-flex items-center rounded-lg border border-[var(--line)] px-3 py-1.5 text-xs font-semibold text-[var(--ink)] transition hover:border-[var(--accent)]/50 hover:text-[var(--accent)]"
           >
-            {primaryLabel}
+            {secondaryLabel}
           </Link>
-          {secondaryHref && secondaryLabel ? (
-            <Link
-              href={secondaryHref}
-              className="inline-flex items-center rounded-lg border border-[var(--line)] px-3 py-1.5 text-xs font-semibold text-[var(--ink)] transition hover:border-[var(--accent)]/50 hover:text-[var(--accent)]"
-            >
-              {secondaryLabel}
-            </Link>
-          ) : null}
-        </div>
+        ) : null}
       </div>
-    </section>
+    </div>
   );
 }
 
@@ -419,21 +449,12 @@ export default async function DashboardPage({
 
         <DashboardHero
           title="External Technician Control Board"
-          summary="Progress work orders and keep payout clearance in sync from one workspace."
+          summary={`${jobs.length} assigned · ${openCount} open · ${completedCount} completed · ${formatMoneyCompact(outstandingTotal, currency)} payout pending`}
           primaryHref="/technicians"
           primaryLabel="Open Work Queue"
           secondaryHref="/technicians/payouts"
           secondaryLabel="Review Payouts"
           icon={<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="black" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>}
-        />
-
-        <StickyKpiRow
-          items={[
-            { label: "Assigned", value: String(jobs.length), href: "/technicians" },
-            { label: "Open", value: String(openCount), href: "/technicians?ready=1", tone: "brand" },
-            { label: "Completed", value: String(completedCount), href: "/jobs?status=COMPLETED", tone: "success" },
-            { label: "Outstanding", value: formatMoneyCompact(outstandingTotal, currency), href: "/technicians/payouts", tone: "warning" },
-          ]}
         />
 
         <div className="hidden gap-3 2xl:grid 2xl:grid-cols-4">
@@ -694,6 +715,204 @@ export default async function DashboardPage({
     );
   }
 
+  // ── TECH_MANAGER dashboard ────────────────────────────────────────────────
+  if (user.role === "TECH_MANAGER") {
+    const today = new Date();
+    const mtdStart = new Date(today.getFullYear(), today.getMonth(), 1, 0, 0, 0, 0);
+    const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0, 0);
+    const threeDaysAgo = new Date(today.getTime() - 3 * 24 * 60 * 60 * 1000);
+
+    const orgFilter = user.orgId ? { orgId: user.orgId } : {};
+
+    const [
+      completedMtd,
+      openJobs,
+      techWorkloadJobs,
+      overdueJobs,
+      unassignedCount,
+      receivedToday,
+      completedToday,
+      diagnosingCount,
+      partsActivity,
+    ] = await Promise.all([
+      prisma.job.findMany({
+        where: { ...orgFilter, completedAt: { gte: mtdStart }, status: "COMPLETED" },
+        select: { completedAt: true, receivedAt: true, assignedTo: { select: { id: true, name: true } } },
+      }),
+      prisma.job.count({
+        where: { ...orgFilter, status: { in: filterSupportedJobStatuses(["RECEIVED","DIAGNOSING","REFERRED","AWAITING_APPROVAL","IN_REPAIR","READY_FOR_PICKUP"]) as JobStatus[] } },
+      }),
+      prisma.job.findMany({
+        where: {
+          ...orgFilter,
+          status: { in: filterSupportedJobStatuses(["DIAGNOSING","IN_REPAIR","REFERRED","AWAITING_APPROVAL","READY_FOR_PICKUP"]) as JobStatus[] },
+          assignedToId: { not: null },
+        },
+        select: { assignedTo: { select: { id: true, name: true, role: true } } },
+      }),
+      prisma.job.findMany({
+        where: {
+          ...orgFilter,
+          status: { in: filterSupportedJobStatuses(["RECEIVED","DIAGNOSING","REFERRED","AWAITING_APPROVAL","IN_REPAIR"]) as JobStatus[] },
+          receivedAt: { lt: threeDaysAgo },
+        },
+        select: { id: true, jobNumber: true, status: true, receivedAt: true },
+        orderBy: { receivedAt: "asc" },
+        take: 8,
+      }),
+      prisma.job.count({
+        where: { ...orgFilter, status: { in: filterSupportedJobStatuses(["RECEIVED","DIAGNOSING","REFERRED","IN_REPAIR"]) as JobStatus[] }, assignedToId: null },
+      }),
+      prisma.job.count({ where: { ...orgFilter, receivedAt: { gte: todayStart } } }),
+      prisma.job.count({ where: { ...orgFilter, completedAt: { gte: todayStart } } }),
+      prisma.job.count({ where: { ...orgFilter, status: "DIAGNOSING" } }),
+      prisma.partStockTransaction.findMany({
+        where: { createdAt: { gte: mtdStart } },
+        select: { type: true, quantity: true },
+      }).catch(() => [] as Array<{ type: string; quantity: number }>),
+    ]);
+
+    // Compute tech workload map
+    const techMap = new Map<string, { id: string; name: string; role: string; count: number }>();
+    for (const j of techWorkloadJobs) {
+      if (!j.assignedTo) continue;
+      const e = techMap.get(j.assignedTo.id) ?? { ...j.assignedTo, count: 0 };
+      e.count += 1;
+      techMap.set(j.assignedTo.id, e);
+    }
+    const techRows = [...techMap.values()].sort((a, b) => b.count - a.count).slice(0, 8);
+
+    // Compute per-tech completions this month
+    const techCompletions = new Map<string, { name: string; count: number; avgDays: number; totalDays: number }>();
+    for (const j of completedMtd) {
+      if (!j.assignedTo) continue;
+      const e = techCompletions.get(j.assignedTo.id) ?? { name: j.assignedTo.name, count: 0, avgDays: 0, totalDays: 0 };
+      const days = j.completedAt && j.receivedAt ? (new Date(j.completedAt).getTime() - new Date(j.receivedAt).getTime()) / 86400000 : 0;
+      e.count += 1;
+      e.totalDays += days;
+      e.avgDays = e.totalDays / e.count;
+      techCompletions.set(j.assignedTo.id, e);
+    }
+    const topTechs = [...techCompletions.values()].sort((a, b) => b.count - a.count).slice(0, 6);
+
+    // Avg turnaround for completed MTD
+    const avgTurnaround = completedMtd.length > 0
+      ? completedMtd.reduce((sum, j) => {
+          if (!j.completedAt || !j.receivedAt) return sum;
+          return sum + (new Date(j.completedAt).getTime() - new Date(j.receivedAt).getTime()) / 86400000;
+        }, 0) / completedMtd.length
+      : 0;
+
+    const partsConsumed = partsActivity.filter(p => p.type === "OUT").reduce((s, p) => s + p.quantity, 0);
+    const overdueWithDays = overdueJobs.map(j => ({ ...j, ageDays: Math.floor((today.getTime() - new Date(j.receivedAt).getTime()) / 86400000) }));
+
+    const trendMonths = trendMonthsSinceStartOfYear(today);
+    const repairTrend = await loadRepairRevenueTrend(trendMonths);
+    const currency = getAppCurrency();
+
+    return (
+      <div className="space-y-4">
+        <DashboardHero
+          title="Tech Operations"
+          summary={`${receivedToday} in · ${completedToday} out today · ${overdueWithDays.length} overdue · avg ${avgTurnaround.toFixed(1)}d turnaround`}
+          primaryHref="/jobs"
+          primaryLabel="All Jobs"
+          secondaryHref="/technicians"
+          secondaryLabel="Technicians"
+          icon={<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="black" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>}
+        />
+
+        {/* KPI strip */}
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {[
+            { label: "Completed MTD", val: String(completedMtd.length), sub: `avg ${avgTurnaround.toFixed(1)}d turnaround`, href: "/jobs?status=COMPLETED", color: "text-emerald-600" },
+            { label: "Open Jobs", val: String(openJobs), sub: `${diagnosingCount} diagnosing`, href: "/jobs", color: "text-[var(--ink)]" },
+            { label: "Overdue (3d+)", val: String(overdueWithDays.length), sub: `${unassignedCount} unassigned`, href: "/jobs", color: overdueWithDays.length > 0 ? "text-amber-600" : "text-[var(--ink-muted)]" },
+            { label: "Parts Used MTD", val: String(partsConsumed), sub: "units consumed", href: "/inventory", color: "text-[var(--ink)]" },
+          ].map(t => (
+            <Link key={t.label} href={t.href} className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px]">
+              <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">{t.label}</p>
+              <p className={`mt-1 text-[15px] font-black leading-tight ${t.color}`}>{t.val}</p>
+              <p className="mt-1 text-[10px] text-[var(--ink-muted)]">{t.sub}</p>
+            </Link>
+          ))}
+        </div>
+
+        {/* Attention banner */}
+        {(overdueWithDays.length > 0 || unassignedCount > 0) && (
+          <section className="panel-shadow rounded-xl border border-[var(--accent)]/25 bg-[var(--panel)] px-4 py-3">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
+              <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--accent)]">Attention Required</span>
+              {unassignedCount > 0 && <Link href="/jobs?assignedToId=unassigned" className="rounded-full border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1 text-[11px] font-medium text-[var(--ink)]">{unassignedCount} unassigned</Link>}
+              {overdueWithDays.length > 0 && <span className="rounded-full border border-white/10 bg-[#0b0b0b] px-2.5 py-1 text-[11px] font-medium text-white/90">{overdueWithDays.length} overdue 3+ days</span>}
+            </div>
+          </section>
+        )}
+
+        <div className="grid gap-3 lg:grid-cols-2">
+          {/* Technician completions leaderboard */}
+          <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+            <p className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Completions This Month</p>
+            {topTechs.length === 0 ? (
+              <p className="text-sm text-[var(--ink-muted)]">No completed jobs this month.</p>
+            ) : (
+              <div className="space-y-1.5">
+                {topTechs.map((t, i) => (
+                  <div key={t.name} className="flex items-center justify-between rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="text-[10px] font-bold text-[var(--ink-muted)] w-4">{i + 1}</span>
+                      <p className="truncate text-xs font-semibold text-[var(--ink)]">{t.name}</p>
+                    </div>
+                    <div className="flex items-center gap-3 shrink-0">
+                      <span className="text-[10px] text-[var(--ink-muted)]">{t.avgDays.toFixed(1)}d avg</span>
+                      <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold text-emerald-600">{t.count} done</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+
+          {/* Active workload */}
+          <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4" id="tech-workload">
+            <div className="mb-3 flex items-center justify-between">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Active Workload</p>
+              {unassignedCount > 0 && <Link href="/jobs?assignedToId=unassigned" className="rounded-full border border-amber-500/30 bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold text-amber-600">{unassignedCount} unassigned</Link>}
+            </div>
+            {techRows.length === 0 ? (
+              <p className="text-sm text-[var(--ink-muted)]">No active assignments.</p>
+            ) : (
+              <div className="space-y-1.5">
+                {techRows.map(t => (
+                  <Link key={t.id} href={`/jobs?assignedToId=${t.id}`} className="group flex items-center justify-between rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 transition hover:border-[var(--accent)]/35">
+                    <div className="min-w-0">
+                      <p className="truncate text-xs font-semibold group-hover:text-[var(--accent)] transition-colors">{t.name}</p>
+                      <p className="text-[10px] text-[var(--ink-muted)]">{t.role === "TECHNICIAN_EXTERNAL" ? "External" : "Internal"}</p>
+                    </div>
+                    <span className={`ml-2 shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${t.role === "TECHNICIAN_EXTERNAL" ? "bg-violet-500/15 text-violet-400" : "bg-sky-500/15 text-sky-500"}`}>{t.count} active</span>
+                  </Link>
+                ))}
+                {overdueWithDays.length > 0 && (
+                  <div className="mt-2 border-t border-[var(--line)] pt-2">
+                    <p className="mb-1.5 text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Overdue Jobs</p>
+                    {overdueWithDays.slice(0, 4).map(j => (
+                      <Link key={j.id} href={`/jobs/${j.id}`} className="mb-1 flex items-center justify-between rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 transition hover:border-amber-500/30">
+                        <p className="mono truncate text-xs font-bold text-[var(--accent)]">{j.jobNumber}</p>
+                        <span className={`ml-2 shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${j.ageDays >= 8 ? "bg-red-500/15 text-red-400" : "bg-amber-500/15 text-amber-600"}`}>{j.ageDays}d</span>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </section>
+        </div>
+
+        <RevenueMarginTrendSection trendMonths={trendMonths} revenueTrend={repairTrend} currency={currency} label="Repair Revenue & Margin Trend" emptyMessage="No completed repair jobs yet for this period." />
+      </div>
+    );
+  }
+
   if (user.role === "ADMIN") {
     const currency = getAppCurrency();
     const today = new Date();
@@ -814,7 +1033,7 @@ export default async function DashboardPage({
     const mtdLabel = monthLabel(today.getFullYear(), today.getMonth() + 1);
 
     const trendMonths = trendMonthsSinceStartOfYear(today);
-    const revenueTrend = await loadRevenueMarginTrend(trendMonths);
+    const revenueTrend = await loadTotalRevenueTrend(trendMonths);
 
     return (
       <div className="space-y-4">
@@ -830,43 +1049,30 @@ export default async function DashboardPage({
 
         {/* Alert Banner */}
         {hasAlerts ? (
-          <section className="panel-shadow rounded-xl border border-[var(--accent)]/25 bg-[var(--panel)] px-4 py-3">
-            <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
-              <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--accent)]">Attention Required</span>
-              {awaitingApprovalCount > 0 ? (
-                <Link
-                  href="/jobs?status=AWAITING_APPROVAL"
-                  className="rounded-full border border-[var(--accent)]/30 bg-[var(--accent)]/10 px-2.5 py-1 text-[11px] font-medium text-[var(--accent)] transition hover:border-[var(--accent)]/50"
-                >
-                  {awaitingApprovalCount} awaiting approval
-                </Link>
-              ) : null}
-              {overdueWithDays.length > 0 ? (
-                <span className="rounded-full border border-white/10 bg-[#0b0b0b] px-2.5 py-1 text-[11px] font-medium text-white/90">
-                  {overdueWithDays.length} overdue (3+ days)
-                </span>
-              ) : null}
-              {unassignedActiveCount > 0 ? (
-                <Link
-                  href="/jobs?assignedToId=unassigned"
-                  className="rounded-full border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1 text-[11px] font-medium text-[var(--ink)] transition hover:border-[var(--accent)]/35"
-                >
-                  {unassignedActiveCount} unassigned
-                </Link>
-              ) : null}
-              {pendingRequests > 0 ? (
-                <Link
-                  href="/intake"
-                  className="rounded-full border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1 text-[11px] font-medium text-[var(--ink)] transition hover:border-[var(--accent)]/35"
-                >
-                  {pendingRequests} pending requests
-                </Link>
-              ) : null}
+          <section className="panel-shadow rounded-xl border border-[var(--accent)]/25 bg-[var(--panel)] px-4 py-2.5">
+            <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
+              <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--accent)]">Needs attention —</span>
+              {[
+                awaitingApprovalCount > 0 && { label: `${awaitingApprovalCount} awaiting approval`, href: "/jobs?status=AWAITING_APPROVAL" },
+                overdueWithDays.length > 0 && { label: `${overdueWithDays.length} overdue (3+ days)`, href: "/jobs" },
+                unassignedActiveCount > 0 && { label: `${unassignedActiveCount} unassigned`, href: "/jobs?assignedToId=unassigned" },
+                pendingRequests > 0 && { label: `${pendingRequests} pending requests`, href: "/intake" },
+              ].filter(Boolean).map((item, i, arr) => {
+                const { label, href } = item as { label: string; href: string };
+                return (
+                  <span key={href} className="inline-flex items-center gap-1">
+                    <Link href={href} className="text-[12px] font-medium text-[var(--ink)] underline-offset-2 hover:text-[var(--accent)] hover:underline">
+                      {label}
+                    </Link>
+                    {i < arr.length - 1 && <span className="text-[var(--ink-muted)]">·</span>}
+                  </span>
+                );
+              })}
             </div>
           </section>
         ) : null}
 
-        <RevenueMarginTrendSection trendMonths={trendMonths} revenueTrend={revenueTrend} currency={currency} />
+        <RevenueMarginTrendSection trendMonths={trendMonths} revenueTrend={revenueTrend} currency={currency} label="Total Revenue & Margin (Repairs + Sales)" emptyMessage="No revenue recorded yet for this period." />
 
         {/* Live Repair Pipeline — with today's stats and quick actions in the header */}
         <section className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
@@ -1104,7 +1310,7 @@ export default async function DashboardPage({
 
     const monthRevenue = completedThisMonth.reduce((sum, job) => sum + (getClientBill(job) ?? 0), 0);
 
-    const revenueTrend = await loadRevenueMarginTrend(trendMonths);
+    const revenueTrend = await loadRepairRevenueTrend(trendMonths);
 
     const payoutMap = await getJobPayoutsByIds(externalCompleted.map((job) => job.id)).catch(() => new Map());
     // externalCompleted already pre-filtered to externalPaid=false in the DB query
@@ -1124,21 +1330,12 @@ export default async function DashboardPage({
 
         <DashboardHero
           title="Operations Overview"
-          summary={`${completedThisMonth.length} completed · ${pendingBilling} pending billing · revenue ${formatMoneyCompact(monthRevenue, currency)}`}
+          summary={`${completedThisMonth.length} completed · ${pendingBilling} pending billing · revenue ${formatMoneyCompact(monthRevenue, currency)} · payouts ${formatMoneyCompact(payoutOutstanding, currency)}`}
           primaryHref="/jobs"
           primaryLabel="View Jobs"
           secondaryHref={reportHref}
           secondaryLabel="Reports"
           icon={<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="black" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>}
-        />
-
-        <StickyKpiRow
-          items={[
-            { label: "Revenue", value: formatMoneyCompact(monthRevenue, currency), href: "/reports" },
-            { label: "Pending", value: String(pendingBilling), href: "/jobs?status=IN_REPAIR,READY_FOR_PICKUP,AWAITING_APPROVAL", tone: "warning" },
-            { label: "Payouts", value: formatMoneyCompact(payoutOutstanding, currency), href: "/reports", tone: "brand" },
-            { label: "Completed", value: String(completedThisMonth.length), href: "/jobs?status=COMPLETED", tone: "success" },
-          ]}
         />
 
         <div className="grid gap-3 lg:grid-cols-2">
@@ -1171,7 +1368,7 @@ export default async function DashboardPage({
           </section>
         </div>
 
-        <RevenueMarginTrendSection trendMonths={trendMonths} revenueTrend={revenueTrend} currency={currency} />
+        <RevenueMarginTrendSection trendMonths={trendMonths} revenueTrend={revenueTrend} currency={currency} label="Repair Revenue & Margin Trend" emptyMessage="No completed repair jobs yet for this period." />
 
       </div>
     );
@@ -1229,51 +1426,639 @@ export default async function DashboardPage({
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-3 lg:hidden">
-          <Link href="/jobs/new" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 text-center transition hover:-translate-y-[1px]">
-            <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Captured</p>
-            <p className="mt-1 text-3xl font-semibold">{capturedThisMonth}</p>
-            <p className="mt-1 text-[11px] font-medium text-[var(--accent)]">New intake →</p>
-          </Link>
-          <Link href="/jobs?status=RECEIVED,DIAGNOSING,AWAITING_APPROVAL,IN_REPAIR,READY_FOR_PICKUP" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 text-center transition hover:-translate-y-[1px]">
-            <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Open</p>
-            <p className="mt-1 text-3xl font-semibold text-[var(--accent)]">{openFromIntake}</p>
-            <p className="mt-1 text-[11px] font-medium text-[var(--accent)]">In progress →</p>
-          </Link>
-          <Link href="/jobs?status=AWAITING_APPROVAL" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 text-center transition hover:-translate-y-[1px]">
-            <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Approval</p>
-            <p className="mt-1 text-3xl font-semibold text-[var(--accent)]">{awaitingApproval}</p>
-            <p className="mt-1 text-[11px] font-medium text-[var(--accent)]">Follow up →</p>
-          </Link>
-          <Link href="/jobs?status=READY_FOR_PICKUP" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 text-center transition hover:-translate-y-[1px]">
-            <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Ready</p>
-            <p className="mt-1 text-3xl font-semibold text-[var(--accent)]">{readyForPickup}</p>
-            <p className="mt-1 text-[11px] font-medium text-[var(--accent)]">Pickup →</p>
-          </Link>
+        {/* Compact inline KPI strip — replaces 2×2 mobile card grid */}
+        <div className="panel-shadow grid grid-cols-4 divide-x divide-[var(--line)] overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)] lg:hidden">
+          {[
+            { label: "Captured",  value: capturedThisMonth, href: "/jobs/new",                                                                          color: "text-[var(--ink)]" },
+            { label: "Open",      value: openFromIntake,    href: "/jobs?status=RECEIVED,DIAGNOSING,AWAITING_APPROVAL,IN_REPAIR,READY_FOR_PICKUP",       color: "text-[var(--accent)]" },
+            { label: "Approval",  value: awaitingApproval,  href: "/jobs?status=AWAITING_APPROVAL",                                                      color: awaitingApproval > 0 ? "text-amber-500" : "text-[var(--ink-muted)]" },
+            { label: "Ready",     value: readyForPickup,    href: "/jobs?status=READY_FOR_PICKUP",                                                       color: readyForPickup > 0 ? "text-[var(--accent)]" : "text-[var(--ink-muted)]" },
+          ].map((item) => (
+            <Link key={item.label} href={item.href} className="flex flex-col items-center justify-center gap-0.5 py-3 transition hover:bg-[var(--panel-strong)]">
+              <p className={`text-lg font-bold ${item.color}`}>{item.value}</p>
+              <p className="text-[9px] uppercase tracking-[0.12em] text-[var(--ink-muted)]">{item.label}</p>
+            </Link>
+          ))}
+        </div>
+
+        {/* Compact 4-stat strip for desktop */}
+        <div className="panel-shadow hidden grid-cols-4 divide-x divide-[var(--line)] overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)] lg:grid">
+          {[
+            { label: `Captured (${selectedPeriodLabel})`, value: capturedThisMonth, href: "/jobs/new",                                                                          color: "text-[var(--ink)]" },
+            { label: "Open queue",                        value: openFromIntake,    href: "/jobs?status=RECEIVED,DIAGNOSING,AWAITING_APPROVAL,IN_REPAIR,READY_FOR_PICKUP",       color: "text-[var(--accent)]" },
+            { label: "Awaiting approval",                 value: awaitingApproval,  href: "/jobs?status=AWAITING_APPROVAL",                                                      color: awaitingApproval > 0 ? "text-amber-500" : "text-[var(--ink-muted)]" },
+            { label: "Ready for pickup",                  value: readyForPickup,    href: "/jobs?status=READY_FOR_PICKUP",                                                       color: readyForPickup > 0 ? "text-[var(--accent)]" : "text-[var(--ink-muted)]" },
+          ].map((item) => (
+            <Link key={item.label} href={item.href} className="flex flex-col items-center justify-center gap-0.5 py-3 transition hover:bg-[var(--panel-strong)]">
+              <p className={`text-lg font-bold ${item.color}`}>{item.value}</p>
+              <p className="text-[9px] uppercase tracking-[0.12em] text-[var(--ink-muted)]">{item.label}</p>
+            </Link>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // ── MANAGER dashboard ─────────────────────────────────────────────────────
+  if (user.role === "MANAGER") {
+    const currency = getAppCurrency();
+    const today = new Date();
+    const mtdStart = new Date(today.getFullYear(), today.getMonth(), 1, 0, 0, 0, 0);
+    const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0, 0);
+    const threeDaysAgo = new Date(today.getTime() - 3 * 24 * 60 * 60 * 1000);
+    const mtdLabel = monthLabel(today.getFullYear(), today.getMonth() + 1);
+
+    const [statusGroup, completedMtd, overdueJobs, techWorkloadJobs, unassignedCount, receivedToday, completedToday, awaitingApprovalCount] = await Promise.all([
+      prisma.job.groupBy({ by: ["status"], _count: { status: true } }),
+      prisma.job.findMany({
+        where: { status: "COMPLETED", completedAt: { gte: mtdStart } },
+        select: { clientBill: true },
+      }),
+      prisma.job.findMany({
+        where: {
+          status: { in: filterSupportedJobStatuses(["RECEIVED", "DIAGNOSING", "REFERRED", "AWAITING_APPROVAL", "IN_REPAIR"]) as JobStatus[] },
+          receivedAt: { lt: threeDaysAgo },
+        },
+        select: { id: true, jobNumber: true, status: true, receivedAt: true, device: { select: { brand: true, model: true } } },
+        orderBy: { receivedAt: "asc" },
+        take: 8,
+      }).catch(async () => {
+        const fb = await prisma.job.findMany({
+          where: { status: { in: filterSupportedJobStatuses(["RECEIVED", "DIAGNOSING", "REFERRED", "AWAITING_APPROVAL", "IN_REPAIR"]) as JobStatus[] }, receivedAt: { lt: threeDaysAgo } },
+          select: { id: true, jobNumber: true, status: true, receivedAt: true },
+          orderBy: { receivedAt: "asc" }, take: 8,
+        });
+        return fb.map(j => ({ ...j, device: null }));
+      }),
+      prisma.job.findMany({
+        where: {
+          status: { in: filterSupportedJobStatuses(["DIAGNOSING", "IN_REPAIR", "REFERRED", "AWAITING_APPROVAL", "READY_FOR_PICKUP"]) as JobStatus[] },
+          assignedToId: { not: null },
+        },
+        select: { assignedTo: { select: { id: true, name: true, role: true } } },
+      }),
+      prisma.job.count({
+        where: {
+          status: { in: filterSupportedJobStatuses(["RECEIVED", "DIAGNOSING", "REFERRED", "IN_REPAIR"]) as JobStatus[] },
+          assignedToId: null,
+        },
+      }),
+      prisma.job.count({ where: { receivedAt: { gte: todayStart } } }),
+      prisma.job.count({ where: { completedAt: { gte: todayStart } } }),
+      prisma.job.count({ where: { status: "AWAITING_APPROVAL" } }),
+    ]);
+
+    const revenueMtd = completedMtd.reduce((sum, j) => sum + (getClientBill(j) ?? 0), 0);
+    const statusCount = new Map<string, number>();
+    for (const item of statusGroup) {
+      const key = normalizeJobStatus(item.status as JobStatus);
+      statusCount.set(key, (statusCount.get(key) ?? 0) + item._count.status);
+    }
+    const overdueWithDays = overdueJobs.map(j => ({ ...j, ageDays: Math.floor((today.getTime() - j.receivedAt.getTime()) / 86400000) }));
+    const techMap = new Map<string, { id: string; name: string; role: string; count: number }>();
+    for (const j of techWorkloadJobs) {
+      if (!j.assignedTo) continue;
+      const e = techMap.get(j.assignedTo.id) ?? { ...j.assignedTo, count: 0 };
+      e.count += 1;
+      techMap.set(j.assignedTo.id, e);
+    }
+    const techRows = [...techMap.values()].sort((a, b) => b.count - a.count).slice(0, 6);
+    const trendMonths = trendMonthsSinceStartOfYear(today);
+    const revenueTrend = await loadTotalRevenueTrend(trendMonths);
+
+    return (
+      <div className="space-y-4">
+        <DashboardHero
+          title="Manager Overview"
+          summary={`${receivedToday} in · ${completedToday} out today · ${overdueWithDays.length} overdue · revenue ${formatMoneyCompact(revenueMtd, currency)} MTD`}
+          primaryHref="/reports"
+          primaryLabel="Full Reports"
+          secondaryHref="/jobs"
+          secondaryLabel="All Jobs"
+          icon={<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="black" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>}
+        />
+
+        {(overdueWithDays.length > 0 || awaitingApprovalCount > 0 || unassignedCount > 0) && (
+          <section className="panel-shadow rounded-xl border border-[var(--accent)]/25 bg-[var(--panel)] px-4 py-3">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
+              <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--accent)]">Attention Required</span>
+              {awaitingApprovalCount > 0 && <Link href="/jobs?status=AWAITING_APPROVAL" className="rounded-full border border-[var(--accent)]/30 bg-[var(--accent)]/10 px-2.5 py-1 text-[11px] font-medium text-[var(--accent)]">{awaitingApprovalCount} awaiting approval</Link>}
+              {overdueWithDays.length > 0 && <span className="rounded-full border border-white/10 bg-[#0b0b0b] px-2.5 py-1 text-[11px] font-medium text-white/90">{overdueWithDays.length} overdue 3+ days</span>}
+              {unassignedCount > 0 && <Link href="/jobs?assignedToId=unassigned" className="rounded-full border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1 text-[11px] font-medium text-[var(--ink)]">{unassignedCount} unassigned</Link>}
+            </div>
+          </section>
+        )}
+
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {[
+            { label: "Revenue MTD", val: formatMoneyCompact(revenueMtd, currency), href: `/reports?period=month&month=${mtdLabel}`, color: "text-[var(--accent)]" },
+            { label: "Completed MTD", val: String(completedMtd.length), href: "/jobs?status=COMPLETED", color: "text-emerald-600" },
+            { label: "In Pipeline", val: String((statusCount.get("DIAGNOSING") ?? 0) + (statusCount.get("IN_REPAIR") ?? 0) + (statusCount.get("AWAITING_APPROVAL") ?? 0)), href: "/jobs?status=DIAGNOSING,IN_REPAIR,AWAITING_APPROVAL", color: "text-[var(--ink)]" },
+            { label: "Ready Pickup", val: String(statusCount.get("READY_FOR_PICKUP") ?? 0), href: "/jobs?status=READY_FOR_PICKUP", color: "text-[var(--accent)]" },
+          ].map(t => (
+            <Link key={t.label} href={t.href} className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px]">
+              <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">{t.label}</p>
+              <p className={`mt-1 text-[15px] font-black leading-tight ${t.color}`}>{t.val}</p>
+            </Link>
+          ))}
+        </div>
+
+        <RevenueMarginTrendSection trendMonths={trendMonths} revenueTrend={revenueTrend} currency={currency} label="Total Revenue & Margin (Repairs + Sales)" emptyMessage="No revenue recorded yet for this period." />
+
+        <div className="grid gap-3 lg:grid-cols-2">
+          <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+            <p className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Live Pipeline</p>
+            <div className="space-y-1.5">
+              {UI_JOB_STATUSES.filter(s => s !== "CLOSED" && s !== "COMPLETED").map(s => {
+                const count = statusCount.get(s) ?? 0;
+                return (
+                  <Link key={s} href={`/jobs?status=${s}`} className="flex items-center justify-between rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 transition hover:border-[var(--accent)]/35">
+                    <p className="text-xs font-medium text-[var(--ink)]">{statusLabel[s]}</p>
+                    <span className={`text-sm font-bold ${count > 0 ? "text-[var(--accent)]" : "text-[var(--ink-muted)]"}`}>{count}</span>
+                  </Link>
+                );
+              })}
+            </div>
+          </section>
+          <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+            <div className="mb-3 flex items-center justify-between">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Staff Workload</p>
+              {unassignedCount > 0 && <Link href="/jobs?assignedToId=unassigned" className="rounded-full border border-amber-500/30 bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold text-amber-600">{unassignedCount} unassigned</Link>}
+            </div>
+            {techRows.length === 0 ? (
+              <p className="text-sm text-[var(--ink-muted)]">No active assignments.</p>
+            ) : (
+              <div className="space-y-1.5">
+                {techRows.map(t => (
+                  <Link key={t.id} href={`/jobs?assignedToId=${t.id}`} className="group flex items-center justify-between rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 transition hover:border-[var(--accent)]/35">
+                    <div className="min-w-0">
+                      <p className="truncate text-xs font-semibold group-hover:text-[var(--accent)] transition-colors">{t.name}</p>
+                      <p className="text-[10px] text-[var(--ink-muted)]">{t.role === "TECHNICIAN_EXTERNAL" ? "External" : t.role === "TECHNICIAN_INTERNAL" ? "Internal" : t.role}</p>
+                    </div>
+                    <span className={`ml-2 shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${t.role === "TECHNICIAN_EXTERNAL" ? "bg-violet-500/15 text-violet-400" : "bg-sky-500/15 text-sky-500"}`}>{t.count} active</span>
+                  </Link>
+                ))}
+                {overdueWithDays.length > 0 && (
+                  <div className="mt-2 border-t border-[var(--line)] pt-2">
+                    <p className="mb-1.5 text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Overdue Jobs</p>
+                    {overdueWithDays.slice(0, 4).map(j => (
+                      <Link key={j.id} href={`/jobs/${j.id}`} className="flex items-center justify-between rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 transition hover:border-amber-500/30 mb-1">
+                        <div className="min-w-0">
+                          <p className="mono truncate text-xs font-bold text-[var(--accent)]">{j.jobNumber}</p>
+                          <p className="truncate text-[10px] text-[var(--ink-muted)]">{statusLabel[j.status as keyof typeof statusLabel] ?? j.status}</p>
+                        </div>
+                        <span className={`ml-2 shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${j.ageDays >= 8 ? "bg-red-500/15 text-red-400" : "bg-amber-500/15 text-amber-600"}`}>{j.ageDays}d</span>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </section>
+        </div>
+      </div>
+    );
+  }
+
+  // ── FINANCE dashboard ──────────────────────────────────────────────────────
+  if (user.role === "FINANCE") {
+    const currency = getAppCurrency();
+    const today = new Date();
+    const mtdStart = new Date(today.getFullYear(), today.getMonth(), 1, 0, 0, 0, 0);
+    const mtdLabel = monthLabel(today.getFullYear(), today.getMonth() + 1);
+    const thirtyDaysAgo = new Date(today.getTime() - 30 * 86400000);
+    const sixtyDaysAgo  = new Date(today.getTime() - 60 * 86400000);
+
+    const [invoices, recentPayments, salesRevenue] = await Promise.all([
+      prisma.invoice.findMany({
+        select: { id: true, invoiceNumber: true, status: true, totalAmount: true, paidAmount: true, issuedAt: true, job: { select: { jobNumber: true, client: { select: { fullName: true } } } } },
+        orderBy: { issuedAt: "desc" },
+        take: 50,
+      }),
+      prisma.payment.findMany({
+        where: { createdAt: { gte: mtdStart } },
+        select: { amount: true, method: true, receivedAt: true, currency: true },
+        orderBy: { receivedAt: "desc" },
+        take: 20,
+      }),
+      prisma.sale.findMany({
+        where: { status: "PAID", paidAt: { gte: mtdStart } },
+        select: { totalAmount: true },
+      }),
+    ]);
+
+    const totalInvoiced = invoices.reduce((s, i) => s + i.totalAmount, 0);
+    const totalCollected = invoices.reduce((s, i) => s + i.paidAmount, 0);
+    const totalOutstanding = totalInvoiced - totalCollected;
+    const overdueCount = invoices.filter(i => i.status !== "PAID" && i.issuedAt < thirtyDaysAgo).length;
+    const ageingCurrent  = invoices.filter(i => i.status !== "PAID" && i.issuedAt >= thirtyDaysAgo).reduce((s, i) => s + (i.totalAmount - i.paidAmount), 0);
+    const ageing30to60   = invoices.filter(i => i.status !== "PAID" && i.issuedAt >= sixtyDaysAgo && i.issuedAt < thirtyDaysAgo).reduce((s, i) => s + (i.totalAmount - i.paidAmount), 0);
+    const ageing60plus   = invoices.filter(i => i.status !== "PAID" && i.issuedAt < sixtyDaysAgo).reduce((s, i) => s + (i.totalAmount - i.paidAmount), 0);
+    const posRevenueMtd  = salesRevenue.reduce((s, r) => s + r.totalAmount, 0);
+    const invoiceRevenueMtd = invoices.filter(i => i.status === "PAID" && i.issuedAt >= mtdStart).reduce((s, i) => s + i.totalAmount, 0);
+    const mtdPayments = recentPayments.reduce((s, p) => s + p.amount, 0);
+    const methodTotals = recentPayments.reduce((acc, p) => { acc[p.method] = (acc[p.method] ?? 0) + p.amount; return acc; }, {} as Record<string, number>);
+    const unpaidInvoices = invoices.filter(i => i.status !== "PAID" && i.status !== "VOID");
+
+    return (
+      <div className="space-y-4">
+        <DashboardHero
+          title="Finance & Accounts"
+          summary={`${formatMoneyCompact(totalOutstanding, currency)} outstanding · ${overdueCount} overdue invoices · ${formatMoneyCompact(mtdPayments, currency)} collected MTD`}
+          primaryHref="/documents/invoices"
+          primaryLabel="Invoices"
+          secondaryHref="/reports"
+          secondaryLabel="Reports"
+          icon={<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="black" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>}
+        />
+
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {[
+            { label: "Total Invoiced", val: formatMoneyCompact(totalInvoiced, currency), href: "/documents/invoices", color: "text-[var(--ink)]" },
+            { label: "Collected",      val: formatMoneyCompact(totalCollected, currency), href: "/documents/invoices?status=PAID", color: "text-emerald-600" },
+            { label: "Outstanding",    val: formatMoneyCompact(totalOutstanding, currency), href: "/documents/invoices?status=ISSUED", color: totalOutstanding > 0 ? "text-[var(--accent)]" : "text-emerald-600" },
+            { label: "Overdue (30d+)", val: String(overdueCount), href: "/documents/invoices", color: overdueCount > 0 ? "text-red-400" : "text-[var(--ink-muted)]" },
+          ].map(t => (
+            <Link key={t.label} href={t.href} className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px]">
+              <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">{t.label}</p>
+              <p className={`mt-1 text-[15px] font-black leading-tight ${t.color}`}>{t.val}</p>
+            </Link>
+          ))}
         </div>
 
         <div className="grid gap-3 lg:grid-cols-2">
-          <Link href="/jobs/new" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px] sm:p-5">
-            <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Captured ({selectedPeriodLabel})</p>
-            <p className="mt-2 text-3xl font-semibold">{capturedThisMonth}</p>
-            <p className="mt-2 text-xs font-medium text-[var(--accent)]">Open intake form →</p>
-          </Link>
-          <Link href="/jobs?status=RECEIVED,DIAGNOSING,AWAITING_APPROVAL,IN_REPAIR,READY_FOR_PICKUP" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px] sm:p-5">
-            <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Open client queue</p>
-            <p className="mt-2 text-3xl font-semibold text-[var(--accent)]">{openFromIntake}</p>
-            <p className="mt-2 text-xs font-medium text-[var(--accent)]">View open jobs →</p>
-          </Link>
-          <Link href="/jobs?status=AWAITING_APPROVAL" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px] sm:p-5">
-            <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Awaiting approval</p>
-            <p className="mt-2 text-3xl font-semibold text-[var(--accent)]">{awaitingApproval}</p>
-            <p className="mt-2 text-xs font-medium text-[var(--accent)]">Open approval queue →</p>
-          </Link>
-          <Link href="/jobs?status=READY_FOR_PICKUP" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px] sm:p-5">
-            <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Ready for pickup</p>
-            <p className="mt-2 text-3xl font-semibold text-[var(--accent)]">{readyForPickup}</p>
-            <p className="mt-2 text-xs font-medium text-[var(--accent)]">Open pickup list →</p>
-          </Link>
+          <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+            <p className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Invoice Ageing</p>
+            <div className="space-y-2">
+              {[
+                { label: "Current (0–30 days)", amount: ageingCurrent, color: "bg-[var(--accent)]/10 border-[var(--accent)]/20 text-[var(--accent)]" },
+                { label: "30–60 days",          amount: ageing30to60, color: "bg-amber-500/10 border-amber-500/25 text-amber-600" },
+                { label: "60+ days (overdue)",  amount: ageing60plus, color: "bg-red-500/10 border-red-500/20 text-red-400" },
+              ].map(row => (
+                <div key={row.label} className={`flex items-center justify-between rounded-lg border px-3 py-2.5 ${row.color}`}>
+                  <p className="text-xs font-medium">{row.label}</p>
+                  <p className="text-sm font-bold">{formatMoneyCompact(row.amount, currency)}</p>
+                </div>
+              ))}
+              <div className="mt-2 flex items-center justify-between rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2.5">
+                <p className="text-xs font-semibold text-[var(--ink)]">Total Outstanding</p>
+                <p className="text-sm font-black text-[var(--ink)]">{formatMoneyCompact(totalOutstanding, currency)}</p>
+              </div>
+            </div>
+          </section>
+
+          <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+            <p className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">MTD Cash In — {mtdLabel}</p>
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2.5">
+                <p className="text-xs text-[var(--ink-muted)]">Invoice payments</p>
+                <p className="text-sm font-bold text-emerald-600">{formatMoneyCompact(invoiceRevenueMtd, currency)}</p>
+              </div>
+              <div className="flex items-center justify-between rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2.5">
+                <p className="text-xs text-[var(--ink-muted)]">POS / cash sales</p>
+                <p className="text-sm font-bold text-emerald-600">{formatMoneyCompact(posRevenueMtd, currency)}</p>
+              </div>
+              {Object.entries(methodTotals).map(([method, amount]) => (
+                <div key={method} className="flex items-center justify-between rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2">
+                  <p className="text-xs text-[var(--ink-muted)]">{method.replace(/_/g, " ")}</p>
+                  <p className="text-sm font-semibold text-[var(--ink)]">{formatMoneyCompact(amount, currency)}</p>
+                </div>
+              ))}
+              <div className="mt-1 flex items-center justify-between rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2.5">
+                <p className="text-xs font-bold text-emerald-600">Total in MTD</p>
+                <p className="text-sm font-black text-emerald-600">{formatMoneyCompact(mtdPayments + posRevenueMtd, currency)}</p>
+              </div>
+            </div>
+          </section>
         </div>
+
+        <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+          <div className="mb-3 flex items-center justify-between">
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Unpaid Invoices</p>
+            <Link href="/documents/invoices" className="text-[11px] font-semibold text-[var(--accent)] hover:underline">View all →</Link>
+          </div>
+          {unpaidInvoices.length === 0 ? (
+            <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2.5">
+              <p className="text-[11px] font-medium text-emerald-600">All invoices paid — nothing outstanding.</p>
+            </div>
+          ) : (
+            <div className="space-y-1.5">
+              {unpaidInvoices.slice(0, 8).map(inv => {
+                const balance = inv.totalAmount - inv.paidAmount;
+                const ageDays = Math.floor((today.getTime() - inv.issuedAt.getTime()) / 86400000);
+                return (
+                  <div key={inv.id} className="flex items-center justify-between rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2">
+                    <div className="min-w-0">
+                      <p className="mono truncate text-xs font-bold text-[var(--ink)]">{inv.invoiceNumber}</p>
+                      <p className="truncate text-[10px] text-[var(--ink-muted)]">{inv.job?.client?.fullName ?? "—"} · {inv.job?.jobNumber ?? "—"}</p>
+                    </div>
+                    <div className="ml-3 shrink-0 text-right">
+                      <p className="text-xs font-semibold text-[var(--accent)]">{formatMoneyCompact(balance, currency)}</p>
+                      <span className={`text-[10px] font-medium ${ageDays > 60 ? "text-red-400" : ageDays > 30 ? "text-amber-600" : "text-[var(--ink-muted)]"}`}>{ageDays}d</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </section>
+      </div>
+    );
+  }
+
+  // ── SALES dashboard ────────────────────────────────────────────────────────
+  if (user.role === "SALES") {
+    const currency = getAppCurrency();
+    const today    = new Date();
+    const period   = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
+    const mtdStart = new Date(today.getFullYear(), today.getMonth(), 1, 0, 0, 0, 0);
+    const prevMonthStart = new Date(today.getFullYear(), today.getMonth() - 1, 1, 0, 0, 0, 0);
+    const prevMonthEnd   = new Date(today.getFullYear(), today.getMonth(), 0, 23, 59, 59, 999);
+    const orgFilter = user.orgId ? { orgId: user.orgId } : {};
+
+    const [
+      completedJobsMtd,
+      allJobsMtd,
+      prevMonthJobCount,
+      paidSalesMtd,
+      paidInvoicesMtd,
+      awaitingApproval,
+      readyPickup,
+      quotedJobs,
+      salesMtdByStaff,
+      jobsMtdByStaff,
+      teamTarget,
+      myTarget,
+    ] = await Promise.all([
+      // Completed jobs MTD for repair revenue
+      prisma.job.findMany({
+        where: { ...orgFilter, status: "COMPLETED", completedAt: { gte: mtdStart } },
+        select: { id: true, clientBill: true, externalTechBill: true, createdById: true, createdBy: { select: { id: true, name: true } } },
+      }),
+      // All jobs received MTD for funnel stats
+      prisma.job.count({ where: { ...orgFilter, receivedAt: { gte: mtdStart } } }),
+      prisma.job.count({ where: { ...orgFilter, receivedAt: { gte: prevMonthStart, lte: prevMonthEnd } } }),
+      // POS sales paid MTD
+      prisma.sale.findMany({
+        where: { ...orgFilter, status: "PAID", paidAt: { gte: mtdStart } },
+        select: { totalAmount: true, createdById: true, createdBy: { select: { id: true, name: true } } },
+      }),
+      // Invoice payments MTD
+      prisma.invoice.findMany({
+        where: { ...orgFilter, status: "PAID", paidAt: { gte: mtdStart } },
+        select: { totalAmount: true, job: { select: { createdById: true, createdBy: { select: { id: true, name: true } } } } },
+      }),
+      prisma.job.count({ where: { ...orgFilter, status: "AWAITING_APPROVAL" } }),
+      prisma.job.count({ where: { ...orgFilter, status: "READY_FOR_PICKUP" } }),
+      prisma.job.findMany({
+        where: { ...orgFilter, status: "AWAITING_APPROVAL" },
+        select: { id: true, jobNumber: true, clientBill: true, client: { select: { fullName: true } }, receivedAt: true },
+        orderBy: { receivedAt: "asc" },
+        take: 8,
+      }),
+      // POS sales per staff this month
+      prisma.sale.groupBy({
+        by: ["createdById"],
+        where: { ...orgFilter, status: "PAID", paidAt: { gte: mtdStart }, createdById: { not: null } },
+        _sum: { totalAmount: true },
+        _count: { id: true },
+      }),
+      // Jobs created per staff this month (for repair revenue attribution)
+      prisma.job.findMany({
+        where: { ...orgFilter, status: "COMPLETED", completedAt: { gte: mtdStart }, createdById: { not: undefined } },
+        select: { createdById: true, createdBy: { select: { name: true } }, clientBill: true },
+      }),
+      // Team target for current month
+      prisma.salesTarget.findFirst({ where: { ...orgFilter, userId: null, period } }),
+      // My own target
+      user.id ? prisma.salesTarget.findFirst({ where: { ...orgFilter, userId: user.id, period } }) : Promise.resolve(null),
+    ]);
+
+    // ── Revenue aggregation ─────────────────────────────────────────────────
+    const repairRevenueMtd = completedJobsMtd.reduce((s, j) => s + (getClientBill(j) ?? 0), 0);
+    const posRevenueMtd    = paidSalesMtd.reduce((s, r) => s + r.totalAmount, 0);
+    const invoiceRevenueMtd = paidInvoicesMtd.reduce((s, i) => s + i.totalAmount, 0);
+    const totalRevenueMtd  = repairRevenueMtd + posRevenueMtd + invoiceRevenueMtd;
+    const teamTargetRevenue = teamTarget?.targetRevenue ?? 0;
+    const targetPct = teamTargetRevenue > 0 ? Math.round((totalRevenueMtd / teamTargetRevenue) * 100) : null;
+    const myTargetRevenue = myTarget?.targetRevenue ?? 0;
+
+    // ── Per-staff performance ────────────────────────────────────────────────
+    // Build a map: staffId → { name, repairRev, posRev, totalRev, jobCount, saleCount }
+    const staffMap = new Map<string, { name: string; repairRev: number; posRev: number; totalRev: number; jobCount: number; saleCount: number; target: number }>();
+
+    for (const j of jobsMtdByStaff) {
+      if (!j.createdById || !j.createdBy) continue;
+      const e = staffMap.get(j.createdById) ?? { name: j.createdBy.name, repairRev: 0, posRev: 0, totalRev: 0, jobCount: 0, saleCount: 0, target: 0 };
+      e.repairRev += getClientBill(j) ?? 0;
+      e.jobCount  += 1;
+      e.totalRev   = e.repairRev + e.posRev;
+      staffMap.set(j.createdById, e);
+    }
+    for (const s of salesMtdByStaff) {
+      if (!s.createdById) continue;
+      // Need name — find from paidSalesMtd
+      const saleRecord = paidSalesMtd.find(r => r.createdById === s.createdById);
+      const name = saleRecord?.createdBy?.name ?? s.createdById;
+      const e = staffMap.get(s.createdById) ?? { name, repairRev: 0, posRev: 0, totalRev: 0, jobCount: 0, saleCount: 0, target: 0 };
+      e.posRev   += s._sum.totalAmount ?? 0;
+      e.saleCount += s._count.id;
+      e.totalRev  = e.repairRev + e.posRev;
+      staffMap.set(s.createdById, e);
+    }
+    // Fetch individual targets for all staff in map
+    const staffIds = [...staffMap.keys()];
+    if (staffIds.length > 0) {
+      const indivTargets = await prisma.salesTarget.findMany({
+        where: { ...orgFilter, userId: { in: staffIds }, period },
+        select: { userId: true, targetRevenue: true },
+      });
+      for (const t of indivTargets) {
+        if (!t.userId) continue;
+        const e = staffMap.get(t.userId);
+        if (e) { e.target = t.targetRevenue; staffMap.set(t.userId, e); }
+      }
+    }
+
+    const staffRows = [...staffMap.values()].sort((a, b) => b.totalRev - a.totalRev);
+    const wonMtd = completedJobsMtd.length;
+    const conversionRate = allJobsMtd > 0 ? Math.round((wonMtd / allJobsMtd) * 100) : 0;
+
+    const trendMonths  = trendMonthsSinceStartOfYear(today);
+    const revenueTrend = await loadTotalRevenueTrend(trendMonths);
+
+    return (
+      <div className="space-y-4">
+        <DashboardHero
+          title="Sales Performance"
+          summary={`${formatMoneyCompact(totalRevenueMtd, currency)} total revenue MTD${teamTargetRevenue > 0 ? ` · ${targetPct}% of target` : ""} · ${awaitingApproval} awaiting approval`}
+          primaryHref="/jobs/new"
+          primaryLabel="New Job"
+          secondaryHref="/jobs?status=AWAITING_APPROVAL"
+          secondaryLabel="Approval Queue"
+          icon={<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="black" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>}
+        />
+
+        {/* ── Team target progress bar ── */}
+        {teamTargetRevenue > 0 && (
+          <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
+            <div className="mb-2 flex items-center justify-between">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Team Target — {period}</p>
+              <span className={`text-sm font-black ${(targetPct ?? 0) >= 100 ? "text-emerald-600" : (targetPct ?? 0) >= 60 ? "text-[var(--accent)]" : "text-amber-600"}`}>
+                {targetPct ?? 0}%
+              </span>
+            </div>
+            <div className="h-2.5 w-full overflow-hidden rounded-full bg-[var(--panel-strong)]">
+              <div
+                className={`h-full rounded-full transition-all ${(targetPct ?? 0) >= 100 ? "bg-emerald-500" : "bg-[var(--accent)]"}`}
+                style={{ width: `${Math.min(100, targetPct ?? 0)}%` }}
+              />
+            </div>
+            <div className="mt-1.5 flex justify-between text-[10px] text-[var(--ink-muted)]">
+              <span>{formatMoneyCompact(totalRevenueMtd, currency)} achieved</span>
+              <span>target {formatMoneyCompact(teamTargetRevenue, currency)}</span>
+            </div>
+          </section>
+        )}
+
+        {/* ── 4 KPI tiles ── */}
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {[
+            { label: "Total Revenue MTD",  val: formatMoneyCompact(totalRevenueMtd, currency),   sub: teamTargetRevenue > 0 ? `${targetPct}% of ${formatMoneyCompact(teamTargetRevenue, currency)} target` : "all channels",      href: "/reports",                                      color: "text-[var(--accent)]" },
+            { label: "Repair Revenue",     val: formatMoneyCompact(repairRevenueMtd, currency),  sub: `${wonMtd} completed jobs`,                                                                                                    href: "/jobs?status=COMPLETED",                        color: "text-sky-600" },
+            { label: "POS + Invoices",     val: formatMoneyCompact(posRevenueMtd + invoiceRevenueMtd, currency), sub: `${paidSalesMtd.length} sales · ${paidInvoicesMtd.length} invoices`,                                          href: "/documents/invoices",                           color: "text-violet-600" },
+            { label: "Conversion Rate",    val: `${conversionRate}%`,                            sub: `${wonMtd} won vs ${prevMonthJobCount} last month`,                                                                             href: "/jobs?status=COMPLETED,READY_FOR_PICKUP",       color: conversionRate >= 50 ? "text-emerald-600" : "text-amber-600" },
+          ].map(t => (
+            <Link key={t.label} href={t.href} className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px]">
+              <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">{t.label}</p>
+              <p className={`mt-1 text-[15px] font-black leading-tight ${t.color}`}>{t.val}</p>
+              <p className="mt-1 text-[10px] text-[var(--ink-muted)]">{t.sub}</p>
+            </Link>
+          ))}
+        </div>
+
+        <div className="grid gap-3 lg:grid-cols-2">
+          {/* ── Individual staff performance ── */}
+          <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+            <div className="mb-3 flex items-center justify-between">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Staff Performance — {period}</p>
+              <Link href="/reports" className="text-[11px] font-semibold text-[var(--accent)] hover:underline">Full report →</Link>
+            </div>
+            {staffRows.length === 0 ? (
+              <p className="text-sm text-[var(--ink-muted)]">No sales activity this month yet.</p>
+            ) : (
+              <div className="space-y-2">
+                {staffRows.map((s, i) => {
+                  const pct = s.target > 0 ? Math.min(100, Math.round((s.totalRev / s.target) * 100)) : null;
+                  return (
+                    <div key={s.name} className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="shrink-0 text-[10px] font-bold text-[var(--ink-muted)] w-4">{i + 1}</span>
+                          <p className="truncate text-xs font-semibold text-[var(--ink)]">{s.name}</p>
+                        </div>
+                        <div className="ml-3 shrink-0 flex items-center gap-2">
+                          {pct !== null && (
+                            <span className={`text-[10px] font-bold ${pct >= 100 ? "text-emerald-600" : pct >= 60 ? "text-[var(--accent)]" : "text-amber-600"}`}>{pct}%</span>
+                          )}
+                          <span className="text-xs font-bold text-[var(--ink)]">{formatMoneyCompact(s.totalRev, currency)}</span>
+                        </div>
+                      </div>
+                      <div className="mt-1.5 flex items-center gap-3 text-[10px] text-[var(--ink-muted)]">
+                        <span className="text-sky-600">{formatMoneyCompact(s.repairRev, currency)} repair</span>
+                        <span className="text-violet-600">{formatMoneyCompact(s.posRev, currency)} POS</span>
+                        {s.target > 0 && (
+                          <>
+                            <span>·</span>
+                            <span>target {formatMoneyCompact(s.target, currency)}</span>
+                          </>
+                        )}
+                      </div>
+                      {pct !== null && (
+                        <div className="mt-1.5 h-1 w-full overflow-hidden rounded-full bg-[var(--line)]">
+                          <div className={`h-full rounded-full ${pct >= 100 ? "bg-emerald-500" : "bg-[var(--accent)]"}`} style={{ width: `${pct}%` }} />
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            {/* My own target summary if viewer has a personal target */}
+            {myTargetRevenue > 0 && (
+              <div className="mt-3 rounded-lg border border-[var(--accent)]/30 bg-[var(--accent)]/5 px-3 py-2">
+                <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">My Target</p>
+                <p className="mt-0.5 text-xs text-[var(--ink)]">{formatMoneyCompact(myTargetRevenue, currency)} this month</p>
+              </div>
+            )}
+          </section>
+
+          {/* ── Pending approvals + channel breakdown ── */}
+          <div className="space-y-3">
+            {/* Revenue by channel */}
+            <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+              <p className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Revenue by Channel MTD</p>
+              {[
+                { label: "Repair Jobs",       amount: repairRevenueMtd,                    color: "bg-sky-500",    textColor: "text-sky-600",    count: `${wonMtd} completed` },
+                { label: "POS Sales",         amount: posRevenueMtd,                       color: "bg-violet-500", textColor: "text-violet-600", count: `${paidSalesMtd.length} sales` },
+                { label: "Invoice Payments",  amount: invoiceRevenueMtd,                   color: "bg-emerald-500",textColor: "text-emerald-600",count: `${paidInvoicesMtd.length} invoices` },
+              ].map(ch => {
+                const pct = totalRevenueMtd > 0 ? Math.round((ch.amount / totalRevenueMtd) * 100) : 0;
+                return (
+                  <div key={ch.label} className="mb-2">
+                    <div className="flex items-center justify-between text-xs mb-1">
+                      <span className="font-medium text-[var(--ink)]">{ch.label}</span>
+                      <span className={`font-bold ${ch.textColor}`}>{formatMoneyCompact(ch.amount, currency)} <span className="font-normal text-[var(--ink-muted)]">({pct}%)</span></span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 h-1.5 overflow-hidden rounded-full bg-[var(--line)]">
+                        <div className={`h-full rounded-full ${ch.color}`} style={{ width: `${pct}%` }} />
+                      </div>
+                      <span className="shrink-0 text-[10px] text-[var(--ink-muted)]">{ch.count}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </section>
+
+            {/* Pending approvals */}
+            <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+              <div className="mb-2 flex items-center justify-between">
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Pending Approvals</p>
+                <Link href="/jobs?status=AWAITING_APPROVAL" className="text-[11px] font-semibold text-[var(--accent)] hover:underline">All →</Link>
+              </div>
+              {quotedJobs.length === 0 ? (
+                <p className="text-sm text-[var(--ink-muted)]">No quotes pending.</p>
+              ) : (
+                <div className="space-y-1.5">
+                  {quotedJobs.slice(0, 5).map(j => {
+                    const waitDays = Math.floor((today.getTime() - j.receivedAt.getTime()) / 86400000);
+                    return (
+                      <Link key={j.id} href={`/jobs/${j.id}`} className="flex items-center justify-between rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 transition hover:border-[var(--accent)]/35">
+                        <div className="min-w-0">
+                          <p className="mono truncate text-xs font-bold text-[var(--accent)]">{j.jobNumber}</p>
+                          <p className="truncate text-[10px] text-[var(--ink-muted)]">{j.client?.fullName ?? "—"}</p>
+                        </div>
+                        <div className="ml-3 shrink-0 text-right">
+                          {j.clientBill && <p className="text-xs font-semibold text-[var(--ink)]">{formatMoneyCompact(j.clientBill, currency)}</p>}
+                          <span className={`text-[10px] font-medium ${waitDays > 3 ? "text-amber-600" : "text-[var(--ink-muted)]"}`}>{waitDays}d wait</span>
+                        </div>
+                      </Link>
+                    );
+                  })}
+                  {readyPickup > 0 && (
+                    <Link href="/jobs?status=READY_FOR_PICKUP" className="flex items-center justify-between rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 transition hover:border-emerald-500/50">
+                      <p className="text-xs font-semibold text-emerald-600">{readyPickup} jobs ready for pickup</p>
+                      <span className="text-[11px] font-bold text-emerald-600">→</span>
+                    </Link>
+                  )}
+                </div>
+              )}
+            </section>
+          </div>
+        </div>
+
+        <RevenueMarginTrendSection trendMonths={trendMonths} revenueTrend={revenueTrend} currency={currency} label="Total Revenue Trend (All Channels)" emptyMessage="No revenue recorded yet for this period." />
       </div>
     );
   }
@@ -1293,7 +2078,7 @@ export default async function DashboardPage({
     <div className="space-y-4">
       <DashboardHero
         title="System Overview"
-        summary="Orient team focus · open the queue and reporting workspaces for deeper action."
+        summary={`${totalJobs} total jobs · ${openJobs} open · ${completedJobs} completed`}
         primaryHref="/jobs"
         primaryLabel="Open Jobs"
         secondaryHref="/reports"
@@ -1301,36 +2086,18 @@ export default async function DashboardPage({
         icon={<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="black" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>}
       />
 
-      <StickyKpiRow
-        items={[
-          { label: "Total", value: String(totalJobs), href: "/jobs" },
-          { label: "Open", value: String(openJobs), href: "/jobs?status=RECEIVED,DIAGNOSING,AWAITING_APPROVAL,IN_REPAIR,READY_FOR_PICKUP", tone: "brand" },
-          { label: "Completed", value: String(completedJobs), href: "/jobs?status=COMPLETED", tone: "success" },
-        ]}
-      />
-
-      <div className="grid gap-3 lg:grid-cols-3">
-        <Link href="/jobs" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px] sm:p-5">
-          <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Total Jobs</p>
-          <p className="mt-2 text-3xl font-semibold">{totalJobs}</p>
-          <p className="mt-2 text-xs font-medium text-[var(--accent)]">View all jobs →</p>
-        </Link>
-        <Link
-          href="/jobs?status=RECEIVED,DIAGNOSING,AWAITING_APPROVAL,IN_REPAIR,READY_FOR_PICKUP"
-          className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px] sm:p-5"
-        >
-          <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Open Jobs</p>
-          <p className="mt-2 text-3xl font-semibold text-[var(--accent)]">{openJobs}</p>
-          <p className="mt-2 text-xs font-medium text-[var(--accent)]">View open queue →</p>
-        </Link>
-        <Link
-          href="/jobs?status=COMPLETED"
-          className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px] sm:p-5"
-        >
-          <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Completed</p>
-          <p className="mt-2 text-3xl font-semibold text-[var(--accent)]">{completedJobs}</p>
-          <p className="mt-2 text-xs font-medium text-[var(--accent)]">View completed jobs →</p>
-        </Link>
+      {/* Quick-link row */}
+      <div className="panel-shadow grid grid-cols-3 divide-x divide-[var(--line)] overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
+        {[
+          { label: "Total Jobs",  value: String(totalJobs),    href: "/jobs",                                                                              color: "text-[var(--ink)]" },
+          { label: "Open",        value: String(openJobs),     href: "/jobs?status=RECEIVED,DIAGNOSING,AWAITING_APPROVAL,IN_REPAIR,READY_FOR_PICKUP",       color: "text-[var(--accent)]" },
+          { label: "Completed",   value: String(completedJobs),href: "/jobs?status=COMPLETED",                                                              color: "text-emerald-600" },
+        ].map((item) => (
+          <Link key={item.label} href={item.href} className="flex flex-col items-center justify-center gap-0.5 py-3 transition hover:bg-[var(--panel-strong)]">
+            <p className={`text-lg font-bold ${item.color}`}>{item.value}</p>
+            <p className="text-[10px] uppercase tracking-[0.12em] text-[var(--ink-muted)]">{item.label}</p>
+          </Link>
+        ))}
       </div>
 
     </div>

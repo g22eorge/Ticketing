@@ -5,16 +5,18 @@ import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
 import { prisma } from "@/lib/prisma";
 import { deliverOutboundMessage, enqueueEmailMessage, enqueueWhatsAppMessage } from "@/lib/notifications/whatsapp-outbox";
 
+const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL || "";
 const ALLOWED_ORIGINS = [
-  process.env.ALLOWED_ORIGIN_1 || "https://www.eagleinfosolutions.com",
-  process.env.ALLOWED_ORIGIN_2 || "https://eagleinfosolutions.com",
-].filter(Boolean);
+  process.env.ALLOWED_ORIGIN_1,
+  process.env.ALLOWED_ORIGIN_2,
+  appUrl,
+].filter(Boolean) as string[];
 
 function getCorsHeaders(origin: string | null) {
   const allowedOrigin =
     origin && ALLOWED_ORIGINS.includes(origin)
       ? origin
-      : "https://www.eagleinfosolutions.com";
+      : (ALLOWED_ORIGINS[0] ?? "*");
 
   return {
     "Access-Control-Allow-Origin": allowedOrigin,
@@ -117,6 +119,8 @@ function buildSharedFields(body: Record<string, unknown>, ip: string) {
     "SELF_DROPOFF" | "SEND_WITH_DELIVERY_PERSON" | "REQUEST_PICKUP";
 
   return {
+    // orgId is resolved in POST (may be omitted for single-tenant deployments using DEFAULT_ORG_ID)
+    orgId: undefined as string | undefined,
     customerName: sanitizeText((body.customer_name as string) || ""),
     phone: normalizeUgandaPhone((phone as string) || ""),
     email: email ? (sanitizeOptionalText(email as string) ?? undefined) : undefined,
@@ -143,6 +147,27 @@ function buildSharedFields(body: Record<string, unknown>, ip: string) {
     pickupNotes: body.pickup_notes ? sanitizeOptionalText(body.pickup_notes as string) ?? undefined : undefined,
     submissionIp: ip,
   };
+}
+
+async function resolveOrgIdFromRequest(request: NextRequest, body: Record<string, unknown>): Promise<string | undefined> {
+  const headerOrgId = request.headers.get("x-org-id")?.trim();
+  const bodyOrgId = typeof body.org_id === "string" ? body.org_id.trim() : "";
+  const orgSlug = typeof body.org_slug === "string" ? body.org_slug.trim() : "";
+
+  const candidate = headerOrgId || bodyOrgId;
+  if (candidate) {
+    const org = await prisma.organization.findUnique({ where: { id: candidate }, select: { id: true } });
+    if (!org) throw new Error("Invalid org_id");
+    return org.id;
+  }
+
+  if (orgSlug) {
+    const org = await prisma.organization.findUnique({ where: { slug: orgSlug }, select: { id: true } });
+    if (!org) throw new Error("Invalid org_slug");
+    return org.id;
+  }
+
+  return undefined;
 }
 
 async function deliverInline(outboxId: string) {
@@ -177,6 +202,16 @@ export async function POST(request: NextRequest) {
     }
 
     const isBatch = Array.isArray(body.devices) && body.devices.length > 0;
+
+    let orgId: string | undefined;
+    try {
+      orgId = await resolveOrgIdFromRequest(request, body);
+    } catch (e) {
+      return NextResponse.json(
+        { success: false, error: e instanceof Error ? e.message : "Invalid organization" },
+        { status: 400, headers: corsHeaders },
+      );
+    }
 
     // ── Validation ──────────────────────────────────────────────────────────
     const customerErrors = validateCustomerAndHandover(body);
@@ -229,6 +264,7 @@ export async function POST(request: NextRequest) {
 
     // ── Create repair request(s) ─────────────────────────────────────────────
     const shared = buildSharedFields(body, ip);
+    shared.orgId = orgId;
     const results: Array<{ requestNumber: string; requestId: string; brand: string; deviceType: string; problemDescription: string }> = [];
 
     if (isBatch) {
@@ -274,8 +310,8 @@ export async function POST(request: NextRequest) {
     const customerName = String(body.customer_name ?? "Customer");
     const deviceLines = results.map((r) => `• ${r.requestNumber} — ${r.brand} (${r.deviceType.replace(/_/g, " ")})`).join("\n");
     const whatsappMessage = isBatch
-      ? `Hello ${customerName},\n\nThank you! We've received your repair requests:\n\n${deviceLines}\n\nWe'll contact you shortly to confirm details for each device.\n\nBest regards,\nEagle Info Solutions`
-      : `Hello ${customerName},\n\nThank you for submitting your repair request (${results[0].requestNumber}).\n\nWe have received your device and will contact you shortly to confirm the diagnosis and timeline.\n\nBest regards,\nEagle Info Solutions`;
+      ? `Hello ${customerName},\n\nThank you! We've received your repair requests:\n\n${deviceLines}\n\nWe'll contact you shortly to confirm details for each device.\n\nBest regards,\nYour Repair Team`
+      : `Hello ${customerName},\n\nThank you for submitting your repair request (${results[0].requestNumber}).\n\nWe have received your device and will contact you shortly to confirm the diagnosis and timeline.\n\nBest regards,\nYour Repair Team`;
 
     let confirmation: "queued" | "sent" | "skipped" = "skipped";
     let outboxId: string | undefined;

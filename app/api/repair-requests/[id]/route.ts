@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { getCurrentUserRole } from "@/lib/session";
+import { requireOrgSession } from "@/lib/org-context";
 import { can } from "@/lib/permissions";
 import { sanitizeOptionalText, sanitizeText } from "@/lib/sanitize";
 import { generateJobNumber } from "@/app/(app)/jobs/new/actions";
 import { sendIntakeApprovalNotification, sendIntakeRejectionNotification, sendJobCreatedNotification } from "@/lib/notifications/whatsapp";
+import { checkJobLimit } from "@/lib/plan-limits";
+import { assertOrgCanMutate } from "@/lib/org-write";
 
 const ALLOWED_STATUSES = ["APPROVED", "REJECTED", "CONVERTED_TO_JOB"] as const;
 type AllowedStatus = (typeof ALLOWED_STATUSES)[number];
@@ -14,9 +16,15 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { session, user } = await getCurrentUserRole();
+  const { session, user, orgId, org } = await requireOrgSession();
   if (!can.viewClientInfo(user)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+  }
+  try {
+    assertOrgCanMutate({ access: org.access, userRole: user.role, userAccessMode: user.accessMode, kind: "GENERAL" });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Workspace is read-only.";
+    return NextResponse.json({ error: message }, { status: 403 });
   }
 
   const { id } = await params;
@@ -30,17 +38,23 @@ export async function PATCH(
     );
   }
 
-  const req = await prisma.repairRequest.findUnique({ where: { id } });
+  const req = await prisma.repairRequest.findFirst({ where: { id, orgId } });
   if (!req) {
     return NextResponse.json({ error: "Request not found" }, { status: 404 });
   }
 
   /* ── Convert to Job ── */
   if (status === "CONVERTED_TO_JOB") {
+    const limit = await checkJobLimit(orgId);
+    if (!limit.allowed) {
+      return NextResponse.json({ error: limit.reason }, { status: 402 });
+    }
+
     // 1. Upsert client by phone
     const client = await prisma.client.upsert({
-      where: { phone: req.phone },
+      where: { phone_orgId: { orgId, phone: req.phone } },
       create: {
+        orgId,
         fullName: sanitizeText(req.customerName),
         phone: req.phone,
         email: sanitizeOptionalText(req.email) ?? undefined,
@@ -54,13 +68,14 @@ export async function PATCH(
     // 2. Create job (retry on duplicate job number)
     let job: { id: string; jobNumber: string } | null = null;
     for (let attempt = 0; attempt < 5; attempt++) {
-      const jobNumber = await generateJobNumber();
+      const jobNumber = await generateJobNumber(orgId ?? undefined);
       try {
         job = await prisma.job.create({
           data: {
+            orgId,
             jobNumber,
             clientId: client.id,
-            createdById: session.user.id,
+            createdById: session!.user.id,
             deviceType: req.deviceType,
             brand: sanitizeText(req.brand),
             model: sanitizeText(req.model ?? ""),
@@ -86,20 +101,21 @@ export async function PATCH(
     await prisma.auditLog.create({
       data: {
         jobId: job.id,
-        userId: session.user.id,
+        userId: session!.user.id,
         action: "JOB_CREATED",
         detail: JSON.stringify({ status: "RECEIVED", sourceRequest: req.requestNumber }),
+        orgId,
       },
     });
 
     // 4. Mark request as converted and store linked job ID
-    await prisma.repairRequest.update({
-      where: { id },
+    await prisma.repairRequest.updateMany({
+      where: { id, orgId },
       data: { requestStatus: "CONVERTED_TO_JOB", linkedJobId: job.id },
     });
 
     // Send WhatsApp notification (non-blocking)
-    sendJobCreatedNotification(req.phone, req.customerName, job.jobNumber).catch((err) =>
+    sendJobCreatedNotification(req.phone, req.customerName, job.jobNumber, orgId).catch((err) =>
       console.error("[Intake] WhatsApp notification failed:", err)
     );
 
@@ -112,10 +128,14 @@ export async function PATCH(
   }
 
   /* ── Approve / Reject ── */
-  const updated = await prisma.repairRequest.update({
-    where: { id },
+  await prisma.repairRequest.updateMany({
+    where: { id, orgId },
     data: { requestStatus: status as AllowedStatus },
   });
+  const updated = await prisma.repairRequest.findFirst({ where: { id, orgId } });
+  if (!updated) {
+    return NextResponse.json({ error: "Request not found" }, { status: 404 });
+  }
 
   // Send WhatsApp notification (non-blocking)
   if (status === "APPROVED") {
@@ -123,13 +143,15 @@ export async function PATCH(
       updated.phone,
       updated.customerName,
       updated.requestNumber,
-      updated.preferredDropoffDate
+      updated.preferredDropoffDate,
+      orgId,
     ).catch((err) => console.error("[Intake] WhatsApp notification failed:", err));
   } else if (status === "REJECTED") {
     sendIntakeRejectionNotification(
       updated.phone,
       updated.customerName,
-      updated.requestNumber
+      updated.requestNumber,
+      orgId,
     ).catch((err) => console.error("[Intake] WhatsApp notification failed:", err));
   }
 

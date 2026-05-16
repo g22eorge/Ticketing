@@ -1,5 +1,17 @@
 #!/usr/bin/env node
 import { spawn } from "node:child_process";
+import fs from "node:fs";
+
+function runCmd(cmd, args, opts = {}) {
+  return new Promise((resolve, reject) => {
+    const child = spawn(cmd, args, { stdio: "inherit", ...opts });
+    child.once("error", reject);
+    child.once("exit", (code) => {
+      if (code === 0) resolve();
+      else reject(new Error(`${cmd} ${args.join(" ")} exited with code ${code}`));
+    });
+  });
+}
 
 function percentile(values, p) {
   if (values.length === 0) return 0;
@@ -59,6 +71,12 @@ async function run() {
 
   try {
     if (!process.env.PERF_BASE_URL) {
+      // Ensure a production build exists (qa:perf is often run standalone).
+      // `next start` hard-requires `.next/BUILD_ID`.
+      if (!fs.existsSync(".next/BUILD_ID")) {
+        await runCmd("bun", ["run", "build"]);
+      }
+
       const url = new URL(baseUrl);
       const port = url.port || "4020";
       serverProcess = spawn("bun", ["run", "start"], {

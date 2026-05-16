@@ -2,13 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { can } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
-import { getCurrentUserRoleOptional } from "@/lib/session";
+import { requireOrgSession } from "@/lib/org-context";
 
 export async function GET(req: NextRequest) {
-  const { user } = await getCurrentUserRoleOptional();
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const { user, orgId } = await requireOrgSession();
   if (!can.viewClientInfo(user)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
@@ -20,6 +17,7 @@ export async function GET(req: NextRequest) {
 
   const clients = await prisma.client.findMany({
     where: {
+      orgId,
       OR: [
         { fullName: { contains: q } },
         { phone: { contains: q } },

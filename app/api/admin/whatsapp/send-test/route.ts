@@ -6,9 +6,17 @@ import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+async function requirePlatformAdmin() {
   const { user } = await getCurrentUserRole();
-  if (user.role !== "ADMIN") {
+  const platformEmail = process.env.PLATFORM_ADMIN_EMAIL;
+  if (!platformEmail || !user?.email || user.email !== platformEmail) return null;
+  if (user.role !== "ADMIN") return null;
+  return user;
+}
+
+export async function GET() {
+  const user = await requirePlatformAdmin();
+  if (!user) {
     return NextResponse.redirect(new URL("/login", process.env.BETTER_AUTH_URL ?? "http://localhost:3000"));
   }
 
@@ -73,8 +81,8 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
-  const { user } = await getCurrentUserRole();
-  if (user.role !== "ADMIN") {
+  const user = await requirePlatformAdmin();
+  if (!user) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

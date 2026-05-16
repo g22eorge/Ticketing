@@ -75,6 +75,20 @@ function createPrismaClient() {
   });
 }
 
+// If a cached singleton is missing recently-added models (stale hot-reload cache),
+// discard it so a fresh client is created with the current generated schema.
+function isStaleSingleton(client: PrismaClient | undefined): boolean {
+  if (!client) return false;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const c = client as any;
+  return !c.complaint || !c.userGroup || !c.branch || !c.supplier || !c.salesTarget;
+}
+
+if (isStaleSingleton(globalForPrisma.prisma)) {
+  try { void globalForPrisma.prisma?.$disconnect(); } catch { /* ignore */ }
+  globalForPrisma.prisma = undefined;
+}
+
 export const prisma =
   globalForPrisma.prisma ??
   createPrismaClient();
@@ -83,31 +97,3 @@ if (process.env.NODE_ENV !== "production") {
   globalForPrisma.prisma = prisma;
 }
 
-// Ensure Rest always has the can_approve_invoices permission.
-// This runs once per server boot and is safe to call on every request
-// because it is idempotent (upsert-style via deleteMany + create).
-async function ensureRestPricingPermission() {
-  try {
-    const restUser = await prisma.user.findFirst({
-      where: { email: "rest@eagle.tech" },
-      select: { id: true },
-    });
-    if (!restUser) return;
-
-    const hasPermission = await prisma.userPermission.findFirst({
-      where: { userId: restUser.id, permission: "can_approve_invoices" },
-    });
-    if (hasPermission) return;
-
-    await prisma.userPermission.create({
-      data: { userId: restUser.id, permission: "can_approve_invoices" },
-    });
-  } catch {
-    // Silently ignore — permission will be granted on next boot.
-  }
-}
-
-// Avoid DB mutations during `next build`.
-if (process.env.NEXT_PHASE !== "phase-production-build") {
-  void ensureRestPricingPermission();
-}

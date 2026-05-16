@@ -44,6 +44,7 @@ function supportsOutbox() {
 }
 
 export async function enqueueWhatsAppMessage(input: {
+  orgId?: string;
   to: string;
   body: string;
   type: OutboundMessageType;
@@ -91,6 +92,7 @@ export async function enqueueWhatsAppMessage(input: {
         provider: input.provider,
         repairRequestId: input.repairRequestId,
         jobId: input.jobId,
+        orgId: input.orgId ?? null,
         nextAttemptAt: input.nextAttemptAt ?? new Date(),
       },
       select: { id: true },
@@ -127,6 +129,7 @@ export async function enqueueWhatsAppMessage(input: {
 }
 
 export async function enqueueEmailMessage(input: {
+  orgId?: string;
   to: string | string[];
   subject: string;
   body: string;
@@ -164,6 +167,7 @@ export async function enqueueEmailMessage(input: {
       nextAttemptAt: input.nextAttemptAt ?? new Date(),
       repairRequestId: input.repairRequestId,
       jobId: input.jobId,
+      orgId: input.orgId ?? null,
       provider: "resend",
     },
     select: { id: true },
@@ -178,6 +182,7 @@ export async function deliverOutboundMessage(id: string) {
   const row = await prisma.outboundMessage.findUnique({
     where: { id },
     select: {
+      orgId: true,
       id: true, channel: true, status: true, type: true,
       to: true, subject: true, body: true,
       templateKey: true, templateVars: true,
@@ -309,6 +314,13 @@ export async function deliverOutboundMessage(id: string) {
   return { ok: false, error: result.error ?? "Send failed" } satisfies DeliveryResult;
 }
 
+export async function deliverOutboundMessageForOrg(id: string, orgId: string) {
+  if (!supportsOutbox()) return { ok: false, error: "Outbox not supported in this runtime" };
+  const row = await prisma.outboundMessage.findUnique({ where: { id }, select: { id: true, orgId: true } });
+  if (!row || row.orgId !== orgId) return { ok: false, error: "Not found" };
+  return deliverOutboundMessage(id);
+}
+
 async function deliverEmail(row: {
   id: string;
   to: string;
@@ -320,10 +332,10 @@ async function deliverEmail(row: {
   const to = row.to.split(",").map((t) => t.trim()).filter(Boolean);
 
   // Use a dedicated alerts sender domain (Resend verifies sender domains).
-  // Prefer explicit env override; otherwise default to alerts.eagleinfosolutions.com.
+  // Set RESEND_ALERTS_FROM to configure the sender address.
   const from =
     process.env.RESEND_ALERTS_FROM ||
-    "Eagle Info Alerts <alerts@alerts.eagleinfosolutions.com>";
+    "Repair Manager Alerts <noreply@repair-manager.app>";
 
   // Prefer a structured template when we have the DB id.
   if (row.type === "REPAIR_REQUEST_EMAIL_ALERT" && row.repairRequestId) {
@@ -363,7 +375,7 @@ async function deliverEmail(row: {
         ...(intakeUrl ? ["", `Intake: ${intakeUrl}`] : []),
       ].join("\n");
 
-      const react = React.createElement(RepairRequestAlertEmail, {
+      const react = React.createElement(RepairRequestAlertEmail as never, {
         requestNumber: request.requestNumber,
         createdAtISO: request.createdAt.toISOString(),
         customerName: request.customerName,
@@ -420,7 +432,7 @@ export async function retryDueWhatsApp(limit = 25) {
   return { ok: true, processed: due.length, sent, failed, health };
 }
 
-export async function retryDueOutboundMessages(limit = 25) {
+export async function retryDueOutboundMessages(limit = 25, opts?: { orgId?: string }) {
   if (!supportsOutbox()) {
     return { ok: false, error: "Outbox not supported in this runtime" };
   }
@@ -428,6 +440,7 @@ export async function retryDueOutboundMessages(limit = 25) {
   const lockCutoff = new Date(Date.now() - LOCK_TTL_MS);
   const due = await prisma.outboundMessage.findMany({
     where: {
+      ...(opts?.orgId ? { orgId: opts.orgId } : {}),
       status: { in: ["PENDING", "FAILED"] },
       nextAttemptAt: { lte: new Date() },
       OR: [{ lockedAt: null }, { lockedAt: { lt: lockCutoff } }],

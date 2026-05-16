@@ -553,6 +553,12 @@ a:hover .nav-icon-premium {
   display: none;
 }
 
+/* Raise the entire row when its details is open, so the dropdown paints above sibling rows */
+tr:has(details[open]) {
+  position: relative;
+  z-index: 40;
+}
+
 /* ── Scrollbar ───────────────────────────────────────────────────────────── */
 
 * {

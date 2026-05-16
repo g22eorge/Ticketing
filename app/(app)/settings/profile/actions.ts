@@ -5,7 +5,8 @@ import { revalidatePath } from "next/cache";
 
 import { prisma } from "@/lib/prisma";
 import { sanitizeText } from "@/lib/sanitize";
-import { requireSession } from "@/lib/session";
+import { requireOrgSession } from "@/lib/org-context";
+import { assertOrgCanMutate } from "@/lib/org-write";
 
 const schema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters").max(80, "Name is too long"),
@@ -25,7 +26,8 @@ export async function updateProfileAction(
   _prevState: UpdateProfileState,
   formData: FormData,
 ): Promise<UpdateProfileState> {
-  const session = await requireSession();
+  const { session, user, org } = await requireOrgSession();
+  assertOrgCanMutate({ access: org.access, userRole: user.role, userAccessMode: user.accessMode, kind: "GENERAL" });
   const parsed = schema.safeParse({
     name: formData.get("name"),
     phone: formData.get("phone") || undefined,

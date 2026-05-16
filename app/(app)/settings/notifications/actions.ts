@@ -3,8 +3,9 @@
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
 
-import { requireSession } from "@/lib/session";
+import { requireOrgSession } from "@/lib/org-context";
 import { updateUserPreferences } from "@/lib/notifications";
+import { assertOrgCanMutate } from "@/lib/org-write";
 
 const schema = z.object({
   whatsappEnabled: z.enum(["on"]).optional(),
@@ -31,7 +32,8 @@ export async function updateNotificationPrefsAction(
   _prev: UpdateNotificationPrefsState,
   formData: FormData,
 ): Promise<UpdateNotificationPrefsState> {
-  const session = await requireSession();
+  const { session, user, org } = await requireOrgSession();
+  assertOrgCanMutate({ access: org.access, userRole: user.role, userAccessMode: user.accessMode, kind: "GENERAL" });
   const parsed = schema.safeParse(Object.fromEntries(formData.entries()));
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid preferences" };

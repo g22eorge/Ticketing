@@ -6,6 +6,7 @@ import { formatMoney } from "@/lib/currency";
 import { prisma } from "@/lib/prisma";
 import { requireOrgSession } from "@/lib/org-context";
 import { checkPartLimit } from "@/lib/plan-limits";
+import { RowActionsMenu, MenuSection, MenuDestructiveRow } from "@/components/shared/RowActionsMenu";
 
 type StockTxnType = "IN" | "OUT" | "ADJUST";
 
@@ -25,7 +26,7 @@ export default async function InventoryPage({
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { user, orgId } = await requireOrgSession();
-  if (!["ADMIN", "OPS", "TECHNICIAN_INTERNAL"].includes(user.role)) {
+  if (!["ADMIN", "MANAGER", "TECH_MANAGER", "OPS", "TECHNICIAN_INTERNAL"].includes(user.role)) {
     redirect("/dashboard");
   }
 
@@ -174,27 +175,50 @@ export default async function InventoryPage({
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="panel-shadow rounded-[1.75rem] border border-[var(--line)] bg-[var(--panel)] p-4 sm:p-6">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex min-w-0 items-center gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-[var(--line)] bg-[var(--accent)]">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="black" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 8h14M5 12h14M5 16h6"/><rect x="2" y="4" width="20" height="16" rx="2"/></svg>
-            </div>
-            <div className="min-w-0">
-              <p className="truncate text-xl font-black text-[var(--ink)]">Inventory</p>
-              <p className="mt-0.5 truncate text-xs text-[var(--ink-muted)]">Track parts · manage stock levels · reorder alerts</p>
-            </div>
+      <div className="panel-shadow flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-2.5">
+        <p className="text-[13px] font-bold text-[var(--ink)]">
+          Inventory{" "}
+          <span className="font-normal text-[var(--ink-muted)]">· {parts.length} parts</span>
+        </p>
+        {canManage && (
+          <div className="flex items-center gap-2">
+            <Link href="/inventory/suppliers" className="inline-flex items-center rounded-lg border border-[var(--line)] px-3 py-1.5 text-xs font-semibold text-[var(--ink)] transition hover:border-[var(--accent)]/50 hover:text-[var(--accent)]">
+              Suppliers
+            </Link>
+            <Link href="/inventory/purchase-orders" className="inline-flex items-center rounded-lg border border-[var(--line)] px-3 py-1.5 text-xs font-semibold text-[var(--ink)] transition hover:border-[var(--accent)]/50 hover:text-[var(--accent)]">
+              Purchase Orders
+            </Link>
           </div>
-          {canManage && (
-            <div className="flex items-center gap-2">
-              <Link href="/inventory/suppliers" className="inline-flex items-center rounded-lg border border-[var(--line)] px-3 py-1.5 text-xs font-semibold text-[var(--ink)] transition hover:border-[var(--accent)]/50 hover:text-[var(--accent)]">
-                Suppliers
-              </Link>
-              <Link href="/inventory/purchase-orders" className="inline-flex items-center rounded-lg border border-[var(--line)] px-3 py-1.5 text-xs font-semibold text-[var(--ink)] transition hover:border-[var(--accent)]/50 hover:text-[var(--accent)]">
-                Purchase Orders
-              </Link>
-            </div>
-          )}
+        )}
+      </div>
+
+      {/* KPI strip */}
+      <div className="panel-shadow grid grid-cols-2 overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)] divide-x divide-y divide-[var(--line)] sm:grid-cols-4 sm:divide-y-0">
+        <div className="flex items-center gap-3 px-4 py-2">
+          <div>
+            <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">Active Parts</p>
+            <p className="text-[15px] font-black tabular-nums leading-tight text-[var(--ink)]">{parts.length}</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-3 px-4 py-2">
+          <div>
+            <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">Low Stock</p>
+            <p className="text-[15px] font-black tabular-nums leading-tight text-amber-500">{lowStock.length}</p>
+            <p className="text-[10px] text-[var(--ink-muted)]">at or below reorder</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-3 px-4 py-2">
+          <div>
+            <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">Reserved</p>
+            <p className="text-[15px] font-black tabular-nums leading-tight text-[var(--ink)]">{reservedCount}</p>
+            <p className="text-[10px] text-[var(--ink-muted)]">units held for jobs</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-3 px-4 py-2">
+          <div>
+            <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">Stock Value</p>
+            <p className="text-[15px] font-black tabular-nums leading-tight text-[var(--ink)]">{formatMoney(totalValue)}</p>
+          </div>
         </div>
       </div>
 
@@ -204,28 +228,6 @@ export default async function InventoryPage({
       {created ? (
         <div className="rounded-xl border border-emerald-500/25 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-600">Part added successfully.</div>
       ) : null}
-
-      {/* KPI tiles */}
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Active Parts</p>
-          <p className="mt-2 text-2xl font-black text-[var(--ink)]">{parts.length}</p>
-        </div>
-        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Low Stock</p>
-          <p className="mt-2 text-2xl font-black text-amber-600">{lowStock.length}</p>
-          <p className="mt-1 text-xs text-[var(--ink-muted)]">at or below reorder level</p>
-        </div>
-        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Reserved</p>
-          <p className="mt-2 text-2xl font-black text-[var(--ink)]">{reservedCount}</p>
-          <p className="mt-1 text-xs text-[var(--ink-muted)]">units held for jobs</p>
-        </div>
-        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Stock Value</p>
-          <p className="mt-2 text-2xl font-black text-[var(--ink)]">{formatMoney(totalValue)}</p>
-        </div>
-      </div>
 
       {/* Add Part — shown only when ?add=1 */}
       {canManage && showAdd ? (
@@ -297,33 +299,29 @@ export default async function InventoryPage({
                       <td className="hidden px-4 py-3 text-right text-[var(--ink-muted)] sm:table-cell">{part.reorderLevel}</td>
                       {canManage ? (
                         <td className="px-4 py-3 text-right">
-                          <details className="relative inline-block">
-                            <summary className="inline-flex h-[30px] w-[30px] cursor-pointer list-none items-center justify-center rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)] transition hover:border-[var(--accent)]/40 hover:text-[var(--ink)]">
-                              <span className="sr-only">Actions</span>
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
-                            </summary>
-                            <div className="panel-shadow absolute right-0 bottom-full z-30 mb-1.5 w-56 rounded-xl border border-[var(--line)] bg-[var(--panel)]">
-                              <p className="border-b border-[var(--line)] px-4 py-2 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Adjust Stock</p>
-                              <form action={adjustStockAction} className="space-y-2 p-3">
-                                <input type="hidden" name="partId" value={part.id} />
-                                <div className="flex gap-2">
-                                  <select name="type" defaultValue="IN" className="rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-1.5 text-xs text-[var(--ink)] outline-none focus:border-[var(--accent)]/50">
-                                    <option value="IN">Stock In</option>
-                                    <option value="OUT">Stock Out</option>
-                                    <option value="ADJUST">Adjust</option>
-                                  </select>
-                                  <input name="quantity" inputMode="numeric" placeholder="Qty" className="min-w-0 flex-1 rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1.5 text-xs outline-none focus:border-[var(--accent)]/50" />
-                                </div>
-                                <input name="reason" placeholder="Reason (optional)" className="w-full rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1.5 text-xs outline-none focus:border-[var(--accent)]/50" />
-                                <button type="submit" className="btn-premium w-full rounded-lg px-3 py-1.5 text-xs font-semibold">Save</button>
-                              </form>
-                              <form action={togglePartActiveAction} className="border-t border-[var(--line)] px-3 py-2.5">
+                          <RowActionsMenu label="Part actions">
+                            <MenuSection label="Adjust Stock" />
+                            <form action={adjustStockAction} className="space-y-2 p-3">
+                              <input type="hidden" name="partId" value={part.id} />
+                              <div className="flex gap-2">
+                                <select name="type" defaultValue="IN" className="rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-1.5 text-xs text-[var(--ink)] outline-none focus:border-[var(--accent)]/50">
+                                  <option value="IN">Stock In</option>
+                                  <option value="OUT">Stock Out</option>
+                                  <option value="ADJUST">Adjust</option>
+                                </select>
+                                <input name="quantity" inputMode="numeric" placeholder="Qty" className="min-w-0 flex-1 rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1.5 text-xs outline-none focus:border-[var(--accent)]/50" />
+                              </div>
+                              <input name="reason" placeholder="Reason (optional)" className="w-full rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1.5 text-xs outline-none focus:border-[var(--accent)]/50" />
+                              <button type="submit" className="btn-premium w-full rounded-lg px-3 py-1.5 text-xs font-semibold">Save</button>
+                            </form>
+                            <MenuDestructiveRow>
+                              <form action={togglePartActiveAction}>
                                 <input type="hidden" name="partId" value={part.id} />
                                 <input type="hidden" name="next" value="0" />
                                 <button type="submit" className="text-xs font-semibold text-red-600 transition hover:text-red-700">Deactivate Part</button>
                               </form>
-                            </div>
-                          </details>
+                            </MenuDestructiveRow>
+                          </RowActionsMenu>
                         </td>
                       ) : null}
                     </tr>

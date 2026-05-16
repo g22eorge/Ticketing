@@ -1,23 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { prisma } from "@/lib/prisma";
-import { getCurrentUserRoleOptional } from "@/lib/session";
+import { requireOrgSession } from "@/lib/org-context";
 
 export async function GET(
   _req: NextRequest,
   context: { params: Promise<{ id: string }> },
 ) {
   const { id } = await context.params;
-  const { session, user } = await getCurrentUserRoleOptional();
-  if (!session?.user || !user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const { session, user, orgId } = await requireOrgSession();
 
   const job = await prisma.job.findFirst({
     where:
       user.role === "TECHNICIAN_EXTERNAL" || user.role === "TECHNICIAN_INTERNAL"
-        ? { id, assignedToId: session.user.id }
-        : { id },
+        ? { id, orgId, assignedToId: session.user.id }
+        : { id, orgId },
     select: { jobNumber: true },
   });
 

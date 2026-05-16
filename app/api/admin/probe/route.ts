@@ -7,6 +7,14 @@ import { emailIsConfigured } from "@/lib/notifications/email";
 
 export const dynamic = "force-dynamic";
 
+async function requirePlatformAdmin() {
+  const { user } = await getCurrentUserRole();
+  const platformEmail = process.env.PLATFORM_ADMIN_EMAIL;
+  if (!platformEmail || !user?.email || user.email !== platformEmail) return null;
+  if (user.role !== "ADMIN") return null;
+  return user;
+}
+
 function serializeError(error: unknown) {
   if (error instanceof Error) {
     return {
@@ -19,8 +27,8 @@ function serializeError(error: unknown) {
 }
 
 export async function GET() {
-  const { user } = await getCurrentUserRole();
-  if (user.role !== "ADMIN") {
+  const user = await requirePlatformAdmin();
+  if (!user) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

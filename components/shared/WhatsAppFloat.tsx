@@ -1,9 +1,15 @@
 "use client";
 
+const WHATSAPP_NUMBER = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER;
+
 export default function WhatsAppFloat() {
+  if (!WHATSAPP_NUMBER) return null;
+
+  const href = `https://api.whatsapp.com/send/?phone=${WHATSAPP_NUMBER}&text=Hello%2C+I+would+like+to+enquire+about+a+repair+service.`;
+
   return (
     <a
-      href="https://api.whatsapp.com/send/?phone=256772006344&text=Hello+Eagle+Info+Solutions%2C+I+would+like+to+enquire+about+a+repair+service."
+      href={href}
       target="_blank"
       rel="noopener noreferrer"
       aria-label="Chat on WhatsApp"
@@ -15,3 +21,4 @@ export default function WhatsAppFloat() {
     </a>
   );
 }
+

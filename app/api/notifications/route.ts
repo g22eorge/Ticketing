@@ -1,13 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getCurrentUserRoleOptional } from "@/lib/session";
+import { requireOrgSession } from "@/lib/org-context";
 import { getUnreadNotifications, getAllNotifications, getUnreadCount } from "@/lib/notifications";
 import { can } from "@/lib/permissions";
 
 export async function GET(request: NextRequest) {
-  const { user } = await getCurrentUserRoleOptional();
-  if (!user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const { user } = await requireOrgSession();
 
   if (!can.viewNotifications(user)) {
     return NextResponse.json({ notifications: [], unreadCount: 0 });
@@ -18,9 +15,10 @@ export async function GET(request: NextRequest) {
   const limit = parseInt(searchParams.get("limit") || "20");
 
   try {
+    const includeClient = can.viewClientInfo(user);
     const notifications = all
-      ? await getAllNotifications(user.id, limit)
-      : await getUnreadNotifications(user.id, limit);
+      ? await getAllNotifications(user.id, limit, { includeClient })
+      : await getUnreadNotifications(user.id, limit, { includeClient });
     const unreadCount = await getUnreadCount(user.id);
 
     return NextResponse.json({

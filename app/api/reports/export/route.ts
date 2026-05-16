@@ -79,10 +79,10 @@ export async function GET(req: NextRequest) {
 
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { role: true, isActive: true },
+    select: { role: true, isActive: true, orgId: true },
   });
 
-  if (!user?.isActive) {
+  if (!user?.isActive || !user.orgId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -99,6 +99,7 @@ export async function GET(req: NextRequest) {
   }
 
   const permissionUser = { role: user.role, permissions };
+  const orgId = user.orgId;
 
   const type = (req.nextUrl.searchParams.get("type") ?? "") as ExportType;
   if (!["pipeline-aging", "revenue-variance", "technician-performance", "external-payouts", "device-performance"].includes(type)) {
@@ -114,12 +115,13 @@ export async function GET(req: NextRequest) {
 
   if (type === "pipeline-aging") {
     const now = Date.now();
-    const jobs = await prisma.job.findMany({
-      where: {
-        status: {
-          in: ["RECEIVED", "DIAGNOSING", "AWAITING_APPROVAL", "IN_REPAIR", "READY_FOR_PICKUP"],
+      const jobs = await prisma.job.findMany({
+        where: {
+          orgId,
+          status: {
+            in: ["RECEIVED", "DIAGNOSING", "AWAITING_APPROVAL", "IN_REPAIR", "READY_FOR_PICKUP"],
+          },
         },
-      },
       include: { assignedTo: true },
       orderBy: { receivedAt: "asc" },
     });
@@ -161,6 +163,7 @@ export async function GET(req: NextRequest) {
     const month = parseMonth(req.nextUrl.searchParams.get("month"));
     const jobs = await prisma.job.findMany({
       where: {
+        orgId,
         status: "COMPLETED",
         completedAt: { gte: month.start, lte: month.end },
       },
@@ -200,6 +203,7 @@ export async function GET(req: NextRequest) {
   if (type === "external-payouts") {
     const jobs = await prisma.job.findMany({
       where: {
+        orgId,
         repairPath: "EXTERNAL",
         assignedTo: { is: { role: "TECHNICIAN_EXTERNAL" } },
       },
@@ -238,6 +242,7 @@ export async function GET(req: NextRequest) {
     const month = parseMonth(req.nextUrl.searchParams.get("month"));
     const jobs = await prisma.job.findMany({
       where: {
+        orgId,
         receivedAt: { gte: month.start, lte: month.end },
       },
       select: {
@@ -252,6 +257,7 @@ export async function GET(req: NextRequest) {
 
     const completedFinancial = await prisma.job.findMany({
       where: {
+        orgId,
         status: "COMPLETED",
         completedAt: { gte: month.start, lte: month.end },
       },
@@ -365,7 +371,7 @@ export async function GET(req: NextRequest) {
   }
 
   const jobs = await prisma.job.findMany({
-    where: { assignedToId: { not: null } },
+    where: { orgId, assignedToId: { not: null } },
     include: { assignedTo: true },
     orderBy: { receivedAt: "asc" },
   });
