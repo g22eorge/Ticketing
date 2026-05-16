@@ -197,86 +197,109 @@ export default async function BillingPage({
         )}
 
         {isAdmin && (
-          <div className="grid gap-4 md:grid-cols-2">
-            {/* Growth card */}
-            <div className="rounded-xl border border-[var(--gold)] bg-[var(--gold)]/5 p-6 space-y-5">
-              <div>
-                <div className="flex items-center justify-between">
-                  <p className="font-semibold text-[var(--ink)] text-lg">Growth</p>
-                  <span className="rounded-full bg-[var(--gold)]/20 px-2.5 py-0.5 text-[10px] font-semibold text-[var(--gold)] uppercase tracking-wide">
-                    Recommended
-                  </span>
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            {(
+              [
+                {
+                  key: "STANDARD" as const,
+                  features: [
+                    `${PLAN_LIMITS.STANDARD.maxUsers} team members`,
+                    `${PLAN_LIMITS.STANDARD.maxJobsPerMonth} jobs / month`,
+                    `${PLAN_LIMITS.STANDARD.maxParts} inventory SKUs`,
+                    "Invite links",
+                    "Full module access",
+                  ],
+                },
+                {
+                  key: "GROWTH" as const,
+                  highlight: true,
+                  features: [
+                    `${PLAN_LIMITS.GROWTH.maxUsers} team members`,
+                    `${PLAN_LIMITS.GROWTH.maxJobsPerMonth} jobs / month`,
+                    `${PLAN_LIMITS.GROWTH.maxParts} inventory SKUs`,
+                    "Custom branding",
+                    "Priority support",
+                  ],
+                },
+                {
+                  key: "PREMIUM" as const,
+                  features: [
+                    `${PLAN_LIMITS.PREMIUM.maxUsers} team members`,
+                    `${PLAN_LIMITS.PREMIUM.maxJobsPerMonth} jobs / month`,
+                    `${PLAN_LIMITS.PREMIUM.maxParts} inventory SKUs`,
+                    "Advanced reporting",
+                    "Multi-branch support",
+                  ],
+                },
+                {
+                  key: "ENTERPRISE" as const,
+                  features: [
+                    "Unlimited team members",
+                    "Unlimited jobs & inventory",
+                    "Custom branding & white-label",
+                    "Dedicated support",
+                    "SLA agreement",
+                  ],
+                },
+              ] as Array<{ key: "STANDARD" | "GROWTH" | "PREMIUM" | "ENTERPRISE"; highlight?: boolean; features: string[] }>
+            ).map(({ key, highlight, features }) => (
+              <div
+                key={key}
+                className={`rounded-xl border p-5 space-y-4 ${
+                  highlight
+                    ? "border-[var(--gold)] bg-[var(--gold)]/5"
+                    : "border-[var(--line)] bg-[var(--panel)]"
+                }`}
+              >
+                <div>
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="font-semibold text-[var(--ink)]">{PLAN_LABELS[key]}</p>
+                    {highlight && (
+                      <span className="rounded-full bg-[var(--gold)]/20 px-2 py-0.5 text-[10px] font-semibold text-[var(--gold)] uppercase tracking-wide">
+                        Popular
+                      </span>
+                    )}
+                  </div>
+                  <p className="mt-1 text-2xl font-bold text-[var(--ink)]">
+                    <span className="text-base font-normal text-[var(--ink-muted)]">UGX </span>
+                    {formatMoney(PLAN_PRICES[key])}
+                    <span className="text-sm font-normal text-[var(--ink-muted)]"> / mo</span>
+                  </p>
                 </div>
-                <p className="mt-2 text-2xl font-bold text-[var(--ink)]">
-                  <span className="text-base font-normal text-[var(--ink-muted)]">UGX </span>
-                  {formatMoney(PLAN_PRICES.GROWTH)}
-                  <span className="text-sm font-normal text-[var(--ink-muted)]"> / mo</span>
-                </p>
-              </div>
-              <ul className="space-y-2">
-                {[
-                  `${PLAN_LIMITS.GROWTH.maxUsers} team members`,
-                  `${PLAN_LIMITS.GROWTH.maxJobsPerMonth} jobs / month`,
-                  `${PLAN_LIMITS.GROWTH.maxParts} inventory SKUs`,
-                  "Custom branding",
-                  "Priority support",
-                ].map((f) => (
-                  <li key={f} className="flex items-center gap-2 text-sm text-[var(--ink-muted)]">
-                    <span className="text-[var(--gold)]">✓</span> {f}
-                  </li>
-                ))}
-              </ul>
-              <div className="space-y-2">
-                <form action={subscribeToPlan}>
-                  <input type="hidden" name="plan" value="GROWTH" />
-                  <button type="submit" className="btn-premium w-full rounded-lg py-2.5 text-sm font-semibold text-white">
-                    Subscribe to Growth
-                  </button>
-                </form>
-                {canStartGrowthTrial && (
-                  <form action={startGrowthTrial}>
+                <ul className="space-y-1.5">
+                  {features.map((f) => (
+                    <li key={f} className="flex items-center gap-2 text-sm text-[var(--ink-muted)]">
+                      <span className="text-[var(--gold)]">✓</span> {f}
+                    </li>
+                  ))}
+                </ul>
+                <div className="space-y-2">
+                  <form action={subscribeToPlan}>
+                    <input type="hidden" name="plan" value={key} />
                     <button
                       type="submit"
-                      className="w-full rounded-lg border border-[var(--gold)] py-2.5 text-sm font-semibold text-[var(--gold)] hover:bg-[var(--gold)]/10 transition-colors"
+                      className={`w-full rounded-lg py-2.5 text-sm font-semibold transition-colors ${
+                        highlight
+                          ? "btn-premium text-white"
+                          : "border border-[var(--line)] text-[var(--ink)] hover:bg-[var(--gold)]/10"
+                      }`}
                     >
-                      Try Growth free for 14 days
+                      Subscribe to {PLAN_LABELS[key]}
                     </button>
                   </form>
-                )}
+                  {key === "GROWTH" && canStartGrowthTrial && (
+                    <form action={startGrowthTrial}>
+                      <button
+                        type="submit"
+                        className="w-full rounded-lg border border-[var(--gold)] py-2 text-sm font-semibold text-[var(--gold)] hover:bg-[var(--gold)]/10 transition-colors"
+                      >
+                        Try Growth free for 14 days
+                      </button>
+                    </form>
+                  )}
+                </div>
               </div>
-            </div>
-
-            {/* Enterprise card */}
-            <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] p-6 space-y-5">
-              <div>
-                <p className="font-semibold text-[var(--ink)] text-lg">Enterprise</p>
-                <p className="mt-2 text-2xl font-bold text-[var(--ink)]">
-                  <span className="text-base font-normal text-[var(--ink-muted)]">UGX </span>
-                  {formatMoney(PLAN_PRICES.ENTERPRISE)}
-                  <span className="text-sm font-normal text-[var(--ink-muted)]"> / mo</span>
-                </p>
-              </div>
-              <ul className="space-y-2">
-                {[
-                  "Unlimited team members",
-                  "Unlimited jobs",
-                  "Unlimited inventory",
-                  "Custom branding",
-                  "Dedicated support",
-                  "SLA agreement",
-                ].map((f) => (
-                  <li key={f} className="flex items-center gap-2 text-sm text-[var(--ink-muted)]">
-                    <span className="text-[var(--gold)]">✓</span> {f}
-                  </li>
-                ))}
-              </ul>
-              <form action={subscribeToPlan}>
-                <input type="hidden" name="plan" value="ENTERPRISE" />
-                <button type="submit" className="w-full rounded-lg border border-[var(--line)] py-2.5 text-sm font-semibold text-[var(--ink)] hover:bg-[var(--gold)]/10 transition-colors">
-                  Subscribe to Enterprise
-                </button>
-              </form>
-            </div>
+            ))}
           </div>
         )}
 
