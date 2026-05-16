@@ -8,9 +8,9 @@ import { PLAN_PRICES, CURRENCY } from "@/lib/pesapal";
 import { PLAN_LIMITS } from "@/lib/plan-limits";
 
 export const metadata: Metadata = {
-  title: "Repair Manager — Repair Shop Management for Uganda",
+  title: "Nexus — Business Operations for Service Teams",
   description:
-    "Run your repair business smarter. Job tracking, client management, technician workflows, invoicing, and billing — built for Ugandan repair shops.",
+    "Run your entire service business from one workspace. Jobs, inventory, purchase orders, invoicing, POS sales, and team management — built for modern service teams.",
   alternates: { canonical: "/" },
 };
 
@@ -24,27 +24,26 @@ const features = [
         <line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /><polyline points="10 9 9 9 8 9" />
       </svg>
     ),
-    title: "Job tracking",
-    body: "From intake to pickup — every status transition logged with a full audit trail.",
+    title: "Job & service tracking",
+    body: "From intake to completion — every status, note, and action logged with a full audit trail.",
   },
   {
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" />
-        <path d="M23 21v-2a4 4 0 00-3-3.87" /><path d="M16 3.13a4 4 0 010 7.75" />
+        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
       </svg>
     ),
-    title: "Role-based access",
-    body: "Admins, ops, internal techs, and external techs — each sees only what they need.",
+    title: "Inventory & parts",
+    body: "Parts catalogue with stock levels, reorder alerts, and reservation against open jobs.",
   },
   {
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="2" y="3" width="20" height="14" rx="2" /><line x1="8" y1="21" x2="16" y2="21" /><line x1="12" y1="17" x2="12" y2="21" />
+        <path d="M9 11l3 3L22 4" /><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
       </svg>
     ),
-    title: "Client portal & intake",
-    body: "Public repair request form with WhatsApp notifications — no phone tag.",
+    title: "Purchase orders",
+    body: "Raise POs to suppliers, receive stock, and reconcile against inventory automatically.",
   },
   {
     icon: (
@@ -53,25 +52,65 @@ const features = [
       </svg>
     ),
     title: "Invoicing & payments",
-    body: "Generate branded invoices and track external technician bills — all in one place.",
+    body: "Generate branded invoices, record payments in multiple currencies, track outstanding balances.",
   },
   {
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+        <rect x="2" y="3" width="20" height="14" rx="2" /><line x1="8" y1="21" x2="16" y2="21" /><line x1="12" y1="17" x2="12" y2="21" />
       </svg>
     ),
-    title: "Inventory management",
-    body: "Parts catalogue with reorder alerts — never get caught out mid-repair.",
+    title: "POS & sales",
+    body: "Point-of-sale for walk-in sales, receipts, and revenue tracking separate from service jobs.",
   },
   {
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="3" y="3" width="18" height="18" rx="2" /><path d="M3 9h18M9 21V9" />
+        <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" />
+        <path d="M23 21v-2a4 4 0 00-3-3.87" /><path d="M16 3.13a4 4 0 010 7.75" />
       </svg>
     ),
-    title: "Reports & analytics",
-    body: "Revenue trends, job volumes, device type breakdowns — understand your business.",
+    title: "Team & role management",
+    body: "Granular roles — Admin, Ops, Technician, Sales, Finance — each with the right access level.",
+  },
+];
+
+const industries = [
+  {
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z" />
+      </svg>
+    ),
+    label: "Device repair shops",
+    desc: "Phone, tablet & PC repairs",
+  },
+  {
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="2" y="3" width="20" height="14" rx="2" /><line x1="8" y1="21" x2="16" y2="21" /><line x1="12" y1="17" x2="12" y2="21" />
+      </svg>
+    ),
+    label: "IT service companies",
+    desc: "Managed services & support",
+  },
+  {
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="3" /><path d="M19.07 4.93a10 10 0 010 14.14" /><path d="M4.93 4.93a10 10 0 000 14.14" />
+      </svg>
+    ),
+    label: "Auto & mechanical workshops",
+    desc: "Vehicle service & diagnostics",
+  },
+  {
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M16.5 9.4l-9-5.19M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 002 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z" /><polyline points="3.27 6.96 12 12.01 20.73 6.96" /><line x1="12" y1="22.08" x2="12" y2="12" />
+      </svg>
+    ),
+    label: "Parts & inventory businesses",
+    desc: "Stock management & POs",
   },
 ];
 
@@ -80,10 +119,10 @@ const plans = [
     key: "STARTER" as const,
     label: "Starter",
     price: null as number | null,
-    desc: "Everything you need to get started, free forever.",
+    desc: "Everything a small team needs to manage jobs and clients, free forever.",
     features: [
       `Up to ${PLAN_LIMITS.STARTER.maxUsers} team members`,
-      `${PLAN_LIMITS.STARTER.maxJobsPerMonth} jobs per month`,
+      `${PLAN_LIMITS.STARTER.maxJobsPerMonth} service jobs per month`,
       `${PLAN_LIMITS.STARTER.maxParts} inventory SKUs`,
       "Job tracking & audit trail",
       "Client management",
@@ -97,10 +136,10 @@ const plans = [
     key: "GROWTH" as const,
     label: "Growth",
     price: PLAN_PRICES.GROWTH,
-    desc: "For growing shops that need more capacity and branding.",
+    desc: "For growing operations that need more capacity, branding, and analytics.",
     features: [
       `Up to ${PLAN_LIMITS.GROWTH.maxUsers} team members`,
-      `${PLAN_LIMITS.GROWTH.maxJobsPerMonth} jobs per month`,
+      `${PLAN_LIMITS.GROWTH.maxJobsPerMonth} service jobs per month`,
       `${PLAN_LIMITS.GROWTH.maxParts} inventory SKUs`,
       "Everything in Starter",
       "Custom branding on invoices",
@@ -113,7 +152,7 @@ const plans = [
     key: "ENTERPRISE" as const,
     label: "Enterprise",
     price: PLAN_PRICES.ENTERPRISE,
-    desc: "Unlimited scale for multi-location repair operations.",
+    desc: "Unlimited scale for multi-location or high-volume service businesses.",
     features: [
       "Unlimited team members",
       "Unlimited jobs",
@@ -143,13 +182,13 @@ export default async function LandingPage() {
       <header className="sticky top-0 z-30 border-b border-white/8 bg-[#050505]/90 backdrop-blur-xl">
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 md:px-6">
           <div className="flex items-center gap-2">
-            <span className="text-base font-bold tracking-tight text-white">Repair</span>
-            <span className="rounded bg-[#D4AF37]/15 px-1.5 py-0.5 text-[11px] font-bold text-[#D4AF37]">Manager</span>
+            <span className="text-base font-bold tracking-tight text-white">Nexus</span>
+            <span className="rounded bg-[#D4AF37]/15 px-1.5 py-0.5 text-[11px] font-bold text-[#D4AF37]">Business OS</span>
           </div>
           <nav className="hidden items-center gap-6 sm:flex">
             <a href="#features" className="text-sm text-white/50 transition-colors hover:text-white">Features</a>
             <a href="#pricing" className="text-sm text-white/50 transition-colors hover:text-white">Pricing</a>
-            <a href="#track" className="text-sm text-white/50 transition-colors hover:text-white">Track repair</a>
+            <a href="#track" className="text-sm text-white/50 transition-colors hover:text-white">Track request</a>
           </nav>
           <div className="flex items-center gap-2">
             <Link href="/login" className="rounded-lg px-3.5 py-1.5 text-sm font-medium text-white/60 transition-colors hover:text-white">
@@ -173,14 +212,14 @@ export default async function LandingPage() {
           <div className="relative mx-auto max-w-3xl text-center">
             <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-[#D4AF37]/25 bg-[#D4AF37]/8 px-4 py-1.5">
               <span className="h-1.5 w-1.5 rounded-full bg-[#D4AF37]" />
-              <span className="text-[12px] font-semibold text-[#D4AF37]">Built for Ugandan repair businesses</span>
+              <span className="text-[12px] font-semibold text-[#D4AF37]">Built for service businesses across Uganda</span>
             </div>
             <h1 className="mb-5 font-[family-name:var(--font-display,sans-serif)] text-4xl font-bold leading-[1.08] tracking-tight text-white md:text-6xl">
-              The OS for your<br />
-              <span style={{ color: "#D4AF37" }}>repair shop</span>
+              Run your whole business,<br />
+              <span style={{ color: "#D4AF37" }}>not just your jobs</span>
             </h1>
             <p className="mx-auto mb-8 max-w-xl text-base leading-relaxed text-white/55 md:text-lg">
-              Job tracking, technician workflows, client management, inventory, invoicing, and WhatsApp notifications — in one workspace.
+              Jobs, inventory, purchase orders, invoicing, POS sales, and team management — one workspace that grows with your operation.
             </p>
             <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
               <Link
@@ -204,9 +243,9 @@ export default async function LandingPage() {
         {/* ── Features ── */}
         <section id="features" className="px-4 py-20 md:px-6 md:py-24">
           <div className="mx-auto max-w-6xl">
-            <p className="mb-3 text-center text-[11px] font-bold uppercase tracking-[0.18em] text-[#D4AF37]/70">Everything you need</p>
+            <p className="mb-3 text-center text-[11px] font-bold uppercase tracking-[0.18em] text-[#D4AF37]/70">Built for every part of your operation</p>
             <h2 className="mb-12 text-center text-2xl font-bold text-white md:text-3xl">
-              Purpose-built for repair shops
+              One platform. Every workflow.
             </h2>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {features.map((f) => (
@@ -225,6 +264,29 @@ export default async function LandingPage() {
           </div>
         </section>
 
+        {/* ── Who uses Nexus ── */}
+        <section className="px-4 pb-16 md:px-6">
+          <div className="mx-auto max-w-6xl">
+            <p className="mb-6 text-center text-[11px] font-bold uppercase tracking-[0.18em] text-[#D4AF37]/70">Trusted across industries</p>
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+              {industries.map((ind) => (
+                <div
+                  key={ind.label}
+                  className="rounded-2xl border border-white/8 bg-[#141414] px-4 py-3 flex items-start gap-3"
+                >
+                  <div className="mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-[#D4AF37]/10 text-[#D4AF37]">
+                    {ind.icon}
+                  </div>
+                  <div>
+                    <p className="text-[13px] font-semibold leading-tight text-white">{ind.label}</p>
+                    <p className="mt-0.5 text-[11px] text-white/40">{ind.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
         {/* ── Data isolation callout ── */}
         <section className="px-4 py-16 md:px-6">
           <div className="mx-auto max-w-4xl">
@@ -235,17 +297,16 @@ export default async function LandingPage() {
                 boxShadow: "0 0 0 1px rgba(212,175,55,0.1), 0 24px 48px rgba(0,0,0,0.5)",
               }}
             >
-              <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.18em] text-[#D4AF37]/70">Strict data isolation</p>
-              <h2 className="mb-3 text-2xl font-bold text-white">External techs never see client info</h2>
+              <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.18em] text-[#D4AF37]/70">Enterprise-grade security</p>
+              <h2 className="mb-3 text-2xl font-bold text-white">External vendors never see your client data</h2>
               <p className="mb-6 max-w-2xl text-sm leading-relaxed text-white/55">
-                When you send a job to an outside technician, they see only the device specs and diagnosis notes.
-                Client names, phone numbers, pricing history, and internal notes are hidden by design — enforced at the server, not just the UI.
+                When you assign work to an outside contractor or vendor, they see only what they need: job specs, device details, and their task. Client names, pricing history, and internal notes stay hidden by design — enforced server-side, not just in the UI.
               </p>
               <div className="grid gap-3 sm:grid-cols-3">
                 {[
-                  { label: "External tech sees", items: ["Device type & model", "Diagnosis summary", "Parts needed", "Their own estimate field"] },
-                  { label: "External tech never sees", items: ["Client name", "Phone / email", "Pricing history", "Internal notes"] },
-                  { label: "Full access: Admins & Ops", items: ["Complete job file", "Client history", "Financials & invoices", "Audit trail"] },
+                  { label: "Vendor sees", items: ["Job specs & device info", "Diagnosis summary", "Parts required", "Their own estimate"] },
+                  { label: "Vendor never sees", items: ["Client name or contacts", "Pricing history", "Payment records", "Internal staff notes"] },
+                  { label: "Full access: Admin & Ops", items: ["Complete job file", "Client history", "Financials & invoices", "Full audit trail"] },
                 ].map((col) => (
                   <div key={col.label} className="rounded-xl border border-white/8 bg-white/[0.03] p-4">
                     <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.14em] text-white/35">{col.label}</p>
@@ -337,7 +398,7 @@ export default async function LandingPage() {
         {/* ── Final CTA ── */}
         <section className="px-4 pb-24 pt-8 md:px-6">
           <div className="mx-auto max-w-xl text-center">
-            <h2 className="mb-3 text-2xl font-bold text-white">Ready to run a tighter shop?</h2>
+            <h2 className="mb-3 text-2xl font-bold text-white">Ready to run a smarter operation?</h2>
             <p className="mb-7 text-sm text-white/45">
               Set up your workspace in minutes. Free plan, no credit card required.
             </p>
@@ -350,13 +411,14 @@ export default async function LandingPage() {
             </Link>
           </div>
         </section>
+
         {/* ── Status lookup ── */}
         <section id="track" className="border-t border-white/8 px-4 py-16 md:px-6">
           <div className="mx-auto max-w-lg text-center">
             <p className="mb-1 text-[11px] font-bold uppercase tracking-[0.18em] text-[#D4AF37]/70">For clients</p>
-            <h2 className="mb-2 text-xl font-bold text-white">Track your repair</h2>
+            <h2 className="mb-2 text-xl font-bold text-white">Track your service request</h2>
             <p className="mb-6 text-sm text-white/45">
-              Have a job number? Check your device&apos;s repair status in real time — no login required.
+              Have a job number? Check your request&apos;s status in real time — no login required.
             </p>
             <StatusLookupForm />
           </div>
@@ -368,20 +430,20 @@ export default async function LandingPage() {
         <div className="mx-auto max-w-6xl">
           <div className="mb-6 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
             <div className="flex items-center gap-2">
-              <span className="text-base font-bold tracking-tight text-white">Repair</span>
-              <span className="rounded bg-[#D4AF37]/15 px-1.5 py-0.5 text-[11px] font-bold text-[#D4AF37]">Manager</span>
+              <span className="text-base font-bold tracking-tight text-white">Nexus</span>
+              <span className="rounded bg-[#D4AF37]/15 px-1.5 py-0.5 text-[11px] font-bold text-[#D4AF37]">Business OS</span>
             </div>
             <nav className="flex flex-wrap gap-x-5 gap-y-2">
               <a href="#features" className="text-sm text-white/40 transition-colors hover:text-white">Features</a>
               <a href="#pricing" className="text-sm text-white/40 transition-colors hover:text-white">Pricing</a>
-              <a href="#track" className="text-sm text-white/40 transition-colors hover:text-white">Track repair</a>
+              <a href="#track" className="text-sm text-white/40 transition-colors hover:text-white">Track request</a>
               <Link href="/login" className="text-sm text-white/40 transition-colors hover:text-white">Log in</Link>
               <Link href="/terms" className="text-sm text-white/40 transition-colors hover:text-white">Terms</Link>
               <Link href="/privacy" className="text-sm text-white/40 transition-colors hover:text-white">Privacy</Link>
             </nav>
           </div>
           <div className="border-t border-white/6 pt-5 text-[12px] text-white/25">
-            © {new Date().getFullYear()} Repair Manager. All rights reserved.
+            © {new Date().getFullYear()} Nexus. All rights reserved.
           </div>
         </div>
       </footer>

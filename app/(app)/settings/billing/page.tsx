@@ -54,7 +54,7 @@ async function subscribeToPlan(formData: FormData) {
     merchantReference: merchantRef,
     amount: PLAN_PRICES[targetPlan],
     currency: "UGX",
-    description: `Repair Manager ${targetPlan} plan`,
+    description: `Nexus ${targetPlan} plan`,
     callbackUrl: `${baseUrl}/api/billing/callback`,
     ipnId,
     email: user.email,

@@ -38,14 +38,14 @@ export default async function RegisterPage() {
             <div className="overflow-hidden rounded-xl border border-white/10">
               <Image src="/eagle-info-logo.png" alt="Logo" width={36} height={36} className="h-9 w-9 object-cover" priority />
             </div>
-            <span className="text-xs font-semibold uppercase tracking-[0.22em] text-white/50">Repair Manager</span>
+            <span className="text-xs font-semibold uppercase tracking-[0.22em] text-white/50">Nexus</span>
           </div>
 
           <div className="relative space-y-8">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#D4AF37]/70">Get started free</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#D4AF37]/70">Business OS</p>
               <h1 className="mt-3 text-3xl font-semibold leading-snug text-white xl:text-4xl">
-                Your repair business,<br />fully organised
+                Your operations,<br />fully organised
               </h1>
               <p className="mt-4 max-w-sm text-sm leading-relaxed text-white/55">
                 Set up your workspace in 60 seconds. Manage jobs, technicians, and clients — all in one place.
@@ -66,7 +66,7 @@ export default async function RegisterPage() {
             </div>
           </div>
 
-          <p className="relative text-[11px] text-white/25">© {new Date().getFullYear()} Repair Manager</p>
+          <p className="relative text-[11px] text-white/25">© {new Date().getFullYear()} Nexus</p>
         </section>
 
         {/* ── Right: register form ── */}
@@ -78,7 +78,7 @@ export default async function RegisterPage() {
               <div className="overflow-hidden rounded-2xl border border-white/10 shadow-lg shadow-black/40">
                 <Image src="/eagle-info-logo.png" alt="Logo" width={56} height={56} className="h-14 w-14 object-cover" priority />
               </div>
-              <p className="mt-3 text-xs font-semibold uppercase tracking-[0.22em] text-white/40">Repair Manager</p>
+              <p className="mt-3 text-xs font-semibold uppercase tracking-[0.22em] text-white/40">Nexus</p>
             </div>
 
             {/* Desktop logo row */}
@@ -86,11 +86,11 @@ export default async function RegisterPage() {
               <div className="overflow-hidden rounded-xl border border-white/10">
                 <Image src="/eagle-info-logo.png" alt="Logo" width={36} height={36} className="h-9 w-9 object-cover" priority />
               </div>
-              <span className="text-xs font-semibold uppercase tracking-[0.22em] text-white/40">Repair Manager</span>
+              <span className="text-xs font-semibold uppercase tracking-[0.22em] text-white/40">Nexus</span>
             </div>
 
             <h2 className="text-2xl font-semibold text-white">Create your account</h2>
-            <p className="mt-1.5 text-sm text-white/40">Start managing repairs in minutes — no credit card needed</p>
+            <p className="mt-1.5 text-sm text-white/40">Start managing your team in minutes — no credit card needed</p>
 
             <div className="mt-8">
               <RegisterForm />
