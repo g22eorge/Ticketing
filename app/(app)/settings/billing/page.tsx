@@ -161,7 +161,7 @@ export default async function BillingPage({
       ? "Subscribe to Growth or Enterprise to restore access to your workspace."
       : isPastDue
       ? "Your last payment failed. Re-subscribe below to restore full access."
-      : "Your 30-day free trial has expired. Upgrade to a paid plan to continue using your workspace.";
+      : "Your 2-month free trial has expired. Choose a plan below to continue using your workspace.";
 
     return (
       <div className="space-y-6">

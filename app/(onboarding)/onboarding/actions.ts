@@ -66,8 +66,10 @@ export async function createOrganization(
   }
 
   // Create org and link the founding user as ADMIN.
+  // Free plan trial: 2 months (60 days). After expiry the workspace suspends
+  // and the admin is prompted to pick a paid plan.
   const trialEndsAt = new Date();
-  trialEndsAt.setDate(trialEndsAt.getDate() + 30);
+  trialEndsAt.setDate(trialEndsAt.getDate() + 60);
 
   await prisma.$transaction(async (tx) => {
     const org = await tx.organization.create({
