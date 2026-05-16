@@ -173,40 +173,43 @@ export default async function InventoryPage({
 
   return (
     <div className="space-y-4">
-      {/* Header + KPI strip */}
-      <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
-        <div className="flex items-center justify-between gap-2 border-b border-[var(--line)] px-4 py-2.5">
-          <p className="text-[13px] font-bold text-[var(--ink)]">Inventory</p>
-          {canManage && (
-            <div className="flex items-center gap-2">
-              <Link href="/inventory/suppliers" className="inline-flex items-center rounded-lg border border-[var(--line)] px-3 py-1.5 text-xs font-semibold text-[var(--ink)] transition hover:border-[var(--accent)]/50 hover:text-[var(--accent)]">
-                Suppliers
-              </Link>
-              <Link href="/inventory/purchase-orders" className="inline-flex items-center rounded-lg border border-[var(--line)] px-3 py-1.5 text-xs font-semibold text-[var(--ink)] transition hover:border-[var(--accent)]/50 hover:text-[var(--accent)]">
-                Purchase Orders
-              </Link>
-            </div>
-          )}
+      {/* Header */}
+      <div className="panel-shadow flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-2.5">
+        <p className="text-[13px] font-bold text-[var(--ink)]">
+          Inventory{" "}
+          <span className="font-normal text-[var(--ink-muted)]">· {parts.length} parts</span>
+        </p>
+        {canManage && (
+          <div className="flex items-center gap-2">
+            <Link href="/inventory/suppliers" className="inline-flex items-center rounded-lg border border-[var(--line)] px-3 py-1.5 text-xs font-semibold text-[var(--ink)] transition hover:border-[var(--accent)]/50 hover:text-[var(--accent)]">
+              Suppliers
+            </Link>
+            <Link href="/inventory/purchase-orders" className="inline-flex items-center rounded-lg border border-[var(--line)] px-3 py-1.5 text-xs font-semibold text-[var(--ink)] transition hover:border-[var(--accent)]/50 hover:text-[var(--accent)]">
+              Purchase Orders
+            </Link>
+          </div>
+        )}
+      </div>
+
+      {/* KPI strip */}
+      <div className="panel-shadow grid grid-cols-2 overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)] divide-x divide-y divide-[var(--line)] sm:grid-cols-4 sm:divide-y-0">
+        <div className="px-4 py-3">
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Active Parts</p>
+          <p className="mt-0.5 text-xl font-black tabular-nums text-[var(--ink)]">{parts.length}</p>
         </div>
-        <div className="grid grid-cols-2 divide-x divide-y divide-[var(--line)] sm:grid-cols-4 sm:divide-y-0">
-          <div className="px-4 py-2.5">
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Active Parts</p>
-            <p className="mt-0.5 text-xl font-black tabular-nums text-[var(--ink)]">{parts.length}</p>
-          </div>
-          <div className="px-4 py-2.5">
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Low Stock</p>
-            <p className="mt-0.5 text-xl font-black tabular-nums text-amber-600">{lowStock.length}</p>
-            <p className="text-[11px] text-[var(--ink-muted)]">at or below reorder</p>
-          </div>
-          <div className="px-4 py-2.5">
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Reserved</p>
-            <p className="mt-0.5 text-xl font-black tabular-nums text-[var(--ink)]">{reservedCount}</p>
-            <p className="text-[11px] text-[var(--ink-muted)]">units held for jobs</p>
-          </div>
-          <div className="px-4 py-2.5">
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Stock Value</p>
-            <p className="mt-0.5 text-xl font-black tabular-nums text-[var(--ink)]">{formatMoney(totalValue)}</p>
-          </div>
+        <div className="px-4 py-3">
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Low Stock</p>
+          <p className="mt-0.5 text-xl font-black tabular-nums text-amber-500">{lowStock.length}</p>
+          <p className="text-[11px] text-[var(--ink-muted)]">at or below reorder</p>
+        </div>
+        <div className="px-4 py-3">
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Reserved</p>
+          <p className="mt-0.5 text-xl font-black tabular-nums text-[var(--ink)]">{reservedCount}</p>
+          <p className="text-[11px] text-[var(--ink-muted)]">units held for jobs</p>
+        </div>
+        <div className="px-4 py-3">
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Stock Value</p>
+          <p className="mt-0.5 text-xl font-black tabular-nums text-[var(--ink)]">{formatMoney(totalValue)}</p>
         </div>
       </div>
 

@@ -81,7 +81,7 @@ function isStaleSingleton(client: PrismaClient | undefined): boolean {
   if (!client) return false;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const c = client as any;
-  return !c.complaint || !c.userGroup || !c.branch || !c.supplier;
+  return !c.complaint || !c.userGroup || !c.branch || !c.supplier || !c.salesTarget;
 }
 
 if (isStaleSingleton(globalForPrisma.prisma)) {
