@@ -6,6 +6,10 @@ import { prisma } from "@/lib/prisma";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
+  // Auth guard — only the platform admin may access this runner UI.
+  const admin = await assertPlatformAdmin();
+  if (!admin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
   // Provide a safe in-browser runner (uses current session cookies).
   // Actual mutation stays on POST.
   const html = `<!doctype html>

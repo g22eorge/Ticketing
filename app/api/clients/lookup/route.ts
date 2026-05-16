@@ -15,20 +15,25 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ clients: [] });
   }
 
-  const clients = await prisma.client.findMany({
-    where: {
-      orgId,
-      OR: [
-        { fullName: { contains: q } },
-        { phone: { contains: q } },
-        { email: { contains: q } },
-        { organization: { contains: q } },
-      ],
-    },
-    orderBy: { updatedAt: "desc" },
-    take: 8,
-    select: { id: true, fullName: true, phone: true, email: true, organization: true },
-  });
+  try {
+    const clients = await prisma.client.findMany({
+      where: {
+        orgId,
+        OR: [
+          { fullName: { contains: q } },
+          { phone: { contains: q } },
+          { email: { contains: q } },
+          { organization: { contains: q } },
+        ],
+      },
+      orderBy: { updatedAt: "desc" },
+      take: 8,
+      select: { id: true, fullName: true, phone: true, email: true, organization: true },
+    });
 
-  return NextResponse.json({ clients });
+    return NextResponse.json({ clients });
+  } catch (err) {
+    console.error("[clients/lookup] GET error:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
 }

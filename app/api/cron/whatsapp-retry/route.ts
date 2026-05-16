@@ -9,6 +9,11 @@ export async function POST(request: NextRequest) {
   const authError = assertCronAuthorized(request);
   if (authError) return authError;
 
-  const result = await retryDueOutboundMessages(getOutboxRetryLimit(25));
-  return NextResponse.json(result);
+  try {
+    const result = await retryDueOutboundMessages(getOutboxRetryLimit(25));
+    return NextResponse.json(result);
+  } catch (err) {
+    console.error("[cron/whatsapp-retry] POST error:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
 }

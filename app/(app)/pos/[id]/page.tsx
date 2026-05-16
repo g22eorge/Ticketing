@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 
 import { DeliveryMethod, PaymentMethod } from "@prisma/client";
@@ -151,8 +151,8 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
   }
 
   if (!sale) {
-    if (dbNeedsFix) redirect("/pos");
-    redirect("/pos");
+    if (dbNeedsFix) redirect("/pos"); // schema not yet migrated — redirect to list
+    notFound(); // sale doesn't exist in this org
   }
 
   const orgBranding = await prisma.documentBrandingSettings.findFirst({

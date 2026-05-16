@@ -15,10 +15,15 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ client: null });
   }
 
-  const client = await prisma.client.findFirst({
-    where: { phone, orgId },
-    select: { id: true, fullName: true, phone: true, email: true, organization: true },
-  });
+  try {
+    const client = await prisma.client.findFirst({
+      where: { phone, orgId },
+      select: { id: true, fullName: true, phone: true, email: true, organization: true },
+    });
 
-  return NextResponse.json({ client });
+    return NextResponse.json({ client });
+  } catch (err) {
+    console.error("[clients/search] GET error:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
 }

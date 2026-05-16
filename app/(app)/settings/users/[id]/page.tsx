@@ -1,7 +1,7 @@
 import { hashPassword } from "better-auth/crypto";
 import { Role } from "@prisma/client";
 import Link from "next/link";
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
@@ -321,7 +321,7 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
     },
   });
 
-  if (!target) redirect("/settings/users");
+  if (!target) notFound();
 
   const accessMode = ((target.accessMode as unknown as "FULL" | "READ_ONLY") ?? "FULL");
 

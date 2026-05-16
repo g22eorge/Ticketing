@@ -12,25 +12,30 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const unresolved = await prisma.job.count({
-    where: { OR: [{ brand: "Unknown" }, { model: "Unknown" }, { deviceType: "OTHER" }] },
-  });
-  const lastHeal = await prisma.auditLog.findFirst({
-    where: { action: "DATA_HEAL_JOB_DEVICE_FIELDS" },
-    orderBy: { createdAt: "desc" },
-    select: { createdAt: true },
-  });
+  try {
+    const unresolved = await prisma.job.count({
+      where: { OR: [{ brand: "Unknown" }, { model: "Unknown" }, { deviceType: "OTHER" }] },
+    });
+    const lastHeal = await prisma.auditLog.findFirst({
+      where: { action: "DATA_HEAL_JOB_DEVICE_FIELDS" },
+      orderBy: { createdAt: "desc" },
+      select: { createdAt: true },
+    });
 
-  const dryRun = request.nextUrl.searchParams.get("dry") === "1";
-  const preview = await runDataHeal(prisma, { dryRun: true, limit: 25 });
+    const dryRun = request.nextUrl.searchParams.get("dry") === "1";
+    const preview = await runDataHeal(prisma, { dryRun: true, limit: 25 });
 
-  return NextResponse.json({
-    ok: true,
-    unresolved,
-    lastHealedAt: lastHeal?.createdAt ?? null,
-    dryRun,
-    preview,
-  });
+    return NextResponse.json({
+      ok: true,
+      unresolved,
+      lastHealedAt: lastHeal?.createdAt ?? null,
+      dryRun,
+      preview,
+    });
+  } catch (err) {
+    console.error("[admin/data-heal] GET error:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -39,7 +44,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const dryRun = request.nextUrl.searchParams.get("dry") === "1";
-  const result = await runDataHeal(prisma, { dryRun, actorUserId: user.id });
-  return NextResponse.json(result);
+  try {
+    const dryRun = request.nextUrl.searchParams.get("dry") === "1";
+    const result = await runDataHeal(prisma, { dryRun, actorUserId: user.id });
+    return NextResponse.json(result);
+  } catch (err) {
+    console.error("[admin/data-heal] POST error:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
 }

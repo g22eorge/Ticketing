@@ -17,7 +17,11 @@ import type { NextConfig } from "next";
  */
 const CSP = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' https://vercel.live",
+  // 'strict-dynamic' causes modern browsers to ignore 'unsafe-inline', giving
+  // nonce-equivalent protection without requiring per-request nonce plumbing.
+  // Older browsers that don't understand 'strict-dynamic' still work via
+  // 'unsafe-inline'. Next.js requires 'unsafe-inline' for __NEXT_DATA__ scripts.
+  "script-src 'self' 'unsafe-inline' 'strict-dynamic' https://vercel.live",
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https:",
   "font-src 'self' data:",
@@ -41,6 +45,7 @@ const nextConfig: NextConfig = {
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
           { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
           { key: "Content-Security-Policy", value: CSP },
+          { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
         ],
       },
     ];
