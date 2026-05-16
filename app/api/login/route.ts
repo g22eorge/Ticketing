@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
 
@@ -72,14 +73,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const origin = new URL(request.url).origin;
-    const upstream = await fetch(`${origin}/api/auth/sign-in/email`, {
+    // Call BetterAuth in-process — avoids HTTP self-fetch which is unreliable
+    // in serverless environments where the origin URL may not match BETTER_AUTH_URL.
+    const authBaseURL =
+      process.env.BETTER_AUTH_URL ??
+      process.env.NEXT_PUBLIC_APP_URL ??
+      new URL(request.url).origin;
+
+    const syntheticRequest = new Request(`${authBaseURL}/api/auth/sign-in/email`, {
       method: "POST",
-      headers: {
+      headers: new Headers({
         "content-type": "application/json",
         accept: "application/json",
-        origin,
-      },
+        origin: authBaseURL,
+      }),
       body: JSON.stringify({
         email: resolved.email,
         password,
@@ -87,6 +94,8 @@ export async function POST(request: NextRequest) {
         rememberMe,
       }),
     });
+
+    const upstream = await auth.handler(syntheticRequest);
 
     const text = await upstream.text();
     const response = new NextResponse(text, {
