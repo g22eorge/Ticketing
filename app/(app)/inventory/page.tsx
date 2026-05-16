@@ -193,23 +193,31 @@ export default async function InventoryPage({
 
       {/* KPI strip */}
       <div className="panel-shadow grid grid-cols-2 overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)] divide-x divide-y divide-[var(--line)] sm:grid-cols-4 sm:divide-y-0">
-        <div className="px-4 py-3">
-          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Active Parts</p>
-          <p className="mt-0.5 text-xl font-black tabular-nums text-[var(--ink)]">{parts.length}</p>
+        <div className="flex items-center gap-3 px-4 py-2">
+          <div>
+            <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">Active Parts</p>
+            <p className="text-[15px] font-black tabular-nums leading-tight text-[var(--ink)]">{parts.length}</p>
+          </div>
         </div>
-        <div className="px-4 py-3">
-          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Low Stock</p>
-          <p className="mt-0.5 text-xl font-black tabular-nums text-amber-500">{lowStock.length}</p>
-          <p className="text-[11px] text-[var(--ink-muted)]">at or below reorder</p>
+        <div className="flex items-center gap-3 px-4 py-2">
+          <div>
+            <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">Low Stock</p>
+            <p className="text-[15px] font-black tabular-nums leading-tight text-amber-500">{lowStock.length}</p>
+            <p className="text-[10px] text-[var(--ink-muted)]">at or below reorder</p>
+          </div>
         </div>
-        <div className="px-4 py-3">
-          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Reserved</p>
-          <p className="mt-0.5 text-xl font-black tabular-nums text-[var(--ink)]">{reservedCount}</p>
-          <p className="text-[11px] text-[var(--ink-muted)]">units held for jobs</p>
+        <div className="flex items-center gap-3 px-4 py-2">
+          <div>
+            <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">Reserved</p>
+            <p className="text-[15px] font-black tabular-nums leading-tight text-[var(--ink)]">{reservedCount}</p>
+            <p className="text-[10px] text-[var(--ink-muted)]">units held for jobs</p>
+          </div>
         </div>
-        <div className="px-4 py-3">
-          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Stock Value</p>
-          <p className="mt-0.5 text-xl font-black tabular-nums text-[var(--ink)]">{formatMoney(totalValue)}</p>
+        <div className="flex items-center gap-3 px-4 py-2">
+          <div>
+            <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">Stock Value</p>
+            <p className="text-[15px] font-black tabular-nums leading-tight text-[var(--ink)]">{formatMoney(totalValue)}</p>
+          </div>
         </div>
       </div>
 
