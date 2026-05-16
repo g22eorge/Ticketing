@@ -16,8 +16,8 @@ export const PESAPAL_BASE =
 // ── Plan prices (UGX) ─────────────────────────────────────────────────────────
 
 export const PLAN_PRICES: Record<string, number> = {
-  GROWTH: 95_000,
-  ENTERPRISE: 180_000,
+  GROWTH: 85_000,
+  ENTERPRISE: 149_000,
 };
 
 export const CURRENCY = "UGX";
