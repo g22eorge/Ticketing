@@ -247,7 +247,7 @@ export default async function ComplaintsPage({
                         )}
                       </td>
                       <td className="px-4 py-3">
-                        <RowActionsMenu label="Update complaint" direction="down">
+                        <RowActionsMenu label="Update complaint">
                           <MenuSection label="Update Status" />
                           <form action={updateStatusAction} className="space-y-2 p-3">
                             <input type="hidden" name="id" value={c.id} />

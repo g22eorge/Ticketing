@@ -218,7 +218,7 @@ export default async function LandingPage() {
           <nav className="hidden items-center gap-6 sm:flex">
             <a href="#features" className="text-sm text-white/50 transition-colors hover:text-white">Features</a>
             <a href="#pricing" className="text-sm text-white/50 transition-colors hover:text-white">Pricing</a>
-            <a href="#track" className="text-sm text-white/50 transition-colors hover:text-white">Track request</a>
+            <a href="#clients"className="text-sm text-white/50 transition-colors hover:text-white">For clients</a>
           </nav>
           <div className="flex items-center gap-2">
             <Link href="/login" className="rounded-lg px-3.5 py-1.5 text-sm font-medium text-white/60 transition-colors hover:text-white">
@@ -442,15 +442,97 @@ export default async function LandingPage() {
           </div>
         </section>
 
-        {/* ── Status lookup ── */}
-        <section id="track" className="border-t border-white/8 px-4 py-16 md:px-6">
-          <div className="mx-auto max-w-lg text-center">
-            <p className="mb-1 text-[11px] font-bold uppercase tracking-[0.18em] text-[#D4AF37]/70">For clients</p>
-            <h2 className="mb-2 text-xl font-bold text-white">Track your service request</h2>
-            <p className="mb-6 text-sm text-white/45">
-              Have a job number? Check your request&apos;s status in real time — no login required.
+        {/* ── Client self-service ── */}
+        <section id="clients" className="border-t border-white/8 px-4 py-20 md:px-6 md:py-24">
+          <div className="mx-auto max-w-6xl">
+            <p className="mb-3 text-center text-[11px] font-bold uppercase tracking-[0.18em] text-[#D4AF37]/70">Built for your customers too</p>
+            <h2 className="mb-4 text-center text-2xl font-bold text-white md:text-3xl">
+              Your clients stay informed — automatically
+            </h2>
+            <p className="mx-auto mb-14 max-w-xl text-center text-sm leading-relaxed text-white/45">
+              No more "what&apos;s the status of my repair?" calls. Clients track their own jobs and submit feedback directly — no login required.
             </p>
-            <StatusLookupForm />
+
+            <div className="grid gap-6 md:grid-cols-2">
+              {/* Job tracker card */}
+              <div
+                className="rounded-2xl border border-white/8 p-6 md:p-8"
+                style={{ background: "linear-gradient(135deg,#141414 0%,#0e0e0e 100%)" }}
+              >
+                <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-[#D4AF37]/10 text-[#D4AF37]">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                  </svg>
+                </div>
+                <p className="mb-1.5 text-lg font-bold text-white">Real-time job tracking</p>
+                <p className="mb-6 text-sm leading-relaxed text-white/50">
+                  Clients enter their job number to instantly see where their device is in the repair process — received, diagnosing, in repair, ready for pickup, and more.
+                </p>
+                {/* Mock status UI */}
+                <div className="rounded-xl border border-white/8 bg-[#0a0a0a] p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="mono text-xs font-bold text-[#D4AF37]">EI-2025-0142</span>
+                    <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-semibold text-emerald-400">Ready for pickup</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {["Received","Diagnosing","In Repair","Ready"].map((step, i) => (
+                      <div key={step} className="flex items-center gap-2 min-w-0">
+                        <div className={`h-1.5 w-1.5 flex-shrink-0 rounded-full ${i < 4 ? "bg-[#D4AF37]" : "bg-white/15"}`} />
+                        <span className={`text-[10px] truncate ${i < 4 ? "text-white/60" : "text-white/20"}`}>{step}</span>
+                        {i < 3 && <div className="h-px w-3 flex-shrink-0 bg-white/10" />}
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-[11px] text-white/35">Samsung Galaxy S23 · Screen replacement</p>
+                </div>
+                <div className="mt-5">
+                  <StatusLookupForm />
+                </div>
+              </div>
+
+              {/* Feedback card */}
+              <div
+                className="rounded-2xl border border-white/8 p-6 md:p-8"
+                style={{ background: "linear-gradient(135deg,#141414 0%,#0e0e0e 100%)" }}
+              >
+                <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-[#D4AF37]/10 text-[#D4AF37]">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+                  </svg>
+                </div>
+                <p className="mb-1.5 text-lg font-bold text-white">Client feedback & complaints</p>
+                <p className="mb-6 text-sm leading-relaxed text-white/50">
+                  Give every client a direct channel to rate their experience or raise a concern. Complaints are tracked in your dashboard with SLA timers — nothing slips through.
+                </p>
+                {/* Mock feedback UI */}
+                <div className="rounded-xl border border-white/8 bg-[#0a0a0a] p-4 space-y-3">
+                  <div className="flex items-start gap-3">
+                    <div className="mt-0.5 h-7 w-7 flex-shrink-0 rounded-full bg-[#D4AF37]/20 flex items-center justify-center text-[11px] font-bold text-[#D4AF37]">J</div>
+                    <div className="min-w-0">
+                      <p className="text-[12px] font-semibold text-white">James O.</p>
+                      <p className="text-[11px] text-white/40">2 hours ago · Job EI-2025-0139</p>
+                    </div>
+                    <div className="ml-auto flex gap-0.5">
+                      {[1,2,3,4,5].map(s => (
+                        <svg key={s} width="10" height="10" viewBox="0 0 24 24" fill={s <= 4 ? "#D4AF37" : "none"} stroke="#D4AF37" strokeWidth="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                      ))}
+                    </div>
+                  </div>
+                  <p className="text-[12px] text-white/50 leading-relaxed">&ldquo;Fast turnaround and kept me updated throughout. Very professional service.&rdquo;</p>
+                  <div className="flex items-center gap-2 pt-1">
+                    <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-emerald-400">Resolved</span>
+                    <span className="text-[10px] text-white/25">Responded in 1h 12m</span>
+                  </div>
+                </div>
+                <Link
+                  href="/feedback"
+                  className="mt-5 flex items-center justify-center gap-2 rounded-xl border border-white/12 bg-white/[0.04] px-4 py-2.5 text-sm font-semibold text-white/70 transition-colors hover:border-white/20 hover:text-white"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+                  Submit feedback or complaint
+                </Link>
+              </div>
+            </div>
           </div>
         </section>
       </main>
@@ -466,7 +548,7 @@ export default async function LandingPage() {
             <nav className="flex flex-wrap gap-x-5 gap-y-2">
               <a href="#features" className="text-sm text-white/40 transition-colors hover:text-white">Features</a>
               <a href="#pricing" className="text-sm text-white/40 transition-colors hover:text-white">Pricing</a>
-              <a href="#track" className="text-sm text-white/40 transition-colors hover:text-white">Track request</a>
+              <a href="#clients"className="text-sm text-white/40 transition-colors hover:text-white">For clients</a>
               <Link href="/login" className="text-sm text-white/40 transition-colors hover:text-white">Log in</Link>
               <Link href="/terms" className="text-sm text-white/40 transition-colors hover:text-white">Terms</Link>
               <Link href="/privacy" className="text-sm text-white/40 transition-colors hover:text-white">Privacy</Link>
