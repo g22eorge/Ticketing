@@ -6,6 +6,10 @@ import type { NextConfig } from "next";
  * 'unsafe-inline' for styles — required by Recharts (inline style attributes)
  * and Tailwind's dynamic class generation in dev mode.
  *
+ * 'unsafe-inline' for scripts — required by Next's bootstrap/runtime scripts in
+ * this deployment mode. Keep 'strict-dynamic' out unless per-request nonces are
+ * added, otherwise some browsers reject same-origin Next.js chunks.
+ *
  * 'unsafe-eval' is intentionally EXCLUDED (no eval-based libraries).
  *
  * data: for images — PDF previews and chart data-URIs.
@@ -17,11 +21,7 @@ import type { NextConfig } from "next";
  */
 const CSP = [
   "default-src 'self'",
-  // 'strict-dynamic' causes modern browsers to ignore 'unsafe-inline', giving
-  // nonce-equivalent protection without requiring per-request nonce plumbing.
-  // Older browsers that don't understand 'strict-dynamic' still work via
-  // 'unsafe-inline'. Next.js requires 'unsafe-inline' for __NEXT_DATA__ scripts.
-  "script-src 'self' 'unsafe-inline' 'strict-dynamic' https://vercel.live",
+  "script-src 'self' 'unsafe-inline' https://vercel.live",
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https:",
   "font-src 'self' data:",
