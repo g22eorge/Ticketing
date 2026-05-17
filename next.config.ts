@@ -10,7 +10,9 @@ import type { NextConfig } from "next";
  * this deployment mode. Keep 'strict-dynamic' out unless per-request nonces are
  * added, otherwise some browsers reject same-origin Next.js chunks.
  *
- * 'unsafe-eval' is intentionally EXCLUDED (no eval-based libraries).
+ * CSP is sent only in production. React/Next/Turbopack dev mode uses eval and
+ * runtime style injection for debugging/HMR, so applying CSP locally can leave
+ * pages as unstyled HTML.
  *
  * data: for images — PDF previews and chart data-URIs.
  *
@@ -19,6 +21,8 @@ import type { NextConfig } from "next";
  * https://vercel.live — Vercel preview comments widget (safe in prod; no-op
  * when not in a preview deployment).
  */
+const isProduction = process.env.NODE_ENV === "production";
+
 const CSP = [
   "default-src 'self'",
   "script-src 'self' 'unsafe-inline' https://vercel.live",
@@ -36,17 +40,19 @@ const CSP = [
 const nextConfig: NextConfig = {
   turbopack: { root: process.cwd() },
   async headers() {
+    const securityHeaders = [
+      { key: "X-Content-Type-Options", value: "nosniff" },
+      { key: "X-Frame-Options", value: "DENY" },
+      { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+      { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+      { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
+      ...(isProduction ? [{ key: "Content-Security-Policy", value: CSP }] : []),
+    ];
+
     return [
       {
         source: "/(.*)",
-        headers: [
-          { key: "X-Content-Type-Options", value: "nosniff" },
-          { key: "X-Frame-Options", value: "DENY" },
-          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-          { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
-          { key: "Content-Security-Policy", value: CSP },
-          { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
-        ],
+        headers: securityHeaders,
       },
     ];
   },
