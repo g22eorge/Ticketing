@@ -18,6 +18,8 @@
     "qa:repair-requests": "TURSO_DATABASE_URL= TURSO_AUTH_TOKEN= DATABASE_URL=\"${DATABASE_URL:-file:./dev.db}\" bunx prisma db push --skip-generate && TURSO_DATABASE_URL= TURSO_AUTH_TOKEN= DATABASE_URL=\"${DATABASE_URL:-file:./dev.db}\" bunx prisma generate && TURSO_DATABASE_URL= TURSO_AUTH_TOKEN= DATABASE_URL=\"${DATABASE_URL:-file:./dev.db}\" bun scripts/qa-repair-request-numbers.mjs",
     "db:prod-job-safety": "bun scripts/prod-job-column-safety.mjs",
     "smoke:prod": "node scripts/smoke-prod.mjs",
+    "qa:pdf-smoke": "node scripts/qa-pdf-smoke.mjs",
+    "qa:rate-limit": "node scripts/qa-rate-limit.mjs",
     "qa:all": "bun run qa:data-integrity && bun run qa:concurrency && bun run qa:perf",
     "data:backfill-final-cost": "node scripts/backfill-final-cost.mjs",
     "predeploy:check": "node scripts/predeploy-check.mjs",
