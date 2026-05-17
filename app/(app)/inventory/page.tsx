@@ -181,6 +181,9 @@ export default async function InventoryPage({
         </p>
         {canManage && (
           <div className="flex items-center gap-2">
+            <Link href="/inventory/locations" className="inline-flex items-center rounded-lg border border-[var(--line)] px-3 py-1.5 text-xs font-semibold text-[var(--ink)] transition hover:border-[var(--accent)]/50 hover:text-[var(--accent)]">
+              Locations
+            </Link>
             <Link href="/inventory/suppliers" className="inline-flex items-center rounded-lg border border-[var(--line)] px-3 py-1.5 text-xs font-semibold text-[var(--ink)] transition hover:border-[var(--accent)]/50 hover:text-[var(--accent)]">
               Suppliers
             </Link>
