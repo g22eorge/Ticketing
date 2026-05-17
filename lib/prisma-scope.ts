@@ -88,6 +88,7 @@ const ORG_SCOPED_MODELS = new Set([
   "StockTransfer",
   "Supplier",
   "SupplierBill",
+  "SupplierPayment",
   "SupplierPrice",
   "User",
   "UserGroup",

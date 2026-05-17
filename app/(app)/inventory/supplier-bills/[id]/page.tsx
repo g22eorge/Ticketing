@@ -4,7 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireOrgSession } from "@/lib/org-context";
 import { can } from "@/lib/permissions";
-import { cancelSupplierBillAction } from "../actions";
+import { cancelSupplierBillAction, createSupplierPaymentAction, deleteSupplierPaymentAction } from "../actions";
 
 export const dynamic = "force-dynamic";
 
@@ -21,6 +21,10 @@ export default async function SupplierBillDetailPage({ params }: { params: Promi
       grn: { select: { id: true, grnNumber: true } },
       createdBy: { select: { name: true, email: true } },
       items: { orderBy: { createdAt: "asc" } },
+      payments: {
+        include: { createdBy: { select: { name: true, email: true } } },
+        orderBy: { paidAt: "desc" },
+      },
     },
   });
   if (!bill || bill.orgId !== orgId) notFound();
@@ -64,6 +68,62 @@ export default async function SupplierBillDetailPage({ params }: { params: Promi
       </div>
 
       {bill.notes ? <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] px-5 py-4"><p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)] mb-1">Notes</p><p className="text-sm text-[var(--ink)] whitespace-pre-wrap">{bill.notes}</p></div> : null}
+
+      <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] overflow-hidden">
+        <div className="px-5 py-3 border-b border-[var(--line)] flex items-center justify-between gap-2">
+          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Payments ({bill.payments.length})</p>
+          <p className="text-xs font-semibold text-[var(--ink-muted)]">Paid {bill.currency} {bill.paidAmount.toLocaleString()}</p>
+        </div>
+        {balance > 0 && bill.status !== "CANCELLED" ? (
+          <form action={createSupplierPaymentAction} className="grid gap-2 border-b border-[var(--line)] p-4 sm:grid-cols-[0.8fr_0.8fr_1fr_1fr_auto]">
+            <input type="hidden" name="billId" value={bill.id} />
+            <input name="amount" type="number" min={0.01} max={balance} step={0.01} placeholder={`Max ${balance.toLocaleString()}`} required className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-right text-[13px] outline-none focus:border-[var(--accent)]/60" />
+            <select name="method" defaultValue="BANK_TRANSFER" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/60">
+              <option value="CASH">Cash</option>
+              <option value="MOBILE_MONEY">Mobile money</option>
+              <option value="BANK_TRANSFER">Bank transfer</option>
+              <option value="CARD">Card</option>
+              <option value="OTHER">Other</option>
+            </select>
+            <input name="reference" placeholder="Reference" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/60" />
+            <input name="paidAt" type="date" defaultValue={new Date().toISOString().slice(0, 10)} className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/60" />
+            <button type="submit" className="btn-premium rounded-lg px-4 py-1.5 text-[13px] font-semibold">Record</button>
+            <input name="note" placeholder="Payment note" className="sm:col-span-5 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/60" />
+          </form>
+        ) : null}
+        {bill.payments.length === 0 ? (
+          <p className="py-8 text-center text-sm text-[var(--ink-muted)]">No payments recorded yet.</p>
+        ) : (
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-[var(--line)] text-xs font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
+                <th className="px-4 py-2 text-left">Date</th>
+                <th className="px-4 py-2 text-left">Method</th>
+                <th className="px-4 py-2 text-left hidden sm:table-cell">Reference</th>
+                <th className="px-4 py-2 text-right">Amount</th>
+                <th className="px-4 py-2" />
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[var(--line)]">
+              {bill.payments.map((payment) => (
+                <tr key={payment.id} className="hover:bg-[var(--gold)]/5">
+                  <td className="px-4 py-2 text-[var(--ink)]">{fmt(payment.paidAt)}</td>
+                  <td className="px-4 py-2 text-xs font-semibold text-[var(--ink-muted)]">{payment.method}</td>
+                  <td className="px-4 py-2 hidden sm:table-cell text-xs text-[var(--ink-muted)]">{payment.reference ?? "-"}</td>
+                  <td className="px-4 py-2 text-right font-semibold tabular-nums text-[var(--ink)]">{payment.currency} {payment.amount.toLocaleString()}</td>
+                  <td className="px-4 py-2 text-right">
+                    <form action={deleteSupplierPaymentAction}>
+                      <input type="hidden" name="id" value={payment.id} />
+                      <input type="hidden" name="billId" value={bill.id} />
+                      <button type="submit" className="text-xs font-semibold text-red-600 hover:text-red-700">Delete</button>
+                    </form>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-[var(--ink-muted)]">
         <p>Posted by {bill.createdBy.name || bill.createdBy.email}.</p>

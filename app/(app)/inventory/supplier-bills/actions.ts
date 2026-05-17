@@ -120,3 +120,85 @@ export async function cancelSupplierBillAction(formData: FormData): Promise<void
   revalidatePath("/inventory/supplier-bills");
   revalidatePath(`/inventory/supplier-bills/${id}`);
 }
+
+function nextBillStatus(totalAmount: number, paidAmount: number) {
+  if (paidAmount <= 0) return "POSTED" as const;
+  if (paidAmount >= totalAmount) return "PAID" as const;
+  return "PART_PAID" as const;
+}
+
+export async function createSupplierPaymentAction(formData: FormData): Promise<void> {
+  const { orgId, session, org } = await requireInventoryManager();
+  const billId = String(formData.get("billId") ?? "").trim();
+  const amount = Number(String(formData.get("amount") ?? "0").trim());
+  const method = String(formData.get("method") ?? "CASH").trim().toUpperCase();
+  const reference = String(formData.get("reference") ?? "").trim() || null;
+  const paidAtRaw = String(formData.get("paidAt") ?? "").trim();
+  const note = String(formData.get("note") ?? "").trim() || null;
+
+  if (!billId || !Number.isFinite(amount) || amount <= 0) return;
+
+  await prisma.$transaction(async (tx) => {
+    const bill = await tx.supplierBill.findFirst({
+      where: { id: billId, orgId, status: { not: "CANCELLED" } },
+      select: { id: true, totalAmount: true, paidAmount: true, currency: true },
+    });
+    if (!bill) return;
+
+    const balance = bill.totalAmount - bill.paidAmount;
+    if (amount > balance) return;
+
+    const nextPaid = bill.paidAmount + amount;
+    await tx.supplierPayment.create({
+      data: {
+        orgId,
+        billId,
+        currency: bill.currency || org.baseCurrency,
+        amount,
+        method: method as never,
+        reference,
+        paidAt: paidAtRaw ? new Date(paidAtRaw) : new Date(),
+        note,
+        createdById: session.user.id,
+      },
+    });
+    await tx.supplierBill.update({
+      where: { id: billId },
+      data: {
+        paidAmount: nextPaid,
+        status: nextBillStatus(bill.totalAmount, nextPaid),
+      },
+    });
+  });
+
+  revalidatePath("/inventory/supplier-bills");
+  revalidatePath(`/inventory/supplier-bills/${billId}`);
+}
+
+export async function deleteSupplierPaymentAction(formData: FormData): Promise<void> {
+  const { orgId } = await requireInventoryManager();
+  const id = String(formData.get("id") ?? "").trim();
+  const billId = String(formData.get("billId") ?? "").trim();
+  if (!id || !billId) return;
+
+  await prisma.$transaction(async (tx) => {
+    const payment = await tx.supplierPayment.findFirst({ where: { id, orgId, billId }, select: { id: true, amount: true } });
+    if (!payment) return;
+
+    const bill = await tx.supplierBill.findFirst({ where: { id: billId, orgId }, select: { id: true, totalAmount: true, paidAmount: true, status: true } });
+    if (!bill || bill.status === "CANCELLED") return;
+
+    await tx.supplierPayment.delete({ where: { id: payment.id } });
+    const nextPaid = Math.max(0, bill.paidAmount - payment.amount);
+    await tx.supplierBill.update({
+      where: { id: billId },
+      data: {
+        paidAmount: nextPaid,
+        status: nextBillStatus(bill.totalAmount, nextPaid),
+      },
+    });
+  });
+
+  revalidatePath("/inventory/supplier-bills");
+  revalidatePath(`/inventory/supplier-bills/${billId}`);
+}

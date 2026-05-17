@@ -77,6 +77,7 @@ model Organization {
   stockTransfers         StockTransfer[]
   goodsReceivedNotes     GoodsReceived[]
   supplierBills          SupplierBill[]
+  supplierPayments       SupplierPayment[]
   userGroups             UserGroup[]
   complaints             Complaint[]
   salesTargets           SalesTarget[]
@@ -192,6 +193,7 @@ model User {
   stockTransfersReceived  StockTransfer[]  @relation("StockTransferReceivedBy")
   goodsReceivedCreated    GoodsReceived[]  @relation("GoodsReceivedCreatedBy")
   supplierBillsCreated    SupplierBill[]   @relation("SupplierBillCreatedBy")
+  supplierPaymentsCreated SupplierPayment[] @relation("SupplierPaymentCreatedBy")
 
   @@index([orgId])
   @@index([branchId])
@@ -1566,6 +1568,7 @@ model SupplierBill {
   updatedAt     DateTime           @updatedAt
 
   items         SupplierBillItem[]
+  payments      SupplierPayment[]
 
   @@index([orgId, issuedAt])
   @@index([orgId, status])
@@ -1584,6 +1587,26 @@ model SupplierBillItem {
   lineTotal   Float
   createdAt   DateTime     @default(now())
 
+  @@index([billId])
+}
+
+model SupplierPayment {
+  id          String        @id @default(cuid())
+  orgId       String
+  org         Organization  @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  billId      String
+  bill        SupplierBill  @relation(fields: [billId], references: [id], onDelete: Cascade)
+  currency    String        @default("UGX")
+  amount      Float
+  method      PaymentMethod @default(CASH)
+  reference   String?
+  paidAt      DateTime      @default(now())
+  note        String?
+  createdById String
+  createdBy   User          @relation("SupplierPaymentCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  createdAt   DateTime      @default(now())
+
+  @@index([orgId, paidAt])
   @@index([billId])
 }
 
