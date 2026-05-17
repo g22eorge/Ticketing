@@ -24,6 +24,8 @@ model Branch {
   updatedAt    DateTime @updatedAt
 
   users        User[]
+  posSessions  PosSession[]
+  sales        Sale[]
 
   @@index([isActive])
   @@index([orgId])
@@ -74,6 +76,10 @@ model User {
   stockTransactions PartStockTransaction[] @relation("StockTxnBy")
   accessAuditEntries UserAccessAudit[] @relation("AccessAuditTarget")
   accessAuditChanges UserAccessAudit[] @relation("AccessAuditActor")
+  posSessionsOperated PosSession[]      @relation("PosSessionOperator")
+  salesCreated        Sale[]            @relation("SaleCreatedBy")
+  paymentsCreated     Payment[]         @relation("PaymentCreatedBy")
+  refundsCreated      Refund[]          @relation("RefundCreatedBy")
 
   @@index([role, isActive])
   @@index([branchId])
@@ -275,6 +281,7 @@ model Client {
   devices         Device[]
   notesEntries    ClientNote[]
   inboundMessages InboundMessage[]
+  sales           Sale[]
 }
 
 model Device {
@@ -400,6 +407,7 @@ model Job {
   inboundMessages  InboundMessage[]
   partReservations PartReservation[]
   stockTransactions PartStockTransaction[]
+  invoice   Invoice?
 
   @@index([deviceId])
   @@index([clientId])
@@ -425,6 +433,7 @@ model Part {
 
   reservations   PartReservation[]
   transactions   PartStockTransaction[]
+  saleItems      SaleItem[]
 
   @@index([isActive])
 }
@@ -846,4 +855,183 @@ enum HandoverMethod {
   SELF_DROPOFF
   SEND_WITH_DELIVERY_PERSON
   REQUEST_PICKUP
+}
+
+// ── POS / SALES ─────────────────────────────────────────────────────────────
+
+enum SaleStatus {
+  OPEN
+  COMPLETED
+  VOIDED
+  REFUNDED
+}
+
+enum InvoiceStatus {
+  DRAFT
+  ISSUED
+  PAID
+  PARTIALLY_PAID
+  OVERDUE
+  VOIDED
+}
+
+enum PaymentMethod {
+  CASH
+  CARD
+  MOBILE_MONEY
+  BANK_TRANSFER
+}
+
+enum PosSessionStatus {
+  OPEN
+  CLOSED
+}
+
+model PosSession {
+  id                     String           @id @default(cuid())
+  orgId                  String?
+  branchId               String?
+  branch                 Branch?          @relation(fields: [branchId], references: [id])
+  operatorId             String
+  operator               User             @relation("PosSessionOperator", fields: [operatorId], references: [id])
+  status                 PosSessionStatus @default(OPEN)
+  openedAt               DateTime         @default(now())
+  closedAt               DateTime?
+  openingFloat           Float            @default(0)
+  expectedClosingBalance Float?
+  actualClosingBalance   Float?
+  notes                  String?
+  totalSales             Float            @default(0)
+  totalRefunds           Float            @default(0)
+  salesCount             Int              @default(0)
+  createdAt              DateTime         @default(now())
+  updatedAt              DateTime         @updatedAt
+
+  sales                  Sale[]
+
+  @@index([orgId, status])
+  @@index([branchId, openedAt])
+  @@index([operatorId])
+}
+
+model Sale {
+  id             String      @id @default(cuid())
+  orgId          String?
+  branchId       String?
+  branch         Branch?     @relation(fields: [branchId], references: [id])
+  clientId       String?
+  client         Client?     @relation(fields: [clientId], references: [id])
+  posSessionId   String?
+  posSession     PosSession? @relation(fields: [posSessionId], references: [id])
+  createdById    String?
+  createdBy      User?       @relation("SaleCreatedBy", fields: [createdById], references: [id])
+  status         SaleStatus  @default(OPEN)
+  saleNumber     String      @unique
+  subtotal       Float       @default(0)
+  discountAmount Float       @default(0)
+  vatAmount      Float       @default(0)
+  totalAmount    Float       @default(0)
+  paidAmount     Float       @default(0)
+  paidAt         DateTime?
+  notes          String?
+  currency       String      @default("UGX")
+  billingMode    String      @default("CASH")
+  invoiceNumber  String?
+  invoicedAt     DateTime?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  items          SaleItem[]
+  payments       Payment[]
+  refunds        Refund[]
+
+  @@index([orgId, status])
+  @@index([branchId, createdAt])
+  @@index([clientId])
+  @@index([posSessionId])
+}
+
+model SaleItem {
+  id          String   @id @default(cuid())
+  saleId      String
+  sale        Sale     @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  partId      String?
+  part        Part?    @relation(fields: [partId], references: [id])
+  description String
+  quantity    Int      @default(1)
+  unitPrice   Float
+  discount    Float    @default(0)
+  lineTotal   Float
+  createdAt   DateTime @default(now())
+
+  @@index([saleId])
+}
+
+model Payment {
+  id                 String        @id @default(cuid())
+  orgId              String?
+  invoiceId          String?
+  invoice            Invoice?      @relation(fields: [invoiceId], references: [id])
+  saleId             String?
+  sale               Sale?         @relation(fields: [saleId], references: [id])
+  amount             Float
+  method             PaymentMethod @default(CASH)
+  reference          String?
+  receivedAt         DateTime      @default(now())
+  createdById        String?
+  createdBy          User?         @relation("PaymentCreatedBy", fields: [createdById], references: [id])
+  note               String?
+  currency           String        @default("UGX")
+  exchangeRateToBase Float?
+  createdAt          DateTime      @default(now())
+
+  @@index([saleId])
+  @@index([invoiceId])
+  @@index([orgId])
+}
+
+model Invoice {
+  id            String        @id @default(cuid())
+  orgId         String?
+  jobId         String        @unique
+  job           Job           @relation(fields: [jobId], references: [id])
+  invoiceNumber String        @unique
+  status        InvoiceStatus @default(ISSUED)
+  issuedAt      DateTime      @default(now())
+  dueDate       DateTime?
+  totalAmount   Float
+  paidAmount    Float         @default(0)
+  paidAt        DateTime?
+  notes         String?
+  currency      String        @default("UGX")
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  payments      Payment[]
+  refunds       Refund[]
+
+  @@index([orgId, status])
+  @@index([jobId])
+}
+
+model Refund {
+  id           String        @id @default(cuid())
+  orgId        String?
+  saleId       String?
+  sale         Sale?         @relation(fields: [saleId], references: [id])
+  invoiceId    String?
+  invoice      Invoice?      @relation(fields: [invoiceId], references: [id])
+  currency     String        @default("UGX")
+  amount       Float
+  method       PaymentMethod @default(CASH)
+  reference    String?
+  refundedAt   DateTime      @default(now())
+  createdById  String
+  createdBy    User          @relation("RefundCreatedBy", fields: [createdById], references: [id])
+  note         String?
+  createdAt    DateTime      @default(now())
+
+  @@index([saleId])
+  @@index([invoiceId])
+  @@index([orgId])
 }
