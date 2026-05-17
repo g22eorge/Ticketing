@@ -23,6 +23,7 @@ const nav = [
   { href: "/targets", label: "Targets", group: "finance", roles: ["ADMIN", "OPS", "SALES_MANAGER", "TECH_MANAGER", "FINANCE"] },
   { href: "/reports", label: "Reports", group: "finance", roles: ["ADMIN", "OPS", "SALES_MANAGER", "FINANCE"] },
   { href: "/payout-followups", label: "Payment Follow-up", group: "finance", roles: ["ADMIN", "OPS", "TECH_MANAGER", "FINANCE"] },
+  { href: "/field", label: "Field Visits", group: "work", roles: ["ADMIN", "OPS", "TECH_MANAGER", "TECH_FIELD"] },
   { href: "/pos", label: "Point of Sale", group: "work", roles: ["ADMIN", "SALES_MANAGER", "SALES_RETAIL", "SALES_POS"] },
   { href: "/technicians/payouts", label: "Payouts", group: "finance", roles: ["TECHNICIAN_EXTERNAL"] },
   { href: "/settings/users", label: "Users", group: "admin", roles: ["ADMIN"] },
@@ -45,6 +46,7 @@ const roleOrder: Partial<Record<Role, readonly string[]>> = {
   ADMIN: [
     "/dashboard",
     "/jobs",
+    "/field",
     "/intake",
     "/clients",
     "/technicians",
@@ -61,7 +63,7 @@ const roleOrder: Partial<Record<Role, readonly string[]>> = {
     "/settings/profile",
     "/settings/notifications",
   ],
-  OPS: ["/dashboard", "/jobs", "/intake", "/clients", "/technicians", "/inventory", "/documents/job-cards", "/documents/quotations", "/documents/invoices", "/reports", "/payout-followups", "/settings/notifications/templates", "/settings/profile", "/settings/notifications"],
+  OPS: ["/dashboard", "/jobs", "/field", "/intake", "/clients", "/technicians", "/inventory", "/documents/job-cards", "/documents/quotations", "/documents/invoices", "/reports", "/payout-followups", "/settings/notifications/templates", "/settings/profile", "/settings/notifications"],
   TECHNICIAN_INTERNAL: ["/dashboard", "/jobs", "/intake", "/technicians", "/inventory", "/documents/job-cards", "/documents/quotations", "/settings/profile", "/settings/notifications"],
   TECHNICIAN_EXTERNAL: ["/dashboard", "/jobs", "/technicians/payouts", "/technicians", "/settings/profile", "/settings/notifications"],
   FRONT_DESK: ["/dashboard", "/jobs", "/intake", "/clients", "/technicians", "/documents/job-cards", "/settings/profile"],
@@ -71,8 +73,8 @@ const roleOrder: Partial<Record<Role, readonly string[]>> = {
   SALES_CORPORATE: ["/dashboard", "/jobs", "/clients", "/documents/quotations", "/documents/invoices", "/settings/profile"],
   SALES_RETAIL: ["/dashboard", "/jobs", "/pos", "/clients", "/documents/quotations", "/settings/profile"],
   SALES_POS: ["/dashboard", "/pos", "/settings/profile"],
-  TECH_MANAGER: ["/dashboard", "/jobs", "/intake", "/technicians", "/inventory", "/documents/job-cards", "/documents/quotations", "/documents/invoices", "/targets", "/payout-followups", "/settings/profile", "/settings/notifications"],
-  TECH_FIELD: ["/dashboard", "/jobs", "/settings/profile"],
+  TECH_MANAGER: ["/dashboard", "/jobs", "/field", "/intake", "/technicians", "/inventory", "/documents/job-cards", "/documents/quotations", "/documents/invoices", "/targets", "/payout-followups", "/settings/profile", "/settings/notifications"],
+  TECH_FIELD: ["/dashboard", "/jobs", "/field", "/settings/profile"],
   FINANCE: ["/dashboard", "/technicians", "/documents/invoices", "/reports", "/payout-followups", "/settings/profile"],
 };
 
@@ -127,6 +129,13 @@ function navIcon(href: string) {
     return (
       <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
         <path fillRule="evenodd" d="M2 5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4l-3 3V5Zm10 3a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM7 8a1 1 0 1 1-2 0 1 1 0 0 1 2 0Zm7 0a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z" clipRule="evenodd" />
+      </svg>
+    );
+  }
+  if (href === "/field") {
+    return (
+      <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+        <path fillRule="evenodd" d="M9.69 18.933l.003.001C9.89 19.02 10 19 10 19s.11.02.308-.066l.002-.001.006-.003.018-.008a5.741 5.741 0 0 0 .281-.14c.186-.096.446-.24.757-.433.62-.384 1.445-.966 2.274-1.765C15.302 15.12 17 12.443 17 9A7 7 0 1 0 3 9c0 3.443 1.698 6.12 3.354 7.585.83.799 1.654 1.38 2.274 1.765.311.193.571.337.757.433a5.741 5.741 0 0 0 .299.148l.006.003ZM10 11.25a2.25 2.25 0 1 0 0-4.5 2.25 2.25 0 0 0 0 4.5Z" clipRule="evenodd" />
       </svg>
     );
   }

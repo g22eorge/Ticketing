@@ -27,7 +27,8 @@ model Branch {
   posSessions     PosSession[]
   sales           Sale[]
   leads           Lead[]
-  salesTargets    SalesTarget[] @relation("BranchSalesTargets")
+  salesTargets    SalesTarget[]  @relation("BranchSalesTargets")
+  fieldVisits     FieldVisit[]
 
   @@index([isActive])
   @@index([orgId])
@@ -90,6 +91,8 @@ model User {
   quotationsApproved  Quotation[]       @relation("QuotationApprovedBy")
   salesTargets        SalesTarget[]     @relation("UserSalesTargets")
   targetsSet          SalesTarget[]     @relation("TargetSetBy")
+  fieldVisitsAssigned FieldVisit[]      @relation("FieldVisitAssignedTo")
+  fieldVisitsScheduled FieldVisit[]     @relation("FieldVisitScheduledBy")
 
   @@index([role, isActive])
   @@index([branchId])
@@ -419,8 +422,9 @@ model Job {
   inboundMessages  InboundMessage[]
   partReservations PartReservation[]
   stockTransactions PartStockTransaction[]
-  invoice   Invoice?
-  quotations Quotation[] @relation("JobQuotation")
+  invoice      Invoice?
+  quotations   Quotation[]   @relation("JobQuotation")
+  fieldVisits  FieldVisit[]  @relation("JobFieldVisits")
 
   @@index([deviceId])
   @@index([clientId])
@@ -1233,4 +1237,59 @@ model SalesTarget {
   @@index([userId, metric])
   @@index([departmentId, metric])
   @@index([branchId, metric])
+}
+
+// ── FIELD WORK ──────────────────────────────────────────────────────────────
+
+enum FieldVisitType {
+  COLLECTION
+  DELIVERY
+  ONSITE_REPAIR
+  ASSESSMENT
+  FOLLOWUP
+}
+
+enum FieldVisitStatus {
+  SCHEDULED
+  EN_ROUTE
+  ARRIVED
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+model FieldVisit {
+  id              String           @id @default(cuid())
+  orgId           String?
+  branchId        String?
+  branch          Branch?          @relation(fields: [branchId], references: [id])
+  jobId           String?
+  job             Job?             @relation("JobFieldVisits", fields: [jobId], references: [id])
+  assignedToId    String
+  assignedTo      User             @relation("FieldVisitAssignedTo", fields: [assignedToId], references: [id])
+  scheduledById   String
+  scheduledBy     User             @relation("FieldVisitScheduledBy", fields: [scheduledById], references: [id])
+  type            FieldVisitType
+  status          FieldVisitStatus @default(SCHEDULED)
+  scheduledAt     DateTime
+  startedAt       DateTime?
+  completedAt     DateTime?
+  // Location
+  address         String
+  gpsLat          Float?
+  gpsLng          Float?
+  // Contact
+  contactName     String?
+  contactPhone    String?
+  // Notes
+  notes           String?
+  outcomeNotes    String?
+  signoffName     String?
+  signoffAt       DateTime?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  @@index([orgId, status])
+  @@index([assignedToId, scheduledAt])
+  @@index([jobId])
 }
