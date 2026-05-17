@@ -78,6 +78,10 @@ model Organization {
   complaints             Complaint[]
   salesTargets           SalesTarget[]
   moduleGrants           OrgModuleGrant[]
+  leads                  Lead[]
+  quotations             Quotation[]
+  posSessions            PosSession[]
+  fieldVisits            FieldVisit[]
 
   @@index([slug])
   @@index([isActive])
@@ -91,6 +95,9 @@ enum OrgModule {
   INVOICING
   COMPLAINTS
   REPORTS
+  SALES
+  FIELD
+  TARGETS
 }
 
 model OrgModuleGrant {
@@ -134,6 +141,11 @@ model User {
   org           Organization? @relation(fields: [orgId], references: [id], onDelete: SetNull)
   branchId      String?
   branch        Branch?       @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  departmentId  String?
+  department    Department?   @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  techType      TechType?
+  employeeId    String?
+  specializations String?
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 
@@ -162,8 +174,19 @@ model User {
   groupMemberships        UserGroupMember[]
   complaintsAssigned      Complaint[]      @relation("ComplaintAssignee")
   salesTargets            SalesTarget[]    @relation("SalesTargets")
+  targetsSet              SalesTarget[]    @relation("TargetSetBy")
+  posSessionsOperated     PosSession[]     @relation("PosSessionOperator")
+  leadsCreated            Lead[]           @relation("LeadCreatedBy")
+  leadsAssigned           Lead[]           @relation("LeadAssignedTo")
+  leadActivities          LeadActivity[]   @relation("LeadActivityBy")
+  quotationsCreated       Quotation[]      @relation("QuotationCreatedBy")
+  quotationsApproved      Quotation[]      @relation("QuotationApprovedBy")
+  fieldVisitsAssigned     FieldVisit[]     @relation("FieldVisitAssignedTo")
+  fieldVisitsScheduled    FieldVisit[]     @relation("FieldVisitScheduledBy")
 
   @@index([orgId])
+  @@index([branchId])
+  @@index([departmentId])
 }
 
 model UserPermission {
@@ -274,6 +297,11 @@ enum Role {
   TECH_MANAGER
   FINANCE
   SALES
+  SALES_MANAGER
+  SALES_CORPORATE
+  SALES_RETAIL
+  SALES_POS
+  TECH_FIELD
   OPS
   TECHNICIAN_INTERNAL
   TECHNICIAN_EXTERNAL
@@ -286,6 +314,13 @@ enum Role {
 enum UserAccessMode {
   FULL
   READ_ONLY
+}
+
+enum TechType {
+  INTERNAL
+  EXTERNAL_PERMANENT
+  EXTERNAL_ONE_TIME
+  FIELD
 }
 
 enum JobStatus {
@@ -423,6 +458,8 @@ model Client {
   notesEntries    ClientNote[]
   inboundMessages InboundMessage[]
   sales           Sale[]
+  leads           Lead[]
+  quotations      Quotation[]
 
   @@unique([phone, orgId])
   @@index([orgId])
@@ -558,6 +595,8 @@ model Job {
   inboundMessages           InboundMessage[]
   partReservations          PartReservation[]
   stockTransactions         PartStockTransaction[]
+  quotations                Quotation[]   @relation("JobQuotation")
+  fieldVisits               FieldVisit[]  @relation("JobFieldVisits")
 
   invoice    Invoice?
   complaints Complaint[]
@@ -724,6 +763,9 @@ model Sale {
   clientId String?
   client   Client? @relation(fields: [clientId], references: [id], onDelete: SetNull)
 
+  posSessionId String?
+  posSession   PosSession? @relation(fields: [posSessionId], references: [id], onDelete: SetNull)
+
   status     SaleStatus @default(OPEN)
   saleNumber String     @unique
 
@@ -759,6 +801,7 @@ model Sale {
   @@index([orgId, status])
   @@index([branchId])
   @@index([clientId])
+  @@index([posSessionId])
 }
 
 model DeliveryNote {
@@ -852,6 +895,7 @@ model Part {
   purchaseOrderItems PurchaseOrderItem[]
   creditNoteItems   CreditNoteItem[]
   deliveryNoteItems DeliveryNoteItem[]
+  quotationItems    QuotationItem[] @relation("PartQuotationItems")
 
   @@unique([sku, orgId])
   @@index([orgId, isActive])
@@ -1327,8 +1371,22 @@ model Branch {
   users User[]
   jobs  Job[]
   sales Sale[]
+  posSessions  PosSession[]
+  leads        Lead[]
+  salesTargets SalesTarget[] @relation("BranchSalesTargets")
+  fieldVisits  FieldVisit[]
 
   @@index([orgId])
+}
+
+model Department {
+  id        String   @id @default(cuid())
+  name      String
+  code      String   @unique
+  createdAt DateTime @default(now())
+
+  users        User[]
+  salesTargets SalesTarget[] @relation("DeptSalesTargets")
 }
 
 // ── Supplier ──────────────────────────────────────────────────────────────────
@@ -1973,23 +2031,300 @@ model Complaint {
 // ── Sales Targets ───────────────────────────────────────────────────────────
 // Monthly revenue targets. userId = null means a team/org-level target.
 // period = "YYYY-MM" e.g. "2026-05"
+enum TargetEntityType {
+  USER
+  INDIVIDUAL
+  DEPARTMENT
+  BRANCH
+  COMPANY
+}
+
+enum TargetMetric {
+  REVENUE
+  JOBS_COMPLETED
+  LEADS_CONVERTED
+  SALES_COUNT
+  QUOTATIONS_SENT
+  POS_SALES
+  CUSTOMER_SATISFACTION
+  RESPONSE_TIME_HOURS
+}
+
+enum TargetPeriod {
+  DAILY
+  WEEKLY
+  MONTHLY
+  QUARTERLY
+  ANNUAL
+  YEARLY
+}
+
 model SalesTarget {
-  id            String   @id @default(cuid())
-  orgId         String
-  org           Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  id    String       @id @default(cuid())
+  orgId String
+  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
 
-  userId        String?
-  user          User?    @relation("SalesTargets", fields: [userId], references: [id], onDelete: SetNull)
+  userId String?
+  user   User?   @relation("SalesTargets", fields: [userId], references: [id], onDelete: SetNull)
 
-  period        String   // "YYYY-MM"
-  targetRevenue Float    @default(0)
-  targetJobs    Int      @default(0) // optional: target number of jobs/sales
+  departmentId String?
+  department   Department? @relation("DeptSalesTargets", fields: [departmentId], references: [id], onDelete: SetNull)
 
-  notes         String?
+  branchId String?
+  branch   Branch? @relation("BranchSalesTargets", fields: [branchId], references: [id], onDelete: SetNull)
+
+  setById String?
+  setBy   User? @relation("TargetSetBy", fields: [setById], references: [id], onDelete: SetNull)
+
+  entityType  TargetEntityType @default(COMPANY)
+  metric      TargetMetric     @default(REVENUE)
+  period      String           // "YYYY-MM" or enum label, depending on source
+  periodLabel String?
+
+  // Legacy commercial target fields remain for dashboard/report compatibility.
+  targetRevenue Float @default(0)
+  targetJobs    Int   @default(0)
+
+  targetValue Float @default(0)
+  actualValue Float @default(0)
+  notes       String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@unique([orgId, userId, period])
   @@index([orgId, period])
+  @@index([entityType, period, periodLabel])
+  @@index([userId])
+  @@index([departmentId])
+  @@index([branchId])
+}
+
+// ── Sales CRM / field work / POS sessions ───────────────────────────────────
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  PROPOSAL_SENT
+  WON
+  LOST
+  STALE
+}
+
+enum LeadSource {
+  WALK_IN
+  REFERRAL
+  PHONE
+  SOCIAL_MEDIA
+  WEBSITE
+  OTHER
+}
+
+model Lead {
+  id        String       @id @default(cuid())
+  orgId     String?
+  org       Organization? @relation(fields: [orgId], references: [id], onDelete: SetNull)
+  branchId  String?
+  branch    Branch?      @relation(fields: [branchId], references: [id], onDelete: SetNull)
+
+  fullName     String
+  phone        String
+  email        String?
+  organization String?
+  interest     String?
+  source       LeadSource @default(WALK_IN)
+  status       LeadStatus @default(NEW)
+  estimatedValue Float?
+  notes        String?
+
+  clientId String?
+  client   Client? @relation(fields: [clientId], references: [id], onDelete: SetNull)
+
+  assignedToId String?
+  assignedTo   User? @relation("LeadAssignedTo", fields: [assignedToId], references: [id], onDelete: SetNull)
+  createdById  String?
+  createdBy    User? @relation("LeadCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  convertedAt DateTime?
+  closedAt    DateTime?
+  followUpAt  DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  activities LeadActivity[]
+  quotations Quotation[]
+
+  @@index([orgId, status])
+  @@index([assignedToId])
+  @@index([createdAt])
+}
+
+model LeadActivity {
+  id        String   @id @default(cuid())
+  leadId    String
+  lead      Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation("LeadActivityBy", fields: [userId], references: [id], onDelete: Cascade)
+  type      String
+  note      String
+  createdAt DateTime @default(now())
+
+  @@index([leadId, createdAt])
+  @@index([userId, createdAt])
+}
+
+enum QuotationStatus {
+  DRAFT
+  SENT
+  ACCEPTED
+  REJECTED
+  EXPIRED
+}
+
+model Quotation {
+  id          String          @id @default(cuid())
+  orgId       String?
+  org         Organization?   @relation(fields: [orgId], references: [id], onDelete: SetNull)
+  quoteNumber String          @unique
+  status      QuotationStatus @default(DRAFT)
+  currency    String          @default("UGX")
+
+  leadId   String?
+  lead     Lead?   @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  clientId String?
+  client   Client? @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  jobId    String?
+  job      Job?    @relation("JobQuotation", fields: [jobId], references: [id], onDelete: SetNull)
+
+  subtotal    Float @default(0)
+  discountAmount Float @default(0)
+  vatAmount      Float @default(0)
+  totalAmount Float @default(0)
+  notes       String?
+  validUntil  DateTime?
+  sentAt      DateTime?
+  acceptedAt  DateTime?
+  rejectedAt  DateTime?
+
+  createdById String?
+  createdBy   User? @relation("QuotationCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  approvedById String?
+  approvedBy   User? @relation("QuotationApprovedBy", fields: [approvedById], references: [id], onDelete: SetNull)
+
+  items     QuotationItem[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([orgId, status])
+  @@index([leadId])
+  @@index([clientId])
+  @@index([jobId])
+}
+
+model QuotationItem {
+  id          String    @id @default(cuid())
+  quotationId String
+  quotation   Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+  partId      String?
+  part        Part?     @relation("PartQuotationItems", fields: [partId], references: [id], onDelete: SetNull)
+  description String
+  quantity    Int
+  unitPrice   Float
+  discount    Float     @default(0)
+  lineTotal   Float
+  createdAt   DateTime  @default(now())
+
+  @@index([quotationId])
+  @@index([partId])
+}
+
+enum PosSessionStatus {
+  OPEN
+  CLOSED
+}
+
+model PosSession {
+  id         String           @id @default(cuid())
+  orgId      String?
+  org        Organization?    @relation(fields: [orgId], references: [id], onDelete: SetNull)
+  branchId   String?
+  branch     Branch?          @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  operatorId String
+  operator   User             @relation("PosSessionOperator", fields: [operatorId], references: [id], onDelete: Cascade)
+  status     PosSessionStatus @default(OPEN)
+  openingFloat Float          @default(0)
+  closingCash  Float?
+  cashTotal    Float          @default(0)
+  cardTotal    Float          @default(0)
+  mobileTotal  Float          @default(0)
+  totalSales   Float          @default(0)
+  salesCount   Int            @default(0)
+  actualClosingBalance Float?
+  openedAt     DateTime       @default(now())
+  closedAt     DateTime?
+  notes        String?
+
+  sales Sale[]
+
+  @@index([orgId, status])
+  @@index([operatorId, openedAt])
+  @@index([branchId])
+}
+
+enum FieldVisitType {
+  COLLECTION
+  DELIVERY
+  ONSITE_REPAIR
+  ASSESSMENT
+  FOLLOWUP
+}
+
+enum FieldVisitStatus {
+  SCHEDULED
+  EN_ROUTE
+  ARRIVED
+  COMPLETED
+  CANCELLED
+  FAILED
+}
+
+model FieldVisit {
+  id       String           @id @default(cuid())
+  orgId    String?
+  org      Organization?    @relation(fields: [orgId], references: [id], onDelete: SetNull)
+  branchId String?
+  branch   Branch?          @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  jobId    String?
+  job      Job?             @relation("JobFieldVisits", fields: [jobId], references: [id], onDelete: SetNull)
+
+  assignedToId String
+  assignedTo   User   @relation("FieldVisitAssignedTo", fields: [assignedToId], references: [id], onDelete: Cascade)
+  scheduledById String
+  scheduledBy   User   @relation("FieldVisitScheduledBy", fields: [scheduledById], references: [id], onDelete: Cascade)
+
+  type      FieldVisitType
+  status    FieldVisitStatus @default(SCHEDULED)
+  scheduledAt DateTime
+  startedAt   DateTime?
+  arrivedAt   DateTime?
+  completedAt DateTime?
+
+  address      String
+  gpsLat       Float?
+  gpsLng       Float?
+  contactName  String?
+  contactPhone String?
+  notes        String?
+  outcomeNotes String?
+  signoffName  String?
+  signoffAt    DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([orgId, status])
+  @@index([assignedToId, scheduledAt])
+  @@index([jobId])
+  @@index([branchId])
 }

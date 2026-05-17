@@ -56,13 +56,18 @@ const roleOptions: Array<{ value: Role; label: string; description: string }> = 
   { value: Role.TECH_MANAGER, label: "Tech Manager", description: "Oversees technician performance, repair turnaround, workload balance, and quality metrics." },
   { value: Role.FINANCE, label: "Finance", description: "Reviews invoices, approves costs, manages settlements and financial reports." },
   { value: Role.SALES, label: "Sales", description: "Handles intake, client approvals, quotes, and revenue pipeline tracking." },
+  { value: Role.SALES_MANAGER, label: "Sales Manager", description: "Manages sales team, quotations, targets, and commissions." },
+  { value: Role.SALES_CORPORATE, label: "Corporate Sales", description: "Handles corporate accounts, invoices, and bulk quotations." },
+  { value: Role.SALES_RETAIL, label: "Retail Sales", description: "Handles walk-in retail sales, quotations, and handovers." },
+  { value: Role.SALES_POS, label: "POS Operator", description: "Runs point-of-sale transactions and cashier sessions." },
   { value: Role.OPS, label: "Operations/Accounts", description: "Coordinates workflow, billing, settlement, and daily operations." },
   { value: Role.FRONT_DESK, label: "Front Desk", description: "Handles front desk intake, customer details, and handover documents." },
+  { value: Role.TECH_FIELD, label: "Field Technician", description: "Handles on-site visits, collections, deliveries, and sign-offs." },
   { value: Role.TECHNICIAN_INTERNAL, label: "Internal Technician", description: "Works diagnosis and in-house repair execution." },
   { value: Role.TECHNICIAN_EXTERNAL, label: "External Technician", description: "External workflow access without client identity or billing history." },
 ];
 
-const roleDefaults: Record<Role, Array<(typeof EXTRA_PERMISSIONS)[number]>> = {
+const roleDefaults: Partial<Record<Role, Array<(typeof EXTRA_PERMISSIONS)[number]>>> = {
   ADMIN: [
     "can_run_internal_repairs",
     "can_intake",
@@ -154,7 +159,7 @@ const roleDefaults: Record<Role, Array<(typeof EXTRA_PERMISSIONS)[number]>> = {
   TECHNICIAN_EXTERNAL: [],
 };
 
-const roleCapabilities: Record<Role, string[]> = {
+const roleCapabilities: Partial<Record<Role, string[]>> = {
   ADMIN: [
     "dashboard_view",
     "jobs_view",

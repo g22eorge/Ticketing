@@ -17,8 +17,9 @@ const nav = [
 
   // Repairs / Technical
   { href: "/jobs",        label: "Jobs",            group: "repairs"    as NavGroup, roles: "all" as const },
-  { href: "/intake",      label: "Intake",          group: "repairs"    as NavGroup, roles: ["ADMIN", "MANAGER", "TECH_MANAGER", "OPS", "FRONT_DESK", "TECHNICIAN_INTERNAL"] as const },
-  { href: "/technicians", label: "Technicians",     group: "repairs"    as NavGroup, roles: ["ADMIN", "MANAGER", "TECH_MANAGER", "OPS", "TECHNICIAN_INTERNAL", "TECHNICIAN_EXTERNAL", "FRONT_DESK"] as const },
+  { href: "/intake",      label: "Intake",          group: "repairs"    as NavGroup, roles: ["ADMIN", "MANAGER", "TECH_MANAGER", "OPS", "FRONT_DESK", "TECHNICIAN_INTERNAL", "SALES_MANAGER"] as const },
+  { href: "/field",       label: "Field Visits",    group: "repairs"    as NavGroup, roles: ["ADMIN", "MANAGER", "TECH_MANAGER", "OPS", "TECH_FIELD"] as const },
+  { href: "/technicians", label: "Technicians",     group: "repairs"    as NavGroup, roles: ["ADMIN", "MANAGER", "TECH_MANAGER", "OPS", "TECHNICIAN_INTERNAL", "TECHNICIAN_EXTERNAL", "FRONT_DESK", "SALES_MANAGER", "FINANCE"] as const },
   { href: "/complaints",  label: "Complaints",      group: "repairs"    as NavGroup, roles: ["ADMIN", "MANAGER", "TECH_MANAGER", "OPS"] as const },
 
   // Inventory
@@ -27,19 +28,21 @@ const nav = [
   { href: "/inventory/purchase-orders",    label: "Purchase Orders", group: "inventory" as NavGroup, roles: ["ADMIN", "MANAGER", "OPS"] as const },
 
   // Clients & Sales
-  { href: "/clients",     label: "Clients",         group: "clients"    as NavGroup, roles: ["ADMIN", "MANAGER", "OPS", "FRONT_DESK", "SALES"] as const },
-  { href: "/pos",         label: "Point of Sale",   group: "clients"    as NavGroup, roles: ["ADMIN", "MANAGER", "OPS", "FRONT_DESK", "SALES"] as const },
+  { href: "/clients",     label: "Clients",         group: "clients"    as NavGroup, roles: ["ADMIN", "MANAGER", "OPS", "FRONT_DESK", "SALES", "SALES_MANAGER", "SALES_CORPORATE", "SALES_RETAIL", "FINANCE"] as const },
+  { href: "/sales",       label: "Sales CRM",       group: "clients"    as NavGroup, roles: ["ADMIN", "MANAGER", "OPS", "SALES", "SALES_MANAGER", "SALES_CORPORATE", "SALES_RETAIL", "TECH_MANAGER"] as const },
+  { href: "/pos",         label: "Point of Sale",   group: "clients"    as NavGroup, roles: ["ADMIN", "MANAGER", "OPS", "FRONT_DESK", "SALES", "SALES_MANAGER", "SALES_RETAIL", "SALES_POS"] as const },
 
   // Documents
   { href: "/documents/job-cards",     label: "Job Cards",      group: "documents" as NavGroup, roles: ["ADMIN", "MANAGER", "TECH_MANAGER", "OPS", "FRONT_DESK", "TECHNICIAN_INTERNAL"] as const },
-  { href: "/documents/quotations",    label: "Quotations",     group: "documents" as NavGroup, roles: ["ADMIN", "MANAGER", "TECH_MANAGER", "OPS", "SALES", "TECHNICIAN_INTERNAL"] as const },
-  { href: "/documents/invoices",      label: "Invoices",       group: "documents" as NavGroup, roles: ["ADMIN", "MANAGER", "OPS", "FINANCE"] as const },
-  { href: "/documents/receipts",      label: "Receipts",       group: "documents" as NavGroup, roles: ["ADMIN", "MANAGER", "OPS", "FRONT_DESK", "SALES"] as const },
+  { href: "/documents/quotations",    label: "Quotations",     group: "documents" as NavGroup, roles: ["ADMIN", "MANAGER", "TECH_MANAGER", "OPS", "SALES", "TECHNICIAN_INTERNAL", "SALES_MANAGER", "SALES_CORPORATE", "SALES_RETAIL"] as const },
+  { href: "/documents/invoices",      label: "Invoices",       group: "documents" as NavGroup, roles: ["ADMIN", "MANAGER", "OPS", "FINANCE", "SALES_MANAGER", "SALES_CORPORATE", "TECH_MANAGER"] as const },
+  { href: "/documents/receipts",      label: "Receipts",       group: "documents" as NavGroup, roles: ["ADMIN", "MANAGER", "OPS", "FRONT_DESK", "SALES", "SALES_MANAGER", "SALES_RETAIL"] as const },
   { href: "/documents/delivery-notes",label: "Delivery Notes", group: "documents" as NavGroup, roles: ["ADMIN", "MANAGER", "OPS", "FRONT_DESK"] as const },
 
   // Finance
-  { href: "/reports",            label: "Reports",         group: "finance"    as NavGroup, roles: ["ADMIN", "MANAGER", "OPS", "FINANCE"] as const },
-  { href: "/payout-followups",   label: "Payment Tracker", group: "finance"    as NavGroup, roles: ["ADMIN", "MANAGER", "OPS", "FINANCE"] as const },
+  { href: "/targets",           label: "Targets",         group: "finance"    as NavGroup, roles: ["ADMIN", "MANAGER", "OPS", "SALES_MANAGER", "TECH_MANAGER", "FINANCE"] as const },
+  { href: "/reports",            label: "Reports",         group: "finance"    as NavGroup, roles: ["ADMIN", "MANAGER", "OPS", "FINANCE", "SALES_MANAGER"] as const },
+  { href: "/payout-followups",   label: "Payment Tracker", group: "finance"    as NavGroup, roles: ["ADMIN", "MANAGER", "OPS", "FINANCE", "TECH_MANAGER", "SALES_MANAGER"] as const },
   { href: "/technicians/payouts",label: "My Payouts",      group: "finance"    as NavGroup, roles: ["TECHNICIAN_EXTERNAL"] as const },
 
   // Administration
@@ -54,7 +57,7 @@ const nav = [
   // Account
   { href: "/settings",                  label: "Settings",      group: "personal" as NavGroup, roles: "all" as const },
   { href: "/settings/profile",          label: "Profile",        group: "personal" as NavGroup, roles: "all" as const },
-  { href: "/settings/notifications",    label: "Notifications",  group: "personal" as NavGroup, roles: ["ADMIN", "MANAGER", "TECH_MANAGER", "OPS", "FINANCE", "FRONT_DESK", "SALES", "TECHNICIAN_INTERNAL", "TECHNICIAN_EXTERNAL"] as const },
+  { href: "/settings/notifications",    label: "Notifications",  group: "personal" as NavGroup, roles: ["ADMIN", "MANAGER", "TECH_MANAGER", "OPS", "FINANCE", "FRONT_DESK", "SALES", "TECHNICIAN_INTERNAL", "TECHNICIAN_EXTERNAL", "SALES_MANAGER", "SALES_CORPORATE", "SALES_RETAIL", "SALES_POS", "TECH_FIELD"] as const },
 ] as const;
 
 // ── group labels ──────────────────────────────────────────────────────────────
@@ -76,15 +79,15 @@ const roleOrder: Partial<Record<Role, readonly string[]>> = {
   ADMIN: [
     "/dashboard",
     // repairs
-    "/jobs", "/intake", "/technicians", "/complaints",
+    "/jobs", "/intake", "/field", "/technicians", "/complaints",
     // inventory
     "/inventory", "/inventory/suppliers", "/inventory/purchase-orders",
     // clients
-    "/clients", "/pos",
+    "/clients", "/sales", "/pos",
     // documents
     "/documents/job-cards", "/documents/quotations", "/documents/invoices", "/documents/receipts", "/documents/delivery-notes",
     // finance
-    "/reports", "/payout-followups",
+    "/targets", "/reports", "/payout-followups",
     // admin
     "/settings/users", "/settings/groups", "/settings/branches", "/settings/branding", "/settings/notifications/templates", "/settings/notifications/whatsapp", "/settings/billing",
     // account
@@ -92,39 +95,39 @@ const roleOrder: Partial<Record<Role, readonly string[]>> = {
   ],
   MANAGER: [
     "/dashboard",
-    "/jobs", "/intake", "/technicians", "/complaints",
+    "/jobs", "/intake", "/field", "/technicians", "/complaints",
     "/inventory", "/inventory/suppliers", "/inventory/purchase-orders",
-    "/clients", "/pos",
+    "/clients", "/sales", "/pos",
     "/documents/job-cards", "/documents/quotations", "/documents/invoices", "/documents/receipts", "/documents/delivery-notes",
-    "/reports", "/payout-followups",
+    "/targets", "/reports", "/payout-followups",
     "/settings", "/settings/profile", "/settings/notifications",
   ],
   TECH_MANAGER: [
     "/dashboard",
-    "/jobs", "/intake", "/technicians", "/complaints",
+    "/jobs", "/intake", "/field", "/technicians", "/complaints",
     "/inventory", "/inventory/suppliers", "/inventory/purchase-orders",
-    "/documents/job-cards", "/documents/quotations",
+    "/documents/job-cards", "/documents/quotations", "/documents/invoices", "/targets", "/payout-followups",
     "/settings", "/settings/profile", "/settings/notifications",
   ],
   OPS: [
     "/dashboard",
-    "/jobs", "/intake", "/technicians", "/complaints",
+    "/jobs", "/intake", "/field", "/technicians", "/complaints",
     "/inventory", "/inventory/suppliers", "/inventory/purchase-orders",
-    "/clients", "/pos",
+    "/clients", "/sales", "/pos",
     "/documents/job-cards", "/documents/quotations", "/documents/invoices", "/documents/receipts", "/documents/delivery-notes",
-    "/reports", "/payout-followups",
+    "/targets", "/reports", "/payout-followups",
     "/settings/notifications/templates",
     "/settings", "/settings/profile", "/settings/notifications",
   ],
   FINANCE: [
     "/dashboard",
     "/documents/invoices",
-    "/reports", "/payout-followups",
+    "/targets", "/reports", "/payout-followups",
     "/settings", "/settings/profile", "/settings/notifications",
   ],
   SALES: [
     "/dashboard",
-    "/clients", "/pos",
+    "/clients", "/sales", "/pos",
     "/documents/quotations", "/documents/receipts",
     "/settings", "/settings/profile", "/settings/notifications",
   ],
@@ -150,6 +153,11 @@ const roleOrder: Partial<Record<Role, readonly string[]>> = {
   ],
   // Legacy alias — normalizeRole() converts INTAKE → FRONT_DESK
   INTAKE: ["/dashboard", "/jobs", "/intake", "/technicians", "/clients", "/documents/job-cards", "/settings", "/settings/profile"],
+  SALES_MANAGER: ["/dashboard", "/jobs", "/intake", "/field", "/technicians", "/clients", "/sales", "/pos", "/documents/job-cards", "/documents/quotations", "/documents/invoices", "/targets", "/reports", "/payout-followups", "/settings", "/settings/profile", "/settings/notifications"],
+  SALES_CORPORATE: ["/dashboard", "/jobs", "/clients", "/sales", "/documents/quotations", "/documents/invoices", "/settings", "/settings/profile", "/settings/notifications"],
+  SALES_RETAIL: ["/dashboard", "/jobs", "/clients", "/sales", "/pos", "/documents/quotations", "/documents/receipts", "/settings", "/settings/profile", "/settings/notifications"],
+  SALES_POS: ["/dashboard", "/pos", "/settings", "/settings/profile", "/settings/notifications"],
+  TECH_FIELD: ["/dashboard", "/jobs", "/field", "/settings", "/settings/profile", "/settings/notifications"],
 };
 
 const roleGroupOrder: Partial<Record<Role, readonly NavGroup[]>> = {
@@ -163,6 +171,11 @@ const roleGroupOrder: Partial<Record<Role, readonly NavGroup[]>> = {
   TECHNICIAN_INTERNAL: ["overview", "repairs", "inventory", "documents", "personal"],
   TECHNICIAN_EXTERNAL: ["overview", "repairs", "finance", "personal"],
   INTAKE:              ["overview", "repairs", "clients", "documents", "personal"],
+  SALES_MANAGER:       ["overview", "repairs", "clients", "documents", "finance", "personal"],
+  SALES_CORPORATE:     ["overview", "clients", "documents", "personal"],
+  SALES_RETAIL:        ["overview", "clients", "documents", "personal"],
+  SALES_POS:           ["overview", "clients", "personal"],
+  TECH_FIELD:          ["overview", "repairs", "personal"],
 };
 
 // ── helpers ───────────────────────────────────────────────────────────────────

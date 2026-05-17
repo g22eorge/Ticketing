@@ -14,6 +14,9 @@ export const MODULE_LABELS: Record<OrgModule, string> = {
   INVOICING:      "Invoicing & Documents",
   COMPLAINTS:     "Complaints",
   REPORTS:        "Reports",
+  SALES:          "Sales CRM",
+  FIELD:          "Field Visits",
+  TARGETS:        "Targets",
 };
 
 export const MODULE_ICONS: Record<OrgModule, string> = {
@@ -24,6 +27,9 @@ export const MODULE_ICONS: Record<OrgModule, string> = {
   INVOICING:      "🧾",
   COMPLAINTS:     "📣",
   REPORTS:        "📊",
+  SALES:          "💼",
+  FIELD:          "📍",
+  TARGETS:        "🎯",
 };
 
 export const ALL_MODULES = Object.values(OrgModule) as OrgModule[];
