@@ -7,7 +7,7 @@ import { usePathname } from "next/navigation";
 
 import { can } from "@/lib/permissions";
 
-type NavGroup = "overview" | "repairs" | "inventory" | "clients" | "documents" | "finance" | "admin" | "personal";
+type NavGroup = "overview" | "repairs" | "inventory" | "clients" | "documents" | "finance" | "personal";
 
 // ── nav items ─────────────────────────────────────────────────────────────────
 
@@ -45,16 +45,6 @@ const nav = [
   { href: "/payout-followups",   label: "Payment Tracker", group: "finance"    as NavGroup, roles: ["ADMIN", "MANAGER", "OPS", "FINANCE", "TECH_MANAGER", "SALES_MANAGER"] as const },
   { href: "/technicians/payouts",label: "My Payouts",      group: "finance"    as NavGroup, roles: ["TECHNICIAN_EXTERNAL"] as const },
 
-  // Administration
-  { href: "/settings/users",                    label: "Users",       group: "admin" as NavGroup, roles: ["ADMIN"] as const },
-  { href: "/settings/groups",                   label: "Groups",      group: "admin" as NavGroup, roles: ["ADMIN"] as const },
-  { href: "/settings/branches",                 label: "Branches",    group: "admin" as NavGroup, roles: ["ADMIN"] as const },
-  { href: "/settings/branding",                 label: "Branding",    group: "admin" as NavGroup, roles: ["ADMIN"] as const },
-  { href: "/settings/notifications/templates",  label: "Templates",   group: "admin" as NavGroup, roles: ["ADMIN", "OPS"] as const },
-  { href: "/settings/notifications/whatsapp",   label: "WhatsApp",    group: "admin" as NavGroup, roles: ["ADMIN"] as const },
-  { href: "/settings/billing",                  label: "Billing",     group: "admin" as NavGroup, roles: ["ADMIN"] as const },
-  { href: "/settings/audit",                    label: "Audit Log",   group: "admin" as NavGroup, roles: ["ADMIN"] as const },
-
   // Account
   { href: "/settings",                  label: "Settings",      group: "personal" as NavGroup, roles: "all" as const },
   { href: "/settings/profile",          label: "Profile",        group: "personal" as NavGroup, roles: "all" as const },
@@ -70,7 +60,6 @@ const groupLabel: Record<NavGroup, string> = {
   clients:   "Clients & Sales",
   documents: "Documents",
   finance:   "Finance",
-  admin:     "Administration",
   personal:  "Account",
 };
 
@@ -89,8 +78,6 @@ const roleOrder: Partial<Record<Role, readonly string[]>> = {
     "/documents/job-cards", "/documents/quotations", "/documents/invoices", "/documents/receipts", "/documents/delivery-notes",
     // finance
     "/targets", "/reports", "/payout-followups",
-    // admin
-    "/settings/users", "/settings/groups", "/settings/branches", "/settings/branding", "/settings/notifications/templates", "/settings/notifications/whatsapp", "/settings/billing", "/settings/audit",
     // account
     "/settings", "/settings/profile", "/settings/notifications",
   ],
@@ -117,7 +104,6 @@ const roleOrder: Partial<Record<Role, readonly string[]>> = {
     "/clients", "/sales", "/pos",
     "/documents/job-cards", "/documents/quotations", "/documents/invoices", "/documents/receipts", "/documents/delivery-notes",
     "/targets", "/reports", "/payout-followups",
-    "/settings/notifications/templates",
     "/settings", "/settings/profile", "/settings/notifications",
   ],
   FINANCE: [
@@ -162,7 +148,7 @@ const roleOrder: Partial<Record<Role, readonly string[]>> = {
 };
 
 const roleGroupOrder: Partial<Record<Role, readonly NavGroup[]>> = {
-  ADMIN:               ["overview", "repairs", "inventory", "clients", "documents", "finance", "admin", "personal"],
+  ADMIN:               ["overview", "repairs", "inventory", "clients", "documents", "finance", "personal"],
   MANAGER:             ["overview", "repairs", "inventory", "clients", "documents", "finance", "personal"],
   TECH_MANAGER:        ["overview", "repairs", "inventory", "documents", "personal"],
   OPS:                 ["overview", "repairs", "inventory", "clients", "documents", "finance", "personal"],
@@ -222,7 +208,7 @@ function orderedNavForRole(role: Role, permissions: string[]) {
 
 function groupedNavForRole(role: Role, permissions: string[]) {
   const ordered = orderedNavForRole(role, permissions);
-  const canonicalOrder: NavGroup[] = ["overview", "repairs", "inventory", "clients", "documents", "finance", "admin", "personal"];
+  const canonicalOrder: NavGroup[] = ["overview", "repairs", "inventory", "clients", "documents", "finance", "personal"];
   const baseGroups = roleGroupOrder[role] ?? ["overview", "personal"];
   const missingGroups = canonicalOrder.filter(
     (group) => ordered.some((item) => item.group === group) && !baseGroups.includes(group),
@@ -287,30 +273,8 @@ function navIcon(href: string) {
     case "/technicians/payouts":
       return <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M10.75 10.818v2.614A3.13 3.13 0 0 0 11.888 13c.482-.315.612-.648.612-.875 0-.227-.13-.56-.612-.875a3.13 3.13 0 0 0-1.138-.432ZM8.33 8.62c.053.055.115.11.184.164.208.16.46.284.736.363V6.603a2.45 2.45 0 0 0-.35.13c-.14.065-.27.143-.386.233-.377.292-.514.627-.514.909 0 .184.058.39.33.576Z" /><path fillRule="evenodd" d="M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Zm-8-6a.75.75 0 0 1 .75.75v.316a3.78 3.78 0 0 1 1.653.713c.426.33.744.74.925 1.2a.75.75 0 0 1-1.395.55 1.35 1.35 0 0 0-.428-.507 2.276 2.276 0 0 0-.755-.36V8.5c.558.157 1.072.443 1.482.8.542.47.87 1.096.87 1.7 0 .604-.328 1.23-.87 1.7a4.841 4.841 0 0 1-1.482.8V14a.75.75 0 0 1-1.5 0v-.311a4.5 4.5 0 0 1-1.681-.845.75.75 0 1 1 .914-1.198c.382.29.813.487 1.267.551V9.5a3.702 3.702 0 0 1-1.29-.645 2.193 2.193 0 0 1-.798-1.678c0-.845.467-1.58 1.129-2.066A3.947 3.947 0 0 1 9.25 4.81V4.75A.75.75 0 0 1 10 4Z" clipRule="evenodd" /></svg>;
 
-    case "/settings/users":
-      return <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M11 5a3 3 0 1 1-6 0 3 3 0 0 1 6 0ZM2.046 15.253c-.18.01-.34-.092-.382-.266a6.5 6.5 0 0 1 11.672 0c-.042.174-.202.276-.382.266a34.816 34.816 0 0 0-10.908 0ZM16.75 9.5a.75.75 0 0 0-1.5 0v1.25H14a.75.75 0 0 0 0 1.5h1.25V13.5a.75.75 0 0 0 1.5 0v-1.25H18a.75.75 0 0 0 0-1.5h-1.25V9.5Z" /></svg>;
-
-    case "/settings/groups":
-      return <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M10 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM6 8a2 2 0 1 1-4 0 2 2 0 0 1 4 0ZM1.49 15.326a.78.78 0 0 1-.358-.442 3 3 0 0 1 4.308-3.516 6.484 6.484 0 0 0-1.905 3.959c-.023.222-.014.442.025.654a4.97 4.97 0 0 1-2.07-.655ZM16.44 15.98a4.97 4.97 0 0 0 2.07-.654.78.78 0 0 0 .357-.442 3 3 0 0 0-4.308-3.517 6.484 6.484 0 0 1 1.907 3.96 2.32 2.32 0 0 1-.026.654ZM18 8a2 2 0 1 1-4 0 2 2 0 0 1 4 0ZM5.304 16.19a.844.844 0 0 1-.277-.71 5 5 0 0 1 9.947 0 .843.843 0 0 1-.277.71A6.975 6.975 0 0 1 10 18a6.974 6.974 0 0 1-4.696-1.81Z" /></svg>;
-
-    case "/settings/branches":
-      return <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fillRule="evenodd" d="M1 2.75A.75.75 0 0 1 1.75 2h16.5a.75.75 0 0 1 0 1.5H15v12.75a.25.25 0 0 1-.25.25H13.5v-2.5a.5.5 0 0 0-.5-.5h-3a.5.5 0 0 0-.5.5v2.5H8.25A.25.25 0 0 1 8 16.25V3.5H1.75A.75.75 0 0 1 1 2.75ZM4 5a.5.5 0 0 1 .5-.5H6a.5.5 0 0 1 0 1H4.5A.5.5 0 0 1 4 5Zm0 3a.5.5 0 0 1 .5-.5H6a.5.5 0 0 1 0 1H4.5A.5.5 0 0 1 4 8Zm8.5-.5a.5.5 0 0 0 0 1H14a.5.5 0 0 0 0-1h-1.5Zm0-3a.5.5 0 0 0 0 1H14a.5.5 0 0 0 0-1h-1.5Z" clipRule="evenodd" /></svg>;
-
-    case "/settings/branding":
-      return <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fillRule="evenodd" d="M4 2a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H4Zm5.5 8.5v3.25a.75.75 0 0 1-1.5 0V10.5H5.75a.75.75 0 0 1 0-1.5h2.25V6.75a.75.75 0 0 1 1.5 0V9h2.25a.75.75 0 0 1 0 1.5H9.5Z" clipRule="evenodd" /></svg>;
-
-    case "/settings/notifications/templates":
     case "/settings/notifications":
       return <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M9.5 2.5a.5.5 0 0 1 1 0v.25a6.5 6.5 0 0 1 5.5 6.428v2.656c0 .555.22 1.086.612 1.478l.284.284a.75.75 0 0 1-.53 1.28H3.634a.75.75 0 0 1-.53-1.28l.284-.284A2.09 2.09 0 0 0 4 11.834V9.178A6.5 6.5 0 0 1 9.5 2.75V2.5Z" /><path d="M7.25 15.5a2.75 2.75 0 0 0 5.5 0h-5.5Z" /></svg>;
-
-    case "/settings/notifications/whatsapp":
-      return <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fillRule="evenodd" d="M10 2a8 8 0 1 0 3.592 15.174l2.953.819a.5.5 0 0 0 .615-.615l-.82-2.953A8 8 0 0 0 10 2Zm-1.44 4.628c.173-.099.388-.094.557.014l1.42.948a.5.5 0 0 1 .146.683l-.6.9c.322.297.616.624.875.977l.9-.6a.5.5 0 0 1 .683.147l.948 1.42a.5.5 0 0 1 .014.557c-.29.508-.81.868-1.398.967-.588.1-1.185-.07-1.63-.452l-.013-.011a7.24 7.24 0 0 1-1.856-2.548l-.007-.018c-.29-.649-.22-1.31.1-1.84.056-.098.13-.188.218-.265l.643-.88Z" clipRule="evenodd" /></svg>;
-
-    case "/settings/billing":
-      return <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fillRule="evenodd" d="M2.5 4A1.5 1.5 0 0 0 1 5.5V6h18v-.5A1.5 1.5 0 0 0 17.5 4h-15ZM19 9H1v5.5A1.5 1.5 0 0 0 2.5 16h15a1.5 1.5 0 0 0 1.5-1.5V9ZM3 13.25a.75.75 0 0 1 .75-.75h1.5a.75.75 0 0 1 0 1.5h-1.5a.75.75 0 0 1-.75-.75Zm4.75-.75a.75.75 0 0 0 0 1.5h3.5a.75.75 0 0 0 0-1.5h-3.5Z" clipRule="evenodd" /></svg>;
-
-    case "/settings/audit":
-      return <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fillRule="evenodd" d="M2 4.75A.75.75 0 0 1 2.75 4h14.5a.75.75 0 0 1 0 1.5H2.75A.75.75 0 0 1 2 4.75ZM2 10a.75.75 0 0 1 .75-.75h14.5a.75.75 0 0 1 0 1.5H2.75A.75.75 0 0 1 2 10Zm0 5.25a.75.75 0 0 1 .75-.75H10a.75.75 0 0 1 0 1.5H2.75a.75.75 0 0 1-.75-.75Z" clipRule="evenodd" /></svg>;
 
     // Settings hub & Profile fallback
     default:
@@ -334,8 +298,6 @@ function groupIcon(group: NavGroup) {
       return <svg viewBox="0 0 12 12" fill="currentColor" aria-hidden="true"><path fillRule="evenodd" d="M2.5 1A1.5 1.5 0 0 0 1 2.5v7A1.5 1.5 0 0 0 2.5 11h7A1.5 1.5 0 0 0 11 9.5v-5L7 1H2.5ZM7 1.5V4h2.5L7 1.5ZM3.5 6a.5.5 0 0 0 0 1h5a.5.5 0 0 0 0-1h-5Zm0 2a.5.5 0 0 0 0 1h3a.5.5 0 0 0 0-1h-3Z" clipRule="evenodd" /></svg>;
     case "finance":
       return <svg viewBox="0 0 12 12" fill="currentColor" aria-hidden="true"><path fillRule="evenodd" d="M6 1a5 5 0 1 0 0 10A5 5 0 0 0 6 1Zm.5 2.5a.5.5 0 0 0-1 0v.27a1.5 1.5 0 0 0 .5 2.91v1.5a.75.75 0 0 1-.553-.242.5.5 0 1 0-.735.676A1.75 1.75 0 0 0 5.5 8.73V9a.5.5 0 0 0 1 0v-.27a1.5 1.5 0 0 0-.5-2.91V4.32c.21.08.388.217.5.38a.5.5 0 1 0 .832-.555A1.75 1.75 0 0 0 6.5 3.77V3.5Z" clipRule="evenodd" /></svg>;
-    case "admin":
-      return <svg viewBox="0 0 12 12" fill="currentColor" aria-hidden="true"><path fillRule="evenodd" d="M6 1 1 3.5v4C1 9.5 3 11 6 11s5-1.5 5-3.5v-4L6 1Zm0 2.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3Z" clipRule="evenodd" /></svg>;
     case "personal":
       return <svg viewBox="0 0 12 12" fill="currentColor" aria-hidden="true"><circle cx="6" cy="4" r="2" /><path d="M2 10a4 4 0 0 1 8 0H2Z" /></svg>;
   }

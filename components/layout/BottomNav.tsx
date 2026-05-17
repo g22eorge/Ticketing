@@ -112,9 +112,7 @@ const ITEMS = {
   inventory:   { href: "/inventory",             label: "Inventory", icon: inventoryIcon },
   payoutFollowups: { href: "/payout-followups",  label: "Payments", icon: payoutsIcon },
   payouts:     { href: "/technicians/payouts",   label: "Payouts",   icon: payoutsIcon },
-  users:       { href: "/settings/users",        label: "Users",     icon: usersIcon },
-  branding:    { href: "/settings/branding",     label: "Branding",  icon: brandingIcon },
-  commsTemplates: { href: "/settings/notifications/templates", label: "Templates", icon: messagesIcon },
+  settings:    { href: "/settings",              label: "Settings",  icon: usersIcon },
   notifications: { href: "/settings/notifications", label: "Notifications", icon: notificationsIcon },
   profile:     { href: "/settings/profile",      label: "Profile",   icon: profileIcon },
   jobCards:    { href: "/documents/job-cards",   label: "Job Cards",  icon: invoiceIcon },
@@ -146,10 +144,9 @@ function getMoreGroups(role: Role, permissions: string[]): NavGroup[] {
     if (href === ITEMS.receipts.href) return can.viewFinancials(permUser);
     if (href === ITEMS.deliveryNotes.href) return can.viewFinancials(permUser) || ["OPS", "FRONT_DESK", "ADMIN"].includes(role);
     if (href === ITEMS.payoutFollowups.href) return can.reviewExternalBills(permUser) || can.approveInvoices(permUser);
-    if (href === ITEMS.users.href || href === ITEMS.branding.href) return role === "ADMIN";
+    if (href === ITEMS.settings.href) return role === "ADMIN";
     if (href === ITEMS.inventory.href) return ["ADMIN", "OPS", "TECHNICIAN_INTERNAL"].includes(role);
     if (href === ITEMS.board.href) return role !== "TECHNICIAN_EXTERNAL";
-    if (href === ITEMS.commsTemplates.href) return ["ADMIN", "OPS"].includes(role);
     if (href === ITEMS.notifications.href) return can.viewNotifications(permUser);
     return true;
   };
@@ -165,11 +162,7 @@ function getMoreGroups(role: Role, permissions: string[]): NavGroup[] {
     },
     {
       title: "Management",
-      items: [ITEMS.users, ITEMS.reports, ITEMS.pos, ITEMS.branding, ITEMS.notifications],
-    },
-    {
-      title: "Communication",
-      items: [ITEMS.commsTemplates],
+      items: [ITEMS.reports, ITEMS.pos, ITEMS.settings, ITEMS.notifications],
     },
   ];
 

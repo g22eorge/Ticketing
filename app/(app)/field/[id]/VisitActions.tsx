@@ -52,12 +52,12 @@ export function VisitActions({ visitId, status, isManager, isFieldTech }: Props)
   return (
     <div className="space-y-4">
       {error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <div className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-4 py-3 text-sm text-red-600">
           {error}
         </div>
       )}
       {success && (
-        <div className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
+        <div className="rounded-lg border border-[var(--accent)]/30 bg-[var(--accent)]/8 px-4 py-3 text-sm text-[var(--ink)]">
           {success}
         </div>
       )}
@@ -67,7 +67,7 @@ export function VisitActions({ visitId, status, isManager, isFieldTech }: Props)
           type="button"
           onClick={() => handleStatusUpdate("EN_ROUTE")}
           disabled={isPending}
-          className="inline-flex items-center gap-2 rounded-lg bg-yellow-500 px-4 py-2 text-sm font-semibold text-white hover:bg-yellow-600 transition-colors disabled:opacity-50"
+          className="btn-premium inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold disabled:opacity-50"
         >
           Mark En Route
         </button>
@@ -78,7 +78,7 @@ export function VisitActions({ visitId, status, isManager, isFieldTech }: Props)
           type="button"
           onClick={() => handleStatusUpdate("ARRIVED")}
           disabled={isPending}
-          className="inline-flex items-center gap-2 rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600 transition-colors disabled:opacity-50"
+          className="btn-premium inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold disabled:opacity-50"
         >
           Mark Arrived
         </button>
@@ -88,7 +88,7 @@ export function VisitActions({ visitId, status, isManager, isFieldTech }: Props)
         <button
           type="button"
           onClick={() => setShowSignoffForm(true)}
-          className="inline-flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700 transition-colors"
+          className="btn-premium inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold"
         >
           Record Sign-off
         </button>
@@ -126,7 +126,7 @@ export function VisitActions({ visitId, status, isManager, isFieldTech }: Props)
             <button
               type="submit"
               disabled={isPending}
-              className="inline-flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700 transition-colors disabled:opacity-50"
+              className="btn-premium inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold disabled:opacity-50"
             >
               {isPending ? "Saving…" : "Complete Visit"}
             </button>
@@ -146,7 +146,7 @@ export function VisitActions({ visitId, status, isManager, isFieldTech }: Props)
           type="button"
           onClick={() => handleStatusUpdate("CANCELLED")}
           disabled={isPending}
-          className="inline-flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-100 transition-colors disabled:opacity-50"
+          className="btn-premium-secondary inline-flex items-center gap-2 rounded-lg border border-red-200 px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50"
         >
           Cancel Visit
         </button>
