@@ -1,0 +1,7 @@
+# Bun configuration — https://bun.sh/docs/runtime/bunfig
+
+[test]
+timeout = 30000
+
+[install]
+exact = false

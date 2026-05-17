@@ -30,7 +30,11 @@
     "seed:local-users": "DATABASE_URL=\"${DATABASE_URL:-file:./dev.db}\" node prisma/seed-local-users.mjs",
     "seed:base": "TURSO_DATABASE_URL= TURSO_AUTH_TOKEN= DATABASE_URL=\"${DATABASE_URL:-file:./dev.db}\" bunx prisma db push --skip-generate && TURSO_DATABASE_URL= TURSO_AUTH_TOKEN= DATABASE_URL=\"${DATABASE_URL:-file:./dev.db}\" bunx prisma generate && TURSO_DATABASE_URL= TURSO_AUTH_TOKEN= DATABASE_URL=\"${DATABASE_URL:-file:./dev.db}\" bun run prisma/seed-base.ts",
     "seed:demo": "TURSO_DATABASE_URL= TURSO_AUTH_TOKEN= DATABASE_URL=\"${DATABASE_URL:-file:./dev.db}\" bunx prisma db push --skip-generate && TURSO_DATABASE_URL= TURSO_AUTH_TOKEN= DATABASE_URL=\"${DATABASE_URL:-file:./dev.db}\" bunx prisma generate && TURSO_DATABASE_URL= TURSO_AUTH_TOKEN= DATABASE_URL=\"${DATABASE_URL:-file:./dev.db}\" bun run prisma/seed.ts",
-    "seed:commercial": "TURSO_DATABASE_URL= TURSO_AUTH_TOKEN= DATABASE_URL=\"${DATABASE_URL:-file:./dev.db}\" bunx prisma db push --skip-generate && TURSO_DATABASE_URL= TURSO_AUTH_TOKEN= DATABASE_URL=\"${DATABASE_URL:-file:./dev.db}\" bunx prisma generate && TURSO_DATABASE_URL= TURSO_AUTH_TOKEN= DATABASE_URL=\"${DATABASE_URL:-file:./dev.db}\" bun run prisma/seed-commercial.ts"
+    "seed:commercial": "TURSO_DATABASE_URL= TURSO_AUTH_TOKEN= DATABASE_URL=\"${DATABASE_URL:-file:./dev.db}\" bunx prisma db push --skip-generate && TURSO_DATABASE_URL= TURSO_AUTH_TOKEN= DATABASE_URL=\"${DATABASE_URL:-file:./dev.db}\" bunx prisma generate && TURSO_DATABASE_URL= TURSO_AUTH_TOKEN= DATABASE_URL=\"${DATABASE_URL:-file:./dev.db}\" bun run prisma/seed-commercial.ts",
+    "test:unit": "ALLOW_SQLITE_PRODUCTION=1 TURSO_DATABASE_URL= TURSO_AUTH_TOKEN= DATABASE_URL=\"file:$(pwd)/prisma/test.db\" bun test tests/unit --timeout 30000",
+    "test:setup": "ALLOW_SQLITE_PRODUCTION=1 TURSO_DATABASE_URL= TURSO_AUTH_TOKEN= DATABASE_URL=\"file:$(pwd)/prisma/test.db\" bunx prisma db push --schema ../../../prisma/schema.prisma --skip-generate",
+    "test:unit:watch": "bun test tests/unit --watch",
+    "worker:start": "bun lib/queue/worker.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -40,9 +44,11 @@
     "@react-email/components": "^1.0.12",
     "@react-pdf/renderer": "^4.3.2",
     "better-auth": "^1.5.6",
+    "bullmq": "^5.76.9",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "install": "^0.13.0",
+    "ioredis": "^5.10.1",
     "next": "16.2.2",
     "prisma": "6.19.3",
     "qrcode": "^1.5.4",
@@ -57,6 +63,7 @@
   "devDependencies": {
     "@playwright/test": "^1.59.1",
     "@tailwindcss/postcss": "^4",
+    "@types/bun": "^1.3.14",
     "@types/node": "^20",
     "@types/qrcode": "^1.5.6",
     "@types/react": "^19",
