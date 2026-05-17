@@ -6,6 +6,7 @@ import { formatMoney } from "@/lib/currency";
 import { prisma } from "@/lib/prisma";
 import { requireOrgSession } from "@/lib/org-context";
 import { requireModule, OrgModule } from "@/lib/module-access";
+import { can } from "@/lib/permissions";
 import { checkPartLimit } from "@/lib/plan-limits";
 import { RowActionsMenu, MenuSection, MenuDestructiveRow } from "@/components/shared/RowActionsMenu";
 
@@ -37,12 +38,12 @@ export default async function InventoryPage({
   const error = typeof params.error === "string" ? params.error : "";
   const showAdd = String(params.add ?? "") === "1";
 
-  const canManage = user.role === "ADMIN" || user.role === "OPS";
+  const canManage = can.manageInventory(user);
 
   async function createPartAction(formData: FormData) {
     "use server";
     const { user, orgId: createOrgId } = await requireOrgSession();
-    if (!(user.role === "ADMIN" || user.role === "OPS")) redirect("/dashboard");
+    if (!can.manageInventory(user)) redirect("/dashboard");
     const sku = String(formData.get("sku") ?? "").trim();
     const name = String(formData.get("name") ?? "").trim();
     const manufacturer = String(formData.get("manufacturer") ?? "").trim();
@@ -83,7 +84,7 @@ export default async function InventoryPage({
   async function adjustStockAction(formData: FormData) {
     "use server";
     const { session, user, orgId: adjustOrgId } = await requireOrgSession();
-    if (!(user.role === "ADMIN" || user.role === "OPS")) redirect("/dashboard");
+    if (!can.manageInventory(user)) redirect("/dashboard");
     const partId = String(formData.get("partId") ?? "").trim();
     const type = String(formData.get("type") ?? "").trim().toUpperCase() as StockTxnType;
     const qty = Math.floor(Number(String(formData.get("quantity") ?? "0").trim()));
@@ -123,12 +124,40 @@ export default async function InventoryPage({
   async function togglePartActiveAction(formData: FormData) {
     "use server";
     const { user, orgId: toggleOrgId } = await requireOrgSession();
-    if (!(user.role === "ADMIN" || user.role === "OPS")) redirect("/dashboard");
+    if (!can.manageInventory(user)) redirect("/dashboard");
     const partId = String(formData.get("partId") ?? "").trim();
     const next = String(formData.get("next") ?? "").trim();
     if (!partId) return;
 
     await prisma.part.update({ where: { id: partId, orgId: toggleOrgId }, data: { isActive: next === "1" } });
+    revalidatePath("/inventory");
+  }
+
+  async function updatePartAction(formData: FormData) {
+    "use server";
+    const { user, orgId: updateOrgId } = await requireOrgSession();
+    if (!can.manageInventory(user)) redirect("/dashboard");
+    const partId = String(formData.get("partId") ?? "").trim();
+    const sku = String(formData.get("sku") ?? "").trim();
+    const name = String(formData.get("name") ?? "").trim();
+    const manufacturer = String(formData.get("manufacturer") ?? "").trim();
+    const unitCostRaw = String(formData.get("unitCost") ?? "").trim();
+    const reorderRaw = String(formData.get("reorderLevel") ?? "").trim();
+    if (!partId || !sku || !name) return;
+
+    const unitCost = unitCostRaw ? Number(unitCostRaw) : null;
+    const reorderLevel = reorderRaw ? Math.max(0, Math.floor(Number(reorderRaw))) : 0;
+
+    await prisma.part.updateMany({
+      where: { id: partId, orgId: updateOrgId },
+      data: {
+        sku,
+        name,
+        manufacturer: manufacturer || null,
+        unitCost: unitCost !== null && Number.isFinite(unitCost) ? unitCost : null,
+        reorderLevel,
+      },
+    });
     revalidatePath("/inventory");
   }
 
@@ -180,7 +209,7 @@ export default async function InventoryPage({
           <span className="font-normal text-[var(--ink-muted)]">· {parts.length} parts</span>
         </p>
         {canManage && (
-          <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
             <Link href="/inventory/locations" className="inline-flex items-center rounded-lg border border-[var(--line)] px-3 py-1.5 text-xs font-semibold text-[var(--ink)] transition hover:border-[var(--accent)]/50 hover:text-[var(--accent)]">
               Locations
             </Link>
@@ -239,9 +268,12 @@ export default async function InventoryPage({
         <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
           <p className="mb-2.5 text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Add Part</p>
           <form action={createPartAction}>
-            <div className="grid gap-2 sm:grid-cols-[1fr_2fr_auto]">
+            <div className="grid gap-2 md:grid-cols-[0.8fr_1.4fr_1fr_0.7fr_0.7fr_auto]">
               <input name="sku" placeholder="SKU *" required className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/60 focus:ring-2 focus:ring-[var(--accent)]/14" />
               <input name="name" placeholder="Part name *" required className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/60 focus:ring-2 focus:ring-[var(--accent)]/14" />
+              <input name="manufacturer" placeholder="Maker" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/60 focus:ring-2 focus:ring-[var(--accent)]/14" />
+              <input name="unitCost" placeholder="Cost" inputMode="decimal" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/60 focus:ring-2 focus:ring-[var(--accent)]/14" />
+              <input name="reorderLevel" placeholder="Reorder" inputMode="numeric" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/60 focus:ring-2 focus:ring-[var(--accent)]/14" />
               <button type="submit" className="btn-premium rounded-lg px-4 py-1.5 text-[13px] font-semibold">Add Part</button>
             </div>
           </form>
@@ -278,9 +310,11 @@ export default async function InventoryPage({
                   <th className="px-4 py-2.5 text-left">Part</th>
                   <th className="hidden px-4 py-2.5 text-left sm:table-cell">SKU</th>
                   <th className="hidden px-4 py-2.5 text-left lg:table-cell">Maker</th>
+                  <th className="hidden px-4 py-2.5 text-right lg:table-cell">Unit Cost</th>
                   <th className="px-4 py-2.5 text-right">On Hand</th>
                   <th className="hidden px-4 py-2.5 text-right md:table-cell">Reserved</th>
                   <th className="px-4 py-2.5 text-right">Available</th>
+                  <th className="hidden px-4 py-2.5 text-right xl:table-cell">Value</th>
                   <th className="hidden px-4 py-2.5 text-right sm:table-cell">Reorder</th>
                   {canManage ? <th className="px-4 py-2.5 text-right">Actions</th> : null}
                 </tr>
@@ -290,6 +324,8 @@ export default async function InventoryPage({
                   const isLow = part.reorderLevel > 0 && part.qtyOnHand <= part.reorderLevel;
                   const reserved = reservedMap.get(part.id) ?? 0;
                   const available = part.qtyOnHand - reserved;
+                  const unitCost = part.unitCost ?? 0;
+                  const stockValue = unitCost * part.qtyOnHand;
                   return (
                     <tr key={part.id} className={"border-t border-[var(--line)] " + (isLow ? "bg-amber-500/8" : "hover:bg-[var(--panel-strong)]/40")}>
                       <td className="px-4 py-3">
@@ -298,13 +334,27 @@ export default async function InventoryPage({
                       </td>
                       <td className="hidden px-4 py-3 text-[var(--ink-muted)] sm:table-cell">{part.sku}</td>
                       <td className="hidden px-4 py-3 text-[var(--ink-muted)] lg:table-cell">{part.manufacturer ?? "—"}</td>
+                      <td className="hidden px-4 py-3 text-right tabular-nums text-[var(--ink-muted)] lg:table-cell">{part.unitCost != null ? formatMoney(part.unitCost) : "—"}</td>
                       <td className="px-4 py-3 text-right font-semibold text-[var(--ink)]">{part.qtyOnHand}</td>
                       <td className="hidden px-4 py-3 text-right text-[var(--ink-muted)] md:table-cell">{reserved}</td>
                       <td className={"px-4 py-3 text-right font-semibold " + (available < 0 ? "text-red-500" : available === 0 ? "text-amber-600" : "text-[var(--ink)]")}>{available}</td>
+                      <td className="hidden px-4 py-3 text-right tabular-nums text-[var(--ink)] xl:table-cell">{formatMoney(stockValue)}</td>
                       <td className="hidden px-4 py-3 text-right text-[var(--ink-muted)] sm:table-cell">{part.reorderLevel}</td>
                       {canManage ? (
                         <td className="px-4 py-3 text-right">
                           <RowActionsMenu label="Part actions">
+                            <MenuSection label="Part Details" />
+                            <form action={updatePartAction} className="space-y-2 p-3">
+                              <input type="hidden" name="partId" value={part.id} />
+                              <input name="sku" defaultValue={part.sku} required className="w-full rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1.5 text-xs outline-none focus:border-[var(--accent)]/50" />
+                              <input name="name" defaultValue={part.name} required className="w-full rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1.5 text-xs outline-none focus:border-[var(--accent)]/50" />
+                              <input name="manufacturer" defaultValue={part.manufacturer ?? ""} placeholder="Maker" className="w-full rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1.5 text-xs outline-none focus:border-[var(--accent)]/50" />
+                              <div className="grid grid-cols-2 gap-2">
+                                <input name="unitCost" defaultValue={part.unitCost ?? ""} placeholder="Unit cost" inputMode="decimal" className="min-w-0 rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1.5 text-xs outline-none focus:border-[var(--accent)]/50" />
+                                <input name="reorderLevel" defaultValue={part.reorderLevel} placeholder="Reorder" inputMode="numeric" className="min-w-0 rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1.5 text-xs outline-none focus:border-[var(--accent)]/50" />
+                              </div>
+                              <button type="submit" className="btn-premium w-full rounded-lg px-3 py-1.5 text-xs font-semibold">Save Details</button>
+                            </form>
                             <MenuSection label="Adjust Stock" />
                             <form action={adjustStockAction} className="space-y-2 p-3">
                               <input type="hidden" name="partId" value={part.id} />
