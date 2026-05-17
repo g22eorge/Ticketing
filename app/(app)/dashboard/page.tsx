@@ -1246,6 +1246,450 @@ export default async function DashboardPage({
     );
   }
 
+  if (user.role === "TECH_MANAGER") {
+    const currency = getAppCurrency();
+    const [jobsOpen, jobsCompleted, externalBillsPending, jobsInProgress] = await Promise.all([
+      prisma.job.count({
+        where: {
+          status: {
+            in: filterSupportedJobStatuses([
+              "RECEIVED",
+              "DIAGNOSING",
+              "REFERRED",
+              "IN_EXTERNAL_REPAIR",
+              "AWAITING_APPROVAL",
+              "IN_REPAIR",
+              "READY_FOR_PICKUP",
+              "WAITING_FOR_PARTS",
+            ]) as JobStatus[],
+          },
+        },
+      }),
+      prisma.job.count({ where: { status: "COMPLETED" } }),
+      prisma.job.count({
+        where: {
+          repairPath: "EXTERNAL",
+          clientBill: { gt: 0 },
+          externalPaid: false,
+        },
+      }),
+      prisma.job.count({
+        where: {
+          status: { in: filterSupportedJobStatuses(["IN_REPAIR"]) as JobStatus[] },
+        },
+      }),
+    ]);
+
+    return (
+      <div className="space-y-4">
+        <DashboardHero
+          title="Technical Operations"
+          summary="Track repair progress across all technicians, clear pending external bills, and ensure quality standards are met."
+          primaryHref="/jobs"
+          primaryLabel="View Queue"
+        />
+
+        <StickyKpiRow
+          items={[
+            { label: "Open", value: String(jobsOpen), href: "/jobs", tone: "brand" },
+            { label: "In Repair", value: String(jobsInProgress), href: "/jobs?status=IN_REPAIR", tone: "warning" },
+            { label: "Completed", value: String(jobsCompleted), href: "/jobs?status=COMPLETED", tone: "success" },
+            { label: "Bills Due", value: String(externalBillsPending), href: "/payout-followups", tone: "warning" },
+          ]}
+        />
+
+        <div className="grid gap-3 lg:grid-cols-2">
+          <Link href="/jobs" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px] sm:p-5">
+            <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Open Jobs</p>
+            <p className="mt-2 text-3xl font-semibold text-[var(--accent)]">{jobsOpen}</p>
+            <p className="mt-2 text-xs font-medium text-[var(--accent)]">View queue →</p>
+          </Link>
+          <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 sm:p-5">
+            <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">In Repair</p>
+            <p className="mt-2 text-3xl font-semibold text-[var(--ink)]">{jobsInProgress}</p>
+            <p className="mt-2 text-xs font-medium text-[var(--ink-muted)]">Active repairs</p>
+          </div>
+          <Link href="/jobs?status=COMPLETED" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px] sm:p-5">
+            <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Completed</p>
+            <p className="mt-2 text-3xl font-semibold text-[var(--accent)]">{jobsCompleted}</p>
+            <p className="mt-2 text-xs font-medium text-[var(--accent)]">View completed →</p>
+          </Link>
+          <Link href="/payout-followups" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px] sm:p-5">
+            <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">External Bills Pending</p>
+            <p className="mt-2 text-3xl font-semibold text-[var(--accent)]">{externalBillsPending}</p>
+            <p className="mt-2 text-xs font-medium text-[var(--accent)]">Clear payouts →</p>
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (user.role === "SALES_MANAGER") {
+    const currency = getAppCurrency();
+    const now = new Date();
+    const { start: monthStart, end: monthEnd } = monthRange(now.getFullYear(), now.getMonth() + 1);
+
+    const [leadsOpen, leadsWon, quotationsPending, salesThisMonthAgg] = await Promise.all([
+      prisma.lead.count({
+        where: { status: { in: ["NEW", "CONTACTED", "QUALIFIED", "PROPOSAL_SENT"] } },
+      }),
+      prisma.lead.count({ where: { status: "WON" } }),
+      prisma.quotation.count({
+        where: { status: { in: ["DRAFT", "SENT"] } },
+      }),
+      prisma.sale.aggregate({
+        _sum: { totalAmount: true },
+        where: {
+          status: "COMPLETED",
+          createdAt: { gte: monthStart, lte: monthEnd },
+        },
+      }),
+    ]);
+
+    const salesThisMonth = salesThisMonthAgg._sum.totalAmount ?? 0;
+
+    return (
+      <div className="space-y-4">
+        <DashboardHero
+          title="Sales Command Centre"
+          summary="Monitor leads pipeline, track quotations, and review revenue against targets."
+          primaryHref="/sales"
+          primaryLabel="Open CRM"
+          secondaryHref="/targets"
+          secondaryLabel="View Targets"
+        />
+
+        <StickyKpiRow
+          items={[
+            { label: "Open Leads", value: String(leadsOpen), href: "/sales", tone: "brand" },
+            { label: "Won", value: String(leadsWon), href: "/sales?tab=leads&status=WON", tone: "success" },
+            { label: "Quotes Pending", value: String(quotationsPending), href: "/sales?tab=quotations", tone: "warning" },
+            { label: "Revenue", value: formatMoney(salesThisMonth, currency), href: "/reports" },
+          ]}
+        />
+
+        <div className="grid gap-3 lg:grid-cols-2">
+          <Link href="/sales" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px] sm:p-5">
+            <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Open Leads</p>
+            <p className="mt-2 text-3xl font-semibold text-[var(--accent)]">{leadsOpen}</p>
+            <p className="mt-2 text-xs font-medium text-[var(--accent)]">View pipeline →</p>
+          </Link>
+          <Link href="/sales?tab=leads&status=WON" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px] sm:p-5">
+            <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Won Leads</p>
+            <p className="mt-2 text-3xl font-semibold text-[var(--accent)]">{leadsWon}</p>
+            <p className="mt-2 text-xs font-medium text-[var(--accent)]">View won leads →</p>
+          </Link>
+          <Link href="/sales?tab=quotations" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px] sm:p-5">
+            <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Quotations Pending</p>
+            <p className="mt-2 text-3xl font-semibold text-[var(--accent)]">{quotationsPending}</p>
+            <p className="mt-2 text-xs font-medium text-[var(--accent)]">Review quotations →</p>
+          </Link>
+          <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 sm:p-5">
+            <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Revenue This Month</p>
+            <p className="mt-2 text-3xl font-semibold text-[var(--ink)]">{formatMoney(salesThisMonth, currency)}</p>
+            <p className="mt-2 text-xs text-[var(--ink-muted)]">Completed sales</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (user.role === "SALES_CORPORATE") {
+    const [myQuotationsDraft, myQuotationsSent, myLeads] = await Promise.all([
+      prisma.quotation.count({
+        where: { createdById: session.user.id, status: "DRAFT" },
+      }),
+      prisma.quotation.count({
+        where: { createdById: session.user.id, status: "SENT" },
+      }),
+      prisma.lead.count({
+        where: {
+          assignedToId: session.user.id,
+          status: { in: ["NEW", "CONTACTED", "QUALIFIED", "PROPOSAL_SENT"] },
+        },
+      }),
+    ]);
+
+    return (
+      <div className="space-y-4">
+        <DashboardHero
+          title="Corporate Sales"
+          summary="Manage your corporate accounts, track quotation approvals, and keep leads progressing."
+          primaryHref="/sales"
+          primaryLabel="Open Pipeline"
+          secondaryHref="/sales/quotations/new"
+          secondaryLabel="New Quotation"
+        />
+
+        <StickyKpiRow
+          items={[
+            { label: "Draft Quotes", value: String(myQuotationsDraft), href: "/sales?tab=quotations", tone: "warning" },
+            { label: "Sent Quotes", value: String(myQuotationsSent), href: "/sales?tab=quotations", tone: "brand" },
+            { label: "My Leads", value: String(myLeads), href: "/sales", tone: "success" },
+          ]}
+        />
+
+        <div className="grid gap-3 lg:grid-cols-3">
+          <Link href="/sales?tab=quotations" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px] sm:p-5">
+            <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Draft Quotations</p>
+            <p className="mt-2 text-3xl font-semibold text-[var(--accent)]">{myQuotationsDraft}</p>
+            <p className="mt-2 text-xs font-medium text-[var(--accent)]">Open drafts →</p>
+          </Link>
+          <Link href="/sales?tab=quotations" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px] sm:p-5">
+            <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Sent Quotations</p>
+            <p className="mt-2 text-3xl font-semibold text-[var(--accent)]">{myQuotationsSent}</p>
+            <p className="mt-2 text-xs font-medium text-[var(--accent)]">Track sent →</p>
+          </Link>
+          <Link href="/sales" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px] sm:p-5">
+            <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Active Leads</p>
+            <p className="mt-2 text-3xl font-semibold text-[var(--accent)]">{myLeads}</p>
+            <p className="mt-2 text-xs font-medium text-[var(--accent)]">View my leads →</p>
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (user.role === "SALES_RETAIL") {
+    const [myLeads, myQuotations, posOpen] = await Promise.all([
+      prisma.lead.count({
+        where: {
+          assignedToId: session.user.id,
+          status: { notIn: ["WON", "LOST", "STALE"] },
+        },
+      }),
+      prisma.quotation.count({
+        where: {
+          createdById: session.user.id,
+          status: { in: ["DRAFT", "SENT"] },
+        },
+      }),
+      prisma.posSession.count({
+        where: { operatorId: session.user.id, status: "OPEN" },
+      }),
+    ]);
+
+    return (
+      <div className="space-y-4">
+        <DashboardHero
+          title="Retail Sales Desk"
+          summary="Manage your active leads, open quotations, and daily POS sessions."
+          primaryHref="/sales"
+          primaryLabel="My Leads"
+          secondaryHref="/pos"
+          secondaryLabel="POS"
+        />
+
+        <StickyKpiRow
+          items={[
+            { label: "My Leads", value: String(myLeads), href: "/sales", tone: "brand" },
+            { label: "Quotations", value: String(myQuotations), href: "/sales?tab=quotations", tone: "warning" },
+            { label: "POS Sessions", value: String(posOpen), href: "/pos", tone: "success" },
+          ]}
+        />
+
+        <div className="grid gap-3 lg:grid-cols-3">
+          <Link href="/sales" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px] sm:p-5">
+            <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">My Leads</p>
+            <p className="mt-2 text-3xl font-semibold text-[var(--accent)]">{myLeads}</p>
+            <p className="mt-2 text-xs font-medium text-[var(--accent)]">View leads →</p>
+          </Link>
+          <Link href="/sales?tab=quotations" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px] sm:p-5">
+            <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">My Quotations</p>
+            <p className="mt-2 text-3xl font-semibold text-[var(--accent)]">{myQuotations}</p>
+            <p className="mt-2 text-xs font-medium text-[var(--accent)]">View quotations →</p>
+          </Link>
+          <Link href="/pos" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px] sm:p-5">
+            <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Active POS</p>
+            <p className="mt-2 text-3xl font-semibold text-[var(--accent)]">{posOpen}</p>
+            <p className="mt-2 text-xs font-medium text-[var(--accent)]">Open POS →</p>
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (user.role === "SALES_POS") {
+    const currency = getAppCurrency();
+    const todayStart = new Date(new Date().setHours(0, 0, 0, 0));
+
+    const [openSession, todaySalesAgg] = await Promise.all([
+      prisma.posSession.findFirst({
+        where: { operatorId: session.user.id, status: "OPEN" },
+        select: { id: true, totalSales: true, salesCount: true, openedAt: true },
+      }),
+      prisma.posSession.aggregate({
+        _sum: { totalSales: true },
+        where: { operatorId: session.user.id, openedAt: { gte: todayStart } },
+      }),
+    ]);
+
+    const todaySales = todaySalesAgg._sum.totalSales ?? 0;
+    const sessionsToday = await prisma.posSession.count({
+      where: { operatorId: session.user.id, openedAt: { gte: todayStart } },
+    });
+
+    return (
+      <div className="space-y-4">
+        <DashboardHero
+          title="Point of Sale"
+          summary="Open a new session to start taking sales, or continue your active session."
+          primaryHref="/pos"
+          primaryLabel={openSession ? "Continue Session" : "Open New Session"}
+        />
+
+        <StickyKpiRow
+          items={[
+            { label: "Today's Sales", value: formatMoney(todaySales, currency), href: "/pos", tone: "success" },
+            { label: "Sessions Today", value: String(sessionsToday), href: "/pos" },
+          ]}
+        />
+
+        {openSession ? (
+          <Link href="/pos" className="panel-shadow block rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px] sm:p-5">
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Active Session</p>
+            <div className="mt-3 grid grid-cols-3 gap-3">
+              <div>
+                <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Total Sales</p>
+                <p className="mt-1 text-xl font-semibold text-[var(--accent)]">{formatMoney(openSession.totalSales, currency)}</p>
+              </div>
+              <div>
+                <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Sales Count</p>
+                <p className="mt-1 text-xl font-semibold text-[var(--ink)]">{openSession.salesCount}</p>
+              </div>
+              <div>
+                <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Opened At</p>
+                <p className="mt-1 text-xl font-semibold text-[var(--ink)]">
+                  {openSession.openedAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                </p>
+              </div>
+            </div>
+            <p className="mt-3 text-xs font-medium text-[var(--accent)]">Continue session →</p>
+          </Link>
+        ) : (
+          <Link href="/pos" className="panel-shadow block rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px] sm:p-5">
+            <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">No Active Session</p>
+            <p className="mt-2 text-sm text-[var(--ink-muted)]">Open a new POS session to start recording sales.</p>
+            <p className="mt-3 text-xs font-medium text-[var(--accent)]">Open session →</p>
+          </Link>
+        )}
+      </div>
+    );
+  }
+
+  if (user.role === "TECH_FIELD") {
+    const todayStart = new Date(new Date().setHours(0, 0, 0, 0));
+
+    const [assignedJobs, completedToday] = await Promise.all([
+      prisma.job.count({
+        where: {
+          assignedToId: session.user.id,
+          status: {
+            in: filterSupportedJobStatuses(["RECEIVED", "DIAGNOSING", "IN_REPAIR"]) as JobStatus[],
+          },
+        },
+      }),
+      prisma.job.count({
+        where: {
+          assignedToId: session.user.id,
+          status: "COMPLETED",
+          completedAt: { gte: todayStart },
+        },
+      }),
+    ]);
+
+    return (
+      <div className="space-y-4">
+        <DashboardHero
+          title="Field Technician"
+          summary="View your assigned jobs and complete field visits."
+          primaryHref="/jobs"
+          primaryLabel="My Jobs"
+        />
+
+        <StickyKpiRow
+          items={[
+            { label: "Assigned", value: String(assignedJobs), href: "/jobs", tone: "brand" },
+            { label: "Completed Today", value: String(completedToday), href: "/jobs?status=COMPLETED", tone: "success" },
+          ]}
+        />
+
+        <div className="grid gap-3 grid-cols-2">
+          <Link href="/jobs" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px] sm:p-5">
+            <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Assigned Jobs</p>
+            <p className="mt-2 text-3xl font-semibold text-[var(--accent)]">{assignedJobs}</p>
+            <p className="mt-2 text-xs font-medium text-[var(--accent)]">View queue →</p>
+          </Link>
+          <Link href="/jobs?status=COMPLETED" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px] sm:p-5">
+            <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Completed Today</p>
+            <p className="mt-2 text-3xl font-semibold text-[var(--accent)]">{completedToday}</p>
+            <p className="mt-2 text-xs font-medium text-[var(--accent)]">View completed →</p>
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (user.role === "FINANCE") {
+    const currency = getAppCurrency();
+
+    const [invoicesPending, invoicesPaid, externalPayoutsDue] = await Promise.all([
+      prisma.invoice.count({
+        where: { status: { in: ["ISSUED", "PARTIALLY_PAID", "OVERDUE"] } },
+      }),
+      prisma.invoice.count({ where: { status: "PAID" } }),
+      prisma.job.count({
+        where: {
+          repairPath: "EXTERNAL",
+          clientBill: { not: null },
+          externalPaid: false,
+          status: {
+            in: filterSupportedJobStatuses(["COMPLETED", "DELIVERED"]) as JobStatus[],
+          },
+        },
+      }),
+    ]);
+
+    return (
+      <div className="space-y-4">
+        <DashboardHero
+          title="Finance Console"
+          summary="Track invoice status, approve payouts, and reconcile accounts."
+          primaryHref="/reports"
+          primaryLabel="Reports"
+          secondaryHref="/payout-followups"
+          secondaryLabel="Payout Queue"
+        />
+
+        <StickyKpiRow
+          items={[
+            { label: "Invoices Due", value: String(invoicesPending), href: "/documents/invoices", tone: "warning" },
+            { label: "Paid", value: String(invoicesPaid), href: "/documents/invoices", tone: "success" },
+            { label: "Ext. Payouts", value: String(externalPayoutsDue), href: "/payout-followups", tone: "warning" },
+          ]}
+        />
+
+        <div className="grid gap-3 lg:grid-cols-3">
+          <Link href="/documents/invoices" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px] sm:p-5">
+            <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Invoices Pending</p>
+            <p className="mt-2 text-3xl font-semibold text-[var(--accent)]">{invoicesPending}</p>
+            <p className="mt-2 text-xs font-medium text-[var(--accent)]">View invoices →</p>
+          </Link>
+          <Link href="/documents/invoices" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px] sm:p-5">
+            <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Invoices Paid</p>
+            <p className="mt-2 text-3xl font-semibold text-[var(--accent)]">{invoicesPaid}</p>
+            <p className="mt-2 text-xs font-medium text-[var(--accent)]">View paid →</p>
+          </Link>
+          <Link href="/payout-followups" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px] sm:p-5">
+            <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">External Payouts</p>
+            <p className="mt-2 text-3xl font-semibold text-[var(--accent)]">{externalPayoutsDue}</p>
+            <p className="mt-2 text-xs font-medium text-[var(--accent)]">View payout queue →</p>
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   const [totalJobs, openJobs, completedJobs] = await Promise.all([
     prisma.job.count(),
     prisma.job.count({
