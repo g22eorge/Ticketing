@@ -20,6 +20,7 @@ const nav = [
   { href: "/documents/job-cards", label: "Job Cards", group: "documents", roles: ["ADMIN", "OPS", "FRONT_DESK", "TECHNICIAN_INTERNAL", "SALES_MANAGER", "TECH_MANAGER"] },
   { href: "/documents/quotations", label: "Quotations", group: "documents", roles: ["ADMIN", "OPS", "TECHNICIAN_INTERNAL", "SALES_MANAGER", "SALES_CORPORATE", "SALES_RETAIL", "TECH_MANAGER"] },
   { href: "/documents/invoices", label: "Invoices", group: "documents", roles: ["ADMIN", "OPS", "SALES_MANAGER", "SALES_CORPORATE", "TECH_MANAGER", "FINANCE"] },
+  { href: "/targets", label: "Targets", group: "finance", roles: ["ADMIN", "OPS", "SALES_MANAGER", "TECH_MANAGER", "FINANCE"] },
   { href: "/reports", label: "Reports", group: "finance", roles: ["ADMIN", "OPS", "SALES_MANAGER", "FINANCE"] },
   { href: "/payout-followups", label: "Payment Follow-up", group: "finance", roles: ["ADMIN", "OPS", "TECH_MANAGER", "FINANCE"] },
   { href: "/pos", label: "Point of Sale", group: "work", roles: ["ADMIN", "SALES_MANAGER", "SALES_RETAIL", "SALES_POS"] },
@@ -66,11 +67,11 @@ const roleOrder: Partial<Record<Role, readonly string[]>> = {
   FRONT_DESK: ["/dashboard", "/jobs", "/intake", "/clients", "/technicians", "/documents/job-cards", "/settings/profile"],
   // Legacy alias - normalizeRole() converts INTAKE → FRONT_DESK, but keep for completeness.
   INTAKE: ["/dashboard", "/jobs", "/intake", "/clients", "/technicians", "/documents/job-cards", "/settings/profile"],
-  SALES_MANAGER: ["/dashboard", "/jobs", "/pos", "/intake", "/clients", "/technicians", "/documents/job-cards", "/documents/quotations", "/documents/invoices", "/reports", "/payout-followups", "/settings/profile", "/settings/notifications"],
+  SALES_MANAGER: ["/dashboard", "/jobs", "/pos", "/sales", "/intake", "/clients", "/technicians", "/documents/job-cards", "/documents/quotations", "/documents/invoices", "/targets", "/reports", "/payout-followups", "/settings/profile", "/settings/notifications"],
   SALES_CORPORATE: ["/dashboard", "/jobs", "/clients", "/documents/quotations", "/documents/invoices", "/settings/profile"],
   SALES_RETAIL: ["/dashboard", "/jobs", "/pos", "/clients", "/documents/quotations", "/settings/profile"],
   SALES_POS: ["/dashboard", "/pos", "/settings/profile"],
-  TECH_MANAGER: ["/dashboard", "/jobs", "/intake", "/technicians", "/inventory", "/documents/job-cards", "/documents/quotations", "/documents/invoices", "/payout-followups", "/settings/profile", "/settings/notifications"],
+  TECH_MANAGER: ["/dashboard", "/jobs", "/intake", "/technicians", "/inventory", "/documents/job-cards", "/documents/quotations", "/documents/invoices", "/targets", "/payout-followups", "/settings/profile", "/settings/notifications"],
   TECH_FIELD: ["/dashboard", "/jobs", "/settings/profile"],
   FINANCE: ["/dashboard", "/technicians", "/documents/invoices", "/reports", "/payout-followups", "/settings/profile"],
 };

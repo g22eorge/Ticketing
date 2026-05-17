@@ -23,10 +23,11 @@ model Branch {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  users        User[]
-  posSessions  PosSession[]
-  sales        Sale[]
-  leads        Lead[]
+  users           User[]
+  posSessions     PosSession[]
+  sales           Sale[]
+  leads           Lead[]
+  salesTargets    SalesTarget[] @relation("BranchSalesTargets")
 
   @@index([isActive])
   @@index([orgId])
@@ -38,7 +39,8 @@ model Department {
   code      String   @unique
   createdAt DateTime @default(now())
 
-  users     User[]
+  users        User[]
+  salesTargets SalesTarget[] @relation("DeptSalesTargets")
 }
 
 model User {
@@ -86,6 +88,8 @@ model User {
   leadActivities      LeadActivity[]    @relation("LeadActivityBy")
   quotationsCreated   Quotation[]       @relation("QuotationCreatedBy")
   quotationsApproved  Quotation[]       @relation("QuotationApprovedBy")
+  salesTargets        SalesTarget[]     @relation("UserSalesTargets")
+  targetsSet          SalesTarget[]     @relation("TargetSetBy")
 
   @@index([role, isActive])
   @@index([branchId])
@@ -1176,4 +1180,57 @@ model Refund {
   @@index([saleId])
   @@index([invoiceId])
   @@index([orgId])
+}
+
+// ── TARGETS & PRODUCTIVITY ──────────────────────────────────────────────────
+
+enum TargetPeriod {
+  DAILY
+  WEEKLY
+  MONTHLY
+  QUARTERLY
+  ANNUAL
+}
+
+enum TargetMetric {
+  REVENUE
+  JOBS_COMPLETED
+  LEADS_CONVERTED
+  SALES_COUNT
+  CUSTOMER_SATISFACTION
+  RESPONSE_TIME_HOURS
+}
+
+enum TargetEntityType {
+  USER
+  DEPARTMENT
+  BRANCH
+}
+
+model SalesTarget {
+  id           String           @id @default(cuid())
+  orgId        String?
+  entityType   TargetEntityType
+  userId       String?
+  user         User?            @relation("UserSalesTargets", fields: [userId], references: [id])
+  departmentId String?
+  department   Department?      @relation("DeptSalesTargets", fields: [departmentId], references: [id])
+  branchId     String?
+  branch       Branch?          @relation("BranchSalesTargets", fields: [branchId], references: [id])
+  metric       TargetMetric
+  period       TargetPeriod
+  periodLabel  String           // e.g. "2026-05", "2026-Q2", "2026"
+  targetValue  Float
+  actualValue  Float            @default(0)
+  setById      String
+  setBy        User             @relation("TargetSetBy", fields: [setById], references: [id])
+  notes        String?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  @@unique([entityType, userId, departmentId, branchId, metric, period, periodLabel])
+  @@index([orgId, period, periodLabel])
+  @@index([userId, metric])
+  @@index([departmentId, metric])
+  @@index([branchId, metric])
 }
