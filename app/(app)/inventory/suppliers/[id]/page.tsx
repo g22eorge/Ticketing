@@ -35,6 +35,11 @@ export default async function SupplierDetailPage({
         orderBy: { createdAt: "desc" },
         include: { _count: { select: { items: true } } },
       },
+      supplierBills: {
+        orderBy: { issuedAt: "desc" },
+        take: 8,
+        select: { id: true, billNumber: true, status: true, totalAmount: true, paidAmount: true, issuedAt: true, dueAt: true, currency: true },
+      },
     },
   });
 
@@ -136,6 +141,48 @@ export default async function SupplierDetailPage({
                         <button type="submit" className="text-xs font-semibold text-red-600 hover:text-red-700">Delete</button>
                       </form>
                     </details>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-3 border-b border-[var(--line)]">
+          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]">
+            Supplier Bills ({supplier.supplierBills.length})
+          </p>
+          <Link
+            href={`/inventory/supplier-bills/new?supplierId=${supplier.id}`}
+            className="rounded-md bg-[var(--gold)]/15 px-3 py-1 text-xs font-semibold text-[var(--gold)] hover:bg-[var(--gold)]/25"
+          >
+            + New Bill
+          </Link>
+        </div>
+        {supplier.supplierBills.length === 0 ? (
+          <p className="py-8 text-center text-sm text-[var(--ink-muted)]">No supplier bills yet.</p>
+        ) : (
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-[var(--line)] text-xs font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
+                <th className="px-4 py-2 text-left">Bill</th>
+                <th className="px-4 py-2 text-left">Status</th>
+                <th className="px-4 py-2 text-right">Total</th>
+                <th className="px-4 py-2 text-right hidden sm:table-cell">Balance</th>
+                <th className="px-4 py-2" />
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[var(--line)]">
+              {supplier.supplierBills.map((bill) => (
+                <tr key={bill.id} className="hover:bg-[var(--gold)]/5">
+                  <td className="px-4 py-2"><p className="font-mono text-xs font-semibold text-[var(--ink)]">{bill.billNumber}</p><p className="text-xs text-[var(--ink-muted)]">{fmt(bill.issuedAt)}</p></td>
+                  <td className="px-4 py-2 text-xs font-semibold text-[var(--ink-muted)]">{bill.status}</td>
+                  <td className="px-4 py-2 text-right font-semibold tabular-nums text-[var(--ink)]">{bill.currency} {bill.totalAmount.toLocaleString()}</td>
+                  <td className="px-4 py-2 text-right hidden sm:table-cell tabular-nums text-[var(--ink-muted)]">{(bill.totalAmount - bill.paidAmount).toLocaleString()}</td>
+                  <td className="px-4 py-2 text-right">
+                    <Link href={`/inventory/supplier-bills/${bill.id}`} className="text-xs font-semibold text-[var(--gold)] hover:underline">View →</Link>
                   </td>
                 </tr>
               ))}

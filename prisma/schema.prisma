@@ -76,6 +76,7 @@ model Organization {
   purchaseOrders         PurchaseOrder[]
   stockTransfers         StockTransfer[]
   goodsReceivedNotes     GoodsReceived[]
+  supplierBills          SupplierBill[]
   userGroups             UserGroup[]
   complaints             Complaint[]
   salesTargets           SalesTarget[]
@@ -190,6 +191,7 @@ model User {
   stockTransfersDispatched StockTransfer[] @relation("StockTransferDispatchedBy")
   stockTransfersReceived  StockTransfer[]  @relation("StockTransferReceivedBy")
   goodsReceivedCreated    GoodsReceived[]  @relation("GoodsReceivedCreatedBy")
+  supplierBillsCreated    SupplierBill[]   @relation("SupplierBillCreatedBy")
 
   @@index([orgId])
   @@index([branchId])
@@ -1425,6 +1427,7 @@ model Supplier {
 
   purchaseOrders PurchaseOrder[]
   goodsReceivedNotes GoodsReceived[]
+  supplierBills SupplierBill[]
 
   @@index([orgId])
 }
@@ -1441,6 +1444,14 @@ enum PurchaseOrderStatus {
 
 enum GoodsReceivedStatus {
   POSTED
+  CANCELLED
+}
+
+enum SupplierBillStatus {
+  DRAFT
+  POSTED
+  PART_PAID
+  PAID
   CANCELLED
 }
 
@@ -1461,6 +1472,7 @@ model PurchaseOrder {
 
   items PurchaseOrderItem[]
   goodsReceivedNotes GoodsReceived[]
+  supplierBills SupplierBill[]
 
   @@index([orgId])
   @@index([supplierId])
@@ -1502,6 +1514,7 @@ model GoodsReceived {
   updatedAt   DateTime            @updatedAt
 
   items       GoodsReceivedItem[]
+  supplierBills SupplierBill[]
 
   @@index([orgId, receivedAt])
   @@index([supplierId])
@@ -1524,6 +1537,54 @@ model GoodsReceivedItem {
   @@index([grnId])
   @@index([partId])
   @@index([poItemId])
+}
+
+model SupplierBill {
+  id            String             @id @default(cuid())
+  orgId         String
+  org           Organization       @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  billNumber    String             @unique
+  supplierRef   String?
+  status        SupplierBillStatus @default(POSTED)
+  supplierId    String
+  supplier      Supplier           @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+  poId          String?
+  po            PurchaseOrder?     @relation(fields: [poId], references: [id], onDelete: SetNull)
+  grnId         String?
+  grn           GoodsReceived?     @relation(fields: [grnId], references: [id], onDelete: SetNull)
+  currency      String             @default("UGX")
+  subtotal      Float
+  taxAmount     Float              @default(0)
+  totalAmount   Float
+  paidAmount    Float              @default(0)
+  issuedAt      DateTime           @default(now())
+  dueAt         DateTime?
+  notes         String?
+  createdById   String
+  createdBy     User               @relation("SupplierBillCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  items         SupplierBillItem[]
+
+  @@index([orgId, issuedAt])
+  @@index([orgId, status])
+  @@index([supplierId])
+  @@index([poId])
+  @@index([grnId])
+}
+
+model SupplierBillItem {
+  id          String       @id @default(cuid())
+  billId      String
+  bill        SupplierBill @relation(fields: [billId], references: [id], onDelete: Cascade)
+  description String
+  quantity    Int
+  unitCost    Float
+  lineTotal   Float
+  createdAt   DateTime     @default(now())
+
+  @@index([billId])
 }
 
 model SystemAuditEvent {
