@@ -74,6 +74,7 @@ const ORG_SCOPED_MODELS = new Set([
   "PosSession",
   "PurchaseOrder",
   "PurchaseOrderItem",
+  "PurchaseRequest",
   "QualityCheck",
   "Quotation",
   "QuotationItem",

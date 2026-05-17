@@ -73,6 +73,7 @@ model Organization {
   invites                UserInvite[]
   branches               Branch[]
   suppliers              Supplier[]
+  purchaseRequests       PurchaseRequest[]
   purchaseOrders         PurchaseOrder[]
   stockTransfers         StockTransfer[]
   goodsReceivedNotes     GoodsReceived[]
@@ -194,6 +195,8 @@ model User {
   goodsReceivedCreated    GoodsReceived[]  @relation("GoodsReceivedCreatedBy")
   supplierBillsCreated    SupplierBill[]   @relation("SupplierBillCreatedBy")
   supplierPaymentsCreated SupplierPayment[] @relation("SupplierPaymentCreatedBy")
+  purchaseRequestsCreated PurchaseRequest[] @relation("PurchaseRequestCreatedBy")
+  purchaseRequestsReviewed PurchaseRequest[] @relation("PurchaseRequestReviewedBy")
 
   @@index([orgId])
   @@index([branchId])
@@ -912,6 +915,7 @@ model Part {
   transactions       PartStockTransaction[]
   saleItems          SaleItem[]
   purchaseOrderItems PurchaseOrderItem[]
+  purchaseRequestItems PurchaseRequestItem[]
   creditNoteItems   CreditNoteItem[]
   deliveryNoteItems DeliveryNoteItem[]
   quotationItems    QuotationItem[] @relation("PartQuotationItems")
@@ -1428,6 +1432,7 @@ model Supplier {
   updatedAt   DateTime     @updatedAt
 
   purchaseOrders PurchaseOrder[]
+  purchaseRequests PurchaseRequest[]
   goodsReceivedNotes GoodsReceived[]
   supplierBills SupplierBill[]
 
@@ -1457,6 +1462,68 @@ enum SupplierBillStatus {
   CANCELLED
 }
 
+enum PurchaseRequestStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  REJECTED
+  CONVERTED
+  CANCELLED
+}
+
+enum PurchaseRequestPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+model PurchaseRequest {
+  id            String                  @id @default(cuid())
+  orgId         String
+  org           Organization            @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  requestNumber String                  @unique
+  status        PurchaseRequestStatus   @default(SUBMITTED)
+  priority      PurchaseRequestPriority @default(NORMAL)
+  supplierId    String?
+  supplier      Supplier?               @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  neededBy      DateTime?
+  reason        String?
+  notes         String?
+  requestedById String
+  requestedBy   User                    @relation("PurchaseRequestCreatedBy", fields: [requestedById], references: [id], onDelete: Restrict)
+  reviewedById  String?
+  reviewedBy    User?                   @relation("PurchaseRequestReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull)
+  reviewedAt    DateTime?
+  reviewNote    String?
+  convertedPoId String?
+  convertedPo   PurchaseOrder?          @relation(fields: [convertedPoId], references: [id], onDelete: SetNull)
+  convertedAt   DateTime?
+  createdAt     DateTime                @default(now())
+  updatedAt     DateTime                @updatedAt
+
+  items         PurchaseRequestItem[]
+
+  @@index([orgId, status, createdAt])
+  @@index([supplierId])
+  @@index([requestedById])
+}
+
+model PurchaseRequestItem {
+  id                String          @id @default(cuid())
+  requestId         String
+  request           PurchaseRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  partId            String?
+  part              Part?           @relation(fields: [partId], references: [id], onDelete: SetNull)
+  description       String
+  quantity          Int
+  estimatedUnitCost Float?
+  createdAt         DateTime        @default(now())
+
+  @@index([requestId])
+  @@index([partId])
+}
+
 model PurchaseOrder {
   id         String              @id @default(cuid())
   orgId      String
@@ -1473,6 +1540,7 @@ model PurchaseOrder {
   updatedAt  DateTime            @updatedAt
 
   items PurchaseOrderItem[]
+  purchaseRequests PurchaseRequest[]
   goodsReceivedNotes GoodsReceived[]
   supplierBills SupplierBill[]
 
