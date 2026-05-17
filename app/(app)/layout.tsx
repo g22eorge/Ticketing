@@ -1,4 +1,4 @@
-import { AppSidebar } from "@/components/layout/AppSidebar";
+import { ClientOnlySidebar } from "@/components/layout/ClientOnlySidebar";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { Header } from "@/components/layout/Header";
 import { PageThemeHeader } from "@/components/layout/PageThemeHeader";
@@ -138,7 +138,7 @@ export default async function AppLayout({
 
   return (
     <div className="min-h-dvh overflow-x-clip md:flex md:h-screen md:overflow-hidden">
-      <AppSidebar
+      <ClientOnlySidebar
         role={user.role}
         permissions={user.permissions}
         isPlatformAdmin={isPlatformAdmin}
