@@ -537,6 +537,89 @@ async function main() {
     password: defaultPassword,
   });
 
+  // Sales — can intake, search jobs, view costs, generate job cards
+  const sales = await ensureUser({
+    name: "Sales",
+    email: "sales@eagle.tech",
+    role: "OPS",
+    password: defaultPassword,
+  });
+  await ensureUserPermissions(sales.id, [
+    "can_intake",
+    "can_search_jobs",
+    "can_view_approved_cost",
+    "can_generate_job_cards",
+    "can_view_job_progress",
+  ]);
+
+  // Invoice Sales — sales + can approve invoices + accounts summary
+  const invoiceSales = await ensureUser({
+    name: "Invoice Sales",
+    email: "invoice.sales@eagle.tech",
+    role: "OPS",
+    password: defaultPassword,
+  });
+  await ensureUserPermissions(invoiceSales.id, [
+    "can_intake",
+    "can_search_jobs",
+    "can_view_approved_cost",
+    "can_generate_job_cards",
+    "can_view_job_progress",
+    "can_approve_invoices",
+    "can_view_accounts_summary",
+  ]);
+
+  // POS — front desk walk-in handling
+  const pos = await ensureUser({
+    name: "POS",
+    email: "pos@eagle.tech",
+    role: "FRONT_DESK",
+    password: defaultPassword,
+  });
+  await ensureUserPermissions(pos.id, [
+    "can_intake",
+    "can_view_approved_cost",
+    "can_generate_job_cards",
+  ]);
+
+  // Sales Manager — full sales + financial + team management
+  const salesManager = await ensureUser({
+    name: "Sales Manager",
+    email: "sales.manager@eagle.tech",
+    role: "OPS",
+    password: defaultPassword,
+  });
+  await ensureUserPermissions(salesManager.id, [
+    "can_intake",
+    "can_manage_intake",
+    "can_search_jobs",
+    "can_view_approved_cost",
+    "can_generate_job_cards",
+    "can_view_job_progress",
+    "can_assign_jobs",
+    "can_approve_invoices",
+    "can_view_accounts_summary",
+    "can_view_external_quotes",
+    "can_review_external_bills",
+  ]);
+
+  // Technical Manager — internal tech with assign + external oversight
+  const techManager = await ensureUser({
+    name: "Technical Manager",
+    email: "tech.manager@eagle.tech",
+    role: "TECHNICIAN_INTERNAL",
+    password: defaultPassword,
+  });
+  await ensureUserPermissions(techManager.id, [
+    "can_run_internal_repairs",
+    "can_view_job_progress",
+    "can_assign_jobs",
+    "can_view_external_updates",
+    "can_view_external_quotes",
+    "can_review_external_bills",
+    "can_view_accounts_summary",
+  ]);
+
   await deactivateUsersByEmail([
     "ops@eagle.local",
     "tech.internal@eagle.local",
