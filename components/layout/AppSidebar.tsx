@@ -451,9 +451,9 @@ export function AppSidebar({
       )}
 
       {/* ── Footer ── */}
-      <div className="border-t border-[var(--line)] px-5 py-3">
-        <p className="text-[10px] font-semibold text-[var(--ink-muted)]/70 tracking-wide">Eagle Info Solutions</p>
-        <p className="mt-0.5 text-[9px] text-[var(--ink-muted)]/45 tracking-wide">Repair Manager</p>
+      <div className="border-t border-[var(--line)] px-5 py-3 text-left">
+        <p className="truncate text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]/65">Eagle Info Solutions</p>
+        <p className="mt-1 text-[10px] font-medium tracking-[0.08em] text-[var(--ink-muted)]/45">Repair Manager</p>
       </div>
     </aside>
   );
