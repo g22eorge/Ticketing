@@ -1,0 +1,6 @@
+version: 2
+matches-ignore:
+  - name: ci-dummy-better-auth-secret
+    match: test-only-not-a-real-secret-for-ci-builds-only
+  - name: ci-dummy-bare-alphabet-secret
+    match: abcdefghijklmnopqrstuvwxyz123456

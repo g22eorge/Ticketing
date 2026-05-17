@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       DATABASE_URL: file:${{ github.workspace }}/prisma/dev.db
-      BETTER_AUTH_SECRET: test-only-not-a-real-secret-for-ci-builds-only
+      BETTER_AUTH_SECRET: "test-only-not-a-real-secret-for-ci-builds-only"
       NEXT_PUBLIC_APP_URL: http://127.0.0.1:3000
       BETTER_AUTH_URL: http://127.0.0.1:3000
 
@@ -75,7 +75,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       DATABASE_URL: file:${{ github.workspace }}/prisma/dev.db
-      BETTER_AUTH_SECRET: test-only-not-a-real-secret-for-ci-builds-only
+      BETTER_AUTH_SECRET: "test-only-not-a-real-secret-for-ci-builds-only"
       NEXT_PUBLIC_APP_URL: http://127.0.0.1:3000
       BETTER_AUTH_URL: http://127.0.0.1:3000
 
@@ -161,7 +161,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       DATABASE_URL: file:${{ github.workspace }}/prisma/dev.db
-      BETTER_AUTH_SECRET: test-only-not-a-real-secret-for-ci-builds-only
+      BETTER_AUTH_SECRET: "test-only-not-a-real-secret-for-ci-builds-only"
       NEXT_PUBLIC_APP_URL: http://127.0.0.1:4173
       BETTER_AUTH_URL: http://127.0.0.1:4173
 
