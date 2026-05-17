@@ -1,12 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { FormEvent, useRef, useState } from "react";
 import { toast } from "sonner";
 
 export function LoginForm() {
-  const router = useRouter();
   const formRef = useRef<HTMLFormElement | null>(null);
   const [isPending, setIsPending] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -32,7 +30,7 @@ export function LoginForm() {
         return;
       }
 
-      router.replace("/dashboard");
+      window.location.href = "/dashboard";
     } catch {
       toast.error("Sign in failed. Please try again.");
     } finally {
