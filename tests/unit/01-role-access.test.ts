@@ -28,11 +28,11 @@ test("3: ADMIN can view client info and financials", () => {
 });
 
 // ── Test 4 ───────────────────────────────────────────────────────────────────
-// FRONT_DESK can view client info but not financials
-test("4: FRONT_DESK can view client info but not financials", () => {
+// FRONT_DESK can view client info and payment/POS workflows.
+test("4: FRONT_DESK can view client info and financial workflows", () => {
   const frontDesk = user("FRONT_DESK");
   expect(can.viewClientInfo(frontDesk)).toBe(true);
-  expect(can.viewFinancials(frontDesk)).toBe(false);
+  expect(can.viewFinancials(frontDesk)).toBe(true);
 });
 
 // ── Test 5 ───────────────────────────────────────────────────────────────────
