@@ -4,7 +4,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { Role } from "@prisma/client";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
 
 import { can } from "@/lib/permissions";
 
@@ -319,17 +318,11 @@ export function AppSidebar({
   };
 }) {
   const pathname = usePathname();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
   const visibleHrefs = nav
     .filter((item) => isVisible(role, item.roles === "all" ? "all" : item.roles))
     .map((item) => item.href);
   const activeHref = activeHrefForPath(pathname, visibleHrefs);
-  const groupedNav = mounted ? groupedNavForRole(role, permissions) : [];
+  const groupedNav = groupedNavForRole(role, permissions);
 
   return (
     <aside className="hidden lg:sticky lg:top-0 lg:flex lg:h-screen lg:w-64 lg:flex-col bg-[var(--sidebar-bg)] border-r border-[var(--line)]">
