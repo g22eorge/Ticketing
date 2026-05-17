@@ -17,12 +17,15 @@ const TILES: Tile[] = [
 
   { href: "/settings/billing", title: "Billing", description: "Plan, trial, invoices, and renewal status.", roles: ["ADMIN"] },
   { href: "/settings/users", title: "Users", description: "Create users, roles, and access control.", roles: ["ADMIN"] },
+  { href: "/settings/groups", title: "Groups", description: "Permission groups and staff membership.", roles: ["ADMIN"] },
+  { href: "/settings/targets", title: "Sales Targets", description: "Monthly revenue and job targets.", roles: ["ADMIN", "SALES"] },
   { href: "/settings/branches", title: "Branches", description: "Locations and default branch rules.", roles: ["ADMIN"] },
   { href: "/settings/branding", title: "Branding", description: "Company details and document templates.", roles: ["ADMIN"] },
   { href: "/settings/notifications/templates", title: "Templates", description: "WhatsApp/email templates and status policy.", roles: ["ADMIN", "OPS"] },
   { href: "/settings/notifications/whatsapp", title: "WhatsApp", description: "Provider credentials and test sends.", roles: ["ADMIN"] },
   { href: "/settings/notifications/outbox", title: "Outbox", description: "Delivery status and retries.", roles: ["ADMIN", "OPS"] },
   { href: "/settings/data-heal", title: "Data Heal", description: "Diagnostics and repair tools for production.", roles: ["ADMIN"] },
+  { href: "/settings/audit", title: "Audit Log", description: "Workspace activity history and export.", roles: ["ADMIN"] },
 ];
 
 function allowed(role: string, roles: Tile["roles"]) {
