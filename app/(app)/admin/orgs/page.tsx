@@ -117,7 +117,7 @@ export default async function AdminOrgsPage() {
                   })}
                 </div>
                 <div className="mt-3 flex justify-end">
-                  <button className="btn-premium rounded-lg px-4 py-1.5 text-xs">
+                  <button type="submit" className="btn-premium rounded-lg px-4 py-1.5 text-xs">
                     Save changes
                   </button>
                 </div>

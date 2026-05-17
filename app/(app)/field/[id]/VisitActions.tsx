@@ -64,6 +64,7 @@ export function VisitActions({ visitId, status, isManager, isFieldTech }: Props)
 
       {status === "SCHEDULED" && (isFieldTech || isManager) && (
         <button
+          type="button"
           onClick={() => handleStatusUpdate("EN_ROUTE")}
           disabled={isPending}
           className="inline-flex items-center gap-2 rounded-lg bg-yellow-500 px-4 py-2 text-sm font-semibold text-white hover:bg-yellow-600 transition-colors disabled:opacity-50"
@@ -74,6 +75,7 @@ export function VisitActions({ visitId, status, isManager, isFieldTech }: Props)
 
       {status === "EN_ROUTE" && (isFieldTech || isManager) && (
         <button
+          type="button"
           onClick={() => handleStatusUpdate("ARRIVED")}
           disabled={isPending}
           className="inline-flex items-center gap-2 rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600 transition-colors disabled:opacity-50"
@@ -84,6 +86,7 @@ export function VisitActions({ visitId, status, isManager, isFieldTech }: Props)
 
       {status === "ARRIVED" && (isFieldTech || isManager) && !showSignoffForm && (
         <button
+          type="button"
           onClick={() => setShowSignoffForm(true)}
           className="inline-flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700 transition-colors"
         >
@@ -140,6 +143,7 @@ export function VisitActions({ visitId, status, isManager, isFieldTech }: Props)
 
       {isManager && (status === "SCHEDULED" || status === "EN_ROUTE" || status === "ARRIVED") && (
         <button
+          type="button"
           onClick={() => handleStatusUpdate("CANCELLED")}
           disabled={isPending}
           className="inline-flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-100 transition-colors disabled:opacity-50"

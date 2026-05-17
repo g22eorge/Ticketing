@@ -810,7 +810,7 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
             placeholder="Sale note"
             className="rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 py-2 text-sm outline-none focus:border-[var(--accent)]/50"
           />
-          <button className="btn-premium-secondary rounded-lg px-3 py-2 text-sm">Save Sale</button>
+          <button type="submit" className="btn-premium-secondary rounded-lg px-3 py-2 text-sm">Save Sale</button>
         </form>
       </section>
 
@@ -853,7 +853,7 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
               className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm outline-none focus:border-[var(--accent)]/50"
               required
             />
-            <button className="btn-premium rounded-lg px-4 py-2 text-sm text-white">Add</button>
+            <button type="submit" className="btn-premium rounded-lg px-4 py-2 text-sm text-white">Add</button>
           </form>
         ) : null}
 
@@ -895,7 +895,7 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
                 className="w-36 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm outline-none focus:border-[var(--accent)]/50"
               />
             </div>
-            <button className="btn-premium-secondary rounded-lg px-3 py-2 text-sm">Apply</button>
+            <button type="submit" className="btn-premium-secondary rounded-lg px-3 py-2 text-sm">Apply</button>
           </form>
         ) : null}
 
@@ -984,7 +984,7 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
               placeholder="Ref (optional)"
               className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm outline-none focus:border-[var(--accent)]/50"
             />
-            <button className="btn-premium rounded-lg px-4 py-2 text-sm text-white">Add</button>
+            <button type="submit" className="btn-premium rounded-lg px-4 py-2 text-sm text-white">Add</button>
           </form>
         ) : null}
 
@@ -1101,7 +1101,7 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
                   </table>
                 </div>
 
-                <button className="btn-premium rounded-lg px-4 py-2 text-sm text-white">Create Credit Note</button>
+                <button type="submit" className="btn-premium rounded-lg px-4 py-2 text-sm text-white">Create Credit Note</button>
               </form>
             </div>
 
@@ -1138,7 +1138,7 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
                     placeholder="Ref (optional)"
                     className="rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 py-2 text-sm outline-none focus:border-[var(--accent)]/50"
                   />
-                  <button className="btn-premium rounded-lg px-4 py-2 text-sm text-white">Refund</button>
+                  <button type="submit" className="btn-premium rounded-lg px-4 py-2 text-sm text-white">Refund</button>
                 </form>
               )}
             </div>
@@ -1199,7 +1199,7 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
                           placeholder="Stock received note (optional)"
                           className="min-w-[240px] flex-1 rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 py-2 text-sm outline-none focus:border-[var(--accent)]/50"
                         />
-                        <button className="btn-premium-secondary rounded-lg px-3 py-2 text-sm">Mark Items Received Back</button>
+                        <button type="submit" className="btn-premium-secondary rounded-lg px-3 py-2 text-sm">Mark Items Received Back</button>
                       </form>
                     ) : cn.itemsReceivedBackNote ? (
                       <p className="mt-2 text-xs text-[var(--ink-muted)]">Note: {cn.itemsReceivedBackNote}</p>

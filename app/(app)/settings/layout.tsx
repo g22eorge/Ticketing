@@ -144,6 +144,7 @@ export default async function SettingsLayout({ children }: { children: ReactNode
       title: "Tools",
       items: [
         user.role === "ADMIN" ? { href: "/settings/data-heal", label: "Data Heal", description: "Diagnostics and repairs" } : null,
+        user.role === "ADMIN" ? { href: "/settings/audit", label: "Audit Log", description: "Full activity history" } : null,
       ].filter(Boolean) as SettingsNavGroup["items"],
     },
   ].filter((g) => g.items.length > 0);

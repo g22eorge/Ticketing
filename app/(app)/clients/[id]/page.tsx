@@ -275,7 +275,7 @@ export default async function ClientDetailPage({
           </label>
         </div>
 
-        {canEdit ? <button className="btn-premium rounded-lg px-3 py-2 text-white">Save Client</button> : null}
+        {canEdit ? <button type="submit" className="btn-premium rounded-lg px-3 py-2 text-white">Save Client</button> : null}
       </form>
 
       <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
@@ -342,7 +342,7 @@ export default async function ClientDetailPage({
         <h2 className="font-semibold">Client Notes</h2>
         <form action={addClientNote} className="mt-3 flex flex-col gap-2">
           <textarea name="body" required placeholder="Add note" className="min-h-24 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm outline-none transition focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/20" />
-          <button disabled={!notesFeatureAvailable} className="btn-premium self-start rounded-lg px-3 py-2 text-sm text-white disabled:opacity-60">Add Note</button>
+          <button type="submit" disabled={!notesFeatureAvailable} className="btn-premium self-start rounded-lg px-3 py-2 text-sm text-white disabled:opacity-60">Add Note</button>
         </form>
 
         {!notesFeatureAvailable ? (

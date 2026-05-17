@@ -73,10 +73,10 @@ export default async function DataHealPage({
         ) : null}
         <div className="flex flex-wrap gap-2">
           <form action={runDry}>
-            <button className="btn-premium-secondary rounded-lg px-3 py-2 text-sm">Run Dry Check</button>
+            <button type="submit" className="btn-premium-secondary rounded-lg px-3 py-2 text-sm">Run Dry Check</button>
           </form>
           <form action={runApply}>
-            <button className="btn-premium rounded-lg px-3 py-2 text-sm font-semibold text-white">Run Heal Now</button>
+            <button type="submit" className="btn-premium rounded-lg px-3 py-2 text-sm font-semibold text-white">Run Heal Now</button>
           </form>
         </div>
       </section>

@@ -602,7 +602,7 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
                 <option value="FULL">Full access</option>
                 <option value="READ_ONLY">Read-only</option>
               </select>
-              <button className="btn-premium-secondary rounded-lg px-3 py-1.5 text-[13px]" disabled={target.id === actor.id}>Apply</button>
+              <button type="submit" className="btn-premium-secondary rounded-lg px-3 py-1.5 text-[13px]" disabled={target.id === actor.id}>Apply</button>
               {target.id === actor.id ? (
                 <p className="text-[11px] text-[var(--ink-muted)]">Cannot change your own mode.</p>
               ) : null}

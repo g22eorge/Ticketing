@@ -212,7 +212,7 @@ export default async function GroupsPage({ searchParams }: { searchParams: Promi
               <form action={createGroupAction} className="space-y-2">
                 <input name="name" placeholder="Group name" className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-[13px] outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/15" required />
                 <input name="description" placeholder="Description (optional)" className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-[13px] outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/15" />
-                <button className="btn-premium rounded-lg px-4 py-2 text-[13px] text-white">Create Group</button>
+                <button type="submit" className="btn-premium rounded-lg px-4 py-2 text-[13px] text-white">Create Group</button>
               </form>
             </div>
           ) : null}
@@ -245,13 +245,13 @@ export default async function GroupsPage({ searchParams }: { searchParams: Promi
                     <input name="name" defaultValue={selected.name} className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm outline-none" required />
                     <input name="description" defaultValue={selected.description ?? ""} className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm outline-none" placeholder="Description" />
                     <div className="md:col-span-2 flex items-center justify-between gap-2">
-                      <button className="btn-premium rounded-lg px-4 py-2 text-sm text-white">Save</button>
+                      <button type="submit" className="btn-premium rounded-lg px-4 py-2 text-sm text-white">Save</button>
                     </div>
                   </form>
                   <div className="md:col-span-2 flex items-center justify-between gap-2">
                     <form action={deleteGroupAction}>
                       <input type="hidden" name="id" value={selected.id} />
-                      <button className="rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-100">Delete</button>
+                      <button type="submit" className="rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-100">Delete</button>
                     </form>
                   </div>
                 </div>
@@ -266,7 +266,7 @@ export default async function GroupsPage({ searchParams }: { searchParams: Promi
                       <option key={u.id} value={u.id}>{u.name} ({u.email})</option>
                     ))}
                   </select>
-                  <button className="btn-premium rounded-lg px-4 py-2 text-sm text-white">Add</button>
+                  <button type="submit" className="btn-premium rounded-lg px-4 py-2 text-sm text-white">Add</button>
                 </form>
 
                 <div className="mt-3 overflow-hidden rounded-lg border border-[var(--line)]">
@@ -288,7 +288,7 @@ export default async function GroupsPage({ searchParams }: { searchParams: Promi
                             <form action={removeMemberAction}>
                               <input type="hidden" name="id" value={selected.id} />
                               <input type="hidden" name="memberId" value={m.id} />
-                              <button className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-xs font-semibold hover:border-[var(--accent)]/40">Remove</button>
+                              <button type="submit" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-xs font-semibold hover:border-[var(--accent)]/40">Remove</button>
                             </form>
                           </td>
                         </tr>
@@ -318,7 +318,7 @@ export default async function GroupsPage({ searchParams }: { searchParams: Promi
                       </label>
                     ))}
                   </div>
-                  <button className="btn-premium rounded-lg px-4 py-2 text-sm text-white">Save Permissions</button>
+                  <button type="submit" className="btn-premium rounded-lg px-4 py-2 text-sm text-white">Save Permissions</button>
                 </form>
               </div>
             </>

@@ -5,6 +5,7 @@ import { requirePlatformAdmin } from "@/lib/platform-admin";
 const NAV = [
   { href: "/platform", label: "Organisations" },
   { href: "/platform/payments", label: "Payments" },
+  { href: "/platform/audit", label: "Audit Log" },
   { href: "/platform/settings", label: "Settings" },
 ];
 

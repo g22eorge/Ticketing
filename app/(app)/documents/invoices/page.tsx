@@ -429,7 +429,7 @@ export default async function InvoicesPage() {
                                 </select>
                                 <input name="reference" placeholder="Ref" className="min-w-0 flex-1 rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1.5 text-xs outline-none focus:border-[var(--accent)]/50" />
                               </div>
-                              <button className="btn-premium w-full rounded-lg px-3 py-1.5 text-xs font-semibold">Record Payment</button>
+                              <button type="submit" className="btn-premium w-full rounded-lg px-3 py-1.5 text-xs font-semibold">Record Payment</button>
                             </form>
                           </>
                         ) : null}
@@ -444,7 +444,7 @@ export default async function InvoicesPage() {
                                 <option value="">No method</option>
                                 {DELIVERY_METHODS.map((m) => <option key={m} value={m}>{m.replaceAll("_", " ")}</option>)}
                               </select>
-                              <button className="btn-premium w-full rounded-lg px-3 py-1.5 text-xs font-semibold">Create Note</button>
+                              <button type="submit" className="btn-premium w-full rounded-lg px-3 py-1.5 text-xs font-semibold">Create Note</button>
                             </form>
                           </>
                         ) : null}
@@ -455,7 +455,7 @@ export default async function InvoicesPage() {
                             {INVOICE_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
                           </select>
                           <textarea name="notes" defaultValue={inv.notes ?? ""} placeholder="Notes" className="min-h-12 w-full rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1.5 text-xs outline-none focus:border-[var(--accent)]/50" />
-                          <button className="btn-premium w-full rounded-lg px-3 py-1.5 text-xs font-semibold">Save</button>
+                          <button type="submit" className="btn-premium w-full rounded-lg px-3 py-1.5 text-xs font-semibold">Save</button>
                         </form>
                         {inv.payments.length === 0 && inv.deliveryNotes.length === 0 ? (
                           <MenuDestructiveRow>

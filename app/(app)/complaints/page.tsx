@@ -278,7 +278,7 @@ export default async function ComplaintsPage({
                               rows={2}
                               className="w-full rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1.5 text-xs outline-none resize-none"
                             />
-                            <button className="btn-premium w-full rounded-lg px-3 py-1.5 text-xs">
+                            <button type="submit" className="btn-premium w-full rounded-lg px-3 py-1.5 text-xs">
                               Save
                             </button>
                           </form>

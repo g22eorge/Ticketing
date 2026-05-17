@@ -25,6 +25,7 @@ export function BranchList({ branches }: { branches: Branch[] }) {
             Locations ({branches.length})
           </p>
           <button
+            type="button"
             onClick={() => { setCreating(true); setEditingId(null); }}
             className="rounded-md bg-[var(--gold)]/15 px-3 py-1 text-xs font-semibold text-[var(--gold)] hover:bg-[var(--gold)]/25"
           >
@@ -62,6 +63,7 @@ export function BranchList({ branches }: { branches: Branch[] }) {
                     </p>
                   </div>
                   <button
+                    type="button"
                     onClick={() => { setEditingId(b.id); setCreating(false); }}
                     className="shrink-0 text-xs font-semibold text-[var(--gold)] hover:underline"
                   >

@@ -53,6 +53,7 @@ const nav = [
   { href: "/settings/notifications/templates",  label: "Templates",   group: "admin" as NavGroup, roles: ["ADMIN", "OPS"] as const },
   { href: "/settings/notifications/whatsapp",   label: "WhatsApp",    group: "admin" as NavGroup, roles: ["ADMIN"] as const },
   { href: "/settings/billing",                  label: "Billing",     group: "admin" as NavGroup, roles: ["ADMIN"] as const },
+  { href: "/settings/audit",                    label: "Audit Log",   group: "admin" as NavGroup, roles: ["ADMIN"] as const },
 
   // Account
   { href: "/settings",                  label: "Settings",      group: "personal" as NavGroup, roles: "all" as const },
@@ -89,7 +90,7 @@ const roleOrder: Partial<Record<Role, readonly string[]>> = {
     // finance
     "/targets", "/reports", "/payout-followups",
     // admin
-    "/settings/users", "/settings/groups", "/settings/branches", "/settings/branding", "/settings/notifications/templates", "/settings/notifications/whatsapp", "/settings/billing",
+    "/settings/users", "/settings/groups", "/settings/branches", "/settings/branding", "/settings/notifications/templates", "/settings/notifications/whatsapp", "/settings/billing", "/settings/audit",
     // account
     "/settings", "/settings/profile", "/settings/notifications",
   ],
@@ -307,6 +308,9 @@ function navIcon(href: string) {
 
     case "/settings/billing":
       return <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fillRule="evenodd" d="M2.5 4A1.5 1.5 0 0 0 1 5.5V6h18v-.5A1.5 1.5 0 0 0 17.5 4h-15ZM19 9H1v5.5A1.5 1.5 0 0 0 2.5 16h15a1.5 1.5 0 0 0 1.5-1.5V9ZM3 13.25a.75.75 0 0 1 .75-.75h1.5a.75.75 0 0 1 0 1.5h-1.5a.75.75 0 0 1-.75-.75Zm4.75-.75a.75.75 0 0 0 0 1.5h3.5a.75.75 0 0 0 0-1.5h-3.5Z" clipRule="evenodd" /></svg>;
+
+    case "/settings/audit":
+      return <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fillRule="evenodd" d="M2 4.75A.75.75 0 0 1 2.75 4h14.5a.75.75 0 0 1 0 1.5H2.75A.75.75 0 0 1 2 4.75ZM2 10a.75.75 0 0 1 .75-.75h14.5a.75.75 0 0 1 0 1.5H2.75A.75.75 0 0 1 2 10Zm0 5.25a.75.75 0 0 1 .75-.75H10a.75.75 0 0 1 0 1.5H2.75a.75.75 0 0 1-.75-.75Z" clipRule="evenodd" /></svg>;
 
     // Settings hub & Profile fallback
     default:

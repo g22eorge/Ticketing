@@ -184,7 +184,7 @@ export default async function PosPage() {
               <option key={b.id} value={b.id}>{b.name}</option>
             ))}
           </select>
-          <button className="btn-premium rounded-lg px-3 py-1.5 text-[12px]">New Sale</button>
+          <button type="submit" className="btn-premium rounded-lg px-3 py-1.5 text-[12px]">New Sale</button>
         </form>
       </div>
 

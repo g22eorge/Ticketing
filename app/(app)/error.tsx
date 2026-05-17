@@ -12,6 +12,7 @@ export default function AppError({ error, reset }: { error: Error; reset: () => 
       </p>
       <div className="mt-4 flex flex-wrap gap-2">
         <button
+          type="button"
           onClick={reset}
           className="btn-premium rounded-lg px-4 py-2.5 text-sm font-semibold text-white"
         >

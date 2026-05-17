@@ -524,14 +524,14 @@ export default async function NotificationTemplatesPage({
         <div className="mt-4 flex flex-wrap gap-2">
           {user.role === "ADMIN" ? (
             <form action={deduplicateTemplates}>
-              <button className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-100">
+              <button type="submit" className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-100">
                 Remove Duplicates
               </button>
             </form>
           ) : null}
           {user.role === "ADMIN" ? (
             <form action={applyMetaMigration}>
-              <button className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700 hover:bg-blue-100">
+              <button type="submit" className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700 hover:bg-blue-100">
                 Apply Migration
               </button>
             </form>
@@ -595,7 +595,7 @@ export default async function NotificationTemplatesPage({
             defaultValue="en"
             className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm font-mono outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14 md:col-span-1 xl:col-span-2"
           />
-          <button className="btn-premium rounded-lg px-3 py-2 text-sm text-white md:col-span-2 xl:col-span-1">Create</button>
+          <button type="submit" className="btn-premium rounded-lg px-3 py-2 text-sm text-white md:col-span-2 xl:col-span-1">Create</button>
         </form>
       </section>
 
@@ -724,14 +724,14 @@ export default async function NotificationTemplatesPage({
                       </div>
                     ) : null}
                     <div className="flex flex-wrap gap-2 xl:col-span-6">
-                      <button className="btn-premium rounded-lg px-3 py-2 text-sm text-white">Save</button>
+                      <button type="submit" className="btn-premium rounded-lg px-3 py-2 text-sm text-white">Save</button>
                     </div>
                   </form>
 
                   {user.role === "ADMIN" ? (
                     <form action={deleteTemplate} className="mt-2">
                       <input type="hidden" name="id" value={t.id} />
-                      <button className="btn-premium-secondary rounded-lg px-3 py-2 text-sm">Delete Template</button>
+                      <button type="submit" className="btn-premium-secondary rounded-lg px-3 py-2 text-sm">Delete Template</button>
                     </form>
                   ) : null}
                 </details>
@@ -798,7 +798,7 @@ export default async function NotificationTemplatesPage({
                   inputMode="numeric"
                   className="rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 py-2 text-sm outline-none focus:border-[var(--accent)]/50"
                 />
-                <button className="btn-premium-secondary rounded-lg px-3 py-2 text-sm">Save</button>
+                <button type="submit" className="btn-premium-secondary rounded-lg px-3 py-2 text-sm">Save</button>
               </form>
             );
           })}

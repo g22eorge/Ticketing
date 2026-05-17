@@ -165,7 +165,7 @@ export default async function PayoutFollowupsPage({
               <option key={tech.id} value={tech.id}>{tech.name}</option>
             ))}
           </select>
-          <button className="btn-premium-secondary rounded-lg px-3 py-1.5 text-sm">Apply</button>
+          <button type="submit" className="btn-premium-secondary rounded-lg px-3 py-1.5 text-sm">Apply</button>
           <Link href="/payout-followups" className="rounded-lg border border-[var(--line)] px-3 py-1.5 text-sm text-[var(--ink-muted)] hover:text-[var(--ink)]">Reset</Link>
         </form>
       </section>

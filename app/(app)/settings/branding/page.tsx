@@ -372,7 +372,7 @@ export default async function BrandingPage({
         </div>
 
         <div className="border-t border-[var(--line)] px-4 py-3">
-          <button className="btn-premium rounded-lg px-4 py-1.5 text-[13px]">Save Document Settings</button>
+          <button type="submit" className="btn-premium rounded-lg px-4 py-1.5 text-[13px]">Save Document Settings</button>
         </div>
       </form>
 
@@ -388,7 +388,7 @@ export default async function BrandingPage({
             className="w-full min-w-0 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-1.5 text-xs sm:text-sm outline-none"
             required
           />
-          <button className="btn-premium rounded-lg px-3 py-1.5 text-sm">Upload Logo</button>
+          <button type="submit" className="btn-premium rounded-lg px-3 py-1.5 text-sm">Upload Logo</button>
         </form>
 
         <div className="mt-3">

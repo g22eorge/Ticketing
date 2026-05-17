@@ -170,7 +170,7 @@ export default async function TechnicianPayoutsPage({
           className={controlClass}
         />
         <div className="flex gap-2">
-          <button className="btn-premium-secondary rounded-lg px-3 py-2">Apply</button>
+          <button type="submit" className="btn-premium-secondary rounded-lg px-3 py-2">Apply</button>
           <Link href="/technicians/payouts" className="btn-premium-secondary rounded-lg px-3 py-2 text-sm">
             Reset
           </Link>

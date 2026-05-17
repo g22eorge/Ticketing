@@ -899,7 +899,7 @@ export default async function UsersPage({
               <select name="role" defaultValue="OPS" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14">
                 {roleOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
-              <button className="btn-premium rounded-lg px-3 py-1.5 text-[13px] text-white">Create</button>
+              <button type="submit" className="btn-premium rounded-lg px-3 py-1.5 text-[13px] text-white">Create</button>
             </form>
           </div>
         </section>

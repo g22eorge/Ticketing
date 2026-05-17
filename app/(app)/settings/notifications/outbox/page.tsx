@@ -215,7 +215,7 @@ export default async function OutboxPage({
             preserve={{ channel: channel ?? undefined, status: status ?? undefined }}
           />
           <form action={retryNowAction}>
-            <button className="btn-premium rounded-lg px-3 py-1.5 text-[13px]">Run Retry</button>
+            <button type="submit" className="btn-premium rounded-lg px-3 py-1.5 text-[13px]">Run Retry</button>
           </form>
         </div>
       </div>
@@ -326,7 +326,7 @@ export default async function OutboxPage({
                         {r.status !== "SENT" ? (
                           <form action={retryOneAction}>
                             <input type="hidden" name="id" value={r.id} />
-                            <button className="btn-premium-secondary w-full rounded-lg px-3 py-1.5 text-xs">
+                            <button type="submit" className="btn-premium-secondary w-full rounded-lg px-3 py-1.5 text-xs">
                               Retry
                             </button>
                           </form>
@@ -334,7 +334,7 @@ export default async function OutboxPage({
                         {r.status !== "DEAD" && r.status !== "SENT" ? (
                           <form action={markDeadAction}>
                             <input type="hidden" name="id" value={r.id} />
-                            <button className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-xs font-medium text-[var(--ink-muted)] transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-700">
+                            <button type="submit" className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-xs font-medium text-[var(--ink-muted)] transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-700">
                               Discard
                             </button>
                           </form>

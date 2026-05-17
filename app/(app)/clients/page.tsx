@@ -283,7 +283,7 @@ export default async function ClientsPage({
               <input name="organization" placeholder="Organization" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-[13px] outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/15" />
             </div>
             <div className="mt-2">
-              <button className="btn-premium rounded-lg px-4 py-2 text-[13px] text-white">
+              <button type="submit" className="btn-premium rounded-lg px-4 py-2 text-[13px] text-white">
                 Create Client
               </button>
             </div>
@@ -345,7 +345,7 @@ export default async function ClientsPage({
                       {user.role === "ADMIN" && client._count.jobs === 0 ? (
                         <form action={deleteClientAction} className="pointer-events-auto">
                           <input type="hidden" name="id" value={client.id} />
-                          <button className="text-[10px] font-medium uppercase tracking-wide text-[var(--ink-muted)]/50 transition hover:text-red-500">
+                          <button type="submit" className="text-[10px] font-medium uppercase tracking-wide text-[var(--ink-muted)]/50 transition hover:text-red-500">
                             ✕
                           </button>
                         </form>
@@ -444,6 +444,7 @@ export default async function ClientsPage({
                           <form action={deleteClientAction} className="inline">
                             <input type="hidden" name="id" value={client.id} />
                             <button
+                              type="submit"
                               disabled={client._count.jobs > 0}
                               className="whitespace-nowrap rounded-lg border border-red-200 px-2.5 py-1 text-[11px] font-medium text-red-500 transition-colors hover:border-red-300 hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-40"
                             >
