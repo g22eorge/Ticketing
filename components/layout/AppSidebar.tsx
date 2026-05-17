@@ -7,7 +7,7 @@ import { usePathname } from "next/navigation";
 
 import { can } from "@/lib/permissions";
 
-type NavGroup = "overview" | "repairs" | "inventory" | "clients" | "documents" | "finance" | "personal";
+type NavGroup = "overview" | "repairs" | "inventory" | "clients" | "documents" | "finance";
 
 // ── nav items ─────────────────────────────────────────────────────────────────
 
@@ -45,10 +45,6 @@ const nav = [
   { href: "/payout-followups",   label: "Payment Tracker", group: "finance"    as NavGroup, roles: ["ADMIN", "MANAGER", "OPS", "FINANCE", "TECH_MANAGER", "SALES_MANAGER"] as const },
   { href: "/technicians/payouts",label: "My Payouts",      group: "finance"    as NavGroup, roles: ["TECHNICIAN_EXTERNAL"] as const },
 
-  // Account
-  { href: "/settings",                  label: "Settings",      group: "personal" as NavGroup, roles: "all" as const },
-  { href: "/settings/profile",          label: "Profile",        group: "personal" as NavGroup, roles: "all" as const },
-  { href: "/settings/notifications",    label: "Notifications",  group: "personal" as NavGroup, roles: ["ADMIN", "MANAGER", "TECH_MANAGER", "OPS", "FINANCE", "FRONT_DESK", "SALES", "TECHNICIAN_INTERNAL", "TECHNICIAN_EXTERNAL", "SALES_MANAGER", "SALES_CORPORATE", "SALES_RETAIL", "SALES_POS", "TECH_FIELD"] as const },
 ] as const;
 
 // ── group labels ──────────────────────────────────────────────────────────────
@@ -60,7 +56,6 @@ const groupLabel: Record<NavGroup, string> = {
   clients:   "Clients & Sales",
   documents: "Documents",
   finance:   "Finance",
-  personal:  "Account",
 };
 
 // ── role-based ordering ───────────────────────────────────────────────────────
@@ -78,8 +73,6 @@ const roleOrder: Partial<Record<Role, readonly string[]>> = {
     "/documents/job-cards", "/documents/quotations", "/documents/invoices", "/documents/receipts", "/documents/delivery-notes",
     // finance
     "/targets", "/reports", "/payout-followups",
-    // account
-    "/settings", "/settings/profile", "/settings/notifications",
   ],
   MANAGER: [
     "/dashboard",
@@ -88,14 +81,12 @@ const roleOrder: Partial<Record<Role, readonly string[]>> = {
     "/clients", "/sales", "/pos",
     "/documents/job-cards", "/documents/quotations", "/documents/invoices", "/documents/receipts", "/documents/delivery-notes",
     "/targets", "/reports", "/payout-followups",
-    "/settings", "/settings/profile", "/settings/notifications",
   ],
   TECH_MANAGER: [
     "/dashboard",
     "/jobs", "/intake", "/field", "/technicians", "/complaints",
     "/inventory", "/inventory/suppliers", "/inventory/purchase-orders",
     "/documents/job-cards", "/documents/quotations", "/documents/invoices", "/targets", "/payout-followups",
-    "/settings", "/settings/profile", "/settings/notifications",
   ],
   OPS: [
     "/dashboard",
@@ -104,65 +95,59 @@ const roleOrder: Partial<Record<Role, readonly string[]>> = {
     "/clients", "/sales", "/pos",
     "/documents/job-cards", "/documents/quotations", "/documents/invoices", "/documents/receipts", "/documents/delivery-notes",
     "/targets", "/reports", "/payout-followups",
-    "/settings", "/settings/profile", "/settings/notifications",
   ],
   FINANCE: [
     "/dashboard",
     "/documents/invoices",
     "/targets", "/reports", "/payout-followups",
-    "/settings", "/settings/profile", "/settings/notifications",
   ],
   SALES: [
     "/dashboard",
     "/clients", "/sales", "/pos",
     "/documents/quotations", "/documents/receipts",
-    "/settings", "/settings/profile", "/settings/notifications",
   ],
   FRONT_DESK: [
     "/dashboard",
     "/jobs", "/intake", "/technicians",
     "/clients", "/pos",
     "/documents/job-cards", "/documents/receipts", "/documents/delivery-notes",
-    "/settings", "/settings/profile",
   ],
   TECHNICIAN_INTERNAL: [
     "/dashboard",
     "/jobs", "/intake", "/technicians",
     "/inventory",
     "/documents/job-cards", "/documents/quotations",
-    "/settings", "/settings/profile", "/settings/notifications",
   ],
   TECHNICIAN_EXTERNAL: [
     "/dashboard",
     "/jobs", "/technicians",
     "/technicians/payouts",
-    "/settings", "/settings/profile", "/settings/notifications",
   ],
   // Legacy alias — normalizeRole() converts INTAKE → FRONT_DESK
-  INTAKE: ["/dashboard", "/jobs", "/intake", "/technicians", "/clients", "/documents/job-cards", "/settings", "/settings/profile"],
-  SALES_MANAGER: ["/dashboard", "/jobs", "/intake", "/field", "/technicians", "/clients", "/sales", "/pos", "/documents/job-cards", "/documents/quotations", "/documents/invoices", "/targets", "/reports", "/payout-followups", "/settings", "/settings/profile", "/settings/notifications"],
-  SALES_CORPORATE: ["/dashboard", "/jobs", "/clients", "/sales", "/documents/quotations", "/documents/invoices", "/settings", "/settings/profile", "/settings/notifications"],
-  SALES_RETAIL: ["/dashboard", "/jobs", "/clients", "/sales", "/pos", "/documents/quotations", "/documents/receipts", "/settings", "/settings/profile", "/settings/notifications"],
-  SALES_POS: ["/dashboard", "/pos", "/settings", "/settings/profile", "/settings/notifications"],
-  TECH_FIELD: ["/dashboard", "/jobs", "/field", "/settings", "/settings/profile", "/settings/notifications"],
+  INTAKE: ["/dashboard", "/jobs", "/intake", "/technicians", "/clients", "/documents/job-cards"],
+  SALES_MANAGER: ["/dashboard", "/jobs", "/intake", "/field", "/technicians", "/clients", "/sales", "/pos", "/documents/job-cards", "/documents/quotations", "/documents/invoices", "/targets", "/reports", "/payout-followups"],
+  SALES_CORPORATE: ["/dashboard", "/jobs", "/clients", "/sales", "/documents/quotations", "/documents/invoices"],
+  SALES_RETAIL: ["/dashboard", "/jobs", "/clients", "/sales", "/pos", "/documents/quotations", "/documents/receipts"],
+  SALES_POS: ["/dashboard", "/pos"],
+  TECH_FIELD: ["/dashboard", "/jobs", "/field"],
 };
 
 const roleGroupOrder: Partial<Record<Role, readonly NavGroup[]>> = {
-  ADMIN:               ["overview", "repairs", "inventory", "clients", "documents", "finance", "personal"],
-  MANAGER:             ["overview", "repairs", "inventory", "clients", "documents", "finance", "personal"],
-  TECH_MANAGER:        ["overview", "repairs", "inventory", "documents", "personal"],
-  OPS:                 ["overview", "repairs", "inventory", "clients", "documents", "finance", "personal"],
-  FINANCE:             ["overview", "finance", "documents", "personal"],
-  SALES:               ["overview", "clients", "documents", "personal"],
-  FRONT_DESK:          ["overview", "repairs", "clients", "documents", "personal"],
-  TECHNICIAN_INTERNAL: ["overview", "repairs", "inventory", "documents", "personal"],
-  TECHNICIAN_EXTERNAL: ["overview", "repairs", "finance", "personal"],
-  INTAKE:              ["overview", "repairs", "clients", "documents", "personal"],
-  SALES_MANAGER:       ["overview", "repairs", "clients", "documents", "finance", "personal"],
-  SALES_CORPORATE:     ["overview", "clients", "documents", "personal"],
-  SALES_RETAIL:        ["overview", "clients", "documents", "personal"],
-  SALES_POS:           ["overview", "clients", "personal"],
-  TECH_FIELD:          ["overview", "repairs", "personal"],
+  ADMIN:               ["overview", "repairs", "inventory", "clients", "documents", "finance"],
+  MANAGER:             ["overview", "repairs", "inventory", "clients", "documents", "finance"],
+  TECH_MANAGER:        ["overview", "repairs", "inventory", "documents"],
+  OPS:                 ["overview", "repairs", "inventory", "clients", "documents", "finance"],
+  FINANCE:             ["overview", "finance", "documents"],
+  SALES:               ["overview", "clients", "documents"],
+  FRONT_DESK:          ["overview", "repairs", "clients", "documents"],
+  TECHNICIAN_INTERNAL: ["overview", "repairs", "inventory", "documents"],
+  TECHNICIAN_EXTERNAL: ["overview", "repairs", "finance"],
+  INTAKE:              ["overview", "repairs", "clients", "documents"],
+  SALES_MANAGER:       ["overview", "repairs", "clients", "documents", "finance"],
+  SALES_CORPORATE:     ["overview", "clients", "documents"],
+  SALES_RETAIL:        ["overview", "clients", "documents"],
+  SALES_POS:           ["overview", "clients"],
+  TECH_FIELD:          ["overview", "repairs"],
 };
 
 // ── helpers ───────────────────────────────────────────────────────────────────
@@ -208,7 +193,7 @@ function orderedNavForRole(role: Role, permissions: string[]) {
 
 function groupedNavForRole(role: Role, permissions: string[]) {
   const ordered = orderedNavForRole(role, permissions);
-  const canonicalOrder: NavGroup[] = ["overview", "repairs", "inventory", "clients", "documents", "finance", "personal"];
+  const canonicalOrder: NavGroup[] = ["overview", "repairs", "inventory", "clients", "documents", "finance"];
   const baseGroups = roleGroupOrder[role] ?? ["overview", "personal"];
   const missingGroups = canonicalOrder.filter(
     (group) => ordered.some((item) => item.group === group) && !baseGroups.includes(group),
@@ -273,10 +258,6 @@ function navIcon(href: string) {
     case "/technicians/payouts":
       return <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M10.75 10.818v2.614A3.13 3.13 0 0 0 11.888 13c.482-.315.612-.648.612-.875 0-.227-.13-.56-.612-.875a3.13 3.13 0 0 0-1.138-.432ZM8.33 8.62c.053.055.115.11.184.164.208.16.46.284.736.363V6.603a2.45 2.45 0 0 0-.35.13c-.14.065-.27.143-.386.233-.377.292-.514.627-.514.909 0 .184.058.39.33.576Z" /><path fillRule="evenodd" d="M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Zm-8-6a.75.75 0 0 1 .75.75v.316a3.78 3.78 0 0 1 1.653.713c.426.33.744.74.925 1.2a.75.75 0 0 1-1.395.55 1.35 1.35 0 0 0-.428-.507 2.276 2.276 0 0 0-.755-.36V8.5c.558.157 1.072.443 1.482.8.542.47.87 1.096.87 1.7 0 .604-.328 1.23-.87 1.7a4.841 4.841 0 0 1-1.482.8V14a.75.75 0 0 1-1.5 0v-.311a4.5 4.5 0 0 1-1.681-.845.75.75 0 1 1 .914-1.198c.382.29.813.487 1.267.551V9.5a3.702 3.702 0 0 1-1.29-.645 2.193 2.193 0 0 1-.798-1.678c0-.845.467-1.58 1.129-2.066A3.947 3.947 0 0 1 9.25 4.81V4.75A.75.75 0 0 1 10 4Z" clipRule="evenodd" /></svg>;
 
-    case "/settings/notifications":
-      return <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M9.5 2.5a.5.5 0 0 1 1 0v.25a6.5 6.5 0 0 1 5.5 6.428v2.656c0 .555.22 1.086.612 1.478l.284.284a.75.75 0 0 1-.53 1.28H3.634a.75.75 0 0 1-.53-1.28l.284-.284A2.09 2.09 0 0 0 4 11.834V9.178A6.5 6.5 0 0 1 9.5 2.75V2.5Z" /><path d="M7.25 15.5a2.75 2.75 0 0 0 5.5 0h-5.5Z" /></svg>;
-
-    // Settings hub & Profile fallback
     default:
       return <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fillRule="evenodd" d="M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Zm-5.5-2.5a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0ZM10 12a5.99 5.99 0 0 0-4.793 2.39A6.483 6.483 0 0 0 10 16.5a6.483 6.483 0 0 0 4.793-2.11A5.99 5.99 0 0 0 10 12Z" clipRule="evenodd" /></svg>;
   }
@@ -298,8 +279,6 @@ function groupIcon(group: NavGroup) {
       return <svg viewBox="0 0 12 12" fill="currentColor" aria-hidden="true"><path fillRule="evenodd" d="M2.5 1A1.5 1.5 0 0 0 1 2.5v7A1.5 1.5 0 0 0 2.5 11h7A1.5 1.5 0 0 0 11 9.5v-5L7 1H2.5ZM7 1.5V4h2.5L7 1.5ZM3.5 6a.5.5 0 0 0 0 1h5a.5.5 0 0 0 0-1h-5Zm0 2a.5.5 0 0 0 0 1h3a.5.5 0 0 0 0-1h-3Z" clipRule="evenodd" /></svg>;
     case "finance":
       return <svg viewBox="0 0 12 12" fill="currentColor" aria-hidden="true"><path fillRule="evenodd" d="M6 1a5 5 0 1 0 0 10A5 5 0 0 0 6 1Zm.5 2.5a.5.5 0 0 0-1 0v.27a1.5 1.5 0 0 0 .5 2.91v1.5a.75.75 0 0 1-.553-.242.5.5 0 1 0-.735.676A1.75 1.75 0 0 0 5.5 8.73V9a.5.5 0 0 0 1 0v-.27a1.5 1.5 0 0 0-.5-2.91V4.32c.21.08.388.217.5.38a.5.5 0 1 0 .832-.555A1.75 1.75 0 0 0 6.5 3.77V3.5Z" clipRule="evenodd" /></svg>;
-    case "personal":
-      return <svg viewBox="0 0 12 12" fill="currentColor" aria-hidden="true"><circle cx="6" cy="4" r="2" /><path d="M2 10a4 4 0 0 1 8 0H2Z" /></svg>;
   }
 }
 

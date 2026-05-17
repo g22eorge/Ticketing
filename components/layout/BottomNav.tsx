@@ -113,8 +113,6 @@ const ITEMS = {
   payoutFollowups: { href: "/payout-followups",  label: "Payments", icon: payoutsIcon },
   payouts:     { href: "/technicians/payouts",   label: "Payouts",   icon: payoutsIcon },
   settings:    { href: "/settings",              label: "Settings",  icon: usersIcon },
-  notifications: { href: "/settings/notifications", label: "Notifications", icon: notificationsIcon },
-  profile:     { href: "/settings/profile",      label: "Profile",   icon: profileIcon },
   jobCards:    { href: "/documents/job-cards",   label: "Job Cards",  icon: invoiceIcon },
   quotations:  { href: "/documents/quotations",  label: "Quotes",    icon: invoiceIcon },
   invoiceDocs: { href: "/documents/invoices",    label: "Invoices",  icon: invoiceIcon },
@@ -144,10 +142,9 @@ function getMoreGroups(role: Role, permissions: string[]): NavGroup[] {
     if (href === ITEMS.receipts.href) return can.viewFinancials(permUser);
     if (href === ITEMS.deliveryNotes.href) return can.viewFinancials(permUser) || ["OPS", "FRONT_DESK", "ADMIN"].includes(role);
     if (href === ITEMS.payoutFollowups.href) return can.reviewExternalBills(permUser) || can.approveInvoices(permUser);
-    if (href === ITEMS.settings.href) return role === "ADMIN";
+    if (href === ITEMS.settings.href) return true;
     if (href === ITEMS.inventory.href) return ["ADMIN", "OPS", "TECHNICIAN_INTERNAL"].includes(role);
     if (href === ITEMS.board.href) return role !== "TECHNICIAN_EXTERNAL";
-    if (href === ITEMS.notifications.href) return can.viewNotifications(permUser);
     return true;
   };
 
@@ -162,7 +159,7 @@ function getMoreGroups(role: Role, permissions: string[]): NavGroup[] {
     },
     {
       title: "Management",
-      items: [ITEMS.reports, ITEMS.pos, ITEMS.settings, ITEMS.notifications],
+      items: [ITEMS.reports, ITEMS.pos, ITEMS.settings],
     },
   ];
 
