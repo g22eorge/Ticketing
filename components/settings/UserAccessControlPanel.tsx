@@ -57,7 +57,7 @@ export function UserAccessControlPanel({
   permissions,
   saveAction,
 }: Props) {
-  const [role, setRole] = useState(initialRole);
+  const [role, setRole] = useState(initialRole || "OPS");
   const [selectedPermissions, setSelectedPermissions] = useState<Set<string>>(
     () => new Set(initialPermissions),
   );
@@ -66,6 +66,14 @@ export function UserAccessControlPanel({
 
   const defaultsForRole = useMemo(() => roleDefaultPermissions[role] ?? [], [role, roleDefaultPermissions]);
   const capabilitiesForRole = useMemo(() => roleDefaultCapabilities[role] ?? [], [role, roleDefaultCapabilities]);
+  const uniqueRoleOptions = useMemo(() => {
+    const seen = new Set<string>();
+    return roleOptions.filter((option) => {
+      if (!option.value || seen.has(option.value)) return false;
+      seen.add(option.value);
+      return true;
+    });
+  }, [roleOptions]);
 
   const byGroup = useMemo(() => {
     const map = new Map<string, PermissionOption[]>();
@@ -137,13 +145,13 @@ export function UserAccessControlPanel({
       }}
     >
       <input type="hidden" name="userId" value={userId} />
-      <input type="hidden" name="q" value={queryText} />
+      <input type="hidden" name="q" value={queryText ?? ""} />
       <input type="hidden" name="role" value={role} />
 
       <section className="rounded-xl border border-[var(--line)] bg-[var(--panel)] p-3 panel-shadow">
         <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Role</p>
         <div className="mt-2 grid gap-1.5 sm:grid-cols-2 xl:grid-cols-3">
-          {roleOptions.map((option) => {
+          {uniqueRoleOptions.map((option) => {
             const active = role === option.value;
             return (
               <button

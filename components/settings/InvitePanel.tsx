@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useRef } from "react";
+import { useActionState, useMemo, useRef } from "react";
 import { useFormStatus } from "react-dom";
 import { toast } from "sonner";
 import { Role } from "@prisma/client";
@@ -30,6 +30,14 @@ const initial: InviteState = {};
 export function InvitePanel({ inviteAction, roleOptions }: Props) {
   const [state, action] = useActionState(inviteAction, initial);
   const urlRef = useRef<HTMLInputElement>(null);
+  const uniqueRoleOptions = useMemo(() => {
+    const seen = new Set<Role>();
+    return roleOptions.filter((option) => {
+      if (seen.has(option.value)) return false;
+      seen.add(option.value);
+      return true;
+    });
+  }, [roleOptions]);
 
   const handleCopy = () => {
     if (!state.inviteUrl) return;
@@ -58,7 +66,7 @@ export function InvitePanel({ inviteAction, roleOptions }: Props) {
           defaultValue="OPS"
           className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-sm outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14"
         >
-          {roleOptions.map((opt) => (
+          {uniqueRoleOptions.map((opt) => (
             <option key={opt.value} value={opt.value}>{opt.label}</option>
           ))}
         </select>
@@ -87,7 +95,7 @@ export function InvitePanel({ inviteAction, roleOptions }: Props) {
             <input
               ref={urlRef}
               readOnly
-              value={state.inviteUrl}
+              value={state.inviteUrl ?? ""}
               onClick={() => urlRef.current?.select()}
               className="flex-1 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-xs text-[var(--ink-muted)] outline-none cursor-pointer"
             />
