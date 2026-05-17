@@ -16,6 +16,7 @@ const nav = [
   { href: "/technicians", label: "Technicians", group: "work", roles: ["ADMIN", "OPS", "TECHNICIAN_INTERNAL", "TECHNICIAN_EXTERNAL", "SALES_MANAGER", "TECH_MANAGER", "FINANCE"] },
   { href: "/inventory", label: "Inventory", group: "work", roles: ["ADMIN", "OPS", "TECHNICIAN_INTERNAL", "TECH_MANAGER"] },
   { href: "/clients", label: "Clients", group: "work", roles: ["ADMIN", "OPS", "FRONT_DESK", "SALES_MANAGER", "SALES_CORPORATE", "SALES_RETAIL", "FINANCE"] },
+  { href: "/sales", label: "Sales CRM", group: "work", roles: ["ADMIN", "OPS", "SALES_MANAGER", "SALES_CORPORATE", "SALES_RETAIL", "TECH_MANAGER"] },
   { href: "/documents/job-cards", label: "Job Cards", group: "documents", roles: ["ADMIN", "OPS", "FRONT_DESK", "TECHNICIAN_INTERNAL", "SALES_MANAGER", "TECH_MANAGER"] },
   { href: "/documents/quotations", label: "Quotations", group: "documents", roles: ["ADMIN", "OPS", "TECHNICIAN_INTERNAL", "SALES_MANAGER", "SALES_CORPORATE", "SALES_RETAIL", "TECH_MANAGER"] },
   { href: "/documents/invoices", label: "Invoices", group: "documents", roles: ["ADMIN", "OPS", "SALES_MANAGER", "SALES_CORPORATE", "TECH_MANAGER", "FINANCE"] },

@@ -26,6 +26,7 @@ model Branch {
   users        User[]
   posSessions  PosSession[]
   sales        Sale[]
+  leads        Lead[]
 
   @@index([isActive])
   @@index([orgId])
@@ -80,6 +81,11 @@ model User {
   salesCreated        Sale[]            @relation("SaleCreatedBy")
   paymentsCreated     Payment[]         @relation("PaymentCreatedBy")
   refundsCreated      Refund[]          @relation("RefundCreatedBy")
+  leadsCreated        Lead[]            @relation("LeadCreatedBy")
+  leadsAssigned       Lead[]            @relation("LeadAssignedTo")
+  leadActivities      LeadActivity[]    @relation("LeadActivityBy")
+  quotationsCreated   Quotation[]       @relation("QuotationCreatedBy")
+  quotationsApproved  Quotation[]       @relation("QuotationApprovedBy")
 
   @@index([role, isActive])
   @@index([branchId])
@@ -282,6 +288,8 @@ model Client {
   notesEntries    ClientNote[]
   inboundMessages InboundMessage[]
   sales           Sale[]
+  leads           Lead[]
+  quotations      Quotation[]
 }
 
 model Device {
@@ -408,6 +416,7 @@ model Job {
   partReservations PartReservation[]
   stockTransactions PartStockTransaction[]
   invoice   Invoice?
+  quotations Quotation[] @relation("JobQuotation")
 
   @@index([deviceId])
   @@index([clientId])
@@ -434,6 +443,7 @@ model Part {
   reservations   PartReservation[]
   transactions   PartStockTransaction[]
   saleItems      SaleItem[]
+  quotationItems QuotationItem[] @relation("PartQuotationItems")
 
   @@index([isActive])
 }
@@ -855,6 +865,138 @@ enum HandoverMethod {
   SELF_DROPOFF
   SEND_WITH_DELIVERY_PERSON
   REQUEST_PICKUP
+}
+
+// ── SALES CRM ───────────────────────────────────────────────────────────────
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  PROPOSAL_SENT
+  WON
+  LOST
+  STALE
+}
+
+enum LeadSource {
+  WALK_IN
+  REFERRAL
+  PHONE
+  SOCIAL_MEDIA
+  WEBSITE
+  OTHER
+}
+
+enum QuotationStatus {
+  DRAFT
+  SENT
+  ACCEPTED
+  REJECTED
+  EXPIRED
+}
+
+model Lead {
+  id          String     @id @default(cuid())
+  orgId       String?
+  branchId    String?
+  branch      Branch?    @relation(fields: [branchId], references: [id])
+  assignedToId String?
+  assignedTo  User?      @relation("LeadAssignedTo", fields: [assignedToId], references: [id])
+  createdById String
+  createdBy   User       @relation("LeadCreatedBy", fields: [createdById], references: [id])
+  // Contact info (may become a Client)
+  fullName    String
+  phone       String
+  email       String?
+  organization String?
+  clientId    String?
+  client      Client?    @relation(fields: [clientId], references: [id])
+  // Lead details
+  status      LeadStatus @default(NEW)
+  source      LeadSource @default(WALK_IN)
+  notes       String?
+  interest    String?    // what they're interested in
+  estimatedValue Float?
+  followUpAt  DateTime?
+  convertedAt DateTime?
+  closedAt    DateTime?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  activities  LeadActivity[]
+  quotations  Quotation[]
+
+  @@index([orgId, status])
+  @@index([assignedToId, status])
+  @@index([branchId])
+  @@index([clientId])
+}
+
+model LeadActivity {
+  id        String   @id @default(cuid())
+  leadId    String
+  lead      Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation("LeadActivityBy", fields: [userId], references: [id])
+  type      String   // CALL, NOTE, EMAIL, MEETING, STATUS_CHANGE
+  note      String?
+  createdAt DateTime @default(now())
+
+  @@index([leadId])
+}
+
+model Quotation {
+  id             String          @id @default(cuid())
+  orgId          String?
+  quoteNumber    String          @unique
+  leadId         String?
+  lead           Lead?           @relation(fields: [leadId], references: [id])
+  clientId       String?
+  client         Client?         @relation(fields: [clientId], references: [id])
+  jobId          String?
+  job            Job?            @relation("JobQuotation", fields: [jobId], references: [id])
+  createdById    String
+  createdBy      User            @relation("QuotationCreatedBy", fields: [createdById], references: [id])
+  approvedById   String?
+  approvedBy     User?           @relation("QuotationApprovedBy", fields: [approvedById], references: [id])
+  status         QuotationStatus @default(DRAFT)
+  subtotal       Float           @default(0)
+  discountAmount Float           @default(0)
+  vatAmount      Float           @default(0)
+  totalAmount    Float           @default(0)
+  validUntil     DateTime?
+  notes          String?
+  internalNotes  String?
+  currency       String          @default("UGX")
+  sentAt         DateTime?
+  acceptedAt     DateTime?
+  rejectedAt     DateTime?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  items          QuotationItem[]
+
+  @@index([orgId, status])
+  @@index([clientId])
+  @@index([leadId])
+  @@index([jobId])
+}
+
+model QuotationItem {
+  id            String    @id @default(cuid())
+  quotationId   String
+  quotation     Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+  partId        String?
+  part          Part?     @relation("PartQuotationItems", fields: [partId], references: [id])
+  description   String
+  quantity      Int       @default(1)
+  unitPrice     Float
+  discount      Float     @default(0)
+  lineTotal     Float
+  createdAt     DateTime  @default(now())
+
+  @@index([quotationId])
 }
 
 // ── POS / SALES ─────────────────────────────────────────────────────────────
