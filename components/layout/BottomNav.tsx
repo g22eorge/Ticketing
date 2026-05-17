@@ -112,7 +112,6 @@ const ITEMS = {
   inventory:   { href: "/inventory",             label: "Inventory", icon: inventoryIcon },
   payoutFollowups: { href: "/payout-followups",  label: "Payments", icon: payoutsIcon },
   payouts:     { href: "/technicians/payouts",   label: "Payouts",   icon: payoutsIcon },
-  settings:    { href: "/settings",              label: "Settings",  icon: usersIcon },
   jobCards:    { href: "/documents/job-cards",   label: "Job Cards",  icon: invoiceIcon },
   quotations:  { href: "/documents/quotations",  label: "Quotes",    icon: invoiceIcon },
   invoiceDocs: { href: "/documents/invoices",    label: "Invoices",  icon: invoiceIcon },
@@ -142,7 +141,6 @@ function getMoreGroups(role: Role, permissions: string[]): NavGroup[] {
     if (href === ITEMS.receipts.href) return can.viewFinancials(permUser);
     if (href === ITEMS.deliveryNotes.href) return can.viewFinancials(permUser) || ["OPS", "FRONT_DESK", "ADMIN"].includes(role);
     if (href === ITEMS.payoutFollowups.href) return can.reviewExternalBills(permUser) || can.approveInvoices(permUser);
-    if (href === ITEMS.settings.href) return true;
     if (href === ITEMS.inventory.href) return ["ADMIN", "OPS", "TECHNICIAN_INTERNAL"].includes(role);
     if (href === ITEMS.board.href) return role !== "TECHNICIAN_EXTERNAL";
     return true;
@@ -159,7 +157,7 @@ function getMoreGroups(role: Role, permissions: string[]): NavGroup[] {
     },
     {
       title: "Management",
-      items: [ITEMS.reports, ITEMS.pos, ITEMS.settings],
+      items: [ITEMS.reports, ITEMS.pos],
     },
   ];
 
@@ -258,27 +256,6 @@ export function BottomNav({
             </button>
           )}
 
-          {(() => {
-            const active = isActive(ITEMS.profile.href);
-            return (
-              <Link
-                href={ITEMS.profile.href}
-                onClick={() => setOpen(false)}
-                className={`flex min-w-0 flex-1 flex-col items-center gap-0.5 py-1 text-[10px] font-semibold transition-colors ${
-                  active ? "text-[var(--accent)]" : "text-[var(--ink-muted)] hover:text-[var(--ink)]"
-                }`}
-              >
-                <span className={`flex items-center justify-center rounded-xl px-4 py-1 transition-all duration-200 ${
-                  active
-                    ? "bg-[var(--accent)]/12 shadow-[0_1px_3px_rgba(212,175,55,0.15)]"
-                    : "bg-transparent"
-                }`}>
-                  {ITEMS.profile.icon}
-                </span>
-                <span className={`tracking-wide ${active ? "font-bold" : ""}`}>{ITEMS.profile.label}</span>
-              </Link>
-            );
-          })()}
         </div>
       </nav>
 
