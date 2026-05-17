@@ -63,10 +63,17 @@ type PermissionOption = {
 
 const roleOptions: Array<{ value: Role; label: string; description: string }> = [
   { value: Role.ADMIN, label: "Admin", description: "Full platform control including user management and financial approvals." },
-  { value: Role.FRONT_DESK, label: "Front Desk", description: "Handles front desk intake, customer details, and handover documents." },
-  { value: Role.TECHNICIAN_INTERNAL, label: "Internal Technician", description: "Works diagnosis and in-house repair execution." },
-  { value: Role.TECHNICIAN_EXTERNAL, label: "External Technician", description: "External workflow access without client identity or billing history." },
   { value: Role.OPS, label: "Operations/Accounts", description: "Coordinates workflow, billing, settlement, and daily operations." },
+  { value: Role.FRONT_DESK, label: "Front Desk", description: "Handles front desk intake, customer details, and handover documents." },
+  { value: Role.SALES_MANAGER, label: "Sales Manager", description: "Manages sales team, approves quotations, monitors targets and commissions." },
+  { value: Role.SALES_CORPORATE, label: "Corporate Sales", description: "Handles corporate client accounts, invoices, and bulk quotations." },
+  { value: Role.SALES_RETAIL, label: "Retail Sales", description: "Walk-in and retail sales, quotations, and customer handover." },
+  { value: Role.SALES_POS, label: "POS Operator", description: "Point-of-sale transactions and daily session management." },
+  { value: Role.TECH_MANAGER, label: "Technical Manager", description: "Oversees technicians, approves repair work, manages inventory and costs." },
+  { value: Role.TECHNICIAN_INTERNAL, label: "Internal Technician", description: "Works diagnosis and in-house repair execution." },
+  { value: Role.TECH_FIELD, label: "Field Technician", description: "On-site visits, field collections, deliveries, and client sign-offs." },
+  { value: Role.TECHNICIAN_EXTERNAL, label: "External Technician", description: "External workflow access without client identity or billing history." },
+  { value: Role.FINANCE, label: "Finance", description: "Invoice approvals, payouts, financial reports, and reconciliation." },
 ];
 
 const roleDefaults: Record<Role, Array<(typeof EXTRA_PERMISSIONS)[number]>> = {
@@ -118,6 +125,69 @@ const roleDefaults: Record<Role, Array<(typeof EXTRA_PERMISSIONS)[number]>> = {
     "can_view_external_updates",
   ],
   TECHNICIAN_EXTERNAL: [],
+  SALES_MANAGER: [
+    "can_search_jobs",
+    "can_view_job_progress",
+    "can_view_approved_cost",
+    "can_view_accounts_summary",
+    "can_approve_invoices",
+    "can_create_leads",
+    "can_view_all_sales",
+    "can_create_quotations",
+    "can_approve_quotations",
+    "can_override_discount",
+    "can_create_invoices",
+    "can_manage_commissions",
+    "can_set_targets",
+    "can_view_team_targets",
+  ],
+  TECH_MANAGER: [
+    "can_run_internal_repairs",
+    "can_search_jobs",
+    "can_generate_job_cards",
+    "can_view_job_progress",
+    "can_view_approved_cost",
+    "can_assign_jobs",
+    "can_view_external_updates",
+    "can_view_external_quotes",
+    "can_review_external_bills",
+    "can_view_accounts_summary",
+    "can_approve_invoices",
+    "can_create_quotations",
+    "can_approve_quotations",
+    "can_manage_inventory",
+    "can_set_targets",
+    "can_view_team_targets",
+  ],
+  SALES_CORPORATE: [
+    "can_search_jobs",
+    "can_create_leads",
+    "can_create_quotations",
+    "can_create_invoices",
+  ],
+  SALES_RETAIL: [
+    "can_search_jobs",
+    "can_create_leads",
+    "can_create_quotations",
+  ],
+  SALES_POS: [
+    "can_open_pos_session",
+  ],
+  TECH_FIELD: [
+    "can_search_jobs",
+    "can_view_job_progress",
+    "can_manage_field_visits",
+    "can_record_field_signoffs",
+  ],
+  FINANCE: [
+    "can_view_accounts_summary",
+    "can_approve_invoices",
+    "can_approve_payouts",
+    "can_run_financial_reports",
+    "can_void_invoices",
+    "can_adjust_stock",
+    "can_view_team_targets",
+  ],
 };
 
 const roleCapabilities: Record<Role, string[]> = {
@@ -187,6 +257,59 @@ const roleCapabilities: Record<Role, string[]> = {
     "jobs_view",
     "tech_notes",
   ],
+  SALES_MANAGER: [
+    "dashboard_view",
+    "jobs_view",
+    "jobs_create",
+    "client_records",
+    "invoices_view",
+    "invoices_approve",
+    "reports_export",
+    "approval_cost",
+    "download_docs",
+  ],
+  TECH_MANAGER: [
+    "dashboard_view",
+    "jobs_view",
+    "jobs_assign",
+    "jobs_create",
+    "device_records",
+    "tech_notes",
+    "parts_bills",
+    "invoices_view",
+    "invoices_approve",
+    "approval_cost",
+    "download_docs",
+  ],
+  SALES_CORPORATE: [
+    "dashboard_view",
+    "jobs_view",
+    "client_records",
+    "invoices_view",
+    "download_docs",
+  ],
+  SALES_RETAIL: [
+    "dashboard_view",
+    "jobs_view",
+    "client_records",
+    "download_docs",
+  ],
+  SALES_POS: [
+    "dashboard_view",
+    "jobs_view",
+  ],
+  TECH_FIELD: [
+    "dashboard_view",
+    "jobs_view",
+    "device_records",
+    "tech_notes",
+  ],
+  FINANCE: [
+    "dashboard_view",
+    "invoices_view",
+    "invoices_approve",
+    "reports_export",
+  ],
 };
 
 const permissionOptions: PermissionOption[] = [
@@ -210,11 +333,10 @@ const permissionOptions: PermissionOption[] = [
 ];
 
 function roleLabel(role: Role) {
-  if (role === "TECHNICIAN_INTERNAL") return "Internal Technician";
-  if (role === "TECHNICIAN_EXTERNAL") return "External Technician";
-  if (role === "FRONT_DESK" || role === "INTAKE") return "Front Desk";
-  if (role === "OPS") return "Operations/Accounts";
-  return "Admin";
+  const found = roleOptions.find((r) => r.value === role);
+  if (found) return found.label;
+  if (role === "INTAKE") return "Front Desk";
+  return role;
 }
 
 function formatDateTime(value?: Date | null) {

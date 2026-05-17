@@ -12,17 +12,52 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Branch {
+  id           String   @id @default(cuid())
+  orgId        String?
+  name         String
+  address      String?
+  phone        String?
+  isActive     Boolean  @default(true)
+  isDefault    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  users        User[]
+
+  @@index([isActive])
+  @@index([orgId])
+}
+
+model Department {
+  id        String   @id @default(cuid())
+  name      String
+  code      String   @unique
+  createdAt DateTime @default(now())
+
+  users     User[]
+}
+
 model User {
-  id            String   @id @default(cuid())
-  name          String
-  email         String   @unique
-  phone         String?
-  emailVerified Boolean  @default(false)
-  image         String?
-  role          Role     @default(OPS)
-  isActive      Boolean  @default(true)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id              String      @id @default(cuid())
+  name            String
+  email           String      @unique
+  phone           String?
+  emailVerified   Boolean     @default(false)
+  image           String?
+  role            Role        @default(OPS)
+  isActive        Boolean     @default(true)
+  // Org structure
+  branchId        String?
+  branch          Branch?     @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  departmentId    String?
+  department      Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  // Tech-specific
+  techType        TechType?
+  employeeId      String?
+  specializations String?     // JSON array e.g. ["phones","laptops"]
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
 
   sessions     Session[]
   accounts     Account[]
@@ -39,6 +74,10 @@ model User {
   stockTransactions PartStockTransaction[] @relation("StockTxnBy")
   accessAuditEntries UserAccessAudit[] @relation("AccessAuditTarget")
   accessAuditChanges UserAccessAudit[] @relation("AccessAuditActor")
+
+  @@index([role, isActive])
+  @@index([branchId])
+  @@index([departmentId])
 }
 
 model UserPermission {
@@ -110,9 +149,23 @@ enum Role {
   TECHNICIAN_INTERNAL
   TECHNICIAN_EXTERNAL
   FRONT_DESK
+  SALES_MANAGER
+  TECH_MANAGER
+  SALES_CORPORATE
+  SALES_RETAIL
+  SALES_POS
+  TECH_FIELD
+  FINANCE
   // Legacy: kept for existing production rows.
   // The app normalizes this to FRONT_DESK at runtime.
   INTAKE
+}
+
+enum TechType {
+  INTERNAL
+  EXTERNAL_PERMANENT
+  EXTERNAL_ONE_TIME
+  FIELD
 }
 
 enum JobStatus {
@@ -209,6 +262,7 @@ enum StockTransactionType {
 
 model Client {
   id           String   @id @default(cuid())
+  orgId        String?
   fullName     String
   phone        String   @unique
   email        String?
@@ -607,6 +661,7 @@ model NotificationPreferences {
 
 model CommunicationTemplate {
   id          String   @id @default(cuid())
+  orgId       String?
   key         String
   channel     OutboundMessageChannel
   label       String

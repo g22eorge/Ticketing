@@ -257,21 +257,51 @@ async function ensureCredentialAccount(userId: string, password: string) {
   });
 }
 
+async function ensureBranch({ name, isDefault = false, orgId }: { name: string; isDefault?: boolean; orgId?: string | null }) {
+  const existing = await prisma.branch.findFirst({ where: { name }, select: { id: true } });
+  if (existing) return existing;
+  return prisma.branch.create({ data: { name, isDefault, ...(orgId ? { orgId } : {}) } });
+}
+
+async function ensureDepartment({ name, code }: { name: string; code: string }) {
+  return prisma.department.upsert({
+    where: { code },
+    update: { name },
+    create: { name, code },
+  });
+}
+
 async function ensureUser({
   name,
   email,
   role,
   password,
+  branchId,
+  departmentId,
+  techType,
 }: {
   name: string;
   email: string;
   role: Role;
   password: string;
+  branchId?: string;
+  departmentId?: string;
+  techType?: "INTERNAL" | "EXTERNAL_PERMANENT" | "EXTERNAL_ONE_TIME" | "FIELD";
 }) {
   const user = await prisma.user.upsert({
     where: { email },
-    update: { name, role, isActive: true, emailVerified: true },
-    create: { name, email, role, isActive: true, emailVerified: true },
+    update: {
+      name, role, isActive: true, emailVerified: true,
+      ...(branchId ? { branchId } : {}),
+      ...(departmentId ? { departmentId } : {}),
+      ...(techType ? { techType } : {}),
+    },
+    create: {
+      name, email, role, isActive: true, emailVerified: true,
+      ...(branchId ? { branchId } : {}),
+      ...(departmentId ? { departmentId } : {}),
+      ...(techType ? { techType } : {}),
+    },
   });
 
   await ensureCredentialAccount(user.id, password);
@@ -485,18 +515,51 @@ function formatJobNumber(date: Date, sequence: number) {
 async function main() {
   const defaultPassword = process.env.SEED_PASSWORD ?? "Admin123!";
 
+  // ── Branches ──────────────────────────────────────────────────────────────
+  // If Turso has an org, use its first branch rather than creating new ones.
+  const orgId = process.env.DEFAULT_ORG_ID ?? null;
+  let headOffice = await prisma.branch.findFirst({ where: { isDefault: true }, select: { id: true } });
+  if (!headOffice) headOffice = await prisma.branch.findFirst({ select: { id: true } });
+  if (!headOffice) headOffice = await ensureBranch({ name: "Head Office", isDefault: true, orgId });
+  await ensureBranch({ name: "Branch 2", orgId });
+
+  // ── Departments ───────────────────────────────────────────────────────────
+  const deptSales  = await ensureDepartment({ name: "Sales",      code: "SALES" });
+  const deptTech   = await ensureDepartment({ name: "Technical",  code: "TECH" });
+  const deptOps    = await ensureDepartment({ name: "Operations", code: "OPS" });
+  const deptFinance= await ensureDepartment({ name: "Finance",    code: "FINANCE" });
+
+  console.log("Seeded branches and departments.");
+
+  // ── Core users ────────────────────────────────────────────────────────────
   const admin = await ensureUser({
     name: "System Admin",
     email: process.env.SEED_ADMIN_EMAIL ?? "admin@eagle.local",
     role: "ADMIN",
     password: process.env.SEED_ADMIN_PASSWORD ?? defaultPassword,
+    branchId: headOffice.id,
   });
+
+  // Technical dept
+  const techManager = await ensureUser({
+    name: "Technical Manager",
+    email: "tech.manager@eagle.tech",
+    role: "TECH_MANAGER",
+    password: defaultPassword,
+    branchId: headOffice.id,
+    departmentId: deptTech.id,
+    techType: "INTERNAL",
+  });
+  await ensureUserPermissions(techManager.id, []);
 
   const techInternal = await ensureUser({
     name: "Rest",
     email: "rest@eagle.tech",
     role: "TECHNICIAN_INTERNAL",
     password: defaultPassword,
+    branchId: headOffice.id,
+    departmentId: deptTech.id,
+    techType: "INTERNAL",
   });
   await ensureUserPermissions(techInternal.id, ["can_approve_invoices"]);
 
@@ -505,13 +568,109 @@ async function main() {
     email: "abdu@eagle.tech",
     role: "TECHNICIAN_EXTERNAL",
     password: defaultPassword,
+    techType: "EXTERNAL_PERMANENT",
   });
+  await ensureUserPermissions(techExternal.id, []);
 
+  const ryan = await ensureUser({
+    name: "Ryan",
+    email: "ryan@eagle.tech",
+    role: "TECHNICIAN_EXTERNAL",
+    password: defaultPassword,
+    techType: "EXTERNAL_PERMANENT",
+  });
+  await ensureUserPermissions(ryan.id, []);
+
+  const dan = await ensureUser({
+    name: "Dan",
+    email: "dan@eagle.tech",
+    role: "TECHNICIAN_EXTERNAL",
+    password: defaultPassword,
+    techType: "EXTERNAL_ONE_TIME",
+  });
+  await ensureUserPermissions(dan.id, []);
+
+  const techField = await ensureUser({
+    name: "Field Tech",
+    email: "field.tech@eagle.tech",
+    role: "TECH_FIELD",
+    password: defaultPassword,
+    branchId: headOffice.id,
+    departmentId: deptTech.id,
+    techType: "FIELD",
+  });
+  await ensureUserPermissions(techField.id, []);
+
+  // Sales dept
+  const salesManager = await ensureUser({
+    name: "Sales Manager",
+    email: "sales.manager@eagle.tech",
+    role: "SALES_MANAGER",
+    password: defaultPassword,
+    branchId: headOffice.id,
+    departmentId: deptSales.id,
+  });
+  await ensureUserPermissions(salesManager.id, []);
+
+  const salesCorporate = await ensureUser({
+    name: "Corporate Sales",
+    email: "sales.corporate@eagle.tech",
+    role: "SALES_CORPORATE",
+    password: defaultPassword,
+    branchId: headOffice.id,
+    departmentId: deptSales.id,
+  });
+  await ensureUserPermissions(salesCorporate.id, []);
+
+  const salesRetail = await ensureUser({
+    name: "Retail Sales",
+    email: "sales.retail@eagle.tech",
+    role: "SALES_RETAIL",
+    password: defaultPassword,
+    branchId: headOffice.id,
+    departmentId: deptSales.id,
+  });
+  await ensureUserPermissions(salesRetail.id, []);
+
+  const salesPos = await ensureUser({
+    name: "POS",
+    email: "pos@eagle.tech",
+    role: "SALES_POS",
+    password: defaultPassword,
+    branchId: headOffice.id,
+    departmentId: deptSales.id,
+  });
+  await ensureUserPermissions(salesPos.id, []);
+
+  // Legacy sales users — migrate to proper roles
+  const sales = await ensureUser({
+    name: "Sales",
+    email: "sales@eagle.tech",
+    role: "SALES_RETAIL",
+    password: defaultPassword,
+    branchId: headOffice.id,
+    departmentId: deptSales.id,
+  });
+  await ensureUserPermissions(sales.id, []);
+
+  const invoiceSales = await ensureUser({
+    name: "Invoice Sales",
+    email: "invoice.sales@eagle.tech",
+    role: "SALES_CORPORATE",
+    password: defaultPassword,
+    branchId: headOffice.id,
+    departmentId: deptSales.id,
+  });
+  await ensureUserPermissions(invoiceSales.id, ["can_approve_invoices"]);
+
+  // Operations dept
   const ops = await ensureUser({
     name: "Kakande",
     email: "ops@eagle.tech",
     role: "FRONT_DESK",
     password: defaultPassword,
+    branchId: headOffice.id,
+    departmentId: deptOps.id,
   });
   await ensureUserPermissions(ops.id, []);
 
@@ -520,105 +679,21 @@ async function main() {
     email: "ops.extended@eagle.tech",
     role: "OPS",
     password: defaultPassword,
+    branchId: headOffice.id,
+    departmentId: deptOps.id,
   });
   await ensureUserPermissions(opsExtended.id, restExtendedPermissions);
 
-  const ryan = await ensureUser({
-    name: "Ryan",
-    email: "ryan@eagle.tech",
-    role: "TECHNICIAN_EXTERNAL",
+  // Finance dept
+  const finance = await ensureUser({
+    name: "Finance",
+    email: "finance@eagle.tech",
+    role: "FINANCE",
     password: defaultPassword,
+    branchId: headOffice.id,
+    departmentId: deptFinance.id,
   });
-
-  const dan = await ensureUser({
-    name: "Dan",
-    email: "dan@eagle.tech",
-    role: "TECHNICIAN_EXTERNAL",
-    password: defaultPassword,
-  });
-
-  // Sales — can intake, search jobs, view costs, generate job cards
-  const sales = await ensureUser({
-    name: "Sales",
-    email: "sales@eagle.tech",
-    role: "OPS",
-    password: defaultPassword,
-  });
-  await ensureUserPermissions(sales.id, [
-    "can_intake",
-    "can_search_jobs",
-    "can_view_approved_cost",
-    "can_generate_job_cards",
-    "can_view_job_progress",
-  ]);
-
-  // Invoice Sales — sales + can approve invoices + accounts summary
-  const invoiceSales = await ensureUser({
-    name: "Invoice Sales",
-    email: "invoice.sales@eagle.tech",
-    role: "OPS",
-    password: defaultPassword,
-  });
-  await ensureUserPermissions(invoiceSales.id, [
-    "can_intake",
-    "can_search_jobs",
-    "can_view_approved_cost",
-    "can_generate_job_cards",
-    "can_view_job_progress",
-    "can_approve_invoices",
-    "can_view_accounts_summary",
-  ]);
-
-  // POS — front desk walk-in handling
-  const pos = await ensureUser({
-    name: "POS",
-    email: "pos@eagle.tech",
-    role: "FRONT_DESK",
-    password: defaultPassword,
-  });
-  await ensureUserPermissions(pos.id, [
-    "can_intake",
-    "can_view_approved_cost",
-    "can_generate_job_cards",
-  ]);
-
-  // Sales Manager — full sales + financial + team management
-  const salesManager = await ensureUser({
-    name: "Sales Manager",
-    email: "sales.manager@eagle.tech",
-    role: "OPS",
-    password: defaultPassword,
-  });
-  await ensureUserPermissions(salesManager.id, [
-    "can_intake",
-    "can_manage_intake",
-    "can_search_jobs",
-    "can_view_approved_cost",
-    "can_generate_job_cards",
-    "can_view_job_progress",
-    "can_assign_jobs",
-    "can_approve_invoices",
-    "can_view_accounts_summary",
-    "can_view_external_quotes",
-    "can_review_external_bills",
-  ]);
-
-  // Technical Manager — internal tech with assign + external oversight
-  const techManager = await ensureUser({
-    name: "Technical Manager",
-    email: "tech.manager@eagle.tech",
-    role: "TECHNICIAN_INTERNAL",
-    password: defaultPassword,
-  });
-  await ensureUserPermissions(techManager.id, [
-    "can_run_internal_repairs",
-    "can_view_job_progress",
-    "can_assign_jobs",
-    "can_view_external_updates",
-    "can_view_external_quotes",
-    "can_review_external_bills",
-    "can_view_accounts_summary",
-  ]);
+  await ensureUserPermissions(finance.id, []);
 
   await deactivateUsersByEmail([
     "ops@eagle.local",
