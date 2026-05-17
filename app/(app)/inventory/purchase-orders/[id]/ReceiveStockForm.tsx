@@ -4,11 +4,13 @@ import { useState, useTransition } from "react";
 import { receiveStockAction } from "../actions";
 
 type Item = { id: string; description: string; qtyOrdered: number; qtyReceived: number };
+type Location = { id: string; name: string; code: string | null };
 
-export function ReceiveStockForm({ poId, items }: { poId: string; items: Item[] }) {
+export function ReceiveStockForm({ poId, items, locations }: { poId: string; items: Item[]; locations: Location[] }) {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const [locationId, setLocationId] = useState(locations[0]?.id ?? "");
   const [quantities, setQuantities] = useState<Record<string, number>>(
     Object.fromEntries(items.map((i) => [i.id, i.qtyReceived])),
   );
@@ -19,6 +21,7 @@ export function ReceiveStockForm({ poId, items }: { poId: string; items: Item[] 
     setSaved(false);
     const fd = new FormData();
     fd.set("poId", poId);
+    fd.set("locationId", locationId);
     for (const [id, qty] of Object.entries(quantities)) {
       fd.set(`qtyReceived_${id}`, String(qty));
     }
@@ -36,6 +39,21 @@ export function ReceiveStockForm({ poId, items }: { poId: string; items: Item[] 
         <p className="mt-0.5 text-xs text-[var(--ink-muted)]">Update quantities received. Part inventory will be adjusted automatically.</p>
       </div>
       <form onSubmit={handleSubmit} className="p-5 space-y-3">
+        <label className="block text-xs font-semibold text-[var(--ink)]">
+          Receive into location
+          <select
+            value={locationId}
+            onChange={(e) => setLocationId(e.target.value)}
+            required
+            className="mt-1 w-full rounded-md border border-[var(--line)] bg-[var(--bg)] px-3 py-2 text-sm text-[var(--ink)] focus:outline-none focus:ring-2 focus:ring-[var(--gold)]/40"
+          >
+            {locations.map((location) => (
+              <option key={location.id} value={location.id}>
+                {location.name}{location.code ? ` (${location.code})` : ""}
+              </option>
+            ))}
+          </select>
+        </label>
         <table className="w-full text-sm">
           <thead>
             <tr className="text-xs font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
@@ -74,7 +92,7 @@ export function ReceiveStockForm({ poId, items }: { poId: string; items: Item[] 
 
         <button
           type="submit"
-          disabled={pending}
+          disabled={pending || !locationId}
           className="btn-premium rounded-lg px-4 py-2 text-sm font-semibold disabled:opacity-50"
         >
           {pending ? "Saving…" : "Save Received Quantities"}

@@ -26,6 +26,7 @@ const nav = [
   { href: "/inventory",                    label: "Parts",           group: "inventory" as NavGroup, roles: ["ADMIN", "MANAGER", "TECH_MANAGER", "OPS", "TECHNICIAN_INTERNAL"] as const },
   { href: "/inventory/locations",          label: "Locations",       group: "inventory" as NavGroup, roles: ["ADMIN", "MANAGER", "TECH_MANAGER", "OPS"] as const },
   { href: "/inventory/transfers",          label: "Transfers",       group: "inventory" as NavGroup, roles: ["ADMIN", "MANAGER", "TECH_MANAGER", "OPS"] as const },
+  { href: "/inventory/goods-received",     label: "Goods Received",  group: "inventory" as NavGroup, roles: ["ADMIN", "MANAGER", "TECH_MANAGER", "OPS"] as const },
   { href: "/inventory/suppliers",          label: "Suppliers",       group: "inventory" as NavGroup, roles: ["ADMIN", "MANAGER", "OPS"] as const },
   { href: "/inventory/purchase-orders",    label: "Purchase Orders", group: "inventory" as NavGroup, roles: ["ADMIN", "MANAGER", "OPS"] as const },
 
@@ -72,7 +73,7 @@ const roleOrder: Partial<Record<Role, readonly string[]>> = {
     // repairs
     "/jobs", "/intake", "/field", "/technicians", "/complaints",
     // inventory
-    "/inventory", "/inventory/locations", "/inventory/transfers", "/inventory/suppliers", "/inventory/purchase-orders",
+    "/inventory", "/inventory/locations", "/inventory/transfers", "/inventory/goods-received", "/inventory/suppliers", "/inventory/purchase-orders",
     // clients
     "/clients", "/sales", "/pos",
     // documents
@@ -84,7 +85,7 @@ const roleOrder: Partial<Record<Role, readonly string[]>> = {
   MANAGER: [
     "/dashboard",
     "/jobs", "/intake", "/field", "/technicians", "/complaints",
-    "/inventory", "/inventory/locations", "/inventory/transfers", "/inventory/suppliers", "/inventory/purchase-orders",
+    "/inventory", "/inventory/locations", "/inventory/transfers", "/inventory/goods-received", "/inventory/suppliers", "/inventory/purchase-orders",
     "/clients", "/sales", "/pos",
     "/documents/job-cards", "/documents/quotations", "/documents/invoices", "/documents/receipts", "/documents/delivery-notes",
     "/targets", "/reports", "/payout-followups",
@@ -93,14 +94,14 @@ const roleOrder: Partial<Record<Role, readonly string[]>> = {
   TECH_MANAGER: [
     "/dashboard",
     "/jobs", "/intake", "/field", "/technicians", "/complaints",
-    "/inventory", "/inventory/locations", "/inventory/transfers", "/inventory/suppliers", "/inventory/purchase-orders",
+    "/inventory", "/inventory/locations", "/inventory/transfers", "/inventory/goods-received", "/inventory/suppliers", "/inventory/purchase-orders",
     "/documents/job-cards", "/documents/quotations", "/documents/invoices", "/targets", "/payout-followups",
     "/settings",
   ],
   OPS: [
     "/dashboard",
     "/jobs", "/intake", "/field", "/technicians", "/complaints",
-    "/inventory", "/inventory/locations", "/inventory/transfers", "/inventory/suppliers", "/inventory/purchase-orders",
+    "/inventory", "/inventory/locations", "/inventory/transfers", "/inventory/goods-received", "/inventory/suppliers", "/inventory/purchase-orders",
     "/clients", "/sales", "/pos",
     "/documents/job-cards", "/documents/quotations", "/documents/invoices", "/documents/receipts", "/documents/delivery-notes",
     "/targets", "/reports", "/payout-followups",

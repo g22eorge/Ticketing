@@ -52,6 +52,7 @@ const ORG_SCOPED_MODELS = new Set([
   "DocumentBrandingSettings",
   "FieldVisit",
   "FileAsset",
+  "GoodsReceived",
   "InboundMessage",
   "InventoryCategory",
   "Invoice",

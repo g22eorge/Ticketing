@@ -29,6 +29,13 @@ export default async function PurchaseOrderDetailPage({
     where: { id },
     include: {
       supplier: { select: { id: true, name: true } },
+      goodsReceivedNotes: {
+        include: {
+          location: { select: { name: true, code: true } },
+          items: { select: { id: true, quantity: true, unitCost: true } },
+        },
+        orderBy: { receivedAt: "desc" },
+      },
       items: {
         include: { part: { select: { id: true, name: true, sku: true } } },
         orderBy: { createdAt: "asc" },
@@ -43,6 +50,11 @@ export default async function PurchaseOrderDetailPage({
 
   const totalOrdered = po.items.reduce((s, i) => s + i.qtyOrdered * i.unitCost, 0);
   const canReceive = ["ORDERED", "PARTIAL"].includes(po.status);
+  const locations = await prisma.stockLocation.findMany({
+    where: { orgId, isActive: true },
+    select: { id: true, name: true, code: true },
+    orderBy: [{ name: "asc" }],
+  });
 
   return (
     <div className="space-y-6 max-w-3xl">
@@ -148,10 +160,38 @@ export default async function PurchaseOrderDetailPage({
         </div>
       )}
 
+      {po.goodsReceivedNotes.length > 0 && (
+        <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] overflow-hidden">
+          <div className="px-5 py-3 border-b border-[var(--line)] flex items-center justify-between gap-2">
+            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Goods Received</p>
+            <Link href="/inventory/goods-received" className="text-xs font-semibold text-[var(--gold)] hover:underline">
+              View all
+            </Link>
+          </div>
+          <div className="divide-y divide-[var(--line)]">
+            {po.goodsReceivedNotes.map((grn) => {
+              const total = grn.items.reduce((sum, item) => sum + item.quantity * item.unitCost, 0);
+              return (
+                <Link key={grn.id} href={`/inventory/goods-received/${grn.id}`} className="flex items-center justify-between gap-3 px-5 py-3 text-sm hover:bg-[var(--bg)]">
+                  <div>
+                    <p className="font-semibold text-[var(--ink)]">{grn.grnNumber}</p>
+                    <p className="text-xs text-[var(--ink-muted)]">
+                      {fmt(grn.receivedAt)} · {grn.location.name}{grn.location.code ? ` (${grn.location.code})` : ""}
+                    </p>
+                  </div>
+                  <p className="font-semibold tabular-nums text-[var(--ink)]">{total.toLocaleString()}</p>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Receive stock */}
-      {canReceive && (
+      {canReceive && locations.length > 0 && (
         <ReceiveStockForm
           poId={po.id}
+          locations={locations}
           items={po.items.map((i) => ({
             id: i.id,
             description: i.description,
@@ -159,6 +199,11 @@ export default async function PurchaseOrderDetailPage({
             qtyReceived: i.qtyReceived,
           }))}
         />
+      )}
+      {canReceive && locations.length === 0 && (
+        <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-5 py-4 text-sm text-amber-700">
+          Create an active stock location before receiving this purchase order.
+        </div>
       )}
     </div>
   );

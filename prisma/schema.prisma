@@ -75,6 +75,7 @@ model Organization {
   suppliers              Supplier[]
   purchaseOrders         PurchaseOrder[]
   stockTransfers         StockTransfer[]
+  goodsReceivedNotes     GoodsReceived[]
   userGroups             UserGroup[]
   complaints             Complaint[]
   salesTargets           SalesTarget[]
@@ -188,6 +189,7 @@ model User {
   stockTransfersApproved  StockTransfer[]  @relation("StockTransferApprovedBy")
   stockTransfersDispatched StockTransfer[] @relation("StockTransferDispatchedBy")
   stockTransfersReceived  StockTransfer[]  @relation("StockTransferReceivedBy")
+  goodsReceivedCreated    GoodsReceived[]  @relation("GoodsReceivedCreatedBy")
 
   @@index([orgId])
   @@index([branchId])
@@ -911,6 +913,7 @@ model Part {
   quotationItems    QuotationItem[] @relation("PartQuotationItems")
   locationStocks    PartLocationStock[]
   stockTransferItems StockTransferItem[]
+  goodsReceivedItems GoodsReceivedItem[]
 
   @@unique([sku, orgId])
   @@index([orgId, isActive])
@@ -1421,6 +1424,7 @@ model Supplier {
   updatedAt   DateTime     @updatedAt
 
   purchaseOrders PurchaseOrder[]
+  goodsReceivedNotes GoodsReceived[]
 
   @@index([orgId])
 }
@@ -1432,6 +1436,11 @@ enum PurchaseOrderStatus {
   ORDERED
   PARTIAL
   RECEIVED
+  CANCELLED
+}
+
+enum GoodsReceivedStatus {
+  POSTED
   CANCELLED
 }
 
@@ -1451,6 +1460,7 @@ model PurchaseOrder {
   updatedAt  DateTime            @updatedAt
 
   items PurchaseOrderItem[]
+  goodsReceivedNotes GoodsReceived[]
 
   @@index([orgId])
   @@index([supplierId])
@@ -1470,6 +1480,50 @@ model PurchaseOrderItem {
   updatedAt   DateTime      @updatedAt
 
   @@index([poId])
+}
+
+model GoodsReceived {
+  id          String              @id @default(cuid())
+  orgId       String
+  org         Organization        @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  grnNumber   String              @unique
+  status      GoodsReceivedStatus @default(POSTED)
+  supplierId  String
+  supplier    Supplier            @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+  poId        String?
+  po          PurchaseOrder?      @relation(fields: [poId], references: [id], onDelete: SetNull)
+  locationId  String
+  location    StockLocation       @relation(fields: [locationId], references: [id], onDelete: Restrict)
+  receivedAt  DateTime            @default(now())
+  note        String?
+  createdById String
+  createdBy   User                @relation("GoodsReceivedCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  items       GoodsReceivedItem[]
+
+  @@index([orgId, receivedAt])
+  @@index([supplierId])
+  @@index([poId])
+  @@index([locationId])
+}
+
+model GoodsReceivedItem {
+  id          String        @id @default(cuid())
+  grnId       String
+  grn         GoodsReceived @relation(fields: [grnId], references: [id], onDelete: Cascade)
+  poItemId    String?
+  partId      String?
+  part        Part?         @relation(fields: [partId], references: [id], onDelete: SetNull)
+  description String
+  quantity    Int
+  unitCost    Float
+  createdAt   DateTime      @default(now())
+
+  @@index([grnId])
+  @@index([partId])
+  @@index([poItemId])
 }
 
 model SystemAuditEvent {
@@ -1756,6 +1810,8 @@ model StockLocation {
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  goodsReceivedNotes GoodsReceived[]
 
   @@unique([orgId, code])
   @@index([orgId, branchId, isActive])
