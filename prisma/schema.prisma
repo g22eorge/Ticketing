@@ -896,6 +896,7 @@ model Part {
   creditNoteItems   CreditNoteItem[]
   deliveryNoteItems DeliveryNoteItem[]
   quotationItems    QuotationItem[] @relation("PartQuotationItems")
+  locationStocks    PartLocationStock[]
 
   @@unique([sku, orgId])
   @@index([orgId, isActive])
@@ -1754,6 +1755,8 @@ model PartLocationStock {
   qtyOnHand   Int      @default(0)
   qtyReserved Int      @default(0)
   updatedAt   DateTime @updatedAt
+
+  part Part @relation(fields: [partId], references: [id], onDelete: Cascade)
 
   @@unique([partId, locationId])
   @@index([orgId, locationId])

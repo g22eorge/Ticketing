@@ -69,7 +69,7 @@ export async function handleLandedCostRecalc(data: unknown): Promise<void> {
   let allocationMethod: AllocationMethod = "BY_VALUE";
 
   try {
-    const po = await prisma.purchaseOrder.findUnique({
+    const po = await (prisma as never as { purchaseOrder: { findUnique: (a: unknown) => Promise<unknown> } }).purchaseOrder.findUnique({
       where: { id: poId },
       select: {
         id: true,
@@ -90,16 +90,17 @@ export async function handleLandedCostRecalc(data: unknown): Promise<void> {
     }
 
     // landedCostTotal / landedCostMethod are future schema fields — read safely.
-    const poAny = po as unknown as Record<string, unknown>;
+    const poAny = po as Record<string, unknown>;
     totalLandedCost = (poAny.landedCostTotal as number | null) ?? 0;
     allocationMethod = ((poAny.landedCostMethod as string | null) ?? "BY_VALUE") as AllocationMethod;
 
-    poItems = (po.items ?? []).map((item) => ({
-      id: item.id,
-      partId: item.partId ?? null,
-      quantity: item.qtyOrdered,
-      unitCost: item.unitCost,
-      totalCost: item.qtyOrdered * item.unitCost,
+    const poItems_raw = (poAny.items as Array<Record<string, unknown>> | undefined) ?? [];
+    poItems = poItems_raw.map((item) => ({
+      id: item.id as string,
+      partId: (item.partId as string | null) ?? null,
+      quantity: item.qtyOrdered as number,
+      unitCost: item.unitCost as number,
+      totalCost: (item.qtyOrdered as number) * (item.unitCost as number),
     }));
   } catch (err) {
     console.error("[landed-cost] failed to load PO:", err);
@@ -120,9 +121,9 @@ export async function handleLandedCostRecalc(data: unknown): Promise<void> {
 
     // Update PO line landed unit cost.
     try {
-      await prisma.purchaseOrderItem.update({
+      await (prisma as never as { purchaseOrderItem: { update: (a: unknown) => Promise<unknown> } }).purchaseOrderItem.update({
         where: { id: lineId },
-        data: { landedUnitCost: landedPerUnit } as never,
+        data: { landedUnitCost: landedPerUnit },
       });
     } catch {
       // landedUnitCost column may not yet exist in older schema — skip.
