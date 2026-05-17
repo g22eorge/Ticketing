@@ -84,6 +84,7 @@ const ORG_SCOPED_MODELS = new Set([
   "SaleItem",
   "SalesTarget",
   "StockLocation",
+  "StockTransfer",
   "Supplier",
   "SupplierPrice",
   "User",

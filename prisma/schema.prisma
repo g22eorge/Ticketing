@@ -74,6 +74,7 @@ model Organization {
   branches               Branch[]
   suppliers              Supplier[]
   purchaseOrders         PurchaseOrder[]
+  stockTransfers         StockTransfer[]
   userGroups             UserGroup[]
   complaints             Complaint[]
   salesTargets           SalesTarget[]
@@ -183,6 +184,10 @@ model User {
   quotationsApproved      Quotation[]      @relation("QuotationApprovedBy")
   fieldVisitsAssigned     FieldVisit[]     @relation("FieldVisitAssignedTo")
   fieldVisitsScheduled    FieldVisit[]     @relation("FieldVisitScheduledBy")
+  stockTransfersCreated   StockTransfer[]  @relation("StockTransferCreatedBy")
+  stockTransfersApproved  StockTransfer[]  @relation("StockTransferApprovedBy")
+  stockTransfersDispatched StockTransfer[] @relation("StockTransferDispatchedBy")
+  stockTransfersReceived  StockTransfer[]  @relation("StockTransferReceivedBy")
 
   @@index([orgId])
   @@index([branchId])
@@ -439,6 +444,14 @@ enum StockTransactionType {
   IN
   OUT
   ADJUST
+}
+
+enum StockTransferStatus {
+  REQUESTED
+  APPROVED
+  DISPATCHED
+  RECEIVED
+  CANCELLED
 }
 
 model Client {
@@ -897,6 +910,7 @@ model Part {
   deliveryNoteItems DeliveryNoteItem[]
   quotationItems    QuotationItem[] @relation("PartQuotationItems")
   locationStocks    PartLocationStock[]
+  stockTransferItems StockTransferItem[]
 
   @@unique([sku, orgId])
   @@index([orgId, isActive])
@@ -1760,6 +1774,56 @@ model PartLocationStock {
 
   @@unique([partId, locationId])
   @@index([orgId, locationId])
+  @@index([partId])
+}
+
+model StockTransfer {
+  id             String              @id @default(cuid())
+  orgId          String
+  org            Organization        @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  transferNumber String              @unique
+  status         StockTransferStatus @default(REQUESTED)
+  fromLocationId String
+  toLocationId   String
+  requestedAt    DateTime            @default(now())
+  approvedAt     DateTime?
+  dispatchedAt   DateTime?
+  receivedAt     DateTime?
+  cancelledAt    DateTime?
+  note           String?
+
+  createdById    String
+  createdBy      User                @relation("StockTransferCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  approvedById   String?
+  approvedBy     User?               @relation("StockTransferApprovedBy", fields: [approvedById], references: [id], onDelete: SetNull)
+  dispatchedById String?
+  dispatchedBy   User?               @relation("StockTransferDispatchedBy", fields: [dispatchedById], references: [id], onDelete: SetNull)
+  receivedById   String?
+  receivedBy     User?               @relation("StockTransferReceivedBy", fields: [receivedById], references: [id], onDelete: SetNull)
+
+  items          StockTransferItem[]
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  @@index([orgId, status, createdAt])
+  @@index([fromLocationId])
+  @@index([toLocationId])
+}
+
+model StockTransferItem {
+  id             String        @id @default(cuid())
+  transferId     String
+  transfer       StockTransfer @relation(fields: [transferId], references: [id], onDelete: Cascade)
+  partId         String
+  part           Part          @relation(fields: [partId], references: [id], onDelete: Restrict)
+  quantity       Int
+  qtyDispatched  Int           @default(0)
+  qtyReceived    Int           @default(0)
+  note           String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@index([transferId])
   @@index([partId])
 }
 
