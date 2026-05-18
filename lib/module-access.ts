@@ -32,7 +32,13 @@ export const MODULE_ICONS: Record<OrgModule, string> = {
   TARGETS:        "🎯",
 };
 
-export const ALL_MODULES = Object.values(OrgModule) as OrgModule[];
+export const ALL_MODULES: OrgModule[] = (() => {
+  try {
+    const vals = Object.values(OrgModule ?? {});
+    if (vals.length > 0) return vals as OrgModule[];
+  } catch { /* ignore */ }
+  return ["JOBS","INVENTORY","POS","PURCHASE_ORDERS","INVOICING","COMPLAINTS","REPORTS","SALES","FIELD","TARGETS"] as OrgModule[];
+})();
 
 /** Returns the set of enabled modules for an org. */
 export async function getOrgModules(orgId: string): Promise<Set<OrgModule>> {

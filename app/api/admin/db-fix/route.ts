@@ -1444,15 +1444,12 @@ export async function POST() {
   // OrgModuleGrant
   if (!(await tableExists("OrgModuleGrant"))) {
     await prisma.$executeRawUnsafe(`CREATE TABLE "OrgModuleGrant" (
-      "id" TEXT NOT NULL PRIMARY KEY,
       "orgId" TEXT NOT NULL,
       "module" TEXT NOT NULL,
-      "grantedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      "expiresAt" DATETIME,
-      "grantedById" TEXT,
-      CONSTRAINT "OrgModuleGrant_orgId_fkey" FOREIGN KEY ("orgId") REFERENCES "Organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+      CONSTRAINT "OrgModuleGrant_orgId_fkey" FOREIGN KEY ("orgId") REFERENCES "Organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+      PRIMARY KEY ("orgId", "module")
     )`);
-    await prisma.$executeRawUnsafe(`CREATE UNIQUE INDEX "OrgModuleGrant_orgId_module_key" ON "OrgModuleGrant"("orgId","module")`);
+    await prisma.$executeRawUnsafe(`CREATE INDEX "OrgModuleGrant_orgId_idx" ON "OrgModuleGrant"("orgId")`);
     changes.push({ kind: "create_table", detail: "Created OrgModuleGrant" });
   }
 
