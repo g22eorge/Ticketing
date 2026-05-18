@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { OrgPlan } from "@prisma/client";
+import { OrgPlan, OrgModule } from "@prisma/client";
 import { setOrgAtSenderId } from "@/lib/org-whatsapp-config";
 import { requirePlatformAdmin } from "@/lib/platform-admin";
 
@@ -79,6 +79,26 @@ export async function setOrgAiModelAction(formData: FormData) {
   const model = ((formData.get("aiModel") as string | null) ?? "").trim() || null;
   if (!orgId) return;
   await prisma.organization.update({ where: { id: orgId }, data: { aiModel: model } });
+  revalidatePath(`/platform/orgs/${orgId}`);
+}
+
+export async function toggleOrgModuleAction(formData: FormData) {
+  await requirePlatformAdmin();
+  const orgId = formData.get("orgId") as string;
+  const module = formData.get("module") as string;
+  const currentlyEnabled = formData.get("currentlyEnabled") === "true";
+  if (!orgId || !module) return;
+  try {
+    if (currentlyEnabled) {
+      await prisma.orgModuleGrant.deleteMany({ where: { orgId, module: module as OrgModule } });
+    } else {
+      await prisma.orgModuleGrant.upsert({
+        where: { orgId_module: { orgId, module: module as OrgModule } },
+        create: { orgId, module: module as OrgModule },
+        update: {},
+      });
+    }
+  } catch { /* table may not exist yet */ }
   revalidatePath(`/platform/orgs/${orgId}`);
 }
 

@@ -10,9 +10,11 @@ import {
   toggleOrgActive,
   setOrgSmsSenderAction,
   setOrgAiModelAction,
+  toggleOrgModuleAction,
 } from "../../actions";
 import { getSmsUsage, SMS_PLAN_QUOTAS } from "@/lib/notifications/sms-quota";
 import { getOrgWhatsAppConfig } from "@/lib/org-whatsapp-config";
+import { ALL_MODULES, MODULE_LABELS, MODULE_ICONS } from "@/lib/module-access";
 
 export const dynamic = "force-dynamic";
 
@@ -66,7 +68,7 @@ export default async function OrgDetailPage({ params }: { params: Promise<{ id: 
 
   if (!org) notFound();
 
-  const [orgUsers, billingHistory, smsUsed, orgWaCfg] = await Promise.all([
+  const [orgUsers, billingHistory, smsUsed, orgWaCfg, moduleGrants] = await Promise.all([
     prisma.user.findMany({
       where: { orgId: id },
       select: { id: true, name: true, email: true, role: true, isActive: true, createdAt: true },
@@ -75,8 +77,10 @@ export default async function OrgDetailPage({ params }: { params: Promise<{ id: 
     getBillingEventsByOrg(id).catch(() => []),
     getSmsUsage(id),
     getOrgWhatsAppConfig(id).catch(() => null),
+    prisma.orgModuleGrant.findMany({ where: { orgId: id }, select: { module: true } }).catch(() => []),
   ]);
 
+  const enabledModuleSet = new Set(moduleGrants.map((g) => g.module as string));
   const smsLimit  = SMS_PLAN_QUOTAS[org.plan] ?? 200;
   const smsPct    = Math.min(100, Math.round((smsUsed / smsLimit) * 100));
   const totalPaid = billingHistory
@@ -343,6 +347,57 @@ export default async function OrgDetailPage({ params }: { params: Promise<{ id: 
             </tbody>
           </table>
         </div>
+      </div>
+
+      {/* Module access */}
+      <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] p-5 space-y-4">
+        <div>
+          <SectionTitle>Module Access</SectionTitle>
+          <p className="mt-1 text-xs text-[var(--ink-muted)]">
+            {enabledModuleSet.size === 0
+              ? "No modules explicitly granted — org sees all modules (default). Toggle any module to start managing access."
+              : `${enabledModuleSet.size} of ${ALL_MODULES.length} modules enabled.`}
+          </p>
+        </div>
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+          {ALL_MODULES.map((mod) => {
+            const enabled = enabledModuleSet.size === 0 || enabledModuleSet.has(mod);
+            const isGranted = enabledModuleSet.has(mod);
+            return (
+              <form key={mod} action={toggleOrgModuleAction}>
+                <input type="hidden" name="orgId" value={org.id} />
+                <input type="hidden" name="module" value={mod} />
+                <input type="hidden" name="currentlyEnabled" value={String(isGranted)} />
+                <button
+                  type="submit"
+                  className={`w-full rounded-xl border px-3 py-3 text-left transition-colors hover:opacity-80 ${
+                    enabled && isGranted
+                      ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+                      : isGranted
+                      ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+                      : enabledModuleSet.size === 0
+                      ? "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]"
+                      : "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)] opacity-60"
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-1">
+                    <span className="text-base">{MODULE_ICONS[mod]}</span>
+                    <span className={`h-2 w-2 rounded-full ${isGranted ? "bg-emerald-500" : enabledModuleSet.size === 0 ? "bg-[var(--ink-muted)]/30" : "bg-red-400"}`} />
+                  </div>
+                  <p className="mt-1.5 text-[11px] font-bold leading-tight">{MODULE_LABELS[mod]}</p>
+                  <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-wide opacity-60">
+                    {isGranted ? "ON — click to disable" : enabledModuleSet.size === 0 ? "default on" : "OFF — click to enable"}
+                  </p>
+                </button>
+              </form>
+            );
+          })}
+        </div>
+        {enabledModuleSet.size === 0 && (
+          <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
+            <strong>Tip:</strong> Enabling any module switches this org from &ldquo;all access&rdquo; to explicit grant mode. Only enabled modules will appear in the sidebar.
+          </p>
+        )}
       </div>
 
       {/* Danger zone */}
