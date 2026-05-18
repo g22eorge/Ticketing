@@ -57,7 +57,12 @@ export default async function OrgDetailPage({ params }: { params: Promise<{ id: 
       createdAt: true, updatedAt: true,
       _count: { select: { users: true, jobs: true } },
     },
-  });
+  }).catch(() =>
+    prisma.organization.findUnique({
+      where: { id },
+      select: { id: true, name: true, slug: true, isActive: true, createdAt: true, updatedAt: true, _count: { select: { users: true, jobs: true } } },
+    }).then((r) => r ? { ...r, plan: "STARTER" as const, billingStatus: "TRIALING" as const, isActive: r.isActive, trialEndsAt: null, planRenewsAt: null, planCancelledAt: null, flwSubscriptionId: null, flwCustomerId: null, aiModel: null } : null)
+  );
 
   if (!org) notFound();
 

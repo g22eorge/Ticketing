@@ -29,7 +29,13 @@ export default async function PlatformPage() {
         trialEndsAt: true, planRenewsAt: true, isActive: true, createdAt: true,
         _count: { select: { users: true, jobs: true } },
       },
-    }),
+    }).catch(() =>
+      // Fallback if billing columns missing — run /api/admin/db-fix to add them
+      prisma.organization.findMany({
+        orderBy: { createdAt: "desc" },
+        select: { id: true, name: true, slug: true, isActive: true, createdAt: true, _count: { select: { users: true, jobs: true } } },
+      }).then((rows) => rows.map((r) => ({ ...r, plan: "STARTER" as const, billingStatus: "TRIALING" as const, trialEndsAt: null, planRenewsAt: null })))
+    ),
     getTotalRevenue(),
     getMonthlyRevenue(),
   ]);

@@ -132,6 +132,16 @@ export async function POST() {
     };
     await addOrgColumn("baseCurrency", "TEXT", "'UGX'");
     await addOrgColumn("supportedCurrencies", "TEXT", "'UGX'");
+    // Billing & subscription columns (added in commercial release)
+    await addOrgColumn("billingStatus", "TEXT", "'TRIALING'");
+    await addOrgColumn("isActive", "INTEGER", "1");
+    await addOrgColumn("flwCustomerId", "TEXT");
+    await addOrgColumn("flwSubscriptionId", "TEXT");
+    await addOrgColumn("flwPlanId", "TEXT");
+    await addOrgColumn("trialEndsAt", "DATETIME");
+    await addOrgColumn("planRenewsAt", "DATETIME");
+    await addOrgColumn("planCancelledAt", "DATETIME");
+    await addOrgColumn("aiModel", "TEXT");
   } catch {
     // ignore
   }
