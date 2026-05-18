@@ -649,6 +649,24 @@ export default async function UsersPage({
     redirect(`/settings/users?${new URLSearchParams({ q, userId: targetUserId }).toString()}`);
   }
 
+  async function toggleUserActive(formData: FormData) {
+    "use server";
+    const { user: actor, orgId: actorOrgId, session } = await requireOrgSession();
+    if (actor.role !== "ADMIN") return;
+    const targetId = String(formData.get("userId") ?? "").trim();
+    const q = String(formData.get("q") ?? "").trim();
+    if (!targetId || targetId === session.user.id) return; // can't deactivate yourself
+    const target = await prisma.user.findUnique({ where: { id: targetId, orgId: actorOrgId }, select: { id: true, isActive: true } });
+    if (!target) return;
+    await prisma.user.update({ where: { id: targetId }, data: { isActive: !target.isActive } });
+    // Revoke all active sessions when deactivating
+    if (target.isActive) {
+      await prisma.session.deleteMany({ where: { userId: targetId } }).catch(() => {});
+    }
+    revalidatePath("/settings/users");
+    redirect(`/settings/users?${new URLSearchParams({ q, userId: targetId }).toString()}`);
+  }
+
   async function inviteUser(_prev: InviteState, formData: FormData): Promise<InviteState> {
     "use server";
 
@@ -966,6 +984,18 @@ export default async function UsersPage({
                 <span className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${selectedUser.isActive ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400" : "border-[var(--line)] text-[var(--ink-muted)]"}`}>
                   {selectedUser.isActive ? "Active" : "Inactive"}
                 </span>
+                {user.role === "ADMIN" && selectedUser.id !== user.id && (
+                  <form action={toggleUserActive}>
+                    <input type="hidden" name="userId" value={selectedUser.id} />
+                    <input type="hidden" name="q" value={q} />
+                    <button
+                      type="submit"
+                      className={`rounded border px-2 py-0.5 text-[10px] font-semibold transition-colors ${selectedUser.isActive ? "border-red-200 text-red-600 hover:bg-red-50" : "border-emerald-200 text-emerald-600 hover:bg-emerald-50"}`}
+                    >
+                      {selectedUser.isActive ? "Deactivate" : "Reactivate"}
+                    </button>
+                  </form>
+                )}
                 <span className="text-[11px] text-[var(--ink-muted)]">
                   Last seen {formatDateTime(selectedUser.sessions[0]?.updatedAt ?? selectedUser.auditLogs[0]?.createdAt ?? selectedUser.updatedAt)}
                 </span>

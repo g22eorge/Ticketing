@@ -117,6 +117,9 @@ const ITEMS = {
   invoiceDocs: { href: "/documents/invoices",    label: "Invoices",  icon: invoiceIcon },
   receipts:    { href: "/documents/receipts",    label: "Receipts",  icon: invoiceIcon },
   deliveryNotes:{ href: "/documents/delivery-notes", label: "Delivery", icon: invoiceIcon },
+  creditNotes:  { href: "/documents/credit-notes",   label: "Credit Notes", icon: invoiceIcon },
+  refunds:      { href: "/documents/refunds",        label: "Refunds",      icon: invoiceIcon },
+  cashierShifts:{ href: "/pos/shifts",               label: "Shifts",       icon: invoiceIcon },
 } satisfies Record<string, NavItem>;
 
 /* ── module guard ── */
@@ -129,7 +132,8 @@ const hrefModule: Record<string, string> = {
   "/procurement": "PURCHASE_ORDERS",
   "/documents/job-cards": "INVOICING", "/documents/quotations": "INVOICING",
   "/documents/invoices": "INVOICING", "/documents/receipts": "INVOICING",
-  "/documents/delivery-notes": "INVOICING",
+  "/documents/delivery-notes": "INVOICING", "/documents/credit-notes": "INVOICING",
+  "/documents/refunds": "INVOICING", "/pos/shifts": "POS",
   "/reports": "REPORTS", "/sales": "SALES", "/targets": "TARGETS",
 };
 
@@ -157,6 +161,9 @@ function getMoreGroups(role: Role, permissions: string[], enabledModules?: Set<s
     if (href === ITEMS.jobCards.href) return can.generateJobCards(permUser);
     if (href === ITEMS.receipts.href) return can.viewFinancials(permUser);
     if (href === ITEMS.deliveryNotes.href) return can.viewFinancials(permUser) || ["OPS", "FRONT_DESK", "ADMIN"].includes(role);
+    if (href === ITEMS.creditNotes.href) return can.viewFinancials(permUser);
+    if (href === ITEMS.refunds.href) return can.viewFinancials(permUser);
+    if (href === ITEMS.cashierShifts.href) return ["ADMIN", "MANAGER", "OPS", "FINANCE", "FRONT_DESK"].includes(role);
     if (href === ITEMS.payoutFollowups.href) return can.reviewExternalBills(permUser) || can.approveInvoices(permUser);
     if (href === ITEMS.inventory.href) return ["ADMIN", "OPS", "TECHNICIAN_INTERNAL"].includes(role);
     if (href === ITEMS.board.href) return role !== "TECHNICIAN_EXTERNAL";
@@ -166,7 +173,7 @@ function getMoreGroups(role: Role, permissions: string[], enabledModules?: Set<s
   const groups: NavGroup[] = [
     {
       title: "Documents",
-      items: [ITEMS.jobCards, ITEMS.quotations, ITEMS.invoiceDocs, ITEMS.receipts, ITEMS.deliveryNotes],
+      items: [ITEMS.jobCards, ITEMS.quotations, ITEMS.invoiceDocs, ITEMS.receipts, ITEMS.deliveryNotes, ITEMS.creditNotes, ITEMS.refunds],
     },
     {
       title: "Operations",
@@ -174,7 +181,7 @@ function getMoreGroups(role: Role, permissions: string[], enabledModules?: Set<s
     },
     {
       title: "Management",
-      items: [ITEMS.reports, ITEMS.pos],
+      items: [ITEMS.reports, ITEMS.pos, ITEMS.cashierShifts],
     },
   ];
 

@@ -47,8 +47,11 @@ const nav = [
   { href: "/documents/invoices",      label: "Invoices",       group: "documents" as NavGroup, roles: ["ADMIN", "MANAGER", "OPS", "FINANCE", "SALES_MANAGER", "SALES_CORPORATE", "TECH_MANAGER"] as const },
   { href: "/documents/receipts",      label: "Receipts",       group: "documents" as NavGroup, roles: ["ADMIN", "MANAGER", "OPS", "FRONT_DESK", "SALES", "SALES_MANAGER", "SALES_RETAIL"] as const },
   { href: "/documents/delivery-notes",label: "Delivery Notes", group: "documents" as NavGroup, roles: ["ADMIN", "MANAGER", "OPS", "FRONT_DESK"] as const },
+  { href: "/documents/credit-notes",  label: "Credit Notes",   group: "documents" as NavGroup, roles: ["ADMIN", "MANAGER", "OPS", "FINANCE"] as const },
+  { href: "/documents/refunds",       label: "Refunds",        group: "documents" as NavGroup, roles: ["ADMIN", "MANAGER", "OPS", "FINANCE"] as const },
 
   // Finance
+  { href: "/pos/shifts",         label: "Cashier Shifts",  group: "finance"    as NavGroup, roles: ["ADMIN", "MANAGER", "OPS", "FINANCE", "FRONT_DESK"] as const },
   { href: "/targets",           label: "Targets",         group: "finance"    as NavGroup, roles: ["ADMIN", "MANAGER", "OPS", "SALES_MANAGER", "TECH_MANAGER", "FINANCE"] as const },
   { href: "/reports",            label: "Reports",         group: "finance"    as NavGroup, roles: ["ADMIN", "MANAGER", "OPS", "FINANCE", "SALES_MANAGER"] as const },
   { href: "/payout-followups",   label: "Payment Tracker", group: "finance"    as NavGroup, roles: ["ADMIN", "MANAGER", "OPS", "FINANCE", "TECH_MANAGER", "SALES_MANAGER"] as const },
@@ -86,9 +89,9 @@ const roleOrder: Partial<Record<Role, readonly string[]>> = {
     // clients
     "/clients", "/sales", "/pos",
     // documents
-    "/documents/job-cards", "/documents/quotations", "/documents/invoices", "/documents/receipts", "/documents/delivery-notes",
+    "/documents/job-cards", "/documents/quotations", "/documents/invoices", "/documents/receipts", "/documents/delivery-notes", "/documents/credit-notes", "/documents/refunds",
     // finance
-    "/targets", "/reports", "/payout-followups",
+    "/pos/shifts", "/targets", "/reports", "/payout-followups",
     "/settings",
   ],
   MANAGER: [
@@ -97,8 +100,8 @@ const roleOrder: Partial<Record<Role, readonly string[]>> = {
     "/inventory", "/inventory/locations", "/inventory/transfers", "/inventory/stock-counts",
     "/procurement", "/inventory/purchase-requests", "/inventory/purchase-orders", "/inventory/goods-received", "/inventory/supplier-bills", "/inventory/suppliers",
     "/clients", "/sales", "/pos",
-    "/documents/job-cards", "/documents/quotations", "/documents/invoices", "/documents/receipts", "/documents/delivery-notes",
-    "/targets", "/reports", "/payout-followups",
+    "/documents/job-cards", "/documents/quotations", "/documents/invoices", "/documents/receipts", "/documents/delivery-notes", "/documents/credit-notes", "/documents/refunds",
+    "/pos/shifts", "/targets", "/reports", "/payout-followups",
     "/settings",
   ],
   TECH_MANAGER: [
@@ -115,14 +118,14 @@ const roleOrder: Partial<Record<Role, readonly string[]>> = {
     "/inventory", "/inventory/locations", "/inventory/transfers", "/inventory/stock-counts",
     "/procurement", "/inventory/purchase-requests", "/inventory/purchase-orders", "/inventory/goods-received", "/inventory/supplier-bills", "/inventory/suppliers",
     "/clients", "/sales", "/pos",
-    "/documents/job-cards", "/documents/quotations", "/documents/invoices", "/documents/receipts", "/documents/delivery-notes",
-    "/targets", "/reports", "/payout-followups",
+    "/documents/job-cards", "/documents/quotations", "/documents/invoices", "/documents/receipts", "/documents/delivery-notes", "/documents/credit-notes", "/documents/refunds",
+    "/pos/shifts", "/targets", "/reports", "/payout-followups",
     "/settings",
   ],
   FINANCE: [
     "/dashboard",
-    "/documents/invoices",
-    "/targets", "/reports", "/payout-followups",
+    "/documents/invoices", "/documents/credit-notes", "/documents/refunds",
+    "/pos/shifts", "/targets", "/reports", "/payout-followups",
     "/settings",
   ],
   SALES: [
@@ -206,6 +209,9 @@ const hrefModule: Record<string, string> = {
   "/documents/invoices":             "INVOICING",
   "/documents/receipts":             "INVOICING",
   "/documents/delivery-notes":       "INVOICING",
+  "/documents/credit-notes":        "INVOICING",
+  "/documents/refunds":             "INVOICING",
+  "/pos/shifts":                    "POS",
   "/reports":                        "REPORTS",
   "/sales":                          "SALES",
   "/targets":                        "TARGETS",
