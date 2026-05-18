@@ -1,5 +1,4 @@
 import { spawnSync } from "node:child_process";
-import { rmSync } from "node:fs";
 
 function run(command, args, options = {}) {
   const result = spawnSync(command, args, {
@@ -18,11 +17,7 @@ if (!env.DATABASE_URL) {
   env.DATABASE_URL = "file:./dev.db";
 }
 
-for (const path of ["node_modules/.prisma/client", "node_modules/@prisma/client/.prisma"]) {
-  rmSync(path, { recursive: true, force: true });
-}
-
-run("bunx", ["prisma", "generate"], { env });
+run("node", ["scripts/generate-prisma-clean.mjs"], { env });
 run("node", ["scripts/assert-prisma-models.mjs"], { env });
 
 if (env.RUN_PRISMA_MIGRATE_DEPLOY === "1") {
