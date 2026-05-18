@@ -223,12 +223,12 @@
 body {
   background: var(--page-bg);
   color: var(--ink);
-  font-family: var(--font-ui), "Manrope", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: var(--font-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif);
   letter-spacing: -0.01em;
 }
 
 :where(h1, h2, h3, h4) {
-  font-family: var(--font-display), var(--font-ui), "Sora", sans-serif;
+  font-family: var(--font-display, var(--font-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif));
   letter-spacing: -0.02em;
 }
 

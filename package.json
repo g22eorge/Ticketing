@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "export DATABASE_URL=\"file:./dev.db\"; bunx prisma db push --skip-generate && node scripts/generate-prisma-clean.mjs && node scripts/assert-prisma-models.mjs && next dev",
+    "dev": "export DATABASE_URL=\"file:./dev.db\" CLEAR_NEXT_CACHE=1; bunx prisma db push --skip-generate && node scripts/generate-prisma-clean.mjs && node scripts/assert-prisma-models.mjs && next dev",
     "build": "node scripts/vercel-build.mjs",
     "vercel-build": "node scripts/vercel-build.mjs",
     "start": "PORT=${PORT:-3000} BIND_HOST=${BIND_HOST:-0.0.0.0}; if [ -f .next/standalone/server.js ]; then HOSTNAME=$BIND_HOST PORT=$PORT bun .next/standalone/server.js; else next start -p $PORT -H $BIND_HOST; fi",
@@ -33,7 +33,7 @@
     "seed:base": "TURSO_DATABASE_URL= TURSO_AUTH_TOKEN= DATABASE_URL=\"${DATABASE_URL:-file:./dev.db}\" bunx prisma db push --skip-generate && TURSO_DATABASE_URL= TURSO_AUTH_TOKEN= DATABASE_URL=\"${DATABASE_URL:-file:./dev.db}\" bunx prisma generate && TURSO_DATABASE_URL= TURSO_AUTH_TOKEN= DATABASE_URL=\"${DATABASE_URL:-file:./dev.db}\" bun run prisma/seed-base.ts",
     "seed:demo": "TURSO_DATABASE_URL= TURSO_AUTH_TOKEN= DATABASE_URL=\"${DATABASE_URL:-file:./dev.db}\" bunx prisma db push --skip-generate && TURSO_DATABASE_URL= TURSO_AUTH_TOKEN= DATABASE_URL=\"${DATABASE_URL:-file:./dev.db}\" bunx prisma generate && TURSO_DATABASE_URL= TURSO_AUTH_TOKEN= DATABASE_URL=\"${DATABASE_URL:-file:./dev.db}\" bun run prisma/seed.ts",
     "seed:commercial": "TURSO_DATABASE_URL= TURSO_AUTH_TOKEN= DATABASE_URL=\"${DATABASE_URL:-file:./dev.db}\" bunx prisma db push --skip-generate && TURSO_DATABASE_URL= TURSO_AUTH_TOKEN= DATABASE_URL=\"${DATABASE_URL:-file:./dev.db}\" bunx prisma generate && TURSO_DATABASE_URL= TURSO_AUTH_TOKEN= DATABASE_URL=\"${DATABASE_URL:-file:./dev.db}\" bun run prisma/seed-commercial.ts",
-    "test:unit": "ALLOW_SQLITE_PRODUCTION=1 TURSO_DATABASE_URL= TURSO_AUTH_TOKEN= DATABASE_URL=\"file:$(pwd)/prisma/test.db\" bun test tests/unit --timeout 30000",
+    "test:unit": "ALLOW_SQLITE_PRODUCTION=1 TURSO_DATABASE_URL= TURSO_AUTH_TOKEN= DATABASE_URL=\"file:$(pwd)/prisma/test.db\" bunx prisma db push --skip-generate && ALLOW_SQLITE_PRODUCTION=1 TURSO_DATABASE_URL= TURSO_AUTH_TOKEN= DATABASE_URL=\"file:$(pwd)/prisma/test.db\" bun test tests/unit --timeout 30000",
     "test:setup": "ALLOW_SQLITE_PRODUCTION=1 TURSO_DATABASE_URL= TURSO_AUTH_TOKEN= DATABASE_URL=\"file:$(pwd)/prisma/test.db\" bunx prisma db push --schema ../../../prisma/schema.prisma --skip-generate",
     "test:unit:watch": "bun test tests/unit --watch",
     "worker:start": "bun lib/queue/worker.ts"

@@ -1,23 +1,10 @@
 import type { Metadata, Viewport } from "next";
-import { Manrope, Sora } from "next/font/google";
 import { cookies } from "next/headers";
 import { Toaster } from "sonner";
 import { Analytics } from "@vercel/analytics/next";
 
 import { ThemeProvider } from "@/components/layout/ThemeProvider";
 import "./globals.css";
-
-const manrope = Manrope({
-  subsets: ["latin"],
-  variable: "--font-ui",
-  display: "swap",
-});
-
-const sora = Sora({
-  subsets: ["latin"],
-  variable: "--font-display",
-  display: "swap",
-});
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || "https://localhost:3000";
 const ogImage = `${siteUrl}/eagle-info-logo.png`;
@@ -77,7 +64,7 @@ export default async function RootLayout({
   const themeClass = stored === "dark" ? "theme-blackgold" : stored === "light" ? "light" : "";
 
   return (
-    <html lang="en" className={`${manrope.variable} ${sora.variable} h-full antialiased${themeClass ? " " + themeClass : ""}`}>
+    <html lang="en" className={`h-full antialiased${themeClass ? " " + themeClass : ""}`}>
       <body className="min-h-full bg-[var(--page-bg)] text-[var(--ink)]">
         <ThemeProvider initialTheme={initialTheme}>
           {children}
