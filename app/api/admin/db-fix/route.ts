@@ -920,6 +920,548 @@ export async function POST() {
     await addPOColumn("notes", "TEXT");
   }
 
+  // ── Commercial tables ────────────────────────────────────────────────────
+
+  // Department
+  if (!(await tableExists("Department"))) {
+    await prisma.$executeRawUnsafe(`CREATE TABLE "Department" (
+      "id" TEXT NOT NULL PRIMARY KEY,
+      "orgId" TEXT NOT NULL,
+      "name" TEXT NOT NULL,
+      "code" TEXT,
+      "managerId" TEXT,
+      "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" DATETIME NOT NULL,
+      CONSTRAINT "Department_orgId_fkey" FOREIGN KEY ("orgId") REFERENCES "Organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+    )`);
+    changes.push({ kind: "create_table", detail: "Created Department" });
+  }
+
+  // UserGroup
+  if (!(await tableExists("UserGroup"))) {
+    await prisma.$executeRawUnsafe(`CREATE TABLE "UserGroup" (
+      "id" TEXT NOT NULL PRIMARY KEY,
+      "orgId" TEXT NOT NULL,
+      "name" TEXT NOT NULL,
+      "description" TEXT,
+      "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" DATETIME NOT NULL,
+      CONSTRAINT "UserGroup_orgId_fkey" FOREIGN KEY ("orgId") REFERENCES "Organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+    )`);
+    await prisma.$executeRawUnsafe(`CREATE INDEX "UserGroup_orgId_idx" ON "UserGroup"("orgId")`);
+    changes.push({ kind: "create_table", detail: "Created UserGroup" });
+  }
+
+  if (!(await tableExists("UserGroupMember"))) {
+    await prisma.$executeRawUnsafe(`CREATE TABLE "UserGroupMember" (
+      "id" TEXT NOT NULL PRIMARY KEY,
+      "groupId" TEXT NOT NULL,
+      "userId" TEXT NOT NULL,
+      "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT "UserGroupMember_groupId_fkey" FOREIGN KEY ("groupId") REFERENCES "UserGroup" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+      CONSTRAINT "UserGroupMember_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+    )`);
+    await prisma.$executeRawUnsafe(`CREATE UNIQUE INDEX "UserGroupMember_groupId_userId_key" ON "UserGroupMember"("groupId","userId")`);
+    changes.push({ kind: "create_table", detail: "Created UserGroupMember" });
+  }
+
+  if (!(await tableExists("UserGroupPermission"))) {
+    await prisma.$executeRawUnsafe(`CREATE TABLE "UserGroupPermission" (
+      "id" TEXT NOT NULL PRIMARY KEY,
+      "groupId" TEXT NOT NULL,
+      "resource" TEXT NOT NULL,
+      "action" TEXT NOT NULL,
+      "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT "UserGroupPermission_groupId_fkey" FOREIGN KEY ("groupId") REFERENCES "UserGroup" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+    )`);
+    changes.push({ kind: "create_table", detail: "Created UserGroupPermission" });
+  }
+
+  // SalesTarget
+  if (!(await tableExists("SalesTarget"))) {
+    await prisma.$executeRawUnsafe(`CREATE TABLE "SalesTarget" (
+      "id" TEXT NOT NULL PRIMARY KEY,
+      "orgId" TEXT NOT NULL,
+      "userId" TEXT,
+      "period" TEXT NOT NULL,
+      "targetRevenue" REAL NOT NULL DEFAULT 0,
+      "targetJobs" INTEGER,
+      "targetLeads" INTEGER,
+      "note" TEXT,
+      "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" DATETIME NOT NULL,
+      CONSTRAINT "SalesTarget_orgId_fkey" FOREIGN KEY ("orgId") REFERENCES "Organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+    )`);
+    await prisma.$executeRawUnsafe(`CREATE INDEX "SalesTarget_orgId_period_idx" ON "SalesTarget"("orgId","period")`);
+    changes.push({ kind: "create_table", detail: "Created SalesTarget" });
+  }
+
+  // Lead + LeadActivity
+  if (!(await tableExists("Lead"))) {
+    await prisma.$executeRawUnsafe(`CREATE TABLE "Lead" (
+      "id" TEXT NOT NULL PRIMARY KEY,
+      "orgId" TEXT NOT NULL,
+      "title" TEXT NOT NULL,
+      "status" TEXT NOT NULL DEFAULT 'NEW',
+      "clientId" TEXT,
+      "assignedToId" TEXT,
+      "source" TEXT,
+      "value" REAL,
+      "currency" TEXT NOT NULL DEFAULT 'KES',
+      "notes" TEXT,
+      "expectedCloseDate" DATETIME,
+      "wonAt" DATETIME,
+      "lostAt" DATETIME,
+      "lostReason" TEXT,
+      "createdById" TEXT,
+      "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" DATETIME NOT NULL,
+      CONSTRAINT "Lead_orgId_fkey" FOREIGN KEY ("orgId") REFERENCES "Organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+    )`);
+    await prisma.$executeRawUnsafe(`CREATE INDEX "Lead_orgId_status_idx" ON "Lead"("orgId","status")`);
+    changes.push({ kind: "create_table", detail: "Created Lead" });
+  }
+
+  if (!(await tableExists("LeadActivity"))) {
+    await prisma.$executeRawUnsafe(`CREATE TABLE "LeadActivity" (
+      "id" TEXT NOT NULL PRIMARY KEY,
+      "leadId" TEXT NOT NULL,
+      "type" TEXT NOT NULL,
+      "note" TEXT,
+      "userId" TEXT,
+      "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT "LeadActivity_leadId_fkey" FOREIGN KEY ("leadId") REFERENCES "Lead" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+    )`);
+    changes.push({ kind: "create_table", detail: "Created LeadActivity" });
+  }
+
+  // Quotation + QuotationItem
+  if (!(await tableExists("Quotation"))) {
+    await prisma.$executeRawUnsafe(`CREATE TABLE "Quotation" (
+      "id" TEXT NOT NULL PRIMARY KEY,
+      "orgId" TEXT NOT NULL,
+      "quotationNumber" TEXT NOT NULL,
+      "status" TEXT NOT NULL DEFAULT 'DRAFT',
+      "clientId" TEXT,
+      "leadId" TEXT,
+      "createdById" TEXT,
+      "validUntil" DATETIME,
+      "sentAt" DATETIME,
+      "acceptedAt" DATETIME,
+      "rejectedAt" DATETIME,
+      "subtotal" REAL NOT NULL DEFAULT 0,
+      "taxAmount" REAL NOT NULL DEFAULT 0,
+      "totalAmount" REAL NOT NULL DEFAULT 0,
+      "currency" TEXT NOT NULL DEFAULT 'KES',
+      "notes" TEXT,
+      "terms" TEXT,
+      "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" DATETIME NOT NULL,
+      CONSTRAINT "Quotation_orgId_fkey" FOREIGN KEY ("orgId") REFERENCES "Organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+    )`);
+    await prisma.$executeRawUnsafe(`CREATE UNIQUE INDEX "Quotation_quotationNumber_key" ON "Quotation"("quotationNumber")`);
+    await prisma.$executeRawUnsafe(`CREATE INDEX "Quotation_orgId_status_idx" ON "Quotation"("orgId","status")`);
+    changes.push({ kind: "create_table", detail: "Created Quotation" });
+  }
+
+  if (!(await tableExists("QuotationItem"))) {
+    await prisma.$executeRawUnsafe(`CREATE TABLE "QuotationItem" (
+      "id" TEXT NOT NULL PRIMARY KEY,
+      "quotationId" TEXT NOT NULL,
+      "description" TEXT NOT NULL,
+      "quantity" REAL NOT NULL DEFAULT 1,
+      "unitPrice" REAL NOT NULL DEFAULT 0,
+      "taxRate" REAL NOT NULL DEFAULT 0,
+      "totalPrice" REAL NOT NULL DEFAULT 0,
+      "partId" TEXT,
+      "sortOrder" INTEGER NOT NULL DEFAULT 0,
+      "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT "QuotationItem_quotationId_fkey" FOREIGN KEY ("quotationId") REFERENCES "Quotation" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+    )`);
+    await prisma.$executeRawUnsafe(`CREATE INDEX "QuotationItem_quotationId_idx" ON "QuotationItem"("quotationId")`);
+    changes.push({ kind: "create_table", detail: "Created QuotationItem" });
+  }
+
+  // CashierShift + PosSession
+  if (!(await tableExists("CashierShift"))) {
+    await prisma.$executeRawUnsafe(`CREATE TABLE "CashierShift" (
+      "id" TEXT NOT NULL PRIMARY KEY,
+      "orgId" TEXT NOT NULL,
+      "cashierId" TEXT NOT NULL,
+      "locationId" TEXT,
+      "openedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "closedAt" DATETIME,
+      "openingFloat" REAL NOT NULL DEFAULT 0,
+      "closingCash" REAL,
+      "expectedCash" REAL,
+      "variance" REAL,
+      "status" TEXT NOT NULL DEFAULT 'OPEN',
+      "notes" TEXT,
+      "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" DATETIME NOT NULL,
+      CONSTRAINT "CashierShift_orgId_fkey" FOREIGN KEY ("orgId") REFERENCES "Organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+    )`);
+    changes.push({ kind: "create_table", detail: "Created CashierShift" });
+  }
+
+  if (!(await tableExists("PosSession"))) {
+    await prisma.$executeRawUnsafe(`CREATE TABLE "PosSession" (
+      "id" TEXT NOT NULL PRIMARY KEY,
+      "orgId" TEXT NOT NULL,
+      "operatorId" TEXT NOT NULL,
+      "locationId" TEXT,
+      "shiftId" TEXT,
+      "status" TEXT NOT NULL DEFAULT 'OPEN',
+      "openedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "closedAt" DATETIME,
+      "totalSales" REAL NOT NULL DEFAULT 0,
+      "salesCount" INTEGER NOT NULL DEFAULT 0,
+      "notes" TEXT,
+      "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" DATETIME NOT NULL,
+      CONSTRAINT "PosSession_orgId_fkey" FOREIGN KEY ("orgId") REFERENCES "Organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+    )`);
+    await prisma.$executeRawUnsafe(`CREATE INDEX "PosSession_orgId_status_idx" ON "PosSession"("orgId","status")`);
+    await prisma.$executeRawUnsafe(`CREATE INDEX "PosSession_operatorId_idx" ON "PosSession"("operatorId")`);
+    changes.push({ kind: "create_table", detail: "Created PosSession" });
+  }
+
+  // InventoryCategory
+  if (!(await tableExists("InventoryCategory"))) {
+    await prisma.$executeRawUnsafe(`CREATE TABLE "InventoryCategory" (
+      "id" TEXT NOT NULL PRIMARY KEY,
+      "orgId" TEXT NOT NULL,
+      "name" TEXT NOT NULL,
+      "parentId" TEXT,
+      "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" DATETIME NOT NULL,
+      CONSTRAINT "InventoryCategory_orgId_fkey" FOREIGN KEY ("orgId") REFERENCES "Organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+    )`);
+    changes.push({ kind: "create_table", detail: "Created InventoryCategory" });
+  }
+
+  // StockLocation + PartLocationStock + ReorderRule
+  if (!(await tableExists("StockLocation"))) {
+    await prisma.$executeRawUnsafe(`CREATE TABLE "StockLocation" (
+      "id" TEXT NOT NULL PRIMARY KEY,
+      "orgId" TEXT NOT NULL,
+      "name" TEXT NOT NULL,
+      "code" TEXT,
+      "type" TEXT NOT NULL DEFAULT 'WAREHOUSE',
+      "isDefault" INTEGER NOT NULL DEFAULT 0,
+      "isActive" INTEGER NOT NULL DEFAULT 1,
+      "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" DATETIME NOT NULL,
+      CONSTRAINT "StockLocation_orgId_fkey" FOREIGN KEY ("orgId") REFERENCES "Organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+    )`);
+    await prisma.$executeRawUnsafe(`CREATE INDEX "StockLocation_orgId_idx" ON "StockLocation"("orgId")`);
+    changes.push({ kind: "create_table", detail: "Created StockLocation" });
+  }
+
+  if (!(await tableExists("PartLocationStock"))) {
+    await prisma.$executeRawUnsafe(`CREATE TABLE "PartLocationStock" (
+      "id" TEXT NOT NULL PRIMARY KEY,
+      "partId" TEXT NOT NULL,
+      "locationId" TEXT NOT NULL,
+      "quantity" INTEGER NOT NULL DEFAULT 0,
+      "updatedAt" DATETIME NOT NULL,
+      CONSTRAINT "PartLocationStock_locationId_fkey" FOREIGN KEY ("locationId") REFERENCES "StockLocation" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+    )`);
+    await prisma.$executeRawUnsafe(`CREATE UNIQUE INDEX "PartLocationStock_partId_locationId_key" ON "PartLocationStock"("partId","locationId")`);
+    changes.push({ kind: "create_table", detail: "Created PartLocationStock" });
+  }
+
+  if (!(await tableExists("ReorderRule"))) {
+    await prisma.$executeRawUnsafe(`CREATE TABLE "ReorderRule" (
+      "id" TEXT NOT NULL PRIMARY KEY,
+      "orgId" TEXT NOT NULL,
+      "partId" TEXT NOT NULL,
+      "locationId" TEXT,
+      "minQty" INTEGER NOT NULL DEFAULT 0,
+      "reorderQty" INTEGER NOT NULL DEFAULT 1,
+      "isActive" INTEGER NOT NULL DEFAULT 1,
+      "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" DATETIME NOT NULL,
+      CONSTRAINT "ReorderRule_orgId_fkey" FOREIGN KEY ("orgId") REFERENCES "Organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+    )`);
+    changes.push({ kind: "create_table", detail: "Created ReorderRule" });
+  }
+
+  // StockCount + StockCountItem
+  if (!(await tableExists("StockCount"))) {
+    await prisma.$executeRawUnsafe(`CREATE TABLE "StockCount" (
+      "id" TEXT NOT NULL PRIMARY KEY,
+      "orgId" TEXT NOT NULL,
+      "countNumber" TEXT NOT NULL,
+      "status" TEXT NOT NULL DEFAULT 'DRAFT',
+      "locationId" TEXT NOT NULL,
+      "countedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "submittedAt" DATETIME,
+      "approvedAt" DATETIME,
+      "note" TEXT,
+      "createdById" TEXT NOT NULL,
+      "approvedById" TEXT,
+      "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" DATETIME NOT NULL,
+      CONSTRAINT "StockCount_orgId_fkey" FOREIGN KEY ("orgId") REFERENCES "Organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+    )`);
+    await prisma.$executeRawUnsafe(`CREATE UNIQUE INDEX "StockCount_countNumber_key" ON "StockCount"("countNumber")`);
+    await prisma.$executeRawUnsafe(`CREATE INDEX "StockCount_orgId_status_idx" ON "StockCount"("orgId","status","countedAt")`);
+    changes.push({ kind: "create_table", detail: "Created StockCount" });
+  }
+
+  if (!(await tableExists("StockCountItem"))) {
+    await prisma.$executeRawUnsafe(`CREATE TABLE "StockCountItem" (
+      "id" TEXT NOT NULL PRIMARY KEY,
+      "stockCountId" TEXT NOT NULL,
+      "partId" TEXT NOT NULL,
+      "systemQty" INTEGER NOT NULL,
+      "countedQty" INTEGER NOT NULL,
+      "varianceQty" INTEGER NOT NULL,
+      "note" TEXT,
+      "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT "StockCountItem_stockCountId_fkey" FOREIGN KEY ("stockCountId") REFERENCES "StockCount" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+    )`);
+    changes.push({ kind: "create_table", detail: "Created StockCountItem" });
+  }
+
+  // StockTransfer + StockTransferItem
+  if (!(await tableExists("StockTransfer"))) {
+    await prisma.$executeRawUnsafe(`CREATE TABLE "StockTransfer" (
+      "id" TEXT NOT NULL PRIMARY KEY,
+      "orgId" TEXT NOT NULL,
+      "transferNumber" TEXT NOT NULL,
+      "fromLocationId" TEXT,
+      "toLocationId" TEXT,
+      "status" TEXT NOT NULL DEFAULT 'DRAFT',
+      "transferredAt" DATETIME,
+      "note" TEXT,
+      "createdById" TEXT,
+      "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" DATETIME NOT NULL,
+      CONSTRAINT "StockTransfer_orgId_fkey" FOREIGN KEY ("orgId") REFERENCES "Organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+    )`);
+    await prisma.$executeRawUnsafe(`CREATE UNIQUE INDEX "StockTransfer_transferNumber_key" ON "StockTransfer"("transferNumber")`);
+    changes.push({ kind: "create_table", detail: "Created StockTransfer" });
+  }
+
+  if (!(await tableExists("StockTransferItem"))) {
+    await prisma.$executeRawUnsafe(`CREATE TABLE "StockTransferItem" (
+      "id" TEXT NOT NULL PRIMARY KEY,
+      "transferId" TEXT NOT NULL,
+      "partId" TEXT NOT NULL,
+      "quantity" INTEGER NOT NULL,
+      "note" TEXT,
+      "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT "StockTransferItem_transferId_fkey" FOREIGN KEY ("transferId") REFERENCES "StockTransfer" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+    )`);
+    changes.push({ kind: "create_table", detail: "Created StockTransferItem" });
+  }
+
+  // GoodsReceived + GoodsReceivedItem
+  if (!(await tableExists("GoodsReceived"))) {
+    await prisma.$executeRawUnsafe(`CREATE TABLE "GoodsReceived" (
+      "id" TEXT NOT NULL PRIMARY KEY,
+      "orgId" TEXT NOT NULL,
+      "grnNumber" TEXT NOT NULL,
+      "purchaseOrderId" TEXT,
+      "supplierId" TEXT,
+      "locationId" TEXT,
+      "receivedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "note" TEXT,
+      "receivedById" TEXT,
+      "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" DATETIME NOT NULL,
+      CONSTRAINT "GoodsReceived_orgId_fkey" FOREIGN KEY ("orgId") REFERENCES "Organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+    )`);
+    await prisma.$executeRawUnsafe(`CREATE UNIQUE INDEX "GoodsReceived_grnNumber_key" ON "GoodsReceived"("grnNumber")`);
+    changes.push({ kind: "create_table", detail: "Created GoodsReceived" });
+  }
+
+  if (!(await tableExists("GoodsReceivedItem"))) {
+    await prisma.$executeRawUnsafe(`CREATE TABLE "GoodsReceivedItem" (
+      "id" TEXT NOT NULL PRIMARY KEY,
+      "grnId" TEXT NOT NULL,
+      "partId" TEXT NOT NULL,
+      "orderedQty" INTEGER NOT NULL DEFAULT 0,
+      "receivedQty" INTEGER NOT NULL,
+      "unitCost" REAL,
+      "note" TEXT,
+      "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT "GoodsReceivedItem_grnId_fkey" FOREIGN KEY ("grnId") REFERENCES "GoodsReceived" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+    )`);
+    changes.push({ kind: "create_table", detail: "Created GoodsReceivedItem" });
+  }
+
+  // SupplierBill + SupplierBillItem + SupplierPayment
+  if (!(await tableExists("SupplierBill"))) {
+    await prisma.$executeRawUnsafe(`CREATE TABLE "SupplierBill" (
+      "id" TEXT NOT NULL PRIMARY KEY,
+      "orgId" TEXT NOT NULL,
+      "billNumber" TEXT NOT NULL,
+      "supplierId" TEXT NOT NULL,
+      "purchaseOrderId" TEXT,
+      "status" TEXT NOT NULL DEFAULT 'DRAFT',
+      "dueDate" DATETIME,
+      "subtotal" REAL NOT NULL DEFAULT 0,
+      "taxAmount" REAL NOT NULL DEFAULT 0,
+      "totalAmount" REAL NOT NULL DEFAULT 0,
+      "paidAmount" REAL NOT NULL DEFAULT 0,
+      "note" TEXT,
+      "issuedAt" DATETIME,
+      "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" DATETIME NOT NULL,
+      CONSTRAINT "SupplierBill_orgId_fkey" FOREIGN KEY ("orgId") REFERENCES "Organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+    )`);
+    await prisma.$executeRawUnsafe(`CREATE UNIQUE INDEX "SupplierBill_billNumber_key" ON "SupplierBill"("billNumber")`);
+    changes.push({ kind: "create_table", detail: "Created SupplierBill" });
+  }
+
+  if (!(await tableExists("SupplierBillItem"))) {
+    await prisma.$executeRawUnsafe(`CREATE TABLE "SupplierBillItem" (
+      "id" TEXT NOT NULL PRIMARY KEY,
+      "billId" TEXT NOT NULL,
+      "description" TEXT NOT NULL,
+      "quantity" REAL NOT NULL DEFAULT 1,
+      "unitCost" REAL NOT NULL DEFAULT 0,
+      "totalCost" REAL NOT NULL DEFAULT 0,
+      "partId" TEXT,
+      "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT "SupplierBillItem_billId_fkey" FOREIGN KEY ("billId") REFERENCES "SupplierBill" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+    )`);
+    changes.push({ kind: "create_table", detail: "Created SupplierBillItem" });
+  }
+
+  if (!(await tableExists("SupplierPayment"))) {
+    await prisma.$executeRawUnsafe(`CREATE TABLE "SupplierPayment" (
+      "id" TEXT NOT NULL PRIMARY KEY,
+      "orgId" TEXT NOT NULL,
+      "supplierId" TEXT NOT NULL,
+      "billId" TEXT,
+      "amount" REAL NOT NULL,
+      "method" TEXT NOT NULL DEFAULT 'CASH',
+      "reference" TEXT,
+      "paidAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "note" TEXT,
+      "createdById" TEXT,
+      "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" DATETIME NOT NULL,
+      CONSTRAINT "SupplierPayment_orgId_fkey" FOREIGN KEY ("orgId") REFERENCES "Organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+    )`);
+    changes.push({ kind: "create_table", detail: "Created SupplierPayment" });
+  }
+
+  // PurchaseRequest + PurchaseRequestItem
+  if (!(await tableExists("PurchaseRequest"))) {
+    await prisma.$executeRawUnsafe(`CREATE TABLE "PurchaseRequest" (
+      "id" TEXT NOT NULL PRIMARY KEY,
+      "orgId" TEXT NOT NULL,
+      "requestNumber" TEXT NOT NULL,
+      "status" TEXT NOT NULL DEFAULT 'DRAFT',
+      "requestedById" TEXT,
+      "approvedById" TEXT,
+      "approvedAt" DATETIME,
+      "note" TEXT,
+      "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" DATETIME NOT NULL,
+      CONSTRAINT "PurchaseRequest_orgId_fkey" FOREIGN KEY ("orgId") REFERENCES "Organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+    )`);
+    await prisma.$executeRawUnsafe(`CREATE UNIQUE INDEX "PurchaseRequest_requestNumber_key" ON "PurchaseRequest"("requestNumber")`);
+    changes.push({ kind: "create_table", detail: "Created PurchaseRequest" });
+  }
+
+  if (!(await tableExists("PurchaseRequestItem"))) {
+    await prisma.$executeRawUnsafe(`CREATE TABLE "PurchaseRequestItem" (
+      "id" TEXT NOT NULL PRIMARY KEY,
+      "requestId" TEXT NOT NULL,
+      "partId" TEXT,
+      "description" TEXT NOT NULL,
+      "quantity" INTEGER NOT NULL DEFAULT 1,
+      "estimatedCost" REAL,
+      "note" TEXT,
+      "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT "PurchaseRequestItem_requestId_fkey" FOREIGN KEY ("requestId") REFERENCES "PurchaseRequest" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+    )`);
+    changes.push({ kind: "create_table", detail: "Created PurchaseRequestItem" });
+  }
+
+  // Complaint
+  if (!(await tableExists("Complaint"))) {
+    await prisma.$executeRawUnsafe(`CREATE TABLE "Complaint" (
+      "id" TEXT NOT NULL PRIMARY KEY,
+      "orgId" TEXT NOT NULL,
+      "clientId" TEXT,
+      "jobId" TEXT,
+      "subject" TEXT NOT NULL,
+      "description" TEXT NOT NULL,
+      "status" TEXT NOT NULL DEFAULT 'OPEN',
+      "priority" TEXT NOT NULL DEFAULT 'NORMAL',
+      "assignedToId" TEXT,
+      "resolvedAt" DATETIME,
+      "resolution" TEXT,
+      "createdById" TEXT,
+      "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" DATETIME NOT NULL,
+      CONSTRAINT "Complaint_orgId_fkey" FOREIGN KEY ("orgId") REFERENCES "Organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+    )`);
+    await prisma.$executeRawUnsafe(`CREATE INDEX "Complaint_orgId_status_idx" ON "Complaint"("orgId","status")`);
+    changes.push({ kind: "create_table", detail: "Created Complaint" });
+  }
+
+  // FieldVisit
+  if (!(await tableExists("FieldVisit"))) {
+    await prisma.$executeRawUnsafe(`CREATE TABLE "FieldVisit" (
+      "id" TEXT NOT NULL PRIMARY KEY,
+      "orgId" TEXT NOT NULL,
+      "jobId" TEXT,
+      "clientId" TEXT,
+      "technicianId" TEXT,
+      "scheduledAt" DATETIME NOT NULL,
+      "completedAt" DATETIME,
+      "status" TEXT NOT NULL DEFAULT 'SCHEDULED',
+      "address" TEXT,
+      "notes" TEXT,
+      "outcome" TEXT,
+      "createdById" TEXT,
+      "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" DATETIME NOT NULL,
+      CONSTRAINT "FieldVisit_orgId_fkey" FOREIGN KEY ("orgId") REFERENCES "Organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+    )`);
+    await prisma.$executeRawUnsafe(`CREATE INDEX "FieldVisit_orgId_status_idx" ON "FieldVisit"("orgId","status")`);
+    changes.push({ kind: "create_table", detail: "Created FieldVisit" });
+  }
+
+  // OrgModuleGrant
+  if (!(await tableExists("OrgModuleGrant"))) {
+    await prisma.$executeRawUnsafe(`CREATE TABLE "OrgModuleGrant" (
+      "id" TEXT NOT NULL PRIMARY KEY,
+      "orgId" TEXT NOT NULL,
+      "module" TEXT NOT NULL,
+      "grantedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "expiresAt" DATETIME,
+      "grantedById" TEXT,
+      CONSTRAINT "OrgModuleGrant_orgId_fkey" FOREIGN KEY ("orgId") REFERENCES "Organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+    )`);
+    await prisma.$executeRawUnsafe(`CREATE UNIQUE INDEX "OrgModuleGrant_orgId_module_key" ON "OrgModuleGrant"("orgId","module")`);
+    changes.push({ kind: "create_table", detail: "Created OrgModuleGrant" });
+  }
+
+  // User columns: accessMode, departmentId, techType, employeeId, specializations
+  {
+    const ucols = await tableColumns("User");
+    const addUserCol = async (name: string, type: string, dflt?: string) => {
+      if (ucols.has(name)) return;
+      const defaultClause = dflt ? ` DEFAULT ${dflt}` : "";
+      await prisma.$executeRawUnsafe(`ALTER TABLE "User" ADD COLUMN "${name}" ${type}${defaultClause}`);
+      changes.push({ kind: "alter_table", detail: `Added User.${name}` });
+    };
+    await addUserCol("accessMode", "TEXT", "'FULL'");
+    await addUserCol("departmentId", "TEXT");
+    await addUserCol("techType", "TEXT");
+    await addUserCol("employeeId", "TEXT");
+    await addUserCol("specializations", "TEXT");
+  }
+
   // Re-check and report
   const finalCols = await jobColumns();
   return NextResponse.json({
@@ -951,6 +1493,20 @@ export async function POST() {
       Supplier: await tableExists("Supplier"),
       PurchaseOrder: await tableExists("PurchaseOrder"),
       PurchaseOrderItem: await tableExists("PurchaseOrderItem"),
+      Department: await tableExists("Department"),
+      UserGroup: await tableExists("UserGroup"),
+      SalesTarget: await tableExists("SalesTarget"),
+      Lead: await tableExists("Lead"),
+      Quotation: await tableExists("Quotation"),
+      PosSession: await tableExists("PosSession"),
+      StockLocation: await tableExists("StockLocation"),
+      StockCount: await tableExists("StockCount"),
+      GoodsReceived: await tableExists("GoodsReceived"),
+      SupplierBill: await tableExists("SupplierBill"),
+      PurchaseRequest: await tableExists("PurchaseRequest"),
+      Complaint: await tableExists("Complaint"),
+      FieldVisit: await tableExists("FieldVisit"),
+      OrgModuleGrant: await tableExists("OrgModuleGrant"),
     },
   });
 }

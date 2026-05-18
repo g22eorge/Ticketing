@@ -1829,9 +1829,9 @@ export default async function DashboardPage({
         select: { createdById: true, createdBy: { select: { name: true } }, clientBill: true },
       }),
       // Team target for current month
-      prisma.salesTarget.findFirst({ where: { ...orgFilter, userId: null, period } }),
+      prisma.salesTarget.findFirst({ where: { ...orgFilter, userId: null, period } }).catch(() => null),
       // My own target
-      user.id ? prisma.salesTarget.findFirst({ where: { ...orgFilter, userId: user.id, period } }) : Promise.resolve(null),
+      user.id ? prisma.salesTarget.findFirst({ where: { ...orgFilter, userId: user.id, period } }).catch(() => null) : Promise.resolve(null),
     ]);
 
     // ── Revenue aggregation ─────────────────────────────────────────────────
@@ -1872,7 +1872,7 @@ export default async function DashboardPage({
       const indivTargets = await prisma.salesTarget.findMany({
         where: { ...orgFilter, userId: { in: staffIds }, period },
         select: { userId: true, targetRevenue: true },
-      });
+      }).catch(() => [] as { userId: string | null; targetRevenue: number }[]);
       for (const t of indivTargets) {
         if (!t.userId) continue;
         const e = staffMap.get(t.userId);
@@ -2071,18 +2071,18 @@ export default async function DashboardPage({
     const [leadsOpen, leadsWon, quotationsPending, salesThisMonthAgg] = await Promise.all([
       prisma.lead.count({
         where: { status: { in: ["NEW", "CONTACTED", "QUALIFIED", "PROPOSAL_SENT"] } },
-      }),
-      prisma.lead.count({ where: { status: "WON" } }),
+      }).catch(() => 0),
+      prisma.lead.count({ where: { status: "WON" } }).catch(() => 0),
       prisma.quotation.count({
         where: { status: { in: ["DRAFT", "SENT"] } },
-      }),
+      }).catch(() => 0),
       prisma.sale.aggregate({
         _sum: { totalAmount: true },
         where: {
           status: "PAID",
           createdAt: { gte: monthStart, lte: monthEnd },
         },
-      }),
+      }).catch(() => ({ _sum: { totalAmount: null } })),
     ]);
 
     const salesThisMonth = salesThisMonthAgg._sum.totalAmount ?? 0;
@@ -2137,16 +2137,16 @@ export default async function DashboardPage({
     const [myQuotationsDraft, myQuotationsSent, myLeads] = await Promise.all([
       prisma.quotation.count({
         where: { createdById: session.user.id, status: "DRAFT" },
-      }),
+      }).catch(() => 0),
       prisma.quotation.count({
         where: { createdById: session.user.id, status: "SENT" },
-      }),
+      }).catch(() => 0),
       prisma.lead.count({
         where: {
           assignedToId: session.user.id,
           status: { in: ["NEW", "CONTACTED", "QUALIFIED", "PROPOSAL_SENT"] },
         },
-      }),
+      }).catch(() => 0),
     ]);
 
     return (
@@ -2196,16 +2196,16 @@ export default async function DashboardPage({
           assignedToId: session.user.id,
           status: { notIn: ["WON", "LOST", "STALE"] },
         },
-      }),
+      }).catch(() => 0),
       prisma.quotation.count({
         where: {
           createdById: session.user.id,
           status: { in: ["DRAFT", "SENT"] },
         },
-      }),
+      }).catch(() => 0),
       prisma.posSession.count({
         where: { operatorId: session.user.id, status: "OPEN" },
-      }),
+      }).catch(() => 0),
     ]);
 
     return (
@@ -2256,17 +2256,17 @@ export default async function DashboardPage({
       prisma.posSession.findFirst({
         where: { operatorId: session.user.id, status: "OPEN" },
         select: { id: true, totalSales: true, salesCount: true, openedAt: true },
-      }),
+      }).catch(() => null),
       prisma.posSession.aggregate({
         _sum: { totalSales: true },
         where: { operatorId: session.user.id, openedAt: { gte: todayStart } },
-      }),
+      }).catch(() => ({ _sum: { totalSales: null } })),
     ]);
 
     const todaySales = todaySalesAgg._sum.totalSales ?? 0;
     const sessionsToday = await prisma.posSession.count({
       where: { operatorId: session.user.id, openedAt: { gte: todayStart } },
-    });
+    }).catch(() => 0);
 
     return (
       <div className="space-y-4">
