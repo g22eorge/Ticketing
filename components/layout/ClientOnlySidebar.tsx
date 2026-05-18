@@ -7,6 +7,7 @@ type SidebarProps = {
   role: Role;
   permissions?: string[];
   isPlatformAdmin?: boolean;
+  enabledModules?: Set<string>;
   badges?: {
     jobs?: number;
     receivedJobs?: number;

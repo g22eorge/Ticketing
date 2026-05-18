@@ -11,6 +11,7 @@ import { requireOrgSession } from "@/lib/org-context";
 import { filterSupportedJobStatuses } from "@/lib/job-status-server";
 import { sendTrialExpiryWarning } from "@/lib/email";
 import { checkIsPlatformAdmin } from "@/lib/platform-admin";
+import { getOrgModules } from "@/lib/module-access";
 import Link from "next/link";
 
 // Module-level dedup: only send trial warning email once per server instance per org.
@@ -111,7 +112,7 @@ export default async function AppLayout({
       ? { orgId, status: "RECEIVED" as JobStatus, assignedToId: session.user.id }
       : { orgId, status: "RECEIVED" as JobStatus };
 
-  const [activeJobsCount, partsForReorder, paymentFollowupCount, receivedJobsCount, pendingRequestsCount, openComplaintsCount] = await Promise.all([
+  const [activeJobsCount, partsForReorder, paymentFollowupCount, receivedJobsCount, pendingRequestsCount, openComplaintsCount, enabledModules] = await Promise.all([
     prisma.job.count({ where: jobsWhere }),
     prisma.part.findMany({
       where: { orgId, isActive: true, reorderLevel: { gt: 0 } },
@@ -132,6 +133,7 @@ export default async function AppLayout({
         return await model.count({ where: { orgId, status: { in: ["RECEIVED", "ACKNOWLEDGED", "INVESTIGATING"] } } });
       } catch { return 0; }
     })(),
+    getOrgModules(orgId),
   ]);
 
   const lowStockCount = partsForReorder.filter((part) => part.qtyOnHand <= part.reorderLevel).length;
@@ -142,6 +144,7 @@ export default async function AppLayout({
         role={user.role}
         permissions={user.permissions}
         isPlatformAdmin={isPlatformAdmin}
+        enabledModules={enabledModules}
         badges={{
           jobs: activeJobsCount,
           receivedJobs: receivedJobsCount,
@@ -178,6 +181,7 @@ export default async function AppLayout({
       <BottomNav
         role={user.role}
         permissions={user.permissions}
+        enabledModules={enabledModules}
         badges={{
           jobs: activeJobsCount,
           receivedJobs: receivedJobsCount,

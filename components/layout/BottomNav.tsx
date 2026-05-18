@@ -119,19 +119,36 @@ const ITEMS = {
   deliveryNotes:{ href: "/documents/delivery-notes", label: "Delivery", icon: invoiceIcon },
 } satisfies Record<string, NavItem>;
 
+/* ── module guard ── */
+const hrefModule: Record<string, string> = {
+  "/jobs": "JOBS", "/intake": "JOBS", "/technicians": "JOBS",
+  "/clients": "JOBS", "/payout-followups": "JOBS",
+  "/complaints": "COMPLAINTS", "/field": "FIELD",
+  "/inventory": "INVENTORY",
+  "/pos": "POS",
+  "/procurement": "PURCHASE_ORDERS",
+  "/documents/job-cards": "INVOICING", "/documents/quotations": "INVOICING",
+  "/documents/invoices": "INVOICING", "/documents/receipts": "INVOICING",
+  "/documents/delivery-notes": "INVOICING",
+  "/reports": "REPORTS", "/sales": "SALES", "/targets": "TARGETS",
+};
+
 /* ── role-based nav config ── */
-function getPrimaryItems(role: Role, permissions: string[]): NavItem[] {
+function getPrimaryItems(role: Role, permissions: string[], enabledModules?: Set<string>): NavItem[] {
   const permUser = { role, permissions };
+  const allowed = (href: string) => !enabledModules || !hrefModule[href] || enabledModules.has(hrefModule[href]);
 
   if (role === "TECHNICIAN_EXTERNAL" || !can.viewIntake(permUser)) {
-    return [ITEMS.dashboard, ITEMS.jobs, ITEMS.board];
+    return [ITEMS.dashboard, ITEMS.jobs, ITEMS.board].filter((i) => allowed(i.href));
   }
-  return [ITEMS.dashboard, ITEMS.intake, ITEMS.jobs];
+  return [ITEMS.dashboard, ITEMS.intake, ITEMS.jobs].filter((i) => allowed(i.href));
 }
 
-function getMoreGroups(role: Role, permissions: string[]): NavGroup[] {
+function getMoreGroups(role: Role, permissions: string[], enabledModules?: Set<string>): NavGroup[] {
   const permUser = { role, permissions };
+  const moduleAllowed = (href: string) => !enabledModules || !hrefModule[href] || enabledModules.has(hrefModule[href]);
   const allow = (href: string) => {
+    if (!moduleAllowed(href)) return false;
     if (href === ITEMS.clients.href) return can.viewClientInfo(permUser);
     if (href === ITEMS.reports.href) return can.viewAccountsSummary(permUser);
     if (href === ITEMS.pos.href) return ["ADMIN", "OPS", "FRONT_DESK"].includes(role);
@@ -172,10 +189,12 @@ function getMoreGroups(role: Role, permissions: string[]): NavGroup[] {
 export function BottomNav({
   role,
   permissions = [],
+  enabledModules,
   badges,
 }: {
   role: Role;
   permissions: string[];
+  enabledModules?: Set<string>;
   badges?: {
     jobs?: number;
     receivedJobs?: number;
@@ -190,8 +209,8 @@ export function BottomNav({
   const [open, setOpen] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
 
-  const primaryItems = getPrimaryItems(role, permissions);
-  const moreGroups   = getMoreGroups(role, permissions);
+  const primaryItems = getPrimaryItems(role, permissions, enabledModules);
+  const moreGroups   = getMoreGroups(role, permissions, enabledModules);
   const hasExtra     = moreGroups.length > 0;
 
   const isActive = (href: string) =>

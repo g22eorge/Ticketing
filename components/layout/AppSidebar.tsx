@@ -178,6 +178,39 @@ const roleGroupOrder: Partial<Record<Role, readonly NavGroup[]>> = {
   TECH_FIELD:          ["overview", "repairs", "personal"],
 };
 
+// ── module guard ──────────────────────────────────────────────────────────────
+
+// Maps each nav href to the OrgModule that must be enabled to show it.
+// Hrefs absent from this map are always shown (dashboard, settings, payouts).
+const hrefModule: Record<string, string> = {
+  "/jobs":                           "JOBS",
+  "/intake":                         "JOBS",
+  "/technicians":                    "JOBS",
+  "/clients":                        "JOBS",
+  "/payout-followups":               "JOBS",
+  "/complaints":                     "COMPLAINTS",
+  "/field":                          "FIELD",
+  "/inventory":                      "INVENTORY",
+  "/inventory/locations":            "INVENTORY",
+  "/inventory/transfers":            "INVENTORY",
+  "/inventory/stock-counts":         "INVENTORY",
+  "/pos":                            "POS",
+  "/procurement":                    "PURCHASE_ORDERS",
+  "/inventory/purchase-requests":    "PURCHASE_ORDERS",
+  "/inventory/purchase-orders":      "PURCHASE_ORDERS",
+  "/inventory/goods-received":       "PURCHASE_ORDERS",
+  "/inventory/supplier-bills":       "PURCHASE_ORDERS",
+  "/inventory/suppliers":            "PURCHASE_ORDERS",
+  "/documents/job-cards":            "INVOICING",
+  "/documents/quotations":           "INVOICING",
+  "/documents/invoices":             "INVOICING",
+  "/documents/receipts":             "INVOICING",
+  "/documents/delivery-notes":       "INVOICING",
+  "/reports":                        "REPORTS",
+  "/sales":                          "SALES",
+  "/targets":                        "TARGETS",
+};
+
 // ── helpers ───────────────────────────────────────────────────────────────────
 
 function isVisible(role: Role, rule: "all" | readonly string[]) {
@@ -197,12 +230,18 @@ function activeHrefForPath(pathname: string, hrefs: readonly string[]) {
   return best;
 }
 
-function orderedNavForRole(role: Role, permissions: string[]) {
-  const visible = nav.filter((item) => isVisible(role, item.roles));
+function orderedNavForRole(role: Role, permissions: string[], enabledModules?: Set<string>) {
+  const moduleAllowed = (href: string) =>
+    !enabledModules || !hrefModule[href] || enabledModules.has(hrefModule[href]);
+
+  const visible = nav.filter(
+    (item) => isVisible(role, item.roles) && moduleAllowed(item.href),
+  );
   const permissionUser = { role, permissions };
 
   // Permission-based extras (for custom-permission users)
   function ensureItem(href: string) {
+    if (!moduleAllowed(href)) return;
     if (!visible.some((i) => i.href === href)) {
       const found = nav.find((i) => i.href === href);
       if (found) visible.push(found);
@@ -219,8 +258,8 @@ function orderedNavForRole(role: Role, permissions: string[]) {
   return [...visible].sort((a, b) => (ranking.get(a.href) ?? 99) - (ranking.get(b.href) ?? 99));
 }
 
-function groupedNavForRole(role: Role, permissions: string[]) {
-  const ordered = orderedNavForRole(role, permissions);
+function groupedNavForRole(role: Role, permissions: string[], enabledModules?: Set<string>) {
+  const ordered = orderedNavForRole(role, permissions, enabledModules);
   const canonicalOrder: NavGroup[] = ["overview", "repairs", "inventory", "procurement", "clients", "documents", "finance", "personal"];
   const baseGroups: readonly NavGroup[] = roleGroupOrder[role] ?? ["overview", "personal"];
   const missingGroups = canonicalOrder.filter(
@@ -319,10 +358,12 @@ export function AppSidebar({
   permissions = [],
   badges,
   isPlatformAdmin = false,
+  enabledModules,
 }: {
   role: Role;
   permissions?: string[];
   isPlatformAdmin?: boolean;
+  enabledModules?: Set<string>;
   badges?: {
     jobs?: number;
     receivedJobs?: number;
@@ -337,7 +378,7 @@ export function AppSidebar({
     .filter((item) => isVisible(role, item.roles === "all" ? "all" : item.roles))
     .map((item) => item.href);
   const activeHref = activeHrefForPath(pathname, visibleHrefs);
-  const groupedNav = groupedNavForRole(role, permissions);
+  const groupedNav = groupedNavForRole(role, permissions, enabledModules);
 
   return (
     <aside className="hidden lg:sticky lg:top-0 lg:flex lg:h-screen lg:w-64 lg:flex-col bg-[var(--sidebar-bg)] border-r border-[var(--line)]">
