@@ -79,6 +79,7 @@ model Organization {
   goodsReceivedNotes     GoodsReceived[]
   supplierBills          SupplierBill[]
   supplierPayments       SupplierPayment[]
+  stockCounts            StockCount[]
   userGroups             UserGroup[]
   complaints             Complaint[]
   salesTargets           SalesTarget[]
@@ -197,6 +198,8 @@ model User {
   supplierPaymentsCreated SupplierPayment[] @relation("SupplierPaymentCreatedBy")
   purchaseRequestsCreated PurchaseRequest[] @relation("PurchaseRequestCreatedBy")
   purchaseRequestsReviewed PurchaseRequest[] @relation("PurchaseRequestReviewedBy")
+  stockCountsCreated     StockCount[]      @relation("StockCountCreatedBy")
+  stockCountsApproved    StockCount[]      @relation("StockCountApprovedBy")
 
   @@index([orgId])
   @@index([branchId])
@@ -922,6 +925,7 @@ model Part {
   locationStocks    PartLocationStock[]
   stockTransferItems StockTransferItem[]
   goodsReceivedItems GoodsReceivedItem[]
+  stockCountItems StockCountItem[]
 
   @@unique([sku, orgId])
   @@index([orgId, isActive])
@@ -1478,6 +1482,13 @@ enum PurchaseRequestPriority {
   URGENT
 }
 
+enum StockCountStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  CANCELLED
+}
+
 model PurchaseRequest {
   id            String                  @id @default(cuid())
   orgId         String
@@ -1676,6 +1687,47 @@ model SupplierPayment {
 
   @@index([orgId, paidAt])
   @@index([billId])
+}
+
+model StockCount {
+  id           String           @id @default(cuid())
+  orgId        String
+  org          Organization     @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  countNumber  String           @unique
+  status       StockCountStatus @default(DRAFT)
+  locationId   String
+  location     StockLocation    @relation(fields: [locationId], references: [id], onDelete: Restrict)
+  countedAt    DateTime         @default(now())
+  submittedAt  DateTime?
+  approvedAt   DateTime?
+  note         String?
+  createdById  String
+  createdBy    User             @relation("StockCountCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  approvedById String?
+  approvedBy   User?            @relation("StockCountApprovedBy", fields: [approvedById], references: [id], onDelete: SetNull)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  items        StockCountItem[]
+
+  @@index([orgId, status, countedAt])
+  @@index([locationId])
+}
+
+model StockCountItem {
+  id           String     @id @default(cuid())
+  stockCountId String
+  stockCount   StockCount @relation(fields: [stockCountId], references: [id], onDelete: Cascade)
+  partId       String
+  part         Part       @relation(fields: [partId], references: [id], onDelete: Restrict)
+  systemQty    Int
+  countedQty   Int
+  varianceQty  Int
+  note         String?
+  createdAt    DateTime   @default(now())
+
+  @@index([stockCountId])
+  @@index([partId])
 }
 
 model SystemAuditEvent {
@@ -1964,6 +2016,7 @@ model StockLocation {
   updatedAt DateTime @updatedAt
 
   goodsReceivedNotes GoodsReceived[]
+  stockCounts StockCount[]
 
   @@unique([orgId, code])
   @@index([orgId, branchId, isActive])
