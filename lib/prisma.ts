@@ -81,7 +81,18 @@ function isStaleSingleton(client: PrismaClient | undefined): boolean {
   if (!client) return false;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const c = client as any;
-  return !c.complaint || !c.userGroup || !c.branch || !c.supplier || !c.salesTarget;
+  return !c.complaint
+    || !c.userGroup
+    || !c.branch
+    || !c.supplier
+    || !c.salesTarget
+    || !c.stockLocation
+    || !c.stockTransfer
+    || !c.purchaseRequest
+    || !c.goodsReceived
+    || !c.supplierBill
+    || !c.supplierPayment
+    || !c.stockCount;
 }
 
 if (isStaleSingleton(globalForPrisma.prisma)) {
@@ -96,4 +107,3 @@ export const prisma =
 if (process.env.NODE_ENV !== "production") {
   globalForPrisma.prisma = prisma;
 }
-

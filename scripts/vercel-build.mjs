@@ -18,6 +18,7 @@ if (!env.DATABASE_URL) {
 }
 
 run("bunx", ["prisma", "generate"], { env });
+run("node", ["scripts/assert-prisma-models.mjs"], { env });
 
 if (env.RUN_PRISMA_MIGRATE_DEPLOY === "1") {
   if (!process.env.DATABASE_URL && !process.env.TURSO_DATABASE_URL) {
