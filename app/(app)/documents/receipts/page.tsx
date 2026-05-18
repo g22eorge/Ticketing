@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { PaymentMethod } from "@prisma/client";
+import type { PaymentMethod } from "@prisma/client";
 
 import { formatMoney, normalizeCurrency, toBaseAmount } from "@/lib/currency";
 import { can } from "@/lib/permissions";
@@ -13,7 +13,7 @@ import { ConfirmSubmitButton } from "@/components/shared/ConfirmSubmitButton";
 import { writeSystemAuditEvent } from "@/lib/commercial/audit";
 import { RowActionsMenu, MenuSection, MenuDestructiveRow } from "@/components/shared/RowActionsMenu";
 
-const PAYMENT_METHODS = Object.values(PaymentMethod);
+const PAYMENT_METHODS: PaymentMethod[] = ["CASH", "MOBILE_MONEY", "BANK_TRANSFER", "CARD", "OTHER"];
 
 export default async function ReceiptsPage() {
   const { user, orgId, org } = await requireOrgSession();
@@ -35,7 +35,7 @@ export default async function ReceiptsPage() {
     const note = String(formData.get("note") ?? "").trim();
     if (!paymentId || !Number.isFinite(amount) || amount <= 0) return;
 
-    const method = PAYMENT_METHODS.includes(methodRaw as PaymentMethod) ? (methodRaw as PaymentMethod) : PaymentMethod.OTHER;
+    const method = PAYMENT_METHODS.includes(methodRaw as PaymentMethod) ? (methodRaw as PaymentMethod) : "OTHER" as PaymentMethod;
 
     const source = await prisma.payment.findFirst({
       where: { id: paymentId, orgId },

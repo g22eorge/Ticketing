@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { InvoiceStatus, InvoiceType } from "@prisma/client";
+import type { InvoiceStatus, InvoiceType } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
 import { requireOrgSession } from "@/lib/org-context";
@@ -22,12 +22,7 @@ const FREQ_LABELS: Record<Frequency, string> = {
   ANNUAL: "Annual",
 };
 
-const INVOICE_TYPES = [
-  InvoiceType.SERVICE,
-  InvoiceType.MERCHANDISE,
-  InvoiceType.CONTRACT,
-  InvoiceType.OTHER,
-] as const;
+const INVOICE_TYPES = ["SERVICE", "MERCHANDISE", "CONTRACT", "OTHER"] as const;
 
 const TYPE_LABELS: Record<string, string> = {
   SERVICE: "Service",
@@ -94,7 +89,7 @@ export default async function RecurringInvoicesPage() {
     const frequency = (FREQUENCIES as readonly string[]).includes(freqRaw) ? (freqRaw as Frequency) : "MONTHLY";
     const invoiceType = (INVOICE_TYPES as readonly string[]).includes(invoiceTypeRaw)
       ? (invoiceTypeRaw as InvoiceType)
-      : InvoiceType.SERVICE;
+      : "SERVICE" as InvoiceType;
     const nextDueAt = startDateRaw ? new Date(startDateRaw) : new Date();
 
     const descriptions = formData.getAll("itemDescription").map((v) => String(v).trim()).filter(Boolean);
@@ -188,7 +183,7 @@ export default async function RecurringInvoicesPage() {
           subject: rec.subject,
           invoiceNumber,
           currency: rec.currency,
-          status: InvoiceStatus.ISSUED,
+          status: "ISSUED" as InvoiceStatus,
           totalAmount,
           notes: rec.notes ?? undefined,
           lines: {

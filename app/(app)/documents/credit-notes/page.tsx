@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { PaymentMethod } from "@prisma/client";
+import type { PaymentMethod } from "@prisma/client";
 
 import { formatMoney, normalizeCurrency } from "@/lib/currency";
 import { can } from "@/lib/permissions";
@@ -11,7 +11,7 @@ import { requireModule, OrgModule } from "@/lib/module-access";
 import { assertOrgCanMutate } from "@/lib/org-write";
 import { ConfirmSubmitButton } from "@/components/shared/ConfirmSubmitButton";
 
-const PAYMENT_METHODS = Object.values(PaymentMethod);
+const PAYMENT_METHODS: PaymentMethod[] = ["CASH", "MOBILE_MONEY", "BANK_TRANSFER", "CARD", "OTHER"];
 
 export const dynamic = "force-dynamic";
 
@@ -75,7 +75,7 @@ export default async function CreditNotesPage({
     const alreadyRefunded = cn.refunds.reduce((s, r) => s + r.amount, 0);
     if (alreadyRefunded + amountRaw > cn.totalAmount) return;
 
-    const method = PAYMENT_METHODS.includes(methodRaw as PaymentMethod) ? (methodRaw as PaymentMethod) : PaymentMethod.CASH;
+    const method = PAYMENT_METHODS.includes(methodRaw as PaymentMethod) ? (methodRaw as PaymentMethod) : "CASH" as PaymentMethod;
 
     await prisma.refund.create({
       data: {

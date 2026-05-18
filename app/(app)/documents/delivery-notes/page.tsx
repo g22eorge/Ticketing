@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { DeliveryMethod } from "@prisma/client";
+import type { DeliveryMethod } from "@prisma/client";
 
 import { can } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
@@ -12,7 +12,7 @@ import { ConfirmSubmitButton } from "@/components/shared/ConfirmSubmitButton";
 import { writeSystemAuditEvent } from "@/lib/commercial/audit";
 import { RowActionsMenu, MenuSection, MenuDestructiveRow } from "@/components/shared/RowActionsMenu";
 
-const DELIVERY_METHODS = Object.values(DeliveryMethod);
+const DELIVERY_METHODS: DeliveryMethod[] = ["PICKUP", "DELIVERY", "COURIER"];
 
 export default async function DeliveryNotesPage() {
   const { user, orgId } = await requireOrgSession();

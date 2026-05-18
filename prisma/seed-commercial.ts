@@ -1371,7 +1371,7 @@ export async function seedCommercialData() {
     totalAmount: number;
     paidAmount: number;
     currency: string;
-    status: "DRAFT" | "ISSUED" | "PAID" | "OVERDUE" | "CANCELLED";
+    status: "DRAFT" | "ISSUED" | "PAID" | "VOID";
     dueDate?: Date;
     lines: { description: string; quantity: number; unitPrice: number; lineTotal: number }[];
     paymentMethod?: "CASH" | "MOBILE_MONEY" | "BANK_TRANSFER";

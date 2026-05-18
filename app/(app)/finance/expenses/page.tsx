@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { ExpenseCategory, PaymentMethod, Prisma } from "@prisma/client";
+import type { ExpenseCategory, PaymentMethod } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 
 import { can } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
@@ -9,12 +10,12 @@ import { requireOrgSession } from "@/lib/org-context";
 import { assertOrgCanMutate } from "@/lib/org-write";
 import { writeSystemAuditEvent } from "@/lib/commercial/audit";
 import { ConfirmSubmitButton } from "@/components/shared/ConfirmSubmitButton";
-import { RowActionsMenu, MenuSection, MenuDestructiveRow } from "@/components/shared/RowActionsMenu";
+import { RowActionsMenu, MenuDestructiveRow } from "@/components/shared/RowActionsMenu";
 
 export const dynamic = "force-dynamic";
 
-const CATEGORIES = Object.values(ExpenseCategory);
-const METHODS = Object.values(PaymentMethod);
+const CATEGORIES: ExpenseCategory[] = ["RENT","UTILITIES","SALARIES","SUPPLIES","MARKETING","TRAVEL","EQUIPMENT","MAINTENANCE","TAXES","OTHER"];
+const METHODS: PaymentMethod[] = ["CASH","MOBILE_MONEY","BANK_TRANSFER","CARD","OTHER"];
 
 const CATEGORY_LABELS: Record<ExpenseCategory, string> = {
   RENT: "Rent",
@@ -124,7 +125,7 @@ export default async function ExpensesPage({ searchParams }: Props) {
 
     const category = CATEGORIES.includes(categoryRaw as ExpenseCategory)
       ? (categoryRaw as ExpenseCategory)
-      : ExpenseCategory.OTHER;
+      : "OTHER" as ExpenseCategory;
     const method =
       methodRaw && METHODS.includes(methodRaw as PaymentMethod)
         ? (methodRaw as PaymentMethod)

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 
-import { DeliveryMethod, PaymentMethod } from "@prisma/client";
+import type { DeliveryMethod, PaymentMethod } from "@prisma/client";
 import { Prisma } from "@prisma/client";
 
 import { formatMoney, normalizeCurrency } from "@/lib/currency";
@@ -13,7 +13,7 @@ import { assertOrgCanMutate } from "@/lib/org-write";
 import { ConfirmSubmitButton } from "@/components/shared/ConfirmSubmitButton";
 import { writeSystemAuditEvent } from "@/lib/commercial/audit";
 
-const METHODS = Object.values(PaymentMethod);
+const METHODS: PaymentMethod[] = ["CASH", "MOBILE_MONEY", "BANK_TRANSFER", "CARD", "OTHER"];
 
 async function recalcSaleTotals(
   tx: Prisma.TransactionClient,
@@ -481,7 +481,7 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
 
     const safeMethod: PaymentMethod = METHODS.includes(method as PaymentMethod)
       ? (method as PaymentMethod)
-      : PaymentMethod.OTHER;
+      : "OTHER" as PaymentMethod;
 
     await prisma.$transaction(async (tx) => {
       await tx.payment.create({
@@ -695,7 +695,7 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
 
     const safeMethod: PaymentMethod = METHODS.includes(method as PaymentMethod)
       ? (method as PaymentMethod)
-      : PaymentMethod.OTHER;
+      : "OTHER" as PaymentMethod;
 
     const currency = normalizeCurrency(creditNote.currency, org.baseCurrency);
     const exchangeRateToBase = currency === org.baseCurrency ? null : (rawRate ? Number(rawRate) : null);
@@ -972,7 +972,7 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
             />
             <select
               name="method"
-              defaultValue={PaymentMethod.CASH}
+              defaultValue={"CASH" as PaymentMethod}
               className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm outline-none focus:border-[var(--accent)]/50"
             >
               {METHODS.map((m) => (

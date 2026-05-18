@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { PaymentMethod, Prisma } from "@prisma/client";
+import type { PaymentMethod } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 
 import { formatMoney, normalizeCurrency } from "@/lib/currency";
 import { can } from "@/lib/permissions";
@@ -11,7 +12,7 @@ import { requireModule, OrgModule } from "@/lib/module-access";
 import { assertOrgCanMutate } from "@/lib/org-write";
 import { ConfirmSubmitButton } from "@/components/shared/ConfirmSubmitButton";
 
-const PAYMENT_METHODS = Object.values(PaymentMethod);
+const PAYMENT_METHODS: PaymentMethod[] = ["CASH", "MOBILE_MONEY", "BANK_TRANSFER", "CARD", "OTHER"];
 
 export const dynamic = "force-dynamic";
 
@@ -52,7 +53,7 @@ export default async function RefundsPage({
 
     const method = PAYMENT_METHODS.includes(methodRaw as PaymentMethod)
       ? (methodRaw as PaymentMethod)
-      : PaymentMethod.CASH;
+      : "CASH" as PaymentMethod;
 
     if (invoiceId) {
       const inv = await prisma.invoice.findFirst({ where: { id: invoiceId, orgId }, select: { id: true } });

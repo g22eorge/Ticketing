@@ -2,7 +2,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 
-import { DeliveryMethod, InvoiceStatus, InvoiceType, PaymentMethod, Prisma } from "@prisma/client";
+import type { DeliveryMethod, InvoiceStatus, InvoiceType, PaymentMethod } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 
 import { formatMoney, isSupportedCurrency, normalizeCurrency, toBaseAmount } from "@/lib/currency";
 import { canGenerateInvoiceForStatus } from "@/lib/documents";
@@ -16,10 +17,10 @@ import { ConfirmSubmitButton } from "@/components/shared/ConfirmSubmitButton";
 import { writeSystemAuditEvent } from "@/lib/commercial/audit";
 import { RowActionsMenu, MenuSection, MenuDestructiveRow } from "@/components/shared/RowActionsMenu";
 
-const PAYMENT_METHODS = Object.values(PaymentMethod);
-const INVOICE_STATUSES = Object.values(InvoiceStatus);
-const INVOICE_TYPES = Object.values(InvoiceType);
-const DELIVERY_METHODS = Object.values(DeliveryMethod);
+const PAYMENT_METHODS: PaymentMethod[]  = ["CASH","MOBILE_MONEY","BANK_TRANSFER","CARD","OTHER"];
+const INVOICE_STATUSES: InvoiceStatus[] = ["DRAFT","ISSUED","PAID","VOID"];
+const INVOICE_TYPES: InvoiceType[]      = ["REPAIR","SERVICE","MERCHANDISE","CONTRACT","OTHER"];
+const DELIVERY_METHODS: DeliveryMethod[] = ["PICKUP","DELIVERY","COURIER"];
 
 export const dynamic = "force-dynamic";
 
@@ -62,7 +63,7 @@ export default async function InvoicesPage({
     const client = await prisma.client.findFirst({ where: { id: clientId, orgId }, select: { id: true } });
     if (!client) return;
 
-    const invoiceType = INVOICE_TYPES.includes(invoiceTypeRaw as InvoiceType) ? (invoiceTypeRaw as InvoiceType) : InvoiceType.SERVICE;
+    const invoiceType = INVOICE_TYPES.includes(invoiceTypeRaw as InvoiceType) ? (invoiceTypeRaw as InvoiceType) : "SERVICE" as InvoiceType;
     const dueDate = dueDateRaw ? new Date(dueDateRaw) : null;
 
     const year = new Date().getFullYear();
@@ -77,7 +78,7 @@ export default async function InvoicesPage({
         subject,
         invoiceNumber,
         currency,
-        status: InvoiceStatus.ISSUED,
+        status: "ISSUED" as InvoiceStatus,
         totalAmount: totalAmountRaw,
         dueDate,
         notes: notes || null,
@@ -123,7 +124,7 @@ export default async function InvoicesPage({
 
     const safeMethod: PaymentMethod = PAYMENT_METHODS.includes(method as PaymentMethod)
       ? (method as PaymentMethod)
-      : PaymentMethod.OTHER;
+      : "OTHER" as PaymentMethod;
 
     await prisma.$transaction(async (tx) => {
       await tx.payment.create({
@@ -186,7 +187,7 @@ export default async function InvoicesPage({
     const notes = String(formData.get("notes") ?? "").trim();
     const subject = String(formData.get("subject") ?? "").trim();
     if (!invoiceId) return;
-    const status = INVOICE_STATUSES.includes(statusRaw as InvoiceStatus) ? (statusRaw as InvoiceStatus) : InvoiceStatus.ISSUED;
+    const status = INVOICE_STATUSES.includes(statusRaw as InvoiceStatus) ? (statusRaw as InvoiceStatus) : "ISSUED" as InvoiceStatus;
 
     await prisma.invoice.updateMany({
       where: { id: invoiceId, orgId },
