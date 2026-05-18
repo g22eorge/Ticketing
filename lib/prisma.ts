@@ -95,7 +95,11 @@ function isStaleSingleton(client: PrismaClient | undefined): boolean {
     || !c.stockCount
     || !c.taxRate
     || !c.expense
-    || !c.recurringInvoice;
+    || !c.recurringInvoice
+    || !c.chartOfAccount
+    || !c.journalEntry
+    || !c.bankAccount
+    || !c.campaign;
 }
 
 if (isStaleSingleton(globalForPrisma.prisma)) {

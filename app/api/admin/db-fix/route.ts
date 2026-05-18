@@ -1591,6 +1591,163 @@ export async function POST() {
     changes.push({ kind: "create_table", detail: "Created RecurringInvoiceItem" });
   }
 
+  // ChartOfAccount
+  if (!(await tableExists("ChartOfAccount"))) {
+    await prisma.$executeRawUnsafe(`CREATE TABLE "ChartOfAccount" (
+      "id" TEXT NOT NULL PRIMARY KEY,
+      "orgId" TEXT NOT NULL,
+      "code" TEXT NOT NULL,
+      "name" TEXT NOT NULL,
+      "type" TEXT NOT NULL,
+      "parentId" TEXT,
+      "description" TEXT,
+      "isSystem" INTEGER NOT NULL DEFAULT 0,
+      "isActive" INTEGER NOT NULL DEFAULT 1,
+      "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" DATETIME NOT NULL,
+      CONSTRAINT "ChartOfAccount_orgId_fkey" FOREIGN KEY ("orgId") REFERENCES "Organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+      CONSTRAINT "ChartOfAccount_parentId_fkey" FOREIGN KEY ("parentId") REFERENCES "ChartOfAccount" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+    )`);
+    await prisma.$executeRawUnsafe(`CREATE UNIQUE INDEX "ChartOfAccount_orgId_code_key" ON "ChartOfAccount"("orgId","code")`);
+    await prisma.$executeRawUnsafe(`CREATE INDEX "ChartOfAccount_orgId_type_idx" ON "ChartOfAccount"("orgId","type")`);
+    changes.push({ kind: "create_table", detail: "Created ChartOfAccount" });
+  }
+
+  // JournalEntry
+  if (!(await tableExists("JournalEntry"))) {
+    await prisma.$executeRawUnsafe(`CREATE TABLE "JournalEntry" (
+      "id" TEXT NOT NULL PRIMARY KEY,
+      "orgId" TEXT NOT NULL,
+      "entryNumber" TEXT NOT NULL,
+      "date" DATETIME NOT NULL,
+      "description" TEXT NOT NULL,
+      "reference" TEXT,
+      "status" TEXT NOT NULL DEFAULT 'DRAFT',
+      "totalAmount" REAL NOT NULL DEFAULT 0,
+      "createdById" TEXT NOT NULL,
+      "postedAt" DATETIME,
+      "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" DATETIME NOT NULL,
+      CONSTRAINT "JournalEntry_orgId_fkey" FOREIGN KEY ("orgId") REFERENCES "Organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+      CONSTRAINT "JournalEntry_createdById_fkey" FOREIGN KEY ("createdById") REFERENCES "User" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+    )`);
+    await prisma.$executeRawUnsafe(`CREATE UNIQUE INDEX "JournalEntry_orgId_entryNumber_key" ON "JournalEntry"("orgId","entryNumber")`);
+    await prisma.$executeRawUnsafe(`CREATE INDEX "JournalEntry_orgId_date_idx" ON "JournalEntry"("orgId","date")`);
+    await prisma.$executeRawUnsafe(`CREATE INDEX "JournalEntry_orgId_status_idx" ON "JournalEntry"("orgId","status")`);
+    changes.push({ kind: "create_table", detail: "Created JournalEntry" });
+  }
+
+  // JournalLine
+  if (!(await tableExists("JournalLine"))) {
+    await prisma.$executeRawUnsafe(`CREATE TABLE "JournalLine" (
+      "id" TEXT NOT NULL PRIMARY KEY,
+      "journalEntryId" TEXT NOT NULL,
+      "accountId" TEXT NOT NULL,
+      "debit" REAL NOT NULL DEFAULT 0,
+      "credit" REAL NOT NULL DEFAULT 0,
+      "description" TEXT,
+      CONSTRAINT "JournalLine_journalEntryId_fkey" FOREIGN KEY ("journalEntryId") REFERENCES "JournalEntry" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+      CONSTRAINT "JournalLine_accountId_fkey" FOREIGN KEY ("accountId") REFERENCES "ChartOfAccount" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+    )`);
+    await prisma.$executeRawUnsafe(`CREATE INDEX "JournalLine_journalEntryId_idx" ON "JournalLine"("journalEntryId")`);
+    await prisma.$executeRawUnsafe(`CREATE INDEX "JournalLine_accountId_idx" ON "JournalLine"("accountId")`);
+    changes.push({ kind: "create_table", detail: "Created JournalLine" });
+  }
+
+  // BankAccount
+  if (!(await tableExists("BankAccount"))) {
+    await prisma.$executeRawUnsafe(`CREATE TABLE "BankAccount" (
+      "id" TEXT NOT NULL PRIMARY KEY,
+      "orgId" TEXT NOT NULL,
+      "name" TEXT NOT NULL,
+      "accountNumber" TEXT,
+      "bankName" TEXT NOT NULL,
+      "currency" TEXT NOT NULL DEFAULT 'UGX',
+      "openingBalance" REAL NOT NULL DEFAULT 0,
+      "currentBalance" REAL NOT NULL DEFAULT 0,
+      "isActive" INTEGER NOT NULL DEFAULT 1,
+      "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" DATETIME NOT NULL,
+      CONSTRAINT "BankAccount_orgId_fkey" FOREIGN KEY ("orgId") REFERENCES "Organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+    )`);
+    await prisma.$executeRawUnsafe(`CREATE INDEX "BankAccount_orgId_idx" ON "BankAccount"("orgId")`);
+    changes.push({ kind: "create_table", detail: "Created BankAccount" });
+  }
+
+  // BankTransaction
+  if (!(await tableExists("BankTransaction"))) {
+    await prisma.$executeRawUnsafe(`CREATE TABLE "BankTransaction" (
+      "id" TEXT NOT NULL PRIMARY KEY,
+      "bankAccountId" TEXT NOT NULL,
+      "orgId" TEXT NOT NULL,
+      "date" DATETIME NOT NULL,
+      "description" TEXT NOT NULL,
+      "amount" REAL NOT NULL,
+      "type" TEXT NOT NULL,
+      "reference" TEXT,
+      "reconciledAt" DATETIME,
+      "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT "BankTransaction_bankAccountId_fkey" FOREIGN KEY ("bankAccountId") REFERENCES "BankAccount" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+      CONSTRAINT "BankTransaction_orgId_fkey" FOREIGN KEY ("orgId") REFERENCES "Organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+    )`);
+    await prisma.$executeRawUnsafe(`CREATE INDEX "BankTransaction_bankAccountId_date_idx" ON "BankTransaction"("bankAccountId","date")`);
+    await prisma.$executeRawUnsafe(`CREATE INDEX "BankTransaction_orgId_date_idx" ON "BankTransaction"("orgId","date")`);
+    changes.push({ kind: "create_table", detail: "Created BankTransaction" });
+  }
+
+  // Campaign
+  if (!(await tableExists("Campaign"))) {
+    await prisma.$executeRawUnsafe(`CREATE TABLE "Campaign" (
+      "id" TEXT NOT NULL PRIMARY KEY,
+      "orgId" TEXT NOT NULL,
+      "name" TEXT NOT NULL,
+      "type" TEXT NOT NULL,
+      "status" TEXT NOT NULL DEFAULT 'DRAFT',
+      "subject" TEXT,
+      "body" TEXT NOT NULL,
+      "scheduledAt" DATETIME,
+      "startedAt" DATETIME,
+      "completedAt" DATETIME,
+      "createdById" TEXT NOT NULL,
+      "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" DATETIME NOT NULL,
+      CONSTRAINT "Campaign_orgId_fkey" FOREIGN KEY ("orgId") REFERENCES "Organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+      CONSTRAINT "Campaign_createdById_fkey" FOREIGN KEY ("createdById") REFERENCES "User" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+    )`);
+    await prisma.$executeRawUnsafe(`CREATE INDEX "Campaign_orgId_status_idx" ON "Campaign"("orgId","status")`);
+    changes.push({ kind: "create_table", detail: "Created Campaign" });
+  }
+
+  // CampaignContact
+  if (!(await tableExists("CampaignContact"))) {
+    await prisma.$executeRawUnsafe(`CREATE TABLE "CampaignContact" (
+      "id" TEXT NOT NULL PRIMARY KEY,
+      "campaignId" TEXT NOT NULL,
+      "orgId" TEXT NOT NULL,
+      "leadId" TEXT,
+      "clientId" TEXT,
+      "status" TEXT NOT NULL DEFAULT 'PENDING',
+      "sentAt" DATETIME,
+      "openedAt" DATETIME,
+      "repliedAt" DATETIME,
+      "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT "CampaignContact_campaignId_fkey" FOREIGN KEY ("campaignId") REFERENCES "Campaign" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+      CONSTRAINT "CampaignContact_leadId_fkey" FOREIGN KEY ("leadId") REFERENCES "Lead" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
+      CONSTRAINT "CampaignContact_clientId_fkey" FOREIGN KEY ("clientId") REFERENCES "Client" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+    )`);
+    await prisma.$executeRawUnsafe(`CREATE INDEX "CampaignContact_campaignId_status_idx" ON "CampaignContact"("campaignId","status")`);
+    changes.push({ kind: "create_table", detail: "Created CampaignContact" });
+  }
+
+  // Lead.score column
+  {
+    const lcols = await tableColumns("Lead");
+    if (!lcols.has("score")) {
+      await prisma.$executeRawUnsafe(`ALTER TABLE "Lead" ADD COLUMN "score" INTEGER NOT NULL DEFAULT 0`);
+      changes.push({ kind: "alter_table", detail: "Added Lead.score" });
+    }
+  }
+
   // Invoice — ensure new columns exist (jobId nullable, clientId, invoiceType, subject, dueDate)
   {
     const icols = await tableColumns("Invoice");
@@ -1704,6 +1861,13 @@ export async function POST() {
       Expense: await tableExists("Expense"),
       RecurringInvoice: await tableExists("RecurringInvoice"),
       RecurringInvoiceItem: await tableExists("RecurringInvoiceItem"),
+      ChartOfAccount: await tableExists("ChartOfAccount"),
+      JournalEntry: await tableExists("JournalEntry"),
+      JournalLine: await tableExists("JournalLine"),
+      BankAccount: await tableExists("BankAccount"),
+      BankTransaction: await tableExists("BankTransaction"),
+      Campaign: await tableExists("Campaign"),
+      CampaignContact: await tableExists("CampaignContact"),
     },
   });
 }

@@ -94,6 +94,11 @@ model Organization {
   taxRates               TaxRate[]
   expenses               Expense[]
   recurringInvoices      RecurringInvoice[]
+  chartOfAccounts        ChartOfAccount[]
+  journalEntries         JournalEntry[]
+  bankAccounts           BankAccount[]
+  bankTransactions       BankTransaction[]
+  campaigns              Campaign[]
 
   @@index([slug])
   @@index([isActive])
@@ -208,6 +213,8 @@ model User {
   stockCountsApproved      StockCount[]        @relation("StockCountApprovedBy")
   expensesCreated          Expense[]           @relation("ExpenseCreatedBy")
   recurringInvoicesCreated RecurringInvoice[]  @relation("RecurringInvoiceCreatedBy")
+  journalEntriesCreated    JournalEntry[]      @relation("JournalEntryCreatedBy")
+  campaignsCreated         Campaign[]          @relation("CampaignCreatedBy")
 
   @@index([orgId])
   @@index([branchId])
@@ -516,6 +523,7 @@ model Client {
   quotations         Quotation[]
   invoices           Invoice[]
   recurringInvoices  RecurringInvoice[]
+  campaignContacts   CampaignContact[]
 
   @@unique([phone, orgId])
   @@index([orgId])
@@ -2595,6 +2603,7 @@ model Lead {
   source       LeadSource @default(WALK_IN)
   status       LeadStatus @default(NEW)
   estimatedValue Float?
+  score        Int     @default(0) // 0-100 lead quality score
   notes        String?
 
   clientId String?
@@ -2611,8 +2620,9 @@ model Lead {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  activities LeadActivity[]
-  quotations Quotation[]
+  activities       LeadActivity[]
+  quotations       Quotation[]
+  campaignContacts CampaignContact[]
 
   @@index([orgId, status])
   @@index([assignedToId])
@@ -2788,4 +2798,189 @@ model FieldVisit {
   @@index([assignedToId, scheduledAt])
   @@index([jobId])
   @@index([branchId])
+}
+
+// ── ACCOUNTING (Double-Entry) ─────────────────────────────────────────────────
+
+enum AccountType {
+  ASSET
+  LIABILITY
+  EQUITY
+  REVENUE
+  EXPENSE
+}
+
+model ChartOfAccount {
+  id          String      @id @default(cuid())
+  orgId       String
+  org         Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  code        String      // e.g. "1000"
+  name        String
+  type        AccountType
+  parentId    String?
+  parent      ChartOfAccount?  @relation("AccountHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children    ChartOfAccount[] @relation("AccountHierarchy")
+  description String?
+  isSystem    Boolean     @default(false) // system accounts can't be deleted
+  isActive    Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  journalLines JournalLine[]
+
+  @@unique([orgId, code])
+  @@index([orgId, type])
+}
+
+enum JournalEntryStatus {
+  DRAFT
+  POSTED
+  VOID
+}
+
+model JournalEntry {
+  id          String             @id @default(cuid())
+  orgId       String
+  org         Organization       @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  entryNumber String             // JE-YYYY-XXXX
+  date        DateTime
+  description String
+  reference   String?            // invoice/expense/etc ref
+  status      JournalEntryStatus @default(DRAFT)
+  totalAmount Float              @default(0)
+  createdById String
+  createdBy   User               @relation("JournalEntryCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  postedAt    DateTime?
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  lines JournalLine[]
+
+  @@unique([orgId, entryNumber])
+  @@index([orgId, date])
+  @@index([orgId, status])
+}
+
+model JournalLine {
+  id             String         @id @default(cuid())
+  journalEntryId String
+  journalEntry   JournalEntry   @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
+  accountId      String
+  account        ChartOfAccount @relation(fields: [accountId], references: [id], onDelete: Restrict)
+  debit          Float          @default(0)
+  credit         Float          @default(0)
+  description    String?
+
+  @@index([journalEntryId])
+  @@index([accountId])
+}
+
+model BankAccount {
+  id             String       @id @default(cuid())
+  orgId          String
+  org            Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  name           String
+  accountNumber  String?
+  bankName       String
+  currency       String       @default("UGX")
+  openingBalance Float        @default(0)
+  currentBalance Float        @default(0)
+  isActive       Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  transactions BankTransaction[]
+
+  @@index([orgId])
+}
+
+enum BankTransactionType {
+  CREDIT
+  DEBIT
+}
+
+model BankTransaction {
+  id            String              @id @default(cuid())
+  bankAccountId String
+  bankAccount   BankAccount         @relation(fields: [bankAccountId], references: [id], onDelete: Cascade)
+  orgId         String
+  org           Organization        @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  date          DateTime
+  description   String
+  amount        Float               // positive always; type distinguishes direction
+  type          BankTransactionType
+  reference     String?
+  reconciledAt  DateTime?
+  createdAt     DateTime            @default(now())
+
+  @@index([bankAccountId, date])
+  @@index([orgId, date])
+}
+
+// ── CRM — Campaigns & Lead Scoring ───────────────────────────────────────────
+
+enum CampaignType {
+  EMAIL
+  SMS
+  CALL
+  WHATSAPP
+}
+
+enum CampaignStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  COMPLETED
+  CANCELLED
+}
+
+enum CampaignContactStatus {
+  PENDING
+  SENT
+  OPENED
+  RESPONDED
+  OPTED_OUT
+}
+
+model Campaign {
+  id          String         @id @default(cuid())
+  orgId       String
+  org         Organization   @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  name        String
+  type        CampaignType
+  status      CampaignStatus @default(DRAFT)
+  subject     String?        // email subject line
+  body        String         // message body / template
+  scheduledAt DateTime?
+  startedAt   DateTime?
+  completedAt DateTime?
+  createdById String
+  createdBy   User           @relation("CampaignCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  contacts CampaignContact[]
+
+  @@index([orgId, status])
+}
+
+model CampaignContact {
+  id         String                @id @default(cuid())
+  campaignId String
+  campaign   Campaign              @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  orgId      String
+  // target is either a lead or an existing client
+  leadId     String?
+  lead       Lead?                 @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  clientId   String?
+  client     Client?               @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  status     CampaignContactStatus @default(PENDING)
+  sentAt     DateTime?
+  openedAt   DateTime?
+  repliedAt  DateTime?
+  createdAt  DateTime              @default(now())
+
+  @@unique([campaignId, leadId])
+  @@unique([campaignId, clientId])
+  @@index([campaignId, status])
 }
