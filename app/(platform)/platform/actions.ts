@@ -10,7 +10,7 @@ export async function setPlanAction(formData: FormData) {
   await requirePlatformAdmin();
   const orgId = formData.get("orgId") as string;
   const plan = formData.get("plan") as OrgPlan;
-  if (!orgId || !["STARTER", "GROWTH", "ENTERPRISE"].includes(plan)) return;
+  if (!orgId || !["STARTER", "STANDARD", "GROWTH", "PREMIUM", "ENTERPRISE"].includes(plan)) return;
   await prisma.organization.update({
     where: { id: orgId },
     data: { plan, billingStatus: plan === "STARTER" ? "TRIALING" : "ACTIVE" },
@@ -70,6 +70,15 @@ export async function setOrgSmsSenderAction(formData: FormData) {
   const senderId = raw === "" ? null : raw;
   if (senderId && (senderId.length > 11 || !/^[A-Za-z0-9]+$/.test(senderId))) return;
   await setOrgAtSenderId(orgId, senderId);
+  revalidatePath(`/platform/orgs/${orgId}`);
+}
+
+export async function setOrgAiModelAction(formData: FormData) {
+  await requirePlatformAdmin();
+  const orgId = formData.get("orgId") as string;
+  const model = ((formData.get("aiModel") as string | null) ?? "").trim() || null;
+  if (!orgId) return;
+  await prisma.organization.update({ where: { id: orgId }, data: { aiModel: model } });
   revalidatePath(`/platform/orgs/${orgId}`);
 }
 

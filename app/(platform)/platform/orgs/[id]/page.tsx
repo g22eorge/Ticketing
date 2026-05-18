@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getBillingEventsByOrg } from "@/lib/billing-events";
 import { requirePlatformAdmin } from "@/lib/platform-admin";
-import { setBillingStatusAction, setPlanAction, extendTrialAction, setOrgSmsSenderAction } from "../../actions";
+import { setBillingStatusAction, setPlanAction, extendTrialAction, setOrgSmsSenderAction, setOrgAiModelAction } from "../../actions";
 import { getSmsUsage, SMS_PLAN_QUOTAS } from "@/lib/notifications/sms-quota";
 import { getOrgWhatsAppConfig } from "@/lib/org-whatsapp-config";
 
@@ -34,6 +34,7 @@ export default async function OrgDetailPage({ params }: { params: Promise<{ id: 
       planCancelledAt: true,
       flwSubscriptionId: true,
       flwCustomerId: true,
+      aiModel: true,
       createdAt: true,
       updatedAt: true,
       _count: { select: { users: true, jobs: true } },
@@ -136,7 +137,9 @@ export default async function OrgDetailPage({ params }: { params: Promise<{ id: 
               className="rounded-md border border-[var(--line)] bg-[var(--bg)] px-2 py-1.5 text-xs text-[var(--ink)] focus:outline-none focus:ring-1 focus:ring-[var(--gold)]"
             >
               <option value="STARTER">Starter</option>
+              <option value="STANDARD">Standard</option>
               <option value="GROWTH">Growth</option>
+              <option value="PREMIUM">Premium</option>
               <option value="ENTERPRISE">Enterprise</option>
             </select>
             <button type="submit" className="rounded-md bg-[var(--gold)]/20 px-3 py-1.5 text-xs font-semibold text-[var(--gold)] hover:bg-[var(--gold)]/30">
@@ -206,6 +209,37 @@ export default async function OrgDetailPage({ params }: { params: Promise<{ id: 
           {orgWaCfg?.atSenderId && (
             <span className="text-xs text-[var(--ink-muted)]">
               Current: <span className="font-mono font-semibold text-[var(--ink)]">{orgWaCfg.atSenderId}</span>
+            </span>
+          )}
+        </form>
+      </div>
+
+      {/* AI Model */}
+      <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] p-5 space-y-3">
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]">AI Model Override</p>
+          <p className="mt-0.5 text-xs text-[var(--ink-muted)]">
+            Assign a specific Claude model to this org. Leave blank to use the platform default.
+          </p>
+        </div>
+        <form action={setOrgAiModelAction} className="flex items-center gap-2">
+          <input type="hidden" name="orgId" value={org.id} />
+          <select
+            name="aiModel"
+            defaultValue={org.aiModel ?? ""}
+            className="rounded-md border border-[var(--line)] bg-[var(--bg)] px-2 py-1.5 text-xs font-mono text-[var(--ink)] focus:outline-none focus:ring-1 focus:ring-[var(--gold)] w-72"
+          >
+            <option value="">Platform default</option>
+            <option value="claude-haiku-4-5-20251001">claude-haiku-4-5-20251001 (Haiku 4.5 — fast)</option>
+            <option value="claude-sonnet-4-6">claude-sonnet-4-6 (Sonnet 4.6 — balanced)</option>
+            <option value="claude-opus-4-7">claude-opus-4-7 (Opus 4.7 — most capable)</option>
+          </select>
+          <button type="submit" className="rounded-md bg-[var(--gold)]/20 px-3 py-1.5 text-xs font-semibold text-[var(--gold)] hover:bg-[var(--gold)]/30">
+            Save
+          </button>
+          {org.aiModel && (
+            <span className="text-xs text-[var(--ink-muted)]">
+              Current: <span className="font-mono font-semibold text-[var(--ink)]">{org.aiModel}</span>
             </span>
           )}
         </form>
