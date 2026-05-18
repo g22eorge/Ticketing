@@ -1,4 +1,5 @@
 import { spawnSync } from "node:child_process";
+import { rmSync } from "node:fs";
 
 function run(command, args, options = {}) {
   const result = spawnSync(command, args, {
@@ -15,6 +16,10 @@ if (!env.DATABASE_URL && env.TURSO_DATABASE_URL) {
 }
 if (!env.DATABASE_URL) {
   env.DATABASE_URL = "file:./dev.db";
+}
+
+for (const path of ["node_modules/.prisma/client", "node_modules/@prisma/client/.prisma"]) {
+  rmSync(path, { recursive: true, force: true });
 }
 
 run("bunx", ["prisma", "generate"], { env });
