@@ -12,7 +12,7 @@ export default async function NewStockCountPage() {
   if (!can.manageInventory(user)) redirect("/inventory");
 
   const [locations, parts] = await Promise.all([
-    prisma.stockLocation.findMany({ where: { orgId, isActive: true }, orderBy: { name: "asc" }, select: { id: true, name: true, code: true } }),
+    prisma.stockLocation.findMany({ where: { orgId, isActive: true }, orderBy: { name: "asc" }, select: { id: true, name: true, code: true } }).catch(() => []),
     prisma.part.findMany({ where: { orgId, isActive: true }, orderBy: { name: "asc" }, select: { id: true, sku: true, name: true, qtyOnHand: true } }),
   ]);
 

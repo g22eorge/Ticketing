@@ -46,8 +46,8 @@ export default async function StockTransfersPage({
       orderBy: { createdAt: "desc" },
       include: { items: { include: { part: { select: { sku: true, name: true } } } } },
       take: 100,
-    }),
-    prisma.stockLocation.findMany({ where: { orgId, isActive: true }, orderBy: { name: "asc" } }),
+    }).catch(() => []),
+    prisma.stockLocation.findMany({ where: { orgId, isActive: true }, orderBy: { name: "asc" } }).catch(() => []),
     prisma.part.findMany({ where: { orgId, isActive: true }, orderBy: { name: "asc" }, select: { id: true, sku: true, name: true } }),
   ]);
   const locationName = new Map(locations.map((location) => [location.id, location.name]));

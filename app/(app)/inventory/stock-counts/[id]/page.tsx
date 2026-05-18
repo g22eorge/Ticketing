@@ -12,7 +12,7 @@ export default async function StockCountDetailPage({ params }: { params: Promise
   const { id } = await params;
   const { user, orgId } = await requireOrgSession();
   if (!can.manageInventory(user)) redirect("/inventory");
-  const count = await prisma.stockCount.findUnique({ where: { id }, include: { location: { select: { name: true, code: true } }, createdBy: { select: { name: true, email: true } }, approvedBy: { select: { name: true, email: true } }, items: { include: { part: { select: { sku: true, name: true } } }, orderBy: { createdAt: "asc" } } } });
+  const count = await prisma.stockCount.findUnique({ where: { id }, include: { location: { select: { name: true, code: true } }, createdBy: { select: { name: true, email: true } }, approvedBy: { select: { name: true, email: true } }, items: { include: { part: { select: { sku: true, name: true } } }, orderBy: { createdAt: "asc" } } } }).catch(() => null);
   if (!count || count.orgId !== orgId) notFound();
   const fmt = (d: Date | null) => d ? d.toLocaleDateString("en-UG", { day: "numeric", month: "short", year: "numeric" }) : "-";
   const varianceLines = count.items.filter((item) => item.varianceQty !== 0).length;

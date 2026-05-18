@@ -27,7 +27,7 @@ export default async function StockLocationsPage({
     prisma.stockLocation.findMany({
       where: { orgId },
       orderBy: [{ isActive: "desc" }, { name: "asc" }],
-    }),
+    }).catch(() => []),
     prisma.branch.findMany({
       where: { orgId, isActive: true },
       orderBy: { name: "asc" },
