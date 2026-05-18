@@ -94,6 +94,7 @@ const roleOrder: Partial<Record<Role, readonly string[]>> = {
     // documents
     "/documents/job-cards", "/documents/quotations", "/documents/invoices", "/documents/receipts", "/documents/delivery-notes", "/documents/credit-notes", "/documents/refunds",
     // finance
+    "/finance/expenses", "/finance/tax-rates", "/finance/recurring",
     "/pos/shifts", "/targets", "/reports", "/payout-followups",
     "/settings",
   ],
@@ -104,6 +105,7 @@ const roleOrder: Partial<Record<Role, readonly string[]>> = {
     "/procurement", "/inventory/purchase-requests", "/inventory/purchase-orders", "/inventory/goods-received", "/inventory/supplier-bills", "/inventory/suppliers",
     "/clients", "/sales", "/pos",
     "/documents/job-cards", "/documents/quotations", "/documents/invoices", "/documents/receipts", "/documents/delivery-notes", "/documents/credit-notes", "/documents/refunds",
+    "/finance/expenses", "/finance/tax-rates", "/finance/recurring",
     "/pos/shifts", "/targets", "/reports", "/payout-followups",
     "/settings",
   ],
@@ -122,12 +124,14 @@ const roleOrder: Partial<Record<Role, readonly string[]>> = {
     "/procurement", "/inventory/purchase-requests", "/inventory/purchase-orders", "/inventory/goods-received", "/inventory/supplier-bills", "/inventory/suppliers",
     "/clients", "/sales", "/pos",
     "/documents/job-cards", "/documents/quotations", "/documents/invoices", "/documents/receipts", "/documents/delivery-notes", "/documents/credit-notes", "/documents/refunds",
+    "/finance/expenses", "/finance/recurring",
     "/pos/shifts", "/targets", "/reports", "/payout-followups",
     "/settings",
   ],
   FINANCE: [
     "/dashboard",
     "/documents/invoices", "/documents/credit-notes", "/documents/refunds",
+    "/finance/expenses", "/finance/recurring",
     "/pos/shifts", "/targets", "/reports", "/payout-followups",
     "/settings",
   ],
