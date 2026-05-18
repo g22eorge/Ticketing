@@ -26,8 +26,8 @@ export default async function ChartOfAccountsPage() {
 
   async function createAccount(fd: FormData) {
     "use server";
-    const { orgId: oid } = await requireOrgSession();
-    await assertOrgCanMutate(oid);
+    const { user: u, orgId: oid, org } = await requireOrgSession();
+    assertOrgCanMutate({ access: org.access, userRole: u.role, userAccessMode: u.accessMode, kind: "GENERAL" });
     const code = fd.get("code") as string;
     const name = fd.get("name") as string;
     const type = fd.get("type") as AccountType;
@@ -42,8 +42,8 @@ export default async function ChartOfAccountsPage() {
 
   async function toggleActive(fd: FormData) {
     "use server";
-    const { orgId: oid } = await requireOrgSession();
-    await assertOrgCanMutate(oid);
+    const { user: u, orgId: oid, org } = await requireOrgSession();
+    assertOrgCanMutate({ access: org.access, userRole: u.role, userAccessMode: u.accessMode, kind: "GENERAL" });
     const id = fd.get("id") as string;
     const acc = await prisma.chartOfAccount.findFirst({ where: { id, orgId: oid } });
     if (!acc || acc.isSystem) return;
@@ -53,8 +53,8 @@ export default async function ChartOfAccountsPage() {
 
   async function deleteAccount(fd: FormData) {
     "use server";
-    const { orgId: oid } = await requireOrgSession();
-    await assertOrgCanMutate(oid);
+    const { user: u, orgId: oid, org } = await requireOrgSession();
+    assertOrgCanMutate({ access: org.access, userRole: u.role, userAccessMode: u.accessMode, kind: "GENERAL" });
     const id = fd.get("id") as string;
     const acc = await prisma.chartOfAccount.findFirst({ where: { id, orgId: oid } });
     if (!acc || acc.isSystem) return;
@@ -177,14 +177,13 @@ export default async function ChartOfAccountsPage() {
                       <td className="px-3 py-3 text-right">
                         {!acc.isSystem && (
                           <RowActionsMenu label="Account actions">
-                            <MenuSection label="Actions">
-                              <form action={toggleActive}>
-                                <input type="hidden" name="id" value={acc.id} />
-                                <button type="submit" className="w-full px-3 py-1.5 text-left text-sm hover:bg-[var(--panel)]">
-                                  {acc.isActive ? "Deactivate" : "Activate"}
-                                </button>
-                              </form>
-                            </MenuSection>
+                            <MenuSection label="Actions" />
+                            <form action={toggleActive}>
+                              <input type="hidden" name="id" value={acc.id} />
+                              <button type="submit" className="w-full px-3 py-1.5 text-left text-sm hover:bg-[var(--panel)]">
+                                {acc.isActive ? "Deactivate" : "Activate"}
+                              </button>
+                            </form>
                             <MenuDestructiveRow>
                               <form action={deleteAccount}>
                                 <input type="hidden" name="id" value={acc.id} />

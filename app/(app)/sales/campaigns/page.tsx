@@ -43,8 +43,8 @@ export default async function CampaignsPage({ searchParams }: { searchParams: Pr
 
   async function createCampaign(fd: FormData) {
     "use server";
-    const { user: u, orgId: oid } = await requireOrgSession();
-    await assertOrgCanMutate(oid);
+    const { user: u, orgId: oid, org } = await requireOrgSession();
+    assertOrgCanMutate({ access: org.access, userRole: u.role, userAccessMode: u.accessMode, kind: "GENERAL" });
     const name = fd.get("name") as string;
     const type = fd.get("type") as CampaignType;
     const subject = (fd.get("subject") as string) || null;
@@ -62,8 +62,8 @@ export default async function CampaignsPage({ searchParams }: { searchParams: Pr
 
   async function updateStatus(fd: FormData) {
     "use server";
-    const { orgId: oid } = await requireOrgSession();
-    await assertOrgCanMutate(oid);
+    const { user: u, orgId: oid, org } = await requireOrgSession();
+    assertOrgCanMutate({ access: org.access, userRole: u.role, userAccessMode: u.accessMode, kind: "GENERAL" });
     const id = fd.get("id") as string;
     const status = fd.get("status") as CampaignStatus;
     const campaign = await prisma.campaign.findFirst({ where: { id, orgId: oid } });
@@ -77,8 +77,8 @@ export default async function CampaignsPage({ searchParams }: { searchParams: Pr
 
   async function deleteCampaign(fd: FormData) {
     "use server";
-    const { orgId: oid } = await requireOrgSession();
-    await assertOrgCanMutate(oid);
+    const { user: u, orgId: oid, org } = await requireOrgSession();
+    assertOrgCanMutate({ access: org.access, userRole: u.role, userAccessMode: u.accessMode, kind: "GENERAL" });
     const id = fd.get("id") as string;
     await prisma.campaign.delete({ where: { id } });
     revalidatePath("/sales/campaigns");
@@ -86,8 +86,8 @@ export default async function CampaignsPage({ searchParams }: { searchParams: Pr
 
   async function addLeadsToCampaign(fd: FormData) {
     "use server";
-    const { orgId: oid } = await requireOrgSession();
-    await assertOrgCanMutate(oid);
+    const { user: u, orgId: oid, org } = await requireOrgSession();
+    assertOrgCanMutate({ access: org.access, userRole: u.role, userAccessMode: u.accessMode, kind: "GENERAL" });
     const campaignId = fd.get("campaignId") as string;
     const source = fd.get("source") as "all_leads" | "all_clients";
     const campaign = await prisma.campaign.findFirst({ where: { id: campaignId, orgId: oid } });
@@ -117,8 +117,8 @@ export default async function CampaignsPage({ searchParams }: { searchParams: Pr
 
   async function updateContactStatus(fd: FormData) {
     "use server";
-    const { orgId: oid } = await requireOrgSession();
-    await assertOrgCanMutate(oid);
+    const { user: u, orgId: oid, org } = await requireOrgSession();
+    assertOrgCanMutate({ access: org.access, userRole: u.role, userAccessMode: u.accessMode, kind: "GENERAL" });
     const id = fd.get("id") as string;
     const status = fd.get("status") as CampaignContactStatus;
     const updates: Record<string, Date> = {};
@@ -266,17 +266,16 @@ export default async function CampaignsPage({ searchParams }: { searchParams: Pr
                     <p className="text-xs text-[var(--ink-muted)]">{TYPE_ICON[selected.type]} {selected.type} · {selected._count.contacts} contacts</p>
                   </div>
                   <RowActionsMenu label="Campaign actions">
-                    <MenuSection label="Status">
-                      {CAMPAIGN_STATUSES.filter((s) => s !== selected.status).map((s) => (
-                        <form key={s} action={updateStatus}>
-                          <input type="hidden" name="id" value={selected.id} />
-                          <input type="hidden" name="status" value={s} />
-                          <button type="submit" className="w-full px-3 py-1.5 text-left text-sm hover:bg-[var(--panel)]">
-                            Set {s}
-                          </button>
-                        </form>
-                      ))}
-                    </MenuSection>
+                    <MenuSection label="Status" />
+                    {CAMPAIGN_STATUSES.filter((s) => s !== selected.status).map((s) => (
+                      <form key={s} action={updateStatus}>
+                        <input type="hidden" name="id" value={selected.id} />
+                        <input type="hidden" name="status" value={s} />
+                        <button type="submit" className="w-full px-3 py-1.5 text-left text-sm hover:bg-[var(--panel)]">
+                          Set {s}
+                        </button>
+                      </form>
+                    ))}
                     <MenuDestructiveRow>
                       <form action={deleteCampaign}>
                         <input type="hidden" name="id" value={selected.id} />

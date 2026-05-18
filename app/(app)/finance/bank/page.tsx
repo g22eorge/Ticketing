@@ -21,8 +21,8 @@ export default async function BankPage({ searchParams }: { searchParams: Promise
 
   async function createBankAccount(fd: FormData) {
     "use server";
-    const { orgId: oid } = await requireOrgSession();
-    await assertOrgCanMutate(oid);
+    const { user: u, orgId: oid, org } = await requireOrgSession();
+    assertOrgCanMutate({ access: org.access, userRole: u.role, userAccessMode: u.accessMode, kind: "GENERAL" });
     const name          = fd.get("name") as string;
     const bankName      = fd.get("bankName") as string;
     const accountNumber = (fd.get("accountNumber") as string) || null;
@@ -36,8 +36,8 @@ export default async function BankPage({ searchParams }: { searchParams: Promise
 
   async function addTransaction(fd: FormData) {
     "use server";
-    const { orgId: oid } = await requireOrgSession();
-    await assertOrgCanMutate(oid);
+    const { user: u, orgId: oid, org } = await requireOrgSession();
+    assertOrgCanMutate({ access: org.access, userRole: u.role, userAccessMode: u.accessMode, kind: "GENERAL" });
     const bankAccountId = fd.get("bankAccountId") as string;
     const date          = fd.get("date") as string;
     const description   = fd.get("description") as string;
@@ -61,8 +61,8 @@ export default async function BankPage({ searchParams }: { searchParams: Promise
 
   async function reconcile(fd: FormData) {
     "use server";
-    const { orgId: oid } = await requireOrgSession();
-    await assertOrgCanMutate(oid);
+    const { user: u, orgId: oid, org } = await requireOrgSession();
+    assertOrgCanMutate({ access: org.access, userRole: u.role, userAccessMode: u.accessMode, kind: "GENERAL" });
     const id = fd.get("id") as string;
     const tx = await prisma.bankTransaction.findFirst({ where: { id, orgId: oid } });
     if (!tx) return;
@@ -75,8 +75,8 @@ export default async function BankPage({ searchParams }: { searchParams: Promise
 
   async function deleteBankAccount(fd: FormData) {
     "use server";
-    const { orgId: oid } = await requireOrgSession();
-    await assertOrgCanMutate(oid);
+    const { user: u, orgId: oid, org } = await requireOrgSession();
+    assertOrgCanMutate({ access: org.access, userRole: u.role, userAccessMode: u.accessMode, kind: "GENERAL" });
     const id = fd.get("id") as string;
     await prisma.bankAccount.delete({ where: { id } });
     revalidatePath("/finance/bank");

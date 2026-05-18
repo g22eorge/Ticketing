@@ -32,8 +32,8 @@ export default async function JournalPage({ searchParams }: { searchParams: Prom
 
   async function createEntry(fd: FormData) {
     "use server";
-    const { user: u, orgId: oid } = await requireOrgSession();
-    await assertOrgCanMutate(oid);
+    const { user: u, orgId: oid, org } = await requireOrgSession();
+    assertOrgCanMutate({ access: org.access, userRole: u.role, userAccessMode: u.accessMode, kind: "GENERAL" });
 
     const description = fd.get("description") as string;
     const dateStr     = fd.get("date") as string;
@@ -77,8 +77,8 @@ export default async function JournalPage({ searchParams }: { searchParams: Prom
 
   async function postEntry(fd: FormData) {
     "use server";
-    const { orgId: oid } = await requireOrgSession();
-    await assertOrgCanMutate(oid);
+    const { user: u, orgId: oid, org } = await requireOrgSession();
+    assertOrgCanMutate({ access: org.access, userRole: u.role, userAccessMode: u.accessMode, kind: "GENERAL" });
     const id = fd.get("id") as string;
     const entry = await prisma.journalEntry.findFirst({ where: { id, orgId: oid, status: "DRAFT" } });
     if (!entry) return;
@@ -88,8 +88,8 @@ export default async function JournalPage({ searchParams }: { searchParams: Prom
 
   async function voidEntry(fd: FormData) {
     "use server";
-    const { orgId: oid } = await requireOrgSession();
-    await assertOrgCanMutate(oid);
+    const { user: u, orgId: oid, org } = await requireOrgSession();
+    assertOrgCanMutate({ access: org.access, userRole: u.role, userAccessMode: u.accessMode, kind: "GENERAL" });
     const id = fd.get("id") as string;
     const entry = await prisma.journalEntry.findFirst({ where: { id, orgId: oid, status: "POSTED" } });
     if (!entry) return;
@@ -99,8 +99,8 @@ export default async function JournalPage({ searchParams }: { searchParams: Prom
 
   async function deleteEntry(fd: FormData) {
     "use server";
-    const { orgId: oid } = await requireOrgSession();
-    await assertOrgCanMutate(oid);
+    const { user: u, orgId: oid, org } = await requireOrgSession();
+    assertOrgCanMutate({ access: org.access, userRole: u.role, userAccessMode: u.accessMode, kind: "GENERAL" });
     const id = fd.get("id") as string;
     const entry = await prisma.journalEntry.findFirst({ where: { id, orgId: oid, status: "DRAFT" } });
     if (!entry) return;
@@ -253,20 +253,19 @@ export default async function JournalPage({ searchParams }: { searchParams: Prom
                       <p className="text-[10px] text-[var(--ink-muted)]">{new Date(entry.date).toLocaleDateString()}</p>
                     </div>
                     <RowActionsMenu label="Entry actions">
-                      <MenuSection label="Actions">
-                        {entry.status === "DRAFT" && (
-                          <form action={postEntry}>
-                            <input type="hidden" name="id" value={entry.id} />
-                            <button type="submit" className="w-full px-3 py-1.5 text-left text-sm hover:bg-[var(--panel)]">Post Entry</button>
-                          </form>
-                        )}
-                        {entry.status === "POSTED" && (
-                          <form action={voidEntry}>
-                            <input type="hidden" name="id" value={entry.id} />
-                            <button type="submit" className="w-full px-3 py-1.5 text-left text-sm hover:bg-[var(--panel)]">Void Entry</button>
-                          </form>
-                        )}
-                      </MenuSection>
+                      <MenuSection label="Actions" />
+                      {entry.status === "DRAFT" && (
+                        <form action={postEntry}>
+                          <input type="hidden" name="id" value={entry.id} />
+                          <button type="submit" className="w-full px-3 py-1.5 text-left text-sm hover:bg-[var(--panel)]">Post Entry</button>
+                        </form>
+                      )}
+                      {entry.status === "POSTED" && (
+                        <form action={voidEntry}>
+                          <input type="hidden" name="id" value={entry.id} />
+                          <button type="submit" className="w-full px-3 py-1.5 text-left text-sm hover:bg-[var(--panel)]">Void Entry</button>
+                        </form>
+                      )}
                       {entry.status === "DRAFT" && (
                         <MenuDestructiveRow>
                           <form action={deleteEntry}>
