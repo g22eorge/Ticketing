@@ -30,7 +30,7 @@ export default async function PurchaseRequestsPage() {
     },
     orderBy: { createdAt: "desc" },
     take: 100,
-  });
+  }).catch(() => []);
 
   const fmt = (d: Date | null) => d ? d.toLocaleDateString("en-UG", { day: "numeric", month: "short", year: "numeric" }) : "-";
 

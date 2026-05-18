@@ -92,7 +92,7 @@ export default async function FieldPage({
     },
     orderBy: { scheduledAt: "asc" },
     take: 100,
-  });
+  }).catch(() => []);
 
   return (
     <div className="space-y-6 p-6">

@@ -79,7 +79,7 @@ export default async function SalesPage({
           include: { assignedTo: { select: { id: true, name: true } }, createdBy: { select: { id: true, name: true } } },
           orderBy: { updatedAt: "desc" },
           take: 100,
-        })
+        }).catch(() => [])
       : Promise.resolve([]),
     activeTab === "quotations"
       ? prisma.quotation.findMany({
@@ -91,10 +91,10 @@ export default async function SalesPage({
           },
           orderBy: { createdAt: "desc" },
           take: 100,
-        })
+        }).catch(() => [])
       : Promise.resolve([]),
     activeTab === "leads"
-      ? prisma.lead.groupBy({ by: ["status"], where: { orgId, ...(onlyOwn ? { assignedToId: user.id } : {}) }, _count: true })
+      ? prisma.lead.groupBy({ by: ["status"], where: { orgId, ...(onlyOwn ? { assignedToId: user.id } : {}) }, _count: true }).catch(() => [])
       : Promise.resolve([]),
   ]);
 

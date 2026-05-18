@@ -45,7 +45,7 @@ export default async function QuotationDetailPage({
       approvedBy: { select: { id: true, name: true } },
       items: { orderBy: { createdAt: "asc" } },
     },
-  });
+  }).catch(() => null);
 
   if (!quotation) notFound();
 

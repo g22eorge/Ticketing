@@ -74,7 +74,7 @@ export default async function FieldVisitDetailPage({
         },
       },
     },
-  });
+  }).catch(() => null);
 
   if (!visit) {
     notFound();

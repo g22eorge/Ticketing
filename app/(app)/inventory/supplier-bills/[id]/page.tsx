@@ -26,7 +26,7 @@ export default async function SupplierBillDetailPage({ params }: { params: Promi
         orderBy: { paidAt: "desc" },
       },
     },
-  });
+  }).catch(() => null);
   if (!bill || bill.orgId !== orgId) notFound();
 
   const fmt = (d: Date | null) => d ? d.toLocaleDateString("en-UG", { day: "numeric", month: "short", year: "numeric" }) : "-";

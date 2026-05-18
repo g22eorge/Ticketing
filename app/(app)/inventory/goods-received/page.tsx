@@ -21,7 +21,7 @@ export default async function GoodsReceivedPage() {
     },
     orderBy: { receivedAt: "desc" },
     take: 100,
-  });
+  }).catch(() => []);
 
   const fmt = (d: Date) => d.toLocaleDateString("en-UG", { day: "numeric", month: "short", year: "numeric" });
 

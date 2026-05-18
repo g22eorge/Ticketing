@@ -137,7 +137,7 @@ export default async function TargetsPage({ searchParams }: { searchParams: Sear
         branch: { select: { id: true, name: true } },
       },
       orderBy: { createdAt: "asc" },
-    }),
+    }).catch(() => []),
     canSet
       ? prisma.user.findMany({
           where: { orgId, isActive: true },
@@ -149,7 +149,7 @@ export default async function TargetsPage({ searchParams }: { searchParams: Sear
       ? prisma.department.findMany({
           select: { id: true, name: true },
           orderBy: { name: "asc" },
-        })
+        }).catch(() => [] as { id: string; name: string }[])
       : Promise.resolve([] as { id: string; name: string }[]),
     canSet
       ? prisma.branch.findMany({

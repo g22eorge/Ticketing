@@ -146,7 +146,7 @@ export default async function SalesTargetsPage({
     prisma.salesTarget.findMany({
       where: { orgId, period: { in: periods } },
       select: { id: true, userId: true, period: true, targetRevenue: true, targetJobs: true },
-    }),
+    }).catch(() => []),
   ]);
 
   // Index targets by userId+period key (null userId uses "__team__")

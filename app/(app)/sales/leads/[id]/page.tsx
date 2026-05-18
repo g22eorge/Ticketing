@@ -79,7 +79,7 @@ export default async function LeadDetailPage({
         orderBy: { createdAt: "desc" },
       },
     },
-  });
+  }).catch(() => null);
 
   if (!lead) notFound();
   if (!can.viewAllSales(user) && lead.assignedToId !== user.id && lead.createdById !== user.id) redirect("/sales");

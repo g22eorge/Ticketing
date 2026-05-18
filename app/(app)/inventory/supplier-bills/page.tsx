@@ -28,7 +28,7 @@ export default async function SupplierBillsPage() {
     },
     orderBy: { issuedAt: "desc" },
     take: 100,
-  });
+  }).catch(() => []);
 
   const totalOutstanding = bills
     .filter((bill) => bill.status !== "CANCELLED")

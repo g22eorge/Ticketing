@@ -21,7 +21,7 @@ export default async function GoodsReceivedDetailPage({ params }: { params: Prom
       createdBy: { select: { name: true, email: true } },
       items: { include: { part: { select: { sku: true, name: true } } }, orderBy: { createdAt: "asc" } },
     },
-  });
+  }).catch(() => null);
 
   if (!grn || grn.orgId !== orgId) notFound();
 

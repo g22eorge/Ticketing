@@ -22,7 +22,7 @@ export default async function PurchaseRequestDetailPage({ params }: { params: Pr
       convertedPo: { select: { id: true, reference: true } },
       items: { include: { part: { select: { sku: true, name: true } } }, orderBy: { createdAt: "asc" } },
     },
-  });
+  }).catch(() => null);
   if (!request || request.orgId !== orgId) notFound();
 
   const suppliers = await prisma.supplier.findMany({ where: { orgId, isActive: true }, orderBy: { name: "asc" }, select: { id: true, name: true } });

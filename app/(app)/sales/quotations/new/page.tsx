@@ -29,7 +29,7 @@ export default async function NewQuotationPage({
             ...(!can.viewAllSales(user) ? { OR: [{ assignedToId: user.id }, { createdById: user.id }] } : {}),
           },
           select: { fullName: true },
-        }).then((l) => l?.fullName ?? null)
+        }).then((l) => l?.fullName ?? null).catch(() => null)
       : Promise.resolve(null),
     params.clientId
       ? prisma.client.findFirst({ where: { id: params.clientId, orgId }, select: { fullName: true } }).then((c) => c?.fullName ?? null)
