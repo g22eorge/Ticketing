@@ -2,11 +2,11 @@ import { redirect } from "next/navigation";
 
 import { can } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
-import { getCurrentUserRole } from "@/lib/session";
+import { requireOrgSession } from "@/lib/org-context";
 import { ScheduleVisitForm } from "./ScheduleVisitForm";
 
 export default async function ScheduleVisitPage() {
-  const { user } = await getCurrentUserRole();
+  const { user, orgId } = await requireOrgSession();
 
   if (!can.manageFieldVisits(user)) {
     redirect("/field");
@@ -16,6 +16,7 @@ export default async function ScheduleVisitPage() {
     prisma.user.findMany({
       where: {
         isActive: true,
+        orgId,
         role: { in: ["TECH_FIELD", "TECHNICIAN_EXTERNAL"] },
       },
       select: { id: true, name: true, role: true },
@@ -26,6 +27,7 @@ export default async function ScheduleVisitPage() {
         status: {
           notIn: ["COMPLETED", "CLOSED"],
         },
+        orgId,
       },
       select: { id: true, jobNumber: true, brand: true, model: true },
       orderBy: { receivedAt: "desc" },

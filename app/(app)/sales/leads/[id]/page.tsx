@@ -4,7 +4,7 @@ import { LeadStatus } from "@prisma/client";
 
 import { can } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
-import { getCurrentUserRole } from "@/lib/session";
+import { requireOrgSession } from "@/lib/org-context";
 import { formatEATDate, formatEATDateTime } from "@/lib/date-eat";
 import { formatMoney, getAppCurrency } from "@/lib/currency";
 import { updateLeadStatus, addLeadActivity } from "../../actions";
@@ -59,14 +59,14 @@ export default async function LeadDetailPage({
 }) {
   const { id } = await params;
   const filters = await searchParams;
-  const { user } = await getCurrentUserRole();
+  const { user, orgId } = await requireOrgSession();
 
   if (!can.createLeads(user) && !can.viewAllSales(user)) {
     redirect("/dashboard");
   }
 
-  const lead = await prisma.lead.findUnique({
-    where: { id },
+  const lead = await prisma.lead.findFirst({
+    where: { id, orgId },
     include: {
       assignedTo: { select: { id: true, name: true } },
       createdBy: { select: { id: true, name: true } },
@@ -82,6 +82,7 @@ export default async function LeadDetailPage({
   });
 
   if (!lead) notFound();
+  if (!can.viewAllSales(user) && lead.assignedToId !== user.id && lead.createdById !== user.id) redirect("/sales");
 
   const canEdit = can.createLeads(user);
   const currency = getAppCurrency();

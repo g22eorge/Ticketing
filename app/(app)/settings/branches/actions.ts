@@ -9,7 +9,7 @@ import { assertOrgCanMutate } from "@/lib/org-write";
 
 async function requireAdmin() {
   const ctx = await requireOrgSession();
-  if (!can.manageUsers(ctx.user)) redirect("/inventory");
+  if (!can.manageUsers(ctx.user)) redirect("/settings");
   assertOrgCanMutate({ access: ctx.org.access, userRole: ctx.user.role, userAccessMode: ctx.user.accessMode, kind: "GENERAL" });
   return ctx;
 }

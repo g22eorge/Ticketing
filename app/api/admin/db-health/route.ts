@@ -21,6 +21,17 @@ const TABLES_TO_CHECK = [
   "Notification",
   "NotificationPreferences",
   "DocumentBrandingSettings",
+  "StockTransfer",
+  "StockTransferItem",
+  "GoodsReceived",
+  "GoodsReceivedItem",
+  "SupplierBill",
+  "SupplierBillItem",
+  "SupplierPayment",
+  "PurchaseRequest",
+  "PurchaseRequestItem",
+  "StockCount",
+  "StockCountItem",
 ] as const;
 
   const JOB_COLUMNS_TO_CHECK = [

@@ -8,7 +8,7 @@ import { FieldVisitStatus, FieldVisitType } from "@prisma/client";
 import { can } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { sanitizeOptionalText, sanitizeText } from "@/lib/sanitize";
-import { getCurrentUserRole } from "@/lib/session";
+import { requireOrgSession } from "@/lib/org-context";
 
 const scheduleVisitSchema = z.object({
   jobId: z.string().optional(),
@@ -33,7 +33,7 @@ export async function scheduleVisit(data: {
   contactPhone?: string;
   notes?: string;
 }) {
-  const { user } = await getCurrentUserRole();
+  const { user, orgId } = await requireOrgSession();
   if (!can.manageFieldVisits(user)) {
     throw new Error("Unauthorized");
   }
@@ -42,10 +42,20 @@ export async function scheduleVisit(data: {
   if (!parsed.success) {
     throw new Error(parsed.error.issues[0]?.message ?? "Invalid input");
   }
+  const assignee = await prisma.user.findFirst({ where: { id: parsed.data.assignedToId, orgId, isActive: true }, select: { id: true } });
+  if (!assignee) throw new Error("Assigned user not found");
+  if (parsed.data.jobId) {
+    const job = await prisma.job.findFirst({ where: { id: parsed.data.jobId, orgId }, select: { id: true } });
+    if (!job) throw new Error("Job not found");
+  }
+  if (parsed.data.branchId) {
+    const branch = await prisma.branch.findFirst({ where: { id: parsed.data.branchId, orgId }, select: { id: true } });
+    if (!branch) throw new Error("Branch not found");
+  }
 
   await prisma.fieldVisit.create({
     data: {
-      orgId: null,
+      orgId,
       jobId: parsed.data.jobId ?? null,
       branchId: parsed.data.branchId ?? null,
       assignedToId: parsed.data.assignedToId,
@@ -72,7 +82,7 @@ export async function updateVisitStatus(
   status: FieldVisitStatus,
   extra?: { outcomeNotes?: string; signoffName?: string },
 ) {
-  const { user } = await getCurrentUserRole();
+  const { user, orgId } = await requireOrgSession();
 
   const isManager = can.manageFieldVisits(user);
   const isFieldTech = can.recordFieldSignoffs(user);
@@ -89,7 +99,7 @@ export async function updateVisitStatus(
     throw new Error("Unauthorized");
   }
 
-  const visit = await prisma.fieldVisit.findUnique({ where: { id: visitId } });
+  const visit = await prisma.fieldVisit.findFirst({ where: { id: visitId, orgId } });
   if (!visit) {
     throw new Error("Visit not found");
   }
@@ -99,8 +109,8 @@ export async function updateVisitStatus(
   }
 
   const now = new Date();
-  await prisma.fieldVisit.update({
-    where: { id: visitId },
+  await prisma.fieldVisit.updateMany({
+    where: { id: visitId, orgId },
     data: {
       status,
       startedAt: status === "EN_ROUTE" ? now : undefined,
@@ -119,7 +129,7 @@ export async function recordSignoff(
   visitId: string,
   data: { signoffName: string; outcomeNotes?: string },
 ) {
-  const { user } = await getCurrentUserRole();
+  const { user, orgId } = await requireOrgSession();
   if (!can.recordFieldSignoffs(user)) {
     throw new Error("Unauthorized");
   }
@@ -135,7 +145,7 @@ export async function recordSignoff(
     throw new Error(parsed.error.issues[0]?.message ?? "Invalid input");
   }
 
-  const visit = await prisma.fieldVisit.findUnique({ where: { id: visitId } });
+  const visit = await prisma.fieldVisit.findFirst({ where: { id: visitId, orgId } });
   if (!visit) {
     throw new Error("Visit not found");
   }
@@ -146,8 +156,8 @@ export async function recordSignoff(
   }
 
   const now = new Date();
-  await prisma.fieldVisit.update({
-    where: { id: visitId },
+  await prisma.fieldVisit.updateMany({
+    where: { id: visitId, orgId },
     data: {
       status: "COMPLETED",
       completedAt: now,

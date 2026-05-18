@@ -4,7 +4,7 @@ import { FieldVisitStatus } from "@prisma/client";
 
 import { can } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
-import { getCurrentUserRole } from "@/lib/session";
+import { requireOrgSession } from "@/lib/org-context";
 import { formatEATDateTime } from "@/lib/date-eat";
 
 const STATUS_LABELS: Record<FieldVisitStatus, string> = {
@@ -54,7 +54,7 @@ export default async function FieldPage({
 }: {
   searchParams: Promise<{ status?: string }>;
 }) {
-  const { user } = await getCurrentUserRole();
+  const { user, orgId } = await requireOrgSession();
 
   const isManager = can.manageFieldVisits(user);
   const isFieldTech = can.recordFieldSignoffs(user);
@@ -83,6 +83,7 @@ export default async function FieldPage({
     where: {
       ...(statusFilter ? { status: { in: statusFilter } } : {}),
       ...assignedToFilter,
+      orgId,
     },
     include: {
       assignedTo: { select: { id: true, name: true } },

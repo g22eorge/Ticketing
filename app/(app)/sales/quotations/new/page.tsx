@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { can } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
-import { getCurrentUserRole } from "@/lib/session";
+import { requireOrgSession } from "@/lib/org-context";
 import { getAppCurrency } from "@/lib/currency";
 import { NewQuotationForm } from "./NewQuotationForm";
 
@@ -10,7 +10,7 @@ export default async function NewQuotationPage({
 }: {
   searchParams: Promise<{ leadId?: string; clientId?: string; jobId?: string }>;
 }) {
-  const { user } = await getCurrentUserRole();
+  const { user, orgId } = await requireOrgSession();
 
   if (!can.createQuotations(user)) {
     redirect("/sales");
@@ -22,10 +22,17 @@ export default async function NewQuotationPage({
 
   const [leadName, clientName] = await Promise.all([
     params.leadId
-      ? prisma.lead.findUnique({ where: { id: params.leadId }, select: { fullName: true } }).then((l) => l?.fullName ?? null)
+      ? prisma.lead.findFirst({
+          where: {
+            id: params.leadId,
+            orgId,
+            ...(!can.viewAllSales(user) ? { OR: [{ assignedToId: user.id }, { createdById: user.id }] } : {}),
+          },
+          select: { fullName: true },
+        }).then((l) => l?.fullName ?? null)
       : Promise.resolve(null),
     params.clientId
-      ? prisma.client.findUnique({ where: { id: params.clientId }, select: { fullName: true } }).then((c) => c?.fullName ?? null)
+      ? prisma.client.findFirst({ where: { id: params.clientId, orgId }, select: { fullName: true } }).then((c) => c?.fullName ?? null)
       : Promise.resolve(null),
   ]);
 

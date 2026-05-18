@@ -7,7 +7,7 @@ import { usePathname } from "next/navigation";
 
 import { can } from "@/lib/permissions";
 
-type NavGroup = "overview" | "repairs" | "inventory" | "clients" | "documents" | "finance" | "personal";
+type NavGroup = "overview" | "repairs" | "inventory" | "procurement" | "clients" | "documents" | "finance" | "personal";
 
 // ── nav items ─────────────────────────────────────────────────────────────────
 
@@ -27,11 +27,14 @@ const nav = [
   { href: "/inventory/locations",          label: "Locations",       group: "inventory" as NavGroup, roles: ["ADMIN", "MANAGER", "TECH_MANAGER", "OPS"] as const },
   { href: "/inventory/transfers",          label: "Transfers",       group: "inventory" as NavGroup, roles: ["ADMIN", "MANAGER", "TECH_MANAGER", "OPS"] as const },
   { href: "/inventory/stock-counts",       label: "Stock Counts",    group: "inventory" as NavGroup, roles: ["ADMIN", "MANAGER", "TECH_MANAGER", "OPS"] as const },
-  { href: "/inventory/goods-received",     label: "Goods Received",  group: "inventory" as NavGroup, roles: ["ADMIN", "MANAGER", "TECH_MANAGER", "OPS"] as const },
-  { href: "/inventory/purchase-requests",  label: "Purchase Requests", group: "inventory" as NavGroup, roles: ["ADMIN", "MANAGER", "TECH_MANAGER", "OPS"] as const },
-  { href: "/inventory/supplier-bills",     label: "Supplier Bills",  group: "inventory" as NavGroup, roles: ["ADMIN", "MANAGER", "TECH_MANAGER", "OPS"] as const },
-  { href: "/inventory/suppliers",          label: "Suppliers",       group: "inventory" as NavGroup, roles: ["ADMIN", "MANAGER", "OPS"] as const },
-  { href: "/inventory/purchase-orders",    label: "Purchase Orders", group: "inventory" as NavGroup, roles: ["ADMIN", "MANAGER", "OPS"] as const },
+
+  // Procurement
+  { href: "/procurement",                   label: "Procurement",     group: "procurement" as NavGroup, roles: ["ADMIN", "MANAGER", "TECH_MANAGER", "OPS"] as const },
+  { href: "/inventory/purchase-requests",  label: "Purchase Requests", group: "procurement" as NavGroup, roles: ["ADMIN", "MANAGER", "TECH_MANAGER", "OPS"] as const },
+  { href: "/inventory/purchase-orders",    label: "Purchase Orders", group: "procurement" as NavGroup, roles: ["ADMIN", "MANAGER", "OPS"] as const },
+  { href: "/inventory/goods-received",     label: "Goods Received",  group: "procurement" as NavGroup, roles: ["ADMIN", "MANAGER", "TECH_MANAGER", "OPS"] as const },
+  { href: "/inventory/supplier-bills",     label: "Supplier Bills",  group: "procurement" as NavGroup, roles: ["ADMIN", "MANAGER", "TECH_MANAGER", "OPS"] as const },
+  { href: "/inventory/suppliers",          label: "Suppliers",       group: "procurement" as NavGroup, roles: ["ADMIN", "MANAGER", "OPS"] as const },
 
   // Clients & Sales
   { href: "/clients",     label: "Clients",         group: "clients"    as NavGroup, roles: ["ADMIN", "MANAGER", "OPS", "FRONT_DESK", "SALES", "SALES_MANAGER", "SALES_CORPORATE", "SALES_RETAIL", "FINANCE"] as const },
@@ -62,6 +65,7 @@ const groupLabel: Record<NavGroup, string> = {
   overview:  "Overview",
   repairs:   "Repairs",
   inventory: "Inventory",
+  procurement: "Procurement",
   clients:   "Clients & Sales",
   documents: "Documents",
   finance:   "Finance",
@@ -76,7 +80,9 @@ const roleOrder: Partial<Record<Role, readonly string[]>> = {
     // repairs
     "/jobs", "/intake", "/field", "/technicians", "/complaints",
     // inventory
-    "/inventory", "/inventory/locations", "/inventory/transfers", "/inventory/stock-counts", "/inventory/goods-received", "/inventory/purchase-requests", "/inventory/supplier-bills", "/inventory/suppliers", "/inventory/purchase-orders",
+    "/inventory", "/inventory/locations", "/inventory/transfers", "/inventory/stock-counts",
+    // procurement
+    "/procurement", "/inventory/purchase-requests", "/inventory/purchase-orders", "/inventory/goods-received", "/inventory/supplier-bills", "/inventory/suppliers",
     // clients
     "/clients", "/sales", "/pos",
     // documents
@@ -88,7 +94,8 @@ const roleOrder: Partial<Record<Role, readonly string[]>> = {
   MANAGER: [
     "/dashboard",
     "/jobs", "/intake", "/field", "/technicians", "/complaints",
-    "/inventory", "/inventory/locations", "/inventory/transfers", "/inventory/stock-counts", "/inventory/goods-received", "/inventory/purchase-requests", "/inventory/supplier-bills", "/inventory/suppliers", "/inventory/purchase-orders",
+    "/inventory", "/inventory/locations", "/inventory/transfers", "/inventory/stock-counts",
+    "/procurement", "/inventory/purchase-requests", "/inventory/purchase-orders", "/inventory/goods-received", "/inventory/supplier-bills", "/inventory/suppliers",
     "/clients", "/sales", "/pos",
     "/documents/job-cards", "/documents/quotations", "/documents/invoices", "/documents/receipts", "/documents/delivery-notes",
     "/targets", "/reports", "/payout-followups",
@@ -97,14 +104,16 @@ const roleOrder: Partial<Record<Role, readonly string[]>> = {
   TECH_MANAGER: [
     "/dashboard",
     "/jobs", "/intake", "/field", "/technicians", "/complaints",
-    "/inventory", "/inventory/locations", "/inventory/transfers", "/inventory/stock-counts", "/inventory/goods-received", "/inventory/purchase-requests", "/inventory/supplier-bills", "/inventory/suppliers", "/inventory/purchase-orders",
+    "/inventory", "/inventory/locations", "/inventory/transfers", "/inventory/stock-counts",
+    "/procurement", "/inventory/purchase-requests", "/inventory/purchase-orders", "/inventory/goods-received", "/inventory/supplier-bills", "/inventory/suppliers",
     "/documents/job-cards", "/documents/quotations", "/documents/invoices", "/targets", "/payout-followups",
     "/settings",
   ],
   OPS: [
     "/dashboard",
     "/jobs", "/intake", "/field", "/technicians", "/complaints",
-    "/inventory", "/inventory/locations", "/inventory/transfers", "/inventory/stock-counts", "/inventory/goods-received", "/inventory/purchase-requests", "/inventory/supplier-bills", "/inventory/suppliers", "/inventory/purchase-orders",
+    "/inventory", "/inventory/locations", "/inventory/transfers", "/inventory/stock-counts",
+    "/procurement", "/inventory/purchase-requests", "/inventory/purchase-orders", "/inventory/goods-received", "/inventory/supplier-bills", "/inventory/suppliers",
     "/clients", "/sales", "/pos",
     "/documents/job-cards", "/documents/quotations", "/documents/invoices", "/documents/receipts", "/documents/delivery-notes",
     "/targets", "/reports", "/payout-followups",
@@ -152,10 +161,10 @@ const roleOrder: Partial<Record<Role, readonly string[]>> = {
 };
 
 const roleGroupOrder: Partial<Record<Role, readonly NavGroup[]>> = {
-  ADMIN:               ["overview", "repairs", "inventory", "clients", "documents", "finance", "personal"],
-  MANAGER:             ["overview", "repairs", "inventory", "clients", "documents", "finance", "personal"],
-  TECH_MANAGER:        ["overview", "repairs", "inventory", "documents", "personal"],
-  OPS:                 ["overview", "repairs", "inventory", "clients", "documents", "finance", "personal"],
+  ADMIN:               ["overview", "repairs", "inventory", "procurement", "clients", "documents", "finance", "personal"],
+  MANAGER:             ["overview", "repairs", "inventory", "procurement", "clients", "documents", "finance", "personal"],
+  TECH_MANAGER:        ["overview", "repairs", "inventory", "procurement", "documents", "personal"],
+  OPS:                 ["overview", "repairs", "inventory", "procurement", "clients", "documents", "finance", "personal"],
   FINANCE:             ["overview", "finance", "documents", "personal"],
   SALES:               ["overview", "clients", "documents", "personal"],
   FRONT_DESK:          ["overview", "repairs", "clients", "documents", "personal"],
@@ -212,7 +221,7 @@ function orderedNavForRole(role: Role, permissions: string[]) {
 
 function groupedNavForRole(role: Role, permissions: string[]) {
   const ordered = orderedNavForRole(role, permissions);
-  const canonicalOrder: NavGroup[] = ["overview", "repairs", "inventory", "clients", "documents", "finance", "personal"];
+  const canonicalOrder: NavGroup[] = ["overview", "repairs", "inventory", "procurement", "clients", "documents", "finance", "personal"];
   const baseGroups: readonly NavGroup[] = roleGroupOrder[role] ?? ["overview", "personal"];
   const missingGroups = canonicalOrder.filter(
     (group) => ordered.some((item) => item.group === group) && !baseGroups.includes(group),

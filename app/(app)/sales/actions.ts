@@ -8,7 +8,7 @@ import { LeadStatus, QuotationStatus } from "@prisma/client";
 import { can } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { sanitizeOptionalText, sanitizeText } from "@/lib/sanitize";
-import { getCurrentUserRole } from "@/lib/session";
+import { requireOrgSession } from "@/lib/org-context";
 
 const createLeadSchema = z.object({
   fullName: z.string().min(2),
@@ -33,7 +33,7 @@ export async function createLead(data: {
   assignedToId?: string;
   estimatedValue?: number;
 }) {
-  const { user } = await getCurrentUserRole();
+  const { user, orgId } = await requireOrgSession();
   if (!can.createLeads(user)) {
     throw new Error("Unauthorized");
   }
@@ -42,10 +42,15 @@ export async function createLead(data: {
   if (!parsed.success) {
     throw new Error(parsed.error.issues[0]?.message ?? "Invalid input");
   }
+  if (parsed.data.assignedToId) {
+    const assignee = await prisma.user.findFirst({ where: { id: parsed.data.assignedToId, orgId }, select: { id: true } });
+    if (!assignee) throw new Error("Assigned user not found");
+  }
 
   const lead = await prisma.lead.create({
     data: {
       fullName: sanitizeText(parsed.data.fullName),
+      orgId,
       phone: sanitizeText(parsed.data.phone),
       email: sanitizeOptionalText(parsed.data.email),
       organization: sanitizeOptionalText(parsed.data.organization),
@@ -72,16 +77,22 @@ export async function createLead(data: {
 }
 
 export async function updateLeadStatus(leadId: string, status: LeadStatus, note?: string) {
-  const { user } = await getCurrentUserRole();
+  const { user, orgId } = await requireOrgSession();
   if (!can.createLeads(user)) {
     throw new Error("Unauthorized");
   }
 
-  const existing = await prisma.lead.findUnique({ where: { id: leadId }, select: { status: true } });
+  const leadAccessWhere = {
+    id: leadId,
+    orgId,
+    ...(!can.viewAllSales(user) ? { OR: [{ assignedToId: user.id }, { createdById: user.id }] } : {}),
+  };
+
+  const existing = await prisma.lead.findFirst({ where: leadAccessWhere, select: { status: true } });
   if (!existing) throw new Error("Lead not found");
 
-  await prisma.lead.update({
-    where: { id: leadId },
+  await prisma.lead.updateMany({
+    where: leadAccessWhere,
     data: {
       status,
       ...(status === "WON" ? { convertedAt: new Date() } : {}),
@@ -106,10 +117,20 @@ export async function addLeadActivity(
   leadId: string,
   activity: { type: string; note: string },
 ) {
-  const { user } = await getCurrentUserRole();
+  const { user, orgId } = await requireOrgSession();
   if (!can.createLeads(user)) {
     throw new Error("Unauthorized");
   }
+
+  const lead = await prisma.lead.findFirst({
+    where: {
+      id: leadId,
+      orgId,
+      ...(!can.viewAllSales(user) ? { OR: [{ assignedToId: user.id }, { createdById: user.id }] } : {}),
+    },
+    select: { id: true },
+  });
+  if (!lead) throw new Error("Lead not found");
 
   await prisma.leadActivity.create({
     data: {
@@ -142,7 +163,7 @@ export async function createQuotation(data: {
     discount: number;
   }>;
 }) {
-  const { user } = await getCurrentUserRole();
+  const { user, orgId } = await requireOrgSession();
   if (!can.createQuotations(user)) {
     throw new Error("Unauthorized");
   }
@@ -156,10 +177,30 @@ export async function createQuotation(data: {
   const quoteNumber = await generateQuoteNumber();
 
   const currency = (process.env.APP_CURRENCY ?? "UGX").toUpperCase().trim() || "UGX";
+  if (data.leadId) {
+    const lead = await prisma.lead.findFirst({
+      where: {
+        id: data.leadId,
+        orgId,
+        ...(!can.viewAllSales(user) ? { OR: [{ assignedToId: user.id }, { createdById: user.id }] } : {}),
+      },
+      select: { id: true },
+    });
+    if (!lead) throw new Error("Lead not found");
+  }
+  if (data.clientId) {
+    const client = await prisma.client.findFirst({ where: { id: data.clientId, orgId }, select: { id: true } });
+    if (!client) throw new Error("Client not found");
+  }
+  if (data.jobId) {
+    const job = await prisma.job.findFirst({ where: { id: data.jobId, orgId }, select: { id: true } });
+    if (!job) throw new Error("Job not found");
+  }
 
   const quotation = await prisma.quotation.create({
     data: {
       quoteNumber,
+      orgId,
       leadId: data.leadId || null,
       clientId: data.clientId || null,
       jobId: data.jobId || null,
@@ -187,7 +228,7 @@ export async function createQuotation(data: {
 }
 
 export async function updateQuotationStatus(quotationId: string, status: QuotationStatus) {
-  const { user } = await getCurrentUserRole();
+  const { user, orgId } = await requireOrgSession();
 
   if (status === "SENT") {
     if (!can.createQuotations(user)) throw new Error("Unauthorized");
@@ -198,8 +239,8 @@ export async function updateQuotationStatus(quotationId: string, status: Quotati
   }
 
   const now = new Date();
-  await prisma.quotation.update({
-    where: { id: quotationId },
+  const result = await prisma.quotation.updateMany({
+    where: { id: quotationId, orgId, ...(status === "ACCEPTED" || can.viewAllSales(user) ? {} : { createdById: user.id }) },
     data: {
       status,
       ...(status === "SENT" ? { sentAt: now } : {}),
@@ -207,6 +248,7 @@ export async function updateQuotationStatus(quotationId: string, status: Quotati
       ...(status === "REJECTED" ? { rejectedAt: now } : {}),
     },
   });
+  if (result.count === 0) throw new Error("Quotation not found");
 
   revalidatePath(`/sales/quotations/${quotationId}`);
   revalidatePath("/sales");
@@ -216,10 +258,16 @@ export async function addQuotationItem(
   quotationId: string,
   item: { description: string; quantity: number; unitPrice: number; discount: number },
 ) {
-  const { user } = await getCurrentUserRole();
+  const { user, orgId } = await requireOrgSession();
   if (!can.createQuotations(user)) throw new Error("Unauthorized");
 
   const lineTotal = item.quantity * item.unitPrice * (1 - item.discount / 100);
+
+  const quote = await prisma.quotation.findFirst({
+    where: { id: quotationId, orgId, ...(!can.viewAllSales(user) ? { createdById: user.id } : {}) },
+    select: { id: true },
+  });
+  if (!quote) throw new Error("Quotation not found");
 
   await prisma.quotationItem.create({
     data: {
@@ -244,11 +292,11 @@ export async function addQuotationItem(
 }
 
 export async function removeQuotationItem(itemId: string) {
-  const { user } = await getCurrentUserRole();
+  const { user, orgId } = await requireOrgSession();
   if (!can.createQuotations(user)) throw new Error("Unauthorized");
 
-  const item = await prisma.quotationItem.findUnique({
-    where: { id: itemId },
+  const item = await prisma.quotationItem.findFirst({
+    where: { id: itemId, quotation: { orgId, ...(!can.viewAllSales(user) ? { createdById: user.id } : {}) } },
     select: { quotationId: true },
   });
   if (!item) return;

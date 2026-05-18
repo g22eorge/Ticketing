@@ -57,7 +57,7 @@ export default async function GroupsPage({ searchParams }: { searchParams: Promi
 
   async function updateGroupAction(formData: FormData) {
     "use server";
-    const { user, orgId: _orgId, org } = await requireOrgSession();
+    const { user, orgId, org } = await requireOrgSession();
     if (user.role !== "ADMIN") redirect("/dashboard");
     assertOrgCanMutate({ access: org.access, userRole: user.role, userAccessMode: user.accessMode, kind: "GENERAL" });
 
@@ -68,8 +68,8 @@ export default async function GroupsPage({ searchParams }: { searchParams: Promi
     });
     if (!parsed.success) return;
 
-    await prisma.userGroup.update({
-      where: { id: parsed.data.id },
+    await prisma.userGroup.updateMany({
+      where: { id: parsed.data.id, orgId },
       data: {
         name: parsed.data.name,
         description: parsed.data.description ? parsed.data.description : null,

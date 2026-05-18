@@ -56,9 +56,13 @@ export default async function InvoicesPage() {
 
     const invoice = await prisma.invoice.findFirst({
       where: { id: invoiceId, orgId },
-      select: { id: true, totalAmount: true, jobId: true },
+      select: { id: true, totalAmount: true, paidAmount: true, jobId: true, status: true },
     });
     if (!invoice) return;
+    if (invoice.status === "VOID") return;
+
+    const existingPaid = invoice.paidAmount ?? 0;
+    if (existingPaid + amount > invoice.totalAmount) return;
 
     const safeMethod: PaymentMethod = PAYMENT_METHODS.includes(method as PaymentMethod)
       ? (method as PaymentMethod)

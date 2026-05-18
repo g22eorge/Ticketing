@@ -4,7 +4,7 @@ import { TargetMetric, TargetPeriod } from "@prisma/client";
 import { formatMoney, getAppCurrency } from "@/lib/currency";
 import { can } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
-import { getCurrentUserRole } from "@/lib/session";
+import { requireOrgSession } from "@/lib/org-context";
 import { SetTargetDialog } from "./SetTargetDialog";
 
 type SearchParams = Promise<{ period?: string; label?: string }>;
@@ -114,7 +114,7 @@ function TargetSection({ title, targets, currency }: { title: string; targets: T
 }
 
 export default async function TargetsPage({ searchParams }: { searchParams: SearchParams }) {
-  const { user } = await getCurrentUserRole();
+  const { user, orgId } = await requireOrgSession();
 
   const canSet = can.setTargets(user);
   const canView = can.viewTeamTargets(user);
@@ -130,7 +130,7 @@ export default async function TargetsPage({ searchParams }: { searchParams: Sear
 
   const [rawTargets, allUsers, departments, branches] = await Promise.all([
     prisma.salesTarget.findMany({
-      where: { period, periodLabel: label },
+      where: { orgId, period, periodLabel: label },
       include: {
         user: { select: { id: true, name: true } },
         department: { select: { id: true, name: true } },
@@ -140,7 +140,7 @@ export default async function TargetsPage({ searchParams }: { searchParams: Sear
     }),
     canSet
       ? prisma.user.findMany({
-          where: { isActive: true },
+          where: { orgId, isActive: true },
           select: { id: true, name: true },
           orderBy: { name: "asc" },
         })
@@ -153,7 +153,7 @@ export default async function TargetsPage({ searchParams }: { searchParams: Sear
       : Promise.resolve([] as { id: string; name: string }[]),
     canSet
       ? prisma.branch.findMany({
-          where: { isActive: true },
+          where: { orgId, isActive: true },
           select: { id: true, name: true },
           orderBy: { name: "asc" },
         })

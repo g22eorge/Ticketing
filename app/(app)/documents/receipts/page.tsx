@@ -39,9 +39,21 @@ export default async function ReceiptsPage() {
 
     const source = await prisma.payment.findFirst({
       where: { id: paymentId, orgId },
-      select: { invoiceId: true, saleId: true },
+      select: { invoiceId: true, saleId: true, currency: true, exchangeRateToBase: true },
     });
     if (!source) return;
+
+    if (source.invoiceId) {
+      const invoice = await prisma.invoice.findFirst({ where: { id: source.invoiceId, orgId }, select: { id: true, totalAmount: true } });
+      if (!invoice) return;
+      const otherPayments = await prisma.payment.findMany({
+        where: { invoiceId: invoice.id, orgId, id: { not: paymentId } },
+        select: { amount: true, currency: true, exchangeRateToBase: true },
+      });
+      const nextPaidAmount = otherPayments.reduce((sum, p) => sum + toBaseAmount({ amount: p.amount, currency: p.currency, baseCurrency: org.baseCurrency, exchangeRateToBase: p.exchangeRateToBase }), 0)
+        + toBaseAmount({ amount, currency: source.currency, baseCurrency: org.baseCurrency, exchangeRateToBase: source.exchangeRateToBase });
+      if (nextPaidAmount > invoice.totalAmount) return;
+    }
 
     await prisma.$transaction(async (tx) => {
       await tx.payment.updateMany({

@@ -4,7 +4,7 @@ import { Prisma, LeadStatus, LeadSource } from "@prisma/client";
 
 import { can } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
-import { getCurrentUserRole } from "@/lib/session";
+import { requireOrgSession } from "@/lib/org-context";
 import { formatEATDate } from "@/lib/date-eat";
 import { formatMoney, getAppCurrency } from "@/lib/currency";
 import { createLead } from "./actions";
@@ -49,7 +49,7 @@ export default async function SalesPage({
 }: {
   searchParams: Promise<SearchParams>;
 }) {
-  const { user } = await getCurrentUserRole();
+  const { user, orgId } = await requireOrgSession();
 
   if (!can.viewAllSales(user) && !can.createLeads(user)) {
     redirect("/dashboard");
@@ -61,8 +61,13 @@ export default async function SalesPage({
   const currency = getAppCurrency();
 
   const onlyOwn = !can.viewAllSales(user) && can.createLeads(user);
+  const quotationWhere: Prisma.QuotationWhereInput = {
+    orgId,
+    ...(!can.viewAllSales(user) ? { createdById: user.id } : {}),
+  };
 
   const leadsWhere: Prisma.LeadWhereInput = {
+    orgId,
     ...(onlyOwn ? { assignedToId: user.id } : {}),
     ...(statusFilter ? { status: statusFilter } : {}),
   };
@@ -78,6 +83,7 @@ export default async function SalesPage({
       : Promise.resolve([]),
     activeTab === "quotations"
       ? prisma.quotation.findMany({
+          where: quotationWhere,
           include: {
             lead: { select: { id: true, fullName: true } },
             client: { select: { id: true, fullName: true } },
@@ -88,7 +94,7 @@ export default async function SalesPage({
         })
       : Promise.resolve([]),
     activeTab === "leads"
-      ? prisma.lead.groupBy({ by: ["status"], where: onlyOwn ? { assignedToId: user.id } : {}, _count: true })
+      ? prisma.lead.groupBy({ by: ["status"], where: { orgId, ...(onlyOwn ? { assignedToId: user.id } : {}) }, _count: true })
       : Promise.resolve([]),
   ]);
 
