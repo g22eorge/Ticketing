@@ -1451,6 +1451,49 @@ export async function POST() {
     )`);
     await prisma.$executeRawUnsafe(`CREATE INDEX "OrgModuleGrant_orgId_idx" ON "OrgModuleGrant"("orgId")`);
     changes.push({ kind: "create_table", detail: "Created OrgModuleGrant" });
+  } else {
+    // If an old db-fix created OrgModuleGrant with a spurious 'id' column,
+    // Prisma upsert fails due to NOT NULL on that column. Drop and recreate.
+    try {
+      const cols = await prisma.$queryRaw<Array<{name: string}>>`PRAGMA table_info("OrgModuleGrant")`;
+      const hasId = cols.some((c) => c.name === "id");
+      if (hasId) {
+        const rows = await prisma.$queryRaw<Array<{orgId: string; module: string}>>`SELECT orgId, module FROM "OrgModuleGrant"`;
+        await prisma.$executeRawUnsafe(`DROP TABLE "OrgModuleGrant"`);
+        await prisma.$executeRawUnsafe(`CREATE TABLE "OrgModuleGrant" (
+          "orgId" TEXT NOT NULL,
+          "module" TEXT NOT NULL,
+          CONSTRAINT "OrgModuleGrant_orgId_fkey" FOREIGN KEY ("orgId") REFERENCES "Organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+          PRIMARY KEY ("orgId", "module")
+        )`);
+        await prisma.$executeRawUnsafe(`CREATE INDEX "OrgModuleGrant_orgId_idx" ON "OrgModuleGrant"("orgId")`);
+        for (const row of rows) {
+          await prisma.$executeRawUnsafe(`INSERT OR IGNORE INTO "OrgModuleGrant" ("orgId","module") VALUES ('${row.orgId}','${row.module}')`);
+        }
+        changes.push({ kind: "alter_table", detail: "Rebuilt OrgModuleGrant with correct composite PK" });
+      }
+    } catch { /* ignore */ }
+  }
+
+  // SystemAuditEvent
+  if (!(await tableExists("SystemAuditEvent"))) {
+    await prisma.$executeRawUnsafe(`CREATE TABLE "SystemAuditEvent" (
+      "id"         TEXT NOT NULL PRIMARY KEY,
+      "orgId"      TEXT,
+      "actorUserId" TEXT,
+      "entityType" TEXT NOT NULL,
+      "entityId"   TEXT,
+      "action"     TEXT NOT NULL,
+      "summary"    TEXT,
+      "beforeJson" TEXT,
+      "afterJson"  TEXT,
+      "ipAddress"  TEXT,
+      "userAgent"  TEXT,
+      "createdAt"  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )`);
+    await prisma.$executeRawUnsafe(`CREATE INDEX "SystemAuditEvent_orgId_createdAt_idx" ON "SystemAuditEvent"("orgId","createdAt")`);
+    await prisma.$executeRawUnsafe(`CREATE INDEX "SystemAuditEvent_entityType_entityId_createdAt_idx" ON "SystemAuditEvent"("entityType","entityId","createdAt")`);
+    changes.push({ kind: "create_table", detail: "Created SystemAuditEvent" });
   }
 
   // User columns: accessMode, departmentId, techType, employeeId, specializations
@@ -1514,6 +1557,7 @@ export async function POST() {
       Complaint: await tableExists("Complaint"),
       FieldVisit: await tableExists("FieldVisit"),
       OrgModuleGrant: await tableExists("OrgModuleGrant"),
+      SystemAuditEvent: await tableExists("SystemAuditEvent"),
     },
   });
 }

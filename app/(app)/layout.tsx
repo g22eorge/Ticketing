@@ -30,7 +30,11 @@ export default async function AppLayout({
   const org = await prisma.organization.findUnique({
     where: { id: orgId },
     select: { billingStatus: true, trialEndsAt: true, plan: true, name: true, planRenewsAt: true },
-  });
+  }).catch(() =>
+    prisma.organization.findUnique({ where: { id: orgId }, select: { name: true } })
+      .then((r) => r ? { ...r, billingStatus: "TRIALING" as const, trialEndsAt: null, plan: "STARTER" as const, planRenewsAt: null } : null)
+      .catch(() => null)
+  );
 
   const now = new Date();
 

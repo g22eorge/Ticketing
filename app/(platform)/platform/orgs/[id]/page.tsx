@@ -73,7 +73,7 @@ export default async function OrgDetailPage({ params }: { params: Promise<{ id: 
       where: { orgId: id },
       select: { id: true, name: true, email: true, role: true, isActive: true, createdAt: true },
       orderBy: { createdAt: "asc" },
-    }),
+    }).catch(() => []),
     getBillingEventsByOrg(id).catch(() => []),
     getSmsUsage(id),
     getOrgWhatsAppConfig(id).catch(() => null),
