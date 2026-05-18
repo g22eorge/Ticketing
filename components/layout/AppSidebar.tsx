@@ -51,8 +51,11 @@ const nav = [
   { href: "/documents/refunds",       label: "Refunds",        group: "documents" as NavGroup, roles: ["ADMIN", "MANAGER", "OPS", "FINANCE"] as const },
 
   // Finance
+  { href: "/finance/expenses",   label: "Expenses",        group: "finance"    as NavGroup, roles: ["ADMIN", "MANAGER", "OPS", "FINANCE"] as const },
+  { href: "/finance/tax-rates",  label: "Tax Rates",       group: "finance"    as NavGroup, roles: ["ADMIN", "MANAGER"] as const },
+  { href: "/finance/recurring",  label: "Recurring",       group: "finance"    as NavGroup, roles: ["ADMIN", "MANAGER", "OPS", "FINANCE"] as const },
   { href: "/pos/shifts",         label: "Cashier Shifts",  group: "finance"    as NavGroup, roles: ["ADMIN", "MANAGER", "OPS", "FINANCE", "FRONT_DESK"] as const },
-  { href: "/targets",           label: "Targets",         group: "finance"    as NavGroup, roles: ["ADMIN", "MANAGER", "OPS", "SALES_MANAGER", "TECH_MANAGER", "FINANCE"] as const },
+  { href: "/targets",            label: "Targets",         group: "finance"    as NavGroup, roles: ["ADMIN", "MANAGER", "OPS", "SALES_MANAGER", "TECH_MANAGER", "FINANCE"] as const },
   { href: "/reports",            label: "Reports",         group: "finance"    as NavGroup, roles: ["ADMIN", "MANAGER", "OPS", "FINANCE", "SALES_MANAGER"] as const },
   { href: "/payout-followups",   label: "Payment Tracker", group: "finance"    as NavGroup, roles: ["ADMIN", "MANAGER", "OPS", "FINANCE", "TECH_MANAGER", "SALES_MANAGER"] as const },
   { href: "/technicians/payouts",label: "My Payouts",      group: "finance"    as NavGroup, roles: ["TECHNICIAN_EXTERNAL"] as const },

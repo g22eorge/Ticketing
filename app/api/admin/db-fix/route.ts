@@ -1496,6 +1496,148 @@ export async function POST() {
     changes.push({ kind: "create_table", detail: "Created SystemAuditEvent" });
   }
 
+  // TaxRate
+  if (!(await tableExists("TaxRate"))) {
+    await prisma.$executeRawUnsafe(`CREATE TABLE "TaxRate" (
+      "id"                 TEXT     NOT NULL PRIMARY KEY,
+      "orgId"              TEXT     NOT NULL,
+      "name"               TEXT     NOT NULL,
+      "code"               TEXT     NOT NULL,
+      "rate"               REAL     NOT NULL,
+      "isDefault"          BOOLEAN  NOT NULL DEFAULT false,
+      "isActive"           BOOLEAN  NOT NULL DEFAULT true,
+      "appliesToSales"     BOOLEAN  NOT NULL DEFAULT true,
+      "appliesToPurchases" BOOLEAN  NOT NULL DEFAULT false,
+      "createdAt"          DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt"          DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT "TaxRate_orgId_fkey" FOREIGN KEY ("orgId") REFERENCES "Organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+    )`);
+    await prisma.$executeRawUnsafe(`CREATE UNIQUE INDEX IF NOT EXISTS "TaxRate_orgId_code_key" ON "TaxRate"("orgId","code")`);
+    await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "TaxRate_orgId_idx" ON "TaxRate"("orgId")`);
+    changes.push({ kind: "create_table", detail: "Created TaxRate" });
+  }
+
+  // Expense
+  if (!(await tableExists("Expense"))) {
+    await prisma.$executeRawUnsafe(`CREATE TABLE "Expense" (
+      "id"                 TEXT     NOT NULL PRIMARY KEY,
+      "orgId"              TEXT     NOT NULL,
+      "expenseNumber"      TEXT     NOT NULL,
+      "category"           TEXT     NOT NULL DEFAULT 'OTHER',
+      "description"        TEXT     NOT NULL,
+      "amount"             REAL     NOT NULL,
+      "currency"           TEXT     NOT NULL DEFAULT 'UGX',
+      "exchangeRateToBase" REAL,
+      "paidAt"             DATETIME,
+      "method"             TEXT,
+      "supplierId"         TEXT,
+      "branchId"           TEXT,
+      "reference"          TEXT,
+      "notes"              TEXT,
+      "createdById"        TEXT     NOT NULL,
+      "createdAt"          DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT "Expense_orgId_fkey"       FOREIGN KEY ("orgId")       REFERENCES "Organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+      CONSTRAINT "Expense_supplierId_fkey"  FOREIGN KEY ("supplierId")  REFERENCES "Supplier"     ("id") ON DELETE SET NULL ON UPDATE CASCADE,
+      CONSTRAINT "Expense_branchId_fkey"    FOREIGN KEY ("branchId")    REFERENCES "Branch"       ("id") ON DELETE SET NULL ON UPDATE CASCADE,
+      CONSTRAINT "Expense_createdById_fkey" FOREIGN KEY ("createdById") REFERENCES "User"         ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+    )`);
+    await prisma.$executeRawUnsafe(`CREATE UNIQUE INDEX IF NOT EXISTS "Expense_expenseNumber_key" ON "Expense"("expenseNumber")`);
+    await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "Expense_orgId_paidAt_idx"   ON "Expense"("orgId","paidAt")`);
+    await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "Expense_orgId_category_idx" ON "Expense"("orgId","category")`);
+    await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "Expense_supplierId_idx"     ON "Expense"("supplierId")`);
+    changes.push({ kind: "create_table", detail: "Created Expense" });
+  }
+
+  // RecurringInvoice
+  if (!(await tableExists("RecurringInvoice"))) {
+    await prisma.$executeRawUnsafe(`CREATE TABLE "RecurringInvoice" (
+      "id"           TEXT     NOT NULL PRIMARY KEY,
+      "orgId"        TEXT     NOT NULL,
+      "clientId"     TEXT     NOT NULL,
+      "subject"      TEXT     NOT NULL,
+      "invoiceType"  TEXT     NOT NULL DEFAULT 'SERVICE',
+      "frequency"    TEXT     NOT NULL,
+      "nextDueAt"    DATETIME NOT NULL,
+      "lastIssuedAt" DATETIME,
+      "currency"     TEXT     NOT NULL DEFAULT 'UGX',
+      "notes"        TEXT,
+      "isActive"     BOOLEAN  NOT NULL DEFAULT true,
+      "autoIssue"    BOOLEAN  NOT NULL DEFAULT false,
+      "createdById"  TEXT     NOT NULL,
+      "createdAt"    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt"    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT "RecurringInvoice_orgId_fkey"       FOREIGN KEY ("orgId")       REFERENCES "Organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+      CONSTRAINT "RecurringInvoice_clientId_fkey"    FOREIGN KEY ("clientId")    REFERENCES "Client"       ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+      CONSTRAINT "RecurringInvoice_createdById_fkey" FOREIGN KEY ("createdById") REFERENCES "User"         ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+    )`);
+    await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "RecurringInvoice_orgId_isActive_nextDueAt_idx" ON "RecurringInvoice"("orgId","isActive","nextDueAt")`);
+    await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "RecurringInvoice_clientId_idx" ON "RecurringInvoice"("clientId")`);
+    changes.push({ kind: "create_table", detail: "Created RecurringInvoice" });
+  }
+
+  // RecurringInvoiceItem
+  if (!(await tableExists("RecurringInvoiceItem"))) {
+    await prisma.$executeRawUnsafe(`CREATE TABLE "RecurringInvoiceItem" (
+      "id"                 TEXT NOT NULL PRIMARY KEY,
+      "recurringInvoiceId" TEXT NOT NULL,
+      "description"        TEXT NOT NULL,
+      "quantity"           REAL NOT NULL DEFAULT 1,
+      "unitPrice"          REAL NOT NULL,
+      "discountAmount"     REAL NOT NULL DEFAULT 0,
+      "lineTotal"          REAL NOT NULL,
+      CONSTRAINT "RecurringInvoiceItem_recurringInvoiceId_fkey" FOREIGN KEY ("recurringInvoiceId") REFERENCES "RecurringInvoice" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+    )`);
+    await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "RecurringInvoiceItem_recurringInvoiceId_idx" ON "RecurringInvoiceItem"("recurringInvoiceId")`);
+    changes.push({ kind: "create_table", detail: "Created RecurringInvoiceItem" });
+  }
+
+  // Invoice — ensure new columns exist (jobId nullable, clientId, invoiceType, subject, dueDate)
+  {
+    const icols = await tableColumns("Invoice");
+    const addInvoiceCol = async (name: string, type: string, dflt?: string) => {
+      if (icols.has(name)) return;
+      const defaultClause = dflt ? ` DEFAULT ${dflt}` : "";
+      await prisma.$executeRawUnsafe(`ALTER TABLE "Invoice" ADD COLUMN "${name}" ${type}${defaultClause}`);
+      changes.push({ kind: "alter_table", detail: `Added Invoice.${name}` });
+    };
+    await addInvoiceCol("clientId", "TEXT");
+    await addInvoiceCol("invoiceType", "TEXT", "'REPAIR'");
+    await addInvoiceCol("subject", "TEXT");
+    await addInvoiceCol("dueDate", "DATETIME");
+    // Ensure indexes
+    try { await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "Invoice_orgId_invoiceType_idx" ON "Invoice"("orgId","invoiceType")`); } catch {}
+    try { await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "Invoice_clientId_idx" ON "Invoice"("clientId")`); } catch {}
+  }
+
+  // Quotation — ensure convertedToInvoiceId column exists
+  {
+    const qcols = await tableColumns("Quotation");
+    if (!qcols.has("convertedToInvoiceId")) {
+      await prisma.$executeRawUnsafe(`ALTER TABLE "Quotation" ADD COLUMN "convertedToInvoiceId" TEXT`);
+      try { await prisma.$executeRawUnsafe(`CREATE UNIQUE INDEX IF NOT EXISTS "Quotation_convertedToInvoiceId_key" ON "Quotation"("convertedToInvoiceId") WHERE "convertedToInvoiceId" IS NOT NULL`); } catch {}
+      changes.push({ kind: "alter_table", detail: "Added Quotation.convertedToInvoiceId" });
+    }
+  }
+
+  // Receipt — ensure clientId column exists
+  {
+    const rcols = await tableColumns("Receipt");
+    if (!rcols.has("clientId")) {
+      await prisma.$executeRawUnsafe(`ALTER TABLE "Receipt" ADD COLUMN "clientId" TEXT`);
+      try { await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "Receipt_clientId_idx" ON "Receipt"("clientId")`); } catch {}
+      changes.push({ kind: "alter_table", detail: "Added Receipt.clientId" });
+    }
+  }
+
+  // CashierShift — ensure posSessionId column exists
+  {
+    const cscols = await tableColumns("CashierShift");
+    if (!cscols.has("posSessionId")) {
+      await prisma.$executeRawUnsafe(`ALTER TABLE "CashierShift" ADD COLUMN "posSessionId" TEXT`);
+      changes.push({ kind: "alter_table", detail: "Added CashierShift.posSessionId" });
+    }
+  }
+
   // User columns: accessMode, departmentId, techType, employeeId, specializations
   {
     const ucols = await tableColumns("User");
@@ -1558,6 +1700,10 @@ export async function POST() {
       FieldVisit: await tableExists("FieldVisit"),
       OrgModuleGrant: await tableExists("OrgModuleGrant"),
       SystemAuditEvent: await tableExists("SystemAuditEvent"),
+      TaxRate: await tableExists("TaxRate"),
+      Expense: await tableExists("Expense"),
+      RecurringInvoice: await tableExists("RecurringInvoice"),
+      RecurringInvoiceItem: await tableExists("RecurringInvoiceItem"),
     },
   });
 }

@@ -120,6 +120,9 @@ const ITEMS = {
   creditNotes:  { href: "/documents/credit-notes",   label: "Credit Notes", icon: invoiceIcon },
   refunds:      { href: "/documents/refunds",        label: "Refunds",      icon: invoiceIcon },
   cashierShifts:{ href: "/pos/shifts",               label: "Shifts",       icon: invoiceIcon },
+  expenses:     { href: "/finance/expenses",         label: "Expenses",     icon: invoiceIcon },
+  taxRates:     { href: "/finance/tax-rates",        label: "Tax Rates",    icon: invoiceIcon },
+  recurring:    { href: "/finance/recurring",        label: "Recurring",    icon: invoiceIcon },
 } satisfies Record<string, NavItem>;
 
 /* ── module guard ── */
@@ -164,6 +167,9 @@ function getMoreGroups(role: Role, permissions: string[], enabledModules?: Set<s
     if (href === ITEMS.creditNotes.href) return can.viewFinancials(permUser);
     if (href === ITEMS.refunds.href) return can.viewFinancials(permUser);
     if (href === ITEMS.cashierShifts.href) return ["ADMIN", "MANAGER", "OPS", "FINANCE", "FRONT_DESK"].includes(role);
+    if (href === ITEMS.expenses.href) return can.viewFinancials(permUser);
+    if (href === ITEMS.taxRates.href) return ["ADMIN", "MANAGER"].includes(role);
+    if (href === ITEMS.recurring.href) return can.viewFinancials(permUser);
     if (href === ITEMS.payoutFollowups.href) return can.reviewExternalBills(permUser) || can.approveInvoices(permUser);
     if (href === ITEMS.inventory.href) return ["ADMIN", "OPS", "TECHNICIAN_INTERNAL"].includes(role);
     if (href === ITEMS.board.href) return role !== "TECHNICIAN_EXTERNAL";
@@ -182,6 +188,10 @@ function getMoreGroups(role: Role, permissions: string[], enabledModules?: Set<s
     {
       title: "Management",
       items: [ITEMS.reports, ITEMS.pos, ITEMS.cashierShifts],
+    },
+    {
+      title: "Finance",
+      items: [ITEMS.expenses, ITEMS.recurring, ITEMS.taxRates],
     },
   ];
 

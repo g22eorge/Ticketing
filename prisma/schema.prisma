@@ -91,6 +91,9 @@ model Organization {
   quotations             Quotation[]
   posSessions            PosSession[]
   fieldVisits            FieldVisit[]
+  taxRates               TaxRate[]
+  expenses               Expense[]
+  recurringInvoices      RecurringInvoice[]
 
   @@index([slug])
   @@index([isActive])
@@ -201,8 +204,10 @@ model User {
   supplierPaymentsCreated SupplierPayment[] @relation("SupplierPaymentCreatedBy")
   purchaseRequestsCreated PurchaseRequest[] @relation("PurchaseRequestCreatedBy")
   purchaseRequestsReviewed PurchaseRequest[] @relation("PurchaseRequestReviewedBy")
-  stockCountsCreated     StockCount[]      @relation("StockCountCreatedBy")
-  stockCountsApproved    StockCount[]      @relation("StockCountApprovedBy")
+  stockCountsCreated       StockCount[]        @relation("StockCountCreatedBy")
+  stockCountsApproved      StockCount[]        @relation("StockCountApprovedBy")
+  expensesCreated          Expense[]           @relation("ExpenseCreatedBy")
+  recurringInvoicesCreated RecurringInvoice[]  @relation("RecurringInvoiceCreatedBy")
 
   @@index([orgId])
   @@index([branchId])
@@ -405,6 +410,27 @@ enum InvoiceStatus {
   VOID
 }
 
+enum InvoiceType {
+  REPAIR
+  SERVICE
+  MERCHANDISE
+  CONTRACT
+  OTHER
+}
+
+enum ExpenseCategory {
+  RENT
+  UTILITIES
+  SALARIES
+  SUPPLIES
+  MARKETING
+  TRAVEL
+  EQUIPMENT
+  MAINTENANCE
+  TAXES
+  OTHER
+}
+
 enum PaymentMethod {
   CASH
   MOBILE_MONEY
@@ -481,13 +507,15 @@ model Client {
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 
-  jobs            Job[]
-  devices         Device[]
-  notesEntries    ClientNote[]
-  inboundMessages InboundMessage[]
-  sales           Sale[]
-  leads           Lead[]
-  quotations      Quotation[]
+  jobs               Job[]
+  devices            Device[]
+  notesEntries       ClientNote[]
+  inboundMessages    InboundMessage[]
+  sales              Sale[]
+  leads              Lead[]
+  quotations         Quotation[]
+  invoices           Invoice[]
+  recurringInvoices  RecurringInvoice[]
 
   @@unique([phone, orgId])
   @@index([orgId])
@@ -646,8 +674,15 @@ model Invoice {
   orgId String
   org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
 
-  jobId String @unique
-  job   Job    @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  // Repair invoices link to a Job; standalone invoices link directly to a Client.
+  jobId    String?  @unique
+  job      Job?     @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  clientId String?
+  client   Client?  @relation(fields: [clientId], references: [id], onDelete: SetNull)
+
+  invoiceType   InvoiceType   @default(REPAIR)
+  subject       String?
+  dueDate       DateTime?
 
   invoiceNumber String        @unique
   currency      String        @default("UGX")
@@ -660,14 +695,17 @@ model Invoice {
 
   notes String?
 
-  payments  Payment[]
-  refunds   Refund[]
+  lines         InvoiceLine[]
+  payments      Payment[]
+  refunds       Refund[]
   deliveryNotes DeliveryNote[]
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
   @@index([orgId, issuedAt])
   @@index([orgId, status])
+  @@index([orgId, invoiceType])
+  @@index([clientId])
 }
 
 model Payment {
@@ -1401,13 +1439,14 @@ model Branch {
   createdAt DateTime     @default(now())
   updatedAt DateTime     @updatedAt
 
-  users User[]
-  jobs  Job[]
-  sales Sale[]
+  users        User[]
+  jobs         Job[]
+  sales        Sale[]
   posSessions  PosSession[]
   leads        Lead[]
   salesTargets SalesTarget[] @relation("BranchSalesTargets")
   fieldVisits  FieldVisit[]
+  expenses     Expense[]
 
   @@index([orgId])
 }
@@ -1438,10 +1477,11 @@ model Supplier {
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
 
-  purchaseOrders PurchaseOrder[]
-  purchaseRequests PurchaseRequest[]
+  purchaseOrders     PurchaseOrder[]
+  purchaseRequests   PurchaseRequest[]
   goodsReceivedNotes GoodsReceived[]
-  supplierBills SupplierBill[]
+  supplierBills      SupplierBill[]
+  expenses           Expense[]
 
   @@index([orgId])
 }
@@ -2130,6 +2170,7 @@ model InvoiceLine {
   id             String   @id @default(cuid())
   orgId          String
   invoiceId      String
+  invoice        Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
   sourceType     String?
   sourceId       String?
   description    String
@@ -2142,6 +2183,90 @@ model InvoiceLine {
 
   @@index([orgId, invoiceId])
   @@index([sourceType, sourceId])
+}
+
+model TaxRate {
+  id                 String       @id @default(cuid())
+  orgId              String
+  org                Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  name               String
+  code               String
+  rate               Float
+  isDefault          Boolean      @default(false)
+  isActive           Boolean      @default(true)
+  appliesToSales     Boolean      @default(true)
+  appliesToPurchases Boolean      @default(false)
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+
+  @@unique([orgId, code])
+  @@index([orgId])
+}
+
+model Expense {
+  id                 String          @id @default(cuid())
+  orgId              String
+  org                Organization    @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  expenseNumber      String          @unique
+  category           ExpenseCategory @default(OTHER)
+  description        String
+  amount             Float
+  currency           String          @default("UGX")
+  exchangeRateToBase Float?
+  paidAt             DateTime?
+  method             PaymentMethod?
+  supplierId         String?
+  supplier           Supplier?       @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  branchId           String?
+  branch             Branch?         @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  reference          String?
+  notes              String?
+  createdById        String
+  createdBy          User            @relation("ExpenseCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  createdAt          DateTime        @default(now())
+
+  @@index([orgId, paidAt])
+  @@index([orgId, category])
+  @@index([supplierId])
+}
+
+model RecurringInvoice {
+  id           String       @id @default(cuid())
+  orgId        String
+  org          Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  clientId     String
+  client       Client       @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  subject      String
+  invoiceType  InvoiceType  @default(SERVICE)
+  frequency    String       // WEEKLY | MONTHLY | QUARTERLY | ANNUAL
+  nextDueAt    DateTime
+  lastIssuedAt DateTime?
+  currency     String       @default("UGX")
+  notes        String?
+  isActive     Boolean      @default(true)
+  autoIssue    Boolean      @default(false)
+  createdById  String
+  createdBy    User         @relation("RecurringInvoiceCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  items RecurringInvoiceItem[]
+
+  @@index([orgId, isActive, nextDueAt])
+  @@index([clientId])
+}
+
+model RecurringInvoiceItem {
+  id                 String           @id @default(cuid())
+  recurringInvoiceId String
+  recurringInvoice   RecurringInvoice @relation(fields: [recurringInvoiceId], references: [id], onDelete: Cascade)
+  description        String
+  quantity           Float            @default(1)
+  unitPrice          Float
+  discountAmount     Float            @default(0)
+  lineTotal          Float
+
+  @@index([recurringInvoiceId])
 }
 
 model DocumentTaxLine {
@@ -2166,6 +2291,7 @@ model Receipt {
   saleId        String?
   invoiceId     String?
   branchId      String?
+  clientId      String?
   amount        Float
   currency      String    @default("UGX")
   issuedAt      DateTime  @default(now())
@@ -2175,6 +2301,7 @@ model Receipt {
 
   @@index([orgId, issuedAt])
   @@index([paymentId])
+  @@index([clientId])
 }
 
 model PaymentAllocation {
@@ -2192,16 +2319,17 @@ model PaymentAllocation {
 }
 
 model CashierShift {
-  id          String    @id @default(cuid())
-  orgId       String
-  branchId    String?
-  cashierId   String
-  status      String    @default("OPEN")
-  openingCash Float     @default(0)
-  closingCash Float?
-  openedAt    DateTime  @default(now())
-  closedAt    DateTime?
-  notes       String?
+  id           String    @id @default(cuid())
+  orgId        String
+  branchId     String?
+  posSessionId String?
+  cashierId    String
+  status       String    @default("OPEN")
+  openingCash  Float     @default(0)
+  closingCash  Float?
+  openedAt     DateTime  @default(now())
+  closedAt     DateTime?
+  notes        String?
 
   @@index([orgId, branchId, status])
   @@index([cashierId, openedAt])
@@ -2542,6 +2670,8 @@ model Quotation {
   createdBy   User? @relation("QuotationCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
   approvedById String?
   approvedBy   User? @relation("QuotationApprovedBy", fields: [approvedById], references: [id], onDelete: SetNull)
+
+  convertedToInvoiceId String? @unique
 
   items     QuotationItem[]
   createdAt DateTime @default(now())

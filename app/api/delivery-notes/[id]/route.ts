@@ -78,9 +78,9 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
 
   const branding = await getDocumentBrandingSettings(orgId);
   const sourceRef = note.invoice?.invoiceNumber
-    ? `${note.invoice.invoiceNumber} / ${note.invoice.job.jobNumber}`
+    ? `${note.invoice.invoiceNumber}${note.invoice.job ? ` / ${note.invoice.job.jobNumber}` : ""}`
     : (note.sale?.invoiceNumber ?? note.sale?.saleNumber ?? "-");
-  const clientName = note.invoice?.job.client.fullName ?? note.sale?.client?.fullName ?? "-";
+  const clientName = note.invoice?.job?.client.fullName ?? note.sale?.client?.fullName ?? "-";
   const element = createElement(DeliveryNoteDocument as never, {
     branding,
     deliveryNoteNumber: note.deliveryNoteNumber,
