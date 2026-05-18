@@ -114,3 +114,8 @@ export const prisma =
 if (process.env.NODE_ENV !== "production") {
   globalForPrisma.prisma = prisma;
 }
+
+// Eagerly start the engine connection so it's ready before the first request.
+// Without this, Prisma 6's lazy initializer races against incoming requests
+// (especially better-auth session checks) and throws "Engine is not yet connected".
+void prisma.$connect().catch(() => {/* errors will surface on first query */});
