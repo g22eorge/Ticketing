@@ -215,7 +215,11 @@ export function BottomNav({
               <Link
                 key={item.href}
                 href={item.href}
-                onClick={() => setOpen(false)}
+                onClick={(event) => {
+                  event.preventDefault();
+                  setOpen(false);
+                  router.push(item.href);
+                }}
                 className={`flex min-w-0 flex-1 flex-col items-center gap-0.5 py-1 text-[10px] font-semibold transition-colors ${
                   active ? "text-[var(--accent)]" : "text-[var(--ink-muted)] hover:text-[var(--ink)]"
                 }`}

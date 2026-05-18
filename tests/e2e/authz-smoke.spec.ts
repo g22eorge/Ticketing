@@ -83,9 +83,12 @@ async function login(page: Page, email: string) {
 test("admin sees admin navigation and can open user settings", async ({ page }) => {
   await login(page, adminEmail);
 
-  await expect(page.getByRole("link", { name: "Users" }).first()).toBeVisible();
-  await expect(page.getByRole("link", { name: "Branding" }).first()).toBeVisible();
+  await expect(page.getByRole("link", { name: "Settings" }).first()).toBeVisible();
   await expect(page.getByRole("link", { name: "Clients" }).first()).toBeVisible();
+
+  await page.goto("/settings");
+  await expect(page.getByRole("link", { name: /Users/ }).first()).toBeVisible();
+  await expect(page.getByRole("link", { name: /Branding/ }).first()).toBeVisible();
 
   await page.goto("/settings/users");
   await page.waitForURL("**/settings/users");
