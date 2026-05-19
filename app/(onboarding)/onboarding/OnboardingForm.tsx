@@ -54,7 +54,7 @@ export function OnboardingForm() {
 
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [businessName, setBusinessName] = useState("");
-  const [selected, setSelected] = useState<Set<OrgModule>>(new Set(["JOBS"] as OrgModule[]));
+  const [selected, setSelected] = useState<Set<OrgModule>>(new Set(["INVOICING", "REPORTS"] as OrgModule[]));
 
   const recommended = recommendPlanForModules([...selected]);
   const meta = PLAN_META[recommended];
