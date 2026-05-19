@@ -933,12 +933,20 @@ export default async function DashboardPage({
       bankAccounts,
       outstandingInvoices,
       expensesMtd,
+      payablesAgg,
       // Operations
       awaitingApprovalCount,
       receivedToday,
       completedToday,
+      receivedMtdCount,
       // Sales funnel
       leadFunnel,
+      // Stock alerts
+      lowStockParts,
+      // Tech leaderboard
+      techCompletedMtd,
+      // Recent activity
+      recentJobs,
       // 6-month trend
       completedForTrend,
       salesForTrend,
@@ -976,12 +984,38 @@ export default async function DashboardPage({
         select: { amount: true },
       }).catch(() => [] as { amount: number }[]),
 
+      prisma.supplierBill.aggregate({
+        where: { ...orgFilter, status: { in: ["POSTED", "PART_PAID"] } },
+        _sum: { totalAmount: true, paidAmount: true },
+      }).catch(() => ({ _sum: { totalAmount: null, paidAmount: null } })),
+
       prisma.job.count({ where: { ...orgFilter, status: "AWAITING_APPROVAL" } }).catch(() => 0),
 
       prisma.job.count({ where: { ...orgFilter, receivedAt: { gte: todayStart } } }),
       prisma.job.count({ where: { ...orgFilter, completedAt: { gte: todayStart } } }),
+      prisma.job.count({ where: { ...orgFilter, receivedAt: { gte: mtdStart, lte: today } } }),
 
       prisma.lead.groupBy({ by: ["status"], where: orgFilter, _count: { status: true } }).catch(() => [] as { status: string; _count: { status: number } }[]),
+
+      prisma.part.findMany({
+        where: { ...orgFilter, isActive: true, reorderLevel: { gt: 0 } },
+        select: { id: true, name: true, sku: true, qtyOnHand: true, reorderLevel: true },
+      }).catch(() => [] as { id: string; name: string; sku: string; qtyOnHand: number; reorderLevel: number }[]),
+
+      prisma.job.findMany({
+        where: { ...orgFilter, status: "COMPLETED", completedAt: { gte: mtdStart }, assignedToId: { not: null } },
+        select: { assignedToId: true, assignedTo: { select: { name: true } } },
+      }).catch(() => [] as { assignedToId: string | null; assignedTo: { name: string } | null }[]),
+
+      prisma.job.findMany({
+        where: orgFilter,
+        orderBy: { updatedAt: "desc" },
+        take: 8,
+        select: { id: true, jobNumber: true, status: true, updatedAt: true, receivedAt: true, completedAt: true, device: { select: { brand: true, model: true } } },
+      }).catch(async () => {
+        const fb = await prisma.job.findMany({ where: orgFilter, orderBy: { updatedAt: "desc" }, take: 8, select: { id: true, jobNumber: true, status: true, updatedAt: true, receivedAt: true, completedAt: true } });
+        return fb.map((j) => ({ ...j, device: null }));
+      }),
 
       prisma.job.findMany({
         where: { ...orgFilter, status: "COMPLETED", completedAt: { gte: last6Months[0].start, lte: last6Months[5].end } },
@@ -1002,11 +1036,27 @@ export default async function DashboardPage({
     const productsMtd  = paidSalesMtd.reduce((s, x) => s + x.totalAmount, 0);
     const corporateMtd = paidInvoicesMtd.reduce((s, x) => s + x.totalAmount, 0);
     const totalMtd     = repairsMtd + productsMtd + corporateMtd;
+    const avgJobValue  = completedMtdJobs.length > 0 ? repairsMtd / completedMtdJobs.length : 0;
+    const conversionRate = receivedMtdCount > 0 ? Math.round(completedMtdJobs.length / receivedMtdCount * 100) : 0;
 
     // Financial position
     const totalBankBalance  = bankAccounts.reduce((s, a) => s + a.currentBalance, 0);
     const outstandingValue  = outstandingInvoices.reduce((s, i) => s + i.totalAmount, 0);
     const expensesValue     = expensesMtd.reduce((s, e) => s + e.amount, 0);
+    const payablesValue     = (payablesAgg._sum.totalAmount ?? 0) - (payablesAgg._sum.paidAmount ?? 0);
+
+    // Low stock
+    const lowStockItems = lowStockParts.filter((p) => p.qtyOnHand <= p.reorderLevel);
+
+    // Tech leaderboard
+    const techMap = new Map<string, { name: string; count: number }>();
+    for (const j of techCompletedMtd) {
+      if (!j.assignedToId || !j.assignedTo) continue;
+      const e = techMap.get(j.assignedToId) ?? { name: j.assignedTo.name, count: 0 };
+      e.count += 1;
+      techMap.set(j.assignedToId, e);
+    }
+    const techLeaderboard = [...techMap.values()].sort((a, b) => b.count - a.count).slice(0, 5);
 
     // Status pipeline
     const statusCount = new Map<string, number>();
@@ -1107,7 +1157,7 @@ export default async function DashboardPage({
         </section>
 
         {/* ── Financial Position ── */}
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
           <Link href="/finance/bank"
             className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px]">
             <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Bank Balance</p>
@@ -1119,6 +1169,12 @@ export default async function DashboardPage({
             <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Receivable</p>
             <p className={`mt-1.5 text-xl font-bold ${outstandingValue > 0 ? "text-amber-600" : "text-[var(--ink)]"}`}>{formatMoneyCompact(outstandingValue, currency)}</p>
             <p className="mt-0.5 text-[10px] text-[var(--ink-muted)]">{outstandingInvoices.length} unpaid invoice{outstandingInvoices.length !== 1 ? "s" : ""}</p>
+          </Link>
+          <Link href="/finance/supplier-bills?status=POSTED"
+            className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px]">
+            <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Payables</p>
+            <p className={`mt-1.5 text-xl font-bold ${payablesValue > 0 ? "text-red-500" : "text-[var(--ink)]"}`}>{formatMoneyCompact(payablesValue, currency)}</p>
+            <p className="mt-0.5 text-[10px] text-[var(--ink-muted)]">outstanding to suppliers</p>
           </Link>
           <Link href="/finance/expenses"
             className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px]">
@@ -1135,10 +1191,26 @@ export default async function DashboardPage({
           </div>
         </div>
 
+        {/* ── Low stock alert ── */}
+        {lowStockItems.length > 0 && (
+          <div className="flex items-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/8 px-4 py-2.5">
+            <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-amber-600">Low Stock —</span>
+            <span className="text-[12px] text-[var(--ink)]">
+              {lowStockItems.slice(0, 3).map((p) => p.name).join(", ")}
+              {lowStockItems.length > 3 && ` +${lowStockItems.length - 3} more`}
+            </span>
+            <Link href="/inventory/parts" className="ml-auto text-[11px] font-semibold text-amber-600 hover:underline">View parts →</Link>
+          </div>
+        )}
+
         {/* ── Live Repair Pipeline ── */}
         <section className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
           <div className="border-b border-[var(--line)] px-3 py-2.5 flex flex-wrap items-center justify-between gap-2">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Live Repair Pipeline</p>
+            <div className="flex items-center gap-3">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Live Repair Pipeline</p>
+              {conversionRate > 0 && <span className="text-[10px] text-[var(--ink-muted)]">{conversionRate}% conversion</span>}
+              {avgJobValue > 0 && <span className="text-[10px] text-[var(--ink-muted)]">· avg {formatMoneyCompact(avgJobValue, currency)}/job</span>}
+            </div>
             <div className="flex items-center gap-2 text-[11px] text-[var(--ink-muted)]">
               <span className="rounded border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-1">{receivedToday} in · <span className="text-[var(--accent)]">{completedToday} out</span> today</span>
               {awaitingApprovalCount > 0 && (
@@ -1185,6 +1257,77 @@ export default async function DashboardPage({
             })}
           </div>
         </section>
+
+        {/* ── Recent Activity + Tech Leaderboard ── */}
+        <div className="grid gap-3 lg:grid-cols-2">
+          {/* Recent Activity */}
+          <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)]">
+            <div className="border-b border-[var(--line)] px-4 py-2.5 flex items-center justify-between">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Recent Activity</p>
+              <Link href="/jobs" className="text-[11px] font-semibold text-[var(--accent)] hover:underline">All jobs →</Link>
+            </div>
+            {recentJobs.length === 0 ? (
+              <p className="px-4 py-6 text-sm text-[var(--ink-muted)]">No jobs yet.</p>
+            ) : (
+              <div className="divide-y divide-[var(--line)]">
+                {recentJobs.map((j) => {
+                  const deviceLabel = [j.device?.brand, j.device?.model].filter(Boolean).join(" ") || "Device";
+                  const isCompleted = j.status === "COMPLETED" || j.status === "DELIVERED";
+                  const isNew       = j.status === "RECEIVED";
+                  return (
+                    <Link key={j.id} href={`/jobs/${j.id}`}
+                      className="flex items-center justify-between px-4 py-2.5 transition hover:bg-[var(--panel-strong)]">
+                      <div className="min-w-0">
+                        <p className="mono text-xs font-bold text-[var(--accent)]">{j.jobNumber}</p>
+                        <p className="truncate text-[10px] text-[var(--ink-muted)]">{deviceLabel}</p>
+                      </div>
+                      <div className="ml-3 shrink-0 text-right">
+                        <p className={`text-[10px] font-semibold ${isCompleted ? "text-emerald-600" : isNew ? "text-sky-500" : "text-[var(--ink-muted)]"}`}>
+                          {statusLabel[j.status as keyof typeof statusLabel] ?? j.status}
+                        </p>
+                        <p className="text-[10px] text-[var(--ink-muted)]">
+                          {new Date(j.updatedAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+                        </p>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+
+          {/* Tech Leaderboard */}
+          <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)]">
+            <div className="border-b border-[var(--line)] px-4 py-2.5">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">
+                Tech Leaderboard — {monthLabel(today.getFullYear(), today.getMonth() + 1)}
+              </p>
+            </div>
+            {techLeaderboard.length === 0 ? (
+              <p className="px-4 py-6 text-sm text-[var(--ink-muted)]">No completed jobs this month.</p>
+            ) : (
+              <div className="divide-y divide-[var(--line)]">
+                {techLeaderboard.map((tech, i) => {
+                  const maxCount = techLeaderboard[0].count;
+                  const pct = maxCount > 0 ? Math.round((tech.count / maxCount) * 100) : 0;
+                  return (
+                    <div key={tech.name} className="flex items-center gap-3 px-4 py-2.5">
+                      <span className="w-4 shrink-0 text-[10px] font-bold text-[var(--ink-muted)]">#{i + 1}</span>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-semibold text-[var(--ink)]">{tech.name}</p>
+                        <div className="mt-1 h-1 w-full rounded-full bg-[var(--line)]">
+                          <div className="h-1 rounded-full bg-[var(--accent)]" style={{ width: `${pct}%` }} />
+                        </div>
+                      </div>
+                      <span className="shrink-0 text-sm font-bold text-[var(--ink)]">{tech.count}</span>
+                      <span className="shrink-0 text-[10px] text-[var(--ink-muted)]">jobs</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+        </div>
 
       </div>
     );
