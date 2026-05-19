@@ -45,17 +45,18 @@ export default async function LoginPage() {
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#D4AF37]/70">Business OS</p>
               <h1 className="mt-3 text-3xl font-semibold leading-snug text-white xl:text-4xl">
-                Operations,<br />without the chaos
+                Every team,<br />one workspace
               </h1>
               <p className="mt-4 max-w-sm text-sm leading-relaxed text-white/55">
-                Staff access for intake, technicians, and operations. Clear status, clear accountability.
+                Finance, sales, operations, repairs, and field staff — each role sees exactly what they need, nothing more.
               </p>
             </div>
 
             <div className="space-y-3">
               {[
-                { icon: "◈", text: "Role-based access keeps client data protected" },
-                { icon: "◈", text: "Every status change and handoff is fully auditable" },
+                { icon: "◈", text: "10 modules — pick only what your business needs" },
+                { icon: "◈", text: "Role-based access with a full audit trail on every action" },
+                { icon: "◈", text: "External vendors see job specs only — client data always protected" },
               ].map((item) => (
                 <div key={item.text} className="flex items-start gap-3">
                   <span className="mt-0.5 text-[#D4AF37]/60 text-xs">{item.icon}</span>

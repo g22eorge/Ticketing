@@ -6,6 +6,7 @@ import { requireOrgSession } from "@/lib/org-context";
 import { can } from "@/lib/permissions";
 import { PLAN_LIMITS, PLAN_LABELS } from "@/lib/plan-limits";
 import { submitOrder, getOrCreateIpnId, buildMerchantRef, PLAN_PRICES, CURRENCY } from "@/lib/pesapal";
+import { getOrgModules, MODULE_LABELS, MODULE_ICONS } from "@/lib/module-access";
 import { formatMoney } from "@/lib/currency";
 import { getPesapalConsumerKey, getPesapalConsumerSecret } from "@/lib/platform-settings";
 
@@ -90,7 +91,7 @@ export default async function BillingPage({
   const { user, orgId } = await requireOrgSession();
   const isAdmin = can.manageUsers(user);
 
-  const [org] = await Promise.all([
+  const [org, enabledModules] = await Promise.all([
     prisma.organization.findUnique({
       where: { id: orgId },
       select: {
@@ -103,9 +104,11 @@ export default async function BillingPage({
         flwSubscriptionId: true,
       },
     }),
+    getOrgModules(orgId),
   ]);
 
   if (!org) redirect("/dashboard");
+  const enabledModuleList = [...enabledModules];
 
   const now = new Date();
   const trialDaysLeft = org.trialEndsAt
@@ -206,8 +209,8 @@ export default async function BillingPage({
                     `${PLAN_LIMITS.STANDARD.maxUsers} team members`,
                     `${PLAN_LIMITS.STANDARD.maxJobsPerMonth} jobs / month`,
                     `${PLAN_LIMITS.STANDARD.maxParts} inventory SKUs`,
-                    "Invite links",
-                    "Full module access",
+                    "Invoicing, Sales CRM & Inventory",
+                    "Invite links · WhatsApp alerts",
                   ],
                 },
                 {
@@ -217,8 +220,8 @@ export default async function BillingPage({
                     `${PLAN_LIMITS.GROWTH.maxUsers} team members`,
                     `${PLAN_LIMITS.GROWTH.maxJobsPerMonth} jobs / month`,
                     `${PLAN_LIMITS.GROWTH.maxParts} inventory SKUs`,
-                    "Custom branding",
-                    "Priority support",
+                    "POS, Purchase Orders & Field Ops",
+                    "Custom branding · Priority support",
                   ],
                 },
                 {
@@ -227,8 +230,8 @@ export default async function BillingPage({
                     `${PLAN_LIMITS.PREMIUM.maxUsers} team members`,
                     `${PLAN_LIMITS.PREMIUM.maxJobsPerMonth} jobs / month`,
                     `${PLAN_LIMITS.PREMIUM.maxParts} inventory SKUs`,
-                    "Advanced reporting",
-                    "Multi-branch support",
+                    `Up to ${PLAN_LIMITS.PREMIUM.maxBranches} branches`,
+                    "All modules · Advanced analytics",
                   ],
                 },
                 {
@@ -236,9 +239,9 @@ export default async function BillingPage({
                   features: [
                     "Unlimited team members",
                     "Unlimited jobs & inventory",
-                    "Custom branding & white-label",
-                    "Dedicated support",
-                    "SLA agreement",
+                    "Unlimited branches",
+                    "White-label branding & SLA",
+                    "Dedicated account manager",
                   ],
                 },
               ] as Array<{ key: "STANDARD" | "GROWTH" | "PREMIUM" | "ENTERPRISE"; highlight?: boolean; features: string[] }>
@@ -333,8 +336,8 @@ export default async function BillingPage({
         `${PLAN_LIMITS.STARTER.maxUsers} team members`,
         `${PLAN_LIMITS.STARTER.maxJobsPerMonth} jobs / month`,
         `${PLAN_LIMITS.STARTER.maxParts} inventory SKUs`,
-        "Basic operations",
-        "No custom branding",
+        "Jobs, Reports & Complaints",
+        "Public client intake form",
       ],
     },
     {
@@ -344,8 +347,8 @@ export default async function BillingPage({
         `${PLAN_LIMITS.STANDARD.maxUsers} team members`,
         `${PLAN_LIMITS.STANDARD.maxJobsPerMonth} jobs / month`,
         `${PLAN_LIMITS.STANDARD.maxParts} inventory SKUs`,
-        "Invite links",
-        "Full module access",
+        "Invoicing, Sales CRM & Inventory",
+        "Invite links · WhatsApp alerts",
       ],
     },
     {
@@ -356,8 +359,8 @@ export default async function BillingPage({
         `${PLAN_LIMITS.GROWTH.maxUsers} team members`,
         `${PLAN_LIMITS.GROWTH.maxJobsPerMonth} jobs / month`,
         `${PLAN_LIMITS.GROWTH.maxParts} inventory SKUs`,
-        "Custom branding",
-        "Priority support",
+        "POS, Purchase Orders & Field Ops",
+        "Custom branding · Priority support",
       ],
     },
     {
@@ -367,8 +370,8 @@ export default async function BillingPage({
         `${PLAN_LIMITS.PREMIUM.maxUsers} team members`,
         `${PLAN_LIMITS.PREMIUM.maxJobsPerMonth} jobs / month`,
         `${PLAN_LIMITS.PREMIUM.maxParts} inventory SKUs`,
-        "Advanced reporting",
-        "Multi-branch support",
+        `Up to ${PLAN_LIMITS.PREMIUM.maxBranches} branches`,
+        "All modules · Advanced analytics",
       ],
     },
     {
@@ -377,9 +380,9 @@ export default async function BillingPage({
       features: [
         "Unlimited team members",
         "Unlimited jobs & inventory",
-        "Custom branding & white-label",
-        "Dedicated support",
-        "SLA agreement",
+        "Unlimited branches",
+        "White-label branding & SLA",
+        "Dedicated account manager",
       ],
     },
   ];
@@ -485,6 +488,27 @@ export default async function BillingPage({
             </button>
           </form>
         )}
+      </section>
+
+      {/* Enabled modules */}
+      <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-5 space-y-3">
+        <div className="flex items-center justify-between">
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Enabled modules</p>
+          <span className="rounded-full bg-[var(--panel-strong)] px-2 py-0.5 text-[10px] font-semibold text-[var(--ink-muted)]">
+            {enabledModuleList.length} / 10
+          </span>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {enabledModuleList.map((m) => (
+            <span key={m} className="inline-flex items-center gap-1.5 rounded-full border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1 text-xs font-medium text-[var(--ink)]">
+              <span>{MODULE_ICONS[m]}</span>
+              <span>{MODULE_LABELS[m]}</span>
+            </span>
+          ))}
+        </div>
+        <p className="text-[11px] text-[var(--ink-muted)]">
+          Modules are selected during onboarding and can be adjusted by a platform administrator.
+        </p>
       </section>
 
       {/* Plan cards — hide Starter upgrade (it's the free tier, no upgrade path back to it) */}

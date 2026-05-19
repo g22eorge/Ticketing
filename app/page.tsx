@@ -20,30 +20,11 @@ const features = [
   {
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" /><polyline points="14 2 14 8 20 8" />
-        <line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /><polyline points="10 9 9 9 8 9" />
+        <path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z" />
       </svg>
     ),
-    title: "Job & service tracking",
-    body: "From intake to completion — every status, note, and action logged with a full audit trail.",
-  },
-  {
-    icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-      </svg>
-    ),
-    title: "Inventory & parts",
-    body: "Parts catalogue with stock levels, reorder alerts, and reservation against open jobs.",
-  },
-  {
-    icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M9 11l3 3L22 4" /><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
-      </svg>
-    ),
-    title: "Purchase orders",
-    body: "Raise POs to suppliers, receive stock, and reconcile against inventory automatically.",
+    title: "Jobs & repairs",
+    body: "From intake to completion — every status, note, diagnosis, and handoff logged with a full audit trail.",
   },
   {
     icon: (
@@ -52,7 +33,16 @@ const features = [
       </svg>
     ),
     title: "Invoicing & payments",
-    body: "Generate branded invoices, record payments in multiple currencies, track outstanding balances.",
+    body: "Generate branded invoices, record payments in multiple currencies, and track every outstanding balance.",
+  },
+  {
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+      </svg>
+    ),
+    title: "Inventory & parts",
+    body: "Parts catalogue with live stock levels, reorder alerts, and automatic reservation against open jobs.",
   },
   {
     icon: (
@@ -60,8 +50,8 @@ const features = [
         <rect x="2" y="3" width="20" height="14" rx="2" /><line x1="8" y1="21" x2="16" y2="21" /><line x1="12" y1="17" x2="12" y2="21" />
       </svg>
     ),
-    title: "POS & sales",
-    body: "Point-of-sale for walk-in sales, receipts, and revenue tracking separate from service jobs.",
+    title: "Point of sale",
+    body: "Walk-in sales, product checkout, shift management, and receipts — separate from service jobs.",
   },
   {
     icon: (
@@ -70,8 +60,53 @@ const features = [
         <path d="M23 21v-2a4 4 0 00-3-3.87" /><path d="M16 3.13a4 4 0 010 7.75" />
       </svg>
     ),
-    title: "Team & role management",
-    body: "Granular roles — Admin, Ops, Technician, Sales, Finance — each with the right access level.",
+    title: "Sales CRM & pipeline",
+    body: "Leads, quotations, corporate accounts, and commissions — track every deal from first contact to payment.",
+  },
+  {
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M9 11l3 3L22 4" /><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
+      </svg>
+    ),
+    title: "Purchase orders",
+    body: "Raise POs to suppliers, receive stock against them, and reconcile supplier bills automatically.",
+  },
+  {
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+      </svg>
+    ),
+    title: "Complaints & feedback",
+    body: "Client complaints logged, assigned, and resolved with SLA timers so nothing slips through.",
+  },
+  {
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/>
+      </svg>
+    ),
+    title: "Field operations",
+    body: "Dispatch field technicians, record on-site signoffs, and track work done outside the office.",
+  },
+  {
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/>
+      </svg>
+    ),
+    title: "Targets & performance",
+    body: "Set revenue and team targets, track attainment in real time, and reward top performers.",
+  },
+  {
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+        <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
+      </svg>
+    ),
+    title: "Reports & analytics",
+    body: "Revenue across all streams, technician performance, inventory health, and CSV exports — per department.",
   },
 ];
 
@@ -112,6 +147,42 @@ const industries = [
     label: "Parts & inventory businesses",
     desc: "Stock management & POs",
   },
+  {
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/>
+      </svg>
+    ),
+    label: "Corporate sales teams",
+    desc: "Leads, quotes & commissions",
+  },
+  {
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+      </svg>
+    ),
+    label: "Retail & wholesale shops",
+    desc: "POS, inventory & invoicing",
+  },
+  {
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/>
+      </svg>
+    ),
+    label: "Field service teams",
+    desc: "On-site jobs & signoffs",
+  },
+  {
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/>
+      </svg>
+    ),
+    label: "Multi-branch operations",
+    desc: "Centralised across locations",
+  },
 ];
 
 const plans = [
@@ -119,13 +190,13 @@ const plans = [
     key: "STARTER" as const,
     label: "Free",
     price: null as number | null,
-    desc: "Try Nexus with no commitment. Good for solo operators just getting started.",
+    desc: "Try with no commitment. Good for solo operators and small teams just getting started.",
     features: [
       `${PLAN_LIMITS.STARTER.maxUsers} team members`,
       `${PLAN_LIMITS.STARTER.maxJobsPerMonth} jobs / month`,
       `${PLAN_LIMITS.STARTER.maxParts} inventory SKUs`,
-      "Job tracking & client records",
-      "Public intake form",
+      "Jobs, Reports & Complaints",
+      "Public client intake form",
     ],
     cta: "Start free",
     highlight: false,
@@ -134,14 +205,13 @@ const plans = [
     key: "STANDARD" as const,
     label: "Standard",
     price: PLAN_PRICES.STANDARD,
-    desc: "For small teams ready to run their full operation on one platform.",
+    desc: "For small teams running invoicing, sales, and inventory alongside their core work.",
     features: [
       `${PLAN_LIMITS.STANDARD.maxUsers} team members`,
       `${PLAN_LIMITS.STANDARD.maxJobsPerMonth} jobs / month`,
       `${PLAN_LIMITS.STANDARD.maxParts} inventory SKUs`,
-      "Invite links",
-      "All modules unlocked",
-      "WhatsApp notifications",
+      "Invoicing, Sales CRM & Inventory",
+      "Invite links & WhatsApp alerts",
     ],
     cta: "Get started",
     highlight: false,
@@ -150,14 +220,13 @@ const plans = [
     key: "GROWTH" as const,
     label: "Professional",
     price: PLAN_PRICES.GROWTH,
-    desc: "For growing businesses that want branded documents and more capacity.",
+    desc: "For growing operations that need POS, field teams, and branded documents.",
     features: [
       `${PLAN_LIMITS.GROWTH.maxUsers} team members`,
       `${PLAN_LIMITS.GROWTH.maxJobsPerMonth} jobs / month`,
       `${PLAN_LIMITS.GROWTH.maxParts} inventory SKUs`,
-      "Custom branding on documents",
-      "Everything in Standard",
-      "Priority support",
+      "POS, Purchase Orders & Field Ops",
+      "Custom branding · Priority support",
     ],
     cta: "Try free for 14 days",
     highlight: true,
@@ -166,14 +235,13 @@ const plans = [
     key: "PREMIUM" as const,
     label: "Premium",
     price: PLAN_PRICES.PREMIUM,
-    desc: "For high-volume operations with multiple branches and advanced reporting.",
+    desc: "For high-volume operations with multiple branches and deep performance reporting.",
     features: [
       `${PLAN_LIMITS.PREMIUM.maxUsers} team members`,
       `${PLAN_LIMITS.PREMIUM.maxJobsPerMonth} jobs / month`,
       `${PLAN_LIMITS.PREMIUM.maxParts} inventory SKUs`,
-      "Advanced reports & analytics",
-      "Multi-branch support",
-      "Everything in Professional",
+      `Up to ${PLAN_LIMITS.PREMIUM.maxBranches} branches`,
+      "All modules · Advanced analytics",
     ],
     cta: "Try free for 14 days",
     highlight: false,
@@ -182,14 +250,13 @@ const plans = [
     key: "ENTERPRISE" as const,
     label: "Enterprise",
     price: PLAN_PRICES.ENTERPRISE,
-    desc: "Unlimited scale. Dedicated support. SLA. For operations that can't afford downtime.",
+    desc: "Unlimited scale, white-label branding, dedicated support, and an SLA.",
     features: [
       "Unlimited team members",
       "Unlimited jobs & inventory",
-      "White-label branding",
+      "Unlimited branches",
+      "White-label branding & SLA",
       "Dedicated account manager",
-      "SLA agreement",
-      "Everything in Premium",
     ],
     cta: "Contact us",
     highlight: false,
@@ -249,7 +316,7 @@ export default async function LandingPage() {
               <span style={{ color: "#D4AF37" }}>not just your jobs</span>
             </h1>
             <p className="mx-auto mb-8 max-w-xl text-base leading-relaxed text-white/55 md:text-lg">
-              Jobs, inventory, purchase orders, invoicing, POS sales, and team management — one workspace that grows with your operation.
+              10 business modules — repairs, invoicing, inventory, POS, sales CRM, field ops, and more. Pick what fits your business and scale from there.
             </p>
             <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
               <Link
@@ -275,9 +342,9 @@ export default async function LandingPage() {
           <div className="mx-auto max-w-6xl">
             <p className="mb-3 text-center text-[11px] font-bold uppercase tracking-[0.18em] text-[#D4AF37]/70">Built for every part of your operation</p>
             <h2 className="mb-12 text-center text-2xl font-bold text-white md:text-3xl">
-              One platform. Every workflow.
+              10 modules. One workspace.
             </h2>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
               {features.map((f) => (
                 <div
                   key={f.title}
@@ -298,7 +365,7 @@ export default async function LandingPage() {
         <section className="px-4 pb-16 md:px-6">
           <div className="mx-auto max-w-6xl">
             <p className="mb-6 text-center text-[11px] font-bold uppercase tracking-[0.18em] text-[#D4AF37]/70">Trusted across industries</p>
-            <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-8">
               {industries.map((ind) => (
                 <div
                   key={ind.label}
