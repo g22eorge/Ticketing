@@ -80,6 +80,12 @@ const OUTBOX_COLUMNS_TO_CHECK = [
   "providerDeliveryError",
 ] as const;
 
+const INVOICE_COLUMNS_TO_CHECK = ["clientId", "invoiceType", "subject", "dueDate", "paidAmount"] as const;
+const DELIVERY_NOTE_COLUMNS_TO_CHECK = ["saleId", "invoiceId", "createdById", "createdAt"] as const;
+const SUPPLIER_BILL_COLUMNS_TO_CHECK = ["supplierRef", "poId", "grnId", "currency", "dueAt", "notes", "createdById", "paidAmount"] as const;
+const SUPPLIER_BILL_ITEM_COLUMNS_TO_CHECK = ["lineTotal"] as const;
+const SUPPLIER_PAYMENT_COLUMNS_TO_CHECK = ["currency", "createdById"] as const;
+
 type SqliteTableInfoRow = {
   cid: number;
   name: string;
@@ -136,12 +142,33 @@ export async function GET() {
     outboxColumnsPresent = null;
   }
 
+  const columnsFor = async <T extends readonly string[]>(table: string, columns: T) => {
+    try {
+      const info = await prisma.$queryRawUnsafe<SqliteTableInfoRow[]>(`PRAGMA table_info('${table.replaceAll("'", "''")}')`);
+      const colSet = new Set(info.map((row) => row.name));
+      return Object.fromEntries(columns.map((c) => [c, colSet.has(c)]));
+    } catch {
+      return null;
+    }
+  };
+
   return NextResponse.json({
     ok: true,
+    runtime: {
+      mode: process.env.TURSO_DATABASE_URL ? "turso" : "sqlite",
+      hasTursoDatabaseUrl: Boolean(process.env.TURSO_DATABASE_URL),
+      hasTursoAuthToken: Boolean(process.env.TURSO_AUTH_TOKEN),
+      databaseUrlKind: process.env.DATABASE_URL?.startsWith("file:") ? "sqlite-file" : process.env.DATABASE_URL ? "other" : "unset",
+    },
     tablesPresent,
     jobColumnsPresent,
     jobColumnNames,
     jobStatusCounts,
     outboxColumnsPresent,
+    invoiceColumnsPresent: await columnsFor("Invoice", INVOICE_COLUMNS_TO_CHECK),
+    deliveryNoteColumnsPresent: await columnsFor("DeliveryNote", DELIVERY_NOTE_COLUMNS_TO_CHECK),
+    supplierBillColumnsPresent: await columnsFor("SupplierBill", SUPPLIER_BILL_COLUMNS_TO_CHECK),
+    supplierBillItemColumnsPresent: await columnsFor("SupplierBillItem", SUPPLIER_BILL_ITEM_COLUMNS_TO_CHECK),
+    supplierPaymentColumnsPresent: await columnsFor("SupplierPayment", SUPPLIER_PAYMENT_COLUMNS_TO_CHECK),
   });
 }

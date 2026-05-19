@@ -4,6 +4,8 @@ import { assertPlatformAdmin } from "@/lib/platform-admin";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
+export const maxDuration = 300;
 
 export async function GET() {
   // Auth guard — only the platform admin may access this runner UI.
@@ -31,9 +33,27 @@ export async function GET() {
         btn.disabled = true;
         out.textContent = 'Running...';
         try {
-          const res = await fetch(location.href, { method: 'POST', credentials: 'include' });
-          const text = await res.text();
-          out.textContent = text;
+          let lastText = '';
+          for (let attempt = 1; attempt <= 8; attempt += 1) {
+            out.textContent = lastText + '\nAttempt ' + attempt + ' of 8 running...';
+            try {
+              const res = await fetch(location.href, {
+                method: 'POST',
+                credentials: 'include',
+                cache: 'no-store',
+                headers: { accept: 'application/json' },
+              });
+              const text = await res.text();
+              lastText = text;
+              out.textContent = text;
+              if (res.ok) return;
+              out.textContent = text + '\n\nServer returned HTTP ' + res.status + '. Retrying because DB Fix is idempotent...';
+            } catch (e) {
+              out.textContent = lastText + '\n\nAttempt ' + attempt + ' failed: ' + String(e) + '\nRetrying because earlier schema changes may have been applied...';
+            }
+            await new Promise((resolve) => setTimeout(resolve, 1500 * attempt));
+          }
+          out.textContent += '\n\nDB Fix did not complete after 8 attempts. Refresh this page and run it again; completed schema changes are kept.';
         } catch (e) {
           out.textContent = String(e);
         } finally {
@@ -113,7 +133,7 @@ async function purchaseOrderColumns() {
   return new Set(rows.map((r) => r.name));
 }
 
-export async function POST() {
+async function runDbFix() {
   const user = await assertPlatformAdmin();
   if (!user) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -241,6 +261,11 @@ export async function POST() {
   await addJobColumn("clientPaymentRef", "TEXT");
   await addJobColumn("invoiceNumber", "TEXT");
   await addJobColumn("invoiceIssuedAt", "DATETIME");
+  await addJobColumn("externalTechFee", "REAL");
+  await addJobColumn("externalPaid", "INTEGER", "0");
+  await addJobColumn("externalPaidAt", "DATETIME");
+  await addJobColumn("externalPaidById", "TEXT");
+  await addJobColumn("externalPaymentRef", "TEXT");
 
   // Invoices + Payments (partial payments)
   const hasInvoice = await tableExists("Invoice");
@@ -249,7 +274,11 @@ export async function POST() {
       CREATE TABLE IF NOT EXISTS "Invoice" (
         "id" TEXT NOT NULL PRIMARY KEY,
         "orgId" TEXT NOT NULL,
-        "jobId" TEXT NOT NULL UNIQUE,
+        "jobId" TEXT UNIQUE,
+        "clientId" TEXT,
+        "invoiceType" TEXT NOT NULL DEFAULT 'REPAIR',
+        "subject" TEXT,
+        "dueDate" DATETIME,
         "invoiceNumber" TEXT NOT NULL UNIQUE,
         "currency" TEXT NOT NULL DEFAULT 'UGX',
         "status" TEXT NOT NULL DEFAULT 'ISSUED',
@@ -261,7 +290,8 @@ export async function POST() {
         "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
         "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY ("orgId") REFERENCES "Organization"("id") ON DELETE CASCADE ON UPDATE CASCADE,
-        FOREIGN KEY ("jobId") REFERENCES "Job"("id") ON DELETE CASCADE ON UPDATE CASCADE
+        FOREIGN KEY ("jobId") REFERENCES "Job"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+        FOREIGN KEY ("clientId") REFERENCES "Client"("id") ON DELETE SET NULL ON UPDATE CASCADE
       )
     `);
     await prisma.$executeRawUnsafe('CREATE INDEX IF NOT EXISTS "Invoice_orgId_issuedAt_idx" ON "Invoice"("orgId", "issuedAt")');
@@ -277,6 +307,10 @@ export async function POST() {
     };
     await addInvColumn("orgId", "TEXT");
     await addInvColumn("jobId", "TEXT");
+    await addInvColumn("clientId", "TEXT");
+    await addInvColumn("invoiceType", "TEXT", "'REPAIR'");
+    await addInvColumn("subject", "TEXT");
+    await addInvColumn("dueDate", "DATETIME");
     await addInvColumn("invoiceNumber", "TEXT");
     await addInvColumn("currency", "TEXT", "'UGX'");
     await addInvColumn("status", "TEXT", "'ISSUED'");
@@ -502,7 +536,8 @@ export async function POST() {
       CREATE TABLE IF NOT EXISTS "DeliveryNote" (
         "id" TEXT NOT NULL PRIMARY KEY,
         "orgId" TEXT NOT NULL,
-        "saleId" TEXT NOT NULL,
+        "saleId" TEXT,
+        "invoiceId" TEXT,
         "deliveryNoteNumber" TEXT NOT NULL UNIQUE,
         "deliveredAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
         "deliveryMethod" TEXT,
@@ -514,12 +549,67 @@ export async function POST() {
         "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY ("orgId") REFERENCES "Organization"("id") ON DELETE CASCADE ON UPDATE CASCADE,
         FOREIGN KEY ("saleId") REFERENCES "Sale"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+        FOREIGN KEY ("invoiceId") REFERENCES "Invoice"("id") ON DELETE CASCADE ON UPDATE CASCADE,
         FOREIGN KEY ("createdById") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE
       )
     `);
     await prisma.$executeRawUnsafe('CREATE INDEX IF NOT EXISTS "DeliveryNote_orgId_deliveredAt_idx" ON "DeliveryNote"("orgId", "deliveredAt")');
     await prisma.$executeRawUnsafe('CREATE INDEX IF NOT EXISTS "DeliveryNote_saleId_idx" ON "DeliveryNote"("saleId")');
+    await prisma.$executeRawUnsafe('CREATE INDEX IF NOT EXISTS "DeliveryNote_invoiceId_idx" ON "DeliveryNote"("invoiceId")');
     changes.push({ kind: "create_table", detail: "Created DeliveryNote + indexes" });
+  } else {
+    const dnCols = await tableColumns("DeliveryNote");
+    const addDnColumn = async (name: string, type: string, dflt?: string) => {
+      if (dnCols.has(name)) return;
+      const defaultClause = dflt ? ` DEFAULT ${dflt}` : "";
+      await prisma.$executeRawUnsafe(`ALTER TABLE "DeliveryNote" ADD COLUMN "${name}" ${type}${defaultClause}`);
+      changes.push({ kind: "alter_table", detail: `Added DeliveryNote.${name}` });
+    };
+    await addDnColumn("invoiceId", "TEXT");
+    await addDnColumn("createdById", "TEXT");
+    await addDnColumn("createdAt", "DATETIME");
+
+    const dnInfo = await tableInfo("DeliveryNote");
+    const saleIdNotNull = dnInfo.find((c) => c.name === "saleId")?.notnull === 1;
+    if (saleIdNotNull) {
+      await prisma.$executeRawUnsafe(`PRAGMA foreign_keys=OFF;`);
+      await prisma.$executeRawUnsafe(`
+        CREATE TABLE IF NOT EXISTS "_DeliveryNote_new" (
+          "id" TEXT NOT NULL PRIMARY KEY,
+          "orgId" TEXT NOT NULL,
+          "saleId" TEXT,
+          "invoiceId" TEXT,
+          "deliveryNoteNumber" TEXT NOT NULL UNIQUE,
+          "deliveredAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          "deliveryMethod" TEXT,
+          "deliveredByName" TEXT NOT NULL,
+          "receivedByName" TEXT NOT NULL,
+          "receivedBySignatureText" TEXT,
+          "note" TEXT,
+          "createdById" TEXT,
+          "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY ("orgId") REFERENCES "Organization"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+          FOREIGN KEY ("saleId") REFERENCES "Sale"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+          FOREIGN KEY ("invoiceId") REFERENCES "Invoice"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+          FOREIGN KEY ("createdById") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE
+        )
+      `);
+      const hasInvoiceId = dnCols.has("invoiceId");
+      const hasCreatedById = dnCols.has("createdById");
+      const hasCreatedAt = dnCols.has("createdAt");
+      await prisma.$executeRawUnsafe(`
+        INSERT OR REPLACE INTO "_DeliveryNote_new" (id, orgId, saleId, invoiceId, deliveryNoteNumber, deliveredAt, deliveryMethod, deliveredByName, receivedByName, receivedBySignatureText, note, createdById, createdAt)
+        SELECT id, orgId, saleId, ${hasInvoiceId ? "invoiceId" : "NULL"}, deliveryNoteNumber, deliveredAt, deliveryMethod, deliveredByName, receivedByName, receivedBySignatureText, note, ${hasCreatedById ? "createdById" : "NULL"}, ${hasCreatedAt ? "createdAt" : "CURRENT_TIMESTAMP"}
+        FROM "DeliveryNote"
+      `);
+      await prisma.$executeRawUnsafe('DROP TABLE "DeliveryNote"');
+      await prisma.$executeRawUnsafe('ALTER TABLE "_DeliveryNote_new" RENAME TO "DeliveryNote"');
+      await prisma.$executeRawUnsafe(`PRAGMA foreign_keys=ON;`);
+      changes.push({ kind: "alter_table", detail: "Rebuilt DeliveryNote to allow invoice-only notes" });
+    }
+    await prisma.$executeRawUnsafe('CREATE INDEX IF NOT EXISTS "DeliveryNote_orgId_deliveredAt_idx" ON "DeliveryNote"("orgId", "deliveredAt")');
+    await prisma.$executeRawUnsafe('CREATE INDEX IF NOT EXISTS "DeliveryNote_saleId_idx" ON "DeliveryNote"("saleId")');
+    await prisma.$executeRawUnsafe('CREATE INDEX IF NOT EXISTS "DeliveryNote_invoiceId_idx" ON "DeliveryNote"("invoiceId")');
   }
 
   const hasDeliveryNoteItem = await tableExists("DeliveryNoteItem");
@@ -958,7 +1048,7 @@ export async function POST() {
       "updatedAt" DATETIME NOT NULL,
       CONSTRAINT "UserGroup_orgId_fkey" FOREIGN KEY ("orgId") REFERENCES "Organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE
     )`);
-    await prisma.$executeRawUnsafe(`CREATE INDEX "UserGroup_orgId_idx" ON "UserGroup"("orgId")`);
+    await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "UserGroup_orgId_idx" ON "UserGroup"("orgId")`);
     changes.push({ kind: "create_table", detail: "Created UserGroup" });
   }
 
@@ -971,7 +1061,7 @@ export async function POST() {
       CONSTRAINT "UserGroupMember_groupId_fkey" FOREIGN KEY ("groupId") REFERENCES "UserGroup" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
       CONSTRAINT "UserGroupMember_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE
     )`);
-    await prisma.$executeRawUnsafe(`CREATE UNIQUE INDEX "UserGroupMember_groupId_userId_key" ON "UserGroupMember"("groupId","userId")`);
+    await prisma.$executeRawUnsafe(`CREATE UNIQUE INDEX IF NOT EXISTS "UserGroupMember_groupId_userId_key" ON "UserGroupMember"("groupId","userId")`);
     changes.push({ kind: "create_table", detail: "Created UserGroupMember" });
   }
 
@@ -1002,7 +1092,7 @@ export async function POST() {
       "updatedAt" DATETIME NOT NULL,
       CONSTRAINT "SalesTarget_orgId_fkey" FOREIGN KEY ("orgId") REFERENCES "Organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE
     )`);
-    await prisma.$executeRawUnsafe(`CREATE INDEX "SalesTarget_orgId_period_idx" ON "SalesTarget"("orgId","period")`);
+    await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "SalesTarget_orgId_period_idx" ON "SalesTarget"("orgId","period")`);
     changes.push({ kind: "create_table", detail: "Created SalesTarget" });
   }
 
@@ -1028,7 +1118,7 @@ export async function POST() {
       "updatedAt" DATETIME NOT NULL,
       CONSTRAINT "Lead_orgId_fkey" FOREIGN KEY ("orgId") REFERENCES "Organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE
     )`);
-    await prisma.$executeRawUnsafe(`CREATE INDEX "Lead_orgId_status_idx" ON "Lead"("orgId","status")`);
+    await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "Lead_orgId_status_idx" ON "Lead"("orgId","status")`);
     changes.push({ kind: "create_table", detail: "Created Lead" });
   }
 
@@ -1069,8 +1159,8 @@ export async function POST() {
       "updatedAt" DATETIME NOT NULL,
       CONSTRAINT "Quotation_orgId_fkey" FOREIGN KEY ("orgId") REFERENCES "Organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE
     )`);
-    await prisma.$executeRawUnsafe(`CREATE UNIQUE INDEX "Quotation_quotationNumber_key" ON "Quotation"("quotationNumber")`);
-    await prisma.$executeRawUnsafe(`CREATE INDEX "Quotation_orgId_status_idx" ON "Quotation"("orgId","status")`);
+    await prisma.$executeRawUnsafe(`CREATE UNIQUE INDEX IF NOT EXISTS "Quotation_quotationNumber_key" ON "Quotation"("quotationNumber")`);
+    await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "Quotation_orgId_status_idx" ON "Quotation"("orgId","status")`);
     changes.push({ kind: "create_table", detail: "Created Quotation" });
   }
 
@@ -1088,7 +1178,7 @@ export async function POST() {
       "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
       CONSTRAINT "QuotationItem_quotationId_fkey" FOREIGN KEY ("quotationId") REFERENCES "Quotation" ("id") ON DELETE CASCADE ON UPDATE CASCADE
     )`);
-    await prisma.$executeRawUnsafe(`CREATE INDEX "QuotationItem_quotationId_idx" ON "QuotationItem"("quotationId")`);
+    await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "QuotationItem_quotationId_idx" ON "QuotationItem"("quotationId")`);
     changes.push({ kind: "create_table", detail: "Created QuotationItem" });
   }
 
@@ -1131,8 +1221,8 @@ export async function POST() {
       "updatedAt" DATETIME NOT NULL,
       CONSTRAINT "PosSession_orgId_fkey" FOREIGN KEY ("orgId") REFERENCES "Organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE
     )`);
-    await prisma.$executeRawUnsafe(`CREATE INDEX "PosSession_orgId_status_idx" ON "PosSession"("orgId","status")`);
-    await prisma.$executeRawUnsafe(`CREATE INDEX "PosSession_operatorId_idx" ON "PosSession"("operatorId")`);
+    await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "PosSession_orgId_status_idx" ON "PosSession"("orgId","status")`);
+    await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "PosSession_operatorId_idx" ON "PosSession"("operatorId")`);
     changes.push({ kind: "create_table", detail: "Created PosSession" });
   }
 
@@ -1164,7 +1254,7 @@ export async function POST() {
       "updatedAt" DATETIME NOT NULL,
       CONSTRAINT "StockLocation_orgId_fkey" FOREIGN KEY ("orgId") REFERENCES "Organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE
     )`);
-    await prisma.$executeRawUnsafe(`CREATE INDEX "StockLocation_orgId_idx" ON "StockLocation"("orgId")`);
+    await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "StockLocation_orgId_idx" ON "StockLocation"("orgId")`);
     changes.push({ kind: "create_table", detail: "Created StockLocation" });
   }
 
@@ -1177,7 +1267,7 @@ export async function POST() {
       "updatedAt" DATETIME NOT NULL,
       CONSTRAINT "PartLocationStock_locationId_fkey" FOREIGN KEY ("locationId") REFERENCES "StockLocation" ("id") ON DELETE CASCADE ON UPDATE CASCADE
     )`);
-    await prisma.$executeRawUnsafe(`CREATE UNIQUE INDEX "PartLocationStock_partId_locationId_key" ON "PartLocationStock"("partId","locationId")`);
+    await prisma.$executeRawUnsafe(`CREATE UNIQUE INDEX IF NOT EXISTS "PartLocationStock_partId_locationId_key" ON "PartLocationStock"("partId","locationId")`);
     changes.push({ kind: "create_table", detail: "Created PartLocationStock" });
   }
 
@@ -1215,8 +1305,8 @@ export async function POST() {
       "updatedAt" DATETIME NOT NULL,
       CONSTRAINT "StockCount_orgId_fkey" FOREIGN KEY ("orgId") REFERENCES "Organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE
     )`);
-    await prisma.$executeRawUnsafe(`CREATE UNIQUE INDEX "StockCount_countNumber_key" ON "StockCount"("countNumber")`);
-    await prisma.$executeRawUnsafe(`CREATE INDEX "StockCount_orgId_status_idx" ON "StockCount"("orgId","status","countedAt")`);
+    await prisma.$executeRawUnsafe(`CREATE UNIQUE INDEX IF NOT EXISTS "StockCount_countNumber_key" ON "StockCount"("countNumber")`);
+    await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "StockCount_orgId_status_idx" ON "StockCount"("orgId","status","countedAt")`);
     changes.push({ kind: "create_table", detail: "Created StockCount" });
   }
 
@@ -1251,7 +1341,7 @@ export async function POST() {
       "updatedAt" DATETIME NOT NULL,
       CONSTRAINT "StockTransfer_orgId_fkey" FOREIGN KEY ("orgId") REFERENCES "Organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE
     )`);
-    await prisma.$executeRawUnsafe(`CREATE UNIQUE INDEX "StockTransfer_transferNumber_key" ON "StockTransfer"("transferNumber")`);
+    await prisma.$executeRawUnsafe(`CREATE UNIQUE INDEX IF NOT EXISTS "StockTransfer_transferNumber_key" ON "StockTransfer"("transferNumber")`);
     changes.push({ kind: "create_table", detail: "Created StockTransfer" });
   }
 
@@ -1284,7 +1374,7 @@ export async function POST() {
       "updatedAt" DATETIME NOT NULL,
       CONSTRAINT "GoodsReceived_orgId_fkey" FOREIGN KEY ("orgId") REFERENCES "Organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE
     )`);
-    await prisma.$executeRawUnsafe(`CREATE UNIQUE INDEX "GoodsReceived_grnNumber_key" ON "GoodsReceived"("grnNumber")`);
+    await prisma.$executeRawUnsafe(`CREATE UNIQUE INDEX IF NOT EXISTS "GoodsReceived_grnNumber_key" ON "GoodsReceived"("grnNumber")`);
     changes.push({ kind: "create_table", detail: "Created GoodsReceived" });
   }
 
@@ -1309,22 +1399,63 @@ export async function POST() {
       "id" TEXT NOT NULL PRIMARY KEY,
       "orgId" TEXT NOT NULL,
       "billNumber" TEXT NOT NULL,
+      "supplierRef" TEXT,
       "supplierId" TEXT NOT NULL,
-      "purchaseOrderId" TEXT,
-      "status" TEXT NOT NULL DEFAULT 'DRAFT',
-      "dueDate" DATETIME,
+      "poId" TEXT,
+      "grnId" TEXT,
+      "currency" TEXT NOT NULL DEFAULT 'UGX',
+      "status" TEXT NOT NULL DEFAULT 'POSTED',
       "subtotal" REAL NOT NULL DEFAULT 0,
       "taxAmount" REAL NOT NULL DEFAULT 0,
       "totalAmount" REAL NOT NULL DEFAULT 0,
       "paidAmount" REAL NOT NULL DEFAULT 0,
-      "note" TEXT,
-      "issuedAt" DATETIME,
+      "issuedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "dueAt" DATETIME,
+      "notes" TEXT,
+      "createdById" TEXT,
       "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      "updatedAt" DATETIME NOT NULL,
+      "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
       CONSTRAINT "SupplierBill_orgId_fkey" FOREIGN KEY ("orgId") REFERENCES "Organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE
     )`);
-    await prisma.$executeRawUnsafe(`CREATE UNIQUE INDEX "SupplierBill_billNumber_key" ON "SupplierBill"("billNumber")`);
+    await prisma.$executeRawUnsafe(`CREATE UNIQUE INDEX IF NOT EXISTS "SupplierBill_billNumber_key" ON "SupplierBill"("billNumber")`);
+    await prisma.$executeRawUnsafe('CREATE INDEX IF NOT EXISTS "SupplierBill_orgId_issuedAt_idx" ON "SupplierBill"("orgId", "issuedAt")');
+    await prisma.$executeRawUnsafe('CREATE INDEX IF NOT EXISTS "SupplierBill_orgId_status_idx" ON "SupplierBill"("orgId", "status")');
+    await prisma.$executeRawUnsafe('CREATE INDEX IF NOT EXISTS "SupplierBill_supplierId_idx" ON "SupplierBill"("supplierId")');
+    await prisma.$executeRawUnsafe('CREATE INDEX IF NOT EXISTS "SupplierBill_poId_idx" ON "SupplierBill"("poId")');
+    await prisma.$executeRawUnsafe('CREATE INDEX IF NOT EXISTS "SupplierBill_grnId_idx" ON "SupplierBill"("grnId")');
     changes.push({ kind: "create_table", detail: "Created SupplierBill" });
+  } else {
+    const sbCols = await tableColumns("SupplierBill");
+    const addSbColumn = async (name: string, type: string, dflt?: string) => {
+      if (sbCols.has(name)) return;
+      const defaultClause = dflt ? ` DEFAULT ${dflt}` : "";
+      await prisma.$executeRawUnsafe(`ALTER TABLE "SupplierBill" ADD COLUMN "${name}" ${type}${defaultClause}`);
+      changes.push({ kind: "alter_table", detail: `Added SupplierBill.${name}` });
+    };
+    await addSbColumn("supplierRef", "TEXT");
+    await addSbColumn("poId", "TEXT");
+    await addSbColumn("grnId", "TEXT");
+    await addSbColumn("currency", "TEXT", "'UGX'");
+    await addSbColumn("dueAt", "DATETIME");
+    await addSbColumn("notes", "TEXT");
+    await addSbColumn("createdById", "TEXT");
+    if (sbCols.has("purchaseOrderId") && !sbCols.has("poId")) {
+      await prisma.$executeRawUnsafe('UPDATE "SupplierBill" SET "poId" = "purchaseOrderId" WHERE "poId" IS NULL');
+      changes.push({ kind: "data", detail: "Copied SupplierBill.purchaseOrderId to poId" });
+    }
+    if (sbCols.has("dueDate") && !sbCols.has("dueAt")) {
+      await prisma.$executeRawUnsafe('UPDATE "SupplierBill" SET "dueAt" = "dueDate" WHERE "dueAt" IS NULL');
+      changes.push({ kind: "data", detail: "Copied SupplierBill.dueDate to dueAt" });
+    }
+    if (sbCols.has("note") && !sbCols.has("notes")) {
+      await prisma.$executeRawUnsafe('UPDATE "SupplierBill" SET "notes" = "note" WHERE "notes" IS NULL');
+      changes.push({ kind: "data", detail: "Copied SupplierBill.note to notes" });
+    }
+    await prisma.$executeRawUnsafe('CREATE INDEX IF NOT EXISTS "SupplierBill_orgId_issuedAt_idx" ON "SupplierBill"("orgId", "issuedAt")');
+    await prisma.$executeRawUnsafe('CREATE INDEX IF NOT EXISTS "SupplierBill_orgId_status_idx" ON "SupplierBill"("orgId", "status")');
+    await prisma.$executeRawUnsafe('CREATE INDEX IF NOT EXISTS "SupplierBill_supplierId_idx" ON "SupplierBill"("supplierId")');
+    await prisma.$executeRawUnsafe('CREATE INDEX IF NOT EXISTS "SupplierBill_poId_idx" ON "SupplierBill"("poId")');
+    await prisma.$executeRawUnsafe('CREATE INDEX IF NOT EXISTS "SupplierBill_grnId_idx" ON "SupplierBill"("grnId")');
   }
 
   if (!(await tableExists("SupplierBillItem"))) {
@@ -1332,22 +1463,32 @@ export async function POST() {
       "id" TEXT NOT NULL PRIMARY KEY,
       "billId" TEXT NOT NULL,
       "description" TEXT NOT NULL,
-      "quantity" REAL NOT NULL DEFAULT 1,
+      "quantity" INTEGER NOT NULL DEFAULT 1,
       "unitCost" REAL NOT NULL DEFAULT 0,
-      "totalCost" REAL NOT NULL DEFAULT 0,
+      "lineTotal" REAL NOT NULL DEFAULT 0,
       "partId" TEXT,
       "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
       CONSTRAINT "SupplierBillItem_billId_fkey" FOREIGN KEY ("billId") REFERENCES "SupplierBill" ("id") ON DELETE CASCADE ON UPDATE CASCADE
     )`);
     changes.push({ kind: "create_table", detail: "Created SupplierBillItem" });
+  } else {
+    const sbiCols = await tableColumns("SupplierBillItem");
+    if (!sbiCols.has("lineTotal")) {
+      await prisma.$executeRawUnsafe('ALTER TABLE "SupplierBillItem" ADD COLUMN "lineTotal" REAL NOT NULL DEFAULT 0');
+      changes.push({ kind: "alter_table", detail: "Added SupplierBillItem.lineTotal" });
+    }
+    if (sbiCols.has("totalCost") && !sbiCols.has("lineTotal")) {
+      await prisma.$executeRawUnsafe('UPDATE "SupplierBillItem" SET "lineTotal" = "totalCost" WHERE "lineTotal" = 0');
+      changes.push({ kind: "data", detail: "Copied SupplierBillItem.totalCost to lineTotal" });
+    }
   }
 
   if (!(await tableExists("SupplierPayment"))) {
     await prisma.$executeRawUnsafe(`CREATE TABLE "SupplierPayment" (
       "id" TEXT NOT NULL PRIMARY KEY,
       "orgId" TEXT NOT NULL,
-      "supplierId" TEXT NOT NULL,
-      "billId" TEXT,
+      "billId" TEXT NOT NULL,
+      "currency" TEXT NOT NULL DEFAULT 'UGX',
       "amount" REAL NOT NULL,
       "method" TEXT NOT NULL DEFAULT 'CASH',
       "reference" TEXT,
@@ -1355,10 +1496,23 @@ export async function POST() {
       "note" TEXT,
       "createdById" TEXT,
       "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      "updatedAt" DATETIME NOT NULL,
       CONSTRAINT "SupplierPayment_orgId_fkey" FOREIGN KEY ("orgId") REFERENCES "Organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE
     )`);
+    await prisma.$executeRawUnsafe('CREATE INDEX IF NOT EXISTS "SupplierPayment_orgId_paidAt_idx" ON "SupplierPayment"("orgId", "paidAt")');
+    await prisma.$executeRawUnsafe('CREATE INDEX IF NOT EXISTS "SupplierPayment_billId_idx" ON "SupplierPayment"("billId")');
     changes.push({ kind: "create_table", detail: "Created SupplierPayment" });
+  } else {
+    const spCols = await tableColumns("SupplierPayment");
+    const addSpColumn = async (name: string, type: string, dflt?: string) => {
+      if (spCols.has(name)) return;
+      const defaultClause = dflt ? ` DEFAULT ${dflt}` : "";
+      await prisma.$executeRawUnsafe(`ALTER TABLE "SupplierPayment" ADD COLUMN "${name}" ${type}${defaultClause}`);
+      changes.push({ kind: "alter_table", detail: `Added SupplierPayment.${name}` });
+    };
+    await addSpColumn("currency", "TEXT", "'UGX'");
+    await addSpColumn("createdById", "TEXT");
+    await prisma.$executeRawUnsafe('CREATE INDEX IF NOT EXISTS "SupplierPayment_orgId_paidAt_idx" ON "SupplierPayment"("orgId", "paidAt")');
+    await prisma.$executeRawUnsafe('CREATE INDEX IF NOT EXISTS "SupplierPayment_billId_idx" ON "SupplierPayment"("billId")');
   }
 
   // PurchaseRequest + PurchaseRequestItem
@@ -1376,7 +1530,7 @@ export async function POST() {
       "updatedAt" DATETIME NOT NULL,
       CONSTRAINT "PurchaseRequest_orgId_fkey" FOREIGN KEY ("orgId") REFERENCES "Organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE
     )`);
-    await prisma.$executeRawUnsafe(`CREATE UNIQUE INDEX "PurchaseRequest_requestNumber_key" ON "PurchaseRequest"("requestNumber")`);
+    await prisma.$executeRawUnsafe(`CREATE UNIQUE INDEX IF NOT EXISTS "PurchaseRequest_requestNumber_key" ON "PurchaseRequest"("requestNumber")`);
     changes.push({ kind: "create_table", detail: "Created PurchaseRequest" });
   }
 
@@ -1414,7 +1568,7 @@ export async function POST() {
       "updatedAt" DATETIME NOT NULL,
       CONSTRAINT "Complaint_orgId_fkey" FOREIGN KEY ("orgId") REFERENCES "Organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE
     )`);
-    await prisma.$executeRawUnsafe(`CREATE INDEX "Complaint_orgId_status_idx" ON "Complaint"("orgId","status")`);
+    await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "Complaint_orgId_status_idx" ON "Complaint"("orgId","status")`);
     changes.push({ kind: "create_table", detail: "Created Complaint" });
   }
 
@@ -1437,7 +1591,7 @@ export async function POST() {
       "updatedAt" DATETIME NOT NULL,
       CONSTRAINT "FieldVisit_orgId_fkey" FOREIGN KEY ("orgId") REFERENCES "Organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE
     )`);
-    await prisma.$executeRawUnsafe(`CREATE INDEX "FieldVisit_orgId_status_idx" ON "FieldVisit"("orgId","status")`);
+    await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "FieldVisit_orgId_status_idx" ON "FieldVisit"("orgId","status")`);
     changes.push({ kind: "create_table", detail: "Created FieldVisit" });
   }
 
@@ -1449,7 +1603,7 @@ export async function POST() {
       CONSTRAINT "OrgModuleGrant_orgId_fkey" FOREIGN KEY ("orgId") REFERENCES "Organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
       PRIMARY KEY ("orgId", "module")
     )`);
-    await prisma.$executeRawUnsafe(`CREATE INDEX "OrgModuleGrant_orgId_idx" ON "OrgModuleGrant"("orgId")`);
+    await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "OrgModuleGrant_orgId_idx" ON "OrgModuleGrant"("orgId")`);
     changes.push({ kind: "create_table", detail: "Created OrgModuleGrant" });
   } else {
     // If an old db-fix created OrgModuleGrant with a spurious 'id' column,
@@ -1466,7 +1620,7 @@ export async function POST() {
           CONSTRAINT "OrgModuleGrant_orgId_fkey" FOREIGN KEY ("orgId") REFERENCES "Organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
           PRIMARY KEY ("orgId", "module")
         )`);
-        await prisma.$executeRawUnsafe(`CREATE INDEX "OrgModuleGrant_orgId_idx" ON "OrgModuleGrant"("orgId")`);
+        await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "OrgModuleGrant_orgId_idx" ON "OrgModuleGrant"("orgId")`);
         for (const row of rows) {
           await prisma.$executeRawUnsafe(`INSERT OR IGNORE INTO "OrgModuleGrant" ("orgId","module") VALUES ('${row.orgId}','${row.module}')`);
         }
@@ -1491,8 +1645,8 @@ export async function POST() {
       "userAgent"  TEXT,
       "createdAt"  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
     )`);
-    await prisma.$executeRawUnsafe(`CREATE INDEX "SystemAuditEvent_orgId_createdAt_idx" ON "SystemAuditEvent"("orgId","createdAt")`);
-    await prisma.$executeRawUnsafe(`CREATE INDEX "SystemAuditEvent_entityType_entityId_createdAt_idx" ON "SystemAuditEvent"("entityType","entityId","createdAt")`);
+    await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "SystemAuditEvent_orgId_createdAt_idx" ON "SystemAuditEvent"("orgId","createdAt")`);
+    await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "SystemAuditEvent_entityType_entityId_createdAt_idx" ON "SystemAuditEvent"("entityType","entityId","createdAt")`);
     changes.push({ kind: "create_table", detail: "Created SystemAuditEvent" });
   }
 
@@ -1608,8 +1762,8 @@ export async function POST() {
       CONSTRAINT "ChartOfAccount_orgId_fkey" FOREIGN KEY ("orgId") REFERENCES "Organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
       CONSTRAINT "ChartOfAccount_parentId_fkey" FOREIGN KEY ("parentId") REFERENCES "ChartOfAccount" ("id") ON DELETE SET NULL ON UPDATE CASCADE
     )`);
-    await prisma.$executeRawUnsafe(`CREATE UNIQUE INDEX "ChartOfAccount_orgId_code_key" ON "ChartOfAccount"("orgId","code")`);
-    await prisma.$executeRawUnsafe(`CREATE INDEX "ChartOfAccount_orgId_type_idx" ON "ChartOfAccount"("orgId","type")`);
+    await prisma.$executeRawUnsafe(`CREATE UNIQUE INDEX IF NOT EXISTS "ChartOfAccount_orgId_code_key" ON "ChartOfAccount"("orgId","code")`);
+    await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "ChartOfAccount_orgId_type_idx" ON "ChartOfAccount"("orgId","type")`);
     changes.push({ kind: "create_table", detail: "Created ChartOfAccount" });
   }
 
@@ -1631,9 +1785,9 @@ export async function POST() {
       CONSTRAINT "JournalEntry_orgId_fkey" FOREIGN KEY ("orgId") REFERENCES "Organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
       CONSTRAINT "JournalEntry_createdById_fkey" FOREIGN KEY ("createdById") REFERENCES "User" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
     )`);
-    await prisma.$executeRawUnsafe(`CREATE UNIQUE INDEX "JournalEntry_orgId_entryNumber_key" ON "JournalEntry"("orgId","entryNumber")`);
-    await prisma.$executeRawUnsafe(`CREATE INDEX "JournalEntry_orgId_date_idx" ON "JournalEntry"("orgId","date")`);
-    await prisma.$executeRawUnsafe(`CREATE INDEX "JournalEntry_orgId_status_idx" ON "JournalEntry"("orgId","status")`);
+    await prisma.$executeRawUnsafe(`CREATE UNIQUE INDEX IF NOT EXISTS "JournalEntry_orgId_entryNumber_key" ON "JournalEntry"("orgId","entryNumber")`);
+    await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "JournalEntry_orgId_date_idx" ON "JournalEntry"("orgId","date")`);
+    await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "JournalEntry_orgId_status_idx" ON "JournalEntry"("orgId","status")`);
     changes.push({ kind: "create_table", detail: "Created JournalEntry" });
   }
 
@@ -1649,8 +1803,8 @@ export async function POST() {
       CONSTRAINT "JournalLine_journalEntryId_fkey" FOREIGN KEY ("journalEntryId") REFERENCES "JournalEntry" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
       CONSTRAINT "JournalLine_accountId_fkey" FOREIGN KEY ("accountId") REFERENCES "ChartOfAccount" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
     )`);
-    await prisma.$executeRawUnsafe(`CREATE INDEX "JournalLine_journalEntryId_idx" ON "JournalLine"("journalEntryId")`);
-    await prisma.$executeRawUnsafe(`CREATE INDEX "JournalLine_accountId_idx" ON "JournalLine"("accountId")`);
+    await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "JournalLine_journalEntryId_idx" ON "JournalLine"("journalEntryId")`);
+    await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "JournalLine_accountId_idx" ON "JournalLine"("accountId")`);
     changes.push({ kind: "create_table", detail: "Created JournalLine" });
   }
 
@@ -1670,7 +1824,7 @@ export async function POST() {
       "updatedAt" DATETIME NOT NULL,
       CONSTRAINT "BankAccount_orgId_fkey" FOREIGN KEY ("orgId") REFERENCES "Organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE
     )`);
-    await prisma.$executeRawUnsafe(`CREATE INDEX "BankAccount_orgId_idx" ON "BankAccount"("orgId")`);
+    await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "BankAccount_orgId_idx" ON "BankAccount"("orgId")`);
     changes.push({ kind: "create_table", detail: "Created BankAccount" });
   }
 
@@ -1690,8 +1844,8 @@ export async function POST() {
       CONSTRAINT "BankTransaction_bankAccountId_fkey" FOREIGN KEY ("bankAccountId") REFERENCES "BankAccount" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
       CONSTRAINT "BankTransaction_orgId_fkey" FOREIGN KEY ("orgId") REFERENCES "Organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE
     )`);
-    await prisma.$executeRawUnsafe(`CREATE INDEX "BankTransaction_bankAccountId_date_idx" ON "BankTransaction"("bankAccountId","date")`);
-    await prisma.$executeRawUnsafe(`CREATE INDEX "BankTransaction_orgId_date_idx" ON "BankTransaction"("orgId","date")`);
+    await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "BankTransaction_bankAccountId_date_idx" ON "BankTransaction"("bankAccountId","date")`);
+    await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "BankTransaction_orgId_date_idx" ON "BankTransaction"("orgId","date")`);
     changes.push({ kind: "create_table", detail: "Created BankTransaction" });
   }
 
@@ -1714,7 +1868,7 @@ export async function POST() {
       CONSTRAINT "Campaign_orgId_fkey" FOREIGN KEY ("orgId") REFERENCES "Organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
       CONSTRAINT "Campaign_createdById_fkey" FOREIGN KEY ("createdById") REFERENCES "User" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
     )`);
-    await prisma.$executeRawUnsafe(`CREATE INDEX "Campaign_orgId_status_idx" ON "Campaign"("orgId","status")`);
+    await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "Campaign_orgId_status_idx" ON "Campaign"("orgId","status")`);
     changes.push({ kind: "create_table", detail: "Created Campaign" });
   }
 
@@ -1735,12 +1889,12 @@ export async function POST() {
       CONSTRAINT "CampaignContact_leadId_fkey" FOREIGN KEY ("leadId") REFERENCES "Lead" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
       CONSTRAINT "CampaignContact_clientId_fkey" FOREIGN KEY ("clientId") REFERENCES "Client" ("id") ON DELETE SET NULL ON UPDATE CASCADE
     )`);
-    await prisma.$executeRawUnsafe(`CREATE INDEX "CampaignContact_campaignId_status_idx" ON "CampaignContact"("campaignId","status")`);
+    await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "CampaignContact_campaignId_status_idx" ON "CampaignContact"("campaignId","status")`);
     changes.push({ kind: "create_table", detail: "Created CampaignContact" });
   }
 
   // Lead.score column
-  {
+  if (await tableExists("Lead")) {
     const lcols = await tableColumns("Lead");
     if (!lcols.has("score")) {
       await prisma.$executeRawUnsafe(`ALTER TABLE "Lead" ADD COLUMN "score" INTEGER NOT NULL DEFAULT 0`);
@@ -1749,7 +1903,7 @@ export async function POST() {
   }
 
   // Invoice — ensure new columns exist (jobId nullable, clientId, invoiceType, subject, dueDate)
-  {
+  if (await tableExists("Invoice")) {
     const icols = await tableColumns("Invoice");
     const addInvoiceCol = async (name: string, type: string, dflt?: string) => {
       if (icols.has(name)) return;
@@ -1767,7 +1921,7 @@ export async function POST() {
   }
 
   // Quotation — ensure convertedToInvoiceId column exists
-  {
+  if (await tableExists("Quotation")) {
     const qcols = await tableColumns("Quotation");
     if (!qcols.has("convertedToInvoiceId")) {
       await prisma.$executeRawUnsafe(`ALTER TABLE "Quotation" ADD COLUMN "convertedToInvoiceId" TEXT`);
@@ -1777,7 +1931,7 @@ export async function POST() {
   }
 
   // Receipt — ensure clientId column exists
-  {
+  if (await tableExists("Receipt")) {
     const rcols = await tableColumns("Receipt");
     if (!rcols.has("clientId")) {
       await prisma.$executeRawUnsafe(`ALTER TABLE "Receipt" ADD COLUMN "clientId" TEXT`);
@@ -1787,7 +1941,7 @@ export async function POST() {
   }
 
   // CashierShift — ensure posSessionId column exists
-  {
+  if (await tableExists("CashierShift")) {
     const cscols = await tableColumns("CashierShift");
     if (!cscols.has("posSessionId")) {
       await prisma.$executeRawUnsafe(`ALTER TABLE "CashierShift" ADD COLUMN "posSessionId" TEXT`);
@@ -1870,4 +2024,19 @@ export async function POST() {
       CampaignContact: await tableExists("CampaignContact"),
     },
   });
+}
+
+export async function POST() {
+  try {
+    return await runDbFix();
+  } catch (error) {
+    console.error("[admin/db-fix] failed", error);
+    return NextResponse.json(
+      {
+        ok: false,
+        error: error instanceof Error ? error.message : "DB Fix failed",
+      },
+      { status: 500 },
+    );
+  }
 }

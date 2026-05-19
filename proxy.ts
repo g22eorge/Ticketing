@@ -52,6 +52,10 @@ export function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const ip = clientIp(req);
 
+  if (pathname === "/api/admin/db-fix/route.ts") {
+    return NextResponse.redirect(new URL("/api/admin/db-fix", req.url));
+  }
+
   // ── Rate limiting ───────────────────────────────────────────────────────────
 
   // Webhook endpoints: allow bursts but cap runaway callers (200 / min per IP).
@@ -107,11 +111,6 @@ export function proxy(req: NextRequest) {
   }
 
   const session = getSessionCookie(req);
-
-  // Redirect authenticated users away from the login page.
-  if (pathname === "/login" && session) {
-    return NextResponse.redirect(new URL("/dashboard", req.url));
-  }
 
   // Root landing page and all explicitly public paths are always accessible.
   if (PUBLIC_PATHS.some((p) => pathname.startsWith(p))) {
