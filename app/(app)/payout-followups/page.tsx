@@ -302,7 +302,7 @@ export default async function PayoutFollowupsPage({
             → All Jobs
           </Link>
         )}
-        <Link href="/finance" className="rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 py-1.5 text-[var(--ink-muted)] hover:text-[var(--ink)] transition-colors">
+        <Link href="/finance/accounts" className="rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 py-1.5 text-[var(--ink-muted)] hover:text-[var(--ink)] transition-colors">
           → Finance Dashboard
         </Link>
       </div>
