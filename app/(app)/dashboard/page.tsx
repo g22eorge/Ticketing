@@ -935,9 +935,10 @@ export default async function DashboardPage({
       expensesMtd,
       // Operations
       awaitingApprovalCount,
-      pendingRequests,
       receivedToday,
       completedToday,
+      // Sales funnel
+      leadFunnel,
       // 6-month trend
       completedForTrend,
       salesForTrend,
@@ -977,10 +978,10 @@ export default async function DashboardPage({
 
       prisma.job.count({ where: { ...orgFilter, status: "AWAITING_APPROVAL" } }).catch(() => 0),
 
-      prisma.repairRequest.count({ where: { requestStatus: { in: ["PENDING_FRONT_DESK","PENDING_INTAKE"] } } }).catch(() => 0),
-
       prisma.job.count({ where: { ...orgFilter, receivedAt: { gte: todayStart } } }),
       prisma.job.count({ where: { ...orgFilter, completedAt: { gte: todayStart } } }),
+
+      prisma.lead.groupBy({ by: ["status"], where: orgFilter, _count: { status: true } }).catch(() => [] as { status: string; _count: { status: number } }[]),
 
       prisma.job.findMany({
         where: { ...orgFilter, status: "COMPLETED", completedAt: { gte: last6Months[0].start, lte: last6Months[5].end } },
@@ -1025,7 +1026,18 @@ export default async function DashboardPage({
       return { key: m.key, repairs, products, corporate, total: repairs + products + corporate };
     });
 
-    const hasAlerts = awaitingApprovalCount > 0 || pendingRequests > 0;
+    // Sales funnel counts
+    const leadCountMap = new Map<string, number>();
+    for (const row of leadFunnel) leadCountMap.set(row.status, row._count.status);
+    const LEAD_STAGES = [
+      { key: "NEW",           name: "New",           color: "text-[var(--ink)]",  href: "/sales/leads?status=NEW" },
+      { key: "CONTACTED",     name: "Contacted",      color: "text-sky-500",       href: "/sales/leads?status=CONTACTED" },
+      { key: "QUALIFIED",     name: "Qualified",      color: "text-violet-500",    href: "/sales/leads?status=QUALIFIED" },
+      { key: "PROPOSAL_SENT", name: "Proposal Sent",  color: "text-amber-500",     href: "/sales/leads?status=PROPOSAL_SENT" },
+      { key: "WON",           name: "Won",            color: "text-emerald-600",   href: "/sales/leads?status=WON" },
+      { key: "LOST",          name: "Lost",           color: "text-red-500",       href: "/sales/leads?status=LOST" },
+      { key: "STALE",         name: "Stale",          color: "text-[var(--ink-muted)]", href: "/sales/leads?status=STALE" },
+    ] as const;
 
     return (
       <div className="space-y-4">
@@ -1037,26 +1049,6 @@ export default async function DashboardPage({
           secondaryHref="/reports"
           secondaryLabel="Reports"
         />
-
-        {hasAlerts && (
-          <section className="panel-shadow rounded-xl border border-[var(--accent)]/25 bg-[var(--panel)] px-4 py-2.5">
-            <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
-              <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--accent)]">Needs attention —</span>
-              {[
-                awaitingApprovalCount > 0 && { label: `${awaitingApprovalCount} awaiting approval`, href: "/jobs?status=AWAITING_APPROVAL" },
-                pendingRequests > 0 && { label: `${pendingRequests} pending requests`, href: "/intake" },
-              ].filter(Boolean).map((item, i, arr) => {
-                const { label, href } = item as { label: string; href: string };
-                return (
-                  <span key={href} className="inline-flex items-center gap-1">
-                    <Link href={href} className="text-[12px] font-medium text-[var(--ink)] underline-offset-2 hover:text-[var(--accent)] hover:underline">{label}</Link>
-                    {i < arr.length - 1 && <span className="text-[var(--ink-muted)]">·</span>}
-                  </span>
-                );
-              })}
-            </div>
-          </section>
-        )}
 
         {/* ── 3 Revenue Streams ── */}
         <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
@@ -1168,6 +1160,26 @@ export default async function DashboardPage({
                     {s.value}
                   </p>
                   <p className="mt-0.5 text-[10px] leading-tight text-[var(--ink-muted)]">{s.name}</p>
+                </Link>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* ── Sales Funnel Pipeline ── */}
+        <section className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
+          <div className="border-b border-[var(--line)] px-3 py-2.5 flex items-center justify-between gap-2">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Sales Funnel</p>
+            <Link href="/sales/leads" className="text-[11px] font-semibold text-[var(--accent)] hover:underline">All leads →</Link>
+          </div>
+          <div className="flex snap-x overflow-x-auto [scrollbar-width:thin]">
+            {LEAD_STAGES.map((stage) => {
+              const count = leadCountMap.get(stage.key) ?? 0;
+              return (
+                <Link key={stage.key} href={stage.href}
+                  className="flex min-w-[88px] shrink-0 flex-col items-center border-r border-[var(--line)] px-3 py-3.5 text-center transition hover:bg-[var(--panel-strong)] last:border-r-0">
+                  <p className={`text-xl font-bold ${count === 0 ? "text-[var(--ink-muted)]" : stage.color}`}>{count}</p>
+                  <p className="mt-0.5 text-[10px] leading-tight text-[var(--ink-muted)]">{stage.name}</p>
                 </Link>
               );
             })}
