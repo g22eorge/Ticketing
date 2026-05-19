@@ -13,7 +13,7 @@ export default async function OnboardingPage() {
 
   return (
     <div className="flex min-h-dvh flex-col items-center justify-center px-4 py-16">
-      <div className="w-full max-w-md space-y-8">
+      <div className="w-full max-w-2xl space-y-8">
         {/* Logo / wordmark */}
         <div className="space-y-2 text-center">
           <div className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--gold)] text-black">
@@ -23,7 +23,7 @@ export default async function OnboardingPage() {
           </div>
           <h1 className="text-2xl font-bold tracking-tight">Set up your workspace</h1>
           <p className="text-sm text-[var(--ink-muted)]">
-            Enter your business name to create your organisation. You can change it later in settings.
+            Tell us about your business so we can set up the right tools and billing plan for you.
           </p>
         </div>
 

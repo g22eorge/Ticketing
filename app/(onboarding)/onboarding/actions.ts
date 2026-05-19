@@ -2,11 +2,12 @@
 
 import { redirect } from "next/navigation";
 import { z } from "zod";
+import { OrgModule } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/session";
 import { sendWelcomeEmail } from "@/lib/email";
-import { ALL_MODULES } from "@/lib/module-access";
+import { ALL_MODULES, recommendPlanForModules } from "@/lib/module-access";
 
 const schema = z.object({
   businessName: z.string().min(2, "Business name must be at least 2 characters").max(100),
@@ -15,6 +16,7 @@ const schema = z.object({
     .min(2)
     .max(50)
     .regex(/^[a-z0-9-]+$/, "Slug can only contain lowercase letters, numbers, and hyphens"),
+  modules: z.array(z.nativeEnum(OrgModule)).min(1, "Select at least one module"),
 });
 
 function toSlug(name: string): string {
@@ -29,7 +31,7 @@ function toSlug(name: string): string {
 
 export type CreateOrgState = {
   error?: string;
-  fieldErrors?: { businessName?: string[]; slug?: string[] };
+  fieldErrors?: { businessName?: string[]; slug?: string[]; modules?: string[] };
 };
 
 export async function createOrganization(
@@ -38,9 +40,13 @@ export async function createOrganization(
 ): Promise<CreateOrgState> {
   const session = await requireSession();
 
+  const modulesRaw = formData.getAll("module") as string[];
+  const businessNameRaw = formData.get("businessName") as string;
+
   const raw = {
-    businessName: formData.get("businessName") as string,
-    slug: toSlug((formData.get("businessName") as string) ?? ""),
+    businessName: businessNameRaw,
+    slug: toSlug(businessNameRaw ?? ""),
+    modules: modulesRaw.length > 0 ? modulesRaw : ALL_MODULES,
   };
 
   const parsed = schema.safeParse(raw);
@@ -48,7 +54,7 @@ export async function createOrganization(
     return { fieldErrors: parsed.error.flatten().fieldErrors };
   }
 
-  const { businessName, slug } = parsed.data;
+  const { businessName, slug, modules } = parsed.data;
 
   // Check if user already has an org.
   const existingUser = await prisma.user.findUnique({
@@ -66,9 +72,10 @@ export async function createOrganization(
     return { error: "That business name is already taken. Try a different one." };
   }
 
-  // Create org and link the founding user as ADMIN.
-  // Free plan trial: 2 months (60 days). After expiry the workspace suspends
-  // and the admin is prompted to pick a paid plan.
+  // Determine the plan tier that satisfies all selected modules.
+  // This is stored on the org so billing knows what to charge after the trial.
+  const recommendedPlan = recommendPlanForModules(modules);
+
   const trialEndsAt = new Date();
   trialEndsAt.setDate(trialEndsAt.getDate() + 60);
 
@@ -79,6 +86,7 @@ export async function createOrganization(
         slug,
         trialEndsAt,
         billingStatus: "TRIALING",
+        plan: recommendedPlan,
       },
     });
 
@@ -92,13 +100,12 @@ export async function createOrganization(
       data: { orgId: org.id },
     });
 
-    // Grant all modules to new orgs by default.
+    // Grant only the modules the client selected.
     await tx.orgModuleGrant.createMany({
-      data: ALL_MODULES.map((module) => ({ orgId: org.id, module })),
+      data: modules.map((module) => ({ orgId: org.id, module })),
     });
   });
 
-  // Fire-and-forget welcome email (don't block redirect on email failure).
   void sendWelcomeEmail(session.user.email, session.user.name, businessName);
 
   redirect("/dashboard");
