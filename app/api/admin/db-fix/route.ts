@@ -133,6 +133,74 @@ async function purchaseOrderColumns() {
   return new Set(rows.map((r) => r.name));
 }
 
+async function runCriticalPageSchemaRepair(changes: Array<{ kind: string; detail: string }>) {
+  const addColumn = async (table: string, cols: Set<string>, name: string, type: string, dflt?: string) => {
+    if (cols.has(name)) return false;
+    const defaultClause = dflt ? ` DEFAULT ${dflt}` : "";
+    await prisma.$executeRawUnsafe(`ALTER TABLE "${table}" ADD COLUMN "${name}" ${type}${defaultClause}`);
+    cols.add(name);
+    changes.push({ kind: "alter_table", detail: `Added ${table}.${name}` });
+    return true;
+  };
+
+  // These columns power /documents/delivery-notes and /payout-followups.
+  // Run them before the longer catch-all repair so those screens recover even
+  // if an optional legacy repair later fails or times out.
+  if (await tableExists("DeliveryNote")) {
+    const cols = await tableColumns("DeliveryNote");
+    await addColumn("DeliveryNote", cols, "invoiceId", "TEXT");
+    await addColumn("DeliveryNote", cols, "createdById", "TEXT");
+    await addColumn("DeliveryNote", cols, "createdAt", "DATETIME");
+    await prisma.$executeRawUnsafe('CREATE INDEX IF NOT EXISTS "DeliveryNote_invoiceId_idx" ON "DeliveryNote"("invoiceId")');
+  }
+
+  if (await tableExists("SupplierBill")) {
+    const cols = await tableColumns("SupplierBill");
+    const hadPurchaseOrderId = cols.has("purchaseOrderId");
+    const hadDueDate = cols.has("dueDate");
+    const hadNote = cols.has("note");
+    const hadPoId = cols.has("poId");
+    const hadDueAt = cols.has("dueAt");
+    const hadNotes = cols.has("notes");
+    await addColumn("SupplierBill", cols, "supplierRef", "TEXT");
+    await addColumn("SupplierBill", cols, "poId", "TEXT");
+    await addColumn("SupplierBill", cols, "grnId", "TEXT");
+    await addColumn("SupplierBill", cols, "currency", "TEXT", "'UGX'");
+    await addColumn("SupplierBill", cols, "dueAt", "DATETIME");
+    await addColumn("SupplierBill", cols, "notes", "TEXT");
+    await addColumn("SupplierBill", cols, "createdById", "TEXT");
+    if (hadPurchaseOrderId && !hadPoId) {
+      await prisma.$executeRawUnsafe('UPDATE "SupplierBill" SET "poId" = "purchaseOrderId" WHERE "poId" IS NULL');
+      changes.push({ kind: "data", detail: "Copied SupplierBill.purchaseOrderId to poId" });
+    }
+    if (hadDueDate && !hadDueAt) {
+      await prisma.$executeRawUnsafe('UPDATE "SupplierBill" SET "dueAt" = "dueDate" WHERE "dueAt" IS NULL');
+      changes.push({ kind: "data", detail: "Copied SupplierBill.dueDate to dueAt" });
+    }
+    if (hadNote && !hadNotes) {
+      await prisma.$executeRawUnsafe('UPDATE "SupplierBill" SET "notes" = "note" WHERE "notes" IS NULL');
+      changes.push({ kind: "data", detail: "Copied SupplierBill.note to notes" });
+    }
+  }
+
+  if (await tableExists("SupplierBillItem")) {
+    const cols = await tableColumns("SupplierBillItem");
+    const hadTotalCost = cols.has("totalCost");
+    const hadLineTotal = cols.has("lineTotal");
+    await addColumn("SupplierBillItem", cols, "lineTotal", "REAL", "0");
+    if (hadTotalCost && !hadLineTotal) {
+      await prisma.$executeRawUnsafe('UPDATE "SupplierBillItem" SET "lineTotal" = "totalCost" WHERE "lineTotal" = 0');
+      changes.push({ kind: "data", detail: "Copied SupplierBillItem.totalCost to lineTotal" });
+    }
+  }
+
+  if (await tableExists("SupplierPayment")) {
+    const cols = await tableColumns("SupplierPayment");
+    await addColumn("SupplierPayment", cols, "currency", "TEXT", "'UGX'");
+    await addColumn("SupplierPayment", cols, "createdById", "TEXT");
+  }
+}
+
 async function runDbFix() {
   const user = await assertPlatformAdmin();
   if (!user) {
@@ -140,6 +208,7 @@ async function runDbFix() {
   }
 
   const changes: Array<{ kind: string; detail: string }> = [];
+  await runCriticalPageSchemaRepair(changes);
 
   // Organization: multi-currency columns
   try {
