@@ -1170,7 +1170,7 @@ export default async function DashboardPage({
             <p className={`mt-1.5 text-xl font-bold ${outstandingValue > 0 ? "text-amber-600" : "text-[var(--ink)]"}`}>{formatMoneyCompact(outstandingValue, currency)}</p>
             <p className="mt-0.5 text-[10px] text-[var(--ink-muted)]">{outstandingInvoices.length} unpaid invoice{outstandingInvoices.length !== 1 ? "s" : ""}</p>
           </Link>
-          <Link href="/finance/supplier-bills?status=POSTED"
+          <Link href="/inventory/supplier-bills?status=POSTED"
             className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px]">
             <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Payables</p>
             <p className={`mt-1.5 text-xl font-bold ${payablesValue > 0 ? "text-red-500" : "text-[var(--ink)]"}`}>{formatMoneyCompact(payablesValue, currency)}</p>
@@ -1199,7 +1199,7 @@ export default async function DashboardPage({
               {lowStockItems.slice(0, 3).map((p) => p.name).join(", ")}
               {lowStockItems.length > 3 && ` +${lowStockItems.length - 3} more`}
             </span>
-            <Link href="/inventory/parts" className="ml-auto text-[11px] font-semibold text-amber-600 hover:underline">View parts →</Link>
+            <Link href="/inventory" className="ml-auto text-[11px] font-semibold text-amber-600 hover:underline">View parts →</Link>
           </div>
         )}
 

@@ -1120,7 +1120,7 @@ export default async function ReportsPage({
                   Low Stock Items
                 </p>
                 <Link
-                  href="/inventory/parts"
+                  href="/inventory"
                   className="text-xs text-[var(--ink-muted)] hover:text-[var(--ink)]"
                 >
                   Manage inventory
@@ -1169,7 +1169,7 @@ export default async function ReportsPage({
           {/* Inventory quick links */}
           <div className="grid gap-3 sm:grid-cols-3">
             <Link
-              href="/inventory/parts"
+              href="/inventory"
               className="panel-shadow flex items-center justify-between rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3.5 transition hover:bg-[var(--panel-strong)]"
             >
               <div>
@@ -1189,7 +1189,7 @@ export default async function ReportsPage({
               <span className="text-lg text-[var(--ink-muted)]">→</span>
             </Link>
             <Link
-              href="/finance/supplier-bills"
+              href="/inventory/supplier-bills"
               className="panel-shadow flex items-center justify-between rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3.5 transition hover:bg-[var(--panel-strong)]"
             >
               <div>

@@ -288,12 +288,12 @@ export default async function PayoutFollowupsPage({
       {/* Quick links */}
       <div className="flex flex-wrap gap-2 text-xs">
         {canSeeInvoices && (
-          <Link href="/finance/invoices" className="rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 py-1.5 text-[var(--ink-muted)] hover:text-[var(--ink)] transition-colors">
+          <Link href="/documents/invoices" className="rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 py-1.5 text-[var(--ink-muted)] hover:text-[var(--ink)] transition-colors">
             → All Invoices
           </Link>
         )}
         {canSeeBills && (
-          <Link href="/finance/supplier-bills" className="rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 py-1.5 text-[var(--ink-muted)] hover:text-[var(--ink)] transition-colors">
+          <Link href="/inventory/supplier-bills" className="rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 py-1.5 text-[var(--ink-muted)] hover:text-[var(--ink)] transition-colors">
             → Supplier Bills
           </Link>
         )}
@@ -368,7 +368,7 @@ export default async function PayoutFollowupsPage({
                       return (
                         <tr key={inv.id} className="border-t border-[var(--line)] transition-colors hover:bg-[var(--panel-strong)]/30">
                           <td className={`${tdClass} font-semibold`}>
-                            <Link href={`/finance/invoices/${inv.id}`} className="hover:text-[var(--accent)] transition-colors">
+                            <Link href={`/documents/invoices/${inv.id}`} className="hover:text-[var(--accent)] transition-colors">
                               {inv.invoiceNumber}
                             </Link>
                           </td>
@@ -404,7 +404,7 @@ export default async function PayoutFollowupsPage({
                             )}
                           </td>
                           <td className={tdClass}>
-                            <Link href={`/finance/invoices/${inv.id}`} className="btn-premium-secondary rounded-lg px-3 py-1.5 text-sm">
+                            <Link href={`/documents/invoices/${inv.id}`} className="btn-premium-secondary rounded-lg px-3 py-1.5 text-sm">
                               Open
                             </Link>
                           </td>
@@ -533,7 +533,7 @@ export default async function PayoutFollowupsPage({
                       return (
                         <tr key={bill.id} className="border-t border-[var(--line)] transition-colors hover:bg-[var(--panel-strong)]/30">
                           <td className={`${tdClass} font-semibold`}>
-                            <Link href={`/finance/supplier-bills/${bill.id}`} className="hover:text-[var(--accent)] transition-colors">
+                            <Link href={`/inventory/supplier-bills/${bill.id}`} className="hover:text-[var(--accent)] transition-colors">
                               {bill.billNumber}
                             </Link>
                           </td>
@@ -569,7 +569,7 @@ export default async function PayoutFollowupsPage({
                             )}
                           </td>
                           <td className={tdClass}>
-                            <Link href={`/finance/supplier-bills/${bill.id}`} className="btn-premium-secondary rounded-lg px-3 py-1.5 text-sm">
+                            <Link href={`/inventory/supplier-bills/${bill.id}`} className="btn-premium-secondary rounded-lg px-3 py-1.5 text-sm">
                               Open
                             </Link>
                           </td>
