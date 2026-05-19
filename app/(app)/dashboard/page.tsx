@@ -917,7 +917,6 @@ export default async function DashboardPage({
     const currency = getAppCurrency();
     const today = new Date();
     const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0, 0);
-    const threeDaysAgo = new Date(today.getTime() - 3 * 24 * 60 * 60 * 1000);
     const mtdStart = new Date(today.getFullYear(), today.getMonth(), 1, 0, 0, 0, 0);
     const last6Months = monthSequence(today.getFullYear(), today.getMonth() + 1, 6);
     const orgFilter = user.orgId ? { orgId: user.orgId } : {};
@@ -935,9 +934,6 @@ export default async function DashboardPage({
       outstandingInvoices,
       expensesMtd,
       // Operations
-      overdueJobs,
-      techWorkloadJobs,
-      unassignedActiveCount,
       awaitingApprovalCount,
       pendingRequests,
       receivedToday,
@@ -978,46 +974,6 @@ export default async function DashboardPage({
         where: { orgId: orgFilter.orgId ?? undefined, paidAt: { gte: mtdStart, lte: today } },
         select: { amount: true },
       }).catch(() => [] as { amount: number }[]),
-
-      prisma.job.findMany({
-        where: {
-          ...orgFilter,
-          status: { in: filterSupportedJobStatuses(["RECEIVED","DIAGNOSING","REFERRED","AWAITING_APPROVAL","IN_REPAIR"]) as JobStatus[] },
-          receivedAt: { lt: threeDaysAgo },
-        },
-        select: { id: true, jobNumber: true, status: true, receivedAt: true, device: { select: { brand: true, model: true } } },
-        orderBy: { receivedAt: "asc" },
-        take: 8,
-      }).catch(async () => {
-        const fallback = await prisma.job.findMany({
-          where: {
-            ...orgFilter,
-            status: { in: filterSupportedJobStatuses(["RECEIVED","DIAGNOSING","REFERRED","AWAITING_APPROVAL","IN_REPAIR"]) as JobStatus[] },
-            receivedAt: { lt: threeDaysAgo },
-          },
-          select: { id: true, jobNumber: true, status: true, receivedAt: true },
-          orderBy: { receivedAt: "asc" },
-          take: 8,
-        });
-        return fallback.map((j) => ({ ...j, device: null }));
-      }),
-
-      prisma.job.findMany({
-        where: {
-          ...orgFilter,
-          status: { in: filterSupportedJobStatuses(["DIAGNOSING","IN_REPAIR","REFERRED","AWAITING_APPROVAL","READY_FOR_PICKUP"]) as JobStatus[] },
-          assignedToId: { not: null },
-        },
-        select: { assignedTo: { select: { id: true, name: true, role: true } } },
-      }),
-
-      prisma.job.count({
-        where: {
-          ...orgFilter,
-          status: { in: filterSupportedJobStatuses(["RECEIVED","DIAGNOSING","REFERRED","IN_REPAIR"]) as JobStatus[] },
-          assignedToId: null,
-        },
-      }),
 
       prisma.job.count({ where: { ...orgFilter, status: "AWAITING_APPROVAL" } }).catch(() => 0),
 
@@ -1061,21 +1017,6 @@ export default async function DashboardPage({
       key: status, name: statusLabel[status], value: statusCount.get(status) ?? 0,
     }));
 
-    const overdueWithDays = overdueJobs.map((job) => ({
-      ...job,
-      ageDays: Math.floor((today.getTime() - job.receivedAt.getTime()) / 86400000),
-    }));
-
-    // Tech workload
-    const techWorkloadMap = new Map<string, { id: string; name: string; role: string; count: number }>();
-    for (const job of techWorkloadJobs) {
-      if (!job.assignedTo) continue;
-      const e = techWorkloadMap.get(job.assignedTo.id) ?? { id: job.assignedTo.id, name: job.assignedTo.name, role: job.assignedTo.role, count: 0 };
-      e.count += 1;
-      techWorkloadMap.set(job.assignedTo.id, e);
-    }
-    const techWorkloadRows = [...techWorkloadMap.values()].sort((a, b) => b.count - a.count).slice(0, 8);
-
     // 6-month trend bars
     const streamTrend = last6Months.map((m) => {
       const repairs   = completedForTrend.filter((j) => j.completedAt && j.completedAt >= m.start && j.completedAt <= m.end).reduce((s, j) => s + (getClientBill(j) ?? 0), 0);
@@ -1084,7 +1025,7 @@ export default async function DashboardPage({
       return { key: m.key, repairs, products, corporate, total: repairs + products + corporate };
     });
 
-    const hasAlerts = overdueWithDays.length > 0 || awaitingApprovalCount > 0 || pendingRequests > 0 || unassignedActiveCount > 0;
+    const hasAlerts = awaitingApprovalCount > 0 || pendingRequests > 0;
 
     return (
       <div className="space-y-4">
@@ -1103,8 +1044,6 @@ export default async function DashboardPage({
               <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--accent)]">Needs attention —</span>
               {[
                 awaitingApprovalCount > 0 && { label: `${awaitingApprovalCount} awaiting approval`, href: "/jobs?status=AWAITING_APPROVAL" },
-                overdueWithDays.length > 0 && { label: `${overdueWithDays.length} overdue (3+ days)`, href: "/jobs" },
-                unassignedActiveCount > 0 && { label: `${unassignedActiveCount} unassigned`, href: "/jobs?assignedToId=unassigned" },
                 pendingRequests > 0 && { label: `${pendingRequests} pending requests`, href: "/intake" },
               ].filter(Boolean).map((item, i, arr) => {
                 const { label, href } = item as { label: string; href: string };
@@ -1215,11 +1154,6 @@ export default async function DashboardPage({
                   {awaitingApprovalCount} awaiting
                 </Link>
               )}
-              {overdueWithDays.length > 0 && (
-                <Link href="/jobs" className="rounded border border-amber-500/30 bg-amber-500/10 px-2 py-1 font-semibold text-amber-600">
-                  {overdueWithDays.length} overdue
-                </Link>
-              )}
               <Link href="/jobs" className="ml-1 font-semibold text-[var(--accent)] hover:underline">All jobs →</Link>
             </div>
           </div>
@@ -1240,72 +1174,6 @@ export default async function DashboardPage({
           </div>
         </section>
 
-        {/* ── Needs Attention + Tech Workload ── */}
-        <div className="grid gap-3 lg:grid-cols-2">
-          <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-            <div className="mb-3 flex items-center justify-between gap-2">
-              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Needs Attention</p>
-              {(overdueWithDays.length > 0 || unassignedActiveCount > 0) && (
-                <span className="rounded-full border border-amber-500/30 bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold text-amber-600">
-                  {overdueWithDays.length + unassignedActiveCount}
-                </span>
-              )}
-            </div>
-            {overdueWithDays.length === 0 && unassignedActiveCount === 0 ? (
-              <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/15 px-3 py-2.5">
-                <p className="text-[11px] font-medium text-emerald-600">All clear — no issues.</p>
-              </div>
-            ) : (
-              <div className="space-y-1.5">
-                {unassignedActiveCount > 0 && (
-                  <Link href="/jobs?assignedToId=unassigned"
-                    className="flex items-center justify-between rounded-lg border border-violet-500/30 bg-violet-500/10 px-3 py-2 transition hover:border-violet-500/50">
-                    <p className="text-xs font-semibold text-violet-400">Unassigned active jobs</p>
-                    <span className="ml-2 shrink-0 rounded-full bg-violet-500/20 px-2 py-0.5 text-[10px] font-bold text-violet-400">{unassignedActiveCount}</span>
-                  </Link>
-                )}
-                {overdueWithDays.map((job) => (
-                  <Link key={job.id} href={`/jobs/${job.id}`}
-                    className="flex items-center justify-between rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 transition hover:border-amber-200">
-                    <div className="min-w-0">
-                      <p className="mono truncate text-xs font-bold text-[var(--accent)]">{job.jobNumber}</p>
-                      <p className="truncate text-[10px] text-[var(--ink-muted)]">
-                        {[job.device?.brand, job.device?.model].filter((v) => v && v !== "Unknown").join(" ") || "Device"}
-                        <span className="mx-1 text-[var(--line)]">·</span>
-                        {statusLabel[job.status as keyof typeof statusLabel] ?? job.status}
-                      </p>
-                    </div>
-                    <span className={`ml-2 shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${job.ageDays >= 8 ? "bg-red-500/15 text-red-400" : "bg-amber-500/15 text-amber-600"}`}>
-                      {job.ageDays}d
-                    </span>
-                  </Link>
-                ))}
-              </div>
-            )}
-          </section>
-
-          <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-            <p className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Technician Workload</p>
-            {techWorkloadRows.length === 0 ? (
-              <p className="text-sm text-[var(--ink-muted)]">No jobs currently assigned.</p>
-            ) : (
-              <div className="space-y-1.5">
-                {techWorkloadRows.map((tech) => (
-                  <Link key={tech.id} href={`/jobs?assignedToId=${tech.id}`}
-                    className="group flex items-center justify-between rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 transition hover:border-[var(--accent)]/35 hover:bg-[var(--panel)]">
-                    <div className="min-w-0">
-                      <p className="truncate text-xs font-semibold transition-colors group-hover:text-[var(--accent)]">{tech.name}</p>
-                      <p className="text-[10px] text-[var(--ink-muted)]">{tech.role === "TECHNICIAN_EXTERNAL" ? "External" : "Internal"}</p>
-                    </div>
-                    <span className={`ml-2 shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${tech.role === "TECHNICIAN_EXTERNAL" ? "bg-violet-500/15 text-violet-400" : "bg-sky-500/15 text-sky-500"}`}>
-                      {tech.count} active
-                    </span>
-                  </Link>
-                ))}
-              </div>
-            )}
-          </section>
-        </div>
       </div>
     );
   }
