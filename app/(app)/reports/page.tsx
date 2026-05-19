@@ -564,32 +564,25 @@ export default async function ReportsPage({
   const wonLeads = leadCountMap.get("WON") ?? 0;
   const leadConversion = totalLeads > 0 ? Math.round((wonLeads / totalLeads) * 100) : 0;
 
-  // Export items
-  const exportItems = [
-    {
-      title: "Pipeline Aging",
-      caption: "Queue delay risk by status",
-      href: "/api/reports/export?type=pipeline-aging",
-    },
-    ...(user.role === "ADMIN"
-      ? [
-          {
-            title: "Repair Margin",
-            caption: "Job-level client bill vs tech cost",
-            href: `/api/reports/export?type=revenue-variance&month=${selectedMonthString}`,
-          },
-        ]
-      : []),
-    {
-      title: "Technician Performance",
-      caption: "Throughput and completion per technician",
-      href: "/api/reports/export?type=technician-performance",
-    },
-    {
-      title: "Device Performance",
-      caption: "Device type completion, margin, and trend",
-      href: `/api/reports/export?type=device-performance&month=${selectedMonthString}`,
-    },
+  // Export items per tab — permission-gated
+  const repairExports = [
+    { title: "Pipeline Aging",        caption: "Open jobs by status and age band",         href: "/api/reports/export?type=pipeline-aging" },
+    { title: "Device Performance",    caption: "Completion, margin and turnaround by device", href: `/api/reports/export?type=device-performance&month=${selectedMonthString}` },
+    ...(can.runFinancialReports(user) ? [{ title: "Repair Margin", caption: "Job-level client bill vs tech cost", href: `/api/reports/export?type=revenue-variance&month=${selectedMonthString}` }] : []),
+    ...(can.reviewExternalBills(user) ? [{ title: "External Payouts", caption: "Outstanding and paid external tech fees", href: "/api/reports/export?type=external-payouts" }] : []),
+  ];
+  const revenueExports = [
+    ...(can.viewAllSales(user) ? [{ title: "POS Sales", caption: "Paid point-of-sale transactions", href: `/api/reports/export?type=pos-sales&month=${selectedMonthString}` }] : []),
+    ...(can.approveInvoices(user) ? [{ title: "Invoices", caption: "All invoices issued this period", href: `/api/reports/export?type=invoices&month=${selectedMonthString}` }] : []),
+    ...(can.runFinancialReports(user) ? [{ title: "Expenses", caption: "All expenses paid this period", href: `/api/reports/export?type=expenses&month=${selectedMonthString}` }] : []),
+    ...(can.viewAllSales(user) ? [{ title: "Staff Sales", caption: "Revenue by staff member with targets", href: `/api/reports/export?type=staff-sales&month=${selectedMonthString}` }] : []),
+  ];
+  const inventoryExports = [
+    ...(can.manageInventory(user) ? [{ title: "Stock Levels", caption: "All active parts with qty and stock status", href: "/api/reports/export?type=inventory-stock" }] : []),
+  ];
+  const peopleExports = [
+    { title: "Technician Performance", caption: "Throughput and completion per technician", href: "/api/reports/export?type=technician-performance" },
+    ...(can.viewAllSales(user) || can.createLeads(user) ? [{ title: "Leads", caption: "All leads with status and estimated value", href: "/api/reports/export?type=leads" }] : []),
   ];
 
   // Tab nav helper
@@ -607,6 +600,22 @@ export default async function ReportsPage({
     if (hrs < 24) return `${Math.round(hrs)}h`;
     return `${Math.floor(hrs / 24)}d ${Math.floor(hrs % 24)}h`;
   };
+
+  const ExportGrid = ({ items }: { items: { title: string; caption: string; href: string }[] }) => (
+    <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Downloads</p>
+      <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+        {items.map((item) => (
+          <a key={item.href} href={item.href}
+            className="flex flex-col rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-3 transition hover:border-[var(--accent)]/40 hover:bg-[var(--panel)]">
+            <p className="text-sm font-semibold text-[var(--ink)]">{item.title}</p>
+            <p className="mt-0.5 text-xs text-[var(--ink-muted)]">{item.caption}</p>
+            <p className="mt-2 text-[10px] font-semibold text-[var(--accent)]">↓ Download CSV</p>
+          </a>
+        ))}
+      </div>
+    </section>
+  );
 
   return (
     <div className="space-y-4">
@@ -860,6 +869,9 @@ export default async function ReportsPage({
               </table>
             </section>
           )}
+
+          {/* Repairs exports */}
+          {repairExports.length > 0 && <ExportGrid items={repairExports} />}
         </>
       )}
 
@@ -1046,25 +1058,10 @@ export default async function ReportsPage({
             </section>
           )}
 
-          {/* Export center */}
-          <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">
-              Exports
-            </p>
-            <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-              {exportItems.map((item) => (
-                <a
-                  key={item.href}
-                  href={item.href}
-                  className="flex flex-col rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-3 transition hover:bg-[var(--panel)]"
-                >
-                  <p className="text-sm font-semibold text-[var(--ink)]">{item.title}</p>
-                  <p className="mt-0.5 text-xs text-[var(--ink-muted)]">{item.caption}</p>
-                  <p className="mt-2 text-[10px] font-semibold text-[var(--ink-muted)]">Download CSV →</p>
-                </a>
-              ))}
-            </div>
-          </section>
+          {/* Revenue exports */}
+          {revenueExports.length > 0 && (
+            <ExportGrid items={revenueExports} />
+          )}
         </>
       )}
 
@@ -1202,6 +1199,9 @@ export default async function ReportsPage({
               <span className="text-lg text-[var(--ink-muted)]">→</span>
             </Link>
           </div>
+
+          {/* Inventory exports */}
+          {inventoryExports.length > 0 && <ExportGrid items={inventoryExports} />}
         </>
       )}
 
@@ -1380,6 +1380,9 @@ export default async function ReportsPage({
               </div>
             )}
           </section>
+
+          {/* People exports */}
+          {peopleExports.length > 0 && <ExportGrid items={peopleExports} />}
         </>
       )}
     </div>
