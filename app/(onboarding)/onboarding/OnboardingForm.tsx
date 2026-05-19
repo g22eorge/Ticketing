@@ -10,7 +10,7 @@ import {
   MODULE_DESCRIPTIONS,
   MODULE_MIN_PLAN,
   recommendPlanForModules,
-} from "@/lib/module-access";
+} from "@/lib/module-catalog";
 import { createOrganization, type CreateOrgState } from "./actions";
 
 // ── Plan display metadata ─────────────────────────────────────────────────────
