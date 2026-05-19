@@ -7,10 +7,14 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 export const maxDuration = 300;
 
-export async function GET() {
+export async function GET(req: Request) {
   // Auth guard — only the platform admin may access this runner UI.
   const admin = await assertPlatformAdmin();
   if (!admin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+  if (new URL(req.url).searchParams.get("run") === "1") {
+    return runDbFix();
+  }
 
   // Provide a safe in-browser runner (uses current session cookies).
   // Actual mutation stays on POST.
@@ -24,7 +28,14 @@ export async function GET() {
   <body style="font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial; padding: 24px;">
     <h1 style="margin: 0 0 8px;">MRMS DB Fix</h1>
     <p style="margin: 0 0 16px;">Runs a one-time schema repair (delivery + notifications + branding + devices). Admin only.</p>
-    <button id="run" style="padding: 10px 14px; border: 1px solid #000; background: #000; color: #fff; border-radius: 8px; cursor: pointer;">Run Fix</button>
+    <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center;">
+      <button id="run" type="button" style="padding: 10px 14px; border: 1px solid #000; background: #000; color: #fff; border-radius: 8px; cursor: pointer;">Run Fix</button>
+      <form method="post" style="margin: 0;">
+        <button type="submit" style="padding: 10px 14px; border: 1px solid #777; background: #fff; color: #111; border-radius: 8px; cursor: pointer;">Run Fix (no JS)</button>
+      </form>
+      <a href="/api/admin/db-fix?run=1" style="font-size: 14px; color: #111;">Direct run link</a>
+    </div>
+    <p style="margin: 12px 0 0; color: #555; font-size: 14px;">If the black button is inactive, use the white no-JS button or the direct run link.</p>
     <pre id="out" style="margin-top: 16px; padding: 12px; border: 1px solid #ddd; border-radius: 8px; background: #fafafa; white-space: pre-wrap;"></pre>
     <script>
       const out = document.getElementById('out');
