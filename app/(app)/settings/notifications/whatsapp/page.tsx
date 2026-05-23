@@ -1,31 +1,20 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { requireOrgSession } from "@/lib/org-context";
-import { getOrgWhatsAppConfig } from "@/lib/org-whatsapp-config";
-import { whatsappHealthCheckForOrg } from "@/lib/notifications/whatsapp";
+import { getCurrentUserRole } from "@/lib/session";
+import { whatsappConfigSummary, whatsappHealthCheck } from "@/lib/notifications/whatsapp";
 import { WhatsAppTestPanel } from "@/components/settings/WhatsAppTestPanel";
-import { WhatsAppConfigForm } from "@/components/settings/WhatsAppConfigForm";
-import { ATSmsConfigForm } from "@/components/settings/ATSmsConfigForm";
-import { checkSmsQuota } from "@/lib/notifications/sms-quota";
-import { getPlatformSettings } from "@/lib/platform-settings";
 
 export const dynamic = "force-dynamic";
 
 export default async function WhatsAppSettingsPage() {
-  const { user, orgId } = await requireOrgSession();
+  const { user } = await getCurrentUserRole();
   if (user.role !== "ADMIN") redirect("/settings/notifications");
 
-  const platformAtStored = await getPlatformSettings(["AT_API_KEY", "AT_USERNAME"]);
-  const platformAtConfigured =
-    Boolean((platformAtStored.AT_API_KEY && platformAtStored.AT_USERNAME) || (process.env.AT_API_KEY && process.env.AT_USERNAME));
+  const summary = whatsappConfigSummary();
+  const health = summary.configured ? await whatsappHealthCheck() : null;
 
-  const [orgConfig, smsStats] = await Promise.all([
-    getOrgWhatsAppConfig(orgId),
-    platformAtConfigured ? checkSmsQuota(orgId) : Promise.resolve(null),
-  ]);
-  const health = orgConfig ? await whatsappHealthCheckForOrg(orgId) : null;
-
+  // Extract the extra fields that whatsappHealthCheck returns alongside { ok, error }
   const healthData = health as (typeof health & {
     display_phone_number?: string;
     verified_name?: string;
@@ -52,7 +41,7 @@ export default async function WhatsAppSettingsPage() {
               WhatsApp Business Account
             </p>
             <p className="mt-0.5 text-xs text-[var(--ink-muted)]">
-              Messages sent from your number via Meta Cloud API.
+              Messages sent from this number via Meta Cloud API.
             </p>
           </div>
           {health?.ok ? (
@@ -60,7 +49,7 @@ export default async function WhatsAppSettingsPage() {
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
               Connected
             </span>
-          ) : orgConfig ? (
+          ) : summary.configured ? (
             <span className="flex shrink-0 items-center gap-1.5 rounded-full border border-red-200 bg-red-50 px-2.5 py-1 text-[11px] font-semibold text-red-700">
               <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
               Error
@@ -72,7 +61,7 @@ export default async function WhatsAppSettingsPage() {
           )}
         </div>
 
-        {orgConfig ? (
+        {summary.configured ? (
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <div className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-4 py-3">
               <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.13em] text-[var(--ink-muted)]">Business Number</p>
@@ -83,7 +72,7 @@ export default async function WhatsAppSettingsPage() {
                   </svg>
                 </span>
                 <p className="font-mono text-sm font-semibold text-[var(--ink)]">
-                  {healthData?.display_phone_number ?? orgConfig.businessNumber}
+                  {healthData?.display_phone_number ?? summary.businessNumber ?? "—"}
                 </p>
               </div>
             </div>
@@ -111,38 +100,49 @@ export default async function WhatsAppSettingsPage() {
           </div>
         ) : (
           <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-700">
-            Connect your Meta WhatsApp Business account below to enable WhatsApp notifications for your customers.
+            WhatsApp is not configured. Set <code className="font-mono">WHATSAPP_ACCESS_TOKEN</code>,{" "}
+            <code className="font-mono">WHATSAPP_PHONE_NUMBER_ID</code>, and{" "}
+            <code className="font-mono">WHATSAPP_BUSINESS_NUMBER</code> in your environment.
           </div>
         )}
 
-        {health && !health.ok && orgConfig && (
+        {health && !health.ok && (
           <div className="mt-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-xs text-red-700">
             <span className="font-semibold">API error:</span> {health.error}
           </div>
         )}
       </div>
 
-      {/* Config form */}
-      <WhatsAppConfigForm orgId={orgId} current={orgConfig} />
-
       {/* Send test — only if connected */}
-      {health?.ok && orgConfig ? (
+      {summary.configured ? (
         <WhatsAppTestPanel
-          from={healthData?.display_phone_number ?? orgConfig.businessNumber}
+          from={healthData?.display_phone_number ?? summary.businessNumber ?? ""}
           verifiedName={healthData?.verified_name ?? null}
         />
       ) : null}
 
-      {/* SMS Notifications */}
-      <ATSmsConfigForm
-        orgId={orgId}
-        smsFallback={orgConfig?.smsFallback ?? false}
-        platformConfigured={platformAtConfigured}
-        stats={smsStats}
-      />
-
       {/* Links */}
-      {/* Outbox lives in Settings > Notifications */}
+      <div className="flex flex-wrap gap-3">
+        <Link
+          href="/settings/notifications/whatsapp/meta-templates"
+          className="btn-premium rounded-lg px-3 py-1.5 text-sm"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="inline h-3.5 w-3.5 mr-1.5 align-[-2px]" aria-hidden><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>
+          Generate Meta Templates →
+        </Link>
+        <Link
+          href="/settings/notifications/outbox"
+          className="btn-premium-secondary rounded-lg px-3 py-1.5 text-sm"
+        >
+          View Message Outbox →
+        </Link>
+        <Link
+          href="/settings/notifications/templates"
+          className="btn-premium-secondary rounded-lg px-3 py-1.5 text-sm"
+        >
+          Edit Message Templates →
+        </Link>
+      </div>
     </div>
   );
 }

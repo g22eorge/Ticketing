@@ -1,11 +1,12 @@
 import Link from "next/link";
 
-import { SearchToggle } from "@/components/shared/SearchToggle";
+
+import { StickyKpiRow } from "@/components/mobile/StickyKpiRow";
 import { JobStatusBadge, statusStripClass } from "@/components/jobs/JobStatusBadge";
 import { JOB_STATUSES, UI_JOB_STATUSES, JobStatus, normalizeJobStatus } from "@/lib/job-status";
 import { formatEATDate } from "@/lib/date-eat";
 import { prisma } from "@/lib/prisma";
-import { requireOrgSession } from "@/lib/org-context";
+import { getCurrentUserRole } from "@/lib/session";
 import { Role } from "@prisma/client";
 
 function deviceName(brand?: string | null, model?: string | null) {
@@ -68,35 +69,23 @@ function shortText(value: string | null, max = 78) {
   return `${value.slice(0, max).trimEnd()}...`;
 }
 
-function nextCourse(job: {
-  status: JobStatus;
-  ready: boolean;
-  clientApproved: boolean | null;
-  repairPath: "IN_HOUSE" | "EXTERNAL" | null;
-}) {
-  if (job.status === "RECEIVED") return "Start diagnosis and capture baseline findings.";
-  if (job.status === "DIAGNOSING") {
-    return job.repairPath === "EXTERNAL"
-      ? "Prepare referral notes and submit external handoff."
-      : "Finalize diagnosis and move job to internal repair.";
-  }
-  if (job.status === "AWAITING_APPROVAL") return "Await client approval before active repair work.";
-  if (job.status === "IN_REPAIR") {
-    if (job.ready) return "Run final checks and prepare pickup handoff.";
-    return job.clientApproved ? "Continue repair and keep timeline updated." : "Pause work until approval is confirmed.";
-  }
-  if (job.status === "READY_FOR_PICKUP") return "Notify client and complete pickup checklist.";
-  if (job.status === "COMPLETED") return "Close documentation and archive supporting notes.";
-  return "No pending action for this job.";
-}
-
 export default async function TechniciansPage({
   searchParams,
 }: {
   searchParams: Promise<SearchParams>;
 }) {
-  const { session, user, orgId } = await requireOrgSession();
+  const { user } = await getCurrentUserRole();
   const filters = await searchParams;
+
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const [totalTechs, internalCount, externalCount, assignedThisMonth] = await Promise.all([
+    prisma.user.count({ where: { role: { in: ["TECHNICIAN_INTERNAL", "TECHNICIAN_EXTERNAL"] } } }).catch(() => 0),
+    prisma.user.count({ where: { role: "TECHNICIAN_INTERNAL" } }).catch(() => 0),
+    prisma.user.count({ where: { role: "TECHNICIAN_EXTERNAL" } }).catch(() => 0),
+    prisma.job.count({ where: { assignedToId: { not: null }, receivedAt: { gte: monthStart } } }).catch(() => 0),
+  ]);
+
   const validStatuses = new Set<string>(JOB_STATUSES);
   const statusFilter = filters.status && validStatuses.has(filters.status as JobStatus)
     ? (filters.status as JobStatus)
@@ -123,7 +112,7 @@ export default async function TechniciansPage({
 
   const where =
     user.role === "TECHNICIAN_EXTERNAL" || user.role === "TECHNICIAN_INTERNAL"
-      ? { assignedToId: session.user.id }
+      ? { assignedToId: user.id }
       : {
           // Operations users need a board view across *all* technicians,
           // not just externally-referred jobs.
@@ -136,7 +125,6 @@ export default async function TechniciansPage({
 
   const jobs = await prisma.job.findMany({
     where: {
-      orgId,
       ...where,
       ...(filters.q
         ? {
@@ -196,15 +184,21 @@ export default async function TechniciansPage({
   const dismissedSpotlightIds = new Set(
     (filters.dismiss ?? "")
       .split(",")
-      .map((value) => value.trim())
+      .map((v) => v.trim())
       .filter(Boolean),
   );
-  const spotlightCandidates = sortedJobs.filter(
-    (job) =>
-      !dismissedSpotlightIds.has(job.id) &&
-      ["RECEIVED", "DIAGNOSING", "REFERRED", "AWAITING_APPROVAL", "IN_REPAIR", "READY_FOR_PICKUP"].includes(job.status),
-  );
-  const spotlightJobs = spotlightCandidates.slice(0, 3);
+  const spotlightJobs = sortedJobs
+    .filter(
+      (job) =>
+        !dismissedSpotlightIds.has(job.id) &&
+        ["RECEIVED", "DIAGNOSING", "REFERRED", "AWAITING_APPROVAL", "IN_REPAIR", "READY_FOR_PICKUP"].includes(job.status),
+    )
+    .slice(0, 3);
+  const spotlightJobIds = new Set(spotlightJobs.map((j) => j.id));
+  function dismissSpotlightReturnTo(jobId: string) {
+    const merged = new Set([...dismissedSpotlightIds, jobId]);
+    return routeWith({ dismiss: Array.from(merged).join(",") });
+  }
   const boardReturnTo = routeWith({});
   const hasActiveFilters = Boolean(filters.q || filters.status || filters.ready);
   const quickActions = [
@@ -212,42 +206,44 @@ export default async function TechniciansPage({
     { href: routeWith({ status: "IN_REPAIR", ready: "" }), label: "In Repair", count: inRepairCount, active: filters.status === "IN_REPAIR" && filters.ready !== "1" },
     { href: routeWith({ status: "AWAITING_APPROVAL", ready: "" }), label: "Approval", count: awaitingApprovalCount, active: filters.status === "AWAITING_APPROVAL" },
   ];
-  function dismissSpotlightReturnTo(jobId: string) {
-    const merged = new Set([...dismissedSpotlightIds, jobId]);
-    return routeWith({ dismiss: Array.from(merged).join(",") });
-  }
-
   return (
     <div className="space-y-4">
-      {/* ── Header strip: title · inline KPIs · action ── */}
-      <div className="panel-shadow flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-2.5">
-        {/* Title + KPI pills */}
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-          <p className="text-[13px] font-bold text-[var(--ink)]">Tech Board</p>
-          <span className="h-3.5 w-px bg-[var(--line)]" aria-hidden="true" />
-          <Link href="/technicians" className="text-[11px] text-[var(--ink-muted)] hover:text-[var(--ink)]">
-            Assigned <span className="font-bold text-[var(--ink)]">{assignedCount}</span>
-          </Link>
-          <Link href="/technicians?ready=1" className="text-[11px] text-[var(--ink-muted)] hover:text-[var(--ink)]">
-            Ready <span className={`font-bold ${readyCount > 0 ? "text-[var(--accent)]" : "text-[var(--ink)]"}`}>{readyCount}</span>
-          </Link>
-          <Link href="/technicians?status=IN_REPAIR" className="text-[11px] text-[var(--ink-muted)] hover:text-[var(--ink)]">
-            In Repair <span className="font-bold text-[var(--ink)]">{inRepairCount}</span>
-          </Link>
-          <span className="text-[11px] text-[var(--ink-muted)]">
-            Overdue <span className={`font-bold ${overdueCount > 0 ? "text-amber-500" : "text-[var(--ink)]"}`}>{overdueCount}</span>
-          </span>
+      {/* ── Technician KPI tiles ── */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
+          <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Total Technicians</p>
+          <p className="mt-1 text-xl font-bold tabular-nums text-[var(--ink)]">{totalTechs}</p>
+          <p className="mt-0.5 text-[11px] text-[var(--ink-muted)]">internal + external</p>
         </div>
-        {/* Action */}
-        <Link
-          href={user.role === "TECHNICIAN_EXTERNAL" ? "/technicians/payouts" : `/jobs?status=IN_REPAIR&returnTo=${encodeURIComponent(boardReturnTo)}`}
-          className="btn-premium-secondary shrink-0 rounded-lg px-3 py-1.5 text-xs"
-        >
-          {user.role === "TECHNICIAN_EXTERNAL" ? "My Payouts →" : "Timeline Notes →"}
-        </Link>
+        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
+          <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Internal</p>
+          <p className="mt-1 text-xl font-bold tabular-nums text-[var(--ink)]">{internalCount}</p>
+          <p className="mt-0.5 text-[11px] text-[var(--ink-muted)]">in-house staff</p>
+        </div>
+        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
+          <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">External</p>
+          <p className="mt-1 text-xl font-bold tabular-nums text-[var(--ink)]">{externalCount}</p>
+          <p className="mt-0.5 text-[11px] text-[var(--ink-muted)]">contractors</p>
+        </div>
+        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
+          <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Jobs Assigned This Month</p>
+          <p className="mt-1 text-xl font-bold tabular-nums text-[var(--ink)]">{assignedThisMonth}</p>
+          <p className="mt-0.5 text-[11px] text-[var(--ink-muted)]">this month</p>
+        </div>
       </div>
 
-      {/* ── Filter strip: status pills · quick chips · search ── */}
+      {/* KPI Row */}
+      <StickyKpiRow
+        items={[
+          { label: "Assigned", value: String(assignedCount), href: "/technicians", tone: "default" },
+          { label: "Ready", value: String(readyCount), href: "/technicians?ready=1", tone: readyCount > 0 ? "brand" : "default" },
+          { label: "In Repair", value: String(inRepairCount), href: "/technicians?status=IN_REPAIR", tone: "default" },
+          { label: "Overdue", value: String(overdueCount), tone: overdueCount > 0 ? "warning" : "default" },
+        ]}
+        className="lg:grid-cols-4"
+      />
+
+      {/* Filter + Quick Actions — unified panel */}
       <section className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
         {(() => {
           function statusHref(nextStatus: string) {
@@ -266,147 +262,95 @@ export default async function TechniciansPage({
             : "";
 
           return (
-            <>
-              {/* Status pills row */}
-              <div className="flex items-center gap-2 border-b border-[var(--line)] px-3 py-2">
-                <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto [scrollbar-width:none]">
-                  <Link
-                    href={statusHref("")}
-                    className={`shrink-0 rounded-full border px-3 py-1 text-[11px] font-semibold transition ${
-                      activeStatus ? "border-[var(--line)] bg-[var(--panel)] text-[var(--ink-muted)] hover:border-[var(--accent)]/30" : "border-[var(--accent)] bg-[var(--accent)] text-white"
-                    }`}
-                  >
-                    All
-                  </Link>
-                  {UI_JOB_STATUSES.map((status) => (
+            <div className="border-b border-[var(--line)] bg-[var(--panel-strong)]/35 px-3 py-2">
+              <div className="flex items-center gap-1.5 overflow-x-auto [scrollbar-width:none]">
+                <Link
+                  href={statusHref("")}
+                  className={`shrink-0 rounded-full border px-3 py-1.5 text-[11px] font-semibold transition ${
+                    activeStatus
+                      ? "border-[var(--line)] bg-[var(--panel)] text-[var(--ink-muted)] hover:border-[var(--accent)]/30"
+                      : "border-[var(--accent)] bg-[var(--accent)] text-white"
+                  }`}
+                >
+                  All
+                </Link>
+                {UI_JOB_STATUSES.map((status) => {
+                  const active = activeStatus === status;
+                  return (
                     <Link
                       key={status}
                       href={statusHref(status)}
-                      className={`shrink-0 rounded-full border px-3 py-1 text-[11px] font-semibold transition ${
-                        activeStatus === status ? "border-[var(--accent)] bg-[var(--accent)] text-white" : "border-[var(--line)] bg-[var(--panel)] text-[var(--ink-muted)] hover:border-[var(--accent)]/30"
+                      className={`shrink-0 rounded-full border px-3 py-1.5 text-[11px] font-semibold transition ${
+                        active
+                          ? "border-[var(--accent)] bg-[var(--accent)] text-white"
+                          : "border-[var(--line)] bg-[var(--panel)] text-[var(--ink-muted)] hover:border-[var(--accent)]/30"
                       }`}
                     >
                       {statusOptionLabel[status]}
                     </Link>
-                  ))}
-                </div>
-                <SearchToggle
-                  basePath="/technicians"
-                  defaultValue={filters.q}
-                  placeholder="Search job # or device"
-                  preserve={{ status: filters.status, ready: filters.ready }}
-                />
+                  );
+                })}
               </div>
-
-              {/* Quick chips row */}
-              <div className="flex flex-wrap items-center gap-1.5 px-3 py-2">
-                {quickActions.map((action) => (
-                  <Link
-                    key={action.label}
-                    href={action.href}
-                    className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold transition ${action.active ? "border-[var(--accent)] bg-[var(--accent)] text-white" : "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink)] hover:border-[var(--accent)]/30"}`}
-                  >
-                    {action.label} <span className={action.active ? "opacity-80" : "text-[var(--ink-muted)]"}>({action.count})</span>
-                  </Link>
-                ))}
-                {hasActiveFilters && (
-                  <Link href="/technicians" className="rounded-full border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1 text-[11px] font-semibold text-[var(--ink-muted)] hover:border-red-400/40 hover:text-red-500">
-                    ✕ Clear
-                  </Link>
-                )}
-              </div>
-            </>
+            </div>
           );
         })()}
+        {/* Auto-hide search after applying */}
+        <details className="group border-b border-[var(--line)]" open={!filters.q}>
+          <summary className="flex cursor-pointer list-none items-center justify-between px-3 py-2.5 text-[11px] font-semibold text-[var(--ink-muted)] hover:bg-[var(--panel-strong)]/30 [&::-webkit-details-marker]:hidden">
+            <span className="truncate">
+              Search
+              {filters.q ? (
+                <span className="ml-2 rounded-full border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-0.5 text-[10px] font-semibold text-[var(--ink)]">
+                  {filters.q}
+                </span>
+              ) : null}
+            </span>
+            <span className="text-[var(--accent)] group-open:hidden">Show</span>
+            <span className="hidden text-[var(--accent)] group-open:inline">Hide</span>
+          </summary>
+          <form>
+            <div className="space-y-2 px-3 pb-3">
+              <input
+                name="q"
+                defaultValue={filters.q}
+                placeholder="Search job # or device"
+                className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2.5 text-sm outline-none transition focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/20"
+              />
+              <div className="flex items-center gap-2">
+                <button className="btn-premium-secondary shrink-0 rounded-lg px-3 py-2.5 text-sm">Apply</button>
+                <Link href="/technicians" className="btn-premium-secondary shrink-0 rounded-lg px-3 py-2.5 text-sm">Reset</Link>
+              </div>
+            </div>
+          </form>
+        </details>
+
+        {/* Quick filter chips + secondary action */}
+        <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2">
+          <div className="flex flex-wrap gap-1.5">
+            {quickActions.map((action) => (
+              <Link
+                key={action.label}
+                href={action.href}
+                className={`rounded-full border px-3 py-2 text-[11px] font-semibold transition ${action.active ? "border-[var(--accent)] bg-[var(--accent)] text-white" : "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink)] hover:border-[var(--accent)]/30"}`}
+              >
+                {action.label} <span className={action.active ? "opacity-80" : "text-[var(--ink-muted)]"}>({action.count})</span>
+              </Link>
+            ))}
+            {hasActiveFilters ? (
+              <Link href="/technicians" className="rounded-full border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-[11px] font-semibold text-[var(--ink-muted)] hover:border-red-200 hover:text-red-600">
+                Clear filters
+              </Link>
+            ) : null}
+          </div>
+          <Link
+            href={user.role === "TECHNICIAN_EXTERNAL" ? "/technicians/payouts" : `/jobs?status=IN_REPAIR&returnTo=${encodeURIComponent(boardReturnTo)}`}
+            className="btn-premium-secondary shrink-0 rounded-lg px-3 py-1.5 text-xs"
+          >
+            {user.role === "TECHNICIAN_EXTERNAL" ? "My Payouts →" : "Timeline Notes →"}
+          </Link>
+        </div>
       </section>
 
-      {/* Priority Spotlight */}
-      {spotlightJobs.length > 0 ? (
-        <section className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
-          <div className="flex items-center justify-between border-b border-[var(--line)] px-4 py-2.5">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Priority Spotlight</p>
-            <span className="text-[11px] text-[var(--ink-muted)]">Top {spotlightJobs.length} urgent</span>
-          </div>
-          <div className="grid gap-0 lg:grid-cols-3 lg:divide-x lg:divide-[var(--line)]">
-            {spotlightJobs.map((job) => {
-              const strip = statusStripClass(job.status);
-              return (
-                <article
-                  key={`spotlight-${job.id}`}
-                  className="relative flex flex-col gap-3 border-b border-[var(--line)] bg-[var(--panel)] p-4 last:border-b-0 lg:border-b-0"
-                >
-                  {/* Left status strip */}
-                  <span className={`absolute inset-y-0 left-0 w-[3px] ${strip}`} aria-hidden="true" />
-
-                  {/* Header row */}
-                  <div className="flex items-start justify-between gap-2 pl-2">
-                    <div className="min-w-0">
-                      <Link href={`/jobs/${job.id}`} className="mono block text-[11px] font-bold text-[var(--ink-muted)] transition-colors hover:text-[var(--accent)]">{job.jobNumber}</Link>
-                      <p className="truncate text-[15px] font-semibold text-[var(--ink)]">{deviceName(job.brand, job.model) ?? deviceLabel[job.deviceType as keyof typeof deviceLabel] ?? job.deviceType}</p>
-                    </div>
-                    <span className={`inline-flex shrink-0 items-center rounded-md border px-2 py-0.5 text-[10px] font-semibold ${job.priority.tone}`}>
-                      {job.priority.label}
-                    </span>
-                  </div>
-
-                  {/* Issue summary */}
-                  <p className="pl-2 text-xs leading-relaxed text-[var(--ink-muted)]">{shortText(job.issueDescription, 90)}</p>
-
-                  {/* Meta row */}
-                  <div className="flex flex-wrap items-center gap-1.5 pl-2">
-                    <JobStatusBadge status={job.status} />
-                    <span className="inline-flex items-center gap-1 rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-0.5 text-[10px] font-medium text-[var(--ink-muted)]">
-                      <svg viewBox="0 0 12 12" fill="currentColor" className="h-2.5 w-2.5 opacity-40" aria-hidden="true"><circle cx="6" cy="4" r="2.5"/><path d="M1 10c0-2.21 2.24-4 5-4s5 1.79 5 4H1Z"/></svg>
-                      {job.assignedTo?.name ?? "Unassigned"}
-                    </span>
-                    <span className="inline-flex items-center rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-0.5 text-[10px] font-medium text-[var(--ink-muted)]">
-                      {job.ageDays}d old
-                    </span>
-                    {job.repairTimeline ? (
-                      <span className="inline-flex items-center rounded-md border border-[var(--accent)]/30 bg-[var(--accent)]/8 px-2 py-0.5 text-[10px] font-medium text-[#9A7A00]">
-                        ETA {job.repairTimeline}
-                      </span>
-                    ) : null}
-                  </div>
-
-                  {/* ETA progress bar */}
-                  {typeof job.etaProgress === "number" ? (
-                    <div className="pl-2">
-                      <div className="h-1 rounded-full bg-[var(--line)]">
-                        <div
-                          className={`h-1 rounded-full transition-all ${job.etaProgress >= 100 ? "bg-[var(--accent)]" : "bg-[var(--ink)]/40"}`}
-                          style={{ width: `${Math.min(job.etaProgress, 100)}%` }}
-                        />
-                      </div>
-                    </div>
-                  ) : null}
-
-                  {/* Next action hint */}
-                  <p className="pl-2 text-[11px] italic text-[var(--ink-muted)]">
-                    → {nextCourse(job)}
-                  </p>
-
-                  {/* Actions */}
-                  <div className="mt-auto grid grid-cols-2 gap-2 pl-2">
-                    <Link
-                      href={`/jobs/${job.id}?returnTo=${encodeURIComponent(dismissSpotlightReturnTo(job.id))}`}
-                      className="btn-premium rounded-lg py-1.5 text-center text-sm font-semibold text-white"
-                    >
-                      Open
-                    </Link>
-                    <Link
-                      href={`/jobs/${job.id}/edit?returnTo=${encodeURIComponent(dismissSpotlightReturnTo(job.id))}`}
-                      className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] py-2 text-center text-xs font-semibold text-[var(--ink)] transition-colors hover:border-[var(--ink)]/20 hover:bg-[var(--panel)]"
-                    >
-                      Update
-                    </Link>
-                  </div>
-                </article>
-              );
-            })}
-          </div>
-        </section>
-      ) : null}
 
       {/* Work Queue */}
       <section className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
@@ -428,15 +372,17 @@ export default async function TechniciansPage({
             <div className="lg:hidden">
                 {sortedJobs.map((job) => {
                   const strip = statusStripClass(job.status);
+                  const isSpotlight = spotlightJobIds.has(job.id);
                   return (
                     <div
                       key={job.id}
-                      className="relative border-b border-[var(--line)] bg-[var(--panel)] px-4 py-3.5 transition-colors last:border-b-0 hover:bg-[var(--panel-strong)]/30"
+                      className={`relative border-b border-[var(--line)] px-4 py-3.5 transition-colors last:border-b-0 hover:bg-[var(--panel-strong)]/30 ${isSpotlight ? "bg-[var(--accent)]/[0.04]" : "bg-[var(--panel)]"}`}
                     >
-                      <span className={`absolute inset-y-0 left-0 w-[3px] rounded-r ${strip}`} aria-hidden="true" />
+                      <span className={`absolute inset-y-0 left-0 w-[3px] rounded-r ${isSpotlight ? "bg-[var(--accent)]" : strip}`} aria-hidden="true" />
                       <div className="flex items-start justify-between gap-3 pl-2">
                         <div className="min-w-0 flex-1 space-y-1">
                           <div className="flex flex-wrap items-center gap-2">
+                            {isSpotlight && <svg viewBox="0 0 24 24" fill="currentColor" className="h-3 w-3 shrink-0 text-[var(--accent)]" aria-label="Priority" role="img"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>}
                             <Link href={`/jobs/${job.id}`} className="mono text-[13px] font-bold text-[var(--ink)] transition-colors hover:text-[var(--accent)]">{job.jobNumber}</Link>
                             <JobStatusBadge status={job.status} />
                             <span className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${job.priority.tone}`}>
@@ -501,21 +447,34 @@ export default async function TechniciansPage({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[var(--line)]">
-                    {sortedJobs.map((job) => {
+                    {sortedJobs.map((job, idx) => {
                       const strip = statusStripClass(job.status);
+                      const isSpotlight = spotlightJobIds.has(job.id);
+                      const isFirstNonSpotlight = !isSpotlight && idx > 0 && spotlightJobIds.has(sortedJobs[idx - 1].id);
                       return (
-                        <tr key={job.id} className="group transition-colors hover:bg-[var(--panel-strong)]/40">
-                          <td className="p-0 w-[3px]" aria-hidden="true">
-                            <div className={`h-full min-h-[3rem] w-[3px] ${strip}`} />
-                          </td>
-                          <td className="px-4 py-3 align-middle">
-                            <Link
-                              href={`/jobs/${job.id}?returnTo=${encodeURIComponent(boardReturnTo)}`}
-                              className="mono block font-bold text-[var(--ink)] transition-colors hover:text-[var(--accent)]"
-                            >
-                              {job.jobNumber}
-                            </Link>
-                          </td>
+                        <>
+                          {isFirstNonSpotlight && (
+                            <tr key={`sep-${job.id}`} aria-hidden="true">
+                              <td colSpan={9} className="py-0">
+                                <div className="mx-4 border-t-2 border-dashed border-[var(--accent)]/20" />
+                              </td>
+                            </tr>
+                          )}
+                          <tr key={job.id} className={`group transition-colors hover:bg-[var(--panel-strong)]/40 ${isSpotlight ? "bg-[var(--accent)]/[0.04]" : ""}`}>
+                            <td className="p-0 w-[3px]" aria-hidden="true">
+                              <div className={`h-full min-h-[3rem] w-[3px] ${isSpotlight ? "bg-[var(--accent)]" : strip}`} />
+                            </td>
+                            <td className="px-4 py-3 align-middle">
+                              <div className="flex items-center gap-1.5">
+                                {isSpotlight && <svg viewBox="0 0 24 24" fill="currentColor" className="h-3 w-3 shrink-0 text-[var(--accent)]" aria-label="Priority" role="img"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>}
+                                <Link
+                                  href={`/jobs/${job.id}?returnTo=${encodeURIComponent(dismissSpotlightReturnTo(job.id))}`}
+                                  className="mono block font-bold text-[var(--ink)] transition-colors hover:text-[var(--accent)]"
+                                >
+                                  {job.jobNumber}
+                                </Link>
+                              </div>
+                            </td>
                           <td className="px-4 py-3 align-middle">
                             <p className="max-w-[16rem] truncate font-semibold text-[var(--ink)]">{deviceName(job.brand, job.model) ?? deviceLabel[job.deviceType as keyof typeof deviceLabel] ?? job.deviceType}</p>
                           </td>
@@ -565,7 +524,8 @@ export default async function TechniciansPage({
                               ) : null}
                             </div>
                           </td>
-                        </tr>
+                          </tr>
+                        </>
                       );
                     })}
                 </tbody>

@@ -10,14 +10,42 @@ import { requireModule, OrgModule } from "@/lib/module-access";
 import { formatEATDate } from "@/lib/date-eat";
 import { normalizeJobStatus } from "@/lib/job-status";
 
-const deviceIcon: Record<string, string> = {
-  PHONE_ANDROID: "📱",
-  PHONE_IPHONE: "📱",
-  TABLET: "📟",
-  WINDOWS_PC: "💻",
-  MAC: "🍎",
-  OTHER: "🔧",
-};
+function DeviceIcon({ type }: { type: string }) {
+  const cls = "inline-block h-3.5 w-3.5 shrink-0 text-[var(--ink-muted)]";
+  switch (type) {
+    case "PHONE_ANDROID":
+    case "PHONE_IPHONE":
+      return (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className={cls} aria-hidden>
+          <rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/>
+        </svg>
+      );
+    case "TABLET":
+      return (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className={cls} aria-hidden>
+          <rect x="4" y="2" width="16" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/>
+        </svg>
+      );
+    case "WINDOWS_PC":
+      return (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className={cls} aria-hidden>
+          <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+        </svg>
+      );
+    case "MAC":
+      return (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className={cls} aria-hidden>
+          <path d="M20 16V7a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v9m16 0H4m16 0 1.28 2.55A1 1 0 0 1 20.38 20H3.62a1 1 0 0 1-.9-1.45L4 16"/>
+        </svg>
+      );
+    default:
+      return (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className={cls} aria-hidden>
+          <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+        </svg>
+      );
+  }
+}
 
 type SearchParams = { q?: string; status?: string };
 
@@ -193,8 +221,8 @@ export default async function JobCardsPage({
 
                     {/* Device */}
                     <td className="hidden px-3 py-2.5 md:table-cell">
-                      <span className="mr-1.5">
-                        {deviceIcon[job.deviceType] ?? "🔧"}
+                      <span className="mr-1.5 align-middle">
+                        <DeviceIcon type={job.deviceType} />
                       </span>
                       <span className="text-xs text-[var(--ink)]">
                         {job.brand} {job.model}
