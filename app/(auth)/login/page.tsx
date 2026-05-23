@@ -35,39 +35,95 @@ export default async function LoginPage() {
           <div className="relative">
             <div className="flex items-center gap-3">
               <div className="overflow-hidden rounded-xl border border-white/10">
-                <Image src="/eagle-info-logo.png" alt="Logo" width={36} height={36} className="h-9 w-9 object-cover" priority />
+                <Image src="/app-logo.png" alt="Dduuka ProMax" width={36} height={36} className="h-9 w-9 object-cover" priority />
               </div>
-              <span className="text-xs font-semibold uppercase tracking-[0.22em] text-white/50">Nexus</span>
+              <span className="text-xs font-semibold uppercase tracking-[0.22em] text-white/50">Dduuka ProMax</span>
             </div>
           </div>
 
-          <div className="relative space-y-8">
+          <div className="relative space-y-7">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#D4AF37]/70">Business OS</p>
-              <h1 className="mt-3 text-3xl font-semibold leading-snug text-white xl:text-4xl">
-                Every team,<br />one workspace
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#D4AF37]/70">All-in-one Business OS</p>
+              <h1 className="mt-2 text-2xl font-semibold leading-snug text-white xl:text-3xl">
+                Every module your<br />business needs
               </h1>
-              <p className="mt-4 max-w-sm text-sm leading-relaxed text-white/55">
-                Finance, sales, operations, repairs, and field staff — each role sees exactly what they need, nothing more.
+              <p className="mt-3 max-w-sm text-sm leading-relaxed text-white/50">
+                From repair jobs to finance — all roles, one platform.
               </p>
             </div>
 
-            <div className="space-y-3">
+            {/* Module grid */}
+            <div className="grid grid-cols-2 gap-2">
               {[
-                { icon: "◈", text: "10 modules — pick only what your business needs" },
-                { icon: "◈", text: "Role-based access with a full audit trail on every action" },
-                { icon: "◈", text: "External vendors see job specs only — client data always protected" },
-              ].map((item) => (
-                <div key={item.text} className="flex items-start gap-3">
-                  <span className="mt-0.5 text-[#D4AF37]/60 text-xs">{item.icon}</span>
-                  <p className="text-sm text-white/55">{item.text}</p>
+                {
+                  label: "Repair & Service", desc: "Jobs · diagnosis · status",
+                  icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5 shrink-0" aria-hidden><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>,
+                },
+                {
+                  label: "Stock & Inventory", desc: "Parts · suppliers · stock",
+                  icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5 shrink-0" aria-hidden><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5M12 22V12"/></svg>,
+                },
+                {
+                  label: "Clients & Sales", desc: "CRM · leads · follow-ups",
+                  icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5 shrink-0" aria-hidden><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
+                },
+                {
+                  label: "Documents", desc: "Quotes · invoices · receipts",
+                  icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5 shrink-0" aria-hidden><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>,
+                },
+                {
+                  label: "Finance", desc: "Payments · expenses · P&L",
+                  icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5 shrink-0" aria-hidden><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>,
+                },
+                {
+                  label: "Reports", desc: "Analytics · KPIs · exports",
+                  icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5 shrink-0" aria-hidden><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>,
+                },
+                {
+                  label: "Communications", desc: "WhatsApp · SMS · notes",
+                  icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5 shrink-0" aria-hidden><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>,
+                },
+                {
+                  label: "Security & Admin", desc: "Roles · audit trail · users",
+                  icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5 shrink-0" aria-hidden><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/></svg>,
+                },
+              ].map((m) => (
+                <div
+                  key={m.label}
+                  className="flex items-start gap-2 rounded-lg border border-white/6 bg-white/3 px-3 py-2.5"
+                >
+                  <span className="mt-0.5 text-[#D4AF37]/50">{m.icon}</span>
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-semibold text-white/80 leading-tight">{m.label}</p>
+                    <p className="text-[10px] text-white/35 leading-tight mt-0.5">{m.desc}</p>
+                  </div>
                 </div>
               ))}
             </div>
+
+            {/* Role strip */}
+            <div>
+              <p className="text-[10px] uppercase tracking-widest text-white/30 mb-2">9 role-isolated access levels</p>
+              <div className="flex flex-wrap gap-1.5">
+                {["Admin", "Tech Manager", "Sales Manager", "Operations", "Technician", "Sales", "Front Desk", "Cashier", "External Tech"].map((r) => (
+                  <span key={r} className="rounded-full border border-[#D4AF37]/20 bg-[#D4AF37]/6 px-2.5 py-0.5 text-[10px] font-medium text-[#D4AF37]/70">
+                    {r}
+                  </span>
+                ))}
+              </div>
+            </div>
           </div>
 
-          <div className="relative">
-            <p className="text-[11px] text-white/25">© {new Date().getFullYear()} Nexus</p>
+          <div className="relative flex items-center justify-between">
+            <p className="text-[11px] text-white/25">© {new Date().getFullYear()} Dduuka ProMax</p>
+            <a
+              href="https://app.eagleinfosolutions.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[11px] text-[#D4AF37]/50 hover:text-[#D4AF37] transition-colors"
+            >
+              app.eagleinfosolutions.com →
+            </a>
           </div>
         </section>
 
@@ -78,17 +134,17 @@ export default async function LoginPage() {
             {/* Mobile-only logo */}
             <div className="mb-8 flex flex-col items-center lg:hidden">
               <div className="overflow-hidden rounded-2xl border border-white/10 shadow-lg shadow-black/40">
-                <Image src="/eagle-info-logo.png" alt="Logo" width={56} height={56} className="h-14 w-14 object-cover" priority />
+                <Image src="/app-logo.png" alt="Dduuka ProMax" width={56} height={56} className="h-14 w-14 object-cover" priority />
               </div>
-              <p className="mt-3 text-xs font-semibold uppercase tracking-[0.22em] text-white/40">Nexus</p>
+              <p className="mt-3 text-xs font-semibold uppercase tracking-[0.22em] text-white/40">Dduuka ProMax</p>
             </div>
 
             {/* Desktop logo row */}
             <div className="mb-8 hidden items-center gap-3 lg:flex">
               <div className="overflow-hidden rounded-xl border border-white/10">
-                <Image src="/eagle-info-logo.png" alt="Logo" width={36} height={36} className="h-9 w-9 object-cover" priority />
+                <Image src="/app-logo.png" alt="Dduuka ProMax" width={36} height={36} className="h-9 w-9 object-cover" priority />
               </div>
-              <span className="text-xs font-semibold uppercase tracking-[0.22em] text-white/40">Nexus</span>
+              <span className="text-xs font-semibold uppercase tracking-[0.22em] text-white/40">Dduuka ProMax</span>
             </div>
 
             <h2 className="text-2xl font-semibold text-white">Sign in</h2>

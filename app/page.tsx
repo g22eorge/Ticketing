@@ -1,631 +1,495 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { StatusLookupForm } from "@/components/shared/StatusLookupForm";
 
 import { getSession } from "@/lib/session";
-import { PLAN_PRICES, CURRENCY } from "@/lib/pesapal";
-import { PLAN_LIMITS } from "@/lib/plan-limits";
+import { RepairRequestForm } from "@/components/public/RepairRequestForm";
 
 export const metadata: Metadata = {
-  title: "Nexus — Business Operations for Service Teams",
+  title: "Eagle Info Solutions — Device Repair & Business Management",
   description:
-    "Run your entire service business from one workspace. Jobs, inventory, purchase orders, invoicing, POS sales, and team management — built for modern service teams.",
+    "Submit a device repair request online. Eagle Info Solutions repairs phones, laptops and tablets in Kampala — written quote, no-fix-no-fee, 30-day warranty. Powered by Dduuka ProMax.",
   alternates: { canonical: "/" },
 };
 
-// ── Static data ─────────────────────────────────────────────────────────────────────────────────
+// ── Module definitions ─────────────────────────────────────────────────────────
 
-const features = [
+const MODULES = [
   {
+    group: "Service & Repairs",
+    color: "from-blue-500/20 to-blue-500/5",
+    border: "border-blue-500/20",
+    accent: "text-blue-400",
     icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z" />
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5" aria-hidden>
+        <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
       </svg>
     ),
-    title: "Jobs & repairs",
-    body: "From intake to completion — every status, note, diagnosis, and handoff logged with a full audit trail.",
+    items: ["Jobs & Repair Tracking", "Intake & Reception", "Field Visits", "Technician Management", "Complaints Handling"],
   },
   {
+    group: "Stock & Supply",
+    color: "from-amber-500/20 to-amber-500/5",
+    border: "border-amber-500/20",
+    accent: "text-amber-400",
     icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-        <line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" />
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5" aria-hidden>
+        <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" />
+        <path d="m3.3 7 8.7 5 8.7-5M12 22V12" />
       </svg>
     ),
-    title: "Invoicing & payments",
-    body: "Generate branded invoices, record payments in multiple currencies, and track every outstanding balance.",
+    items: ["Parts & Stock Levels", "Purchase Orders", "Goods Received", "Supplier Bills", "Stock Counts & Transfers"],
   },
   {
+    group: "Customers & Sales",
+    color: "from-emerald-500/20 to-emerald-500/5",
+    border: "border-emerald-500/20",
+    accent: "text-emerald-400",
     icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5" aria-hidden>
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+        <circle cx="9" cy="7" r="4" />
+        <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
       </svg>
     ),
-    title: "Inventory & parts",
-    body: "Parts catalogue with live stock levels, reorder alerts, and automatic reservation against open jobs.",
+    items: ["Client Directory", "Point of Sale (POS)", "Sales CRM & Leads", "Sales Visits", "Campaigns & Outreach"],
   },
   {
+    group: "Documents",
+    color: "from-purple-500/20 to-purple-500/5",
+    border: "border-purple-500/20",
+    accent: "text-purple-400",
     icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="2" y="3" width="20" height="14" rx="2" /><line x1="8" y1="21" x2="16" y2="21" /><line x1="12" y1="17" x2="12" y2="21" />
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5" aria-hidden>
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" />
+        <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" />
       </svg>
     ),
-    title: "Point of sale",
-    body: "Walk-in sales, product checkout, shift management, and receipts — separate from service jobs.",
+    items: ["Job Cards", "Invoices & Receipts", "Quotations", "Delivery Notes", "Credit Notes & Refunds"],
   },
   {
+    group: "Finance",
+    color: "from-[#D4AF37]/25 to-[#D4AF37]/5",
+    border: "border-[#D4AF37]/25",
+    accent: "text-[#D4AF37]",
     icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" />
-        <path d="M23 21v-2a4 4 0 00-3-3.87" /><path d="M16 3.13a4 4 0 010 7.75" />
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5" aria-hidden>
+        <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
       </svg>
     ),
-    title: "Sales CRM & pipeline",
-    body: "Leads, quotations, corporate accounts, and commissions — track every deal from first contact to payment.",
+    items: ["Expenses & Bank", "P&L, Balance Sheet", "Cash Flow Statements", "Aged Receivables", "Journal Entries"],
   },
   {
+    group: "Reports & Analytics",
+    color: "from-cyan-500/20 to-cyan-500/5",
+    border: "border-cyan-500/20",
+    accent: "text-cyan-400",
     icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M9 11l3 3L22 4" /><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5" aria-hidden>
+        <path d="M3 3v18h18" />
+        <path d="m19 9-5 5-4-4-3 3" />
       </svg>
     ),
-    title: "Purchase orders",
-    body: "Raise POs to suppliers, receive stock against them, and reconcile supplier bills automatically.",
+    items: ["Tech Performance", "Operations Dashboard", "Inventory Value Report", "Customer Statements", "Revenue Analytics"],
   },
   {
+    group: "Communications",
+    color: "from-green-500/20 to-green-500/5",
+    border: "border-green-500/20",
+    accent: "text-green-400",
     icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5" aria-hidden>
+        <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5Z" />
       </svg>
     ),
-    title: "Complaints & feedback",
-    body: "Client complaints logged, assigned, and resolved with SLA timers so nothing slips through.",
+    items: ["WhatsApp Notifications", "Message Templates", "Meta Business Integration", "Delivery Outbox", "Status Alerts"],
   },
   {
+    group: "Security & Admin",
+    color: "from-rose-500/20 to-rose-500/5",
+    border: "border-rose-500/20",
+    accent: "text-rose-400",
     icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5" aria-hidden>
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z" />
       </svg>
     ),
-    title: "Field operations",
-    body: "Dispatch field technicians, record on-site signoffs, and track work done outside the office.",
-  },
-  {
-    icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/>
-      </svg>
-    ),
-    title: "Targets & performance",
-    body: "Set revenue and team targets, track attainment in real time, and reward top performers.",
-  },
-  {
-    icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-        <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
-      </svg>
-    ),
-    title: "Reports & analytics",
-    body: "Revenue across all streams, technician performance, inventory health, and CSV exports — per department.",
+    items: ["9 Role-Based Access Levels", "Full Audit Trail", "User Management", "Data Heal & Diagnostics"],
   },
 ];
 
-const industries = [
-  {
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z" />
-      </svg>
-    ),
-    label: "Device repair shops",
-    desc: "Phone, tablet & PC repairs",
-  },
-  {
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="2" y="3" width="20" height="14" rx="2" /><line x1="8" y1="21" x2="16" y2="21" /><line x1="12" y1="17" x2="12" y2="21" />
-      </svg>
-    ),
-    label: "IT service companies",
-    desc: "Managed services & support",
-  },
-  {
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="12" cy="12" r="3" /><path d="M19.07 4.93a10 10 0 010 14.14" /><path d="M4.93 4.93a10 10 0 000 14.14" />
-      </svg>
-    ),
-    label: "Auto & mechanical workshops",
-    desc: "Vehicle service & diagnostics",
-  },
-  {
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M16.5 9.4l-9-5.19M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 002 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z" /><polyline points="3.27 6.96 12 12.01 20.73 6.96" /><line x1="12" y1="22.08" x2="12" y2="12" />
-      </svg>
-    ),
-    label: "Parts & inventory businesses",
-    desc: "Stock management & POs",
-  },
-  {
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/>
-      </svg>
-    ),
-    label: "Corporate sales teams",
-    desc: "Leads, quotes & commissions",
-  },
-  {
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
-      </svg>
-    ),
-    label: "Retail & wholesale shops",
-    desc: "POS, inventory & invoicing",
-  },
-  {
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/>
-      </svg>
-    ),
-    label: "Field service teams",
-    desc: "On-site jobs & signoffs",
-  },
-  {
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/>
-      </svg>
-    ),
-    label: "Multi-branch operations",
-    desc: "Centralised across locations",
-  },
+const STATS = [
+  { value: "8+", label: "Modules" },
+  { value: "9", label: "User Roles" },
+  { value: "50+", label: "Features" },
+  { value: "100%", label: "Role-Isolated" },
 ];
 
-const plans = [
-  {
-    key: "STARTER" as const,
-    label: "Free",
-    price: null as number | null,
-    desc: "Try with no commitment. Good for solo operators and small teams just getting started.",
-    features: [
-      `${PLAN_LIMITS.STARTER.maxUsers} team members`,
-      `${PLAN_LIMITS.STARTER.maxJobsPerMonth} jobs / month`,
-      `${PLAN_LIMITS.STARTER.maxParts} inventory SKUs`,
-      "Jobs, Reports & Complaints",
-      "Public client intake form",
-    ],
-    cta: "Start free",
-    highlight: false,
-  },
-  {
-    key: "STANDARD" as const,
-    label: "Standard",
-    price: PLAN_PRICES.STANDARD,
-    desc: "For small teams running invoicing, sales, and inventory alongside their core work.",
-    features: [
-      `${PLAN_LIMITS.STANDARD.maxUsers} team members`,
-      `${PLAN_LIMITS.STANDARD.maxJobsPerMonth} jobs / month`,
-      `${PLAN_LIMITS.STANDARD.maxParts} inventory SKUs`,
-      "Invoicing, Sales CRM & Inventory",
-      "Invite links & WhatsApp alerts",
-    ],
-    cta: "Get started",
-    highlight: false,
-  },
-  {
-    key: "GROWTH" as const,
-    label: "Professional",
-    price: PLAN_PRICES.GROWTH,
-    desc: "For growing operations that need POS, field teams, and branded documents.",
-    features: [
-      `${PLAN_LIMITS.GROWTH.maxUsers} team members`,
-      `${PLAN_LIMITS.GROWTH.maxJobsPerMonth} jobs / month`,
-      `${PLAN_LIMITS.GROWTH.maxParts} inventory SKUs`,
-      "POS, Purchase Orders & Field Ops",
-      "Custom branding · Priority support",
-    ],
-    cta: "Try free for 14 days",
-    highlight: true,
-  },
-  {
-    key: "PREMIUM" as const,
-    label: "Premium",
-    price: PLAN_PRICES.PREMIUM,
-    desc: "For high-volume operations with multiple branches and deep performance reporting.",
-    features: [
-      `${PLAN_LIMITS.PREMIUM.maxUsers} team members`,
-      `${PLAN_LIMITS.PREMIUM.maxJobsPerMonth} jobs / month`,
-      `${PLAN_LIMITS.PREMIUM.maxParts} inventory SKUs`,
-      `Up to ${PLAN_LIMITS.PREMIUM.maxBranches} branches`,
-      "All modules · Advanced analytics",
-    ],
-    cta: "Try free for 14 days",
-    highlight: false,
-  },
-  {
-    key: "ENTERPRISE" as const,
-    label: "Enterprise",
-    price: PLAN_PRICES.ENTERPRISE,
-    desc: "Unlimited scale, white-label branding, dedicated support, and an SLA.",
-    features: [
-      "Unlimited team members",
-      "Unlimited jobs & inventory",
-      "Unlimited branches",
-      "White-label branding & SLA",
-      "Dedicated account manager",
-    ],
-    cta: "Contact us",
-    highlight: false,
-  },
-];
+// WhatsApp SVG path shared across multiple links
+const WA_PATH = "M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z";
 
-function formatPrice(n: number) {
-  return n.toLocaleString("en-UG");
-}
-
-// ── Page ──────────────────────────────────────────────────────────────────────────────────
-
-export default async function LandingPage() {
+export default async function Page() {
   const session = await getSession();
   if (session?.user) redirect("/dashboard");
 
   return (
-    <div className="theme-blackgold min-h-screen bg-[#050505] text-white">
+    <main className="theme-blackgold relative min-h-screen overflow-x-hidden bg-[#050505] text-white">
+
+      {/* ── Ambient background ── */}
+      <div className="pointer-events-none fixed inset-0 -z-10">
+        <div className="absolute left-1/4 top-0 h-[600px] w-[600px] -translate-x-1/2 rounded-full bg-[#D4AF37]/8 blur-[140px]" />
+        <div className="absolute right-0 top-1/3 h-[400px] w-[400px] rounded-full bg-blue-500/6 blur-[120px]" />
+      </div>
+
       {/* ── Nav ── */}
-      <header className="sticky top-0 z-30 border-b border-white/8 bg-[#050505]/90 backdrop-blur-xl">
-        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 md:px-6">
-          <div className="flex items-center gap-2">
-            <span className="text-base font-bold tracking-tight text-white">Nexus</span>
-            <span className="rounded bg-[#D4AF37]/15 px-1.5 py-0.5 text-[11px] font-bold text-[#D4AF37]">Business OS</span>
+      <nav className="sticky top-0 z-40 border-b border-white/6 bg-[#050505]/90 px-4 py-3 backdrop-blur-md">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4">
+
+          {/* Brand: Eagle Info Solutions, powered by Dduuka ProMax */}
+          <div className="flex items-center gap-3">
+            <div className="overflow-hidden rounded-xl border border-white/10">
+              <Image src="/app-logo.png" alt="Eagle Info Solutions" width={32} height={32} className="h-8 w-8 object-cover" priority />
+            </div>
+            <div>
+              <p className="text-sm font-bold leading-none text-white">Eagle Info Solutions</p>
+              <p className="mt-0.5 text-[10px] font-medium uppercase tracking-[0.16em] text-[#D4AF37]/60">Powered by Dduuka ProMax</p>
+            </div>
           </div>
-          <nav className="hidden items-center gap-6 sm:flex">
-            <a href="#features" className="text-sm text-white/50 transition-colors hover:text-white">Features</a>
-            <a href="#pricing" className="text-sm text-white/50 transition-colors hover:text-white">Pricing</a>
-            <a href="#clients"className="text-sm text-white/50 transition-colors hover:text-white">For clients</a>
-          </nav>
+
+          {/* Nav actions */}
           <div className="flex items-center gap-2">
-            <Link href="/login" className="rounded-lg px-3.5 py-1.5 text-sm font-medium text-white/60 transition-colors hover:text-white">
-              Log in
-            </Link>
-            <Link
-              href="/register"
-              className="rounded-lg px-3.5 py-1.5 text-sm font-bold text-black shadow-[0_2px_10px_rgba(212,175,55,0.25)]"
-              style={{ background: "linear-gradient(180deg,#E8C84A 0%,#C9A020 100%)" }}
+            <a
+              href="#repair-form"
+              className="hidden items-center gap-1.5 rounded-lg border border-[#D4AF37]/30 bg-[#D4AF37]/10 px-4 py-2 text-xs font-semibold text-[#D4AF37] transition hover:bg-[#D4AF37]/20 sm:flex"
             >
-              Get started
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5" aria-hidden>
+                <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
+              </svg>
+              Repair Request
+            </a>
+            <Link
+              href="/complaint"
+              className="hidden items-center gap-1.5 rounded-lg border border-red-500/20 bg-red-500/8 px-3 py-2 text-xs font-semibold text-red-400/80 transition hover:bg-red-500/15 hover:text-red-400 md:flex"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5" aria-hidden>
+                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
+              Complaint
+            </Link>
+            <a
+              href="https://wa.me/256772006344?text=Hi%20Eagle%20Info%2C%20I%20have%20a%20device%20I%20need%20repaired."
+              target="_blank" rel="noreferrer"
+              className="flex items-center gap-1.5 rounded-lg bg-[#25D366]/15 border border-[#25D366]/25 px-3 py-2 text-xs font-semibold text-[#25D366] transition hover:bg-[#25D366]/25"
+            >
+              <svg viewBox="0 0 24 24" fill="currentColor" className="h-3.5 w-3.5" aria-hidden><path d={WA_PATH}/></svg>
+              <span className="hidden sm:inline">WhatsApp</span>
+            </a>
+            <Link
+              href="/login"
+              className="rounded-lg border border-white/12 bg-white/5 px-4 py-2 text-xs font-semibold text-white/60 transition hover:border-white/20 hover:text-white"
+            >
+              Staff Login
             </Link>
           </div>
         </div>
-      </header>
+      </nav>
 
-      <main>
-        {/* ── Hero ── */}
-        <section className="relative overflow-hidden px-4 pb-24 pt-20 md:px-6 md:pb-32 md:pt-28">
-          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(900px_500px_at_50%_0%,rgba(212,175,55,0.13),transparent_65%)]" />
-          <div className="relative mx-auto max-w-3xl text-center">
-            <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-[#D4AF37]/25 bg-[#D4AF37]/8 px-4 py-1.5">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#D4AF37]" />
-              <span className="text-[12px] font-semibold text-[#D4AF37]">Built for service businesses across Uganda</span>
-            </div>
-            <h1 className="mb-5 font-[family-name:var(--font-display,sans-serif)] text-4xl font-bold leading-[1.08] tracking-tight text-white md:text-6xl">
-              Run your whole business,<br />
-              <span style={{ color: "#D4AF37" }}>not just your jobs</span>
-            </h1>
-            <p className="mx-auto mb-8 max-w-xl text-base leading-relaxed text-white/55 md:text-lg">
-              10 business modules — repairs, invoicing, inventory, POS, sales CRM, field ops, and more. Pick what fits your business and scale from there.
-            </p>
-            <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
-              <Link
-                href="/register"
-                className="flex w-full items-center justify-center gap-2 rounded-xl px-6 py-3 text-[15px] font-bold text-black shadow-[0_4px_20px_rgba(212,175,55,0.3)] sm:w-auto"
-                style={{ background: "linear-gradient(180deg,#E8C84A 0%,#C9A020 100%)" }}
-              >
-                Start free — no credit card
-              </Link>
-              <Link
-                href="/login"
-                className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/12 bg-white/[0.04] px-6 py-3 text-[15px] font-semibold text-white/70 backdrop-blur-sm transition-colors hover:border-white/20 hover:text-white sm:w-auto"
-              >
-                Log in to your workspace
-              </Link>
-            </div>
-            <p className="mt-4 text-[12px] text-white/30">2-month free trial · Cancel anytime</p>
-          </div>
-        </section>
+      <div className="mx-auto max-w-6xl px-4">
 
-        {/* ── Features ── */}
-        <section id="features" className="px-4 py-20 md:px-6 md:py-24">
-          <div className="mx-auto max-w-6xl">
-            <p className="mb-3 text-center text-[11px] font-bold uppercase tracking-[0.18em] text-[#D4AF37]/70">Built for every part of your operation</p>
-            <h2 className="mb-12 text-center text-2xl font-bold text-white md:text-3xl">
-              10 modules. One workspace.
-            </h2>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-              {features.map((f) => (
-                <div
-                  key={f.title}
-                  className="rounded-2xl border border-white/8 bg-[#141414] p-5 transition-all duration-200 hover:-translate-y-0.5 hover:border-white/14 hover:bg-[#181818]"
-                >
-                  <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-xl bg-[#D4AF37]/10 text-[#D4AF37]">
-                    {f.icon}
-                  </div>
-                  <p className="mb-1 font-semibold text-white">{f.title}</p>
-                  <p className="text-sm leading-relaxed text-white/50">{f.body}</p>
+        {/* ══════════════════════════════════════════════════════════════
+            HERO — Eagle Info Solutions repair service + inline form
+        ══════════════════════════════════════════════════════════════ */}
+        <section id="repair-form" className="py-12 md:py-16">
+
+          {/* Two-column: left = copy, right = form */}
+          <div className="flex flex-col gap-10 lg:flex-row lg:items-start lg:gap-14">
+
+            {/* ── Left: Company + service intro ── */}
+            <div className="lg:max-w-sm lg:pt-2 lg:sticky lg:top-24">
+              {/* Company badge */}
+              <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/5 px-4 py-1.5">
+                <div className="h-4 w-4 overflow-hidden rounded-md border border-white/15">
+                  <Image src="/app-logo.png" alt="" width={16} height={16} className="h-4 w-4 object-cover" />
                 </div>
-              ))}
-            </div>
-          </div>
-        </section>
+                <span className="text-[11px] font-semibold text-white/60">Eagle Info Solutions</span>
+              </div>
 
-        {/* ── Who uses Nexus ── */}
-        <section className="px-4 pb-16 md:px-6">
-          <div className="mx-auto max-w-6xl">
-            <p className="mb-6 text-center text-[11px] font-bold uppercase tracking-[0.18em] text-[#D4AF37]/70">Trusted across industries</p>
-            <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-8">
-              {industries.map((ind) => (
-                <div
-                  key={ind.label}
-                  className="rounded-2xl border border-white/8 bg-[#141414] px-4 py-3 flex items-start gap-3"
-                >
-                  <div className="mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-[#D4AF37]/10 text-[#D4AF37]">
-                    {ind.icon}
-                  </div>
-                  <div>
-                    <p className="text-[13px] font-semibold leading-tight text-white">{ind.label}</p>
-                    <p className="mt-0.5 text-[11px] text-white/40">{ind.desc}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
+              <h1 className="text-3xl font-extrabold leading-tight text-white xl:text-4xl">
+                Device broken?<br />
+                <span className="bg-gradient-to-r from-[#E8C84A] to-[#C9A020] bg-clip-text text-transparent">
+                  We fix it fast.
+                </span>
+              </h1>
 
-        {/* ── Data isolation callout ── */}
-        <section className="px-4 py-16 md:px-6">
-          <div className="mx-auto max-w-4xl">
-            <div
-              className="rounded-2xl border border-[#D4AF37]/25 p-8 md:p-10"
-              style={{
-                background: "linear-gradient(135deg,#1f1b0e 0%,#0c0c0c 100%)",
-                boxShadow: "0 0 0 1px rgba(212,175,55,0.1), 0 24px 48px rgba(0,0,0,0.5)",
-              }}
-            >
-              <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.18em] text-[#D4AF37]/70">Enterprise-grade security</p>
-              <h2 className="mb-3 text-2xl font-bold text-white">External vendors never see your client data</h2>
-              <p className="mb-6 max-w-2xl text-sm leading-relaxed text-white/55">
-                When you assign work to an outside contractor or vendor, they see only what they need: job specs, device details, and their task. Client names, pricing history, and internal notes stay hidden by design — enforced server-side, not just in the UI.
+              <p className="mt-4 text-sm leading-relaxed text-white/50">
+                Fill in the form to submit your repair request directly to Eagle Info Solutions.
+                We&apos;ll review it and get back to you within a few hours with a quote and timeline.
               </p>
-              <div className="grid gap-3 sm:grid-cols-3">
+
+              {/* Trust badges */}
+              <div className="mt-6 space-y-2.5">
                 {[
-                  { label: "Vendor sees", items: ["Job specs & device info", "Diagnosis summary", "Parts required", "Their own estimate"] },
-                  { label: "Vendor never sees", items: ["Client name or contacts", "Pricing history", "Payment records", "Internal staff notes"] },
-                  { label: "Full access: Admin & Ops", items: ["Complete job file", "Client history", "Financials & invoices", "Full audit trail"] },
-                ].map((col) => (
-                  <div key={col.label} className="rounded-xl border border-white/8 bg-white/[0.03] p-4">
-                    <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.14em] text-white/35">{col.label}</p>
-                    <ul className="space-y-1.5">
-                      {col.items.map((item) => (
-                        <li key={item} className="flex items-center gap-2 text-sm text-white/65">
-                          <span className="h-1 w-1 flex-shrink-0 rounded-full bg-[#D4AF37]/60" />
-                          {item}
-                        </li>
-                      ))}
-                    </ul>
+                  {
+                    label: "Written quote before any work begins",
+                    icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 shrink-0" aria-hidden><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>,
+                  },
+                  {
+                    label: "No fix, no fee — guaranteed",
+                    icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 shrink-0" aria-hidden><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>,
+                  },
+                  {
+                    label: "30-day warranty on all repairs",
+                    icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 shrink-0" aria-hidden><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/></svg>,
+                  },
+                  {
+                    label: "Shop L28, Nalubega Complex, Bombo Road, Kampala",
+                    icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 shrink-0" aria-hidden><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>,
+                  },
+                  {
+                    label: "Phones · Laptops · Tablets · PCs",
+                    icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 shrink-0" aria-hidden><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>,
+                  },
+                ].map((t) => (
+                  <div key={t.label} className="flex items-start gap-2.5">
+                    <span className="mt-0.5 text-[#D4AF37]/60">{t.icon}</span>
+                    <p className="text-[13px] leading-tight text-white/55">{t.label}</p>
                   </div>
                 ))}
               </div>
-            </div>
-          </div>
-        </section>
 
-        {/* ── Pricing ── */}
-        <section id="pricing" className="px-4 py-20 md:px-6 md:py-24">
-          <div className="mx-auto max-w-6xl">
-            <p className="mb-3 text-center text-[11px] font-bold uppercase tracking-[0.18em] text-[#D4AF37]/70">Simple pricing</p>
-            <h2 className="mb-2 text-center text-2xl font-bold text-white md:text-3xl">Start free, scale when ready</h2>
-            <p className="mb-12 text-center text-sm text-white/40">Free plan includes a 2-month trial. Upgrade anytime — no credit card required to start.</p>
-
-            <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5">
-              {plans.map((plan) => (
-                <div
-                  key={plan.key}
-                  className={`relative flex flex-col rounded-2xl border p-6 transition-all duration-200 hover:-translate-y-0.5 ${
-                    plan.highlight
-                      ? "border-[#D4AF37]/40 shadow-[0_0_0_1px_rgba(212,175,55,0.15),0_24px_48px_rgba(0,0,0,0.5)]"
-                      : "border-white/8 bg-[#141414]"
-                  }`}
-                  style={plan.highlight ? { background: "linear-gradient(160deg,#1f1b0e 0%,#0c0c0c 100%)" } : undefined}
+              {/* Alternative contact */}
+              <div className="mt-7 flex flex-col gap-2">
+                <p className="text-[11px] font-semibold uppercase tracking-widest text-white/25">Or contact us directly</p>
+                <a
+                  href="https://wa.me/256772006344?text=Hi%20Eagle%20Info%2C%20I%20have%20a%20device%20I%20need%20repaired.%20Please%20help%20me."
+                  target="_blank" rel="noreferrer"
+                  className="flex items-center gap-2 rounded-lg bg-[#25D366]/12 border border-[#25D366]/25 px-4 py-2.5 text-sm font-semibold text-[#25D366] transition hover:bg-[#25D366]/20"
                 >
-                  {plan.highlight && (
-                    <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                      <span className="rounded-full border border-[#D4AF37]/40 bg-[#1a1600] px-3 py-1 text-[11px] font-bold text-[#D4AF37]">
-                        Most popular
-                      </span>
-                    </div>
-                  )}
+                  <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4 shrink-0" aria-hidden><path d={WA_PATH}/></svg>
+                  +256 772 006 344 on WhatsApp
+                </a>
+                <a
+                  href="/address"
+                  className="flex items-center gap-2 rounded-lg border border-white/8 bg-white/3 px-4 py-2.5 text-sm text-white/45 transition hover:border-white/15 hover:text-white/65"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 shrink-0" aria-hidden>
+                    <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>
+                  </svg>
+                  Get directions to our shop
+                </a>
+              </div>
+            </div>
 
-                  <div className="mb-4">
-                    <p className="text-sm font-bold text-white/70">{plan.label}</p>
-                    <div className="mt-1 flex items-baseline gap-1">
-                      {plan.price === null ? (
-                        <span className="text-3xl font-bold text-white">Free</span>
-                      ) : (
-                        <>
-                          <span className="text-base font-medium text-white/40">{CURRENCY}</span>
-                          <span className="text-3xl font-bold text-white">{formatPrice(plan.price)}</span>
-                          <span className="text-sm text-white/40">/ mo</span>
-                        </>
-                      )}
+            {/* ── Right: The repair request form ── */}
+            <div className="flex-1">
+              <div
+                className="relative overflow-hidden rounded-2xl border border-white/10 p-6 md:p-8"
+                style={{
+                  background: "linear-gradient(160deg,#111111 0%,#0d0d0d 100%)",
+                  boxShadow: "0 0 0 1px rgba(255,255,255,0.04), 0 20px 60px rgba(0,0,0,0.5)",
+                }}
+              >
+                <div className="pointer-events-none absolute -right-12 -top-12 h-48 w-48 rounded-full bg-[#D4AF37]/6 blur-[60px]" />
+                <div className="relative">
+                  <div className="mb-5 flex items-center justify-between">
+                    <div>
+                      <p className="text-base font-bold text-white">Repair Request Form</p>
+                      <p className="mt-0.5 text-xs text-white/35">All fields marked * are required</p>
                     </div>
-                    <p className="mt-1.5 text-[13px] leading-relaxed text-white/45">{plan.desc}</p>
+                    <div className="flex items-center gap-1.5 rounded-full border border-green-500/25 bg-green-500/8 px-3 py-1">
+                      <span className="h-1.5 w-1.5 rounded-full bg-green-400" />
+                      <span className="text-[10px] font-semibold text-green-400">Live</span>
+                    </div>
                   </div>
-
-                  <ul className="mb-6 flex-1 space-y-2">
-                    {plan.features.map((f) => (
-                      <li key={f} className="flex items-center gap-2.5 text-sm text-white/65">
-                        <svg className="h-3.5 w-3.5 flex-shrink-0 text-[#D4AF37]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                          <polyline points="20 6 9 17 4 12" />
-                        </svg>
-                        {f}
-                      </li>
-                    ))}
-                  </ul>
-
-                  <Link
-                    href="/register"
-                    className={`block rounded-xl py-2.5 text-center text-sm font-bold transition-all ${
-                      plan.highlight
-                        ? "text-black shadow-[0_3px_12px_rgba(212,175,55,0.25)]"
-                        : "border border-white/12 bg-white/[0.05] text-white hover:border-white/20 hover:bg-white/[0.09]"
-                    }`}
-                    style={plan.highlight ? { background: "linear-gradient(180deg,#E8C84A 0%,#C9A020 100%)" } : undefined}
-                  >
-                    {plan.cta}
-                  </Link>
+                  <RepairRequestForm />
                 </div>
-              ))}
+              </div>
             </div>
           </div>
-        </section>
 
-        {/* ── Final CTA ── */}
-        <section className="px-4 pb-24 pt-8 md:px-6">
-          <div className="mx-auto max-w-xl text-center">
-            <h2 className="mb-3 text-2xl font-bold text-white">Ready to run a smarter operation?</h2>
-            <p className="mb-7 text-sm text-white/45">
-              Set up your workspace in minutes. Free plan, no credit card required.
-            </p>
+          {/* ── Complaint CTA strip ── */}
+          <div className="mt-6 flex flex-col items-center gap-3 rounded-2xl border border-red-500/12 bg-red-500/[0.04] px-6 py-5 text-center sm:flex-row sm:text-left">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-red-500/20 bg-red-500/10 text-red-400">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5" aria-hidden>
+                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-white/80">Had a bad experience?</p>
+              <p className="mt-0.5 text-xs text-white/40">
+                We take every complaint seriously. Tell us what went wrong and we&apos;ll make it right.
+              </p>
+            </div>
             <Link
-              href="/register"
-              className="inline-flex items-center gap-2 rounded-xl px-8 py-3 text-[15px] font-bold text-black shadow-[0_4px_20px_rgba(212,175,55,0.3)]"
-              style={{ background: "linear-gradient(180deg,#E8C84A 0%,#C9A020 100%)" }}
+              href="/complaint"
+              className="flex shrink-0 items-center gap-2 rounded-xl border border-red-500/25 bg-red-500/10 px-5 py-2.5 text-sm font-semibold text-red-400 transition hover:bg-red-500/20"
             >
-              Create your workspace
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden>
+                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
+              Submit a Complaint
             </Link>
           </div>
         </section>
 
-        {/* ── Client self-service ── */}
-        <section id="clients" className="border-t border-white/8 px-4 py-20 md:px-6 md:py-24">
-          <div className="mx-auto max-w-6xl">
-            <p className="mb-3 text-center text-[11px] font-bold uppercase tracking-[0.18em] text-[#D4AF37]/70">Built for your customers too</p>
-            <h2 className="mb-4 text-center text-2xl font-bold text-white md:text-3xl">
-              Your clients stay informed — automatically
-            </h2>
-            <p className="mx-auto mb-14 max-w-xl text-center text-sm leading-relaxed text-white/45">
-              No more &ldquo;what&apos;s the status of my repair?&rdquo; calls. Clients track their own jobs and submit feedback directly — no login required.
-            </p>
+        {/* ── Divider with Dduuka ProMax intro ── */}
+        <div className="relative py-6">
+          <div className="absolute inset-x-0 top-1/2 h-px bg-gradient-to-r from-transparent via-white/8 to-transparent" />
+          <div className="relative flex justify-center">
+            <div className="flex items-center gap-3 rounded-full border border-white/8 bg-[#050505] px-5 py-2">
+              <span className="text-[11px] text-white/30">Also available as a</span>
+              <span className="text-[11px] font-bold text-[#D4AF37]/70">Dduuka ProMax</span>
+              <span className="text-[11px] text-white/30">business system</span>
+              <a href="#business-system" className="text-[11px] font-semibold text-[#D4AF37]/60 hover:text-[#D4AF37] transition-colors">
+                Learn more ↓
+              </a>
+            </div>
+          </div>
+        </div>
 
-            <div className="grid gap-6 md:grid-cols-2">
-              {/* Job tracker card */}
+        {/* ══════════════════════════════════════════════════════════════
+            SYSTEM SHOWCASE — Dduuka ProMax for business owners
+        ══════════════════════════════════════════════════════════════ */}
+        <section id="business-system" className="py-12">
+
+          {/* Stats bar */}
+          <div className="mb-10 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {STATS.map((s) => (
+              <div key={s.label} className="rounded-xl border border-white/6 bg-white/[0.02] p-4 text-center">
+                <p className="text-2xl font-extrabold text-[#D4AF37]">{s.value}</p>
+                <p className="mt-0.5 text-[11px] text-white/40">{s.label}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Heading */}
+          <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-[#D4AF37]/25 bg-[#D4AF37]/8 px-4 py-1.5">
+            <span className="h-1.5 w-1.5 rounded-full bg-[#D4AF37]" />
+            <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#D4AF37]/90">Dduuka ProMax — Business Management System</span>
+          </div>
+          <h2 className="mt-3 text-2xl font-extrabold text-white md:text-3xl">
+            Manage your entire business like a pro
+          </h2>
+          <p className="mt-3 max-w-xl text-sm leading-relaxed text-white/45">
+            Dduuka ProMax is the complete business management system behind Eagle Info Solutions —
+            covering sales, inventory, finance, repair service, CRM, documents, and daily operations.
+            Available as a hosted deployment for your business.
+          </p>
+
+          {/* Module grid */}
+          <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {MODULES.map((mod) => (
               <div
-                className="rounded-2xl border border-white/8 p-6 md:p-8"
-                style={{ background: "linear-gradient(135deg,#141414 0%,#0e0e0e 100%)" }}
+                key={mod.group}
+                className={`relative overflow-hidden rounded-2xl border bg-gradient-to-b p-5 ${mod.border} ${mod.color}`}
               >
-                <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-[#D4AF37]/10 text-[#D4AF37]">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-                  </svg>
-                </div>
-                <p className="mb-1.5 text-lg font-bold text-white">Real-time job tracking</p>
-                <p className="mb-6 text-sm leading-relaxed text-white/50">
-                  Clients enter their job number to instantly see where their device is in the repair process — received, diagnosing, in repair, ready for pickup, and more.
-                </p>
-                {/* Mock status UI */}
-                <div className="rounded-xl border border-white/8 bg-[#0a0a0a] p-4 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="mono text-xs font-bold text-[#D4AF37]">EI-2025-0142</span>
-                    <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-semibold text-emerald-400">Ready for pickup</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {["Received","Diagnosing","In Repair","Ready"].map((step, i) => (
-                      <div key={step} className="flex items-center gap-2 min-w-0">
-                        <div className={`h-1.5 w-1.5 flex-shrink-0 rounded-full ${i < 4 ? "bg-[#D4AF37]" : "bg-white/15"}`} />
-                        <span className={`text-[10px] truncate ${i < 4 ? "text-white/60" : "text-white/20"}`}>{step}</span>
-                        {i < 3 && <div className="h-px w-3 flex-shrink-0 bg-white/10" />}
-                      </div>
-                    ))}
-                  </div>
-                  <p className="text-[11px] text-white/35">Samsung Galaxy S23 · Screen replacement</p>
-                </div>
-                <div className="mt-5">
-                  <StatusLookupForm />
-                </div>
+                <div className={`mb-3 ${mod.accent}`}>{mod.icon}</div>
+                <p className="text-sm font-bold text-white">{mod.group}</p>
+                <ul className="mt-2 space-y-1">
+                  {mod.items.map((item) => (
+                    <li key={item} className="text-[11px] text-white/45 leading-snug">
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+
+          {/* ── Commercial CTA ── */}
+          <div
+            className="relative mt-10 overflow-hidden rounded-3xl border border-[#D4AF37]/25 p-8 md:p-12"
+            style={{
+              background: "linear-gradient(135deg,#1f1b0e 0%,#141006 40%,#0c0c0c 100%)",
+              boxShadow: "0 0 0 1px rgba(212,175,55,0.12), 0 24px 60px rgba(0,0,0,0.5)",
+            }}
+          >
+            <div className="pointer-events-none absolute -right-20 -top-20 h-80 w-80 rounded-full bg-[#D4AF37]/12 blur-[80px]" />
+
+            <div className="relative max-w-2xl">
+              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#D4AF37]/30 bg-[#D4AF37]/10 px-4 py-1.5">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#D4AF37]" />
+                <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#D4AF37]">Get Dduuka ProMax for Your Business</span>
               </div>
 
-              {/* Feedback card */}
-              <div
-                className="rounded-2xl border border-white/8 p-6 md:p-8"
-                style={{ background: "linear-gradient(135deg,#141414 0%,#0e0e0e 100%)" }}
-              >
-                <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-[#D4AF37]/10 text-[#D4AF37]">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
-                  </svg>
-                </div>
-                <p className="mb-1.5 text-lg font-bold text-white">Client feedback & complaints</p>
-                <p className="mb-6 text-sm leading-relaxed text-white/50">
-                  Give every client a direct channel to rate their experience or raise a concern. Complaints are tracked in your dashboard with SLA timers — nothing slips through.
-                </p>
-                {/* Mock feedback UI */}
-                <div className="rounded-xl border border-white/8 bg-[#0a0a0a] p-4 space-y-3">
-                  <div className="flex items-start gap-3">
-                    <div className="mt-0.5 h-7 w-7 flex-shrink-0 rounded-full bg-[#D4AF37]/20 flex items-center justify-center text-[11px] font-bold text-[#D4AF37]">J</div>
-                    <div className="min-w-0">
-                      <p className="text-[12px] font-semibold text-white">James O.</p>
-                      <p className="text-[11px] text-white/40">2 hours ago · Job EI-2025-0139</p>
-                    </div>
-                    <div className="ml-auto flex gap-0.5">
-                      {[1,2,3,4,5].map(s => (
-                        <svg key={s} width="10" height="10" viewBox="0 0 24 24" fill={s <= 4 ? "#D4AF37" : "none"} stroke="#D4AF37" strokeWidth="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-                      ))}
-                    </div>
-                  </div>
-                  <p className="text-[12px] text-white/50 leading-relaxed">&ldquo;Fast turnaround and kept me updated throughout. Very professional service.&rdquo;</p>
-                  <div className="flex items-center gap-2 pt-1">
-                    <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-emerald-400">Resolved</span>
-                    <span className="text-[10px] text-white/25">Responded in 1h 12m</span>
-                  </div>
-                </div>
-                <Link
-                  href="/feedback"
-                  className="mt-5 flex items-center justify-center gap-2 rounded-xl border border-white/12 bg-white/[0.04] px-4 py-2.5 text-sm font-semibold text-white/70 transition-colors hover:border-white/20 hover:text-white"
+              <h3 className="text-2xl font-extrabold leading-snug text-white md:text-3xl">
+                Want this system for<br />your business?
+              </h3>
+              <p className="mt-3 text-sm leading-relaxed text-white/55">
+                Dduuka ProMax is a complete business management system — sales, inventory,
+                invoicing, finance, CRM, repair service support, and daily operations.
+                Available as a hosted deployment for businesses, service centres, and technology
+                companies. Includes setup, data migration, staff training, and ongoing support.
+              </p>
+
+              <div className="mt-6 flex flex-wrap gap-3">
+                <a
+                  href="https://wa.me/256772006344?text=Hi%2C%20I%27m%20interested%20in%20Dduuka%20ProMax%20for%20my%20business.%20Please%20send%20me%20pricing%20and%20setup%20details."
+                  target="_blank" rel="noreferrer"
+                  className="flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-bold text-black shadow-[0_4px_20px_rgba(212,175,55,0.3)] transition hover:opacity-90"
+                  style={{ background: "linear-gradient(180deg,#E8C84A 0%,#C9A020 100%)" }}
                 >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-                  Submit feedback or complaint
-                </Link>
+                  <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4" aria-hidden><path d={WA_PATH}/></svg>
+                  WhatsApp us now
+                </a>
+                <a
+                  href="https://app.eagleinfosolutions.com"
+                  target="_blank" rel="noreferrer"
+                  className="flex items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-6 py-3 text-sm font-semibold text-white/70 transition hover:border-[#D4AF37]/30 hover:text-white"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden>
+                    <circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+                  </svg>
+                  app.eagleinfosolutions.com
+                </a>
+                <a
+                  href="tel:+256772006344"
+                  className="flex items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-6 py-3 text-sm font-semibold text-white/70 transition hover:border-white/25 hover:text-white"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden>
+                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 3.07 9.8 19.79 19.79 0 0 1 2 1.18 2 2 0 0 1 4 .03h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 7.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 14.92z"/>
+                  </svg>
+                  +256 772 006 344
+                </a>
               </div>
             </div>
           </div>
         </section>
-      </main>
+
+      </div>
 
       {/* ── Footer ── */}
-      <footer className="border-t border-white/8 px-4 py-8 md:px-6">
+      <footer className="mt-8 border-t border-white/6 px-4 py-8">
         <div className="mx-auto max-w-6xl">
-          <div className="mb-6 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
-            <div className="flex items-center gap-2">
-              <span className="text-base font-bold tracking-tight text-white">Nexus</span>
-              <span className="rounded bg-[#D4AF37]/15 px-1.5 py-0.5 text-[11px] font-bold text-[#D4AF37]">Business OS</span>
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="overflow-hidden rounded-lg border border-white/10">
+                <Image src="/app-logo.png" alt="Eagle Info Solutions" width={28} height={28} className="h-7 w-7 object-cover" />
+              </div>
+              <div>
+                <p className="text-xs font-bold text-white">Eagle Info Solutions</p>
+                <p className="text-[10px] text-white/30">Powered by Dduuka ProMax · © {new Date().getFullYear()}</p>
+              </div>
             </div>
-            <nav className="flex flex-wrap gap-x-5 gap-y-2">
-              <a href="#features" className="text-sm text-white/40 transition-colors hover:text-white">Features</a>
-              <a href="#pricing" className="text-sm text-white/40 transition-colors hover:text-white">Pricing</a>
-              <a href="#clients"className="text-sm text-white/40 transition-colors hover:text-white">For clients</a>
-              <Link href="/login" className="text-sm text-white/40 transition-colors hover:text-white">Log in</Link>
-              <Link href="/terms" className="text-sm text-white/40 transition-colors hover:text-white">Terms</Link>
-              <Link href="/privacy" className="text-sm text-white/40 transition-colors hover:text-white">Privacy</Link>
-            </nav>
-          </div>
-          <div className="border-t border-white/6 pt-5 text-[12px] text-white/25">
-            &copy; {new Date().getFullYear()} Nexus. All rights reserved.
+            <div className="flex flex-wrap items-center gap-3">
+              {[
+                { href: "https://www.facebook.com/EagleInfoSolutions", label: "Facebook", icon: <path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z" fill="currentColor"/> },
+                { href: "https://www.instagram.com/EagleInfo_UG", label: "Instagram", icon: <><rect x="2" y="2" width="20" height="20" rx="5" fill="none" stroke="currentColor" strokeWidth="1.8"/><circle cx="12" cy="12" r="5" fill="none" stroke="currentColor" strokeWidth="1.8"/><circle cx="17.5" cy="6.5" r="1.2" fill="currentColor"/></> },
+                { href: "https://www.tiktok.com/@EagleInfo_UG", label: "TikTok", icon: <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.27 6.27 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.69a8.18 8.18 0 004.78 1.52V6.78a4.85 4.85 0 01-1.01-.09z" fill="currentColor"/> },
+                { href: "https://www.linkedin.com/company/104326797/", label: "LinkedIn", icon: <><path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-4 0v7h-4v-7a6 6 0 016-6zM2 9h4v12H2z" fill="currentColor"/><circle cx="4" cy="4" r="2" fill="currentColor"/></> },
+              ].map((s) => (
+                <a key={s.label} href={s.href} target="_blank" rel="noopener noreferrer" aria-label={s.label}
+                  className="flex h-7 w-7 items-center justify-center rounded-lg border border-white/8 text-white/40 transition hover:border-[#D4AF37]/30 hover:text-[#D4AF37]">
+                  <svg width="12" height="12" viewBox="0 0 24 24">{s.icon}</svg>
+                </a>
+              ))}
+              <Link href="/complaint" className="text-xs font-semibold text-red-400/60 transition hover:text-red-400">Complaint</Link>
+              <Link href="/login" className="text-xs font-semibold text-white/35 transition hover:text-[#D4AF37]">Staff Login</Link>
+            </div>
           </div>
         </div>
       </footer>
-    </div>
+    </main>
   );
 }
