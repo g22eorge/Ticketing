@@ -9,6 +9,7 @@
     "start": "PORT=${PORT:-3000} BIND_HOST=${BIND_HOST:-0.0.0.0}; if [ -f .next/standalone/server.js ]; then HOSTNAME=$BIND_HOST PORT=$PORT bun .next/standalone/server.js; else next start -p $PORT -H $BIND_HOST; fi",
     "lint": "eslint",
     "test:unit": "DATABASE_URL=\"file:./dev.db\" bun test tests/unit",
+    "test:unit:coverage": "DATABASE_URL=\"file:./dev.db\" bun test tests/unit --coverage",
     "check:links": "node scripts/check-links.mjs",
     "report:revenue": "node scripts/revenue-report.mjs",
     "qa:data-integrity": "TURSO_DATABASE_URL= TURSO_AUTH_TOKEN= DATABASE_URL=\"${DATABASE_URL:-file:./dev.db}\" bunx prisma db push --skip-generate && TURSO_DATABASE_URL= TURSO_AUTH_TOKEN= DATABASE_URL=\"${DATABASE_URL:-file:./dev.db}\" bunx prisma generate && TURSO_DATABASE_URL= TURSO_AUTH_TOKEN= DATABASE_URL=\"${DATABASE_URL:-file:./dev.db}\" bun scripts/qa-data-integrity.mjs",
