@@ -4,7 +4,7 @@ import { FieldVisitStatus } from "@prisma/client";
 
 import { can } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
-import { getCurrentUserRole } from "@/lib/session";
+import { requireOrgSession } from "@/lib/org-context";
 import { formatEATDateTime } from "@/lib/date-eat";
 import { VisitActions } from "./VisitActions";
 
@@ -49,7 +49,7 @@ export default async function FieldVisitDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const { user } = await getCurrentUserRole();
+  const { user, orgId } = await requireOrgSession();
 
   const isManager = can.manageFieldVisits(user);
   const isFieldTech = can.recordFieldSignoffs(user);
@@ -58,8 +58,8 @@ export default async function FieldVisitDetailPage({
     redirect("/");
   }
 
-  const visit = await prisma.fieldVisit.findUnique({
-    where: { id },
+  const visit = await prisma.fieldVisit.findFirst({
+    where: { id, orgId },
     include: {
       assignedTo: { select: { id: true, name: true, email: true } },
       scheduledBy: { select: { id: true, name: true } },
@@ -70,11 +70,11 @@ export default async function FieldVisitDetailPage({
           brand: true,
           model: true,
           deviceType: true,
-          client: { select: { fullName: true, phone: true } },
+          ...(isManager ? { client: { select: { fullName: true, phone: true } } } : {}),
         },
       },
     },
-  });
+  }).catch(() => null);
 
   if (!visit) {
     notFound();

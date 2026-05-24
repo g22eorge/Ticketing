@@ -209,23 +209,13 @@ export default async function JobsPage({
   let total = 0;
 
   try {
-    const jobsResult = await prisma.job
-      .findMany({
-        where,
-        include: includeWithOneTime,
-        orderBy,
-        skip: (page - 1) * pageSize,
-        take: pageSize,
-      })
-      .catch(() =>
-        prisma.job.findMany({
-          where,
-          include: includeBase,
-          orderBy,
-          skip: (page - 1) * pageSize,
-          take: pageSize,
-        }),
-      );
+    const jobsResult = await prisma.job.findMany({
+      where,
+      include: includeWithOneTime,
+      orderBy,
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+    });
 
     const totalResult = await prisma.job.count({ where });
     jobs = jobsResult as Array<JobWithClient | JobWithoutClient>;
@@ -297,9 +287,7 @@ export default async function JobsPage({
           "IN_EXTERNAL_REPAIR", "WAITING_FOR_PARTS", "RETURNED_FROM_EXTERNAL",
         ]) as JobStatus[]);
     const boardWhere = { ...where, status: { in: boardActiveDbStatuses } };
-    const rawBoard = await prisma.job
-      .findMany({ where: boardWhere, include: includeWithOneTime, orderBy: { receivedAt: "desc" }, take: 200 })
-      .catch(() => prisma.job.findMany({ where: boardWhere, include: includeBase, orderBy: { receivedAt: "desc" }, take: 200 }));
+    const rawBoard = await prisma.job.findMany({ where: boardWhere, include: includeWithOneTime, orderBy: { receivedAt: "desc" }, take: 200 });
     const fallbackFields = (j: (typeof rawBoard)[0]) => j as typeof j & { deviceType?: string; brand?: string | null; model?: string | null };
     boardRows = rawBoard.map((job) => ({
       id: job.id,

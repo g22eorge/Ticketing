@@ -90,10 +90,8 @@ function parseDevices(devicesJson: string) {
 }
 
 export async function generateJobNumber(orgId?: string) {
-  const now = new Date();
-  const month = now.getMonth() + 1;
-  const year = now.getFullYear();
-  const prefix = `EIS-${month}/${year}/`;
+  const year = new Date().getFullYear();
+  const prefix = `EI-${year}-`;
   const latest = await prisma.job.findFirst({
     where: { jobNumber: { startsWith: prefix }, ...(orgId ? { orgId } : {}) },
     orderBy: { jobNumber: "desc" },
@@ -194,6 +192,9 @@ export async function createJobAction(
         }
       }
 
+    // Device info is written to both the Device relation and denormalized Job fields.
+    // Device relation is the canonical source when deviceId is set; denormalized fields
+    // are kept in sync as a fallback for environments where the Device table is absent.
     let deviceId: string | null = null;
     try {
       const createdDevice = await prisma.device.create({

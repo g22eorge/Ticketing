@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
   // Platform admin is always exempt (matched later during credential check,
   // but we check the same env var for a quick bypass without a DB query).
   const platformAdmin = process.env.PLATFORM_ADMIN_EMAIL?.toLowerCase();
-  let isExempt = false;
+  let isExempt = process.env.E2E_DISABLE_RATE_LIMIT === "1";
   if (platformAdmin && path.endsWith("/sign-in/email")) {
     try {
       const body = await request.clone().json();

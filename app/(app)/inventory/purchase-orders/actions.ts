@@ -9,9 +9,15 @@ import { assertOrgCanMutate } from "@/lib/org-write";
 
 async function requireAdmin() {
   const ctx = await requireOrgSession();
-  if (!can.manageUsers(ctx.user)) redirect("/inventory");
+  if (!can.manageInventory(ctx.user)) redirect("/inventory");
   assertOrgCanMutate({ access: ctx.org.access, userRole: ctx.user.role, userAccessMode: ctx.user.accessMode, kind: "GENERAL" });
   return ctx;
+}
+
+async function generateGrnNumber(orgId: string): Promise<string> {
+  const year = new Date().getFullYear();
+  const count = await prisma.goodsReceived.count({ where: { orgId } });
+  return `GRN-${year}-${String(count + 1).padStart(4, "0")}`;
 }
 
 // ── Create PO ──────────────────────────────────────────────────────────────
@@ -112,38 +118,89 @@ export async function updatePurchaseOrderAction(
 export async function receiveStockAction(
   formData: FormData,
 ): Promise<{ error?: string }> {
-  const { orgId } = await requireAdmin();
+  const { orgId, session } = await requireAdmin();
 
   const poId = formData.get("poId") as string;
+  const locationId = String(formData.get("locationId") ?? "").trim();
+  if (!locationId) return { error: "Stock location is required" };
+
+  const location = await prisma.stockLocation.findUnique({
+    where: { id: locationId },
+    select: { orgId: true, isActive: true },
+  });
+  if (!location || location.orgId !== orgId || !location.isActive) return { error: "Stock location not found" };
+
   const po = await prisma.purchaseOrder.findUnique({
     where: { id: poId },
     include: { items: { include: { part: true } } },
   });
   if (!po || po.orgId !== orgId) return { error: "Not found" };
+  if (!["ORDERED", "PARTIAL"].includes(po.status)) return { error: "This purchase order cannot receive stock" };
 
   // qtyReceived_<itemId> fields in formData
-  const updates: Array<{ id: string; qtyReceived: number; partId: string | null; delta: number }> = [];
+  const updates: Array<{ id: string; qtyReceived: number; partId: string | null; delta: number; description: string; unitCost: number }> = [];
 
   for (const item of po.items) {
     const val = parseInt(formData.get(`qtyReceived_${item.id}`) as string, 10);
     if (isNaN(val) || val < 0) continue;
+    if (val > item.qtyOrdered) return { error: `Received quantity cannot exceed ordered quantity for ${item.description}` };
+    if (val < item.qtyReceived) return { error: "Use adjustments or returns to reduce previously received stock" };
     const delta = val - item.qtyReceived;
     if (delta === 0) continue;
-    updates.push({ id: item.id, qtyReceived: val, partId: item.partId, delta });
+    updates.push({ id: item.id, qtyReceived: val, partId: item.partId, delta, description: item.description, unitCost: item.unitCost });
   }
 
   if (!updates.length) return { error: "No changes to save" };
+  const grnNumber = await generateGrnNumber(orgId);
 
   await prisma.$transaction(async (tx) => {
+    await tx.goodsReceived.create({
+      data: {
+        orgId,
+        grnNumber,
+        supplierId: po.supplierId,
+        poId,
+        locationId,
+        createdById: session.user.id,
+        items: {
+          create: updates.map((u) => ({
+            poItemId: u.id,
+            partId: u.partId,
+            description: u.description,
+            quantity: u.delta,
+            unitCost: u.unitCost,
+          })),
+        },
+      },
+    });
+
     for (const u of updates) {
       await tx.purchaseOrderItem.update({
         where: { id: u.id },
         data: { qtyReceived: u.qtyReceived },
       });
       if (u.partId && u.delta > 0) {
+        await tx.partLocationStock.upsert({
+          where: { partId_locationId: { partId: u.partId, locationId } },
+          create: { orgId, partId: u.partId, locationId, qtyOnHand: u.delta, qtyReserved: 0 },
+          update: { qtyOnHand: { increment: u.delta } },
+        });
+        await tx.partStockTransaction.create({
+          data: {
+            partId: u.partId,
+            type: "IN",
+            quantity: u.delta,
+            reason: `Received via ${grnNumber}`,
+            createdById: session.user.id,
+          },
+        });
+        const aggregate = await tx.partLocationStock.aggregate({
+          where: { partId: u.partId },
+          _sum: { qtyOnHand: true },
+        });
         await tx.part.update({
           where: { id: u.partId },
-          data: { qtyOnHand: { increment: u.delta } },
+          data: { qtyOnHand: aggregate._sum.qtyOnHand ?? 0, unitCost: u.unitCost },
         });
       }
     }
@@ -164,5 +221,7 @@ export async function receiveStockAction(
   });
 
   revalidatePath(`/inventory/purchase-orders/${poId}`);
+  revalidatePath("/inventory/goods-received");
+  revalidatePath("/inventory");
   return {};
 }

@@ -7,7 +7,6 @@ import { TargetEntityType, TargetMetric, TargetPeriod } from "@prisma/client";
 import { can } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { requireOrgSession } from "@/lib/org-context";
-import { getCurrentUserRole } from "@/lib/session";
 
 const setTargetSchema = z.object({
   entityType: z.nativeEnum(TargetEntityType),
@@ -44,6 +43,20 @@ export async function setTarget(data: {
 
   const d = parsed.data;
 
+  if (d.entityType === "USER") {
+    if (!d.userId) throw new Error("User is required");
+    const targetUser = await prisma.user.findFirst({ where: { id: d.userId, orgId }, select: { id: true } });
+    if (!targetUser) throw new Error("User not found");
+  } else if (d.entityType === "DEPARTMENT") {
+    if (!d.departmentId) throw new Error("Department is required");
+    const department = await prisma.department.findUnique({ where: { id: d.departmentId }, select: { id: true } });
+    if (!department) throw new Error("Department not found");
+  } else if (d.entityType === "BRANCH") {
+    if (!d.branchId) throw new Error("Branch is required");
+    const branch = await prisma.branch.findFirst({ where: { id: d.branchId, orgId }, select: { id: true } });
+    if (!branch) throw new Error("Branch not found");
+  }
+
   const existing = await prisma.salesTarget.findFirst({
     where: {
       entityType: d.entityType,
@@ -59,8 +72,8 @@ export async function setTarget(data: {
   });
 
   if (existing) {
-    await prisma.salesTarget.update({
-      where: { id: existing.id },
+    await prisma.salesTarget.updateMany({
+      where: { id: existing.id, orgId },
       data: {
         targetValue: d.targetValue,
         notes: d.notes ?? null,
@@ -89,7 +102,7 @@ export async function setTarget(data: {
 }
 
 export async function updateTargetActual(targetId: string, actualValue: number) {
-  const { user } = await getCurrentUserRole();
+  const { user, orgId } = await requireOrgSession();
   if (!can.setTargets(user)) {
     throw new Error("Unauthorized");
   }
@@ -98,8 +111,8 @@ export async function updateTargetActual(targetId: string, actualValue: number) 
     throw new Error("Invalid actual value");
   }
 
-  await prisma.salesTarget.update({
-    where: { id: targetId },
+  await prisma.salesTarget.updateMany({
+    where: { id: targetId, orgId },
     data: { actualValue },
   });
 
@@ -107,12 +120,12 @@ export async function updateTargetActual(targetId: string, actualValue: number) 
 }
 
 export async function deleteTarget(targetId: string) {
-  const { user } = await getCurrentUserRole();
+  const { user, orgId } = await requireOrgSession();
   if (!can.setTargets(user)) {
     throw new Error("Unauthorized");
   }
 
-  await prisma.salesTarget.delete({ where: { id: targetId } });
+  await prisma.salesTarget.deleteMany({ where: { id: targetId, orgId } });
 
   revalidatePath("/targets");
 }

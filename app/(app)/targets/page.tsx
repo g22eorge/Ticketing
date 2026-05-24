@@ -4,7 +4,7 @@ import { TargetMetric, TargetPeriod } from "@prisma/client";
 import { formatMoney, getAppCurrency } from "@/lib/currency";
 import { can } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
-import { getCurrentUserRole } from "@/lib/session";
+import { requireOrgSession } from "@/lib/org-context";
 import { SetTargetDialog } from "./SetTargetDialog";
 
 type SearchParams = Promise<{ period?: string; label?: string }>;
@@ -114,7 +114,7 @@ function TargetSection({ title, targets, currency }: { title: string; targets: T
 }
 
 export default async function TargetsPage({ searchParams }: { searchParams: SearchParams }) {
-  const { user } = await getCurrentUserRole();
+  const { user, orgId } = await requireOrgSession();
 
   const canSet = can.setTargets(user);
   const canView = can.viewTeamTargets(user);
@@ -130,17 +130,17 @@ export default async function TargetsPage({ searchParams }: { searchParams: Sear
 
   const [rawTargets, allUsers, departments, branches] = await Promise.all([
     prisma.salesTarget.findMany({
-      where: { period, periodLabel: label },
+      where: { orgId, period, periodLabel: label },
       include: {
         user: { select: { id: true, name: true } },
         department: { select: { id: true, name: true } },
         branch: { select: { id: true, name: true } },
       },
       orderBy: { createdAt: "asc" },
-    }),
+    }).catch(() => []),
     canSet
       ? prisma.user.findMany({
-          where: { isActive: true },
+          where: { orgId, isActive: true },
           select: { id: true, name: true },
           orderBy: { name: "asc" },
         })
@@ -149,11 +149,11 @@ export default async function TargetsPage({ searchParams }: { searchParams: Sear
       ? prisma.department.findMany({
           select: { id: true, name: true },
           orderBy: { name: "asc" },
-        })
+        }).catch(() => [] as { id: string; name: string }[])
       : Promise.resolve([] as { id: string; name: string }[]),
     canSet
       ? prisma.branch.findMany({
-          where: { isActive: true },
+          where: { orgId, isActive: true },
           select: { id: true, name: true },
           orderBy: { name: "asc" },
         })

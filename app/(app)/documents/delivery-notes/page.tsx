@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { DeliveryMethod } from "@prisma/client";
+import type { DeliveryMethod } from "@prisma/client";
 
 import { can } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
@@ -12,7 +12,7 @@ import { ConfirmSubmitButton } from "@/components/shared/ConfirmSubmitButton";
 import { writeSystemAuditEvent } from "@/lib/commercial/audit";
 import { RowActionsMenu, MenuSection, MenuDestructiveRow } from "@/components/shared/RowActionsMenu";
 
-const DELIVERY_METHODS = Object.values(DeliveryMethod);
+const DELIVERY_METHODS: DeliveryMethod[] = ["PICKUP", "DELIVERY", "COURIER"];
 
 export default async function DeliveryNotesPage() {
   const { user, orgId } = await requireOrgSession();
@@ -75,7 +75,7 @@ export default async function DeliveryNotesPage() {
     receivedBySignatureText: string | null;
     note: string | null;
     sale: { id: string; saleNumber: string; invoiceNumber: string | null; client: { fullName: string } | null } | null;
-    invoice?: { id: string; invoiceNumber: string; job: { id: string; jobNumber: string; client: { fullName: string } } } | null;
+    invoice?: { id: string; invoiceNumber: string; job: { id: string; jobNumber: string; client: { fullName: string } } | null } | null;
   };
 
   let notes: DeliveryNoteRow[] = [];
@@ -188,8 +188,8 @@ export default async function DeliveryNotesPage() {
                 </td>
                 <td className="hidden px-3 py-2.5 md:table-cell">
                   {n.invoice ? (
-                    <Link className="mono font-semibold text-[var(--ink)] transition hover:text-[var(--accent)]" href={`/jobs/${n.invoice.job.id}`}>
-                      {n.invoice.invoiceNumber} / {n.invoice.job.jobNumber}
+                    <Link className="mono font-semibold text-[var(--ink)] transition hover:text-[var(--accent)]" href={n.invoice.job ? `/jobs/${n.invoice.job.id}` : "/documents/invoices"}>
+                      {n.invoice.invoiceNumber}{n.invoice.job ? ` / ${n.invoice.job.jobNumber}` : ""}
                     </Link>
                   ) : n.sale ? (
                     <Link className="mono font-semibold text-[var(--ink)] transition hover:text-[var(--accent)]" href={`/pos/${n.sale.id}`}>
@@ -197,7 +197,7 @@ export default async function DeliveryNotesPage() {
                     </Link>
                   ) : "-"}
                 </td>
-                <td className="hidden px-3 py-2.5 text-[var(--ink-muted)] lg:table-cell">{n.invoice?.job.client.fullName ?? n.sale?.client?.fullName ?? "-"}</td>
+                <td className="hidden px-3 py-2.5 text-[var(--ink-muted)] lg:table-cell">{n.invoice?.job?.client.fullName ?? n.sale?.client?.fullName ?? "-"}</td>
                 <td className="px-3 py-2.5 text-[var(--ink-muted)]">{n.deliveredAt.toLocaleDateString()}<br /><span className="text-[10px]">{n.deliveredAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span></td>
                 <td className="hidden px-3 py-2.5 lg:table-cell">
                   {n.deliveryMethod ? (
@@ -208,7 +208,7 @@ export default async function DeliveryNotesPage() {
                 </td>
                 <td className="px-3 py-2">
                   <div className="flex items-center gap-1.5">
-                    <Link href={n.invoice ? `/jobs/${n.invoice.job.id}` : n.sale ? `/pos/${n.sale.id}` : "/documents/delivery-notes"} className="inline-flex items-center rounded-lg border border-[var(--line)] px-2.5 py-1.5 text-xs font-medium text-[var(--ink)] transition hover:border-[var(--accent)]/50 hover:text-[var(--accent)]">
+                    <Link href={n.invoice?.job ? `/jobs/${n.invoice.job.id}` : n.sale ? `/pos/${n.sale.id}` : "/documents/delivery-notes"} className="inline-flex items-center rounded-lg border border-[var(--line)] px-2.5 py-1.5 text-xs font-medium text-[var(--ink)] transition hover:border-[var(--accent)]/50 hover:text-[var(--accent)]">
                       View
                     </Link>
                     <a href={`/api/delivery-notes/${n.id}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 rounded-lg border border-[var(--accent)]/40 bg-[var(--accent)]/10 px-2.5 py-1.5 text-xs font-semibold text-[var(--accent)] transition hover:bg-[var(--accent)]/20">

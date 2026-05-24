@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { QuotationStatus } from "@prisma/client";
+import { Prisma, QuotationStatus } from "@prisma/client";
 
 import { can } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
-import { getCurrentUserRole } from "@/lib/session";
+import { requireOrgSession } from "@/lib/org-context";
 import { formatEATDate, formatEATDateTime } from "@/lib/date-eat";
 import { formatMoney } from "@/lib/currency";
 import { updateQuotationStatus } from "../../actions";
@@ -23,14 +23,20 @@ export default async function QuotationDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const { user } = await getCurrentUserRole();
+  const { user, orgId } = await requireOrgSession();
 
   if (!can.createQuotations(user) && !can.viewAllSales(user)) {
     redirect("/dashboard");
   }
 
-  const quotation = await prisma.quotation.findUnique({
-    where: { id },
+  const quotationWhere: Prisma.QuotationWhereInput = {
+    id,
+    orgId,
+    ...(!can.viewAllSales(user) ? { createdById: user.id } : {}),
+  };
+
+  const quotation = await prisma.quotation.findFirst({
+    where: quotationWhere,
     include: {
       lead: { select: { id: true, fullName: true } },
       client: { select: { id: true, fullName: true } },
@@ -39,7 +45,7 @@ export default async function QuotationDetailPage({
       approvedBy: { select: { id: true, name: true } },
       items: { orderBy: { createdAt: "asc" } },
     },
-  });
+  }).catch(() => null);
 
   if (!quotation) notFound();
 

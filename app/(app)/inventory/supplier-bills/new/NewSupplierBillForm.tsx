@@ -1,0 +1,142 @@
+"use client";
+
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState, useTransition } from "react";
+
+import { createSupplierBillAction } from "../actions";
+
+type Supplier = { id: string; name: string };
+type PurchaseOrder = { id: string; supplierId: string; reference: string | null };
+type GoodsReceived = { id: string; supplierId: string; poId: string | null; grnNumber: string };
+type LineItem = { key: number; description: string; quantity: number; unitCost: number };
+
+let keyCounter = 0;
+function nextKey() { return ++keyCounter; }
+
+export function NewSupplierBillForm({
+  suppliers,
+  purchaseOrders,
+  goodsReceived,
+  defaultSupplierId,
+  defaultPoId,
+  defaultGrnId,
+  baseCurrency,
+}: {
+  suppliers: Supplier[];
+  purchaseOrders: PurchaseOrder[];
+  goodsReceived: GoodsReceived[];
+  defaultSupplierId?: string;
+  defaultPoId?: string;
+  defaultGrnId?: string;
+  baseCurrency: string;
+}) {
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+  const [supplierId, setSupplierId] = useState(defaultSupplierId ?? "");
+  const [lines, setLines] = useState<LineItem[]>([{ key: nextKey(), description: "", quantity: 1, unitCost: 0 }]);
+
+  const supplierPOs = purchaseOrders.filter((po) => !supplierId || po.supplierId === supplierId);
+  const supplierGRNs = goodsReceived.filter((grn) => !supplierId || grn.supplierId === supplierId);
+
+  function updateLine(key: number, patch: Partial<LineItem>) {
+    setLines((prev) => prev.map((line) => (line.key === key ? { ...line, ...patch } : line)));
+  }
+
+  function submit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setError(null);
+    const fd = new FormData(e.currentTarget);
+    fd.set("items", JSON.stringify(lines.map(({ description, quantity, unitCost }) => ({ description, quantity, unitCost }))));
+    startTransition(async () => {
+      const result = await createSupplierBillAction(fd);
+      if (result.error) { setError(result.error); return; }
+      router.push(`/inventory/supplier-bills/${result.id}`);
+    });
+  }
+
+  const subtotal = lines.reduce((sum, line) => sum + line.quantity * line.unitCost, 0);
+
+  return (
+    <form onSubmit={submit} className="space-y-5">
+      <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] p-5 space-y-4">
+        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Bill Details</p>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <label className="block text-xs font-semibold text-[var(--ink-muted)]">
+            Supplier
+            <select name="supplierId" required value={supplierId} onChange={(e) => setSupplierId(e.target.value)} className="mt-1 w-full rounded-lg border border-[var(--line)] bg-[var(--bg)] px-3 py-2 text-sm text-[var(--ink)]">
+              <option value="">Select supplier...</option>
+              {suppliers.map((supplier) => <option key={supplier.id} value={supplier.id}>{supplier.name}</option>)}
+            </select>
+          </label>
+          <label className="block text-xs font-semibold text-[var(--ink-muted)]">
+            Supplier invoice/reference
+            <input name="supplierRef" className="mt-1 w-full rounded-lg border border-[var(--line)] bg-[var(--bg)] px-3 py-2 text-sm text-[var(--ink)]" />
+          </label>
+          <label className="block text-xs font-semibold text-[var(--ink-muted)]">
+            Purchase order
+            <select name="poId" defaultValue={defaultPoId ?? ""} className="mt-1 w-full rounded-lg border border-[var(--line)] bg-[var(--bg)] px-3 py-2 text-sm text-[var(--ink)]">
+              <option value="">No linked PO</option>
+              {supplierPOs.map((po) => <option key={po.id} value={po.id}>{po.reference ?? `PO-${po.id.slice(-6).toUpperCase()}`}</option>)}
+            </select>
+          </label>
+          <label className="block text-xs font-semibold text-[var(--ink-muted)]">
+            Goods received
+            <select name="grnId" defaultValue={defaultGrnId ?? ""} className="mt-1 w-full rounded-lg border border-[var(--line)] bg-[var(--bg)] px-3 py-2 text-sm text-[var(--ink)]">
+              <option value="">No linked GRN</option>
+              {supplierGRNs.map((grn) => <option key={grn.id} value={grn.id}>{grn.grnNumber}</option>)}
+            </select>
+          </label>
+          <label className="block text-xs font-semibold text-[var(--ink-muted)]">
+            Issued date
+            <input name="issuedAt" type="date" defaultValue={new Date().toISOString().slice(0, 10)} className="mt-1 w-full rounded-lg border border-[var(--line)] bg-[var(--bg)] px-3 py-2 text-sm text-[var(--ink)]" />
+          </label>
+          <label className="block text-xs font-semibold text-[var(--ink-muted)]">
+            Due date
+            <input name="dueAt" type="date" className="mt-1 w-full rounded-lg border border-[var(--line)] bg-[var(--bg)] px-3 py-2 text-sm text-[var(--ink)]" />
+          </label>
+          <label className="block text-xs font-semibold text-[var(--ink-muted)]">
+            Currency
+            <input name="currency" defaultValue={baseCurrency} className="mt-1 w-full rounded-lg border border-[var(--line)] bg-[var(--bg)] px-3 py-2 text-sm uppercase text-[var(--ink)]" />
+          </label>
+          <label className="block text-xs font-semibold text-[var(--ink-muted)]">
+            Tax amount
+            <input name="taxAmount" type="number" min={0} step={0.01} defaultValue={0} className="mt-1 w-full rounded-lg border border-[var(--line)] bg-[var(--bg)] px-3 py-2 text-right text-sm text-[var(--ink)]" />
+          </label>
+        </div>
+        <textarea name="notes" rows={2} placeholder="Notes" className="w-full rounded-lg border border-[var(--line)] bg-[var(--bg)] px-3 py-2 text-sm text-[var(--ink)]" />
+      </div>
+
+      <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-3 border-b border-[var(--line)]">
+          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Line Items</p>
+          <button type="button" onClick={() => setLines((prev) => [...prev, { key: nextKey(), description: "", quantity: 1, unitCost: 0 }])} className="rounded-md bg-[var(--gold)]/15 px-3 py-1 text-xs font-semibold text-[var(--gold)] hover:bg-[var(--gold)]/25">+ Add Line</button>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead><tr className="border-b border-[var(--line)] text-xs font-semibold uppercase tracking-wide text-[var(--ink-muted)]"><th className="px-3 py-2 text-left">Description</th><th className="px-3 py-2 text-right w-24">Qty</th><th className="px-3 py-2 text-right w-32">Unit Cost</th><th className="px-3 py-2 text-right w-32">Total</th><th className="px-3 py-2 w-8" /></tr></thead>
+            <tbody className="divide-y divide-[var(--line)]">
+              {lines.map((line) => (
+                <tr key={line.key}>
+                  <td className="px-3 py-2"><input value={line.description} onChange={(e) => updateLine(line.key, { description: e.target.value })} required className="w-full rounded-md border border-[var(--line)] bg-[var(--bg)] px-2 py-1.5 text-xs text-[var(--ink)]" /></td>
+                  <td className="px-3 py-2"><input type="number" min={1} value={line.quantity} onChange={(e) => updateLine(line.key, { quantity: parseInt(e.target.value, 10) || 1 })} className="w-full rounded-md border border-[var(--line)] bg-[var(--bg)] px-2 py-1.5 text-right text-xs text-[var(--ink)]" /></td>
+                  <td className="px-3 py-2"><input type="number" min={0} step={0.01} value={line.unitCost} onChange={(e) => updateLine(line.key, { unitCost: parseFloat(e.target.value) || 0 })} className="w-full rounded-md border border-[var(--line)] bg-[var(--bg)] px-2 py-1.5 text-right text-xs text-[var(--ink)]" /></td>
+                  <td className="px-3 py-2 text-right text-xs tabular-nums text-[var(--ink-muted)]">{(line.quantity * line.unitCost).toLocaleString()}</td>
+                  <td className="px-3 py-2 text-center">{lines.length > 1 ? <button type="button" onClick={() => setLines((prev) => prev.filter((item) => item.key !== line.key))} className="text-xs font-bold text-[var(--ink-muted)] hover:text-red-500">x</button> : null}</td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot><tr className="border-t border-[var(--line)] bg-[var(--gold)]/5"><td colSpan={3} className="px-3 py-2 text-right text-xs font-semibold text-[var(--ink-muted)]">Subtotal</td><td className="px-3 py-2 text-right text-sm font-bold text-[var(--ink)] tabular-nums">{subtotal.toLocaleString()}</td><td /></tr></tfoot>
+          </table>
+        </div>
+      </div>
+
+      {error ? <p className="text-sm text-red-600">{error}</p> : null}
+      <div className="flex gap-2">
+        <button type="submit" disabled={pending} className="btn-premium rounded-lg px-5 py-2 text-sm font-semibold disabled:opacity-50">{pending ? "Saving..." : "Create Bill"}</button>
+        <Link href="/inventory/supplier-bills" className="rounded-lg border border-[var(--line)] px-5 py-2 text-sm font-semibold text-[var(--ink-muted)] hover:text-[var(--ink)]">Cancel</Link>
+      </div>
+    </form>
+  );
+}

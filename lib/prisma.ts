@@ -81,7 +81,25 @@ function isStaleSingleton(client: PrismaClient | undefined): boolean {
   if (!client) return false;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const c = client as any;
-  return !c.complaint || !c.userGroup || !c.branch || !c.supplier || !c.salesTarget;
+  return !c.complaint
+    || !c.userGroup
+    || !c.branch
+    || !c.supplier
+    || !c.salesTarget
+    || !c.stockLocation
+    || !c.stockTransfer
+    || !c.purchaseRequest
+    || !c.goodsReceived
+    || !c.supplierBill
+    || !c.supplierPayment
+    || !c.stockCount
+    || !c.taxRate
+    || !c.expense
+    || !c.recurringInvoice
+    || !c.chartOfAccount
+    || !c.journalEntry
+    || !c.bankAccount
+    || !c.campaign;
 }
 
 if (isStaleSingleton(globalForPrisma.prisma)) {
@@ -97,3 +115,7 @@ if (process.env.NODE_ENV !== "production") {
   globalForPrisma.prisma = prisma;
 }
 
+// Eagerly start the engine connection so it's ready before the first request.
+// Without this, Prisma 6's lazy initializer races against incoming requests
+// (especially better-auth session checks) and throws "Engine is not yet connected".
+void prisma.$connect().catch(() => {/* errors will surface on first query */});

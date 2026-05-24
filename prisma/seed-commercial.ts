@@ -1288,6 +1288,310 @@ export async function seedCommercialData() {
 
   console.log("✓ FixIt Fast Ghana — expanded: branches, parts, supplier, invoices, payments, complaint\n");
 
+  // ────────────────────────────────────────────────────────────────────────────
+  // FINANCE MODULE — TechFix Uganda: TaxRates, Expenses, Standalone Invoices,
+  //                  Recurring Invoice templates
+  // ────────────────────────────────────────────────────────────────────────────
+
+  // ── Tax Rates ────────────────────────────────────────────────────────────
+  async function ensureTaxRate(orgId: string, code: string, name: string, rate: number, isDefault: boolean, appliesToSales: boolean, appliesToPurchases: boolean) {
+    const existing = await prisma.taxRate.findFirst({ where: { orgId, code } });
+    if (existing) return existing;
+    return prisma.taxRate.create({ data: { orgId, code, name, rate, isDefault, appliesToSales, appliesToPurchases } });
+  }
+
+  await ensureTaxRate(techfix.id, "VAT18",  "Value Added Tax (18%)",       18,   true,  true,  false);
+  await ensureTaxRate(techfix.id, "WHT6",   "Withholding Tax (6%)",          6,   false, false, true);
+  await ensureTaxRate(techfix.id, "EXEMPT", "Exempt",                        0,   false, true,  true);
+  await ensureTaxRate(techfix.id, "NHIL",   "National Health Levy (2.5%)", 2.5,  false, true,  false);
+
+  // ── Expenses ─────────────────────────────────────────────────────────────
+  const tfAdminUser = await prisma.user.findUnique({ where: { email: "admin@techfix.ug" }, select: { id: true } });
+  const tfOpsUser   = await prisma.user.findUnique({ where: { email: "ops@techfix.ug" },   select: { id: true } });
+
+  async function ensureExpense(data: {
+    orgId: string;
+    expenseNumber: string;
+    category: "RENT" | "UTILITIES" | "SALARIES" | "SUPPLIES" | "MARKETING" | "TRAVEL" | "EQUIPMENT" | "MAINTENANCE" | "TAXES" | "OTHER";
+    description: string;
+    amount: number;
+    currency: string;
+    method?: "CASH" | "MOBILE_MONEY" | "BANK_TRANSFER" | "CARD";
+    supplierId?: string;
+    branchId?: string;
+    reference?: string;
+    paidAt?: Date;
+    createdById: string;
+  }) {
+    const existing = await prisma.expense.findFirst({ where: { expenseNumber: data.expenseNumber } });
+    if (existing) return existing;
+    return prisma.expense.create({
+      data: {
+        orgId: data.orgId,
+        expenseNumber: data.expenseNumber,
+        category: data.category,
+        description: data.description,
+        amount: data.amount,
+        currency: data.currency,
+        method: data.method ?? null,
+        supplierId: data.supplierId ?? null,
+        branchId: data.branchId ?? null,
+        reference: data.reference ?? null,
+        paidAt: data.paidAt ?? null,
+        createdById: data.createdById,
+      },
+    });
+  }
+
+  if (tfAdminUser && tfOpsUser) {
+    const tfMainBranchRef = await prisma.branch.findFirst({ where: { orgId: techfix.id, isDefault: true }, select: { id: true } });
+    const tfSupplierRef   = await prisma.supplier.findFirst({ where: { orgId: techfix.id, name: "SpareHub Uganda" }, select: { id: true } });
+
+    await ensureExpense({ orgId: techfix.id, expenseNumber: "EXP-2026-0001", category: "RENT",        description: "Main Branch monthly rent — May 2026",              amount: 1500000, currency: "UGX", method: "BANK_TRANSFER", branchId: tfMainBranchRef?.id, reference: "RENT/MAY/2026",   paidAt: daysAgo(15), createdById: tfAdminUser.id });
+    await ensureExpense({ orgId: techfix.id, expenseNumber: "EXP-2026-0002", category: "UTILITIES",   description: "Electricity bill — UMEME April 2026",              amount: 320000,  currency: "UGX", method: "MOBILE_MONEY", branchId: tfMainBranchRef?.id, reference: "UMEME/APR/2026",  paidAt: daysAgo(20), createdById: tfOpsUser.id });
+    await ensureExpense({ orgId: techfix.id, expenseNumber: "EXP-2026-0003", category: "SUPPLIES",    description: "IPA cleaning solution, thermal paste, screwdrivers",amount: 185000,  currency: "UGX", method: "CASH",          supplierId: tfSupplierRef?.id,  reference: "RCP-2304",        paidAt: daysAgo(10), createdById: tfOpsUser.id });
+    await ensureExpense({ orgId: techfix.id, expenseNumber: "EXP-2026-0004", category: "SALARIES",    description: "Technician salary advance — David Ochieng",        amount: 400000,  currency: "UGX", method: "MOBILE_MONEY",                                 paidAt: daysAgo(7),  createdById: tfAdminUser.id });
+    await ensureExpense({ orgId: techfix.id, expenseNumber: "EXP-2026-0005", category: "MARKETING",   description: "Facebook ads — device repair promotion May 2026",  amount: 120000,  currency: "UGX", method: "CARD",                                         paidAt: daysAgo(5),  createdById: tfAdminUser.id });
+    await ensureExpense({ orgId: techfix.id, expenseNumber: "EXP-2026-0006", category: "EQUIPMENT",   description: "Ultrasonic cleaner machine",                       amount: 2200000, currency: "UGX", method: "BANK_TRANSFER", supplierId: tfSupplierRef?.id,  reference: "INV-HUB-5512",   paidAt: daysAgo(30), createdById: tfAdminUser.id });
+    await ensureExpense({ orgId: techfix.id, expenseNumber: "EXP-2026-0007", category: "UTILITIES",   description: "Internet — MTN Business — May 2026",               amount: 250000,  currency: "UGX", method: "MOBILE_MONEY",                                 paidAt: daysAgo(3),  createdById: tfOpsUser.id });
+    await ensureExpense({ orgId: techfix.id, expenseNumber: "EXP-2026-0008", category: "MAINTENANCE", description: "Air conditioner service — repair bay",             amount: 180000,  currency: "UGX", method: "CASH",          branchId: tfMainBranchRef?.id,  paidAt: daysAgo(14), createdById: tfOpsUser.id });
+    await ensureExpense({ orgId: techfix.id, expenseNumber: "EXP-2026-0009", category: "TRAVEL",      description: "External tech pickup — Jinja Road delivery",       amount: 45000,   currency: "UGX", method: "CASH",                                         paidAt: daysAgo(4),  createdById: tfOpsUser.id });
+    await ensureExpense({ orgId: techfix.id, expenseNumber: "EXP-2026-0010", category: "TAXES",       description: "Local government levy — Kampala City",             amount: 660000,  currency: "UGX", method: "BANK_TRANSFER", reference: "KCC/LEV/Q1/2026", paidAt: daysAgo(25), createdById: tfAdminUser.id });
+    await ensureExpense({ orgId: techfix.id, expenseNumber: "EXP-2026-0011", category: "SUPPLIES",    description: "Anti-static bags, screen protectors, packaging",   amount: 95000,   currency: "UGX", method: "CASH",          supplierId: tfSupplierRef?.id,  paidAt: daysAgo(8),  createdById: tfOpsUser.id });
+    await ensureExpense({ orgId: techfix.id, expenseNumber: "EXP-2026-0012", category: "RENT",        description: "Ntinda Branch monthly rent — May 2026",            amount: 900000,  currency: "UGX", method: "BANK_TRANSFER", reference: "RENT/NTD/MAY/2026", paidAt: daysAgo(15), createdById: tfAdminUser.id });
+  }
+
+  // ── Standalone Invoices (non-repair) ─────────────────────────────────────
+  async function ensureStandaloneInvoice(data: {
+    orgId: string;
+    invoiceNumber: string;
+    clientPhone: string;
+    invoiceType: "SERVICE" | "MERCHANDISE" | "CONTRACT" | "OTHER";
+    subject: string;
+    totalAmount: number;
+    paidAmount: number;
+    currency: string;
+    status: "DRAFT" | "ISSUED" | "PAID" | "VOID";
+    dueDate?: Date;
+    lines: { description: string; quantity: number; unitPrice: number; lineTotal: number }[];
+    paymentMethod?: "CASH" | "MOBILE_MONEY" | "BANK_TRANSFER";
+  }) {
+    const existing = await prisma.invoice.findUnique({ where: { invoiceNumber: data.invoiceNumber } });
+    if (existing) return existing;
+    const client = await prisma.client.findFirst({ where: { phone: data.clientPhone, orgId: data.orgId }, select: { id: true } });
+    if (!client) return null;
+    return prisma.invoice.create({
+      data: {
+        orgId: data.orgId,
+        clientId: client.id,
+        invoiceType: data.invoiceType,
+        subject: data.subject,
+        invoiceNumber: data.invoiceNumber,
+        currency: data.currency,
+        status: data.status,
+        totalAmount: data.totalAmount,
+        paidAmount: data.paidAmount,
+        paidAt: data.paidAmount >= data.totalAmount && data.totalAmount > 0 ? daysAgo(2) : null,
+        dueDate: data.dueDate ?? null,
+        lines: {
+          create: data.lines.map((l) => ({ orgId: data.orgId, description: l.description, quantity: l.quantity, unitPrice: l.unitPrice, lineTotal: l.lineTotal })),
+        },
+      },
+    });
+  }
+
+  await ensureStandaloneInvoice({
+    orgId: techfix.id,
+    invoiceNumber: "INV-SVC-001",
+    clientPhone: "+256701001011",  // Kampala Tech Hub
+    invoiceType: "CONTRACT",
+    subject: "Monthly IT Support Contract — May 2026",
+    totalAmount: 800000,
+    paidAmount: 800000,
+    currency: "UGX",
+    status: "PAID",
+    lines: [
+      { description: "Monthly IT support retainer (20 hrs)", quantity: 1, unitPrice: 600000, lineTotal: 600000 },
+      { description: "Remote support top-up hours (5 hrs × UGX 40,000)", quantity: 5, unitPrice: 40000, lineTotal: 200000 },
+    ],
+  });
+
+  await ensureStandaloneInvoice({
+    orgId: techfix.id,
+    invoiceNumber: "INV-SVC-002",
+    clientPhone: "+256701001009",  // Irene Akello
+    invoiceType: "SERVICE",
+    subject: "Network Setup & Configuration — Office",
+    totalAmount: 350000,
+    paidAmount: 0,
+    currency: "UGX",
+    status: "ISSUED",
+    dueDate: daysFromNow(7),
+    lines: [
+      { description: "Router configuration & access point setup", quantity: 1, unitPrice: 200000, lineTotal: 200000 },
+      { description: "Cable running & wall sockets", quantity: 3, unitPrice: 50000, lineTotal: 150000 },
+    ],
+  });
+
+  await ensureStandaloneInvoice({
+    orgId: techfix.id,
+    invoiceNumber: "INV-SVC-003",
+    clientPhone: "+256701001016",  // Rita Nakabuubi
+    invoiceType: "SERVICE",
+    subject: "CCTV Installation — 4 Cameras",
+    totalAmount: 1200000,
+    paidAmount: 600000,
+    currency: "UGX",
+    status: "ISSUED",
+    dueDate: daysFromNow(3),
+    lines: [
+      { description: "CCTV camera units × 4", quantity: 4, unitPrice: 220000, lineTotal: 880000 },
+      { description: "Installation & cabling", quantity: 1, unitPrice: 200000, lineTotal: 200000 },
+      { description: "DVR setup & remote access config", quantity: 1, unitPrice: 120000, lineTotal: 120000 },
+    ],
+  });
+
+  await ensureStandaloneInvoice({
+    orgId: techfix.id,
+    invoiceNumber: "INV-SVC-004",
+    clientPhone: "+256701001014",  // Norah Atim (school)
+    invoiceType: "CONTRACT",
+    subject: "Annual School IT Support Agreement 2026",
+    totalAmount: 4800000,
+    paidAmount: 0,
+    currency: "UGX",
+    status: "DRAFT",
+    dueDate: daysFromNow(14),
+    lines: [
+      { description: "Annual IT support contract (12 months)", quantity: 1, unitPrice: 4800000, lineTotal: 4800000 },
+    ],
+  });
+
+  await ensureStandaloneInvoice({
+    orgId: techfix.id,
+    invoiceNumber: "INV-SVC-005",
+    clientPhone: "+256701001019",  // Uganda Moto Parts
+    invoiceType: "MERCHANDISE",
+    subject: "Bulk Screen Protectors & Accessories Order",
+    totalAmount: 450000,
+    paidAmount: 450000,
+    currency: "UGX",
+    status: "PAID",
+    lines: [
+      { description: "Universal screen protectors × 50", quantity: 50, unitPrice: 3500, lineTotal: 175000 },
+      { description: "Phone cases assorted × 30", quantity: 30, unitPrice: 9200, lineTotal: 276000 },
+    ],
+  });
+
+  // ── Recurring Invoice Templates ───────────────────────────────────────────
+  async function ensureRecurringInvoice(data: {
+    orgId: string;
+    clientPhone: string;
+    subject: string;
+    invoiceType: "SERVICE" | "CONTRACT";
+    frequency: string;
+    currency: string;
+    isActive: boolean;
+    nextDueAt: Date;
+    lastIssuedAt?: Date;
+    createdById: string;
+    items: { description: string; quantity: number; unitPrice: number; lineTotal: number }[];
+  }) {
+    const client = await prisma.client.findFirst({ where: { phone: data.clientPhone, orgId: data.orgId }, select: { id: true } });
+    if (!client) return null;
+    const existing = await prisma.recurringInvoice.findFirst({
+      where: { orgId: data.orgId, clientId: client.id, subject: data.subject },
+    });
+    if (existing) return existing;
+    return prisma.recurringInvoice.create({
+      data: {
+        orgId: data.orgId,
+        clientId: client.id,
+        subject: data.subject,
+        invoiceType: data.invoiceType,
+        frequency: data.frequency,
+        currency: data.currency,
+        isActive: data.isActive,
+        nextDueAt: data.nextDueAt,
+        lastIssuedAt: data.lastIssuedAt ?? null,
+        autoIssue: false,
+        createdById: data.createdById,
+        items: { create: data.items },
+      },
+    });
+  }
+
+  if (tfAdminUser) {
+    await ensureRecurringInvoice({
+      orgId: techfix.id,
+      clientPhone: "+256701001011",  // Kampala Tech Hub
+      subject: "Monthly IT Support Contract",
+      invoiceType: "CONTRACT",
+      frequency: "MONTHLY",
+      currency: "UGX",
+      isActive: true,
+      nextDueAt: daysFromNow(2),
+      lastIssuedAt: daysAgo(28),
+      createdById: tfAdminUser.id,
+      items: [
+        { description: "Monthly IT support retainer (20 hrs)", quantity: 1, unitPrice: 600000, lineTotal: 600000 },
+        { description: "Remote support hours allowance", quantity: 5, unitPrice: 40000, lineTotal: 200000 },
+      ],
+    });
+
+    await ensureRecurringInvoice({
+      orgId: techfix.id,
+      clientPhone: "+256701001014",  // Norah Atim (school)
+      subject: "Quarterly School Device Maintenance",
+      invoiceType: "SERVICE",
+      frequency: "QUARTERLY",
+      currency: "UGX",
+      isActive: true,
+      nextDueAt: daysFromNow(18),
+      lastIssuedAt: daysAgo(72),
+      createdById: tfAdminUser.id,
+      items: [
+        { description: "Device health check & cleaning (30 devices)", quantity: 30, unitPrice: 15000, lineTotal: 450000 },
+        { description: "Software updates & antivirus renewal", quantity: 1, unitPrice: 120000, lineTotal: 120000 },
+      ],
+    });
+
+    await ensureRecurringInvoice({
+      orgId: techfix.id,
+      clientPhone: "+256701001019",  // Uganda Moto Parts
+      subject: "Weekly Consumables Resupply",
+      invoiceType: "SERVICE",
+      frequency: "WEEKLY",
+      currency: "UGX",
+      isActive: false,  // paused
+      nextDueAt: daysFromNow(5),
+      createdById: tfAdminUser.id,
+      items: [
+        { description: "Screen protectors bundle × 20", quantity: 20, unitPrice: 3500, lineTotal: 70000 },
+        { description: "Microfibre cleaning cloths × 10", quantity: 10, unitPrice: 2500, lineTotal: 25000 },
+      ],
+    });
+
+    await ensureRecurringInvoice({
+      orgId: techfix.id,
+      clientPhone: "+256701001016",  // Rita Nakabuubi
+      subject: "Annual CCTV Maintenance Agreement",
+      invoiceType: "CONTRACT",
+      frequency: "ANNUAL",
+      currency: "UGX",
+      isActive: true,
+      nextDueAt: daysFromNow(320),
+      lastIssuedAt: daysAgo(45),
+      createdById: tfAdminUser.id,
+      items: [
+        { description: "Annual CCTV system service & health check", quantity: 1, unitPrice: 280000, lineTotal: 280000 },
+        { description: "DVR hard drive inspection & backup", quantity: 1, unitPrice: 80000, lineTotal: 80000 },
+      ],
+    });
+  }
+
+  console.log("✓ Finance module — TechFix Uganda: 4 tax rates, 12 expenses, 5 standalone invoices, 4 recurring templates");
+
   // ── Summary ─────────────────────────────────────────────────────────────────
   console.log("═══════════════════════════════════════════════════════");
   console.log("  DEMO LOGIN CREDENTIALS  (password: Demo1234!)");

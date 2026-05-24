@@ -6,7 +6,14 @@ import { useFormStatus } from "react-dom";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
-import { updateProfileAction, type UpdateProfileState } from "@/app/(app)/settings/profile/actions";
+import {
+  adminChangeUserPasswordAction,
+  changePasswordAction,
+  updateProfileAction,
+  type AdminChangePasswordState,
+  type ChangePasswordState,
+  type UpdateProfileState,
+} from "@/app/(app)/settings/profile/actions";
 
 type QuickLink = {
   label: string;
@@ -15,7 +22,15 @@ type QuickLink = {
   desc: string;
 };
 
-function SaveBtn() {
+type OrgUserOption = {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  isActive: boolean;
+};
+
+function SaveBtn({ label = "Save", pendingLabel = "Saving…" }: { label?: string; pendingLabel?: string }) {
   const { pending } = useFormStatus();
   return (
     <button
@@ -23,7 +38,7 @@ function SaveBtn() {
       disabled={pending}
       className="btn-premium rounded-lg px-3 py-1.5 text-xs font-semibold disabled:opacity-60"
     >
-      {pending ? "Saving…" : "Save"}
+      {pending ? pendingLabel : label}
     </button>
   );
 }
@@ -99,6 +114,8 @@ export function SettingsPanel({
   userPhone,
   userRole,
   role,
+  initialSection = "profile",
+  orgUsers = [],
 }: {
   open: boolean;
   onClose: () => void;
@@ -107,11 +124,18 @@ export function SettingsPanel({
   userPhone: string | null;
   userRole: string;
   role: string;
+  initialSection?: "profile" | "password";
+  orgUsers?: OrgUserOption[];
 }) {
   const router = useRouter();
   const panelRef = useRef<HTMLDivElement>(null);
+  const passwordSectionRef = useRef<HTMLDetailsElement>(null);
   const initialState: UpdateProfileState = {};
   const [state, formAction] = useActionState(updateProfileAction, initialState);
+  const passwordInitialState: ChangePasswordState = {};
+  const [passwordState, passwordFormAction] = useActionState(changePasswordAction, passwordInitialState);
+  const adminPasswordInitialState: AdminChangePasswordState = {};
+  const [adminPasswordState, adminPasswordFormAction] = useActionState(adminChangeUserPasswordAction, adminPasswordInitialState);
 
   useEffect(() => {
     if (state.success) {
@@ -120,6 +144,16 @@ export function SettingsPanel({
     }
     if (state.error) toast.error(state.error);
   }, [state, router]);
+
+  useEffect(() => {
+    if (passwordState.success) toast.success("Password changed");
+    if (passwordState.error) toast.error(passwordState.error);
+  }, [passwordState]);
+
+  useEffect(() => {
+    if (adminPasswordState.success) toast.success(adminPasswordState.success);
+    if (adminPasswordState.error) toast.error(adminPasswordState.error);
+  }, [adminPasswordState]);
 
   // Close on Escape
   useEffect(() => {
@@ -130,6 +164,13 @@ export function SettingsPanel({
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, [open, onClose]);
+
+  useEffect(() => {
+    if (!open || initialSection !== "password") return;
+    window.requestAnimationFrame(() => {
+      passwordSectionRef.current?.scrollIntoView({ block: "start" });
+    });
+  }, [open, initialSection]);
 
   const isAdmin = role === "ADMIN";
   const isOps = role === "OPS";
@@ -154,9 +195,10 @@ export function SettingsPanel({
         ref={panelRef}
         role="dialog"
         aria-modal="true"
+        aria-hidden={!open}
         aria-label="Settings"
         className={`fixed right-0 top-0 z-50 flex h-full w-full max-w-sm flex-col border-l border-[var(--line)] bg-[var(--panel)] shadow-2xl transition-transform duration-300 ease-in-out ${
-          open ? "translate-x-0" : "translate-x-full"
+          open ? "translate-x-0" : "invisible translate-x-full pointer-events-none"
         }`}
       >
         {/* Header */}
@@ -184,9 +226,11 @@ export function SettingsPanel({
         <div className="flex-1 overflow-y-auto">
 
           {/* Profile section */}
-          <div className="border-b border-[var(--line)] p-4">
-            <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Your Profile</p>
-            <form action={formAction} className="space-y-3">
+          <details className="border-b border-[var(--line)] p-4">
+            <summary className="cursor-pointer text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)] hover:text-[var(--ink)]">
+              Your Profile
+            </summary>
+            <form action={formAction} className="mt-3 space-y-2">
               <div>
                 <label htmlFor="sp-name" className="mb-1 block text-xs text-[var(--ink-muted)]">Name</label>
                 <input id="sp-name" name="name" defaultValue={userName} required minLength={2} maxLength={80} className={fieldClass()} />
@@ -207,16 +251,68 @@ export function SettingsPanel({
               </div>
               <div className="flex items-center justify-between">
                 <SaveBtn />
-                <Link
-                  href="/settings/profile"
-                  onClick={onClose}
-                  className="text-[11px] text-[var(--accent)] underline-offset-2 hover:underline"
-                >
-                  Change password →
-                </Link>
+                <span className="text-[11px] text-[var(--ink-muted)]">Manage password below</span>
               </div>
             </form>
-          </div>
+          </details>
+
+          {/* Password section */}
+          <details ref={passwordSectionRef} className="border-b border-[var(--line)] p-4">
+            <summary className="cursor-pointer text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)] hover:text-[var(--ink)]">
+              Password
+            </summary>
+            <form action={passwordFormAction} className="mt-3 space-y-2">
+              <div>
+                <label htmlFor="sp-current-password" className="mb-1 block text-xs text-[var(--ink-muted)]">Current password</label>
+                <input id="sp-current-password" name="currentPassword" type="password" required autoComplete="current-password" className={fieldClass()} />
+              </div>
+              <div>
+                <label htmlFor="sp-new-password" className="mb-1 block text-xs text-[var(--ink-muted)]">New password</label>
+                <input id="sp-new-password" name="newPassword" type="password" required minLength={8} autoComplete="new-password" className={fieldClass()} />
+              </div>
+              <div>
+                <label htmlFor="sp-confirm-password" className="mb-1 block text-xs text-[var(--ink-muted)]">Confirm new password</label>
+                <input id="sp-confirm-password" name="confirmPassword" type="password" required minLength={8} autoComplete="new-password" className={fieldClass()} />
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <SaveBtn label="Change password" pendingLabel="Changing…" />
+                {passwordState.success ? <span className="text-[11px] text-[var(--accent)]">Updated</span> : null}
+              </div>
+            </form>
+          </details>
+
+          {isAdmin ? (
+            <details className="border-b border-[var(--line)] p-4">
+              <summary className="cursor-pointer text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)] hover:text-[var(--ink)]">
+                Admin password reset
+              </summary>
+              <form action={adminPasswordFormAction} className="mt-3 space-y-2">
+                <div>
+                  <label htmlFor="sp-admin-user" className="mb-1 block text-xs text-[var(--ink-muted)]">User</label>
+                  <select id="sp-admin-user" name="userId" required defaultValue="" className={fieldClass()}>
+                    <option value="" disabled>Choose user…</option>
+                    {orgUsers.map((user) => (
+                      <option key={user.id} value={user.id}>
+                        {user.name} - {user.email}{user.isActive ? "" : " (inactive)"}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="sp-admin-password" className="mb-1 block text-xs text-[var(--ink-muted)]">New password</label>
+                  <input id="sp-admin-password" name="password" type="password" required minLength={8} autoComplete="new-password" className={fieldClass()} />
+                </div>
+                <div>
+                  <label htmlFor="sp-admin-confirm" className="mb-1 block text-xs text-[var(--ink-muted)]">Confirm password</label>
+                  <input id="sp-admin-confirm" name="confirm" type="password" required minLength={8} autoComplete="new-password" className={fieldClass()} />
+                </div>
+                <div className="flex items-center justify-between gap-3">
+                  <SaveBtn label="Reset password" pendingLabel="Resetting…" />
+                  {adminPasswordState.success ? <span className="text-[11px] text-[var(--accent)]">Updated</span> : null}
+                </div>
+              </form>
+            </details>
+          ) : null}
 
           {/* Quick links */}
           {quickLinks.length > 0 ? (
@@ -247,6 +343,7 @@ export function SettingsPanel({
               </div>
             </div>
           ) : null}
+
         </div>
 
         {/* Footer */}

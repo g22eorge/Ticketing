@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { PaymentMethod } from "@prisma/client";
+import type { PaymentMethod } from "@prisma/client";
 
 import { formatMoney, normalizeCurrency, toBaseAmount } from "@/lib/currency";
 import { can } from "@/lib/permissions";
@@ -13,7 +13,7 @@ import { ConfirmSubmitButton } from "@/components/shared/ConfirmSubmitButton";
 import { writeSystemAuditEvent } from "@/lib/commercial/audit";
 import { RowActionsMenu, MenuSection, MenuDestructiveRow } from "@/components/shared/RowActionsMenu";
 
-const PAYMENT_METHODS = Object.values(PaymentMethod);
+const PAYMENT_METHODS: PaymentMethod[] = ["CASH", "MOBILE_MONEY", "BANK_TRANSFER", "CARD", "OTHER"];
 
 export default async function ReceiptsPage() {
   const { user, orgId, org } = await requireOrgSession();
@@ -35,13 +35,25 @@ export default async function ReceiptsPage() {
     const note = String(formData.get("note") ?? "").trim();
     if (!paymentId || !Number.isFinite(amount) || amount <= 0) return;
 
-    const method = PAYMENT_METHODS.includes(methodRaw as PaymentMethod) ? (methodRaw as PaymentMethod) : PaymentMethod.OTHER;
+    const method = PAYMENT_METHODS.includes(methodRaw as PaymentMethod) ? (methodRaw as PaymentMethod) : "OTHER" as PaymentMethod;
 
     const source = await prisma.payment.findFirst({
       where: { id: paymentId, orgId },
-      select: { invoiceId: true, saleId: true },
+      select: { invoiceId: true, saleId: true, currency: true, exchangeRateToBase: true },
     });
     if (!source) return;
+
+    if (source.invoiceId) {
+      const invoice = await prisma.invoice.findFirst({ where: { id: source.invoiceId, orgId }, select: { id: true, totalAmount: true } });
+      if (!invoice) return;
+      const otherPayments = await prisma.payment.findMany({
+        where: { invoiceId: invoice.id, orgId, id: { not: paymentId } },
+        select: { amount: true, currency: true, exchangeRateToBase: true },
+      });
+      const nextPaidAmount = otherPayments.reduce((sum, p) => sum + toBaseAmount({ amount: p.amount, currency: p.currency, baseCurrency: org.baseCurrency, exchangeRateToBase: p.exchangeRateToBase }), 0)
+        + toBaseAmount({ amount, currency: source.currency, baseCurrency: org.baseCurrency, exchangeRateToBase: source.exchangeRateToBase });
+      if (nextPaidAmount > invoice.totalAmount) return;
+    }
 
     await prisma.$transaction(async (tx) => {
       await tx.payment.updateMany({
@@ -56,7 +68,7 @@ export default async function ReceiptsPage() {
           const paidAmount = payments.reduce((sum, p) => sum + toBaseAmount({ amount: p.amount, currency: p.currency, baseCurrency: org.baseCurrency, exchangeRateToBase: p.exchangeRateToBase }), 0);
           const isPaid = invoice.totalAmount > 0 && paidAmount >= invoice.totalAmount;
           await tx.invoice.updateMany({ where: { id: invoice.id, orgId }, data: { paidAmount, paidAt: isPaid ? new Date() : null, status: invoice.totalAmount <= 0 ? "PAID" : isPaid ? "PAID" : "ISSUED" } });
-          await tx.job.updateMany({ where: { id: invoice.jobId, orgId }, data: { clientPaid: isPaid, clientPaidAt: isPaid ? new Date() : null, clientPaidById: isPaid ? user.id : null } });
+          if (invoice.jobId) await tx.job.updateMany({ where: { id: invoice.jobId, orgId }, data: { clientPaid: isPaid, clientPaidAt: isPaid ? new Date() : null, clientPaidById: isPaid ? user.id : null } });
         }
       }
 
@@ -101,7 +113,7 @@ export default async function ReceiptsPage() {
           const paidAmount = payments.reduce((sum, p) => sum + toBaseAmount({ amount: p.amount, currency: p.currency, baseCurrency: org.baseCurrency, exchangeRateToBase: p.exchangeRateToBase }), 0);
           const isPaid = invoice.totalAmount > 0 && paidAmount >= invoice.totalAmount;
           await tx.invoice.updateMany({ where: { id: invoice.id, orgId }, data: { paidAmount, paidAt: isPaid ? new Date() : null, status: invoice.totalAmount <= 0 ? "PAID" : isPaid ? "PAID" : "ISSUED" } });
-          await tx.job.updateMany({ where: { id: invoice.jobId, orgId }, data: { clientPaid: isPaid, clientPaidAt: isPaid ? new Date() : null, clientPaidById: isPaid ? user.id : null } });
+          if (invoice.jobId) await tx.job.updateMany({ where: { id: invoice.jobId, orgId }, data: { clientPaid: isPaid, clientPaidAt: isPaid ? new Date() : null, clientPaidById: isPaid ? user.id : null } });
         }
       }
 

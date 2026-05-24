@@ -20,6 +20,13 @@ type HeaderProps = {
   permissions?: string[];
   isPlatformAdmin?: boolean;
   orgName?: string | null;
+  orgUsers?: Array<{
+    id: string;
+    name: string;
+    email: string;
+    role: string;
+    isActive: boolean;
+  }>;
 };
 
 function roleDisplay(role: string) {
@@ -55,11 +62,50 @@ function initials(name: string) {
     .toUpperCase() || "?";
 }
 
-export function Header({ userName, userEmail, userPhone = null, role, permissions = [], isPlatformAdmin = false, orgName = null }: HeaderProps) {
+function UserListSection({
+  title,
+  users,
+  onSelect,
+}: {
+  title: string;
+  users: NonNullable<HeaderProps["orgUsers"]>;
+  onSelect: (userId: string) => void;
+}) {
+  if (users.length === 0) return null;
+
+  return (
+    <div>
+      <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--ink-muted)]">
+        {title}
+      </p>
+      <div className="max-h-40 overflow-y-auto rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] p-1">
+        {users.map((user) => (
+          <button
+            key={user.id}
+            role="menuitem"
+            type="button"
+            onClick={() => onSelect(user.id)}
+            className="flex w-full flex-col rounded-md px-2 py-1.5 text-left hover:bg-[var(--panel)]"
+          >
+            <span className="truncate text-xs font-semibold text-[var(--ink)]">{user.name}</span>
+            <span className="truncate text-[10px] text-[var(--ink-muted)]">
+              {roleDisplay(user.role)} · {user.isActive ? user.email : `${user.email} · inactive`}
+            </span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export function Header({ userName, userEmail, userPhone = null, role, permissions = [], isPlatformAdmin = false, orgName = null, orgUsers = [] }: HeaderProps) {
   const router = useRouter();
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settingsInitialSection, setSettingsInitialSection] = useState<"profile" | "password">("profile");
+  const localAdmins = orgUsers.filter((user) => user.role === "ADMIN");
+  const localUsers = orgUsers.filter((user) => user.role !== "ADMIN");
 
   return (
     <>
@@ -90,9 +136,9 @@ export function Header({ userName, userEmail, userPhone = null, role, permission
             {can.viewNotifications({ role: role as never, permissions }) ? <NotificationBell /> : null}
 
             {/* Settings gear */}
-            <button
-              type="button"
-              onClick={() => setSettingsOpen(true)}
+              <button
+                type="button"
+                onClick={() => { setSettingsInitialSection("profile"); setSettingsOpen(true); }}
               title="Settings"
               aria-label="Open settings"
               className="rounded-md border border-[var(--line)] bg-[var(--panel-strong)] p-2 text-[var(--ink-muted)] transition hover:border-[var(--accent)]/40 hover:text-[var(--accent)]"
@@ -147,9 +193,17 @@ export function Header({ userName, userEmail, userPhone = null, role, permission
                     role="menuitem"
                     type="button"
                     className="flex w-full items-center px-3 py-2 text-left text-sm text-[var(--ink)] hover:bg-[var(--panel-strong)]"
-                    onClick={() => { setMenuOpen(false); setSettingsOpen(true); }}
+                    onClick={() => { setSettingsInitialSection("profile"); setMenuOpen(false); setSettingsOpen(true); }}
                   >
                     Settings
+                  </button>
+                  <button
+                    role="menuitem"
+                    type="button"
+                    className="flex w-full items-center px-3 py-2 text-left text-sm text-[var(--ink)] hover:bg-[var(--panel-strong)]"
+                    onClick={() => { setSettingsInitialSection("password"); setMenuOpen(false); setSettingsOpen(true); }}
+                  >
+                    Change password
                   </button>
                   <Link
                     role="menuitem"
@@ -160,14 +214,22 @@ export function Header({ userName, userEmail, userPhone = null, role, permission
                     Profile
                   </Link>
                   {role === "ADMIN" ? (
-                    <Link
-                      role="menuitem"
-                      href="/settings/users"
-                      className="flex w-full items-center px-3 py-2 text-left text-sm text-[var(--ink)] hover:bg-[var(--panel-strong)]"
-                      onClick={() => setMenuOpen(false)}
-                    >
-                      Users
-                    </Link>
+                    <div className="border-t border-[var(--line)] px-3 py-2">
+                      <Link
+                        role="menuitem"
+                        href="/settings/users"
+                        className="mb-2 flex w-full text-left text-sm font-medium text-[var(--ink)] hover:text-[var(--accent)]"
+                        onClick={() => setMenuOpen(false)}
+                      >
+                        Users
+                      </Link>
+                      {orgUsers.length > 0 ? (
+                        <div className="space-y-2">
+                          <UserListSection title="Local admins" users={localAdmins} onSelect={(userId) => { setMenuOpen(false); router.push(`/settings/users/${userId}`); }} />
+                          <UserListSection title="Local users" users={localUsers} onSelect={(userId) => { setMenuOpen(false); router.push(`/settings/users/${userId}`); }} />
+                        </div>
+                      ) : null}
+                    </div>
                   ) : null}
                   {isPlatformAdmin ? (
                     <Link
@@ -216,6 +278,8 @@ export function Header({ userName, userEmail, userPhone = null, role, permission
         userPhone={userPhone}
         userRole={roleDisplay(role)}
         role={role}
+        initialSection={settingsInitialSection}
+        orgUsers={orgUsers}
       />
     </>
   );

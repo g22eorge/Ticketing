@@ -1,4 +1,4 @@
-import { AppSidebar } from "@/components/layout/AppSidebar";
+import { ClientOnlySidebar } from "@/components/layout/ClientOnlySidebar";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { Header } from "@/components/layout/Header";
 import { PageThemeHeader } from "@/components/layout/PageThemeHeader";
@@ -11,6 +11,7 @@ import { requireOrgSession } from "@/lib/org-context";
 import { filterSupportedJobStatuses } from "@/lib/job-status-server";
 import { sendTrialExpiryWarning } from "@/lib/email";
 import { checkIsPlatformAdmin } from "@/lib/platform-admin";
+import { getOrgModules } from "@/lib/module-access";
 import Link from "next/link";
 
 // Module-level dedup: only send trial warning email once per server instance per org.
@@ -29,7 +30,11 @@ export default async function AppLayout({
   const org = await prisma.organization.findUnique({
     where: { id: orgId },
     select: { billingStatus: true, trialEndsAt: true, plan: true, name: true, planRenewsAt: true },
-  });
+  }).catch(() =>
+    prisma.organization.findUnique({ where: { id: orgId }, select: { name: true } })
+      .then((r) => r ? { ...r, billingStatus: "TRIALING" as const, trialEndsAt: null, plan: "STARTER" as const, planRenewsAt: null } : null)
+      .catch(() => null)
+  );
 
   const now = new Date();
 
@@ -111,7 +116,7 @@ export default async function AppLayout({
       ? { orgId, status: "RECEIVED" as JobStatus, assignedToId: session.user.id }
       : { orgId, status: "RECEIVED" as JobStatus };
 
-  const [activeJobsCount, partsForReorder, paymentFollowupCount, receivedJobsCount, pendingRequestsCount, openComplaintsCount] = await Promise.all([
+  const [activeJobsCount, partsForReorder, paymentFollowupCount, receivedJobsCount, pendingRequestsCount, openComplaintsCount, enabledModules, orgUsers] = await Promise.all([
     prisma.job.count({ where: jobsWhere }),
     prisma.part.findMany({
       where: { orgId, isActive: true, reorderLevel: { gt: 0 } },
@@ -132,16 +137,25 @@ export default async function AppLayout({
         return await model.count({ where: { orgId, status: { in: ["RECEIVED", "ACKNOWLEDGED", "INVESTIGATING"] } } });
       } catch { return 0; }
     })(),
+    getOrgModules(orgId),
+    user.role === "ADMIN"
+      ? prisma.user.findMany({
+          where: { orgId },
+          select: { id: true, name: true, email: true, role: true, isActive: true },
+          orderBy: [{ isActive: "desc" }, { name: "asc" }],
+        })
+      : Promise.resolve([]),
   ]);
 
   const lowStockCount = partsForReorder.filter((part) => part.qtyOnHand <= part.reorderLevel).length;
 
   return (
     <div className="min-h-dvh overflow-x-clip md:flex md:h-screen md:overflow-hidden">
-      <AppSidebar
+      <ClientOnlySidebar
         role={user.role}
         permissions={user.permissions}
         isPlatformAdmin={isPlatformAdmin}
+        enabledModules={enabledModules}
         badges={{
           jobs: activeJobsCount,
           receivedJobs: receivedJobsCount,
@@ -153,7 +167,7 @@ export default async function AppLayout({
       />
       <div className="relative flex min-h-screen min-w-0 flex-1 flex-col overflow-x-clip md:h-full md:min-h-0">
         <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_top_right,rgba(212,175,55,0.06),transparent_50%),radial-gradient(ellipse_at_bottom_left,rgba(212,175,55,0.04),transparent_40%)]" />
-        <Header userName={user.name} userEmail={user.email} userPhone={user.phone} role={user.role} permissions={user.permissions} isPlatformAdmin={isPlatformAdmin} orgName={org?.name ?? null} />
+        <Header userName={user.name} userEmail={user.email} userPhone={user.phone} role={user.role} permissions={user.permissions} isPlatformAdmin={isPlatformAdmin} orgName={org?.name ?? null} orgUsers={orgUsers} />
         <main className="fade-in flex-1 overflow-x-hidden px-4 pb-[var(--mobile-shell-bottom)] pt-[var(--mobile-shell-top)] md:min-h-0 md:overflow-y-auto md:px-6 md:pb-8">
           <div className="mobile-page-shell mx-auto w-full max-w-lg md:max-w-[1240px] md:space-y-5 xl:max-w-[1360px]">
             <PageThemeHeader role={user.role} />
@@ -178,6 +192,7 @@ export default async function AppLayout({
       <BottomNav
         role={user.role}
         permissions={user.permissions}
+        enabledModules={enabledModules}
         badges={{
           jobs: activeJobsCount,
           receivedJobs: receivedJobsCount,

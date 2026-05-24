@@ -3,7 +3,7 @@ import path from "node:path";
 import { defineConfig } from "prisma/config";
 
 function getDatabaseUrl() {
-  const url = process.env.DATABASE_URL || "file:./dev.db";
+  const url = process.env.DATABASE_URL || process.env.TURSO_DATABASE_URL || "file:./dev.db";
 
   // Allow Prisma CLI to target Turso/libSQL when explicitly configured.
   // (Needed for prod `prisma migrate deploy`.)
