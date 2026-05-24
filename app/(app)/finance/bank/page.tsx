@@ -479,105 +479,123 @@ export default async function BankPage({
                     {q ? "No transactions match your search." : "No transactions yet."}
                   </div>
                 ) : (
-                  <div className="overflow-x-auto rounded-xl border border-[var(--line)]">
-                    <table className="w-full min-w-[500px] text-sm">
-                      <thead className="border-b border-[var(--line)] bg-[var(--panel)]">
-                        <tr>
-                          <th className="px-4 py-2.5 text-left text-xs font-semibold text-[var(--ink-muted)]">Date</th>
-                          <th className="px-4 py-2.5 text-left text-xs font-semibold text-[var(--ink-muted)]">Description</th>
-                          <th className="px-4 py-2.5 text-right text-xs font-semibold text-emerald-700">In</th>
-                          <th className="px-4 py-2.5 text-right text-xs font-semibold text-red-700">Out</th>
-                          <th className="px-4 py-2.5 text-right text-xs font-semibold text-[var(--ink-muted)]">Balance</th>
-                          <th className="px-4 py-2.5 text-center text-xs font-semibold text-[var(--ink-muted)]">Reconciled</th>
-                          <th className="px-4 py-2.5" />
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-[var(--line)] bg-[var(--bg)]">
-                        {/* Sort descending for display but use pre-computed running balance */}
-                        {[...transactions]
-                          .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-                          .map((tx) => {
-                            const rb = balanceById.get(tx.id);
-                            return (
-                              <tr
-                                key={tx.id}
-                                className={`hover:bg-[var(--panel)] ${tx.reconciledAt ? "opacity-60" : ""}`}
-                              >
-                                <td className="px-4 py-2.5 text-xs text-[var(--ink-muted)]">
-                                  {new Date(tx.date).toLocaleDateString("en-UG", {
-                                    day: "numeric",
-                                    month: "short",
-                                    year: "numeric",
-                                  })}
-                                </td>
-                                <td className="px-4 py-2.5">
-                                  <p className="font-medium text-[var(--ink)]">{tx.description}</p>
-                                  {tx.reference && (
-                                    <p className="text-xs text-[var(--ink-muted)]">{tx.reference}</p>
-                                  )}
-                                </td>
-                                <td className="px-4 py-2.5 text-right font-medium text-emerald-700">
-                                  {tx.type === "CREDIT" ? formatMoney(tx.amount, currency) : ""}
-                                </td>
-                                <td className="px-4 py-2.5 text-right font-medium text-red-600">
-                                  {tx.type === "DEBIT" ? formatMoney(tx.amount, currency) : ""}
-                                </td>
-                                <td className={`px-4 py-2.5 text-right text-[12px] font-semibold tabular-nums ${(rb ?? 0) >= 0 ? "text-[var(--ink)]" : "text-red-600"}`}>
-                                  {rb !== undefined
-                                    ? `${rb < 0 ? "−" : ""}${formatMoney(Math.abs(rb), currency)}`
-                                    : "—"}
-                                </td>
-                                <td className="px-4 py-2.5 text-center">
-                                  {tx.reconciledAt ? (
-                                    <span className="rounded-full bg-green-500/10 px-2 py-0.5 text-[10px] font-medium text-green-700">
-                                      ✓ Done
-                                    </span>
-                                  ) : (
-                                    <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-700">
-                                      Pending
+                  <div className="rounded-xl border border-[var(--line)]">
+                    {/* ── Mobile transaction cards ── */}
+                    <div className="divide-y divide-[var(--line)] lg:hidden">
+                      {[...transactions]
+                        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                        .map((tx) => {
+                          const rb = balanceById.get(tx.id);
+                          return (
+                            <div key={`m-${tx.id}`} className={`px-4 py-3 ${tx.reconciledAt ? "opacity-60" : ""}`}>
+                              <div className="mb-0.5 flex items-start justify-between gap-2">
+                                <p className="text-[13px] font-medium text-[var(--ink)]">{tx.description}</p>
+                                <span className={`shrink-0 text-[13px] font-bold tabular-nums ${tx.type === "CREDIT" ? "text-emerald-700" : "text-red-600"}`}>
+                                  {tx.type === "CREDIT" ? "+" : "−"}{formatMoney(tx.amount, currency)}
+                                </span>
+                              </div>
+                              <div className="flex items-center justify-between gap-2">
+                                <div className="flex items-center gap-2 text-[11px] text-[var(--ink-muted)]">
+                                  <span>{new Date(tx.date).toLocaleDateString("en-UG", { day: "numeric", month: "short", year: "numeric" })}</span>
+                                  {tx.reference && <><span className="opacity-40">·</span><span>{tx.reference}</span></>}
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  {rb !== undefined && (
+                                    <span className={`text-[11px] tabular-nums ${(rb ?? 0) >= 0 ? "text-[var(--ink-muted)]" : "text-red-600"}`}>
+                                      bal {rb < 0 ? "−" : ""}{formatMoney(Math.abs(rb), currency)}
                                     </span>
                                   )}
-                                </td>
-                                <td className="px-3 py-2.5 text-right">
                                   <form action={reconcile}>
                                     <input type="hidden" name="id" value={tx.id} />
-                                    <button
-                                      type="submit"
-                                      className="text-xs text-[var(--accent)] hover:underline"
-                                    >
+                                    <button type="submit" className="text-[11px] text-[var(--accent)] hover:underline">
                                       {tx.reconciledAt ? "Unmark" : "Reconcile"}
                                     </button>
                                   </form>
-                                </td>
-                              </tr>
-                            );
-                          })}
-                      </tbody>
-                      <tfoot className="border-t border-[var(--line)] bg-[var(--panel-strong)]">
-                        <tr>
-                          <td colSpan={2} className="px-4 py-2.5 text-xs font-bold text-[var(--ink-muted)]">
-                            {transactions.length} transactions
-                            {q ? " (filtered)" : ""}
-                          </td>
-                          <td className="px-4 py-2.5 text-right text-xs font-bold tabular-nums text-emerald-700">
-                            {formatMoney(
-                              transactions.filter((t) => t.type === "CREDIT").reduce((s, t) => s + t.amount, 0),
-                              currency,
-                            )}
-                          </td>
-                          <td className="px-4 py-2.5 text-right text-xs font-bold tabular-nums text-red-600">
-                            {formatMoney(
-                              transactions.filter((t) => t.type === "DEBIT").reduce((s, t) => s + t.amount, 0),
-                              currency,
-                            )}
-                          </td>
-                          <td className="px-4 py-2.5 text-right text-xs font-bold tabular-nums text-[var(--ink)]">
-                            {formatMoney(activeAccount.currentBalance, currency)}
-                          </td>
-                          <td colSpan={2} />
-                        </tr>
-                      </tfoot>
-                    </table>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      <div className="flex items-center justify-between border-t border-[var(--line)] bg-[var(--panel-strong)] px-4 py-2.5 text-xs font-semibold">
+                        <span className="text-[var(--ink-muted)]">{transactions.length} transactions{q ? " (filtered)" : ""}</span>
+                        <span className="text-[var(--ink)]">{formatMoney(activeAccount.currentBalance, currency)}</span>
+                      </div>
+                    </div>
+                    {/* ── Desktop transaction table ── */}
+                    <div className="hidden overflow-x-auto lg:block">
+                      <table className="w-full min-w-[500px] text-sm">
+                        <thead className="border-b border-[var(--line)] bg-[var(--panel)]">
+                          <tr>
+                            <th className="px-4 py-2.5 text-left text-xs font-semibold text-[var(--ink-muted)]">Date</th>
+                            <th className="px-4 py-2.5 text-left text-xs font-semibold text-[var(--ink-muted)]">Description</th>
+                            <th className="px-4 py-2.5 text-right text-xs font-semibold text-emerald-700">In</th>
+                            <th className="px-4 py-2.5 text-right text-xs font-semibold text-red-700">Out</th>
+                            <th className="px-4 py-2.5 text-right text-xs font-semibold text-[var(--ink-muted)]">Balance</th>
+                            <th className="px-4 py-2.5 text-center text-xs font-semibold text-[var(--ink-muted)]">Reconciled</th>
+                            <th className="px-4 py-2.5" />
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-[var(--line)] bg-[var(--bg)]">
+                          {[...transactions]
+                            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                            .map((tx) => {
+                              const rb = balanceById.get(tx.id);
+                              return (
+                                <tr key={`d-${tx.id}`} className={`hover:bg-[var(--panel)] ${tx.reconciledAt ? "opacity-60" : ""}`}>
+                                  <td className="px-4 py-2.5 text-xs text-[var(--ink-muted)]">
+                                    {new Date(tx.date).toLocaleDateString("en-UG", { day: "numeric", month: "short", year: "numeric" })}
+                                  </td>
+                                  <td className="px-4 py-2.5">
+                                    <p className="font-medium text-[var(--ink)]">{tx.description}</p>
+                                    {tx.reference && <p className="text-xs text-[var(--ink-muted)]">{tx.reference}</p>}
+                                  </td>
+                                  <td className="px-4 py-2.5 text-right font-medium text-emerald-700">
+                                    {tx.type === "CREDIT" ? formatMoney(tx.amount, currency) : ""}
+                                  </td>
+                                  <td className="px-4 py-2.5 text-right font-medium text-red-600">
+                                    {tx.type === "DEBIT" ? formatMoney(tx.amount, currency) : ""}
+                                  </td>
+                                  <td className={`px-4 py-2.5 text-right text-[12px] font-semibold tabular-nums ${(rb ?? 0) >= 0 ? "text-[var(--ink)]" : "text-red-600"}`}>
+                                    {rb !== undefined ? `${rb < 0 ? "−" : ""}${formatMoney(Math.abs(rb), currency)}` : "—"}
+                                  </td>
+                                  <td className="px-4 py-2.5 text-center">
+                                    {tx.reconciledAt ? (
+                                      <span className="rounded-full bg-green-500/10 px-2 py-0.5 text-[10px] font-medium text-green-700">✓ Done</span>
+                                    ) : (
+                                      <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-700">Pending</span>
+                                    )}
+                                  </td>
+                                  <td className="px-3 py-2.5 text-right">
+                                    <form action={reconcile}>
+                                      <input type="hidden" name="id" value={tx.id} />
+                                      <button type="submit" className="text-xs text-[var(--accent)] hover:underline">
+                                        {tx.reconciledAt ? "Unmark" : "Reconcile"}
+                                      </button>
+                                    </form>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                        </tbody>
+                        <tfoot className="border-t border-[var(--line)] bg-[var(--panel-strong)]">
+                          <tr>
+                            <td colSpan={2} className="px-4 py-2.5 text-xs font-bold text-[var(--ink-muted)]">
+                              {transactions.length} transactions{q ? " (filtered)" : ""}
+                            </td>
+                            <td className="px-4 py-2.5 text-right text-xs font-bold tabular-nums text-emerald-700">
+                              {formatMoney(transactions.filter((t) => t.type === "CREDIT").reduce((s, t) => s + t.amount, 0), currency)}
+                            </td>
+                            <td className="px-4 py-2.5 text-right text-xs font-bold tabular-nums text-red-600">
+                              {formatMoney(transactions.filter((t) => t.type === "DEBIT").reduce((s, t) => s + t.amount, 0), currency)}
+                            </td>
+                            <td className="px-4 py-2.5 text-right text-xs font-bold tabular-nums text-[var(--ink)]">
+                              {formatMoney(activeAccount.currentBalance, currency)}
+                            </td>
+                            <td colSpan={2} />
+                          </tr>
+                        </tfoot>
+                      </table>
+                    </div>
                   </div>
                 )}
               </>

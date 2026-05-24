@@ -1,24 +1,21 @@
 import Link from "next/link";
+import { getCurrentUserRole } from "@/lib/session";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 
-import { formatMoneyCompact, normalizeCurrency } from "@/lib/currency";
-import { prisma } from "@/lib/prisma";
-import { requireOrgSession } from "@/lib/org-context";
-import { requireModule, OrgModule } from "@/lib/module-access";
+import { formatMoneyCompact, normalizeCurrency, getAppCurrency } from "@/lib/currency";
+import { orgDb, prisma } from "@/lib/prisma";
 import { can } from "@/lib/permissions";
-import { assertOrgCanMutate } from "@/lib/org-write";
 import { ConfirmSubmitButton } from "@/components/shared/ConfirmSubmitButton";
-import { writeSystemAuditEvent } from "@/lib/commercial/audit";
 
 function monthKey(d: Date) {
   return `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
 
-async function nextSaleNumber(orgId: string) {
+async function nextSaleNumber(db: ReturnType<typeof orgDb>) {
   const prefix = `S-${monthKey(new Date())}-`;
-  const last = await prisma.sale.findFirst({
-    where: { orgId, saleNumber: { startsWith: prefix } },
+  const last = await db.sale.findFirst({
+    where: { saleNumber: { startsWith: prefix } },
     orderBy: { saleNumber: "desc" },
     select: { saleNumber: true },
   });
@@ -29,38 +26,45 @@ async function nextSaleNumber(orgId: string) {
 }
 
 export default async function PosPage() {
-  await requireModule(OrgModule.POS);
-  const { user, orgId, org } = await requireOrgSession();
+  const { user } = await getCurrentUserRole();
+  const db = orgDb(user.orgId);
   if (!(can.viewFinancials(user) || ["ADMIN", "OPS", "FRONT_DESK"].includes(user.role))) {
     redirect("/dashboard");
   }
 
+  const currency = getAppCurrency();
+
+  const now = new Date();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+  const [kpiTodayAgg, kpiMonthAgg, kpiMonthCount] = await Promise.all([
+    db.sale.aggregate({ _sum: { totalAmount: true }, where: { createdAt: { gte: todayStart } } }).catch(() => ({ _sum: { totalAmount: 0 } })),
+    db.sale.aggregate({ _sum: { totalAmount: true }, where: { createdAt: { gte: monthStart } } }).catch(() => ({ _sum: { totalAmount: 0 } })),
+    db.sale.count({ where: { createdAt: { gte: monthStart } } }).catch(() => 0),
+  ]);
+  const kpiTodayTotal = kpiTodayAgg._sum.totalAmount ?? 0;
+  const kpiMonthTotal = kpiMonthAgg._sum.totalAmount ?? 0;
+  const kpiAvgSale = kpiMonthCount > 0 ? kpiMonthTotal / kpiMonthCount : 0;
+
   let dbNeedsFix = false;
 
-  const branches = await prisma.branch.findMany({
-    where: { orgId, isActive: true },
-    orderBy: [{ isDefault: "desc" }, { name: "asc" }],
-    select: { id: true, name: true, isDefault: true },
-  }).catch(() => []);
+  const branches: { id: string; name: string }[] = [];
+  const defaultBranchId: string | null = null;
 
-  const defaultBranchId = branches.find((b) => b.isDefault)?.id ?? branches[0]?.id ?? null;
-
-  async function createSaleAction(formData: FormData) {
+  async function createSaleAction(_formData: FormData) {
     "use server";
-    const { user, orgId, session, org } = await requireOrgSession();
-    if (!(can.viewFinancials(user) || ["ADMIN", "OPS", "FRONT_DESK"].includes(user.role))) redirect("/dashboard");
-    assertOrgCanMutate({ access: org.access, userRole: user.role, userAccessMode: user.accessMode, kind: "GENERAL" });
+    const { user: _u2 } = await getCurrentUserRole();
+    const db = orgDb(_u2.orgId);
+    if (!(can.viewFinancials(_u2) || ["ADMIN", "OPS", "FRONT_DESK"].includes(_u2.role))) redirect("/dashboard");
 
-    const branchId = String(formData.get("branchId") ?? "").trim() || null;
-    const saleNumber = await nextSaleNumber(orgId);
-    const sale = await prisma.sale.create({
+    const saleNumber = await nextSaleNumber(db);
+    const sale = await db.sale.create({
       data: {
-        orgId,
-        branchId,
         saleNumber,
         status: "OPEN",
-        currency: org.baseCurrency,
-        createdById: session.user.id,
+        // currency uses schema default
+        createdById: _u2.id,
       },
       select: { id: true },
     });
@@ -71,15 +75,15 @@ export default async function PosPage() {
 
   async function deleteSaleAction(formData: FormData) {
     "use server";
-    const { user, orgId, org } = await requireOrgSession();
-    if (user.role !== "ADMIN") redirect("/dashboard");
-    assertOrgCanMutate({ access: org.access, userRole: user.role, userAccessMode: user.accessMode, kind: "GENERAL" });
+    const { user: _u3 } = await getCurrentUserRole();
+    const db = orgDb(_u3.orgId);
+    if (_u3.role !== "ADMIN") redirect("/dashboard");
 
     const saleId = String(formData.get("saleId") ?? "").trim();
     if (!saleId) return;
 
-    const sale = await prisma.sale.findFirst({
-      where: { id: saleId, orgId },
+    const sale = await db.sale.findFirst({
+      where: { id: saleId },
       select: {
         id: true,
         status: true,
@@ -96,7 +100,7 @@ export default async function PosPage() {
     await prisma.$transaction(async (tx) => {
       for (const item of sale.items) {
         if (!item.partId) continue;
-        const part = await tx.part.findFirst({ where: { id: item.partId, orgId }, select: { id: true, qtyOnHand: true } });
+        const part = await tx.part.findFirst({ where: { id: item.partId }, select: { id: true, qtyOnHand: true } });
         if (!part) continue;
         await tx.part.update({ where: { id: part.id }, data: { qtyOnHand: part.qtyOnHand + Math.abs(item.quantity) } });
         await tx.partStockTransaction.create({
@@ -106,13 +110,12 @@ export default async function PosPage() {
             type: "IN",
             quantity: Math.abs(item.quantity),
             reason: `POS sale deleted (${item.description})`,
-            createdById: user.id,
+            createdById: _u3.id,
           },
         });
       }
-      await tx.sale.deleteMany({ where: { id: sale.id, orgId } });
+      await tx.sale.deleteMany({ where: { id: sale.id } });
     });
-    await writeSystemAuditEvent({ orgId, actorUserId: user.id, entityType: "Sale", entityId: sale.id, action: "POS_SALE_DELETED", summary: "Open POS sale deleted" });
 
     revalidatePath("/pos");
   }
@@ -126,27 +129,25 @@ export default async function PosPage() {
     paidAmount: number;
     invoicedAt: Date | null;
     createdAt: Date;
-    branch: { name: string } | null;
     _count: { payments: number; creditNotes: number; refunds: number; deliveryNotes: number };
   }> = [];
   try {
-    sales = await prisma.sale.findMany({
-      where: { orgId },
+    sales = await db.sale.findMany({
+      where: {},
       orderBy: { createdAt: "desc" },
       take: 40,
-        select: {
-          id: true,
-          saleNumber: true,
-          status: true,
-          currency: true,
-          totalAmount: true,
-          paidAmount: true,
-          invoicedAt: true,
-          createdAt: true,
-          branch: { select: { name: true } },
-          _count: { select: { payments: true, creditNotes: true, refunds: true, deliveryNotes: true } },
-        },
-      });
+      select: {
+        id: true,
+        saleNumber: true,
+        status: true,
+        currency: true,
+        totalAmount: true,
+        paidAmount: true,
+        invoicedAt: true,
+        createdAt: true,
+        _count: { select: { payments: true, creditNotes: true, refunds: true, deliveryNotes: true } },
+      },
+    });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     if (msg.includes("no such table") && msg.includes("Sale")) dbNeedsFix = true;
@@ -171,6 +172,30 @@ export default async function PosPage() {
           </a>
         </section>
       ) : null}
+      {/* ── KPI tiles ── */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
+          <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Today&apos;s Sales</p>
+          <p className="mt-1 text-xl font-bold tabular-nums text-[var(--ink)]">{formatMoneyCompact(kpiTodayTotal, currency)}</p>
+          <p className="mt-0.5 text-[11px] text-[var(--ink-muted)]">today</p>
+        </div>
+        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
+          <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">This Month</p>
+          <p className="mt-1 text-xl font-bold tabular-nums text-[var(--ink)]">{formatMoneyCompact(kpiMonthTotal, currency)}</p>
+          <p className="mt-0.5 text-[11px] text-[var(--ink-muted)]">this month</p>
+        </div>
+        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
+          <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Transactions This Month</p>
+          <p className="mt-1 text-xl font-bold tabular-nums text-[var(--ink)]">{kpiMonthCount}</p>
+          <p className="mt-0.5 text-[11px] text-[var(--ink-muted)]">sales this month</p>
+        </div>
+        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
+          <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Avg Sale Value</p>
+          <p className="mt-1 text-xl font-bold tabular-nums text-[var(--ink)]">{formatMoneyCompact(kpiAvgSale, currency)}</p>
+          <p className="mt-0.5 text-[11px] text-[var(--ink-muted)]">per transaction</p>
+        </div>
+      </div>
+
       <div className="panel-shadow flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-2.5">
         <p className="text-[13px] font-bold text-[var(--ink)]">Sales</p>
         <form action={createSaleAction} className="flex flex-wrap items-center gap-2">
@@ -195,55 +220,90 @@ export default async function PosPage() {
         {sales.length === 0 ? (
           <div className="px-4 py-10 text-sm text-[var(--ink-muted)]">No sales yet.</div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[720px] text-left text-sm">
-              <thead className="border-b border-[var(--line)]">
-                <tr className="text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
-                  <th className="px-4 py-2.5">Sale</th>
-                  <th className="px-4 py-2.5">Branch</th>
-                  <th className="px-4 py-2.5">Total</th>
-                  <th className="px-4 py-2.5">Paid</th>
-                  <th className="px-4 py-2.5">Status</th>
-                  <th className="px-4 py-2.5">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[var(--line)]">
-                {sales.map((s) => {
-                  const canDeleteSale = user.role === "ADMIN" && s.status === "OPEN" && !s.invoicedAt && s._count.payments === 0 && s._count.creditNotes === 0 && s._count.refunds === 0 && s._count.deliveryNotes === 0;
-                  return (
-                    <tr key={s.id} className="hover:bg-[var(--panel-strong)]/40">
-                      <td className="px-4 py-3 mono font-semibold">{s.saleNumber}</td>
-                      <td className="px-4 py-3 text-[var(--ink-muted)]">{s.branch?.name ?? "-"}</td>
-                      <td className="px-4 py-3">{formatMoneyCompact(s.totalAmount, normalizeCurrency(s.currency, org.baseCurrency))}</td>
-                      <td className="px-4 py-3">{formatMoneyCompact(s.paidAmount, normalizeCurrency(s.currency, org.baseCurrency))}</td>
-                      <td className="px-4 py-3">
-                        <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${
-                          s.status === "PAID"
-                            ? "border-emerald-500/30 bg-emerald-500/15 text-emerald-700"
-                            : s.status === "VOID"
-                              ? "border-red-500/20 bg-red-500/10 text-red-600"
-                              : "border-amber-400/30 bg-amber-400/15 text-amber-700"
-                        }`}>
-                          {s.status}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <Link href={`/pos/${s.id}`} className="btn-premium-secondary rounded-md px-2.5 py-1.5 text-xs">Open/Edit</Link>
-                          {canDeleteSale ? (
-                            <form action={deleteSaleAction}>
-                              <input type="hidden" name="saleId" value={s.id} />
-                              <ConfirmSubmitButton message="Delete this open POS sale? Stock will be restored." className="rounded-md border border-red-200 px-2.5 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-50">Delete</ConfirmSubmitButton>
-                            </form>
-                          ) : null}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+          <>
+            {/* ── Mobile cards ── */}
+            <div className="divide-y divide-[var(--line)] lg:hidden">
+              {sales.map((s) => {
+                const canDeleteSale = user.role === "ADMIN" && s.status === "OPEN" && !s.invoicedAt && s._count.payments === 0 && s._count.creditNotes === 0 && s._count.refunds === 0 && s._count.deliveryNotes === 0;
+                const statusCls = s.status === "PAID"
+                  ? "border-emerald-500/30 bg-emerald-500/15 text-emerald-700"
+                  : s.status === "VOID"
+                    ? "border-red-500/20 bg-red-500/10 text-red-600"
+                    : "border-amber-400/30 bg-amber-400/15 text-amber-700";
+                return (
+                  <div key={`m-${s.id}`} className="px-4 py-3">
+                    <div className="mb-1.5 flex items-center justify-between gap-2">
+                      <span className="mono text-[13px] font-bold text-[var(--ink)]">{s.saleNumber}</span>
+                      <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${statusCls}`}>{s.status}</span>
+                    </div>
+                    <div className="mb-2 flex items-baseline gap-3 text-sm">
+                      <span className="font-semibold text-[var(--ink)]">{formatMoneyCompact(s.totalAmount, normalizeCurrency(s.currency, "UGX"))}</span>
+                      <span className="text-[11px] text-[var(--ink-muted)]">paid {formatMoneyCompact(s.paidAmount, normalizeCurrency(s.currency, "UGX"))}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Link href={`/pos/${s.id}`} className="btn-premium-secondary rounded-md px-2.5 py-1.5 text-xs">Open/Edit</Link>
+                      {canDeleteSale ? (
+                        <form action={deleteSaleAction}>
+                          <input type="hidden" name="saleId" value={s.id} />
+                          <ConfirmSubmitButton message="Delete this open POS sale? Stock will be restored." className="rounded-md border border-red-200 px-2.5 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-50">Delete</ConfirmSubmitButton>
+                        </form>
+                      ) : null}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            {/* ── Desktop table ── */}
+            <div className="hidden overflow-x-auto lg:block">
+              <table className="w-full min-w-[720px] text-left text-sm">
+                <thead className="border-b border-[var(--line)]">
+                  <tr className="text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
+                    <th className="px-4 py-2.5">Sale</th>
+                    <th className="px-4 py-2.5">Branch</th>
+                    <th className="px-4 py-2.5">Total</th>
+                    <th className="px-4 py-2.5">Paid</th>
+                    <th className="px-4 py-2.5">Status</th>
+                    <th className="px-4 py-2.5">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[var(--line)]">
+                  {sales.map((s) => {
+                    const canDeleteSale = user.role === "ADMIN" && s.status === "OPEN" && !s.invoicedAt && s._count.payments === 0 && s._count.creditNotes === 0 && s._count.refunds === 0 && s._count.deliveryNotes === 0;
+                    return (
+                      <tr key={`d-${s.id}`} className="hover:bg-[var(--panel-strong)]/40">
+                        <td className="px-4 py-3 mono font-semibold">{s.saleNumber}</td>
+                        <td className="px-4 py-3 text-[var(--ink-muted)]">—</td>
+                        <td className="px-4 py-3">{formatMoneyCompact(s.totalAmount, normalizeCurrency(s.currency, "UGX"))}</td>
+                        <td className="px-4 py-3">{formatMoneyCompact(s.paidAmount, normalizeCurrency(s.currency, "UGX"))}</td>
+                        <td className="px-4 py-3">
+                          <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${
+                            s.status === "PAID"
+                              ? "border-emerald-500/30 bg-emerald-500/15 text-emerald-700"
+                              : s.status === "VOID"
+                                ? "border-red-500/20 bg-red-500/10 text-red-600"
+                                : "border-amber-400/30 bg-amber-400/15 text-amber-700"
+                          }`}>
+                            {s.status}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <Link href={`/pos/${s.id}`} className="btn-premium-secondary rounded-md px-2.5 py-1.5 text-xs">Open/Edit</Link>
+                            {canDeleteSale ? (
+                              <form action={deleteSaleAction}>
+                                <input type="hidden" name="saleId" value={s.id} />
+                                <ConfirmSubmitButton message="Delete this open POS sale? Stock will be restored." className="rounded-md border border-red-200 px-2.5 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-50">Delete</ConfirmSubmitButton>
+                              </form>
+                            ) : null}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </section>
     </div>

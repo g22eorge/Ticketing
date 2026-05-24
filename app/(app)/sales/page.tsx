@@ -524,7 +524,39 @@ export default async function SalesPage({
               </div>
             ) : (
               <>
-                <div className="overflow-x-auto">
+                {/* ── Mobile lead cards ── */}
+                <div className="divide-y divide-[var(--line)] lg:hidden">
+                  {leads.map((lead) => {
+                    const isOverdue = lead.followUpAt != null && lead.followUpAt <= now && !["WON", "LOST", "STALE"].includes(lead.status);
+                    return (
+                      <Link key={`m-${lead.id}`} href={`/sales/leads/${lead.id}`} className="block px-4 py-3 transition-colors hover:bg-[var(--panel-strong)]/40">
+                        <div className="mb-1 flex items-center justify-between gap-2">
+                          <span className="text-[14px] font-semibold text-[var(--ink)]">{lead.fullName}</span>
+                          <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold ${LEAD_STATUS_COLORS[lead.status]}`}>
+                            {LEAD_STATUS_LABELS[lead.status]}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 text-[11px] text-[var(--ink-muted)]">
+                          <span>{lead.phone}</span>
+                          {lead.organization ? <><span className="opacity-40">·</span><span className="truncate">{lead.organization}</span></> : null}
+                        </div>
+                        {(lead.estimatedValue != null || lead.followUpAt) && (
+                          <div className="mt-1.5 flex items-center gap-3 text-[11px]">
+                            {lead.estimatedValue != null && <span className="font-semibold text-[var(--ink)]">{formatMoney(lead.estimatedValue, currency)}</span>}
+                            {lead.followUpAt && (
+                              <span className={`flex items-center gap-0.5 ${isOverdue ? "font-semibold text-red-600" : "text-[var(--ink-muted)]"}`}>
+                                {isOverdue && <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-3 w-3 shrink-0" aria-hidden><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>}
+                                {formatEATDate(lead.followUpAt)}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </Link>
+                    );
+                  })}
+                </div>
+                {/* ── Desktop leads table ── */}
+                <div className="hidden overflow-x-auto lg:block">
                   <table className="w-full min-w-[720px] border-collapse text-[13px]">
                     <thead className="bg-[var(--panel-strong)]/50 text-left text-[10px] font-bold uppercase tracking-[0.15em] text-[var(--ink-muted)]">
                       <tr className="border-b border-[var(--line)]">
@@ -540,65 +572,34 @@ export default async function SalesPage({
                     </thead>
                     <tbody className="divide-y divide-[var(--line)]">
                       {leads.map((lead) => {
-                        const isOverdue =
-                          lead.followUpAt != null &&
-                          lead.followUpAt <= now &&
-                          !["WON", "LOST", "STALE"].includes(lead.status);
+                        const isOverdue = lead.followUpAt != null && lead.followUpAt <= now && !["WON", "LOST", "STALE"].includes(lead.status);
                         return (
-                          <tr key={lead.id} className="transition-colors hover:bg-[var(--panel-strong)]/40">
+                          <tr key={`d-${lead.id}`} className="transition-colors hover:bg-[var(--panel-strong)]/40">
                             <td className="px-4 py-3 font-medium text-[var(--ink)]">
-                              <Link
-                                href={`/sales/leads/${lead.id}`}
-                                className="hover:text-[var(--accent)] hover:underline"
-                              >
-                                {lead.fullName}
-                              </Link>
-                              {lead.organization ? (
-                                <span className="ml-1.5 text-[11px] text-[var(--ink-muted)]">
-                                  {lead.organization}
-                                </span>
-                              ) : null}
+                              <Link href={`/sales/leads/${lead.id}`} className="hover:text-[var(--accent)] hover:underline">{lead.fullName}</Link>
+                              {lead.organization ? <span className="ml-1.5 text-[11px] text-[var(--ink-muted)]">{lead.organization}</span> : null}
                             </td>
                             <td className="px-4 py-3 text-[var(--ink-muted)]">{lead.phone}</td>
-                            <td className="px-4 py-3 text-[var(--ink-muted)]">
-                              {lead.source.replace(/_/g, " ")}
-                            </td>
+                            <td className="px-4 py-3 text-[var(--ink-muted)]">{lead.source.replace(/_/g, " ")}</td>
                             <td className="px-4 py-3">
-                              <span
-                                className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold ${LEAD_STATUS_COLORS[lead.status]}`}
-                              >
+                              <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold ${LEAD_STATUS_COLORS[lead.status]}`}>
                                 {LEAD_STATUS_LABELS[lead.status]}
                               </span>
                             </td>
-                            <td className="px-4 py-3 text-[var(--ink-muted)]">
-                              {lead.assignedTo?.name ?? <span className="opacity-40">—</span>}
-                            </td>
+                            <td className="px-4 py-3 text-[var(--ink-muted)]">{lead.assignedTo?.name ?? <span className="opacity-40">—</span>}</td>
                             <td className="px-4 py-3 font-medium text-[var(--ink)]">
-                              {lead.estimatedValue != null
-                                ? formatMoney(lead.estimatedValue, currency)
-                                : <span className="opacity-40 font-normal">—</span>}
+                              {lead.estimatedValue != null ? formatMoney(lead.estimatedValue, currency) : <span className="opacity-40 font-normal">—</span>}
                             </td>
                             <td className="px-4 py-3">
                               {lead.followUpAt ? (
                                 <span className={`inline-flex items-center gap-1 text-[12px] ${isOverdue ? "font-semibold text-red-600" : "text-[var(--ink-muted)]"}`}>
-                                  {isOverdue && (
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-3 w-3 shrink-0" aria-hidden>
-                                      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
-                                    </svg>
-                                  )}
+                                  {isOverdue && <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-3 w-3 shrink-0" aria-hidden><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>}
                                   {formatEATDate(lead.followUpAt)}
                                 </span>
-                              ) : (
-                                <span className="opacity-40 text-[var(--ink-muted)]">—</span>
-                              )}
+                              ) : <span className="opacity-40 text-[var(--ink-muted)]">—</span>}
                             </td>
                             <td className="px-4 py-3 text-right">
-                              <Link
-                                href={`/sales/leads/${lead.id}`}
-                                className="whitespace-nowrap rounded-lg border border-[var(--line)] px-2.5 py-1 text-[11px] font-semibold text-[var(--ink)] transition-colors hover:border-[var(--accent)]/50 hover:text-[var(--accent)]"
-                              >
-                                Open
-                              </Link>
+                              <Link href={`/sales/leads/${lead.id}`} className="whitespace-nowrap rounded-lg border border-[var(--line)] px-2.5 py-1 text-[11px] font-semibold text-[var(--ink)] transition-colors hover:border-[var(--accent)]/50 hover:text-[var(--accent)]">Open</Link>
                             </td>
                           </tr>
                         );
@@ -665,80 +666,79 @@ export default async function SalesPage({
                 ) : null}
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[700px] border-collapse text-[13px]">
-                  <thead className="bg-[var(--panel-strong)]/50 text-left text-[10px] font-bold uppercase tracking-[0.15em] text-[var(--ink-muted)]">
-                    <tr className="border-b border-[var(--line)]">
-                      <th className="px-4 py-2.5">Quote #</th>
-                      <th className="px-4 py-2.5">Client / Lead</th>
-                      <th className="px-4 py-2.5">Status</th>
-                      <th className="px-4 py-2.5">Total</th>
-                      <th className="px-4 py-2.5">Created</th>
-                      <th className="px-4 py-2.5">Valid Until</th>
-                      <th className="px-4 py-2.5 text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[var(--line)]">
-                    {quotations.map((q) => {
-                      const recipientName = q.client?.fullName ?? q.lead?.fullName ?? null;
-                      const isExpired =
-                        q.status !== "ACCEPTED" &&
-                        q.validUntil != null &&
-                        q.validUntil < now;
-                      return (
-                        <tr key={q.id} className="transition-colors hover:bg-[var(--panel-strong)]/40">
-                          <td className="px-4 py-3 font-mono text-[12px] font-semibold text-[var(--ink)]">
-                            <Link
-                              href={`/sales/quotations/${q.id}`}
-                              className="hover:text-[var(--accent)] hover:underline"
-                            >
-                              {q.quoteNumber}
-                            </Link>
-                          </td>
-                          <td className="px-4 py-3 text-[var(--ink-muted)]">
-                            {recipientName ?? <span className="opacity-40">—</span>}
-                          </td>
-                          <td className="px-4 py-3">
-                            <span
-                              className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold ${QUOTATION_STATUS_COLORS[q.status] ?? ""}`}
-                            >
-                              {q.status}
+              <>
+                {/* ── Mobile quotation cards ── */}
+                <div className="divide-y divide-[var(--line)] lg:hidden">
+                  {quotations.map((q) => {
+                    const recipientName = q.client?.fullName ?? q.lead?.fullName ?? null;
+                    const isExpired = q.status !== "ACCEPTED" && q.validUntil != null && q.validUntil < now;
+                    return (
+                      <Link key={`m-${q.id}`} href={`/sales/quotations/${q.id}`} className="block px-4 py-3 transition-colors hover:bg-[var(--panel-strong)]/40">
+                        <div className="mb-1 flex items-center justify-between gap-2">
+                          <span className="font-mono text-[13px] font-bold text-[var(--ink)]">{q.quoteNumber}</span>
+                          <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold ${QUOTATION_STATUS_COLORS[q.status] ?? ""}`}>{q.status}</span>
+                        </div>
+                        {recipientName && <p className="text-[12px] text-[var(--ink-muted)]">{recipientName}</p>}
+                        <div className="mt-1 flex items-center gap-3 text-[11px]">
+                          <span className="font-semibold text-[var(--ink)]">{formatMoney(q.totalAmount, q.currency)}</span>
+                          {q.validUntil && (
+                            <span className={`flex items-center gap-0.5 ${isExpired ? "font-semibold text-red-600" : "text-[var(--ink-muted)]"}`}>
+                              {isExpired && <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-3 w-3 shrink-0" aria-hidden><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>}
+                              valid to {formatEATDate(q.validUntil)}
                             </span>
-                          </td>
-                          <td className="px-4 py-3 font-medium text-[var(--ink)]">
-                            {formatMoney(q.totalAmount, q.currency)}
-                          </td>
-                          <td className="px-4 py-3 text-[var(--ink-muted)]">
-                            {formatEATDate(q.createdAt)}
-                          </td>
-                          <td className="px-4 py-3">
-                            {q.validUntil ? (
-                              <span className={`inline-flex items-center gap-1 text-[12px] ${isExpired ? "font-semibold text-red-600" : "text-[var(--ink-muted)]"}`}>
-                                {isExpired && (
-                                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-3 w-3 shrink-0" aria-hidden>
-                                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
-                                  </svg>
-                                )}
-                                {formatEATDate(q.validUntil)}
-                              </span>
-                            ) : (
-                              <span className="opacity-40 text-[var(--ink-muted)]">—</span>
-                            )}
-                          </td>
-                          <td className="px-4 py-3 text-right">
-                            <Link
-                              href={`/sales/quotations/${q.id}`}
-                              className="whitespace-nowrap rounded-lg border border-[var(--line)] px-2.5 py-1 text-[11px] font-semibold text-[var(--ink)] transition-colors hover:border-[var(--accent)]/50 hover:text-[var(--accent)]"
-                            >
-                              Open
-                            </Link>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+                          )}
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
+                {/* ── Desktop quotations table ── */}
+                <div className="hidden overflow-x-auto lg:block">
+                  <table className="w-full min-w-[700px] border-collapse text-[13px]">
+                    <thead className="bg-[var(--panel-strong)]/50 text-left text-[10px] font-bold uppercase tracking-[0.15em] text-[var(--ink-muted)]">
+                      <tr className="border-b border-[var(--line)]">
+                        <th className="px-4 py-2.5">Quote #</th>
+                        <th className="px-4 py-2.5">Client / Lead</th>
+                        <th className="px-4 py-2.5">Status</th>
+                        <th className="px-4 py-2.5">Total</th>
+                        <th className="px-4 py-2.5">Created</th>
+                        <th className="px-4 py-2.5">Valid Until</th>
+                        <th className="px-4 py-2.5 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[var(--line)]">
+                      {quotations.map((q) => {
+                        const recipientName = q.client?.fullName ?? q.lead?.fullName ?? null;
+                        const isExpired = q.status !== "ACCEPTED" && q.validUntil != null && q.validUntil < now;
+                        return (
+                          <tr key={`d-${q.id}`} className="transition-colors hover:bg-[var(--panel-strong)]/40">
+                            <td className="px-4 py-3 font-mono text-[12px] font-semibold text-[var(--ink)]">
+                              <Link href={`/sales/quotations/${q.id}`} className="hover:text-[var(--accent)] hover:underline">{q.quoteNumber}</Link>
+                            </td>
+                            <td className="px-4 py-3 text-[var(--ink-muted)]">{recipientName ?? <span className="opacity-40">—</span>}</td>
+                            <td className="px-4 py-3">
+                              <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold ${QUOTATION_STATUS_COLORS[q.status] ?? ""}`}>{q.status}</span>
+                            </td>
+                            <td className="px-4 py-3 font-medium text-[var(--ink)]">{formatMoney(q.totalAmount, q.currency)}</td>
+                            <td className="px-4 py-3 text-[var(--ink-muted)]">{formatEATDate(q.createdAt)}</td>
+                            <td className="px-4 py-3">
+                              {q.validUntil ? (
+                                <span className={`inline-flex items-center gap-1 text-[12px] ${isExpired ? "font-semibold text-red-600" : "text-[var(--ink-muted)]"}`}>
+                                  {isExpired && <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-3 w-3 shrink-0" aria-hidden><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>}
+                                  {formatEATDate(q.validUntil)}
+                                </span>
+                              ) : <span className="opacity-40 text-[var(--ink-muted)]">—</span>}
+                            </td>
+                            <td className="px-4 py-3 text-right">
+                              <Link href={`/sales/quotations/${q.id}`} className="whitespace-nowrap rounded-lg border border-[var(--line)] px-2.5 py-1 text-[11px] font-semibold text-[var(--ink)] transition-colors hover:border-[var(--accent)]/50 hover:text-[var(--accent)]">Open</Link>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </>
             )}
           </div>
         )}
