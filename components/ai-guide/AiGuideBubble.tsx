@@ -80,6 +80,45 @@ type HistoryEntry = { role: Role; parts: [{ text: string }] };
 
 function clientFallbackAnswer(text: string) {
   const message = text.toLowerCase();
+  if (
+    message.includes("management focus") ||
+    message.includes("focus on today") ||
+    message.includes("focus today") ||
+    message.includes("business focus") ||
+    message.includes("decision") ||
+    message.includes("ai insights") ||
+    message.includes("business copilot") ||
+    message.includes("what should management") ||
+    message.includes("what should i focus") ||
+    message.includes("what needs attention")
+  ) {
+    return [
+      "For management decision-making, use AI Insights rather than the general help guide:",
+      "1. Open AI Insights from the sidebar, or go to /ai-insights.",
+      "2. Review revenue signal, cash margin signal, open repair load, and inventory risk.",
+      "3. Check risks for overdue jobs, stale jobs, awaiting approvals, low stock, overdue invoices, and overdue supplier bills.",
+      "4. Use the AI Business Copilot there for live-number questions like: What should management focus on today?",
+      "A good daily focus is: clear stuck repairs, follow up client approvals, collect overdue receivables, reorder critical low-stock parts, and review expenses if cash margin is weak.",
+    ].join("\n");
+  }
+  if (
+    message.includes("revenue") ||
+    message.includes("profit") ||
+    message.includes("cash flow") ||
+    message.includes("cash margin") ||
+    message.includes("receivables") ||
+    message.includes("payables") ||
+    message.includes("overdue invoice") ||
+    message.includes("financial risk")
+  ) {
+    return [
+      "For revenue, profit, cash flow, receivables, and payables analysis:",
+      "1. Open AI Insights -> AI Business Copilot.",
+      "2. Ask a focused question like: Why might revenue or profit be under pressure?",
+      "3. The copilot uses aggregate numbers from repairs, POS, paid invoices, expenses, receivables, supplier bills, and targets.",
+      "4. Open Finance -> Reports for formal P&L, Cash Flow, Aged Receivables, Balance Sheet, and Inventory Value reports.",
+    ].join("\n");
+  }
   if (message.includes("job") || message.includes("intake")) {
     return [
       "To create a job:",
@@ -110,7 +149,18 @@ function clientFallbackAnswer(text: string) {
       "If generation fails, check job status, bill amount, permissions, and branding settings.",
     ].join("\n");
   }
-  if (message.includes("inventory") || message.includes("stock") || message.includes("supplier") || message.includes("purchase")) {
+  if (message.includes("part") && (message.includes("add") || message.includes("create") || message.includes("new"))) {
+    return [
+      "To add parts/items to inventory:",
+      "1. Open Inventory -> Parts & Stock.",
+      "2. Choose Add Part or New Item.",
+      "3. Enter part name, SKU/code, manufacturer, unit cost, quantity on hand, and reorder level.",
+      "4. Choose a stock location if your setup uses locations.",
+      "5. Save. The part can then be used for repairs, sales, purchase orders, stock counts, and reorder alerts.",
+      "6. If stock is coming from a supplier, use Purchase Orders -> Goods Received instead of manually changing quantity.",
+    ].join("\n");
+  }
+  if (message.includes("inventory") || message.includes("stock") || message.includes("part") || message.includes("supplier") || message.includes("purchase")) {
     return [
       "Inventory workflow:",
       "1. Use Inventory -> Parts & Stock to manage items, quantities, costs, and reorder levels.",

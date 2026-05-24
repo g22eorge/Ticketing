@@ -47,6 +47,19 @@ Internal and external technicians.
 - Tax Rates: Configure sales/purchase taxes
 - Recurring: Recurring invoices and scheduled billing
 
+### AI Insights & Business Copilot
+- Page: AI Insights (/ai-insights)
+- Purpose: management decision-making across repairs, sales, finance, inventory,
+  receivables, payables, targets, and operational risks
+- Use it for questions like "What should management focus on today?", "Why is
+  cash margin under pressure?", "Which repair bottlenecks need action?", and
+  "What inventory risks should we fix first?"
+- The Business Copilot answers from tenant-scoped aggregate data and avoids
+  sending client PII or private job notes to the model.
+- If asked a management/reporting/decision question, direct the user to AI
+  Insights and explain the daily priorities: stuck repairs, approvals,
+  receivables, low stock, expenses, targets, and supplier payables.
+
 ### Inventory
 - Items list with stock levels and reorder alerts
 - Stock Counts: Cycle-count reconciliation
@@ -238,8 +251,296 @@ export const runtime = "nodejs";
 
 type ChatMessage = { role: "user" | "model"; parts: [{ text: string }] };
 
+type GuideIntent = {
+  any: string[];
+  all?: string[];
+  actionAny?: string[];
+  answer: string[];
+};
+
+const GUIDE_INTENTS: GuideIntent[] = [
+  {
+    any: [
+      "management focus",
+      "focus on today",
+      "focus today",
+      "business focus",
+      "decision",
+      "ai insights",
+      "business copilot",
+      "what should management",
+      "what should i focus",
+      "what needs attention",
+    ],
+    answer: [
+      "For management decision-making, use AI Insights rather than the general help guide:",
+      "1. Open AI Insights from the sidebar, or go to /ai-insights.",
+      "2. Review the top KPI cards first: revenue signal, cash margin signal, open repair load, and inventory risk.",
+      "3. Check Risks AI Should Escalate for overdue jobs, stale jobs, awaiting approvals, low stock, overdue invoices, and overdue supplier bills.",
+      "4. Use Recommended Management Actions to decide what to assign today.",
+      "5. Ask the AI Business Copilot questions like: What should management focus on today? Which repairs are stuck? What inventory risks should we fix first? Why is cash margin under pressure?",
+      "A good daily management focus is usually: clear stuck repairs, follow up client approvals, collect overdue receivables, reorder critical low-stock parts, and review expenses if cash margin is weak.",
+    ],
+  },
+  {
+    any: ["revenue", "profit", "cash flow", "cash margin", "receivables", "payables", "overdue invoice", "financial risk"],
+    answer: [
+      "For revenue, profit, cash flow, receivables, and payables analysis:",
+      "1. Open AI Insights -> AI Business Copilot.",
+      "2. Ask a focused question, for example: Why might revenue or profit be under pressure?",
+      "3. The copilot uses tenant-scoped aggregate numbers from repairs, POS, paid invoices, expenses, receivables, supplier bills, and targets.",
+      "4. Then open Finance -> Reports for formal P&L, Cash Flow, Aged Receivables, Balance Sheet, and Inventory Value reports.",
+      "Management should prioritise overdue receivables, negative cash margin, falling revenue versus last month, and expenses growing faster than revenue.",
+    ],
+  },
+  {
+    any: ["part", "parts", "stock item", "inventory item"],
+    actionAny: ["add", "create", "new", "register"],
+    answer: [
+      "To add parts/items to inventory:",
+      "1. Open Inventory -> Parts & Stock.",
+      "2. Choose Add Part or New Item.",
+      "3. Enter the part name, SKU/code, manufacturer if available, unit cost, quantity on hand, and reorder level.",
+      "4. If your setup uses locations, choose the stock location where the part is stored.",
+      "5. Save the part. It will appear in inventory and can be used for repairs, POS sales, purchase orders, stock counts, and reorder alerts.",
+      "6. If the part is being bought from a supplier, use Inventory -> Purchase Orders, then Inventory -> Goods Received to increase stock cleanly.",
+      "If you cannot see the add button, check that your role has inventory/admin permissions.",
+    ],
+  },
+  {
+    any: ["supplier", "vendor"],
+    actionAny: ["add", "create", "new", "register"],
+    answer: [
+      "To add a supplier:",
+      "1. Open Inventory -> Suppliers.",
+      "2. Choose New Supplier or Add Supplier.",
+      "3. Enter supplier name, contact person, phone, email, address, and notes if available.",
+      "4. Save the supplier.",
+      "5. Use that supplier later on Purchase Orders, Goods Received, Supplier Bills, and supplier payment workflows.",
+      "If the button is missing, check inventory/admin permissions.",
+    ],
+  },
+  {
+    any: ["purchase order", "po"],
+    answer: [
+      "To create a purchase order:",
+      "1. Open Inventory -> Purchase Orders.",
+      "2. Choose New Purchase Order.",
+      "3. Select the supplier and add the parts/items, quantities, expected cost, and notes.",
+      "4. Save or submit the PO depending on your workflow.",
+      "5. When items arrive, open Inventory -> Goods Received to receive stock against the PO.",
+      "6. Record the supplier invoice under Inventory -> Supplier Bills if applicable.",
+    ],
+  },
+  {
+    any: ["goods received", "receive stock", "receive parts", "grn"],
+    answer: [
+      "To receive stock:",
+      "1. Open Inventory -> Goods Received.",
+      "2. Choose New Goods Received or open the related Purchase Order and click Receive.",
+      "3. Confirm supplier, PO, receiving location, quantities received, and any notes.",
+      "4. Save the receipt. Stock quantities increase from this transaction.",
+      "5. If the supplier sent an invoice, record it under Supplier Bills.",
+      "Use Goods Received instead of manually editing stock when stock comes from suppliers.",
+    ],
+  },
+  {
+    any: ["stock count", "count stock", "adjust stock", "reconcile stock"],
+    answer: [
+      "To do a stock count:",
+      "1. Open Inventory -> Stock Counts.",
+      "2. Choose New Stock Count.",
+      "3. Select the location and enter the physical counted quantities.",
+      "4. Review variances between system quantity and counted quantity.",
+      "5. Submit/approve the count according to your permissions.",
+      "Use stock counts for reconciliation, not for supplier receiving.",
+    ],
+  },
+  {
+    any: ["expense", "expenses"],
+    actionAny: ["add", "create", "new", "record"],
+    answer: [
+      "To record an expense:",
+      "1. Open Finance -> Expenses.",
+      "2. Choose Add Expense.",
+      "3. Enter date, amount, category/account, payment method, supplier/payee, and description.",
+      "4. Attach or reference supporting documents if your workflow requires it.",
+      "5. Save the expense. It will feed finance reporting where configured.",
+    ],
+  },
+  {
+    any: ["invoice", "invoices"],
+    actionAny: ["create", "generate", "new", "make", "issue"],
+    answer: [
+      "To create or generate an invoice:",
+      "1. For repair jobs, open the job and go to the Documents/Financials area, then generate the invoice when the job is ready for billing.",
+      "2. For manual/service invoices, open Documents -> Invoices and choose New Invoice if available for your role.",
+      "3. Confirm client, line items, tax/VAT, totals, and due date.",
+      "4. Save or issue the invoice.",
+      "5. Record payment through receipts/payment controls when the client pays.",
+      "If invoice generation fails, check job status, client bill/final cost, branding settings, and finance permissions.",
+    ],
+  },
+  {
+    any: ["receipt", "payment"],
+    all: ["record"],
+    answer: [
+      "To record a customer payment/receipt:",
+      "1. Open Documents -> Receipts or the related invoice/job payment area.",
+      "2. Select the client/invoice/sale being paid.",
+      "3. Enter amount, payment method, reference, and payment date.",
+      "4. Save the payment/receipt.",
+      "5. Confirm the invoice or customer statement reflects the new balance.",
+    ],
+  },
+  {
+    any: ["pos", "counter sale", "walk-in sale"],
+    answer: [
+      "To make a POS sale:",
+      "1. Open POS.",
+      "2. Start or select an open cashier shift if required.",
+      "3. Add products/services to the sale.",
+      "4. Confirm quantities, discounts, tax/VAT, and total.",
+      "5. Record payment method: cash, card, mobile money, or other configured method.",
+      "6. Complete the sale and issue a receipt if needed.",
+    ],
+  },
+  {
+    any: ["cashier shift", "close shift", "open shift"],
+    answer: [
+      "To manage a cashier shift:",
+      "1. Open POS -> Shifts.",
+      "2. Open a shift with the starting float before sales begin.",
+      "3. Process POS sales during the shift.",
+      "4. At closing, enter counted cash/card/mobile totals.",
+      "5. Review variances and close the shift.",
+      "6. Managers/admins can review shift history and reconciliation issues.",
+    ],
+  },
+  {
+    any: ["lead", "prospect"],
+    actionAny: ["create", "add", "new", "register"],
+    answer: [
+      "To create a sales lead:",
+      "1. Open Sales -> Leads.",
+      "2. Choose New Lead.",
+      "3. Enter name, phone, email, organisation, interest/source, estimated value, and notes.",
+      "4. Assign a salesperson or follow-up date if required.",
+      "5. Save the lead and update activities as follow-ups happen.",
+    ],
+  },
+  {
+    any: ["campaign", "marketing"],
+    answer: [
+      "To create a campaign:",
+      "1. Open Sales -> Campaigns.",
+      "2. Choose New Campaign.",
+      "3. Set campaign name, type/channel, target audience, message/template, and schedule if supported.",
+      "4. Review recipients before sending.",
+      "5. Track delivery/results from the campaign and notification/outbox pages.",
+      "If WhatsApp messages fail, check template names, WhatsApp config, recipient phone format, and outbox status.",
+    ],
+  },
+  {
+    any: ["user", "staff", "employee", "technician"],
+    actionAny: ["add", "create", "new", "register", "invite"],
+    answer: [
+      "To add a staff user:",
+      "1. Open Settings -> Users.",
+      "2. Choose Create User.",
+      "3. Enter name, email, phone, temporary password, and role.",
+      "4. Save the user.",
+      "5. Select the user to adjust permissions or reset their password later.",
+      "Only tenant admins can manage users inside their organisation. Platform admins manage organisations separately.",
+    ],
+  },
+  {
+    any: ["password", "reset password"],
+    answer: [
+      "To reset a user's password:",
+      "1. Open Settings -> Users.",
+      "2. Select the user.",
+      "3. Use Reset Password.",
+      "4. Enter and confirm the new temporary password.",
+      "5. Tell the user to sign in and change it if your process requires that.",
+      "For security, do not share passwords in public chat or tickets.",
+    ],
+  },
+  {
+    any: ["company", "organisation", "organization", "tenant"],
+    actionAny: ["create", "add", "new", "register", "onboard"],
+    answer: [
+      "To create a company/tenant:",
+      "1. Sign in as platform admin.",
+      "2. Open Platform Admin -> Organisations.",
+      "3. Use the create-company/onboarding flow if enabled, or direct the company to /company signup.",
+      "4. Enter company name, slug, admin contact, plan, phone/email, and default settings.",
+      "5. Create the first admin user for that company.",
+      "6. Confirm the company appears in Platform Admin and the admin can log into their tenant workspace.",
+    ],
+  },
+  {
+    any: ["job", "repair", "intake"],
+    actionAny: ["create", "add", "new", "open", "register"],
+    answer: [
+      "To create a repair job:",
+      "1. Open Jobs -> New Job, or use the intake/new repair shortcut if your sidebar shows it.",
+      "2. Search the client by phone first to avoid duplicates.",
+      "3. Enter client details, device type, brand, model, serial/IMEI, accessories, and physical condition notes.",
+      "4. Enter the customer's issue description in their own words.",
+      "5. Upload before-repair photos if needed.",
+      "6. Review and submit. The system creates the job number and starts the job as RECEIVED.",
+      "Only ADMIN/OPS-style roles can create jobs unless your tenant permissions were customised.",
+    ],
+  },
+  {
+    any: ["technician", "tech", "assignee", "assign"],
+    actionAny: ["assign", "send", "refer", "allocate"],
+    answer: [
+      "To assign a technician:",
+      "1. Open the job detail page.",
+      "2. Use the assignment/action panel or edit job screen, depending on your role.",
+      "3. Select an internal technician for in-house work, or choose an external technician when the job is referred out.",
+      "4. Save the assignment. The audit timeline should record who assigned the technician and when.",
+      "5. For external technicians, confirm only device and diagnosis details are visible; client details and pricing history must remain hidden.",
+      "If a technician cannot see the job, confirm they are active, assigned to that job, and using the correct tenant account.",
+    ],
+  },
+];
+
+function hasAny(text: string, words: string[]) {
+  return words.some((word) => text.includes(word));
+}
+
+function hasAll(text: string, words: string[]) {
+  return words.every((word) => text.includes(word));
+}
+
+function intentAnswer(message: string) {
+  const text = message.toLowerCase();
+  const normalized = text
+    .replace(/how do i|how to|where do i|can i|please|\?/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  for (const intent of GUIDE_INTENTS) {
+    if (
+      hasAny(normalized, intent.any) &&
+      (!intent.all || hasAll(normalized, intent.all)) &&
+      (!intent.actionAny || hasAny(normalized, intent.actionAny))
+    ) {
+      return intent.answer.join("\n");
+    }
+  }
+
+  return null;
+}
+
 function fallbackAnswer(message: string) {
   const text = message.toLowerCase();
+
+  const knownIntent = intentAnswer(message);
+  if (knownIntent) return knownIntent;
 
   if (text.includes("job") && (text.includes("create") || text.includes("new") || text.includes("intake"))) {
     return [
@@ -306,7 +607,20 @@ function fallbackAnswer(message: string) {
     ].join("\n");
   }
 
-  if (text.includes("inventory") || text.includes("stock") || text.includes("supplier") || text.includes("purchase")) {
+  if (text.includes("part") && (text.includes("add") || text.includes("create") || text.includes("new"))) {
+    return [
+      "To add parts/items to inventory:",
+      "1. Open Inventory -> Parts & Stock.",
+      "2. Choose Add Part or New Item.",
+      "3. Enter the part name, SKU/code, manufacturer if available, unit cost, quantity on hand, and reorder level.",
+      "4. If your setup uses locations, choose the stock location where the part is stored.",
+      "5. Save the part. It will appear in inventory and can be used for repairs, sales, purchase orders, stock counts, and reorder alerts.",
+      "6. For supplier purchases, create a Purchase Order, then receive stock through Goods Received instead of manually increasing quantity.",
+      "If you cannot see the add button, check that your role has inventory/admin permissions.",
+    ].join("\n");
+  }
+
+  if (text.includes("inventory") || text.includes("stock") || text.includes("part") || text.includes("supplier") || text.includes("purchase")) {
     return [
       "Inventory and procurement workflow:",
       "1. Inventory -> Parts & Stock shows items, quantities, costs, and reorder levels.",
@@ -441,6 +755,18 @@ export async function POST(request: NextRequest) {
   }
   if (message.length > 2000) {
     return new Response("Message is too long (max 2000 characters).", { status: 400 });
+  }
+
+  const knownIntent = intentAnswer(message);
+  if (knownIntent) {
+    return new Response(knownIntent, {
+      headers: {
+        "content-type": "text/plain; charset=utf-8",
+        "x-content-type-options": "nosniff",
+        "cache-control": "no-store",
+        "x-ai-guide-mode": "intent",
+      },
+    });
   }
 
   try {
