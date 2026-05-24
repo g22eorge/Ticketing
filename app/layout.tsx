@@ -12,23 +12,23 @@ const ogImage = `${siteUrl}/eagle-info-logo.png`;
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "Repair Manager",
-    template: "%s | Repair Manager",
+    default: "Duuka ProMax",
+    template: "%s | Duuka ProMax",
   },
-  description: "Device repair management platform. Track jobs, manage clients, and communicate with technicians.",
+  description: "Business management platform for repairs, sales, inventory, finance, documents, and daily operations.",
   alternates: { canonical: "/" },
   openGraph: {
-    title: "Repair Manager",
-    description: "Device repair management platform.",
+    title: "Duuka ProMax",
+    description: "Business management platform for repairs, sales, inventory, finance, documents, and daily operations.",
     url: "/",
-    siteName: "Repair Manager",
+    siteName: "Duuka ProMax",
     type: "website",
-    images: [{ url: ogImage, width: 512, height: 512, alt: "Repair Manager" }],
+    images: [{ url: ogImage, width: 512, height: 512, alt: "Duuka ProMax" }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Repair Manager",
-    description: "Device repair management platform.",
+    title: "Duuka ProMax",
+    description: "Business management platform for repairs, sales, inventory, finance, documents, and daily operations.",
     images: [ogImage],
   },
   icons: {

@@ -2,12 +2,12 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy — Repair Manager",
-  description: "How Repair Manager collects, uses, and protects your personal data.",
+  title: "Privacy Policy — Duuka ProMax",
+  description: "How Duuka ProMax collects, uses, and protects your personal data.",
 };
 
 const EFFECTIVE_DATE = "1 May 2025";
-const COMPANY = "Repair Manager";
+const COMPANY = "Duuka ProMax";
 const CONTACT_EMAIL = process.env.NEXT_PUBLIC_CONTACT_EMAIL || "support@example.com";
 
 export default function PrivacyPage() {
@@ -17,8 +17,8 @@ export default function PrivacyPage() {
       <header className="border-b border-white/8 px-4 py-4 md:px-6">
         <div className="mx-auto flex max-w-4xl items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
-            <span className="text-base font-bold tracking-tight text-white">Repair</span>
-            <span className="rounded bg-[#D4AF37]/15 px-1.5 py-0.5 text-[11px] font-bold text-[#D4AF37]">Manager</span>
+            <span className="text-base font-bold tracking-tight text-white">Duuka</span>
+            <span className="rounded bg-[#D4AF37]/15 px-1.5 py-0.5 text-[11px] font-bold text-[#D4AF37]">ProMax</span>
           </Link>
           <Link href="/register" className="text-sm text-white/50 transition-colors hover:text-white">
             Get started →
@@ -38,7 +38,7 @@ export default function PrivacyPage() {
 
           <section>
             <p>
-              {COMPANY} (&ldquo;we&rdquo;, &ldquo;us&rdquo;, &ldquo;our&rdquo;) operates the Repair Manager platform.
+              {COMPANY} (&ldquo;we&rdquo;, &ldquo;us&rdquo;, &ldquo;our&rdquo;) operates the Duuka ProMax platform.
               This Privacy Policy explains what information we collect, how we use it, and your rights regarding it.
               By using the Platform you agree to the practices described here.
             </p>

@@ -124,7 +124,7 @@ export function Header({ userName, userEmail, userPhone = null, role, permission
                 priority
               />
             </div>
-            <span className="text-[13px] font-bold text-[var(--ink)] tracking-tight">Repair Manager</span>
+            <span className="text-[13px] font-bold text-[var(--ink)] tracking-tight">Duuka ProMax</span>
           </Link>
 
           {/* Spacer */}

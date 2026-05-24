@@ -2,12 +2,12 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Terms of Service — Repair Manager",
-  description: "Terms and conditions governing use of the Repair Manager platform.",
+  title: "Terms of Service — Duuka ProMax",
+  description: "Terms and conditions governing use of the Duuka ProMax platform.",
 };
 
 const EFFECTIVE_DATE = "1 May 2025";
-const COMPANY = "Repair Manager";
+const COMPANY = "Duuka ProMax";
 const CONTACT_EMAIL = process.env.NEXT_PUBLIC_CONTACT_EMAIL || "support@example.com";
 
 export default function TermsPage() {
@@ -17,8 +17,8 @@ export default function TermsPage() {
       <header className="border-b border-white/8 px-4 py-4 md:px-6">
         <div className="mx-auto flex max-w-4xl items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
-            <span className="text-base font-bold tracking-tight text-white">Repair</span>
-            <span className="rounded bg-[#D4AF37]/15 px-1.5 py-0.5 text-[11px] font-bold text-[#D4AF37]">Manager</span>
+            <span className="text-base font-bold tracking-tight text-white">Duuka</span>
+            <span className="rounded bg-[#D4AF37]/15 px-1.5 py-0.5 text-[11px] font-bold text-[#D4AF37]">ProMax</span>
           </Link>
           <Link href="/register" className="text-sm text-white/50 transition-colors hover:text-white">
             Get started →
@@ -38,7 +38,7 @@ export default function TermsPage() {
 
           <section>
             <p>
-              These Terms of Service (&ldquo;Terms&rdquo;) govern your access to and use of the Repair Manager software platform
+              These Terms of Service (&ldquo;Terms&rdquo;) govern your access to and use of the Duuka ProMax software platform
               (&ldquo;Platform&rdquo;) operated by {COMPANY} (&ldquo;we&rdquo;, &ldquo;us&rdquo;, or &ldquo;our&rdquo;).
               By creating a workspace or using the Platform you agree to be bound by these Terms.
               If you do not agree, do not use the Platform.

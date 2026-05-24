@@ -1,6 +1,6 @@
 import { Resend } from "resend";
 
-const FROM = process.env.EMAIL_FROM ?? "Repair Manager <noreply@repairmanager.app>";
+const FROM = process.env.EMAIL_FROM ?? "Duuka ProMax <noreply@app.eagleinfosolutions.com>";
 
 async function send(to: string, subject: string, html: string) {
   if (!process.env.RESEND_API_KEY) {
@@ -19,18 +19,18 @@ async function send(to: string, subject: string, html: string) {
 const base = (body: string) => `
   <div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:32px 24px;background:#0d0d0d;color:#e5e5e5;border-radius:12px">
     <div style="margin-bottom:24px">
-      <span style="font-size:11px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:#D4AF37">Repair Manager</span>
+      <span style="font-size:11px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:#D4AF37">Duuka ProMax</span>
     </div>
     ${body}
     <div style="margin-top:32px;border-top:1px solid #2a2a2a;padding-top:16px">
-      <p style="font-size:11px;color:#555;margin:0">You're receiving this because you have an account on Repair Manager.</p>
+      <p style="font-size:11px;color:#555;margin:0">You're receiving this because you have an account on Duuka ProMax.</p>
     </div>
   </div>
 `;
 
 export async function sendWelcomeEmail(to: string, name: string, orgName: string) {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
-  await send(to, `Welcome to Repair Manager — ${orgName}`, base(`
+  await send(to, `Welcome to Duuka ProMax — ${orgName}`, base(`
     <h2 style="font-size:20px;font-weight:700;color:#fff;margin:0 0 8px">Welcome, ${name}!</h2>
     <p style="color:#aaa;line-height:1.6;margin:0 0 24px">Your workspace <strong style="color:#fff">${orgName}</strong> is live. You're on a free 14-day trial — no credit card needed.</p>
     <a href="${appUrl}/dashboard" style="display:inline-block;background:#D4AF37;color:#000;font-weight:700;font-size:14px;padding:12px 24px;border-radius:8px;text-decoration:none">Open your workspace →</a>

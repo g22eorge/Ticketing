@@ -31,7 +31,7 @@ export default async function AcceptInvitePage({ params }: Props) {
             <div className="overflow-hidden rounded-2xl border border-white/10 shadow-lg shadow-black/40">
               <Image src="/eagle-info-logo.png" alt="Logo" width={52} height={52} className="h-13 w-13 object-cover" priority />
             </div>
-            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-white/40">Repair Manager</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-white/40">Duuka ProMax</p>
           </div>
 
           {isInvalid ? (

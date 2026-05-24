@@ -335,7 +335,7 @@ async function deliverEmail(row: {
   // Set RESEND_ALERTS_FROM to configure the sender address.
   const from =
     process.env.RESEND_ALERTS_FROM ||
-    "Repair Manager Alerts <noreply@repair-manager.app>";
+    "Duuka ProMax Alerts <alerts@app.eagleinfosolutions.com>";
 
   // Prefer a structured template when we have the DB id.
   if (row.type === "REPAIR_REQUEST_EMAIL_ALERT" && row.repairRequestId) {

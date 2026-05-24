@@ -111,7 +111,7 @@ export default function TwitterImage() {
                 background: "rgba(0,0,0,0.35)",
               }}
             >
-              Repair Manager
+              Duuka ProMax
             </div>
           </div>
         </div>

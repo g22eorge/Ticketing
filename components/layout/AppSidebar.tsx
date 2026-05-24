@@ -554,7 +554,7 @@ export function AppSidebar({
       {/* ── Footer ── */}
       <div className="border-t border-[var(--line)] px-5 py-3 text-left">
         <p className="truncate text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]" aria-hidden="true">Eagle Info Solutions</p>
-        <p className="mt-1 text-[10px] font-medium tracking-[0.08em] text-[var(--ink-muted)]" aria-hidden="true">Repair Manager</p>
+        <p className="mt-1 text-[10px] font-medium tracking-[0.08em] text-[var(--ink-muted)]" aria-hidden="true">Duuka ProMax</p>
       </div>
     </aside>
   );
