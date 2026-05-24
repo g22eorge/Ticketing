@@ -315,12 +315,10 @@ test("pages have no critical axe-core accessibility violations", async ({ page }
     const results = await new AxeBuilder({ page })
       // Focus on critical and serious impact only — informational/minor issues
       // are tracked separately and addressed incrementally.
+      // color-contrast is intentionally included: axe runs inside the real
+      // Playwright browser, so window.getComputedStyle() resolves CSS custom
+      // properties correctly and the check is accurate.
       .withTags(["wcag2a", "wcag2aa"])
-      .disableRules([
-        // colour-contrast requires the exact rendered colours; can false-positive
-        // on CSS custom properties that axe cannot resolve at scan time.
-        "color-contrast",
-      ])
       .analyze();
 
     const critical = results.violations.filter(

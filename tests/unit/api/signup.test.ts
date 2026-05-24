@@ -9,6 +9,17 @@ const mockUserFindUnique = mock(async (): Promise<any> => null);
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const mockOrgFindUnique = mock(async (): Promise<any> => null);
 
+// tx object passed into prisma.$transaction(callback)
+const mockTx = {
+  organisation: { create: mock(async () => ({ id: "org-1", name: "Acme Corp", slug: "acme-corp" })) },
+  user: { create: mock(async () => ({ id: "user-1", email: "alice@acme.com", orgId: "org-1" })) },
+  account: { create: mock(async () => ({ id: "acct-1" })) },
+};
+
+// Execute the callback so createOrgAndUser gets coverage
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const mockTransaction = mock(async (cb: (tx: typeof mockTx) => Promise<any>) => cb(mockTx));
+
 mock.module("@/lib/rate-limit", () => ({
   checkRateLimit: mockCheckRateLimit,
   rateLimitHeaders: mock(() => ({})),
@@ -18,11 +29,10 @@ mock.module("@/lib/prisma", () => ({
   prisma: {
     user: { findUnique: mockUserFindUnique },
     organisation: { findUnique: mockOrgFindUnique },
-    $transaction: mock(async () => ({ org: {}, user: {} })),
+    $transaction: mockTransaction,
   },
 }));
 
-// better-auth/crypto used by the route for hashPassword
 mock.module("better-auth/crypto", () => ({
   hashPassword: mock(async (pw: string) => `hashed:${pw}`),
 }));
@@ -91,6 +101,73 @@ describe("POST /api/org/signup — validation", () => {
   it("returns 422 when orgName is too short (< 2 chars)", async () => {
     const res = await POST(makePost({ ...validBody, orgName: "A" }));
     expect(res.status).toBe(422);
+  });
+});
+
+// ── Success path ──────────────────────────────────────────────────────────────
+
+describe("POST /api/org/signup — success path", () => {
+  beforeEach(() => {
+    mockCheckRateLimit.mockImplementation(async () => ({ allowed: true, retryAfterMs: 0 }));
+    mockUserFindUnique.mockImplementation(async () => null);
+    mockOrgFindUnique.mockImplementation(async () => null);
+  });
+
+  it("returns 201 on a valid new organisation", async () => {
+    const res = await POST(makePost(validBody));
+    expect(res.status).toBe(201);
+  });
+
+  it("response body has success: true", async () => {
+    const res = await POST(makePost(validBody));
+    const body = await res.json();
+    expect(body.success).toBe(true);
+  });
+
+  it("response body includes orgId, orgName, and email", async () => {
+    const res = await POST(makePost(validBody));
+    const body = await res.json();
+    expect(body.orgId).toBeDefined();
+    expect(body.orgName).toBe("Acme Corp");
+    expect(body.email).toBe("alice@acme.com");
+  });
+
+  it("accepts an optional plan field", async () => {
+    const res = await POST(makePost({ ...validBody, plan: "STARTER" }));
+    expect(res.status).toBe(201);
+  });
+
+  it("creates org+user+account inside a single transaction", async () => {
+    mockTransaction.mockReset();
+    mockTransaction.mockImplementation(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      async (cb: (tx: typeof mockTx) => Promise<any>) => cb(mockTx),
+    );
+    await POST(makePost(validBody));
+    expect(mockTransaction).toHaveBeenCalledTimes(1);
+  });
+
+  it("uses a unique slug when the original slug is already taken", async () => {
+    // First org lookup: slug taken; second: new slug is free (org find is called twice)
+    mockOrgFindUnique
+      .mockImplementationOnce(async () => ({ id: "existing-org" })) // slug taken
+      .mockImplementationOnce(async () => null);                      // new slug free
+    const res = await POST(makePost(validBody));
+    // Should still succeed — a suffix is appended to the slug
+    expect(res.status).toBe(201);
+  });
+
+  it("returns 500 when the transaction throws", async () => {
+    mockTransaction.mockImplementation(async () => {
+      throw new Error("DB error");
+    });
+    const res = await POST(makePost(validBody));
+    expect(res.status).toBe(500);
+    // restore
+    mockTransaction.mockImplementation(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      async (cb: (tx: typeof mockTx) => Promise<any>) => cb(mockTx),
+    );
   });
 });
 
