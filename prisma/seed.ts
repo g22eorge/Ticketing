@@ -321,12 +321,11 @@ async function main() {
   // E2E / CI test account — stable credentials so Playwright tests don't depend
   // on SEED_ADMIN_EMAIL. Never referenced in production workflows.
   const e2eAdminEmail = process.env.E2E_ADMIN_EMAIL ?? "admin@dduuka.local";
-  const e2eAdminPassword = process.env.E2E_PASSWORD ?? defaultPassword;
   await ensureUser({
     name: "E2E Admin",
     email: e2eAdminEmail,
     role: "ADMIN",
-    password: e2eAdminPassword,
+    password: "Admin123!",
   });
 
   const techInternal = await ensureUser({
