@@ -219,13 +219,6 @@ export default async function AiInsightsPage() {
     completedThisMonth.length ? "Compare technician turnaround times and external repair costs before assigning the next batch of work." : null,
   ].filter((item): item is string => Boolean(item));
 
-  const executiveSummary = [
-    `This month has ${jobsThisMonth} new job(s), ${completedThisMonth.length} completed repair(s), and ${formatMoney(totalRevenue, currency)} total recognised revenue signal from repairs, POS, and paid invoices.`,
-    `Open operational load is ${openJobs.length} job(s), with ${overdueJobs.length} older than 7 days and ${awaitingApproval.length} awaiting approval.`,
-    `Inventory value is approximately ${formatMoney(inventoryValue, currency)}, with ${lowStockParts.length} part(s) at or below reorder level.`,
-    `Receivables are ${formatMoney(receivables, currency)} and supplier payables are ${formatMoney(payables, currency)} based on open documents.`,
-  ];
-
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -250,15 +243,6 @@ export default async function AiInsightsPage() {
       </section>
 
       <BusinessCopilot />
-
-      <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Executive Summary</p>
-        <div className="mt-3 grid gap-2 lg:grid-cols-2">
-          {executiveSummary.map((line) => (
-            <div key={line} className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm text-[var(--ink)]">{line}</div>
-          ))}
-        </div>
-      </section>
 
       <div className="grid gap-4 xl:grid-cols-2">
         <InsightCard title="Risks AI Should Escalate" items={risks} empty="No major cross-module risks detected from the current data." />
