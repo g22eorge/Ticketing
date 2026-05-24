@@ -56,6 +56,9 @@ jobs:
       - name: Typecheck
         run: bunx tsc --noEmit
 
+      - name: Unit tests
+        run: bun run test:unit
+
       - name: Build
         run: bun run build
 
@@ -68,7 +71,7 @@ jobs:
             echo "## quality"
             echo "- status: ${{ job.status }}"
             echo "- duration_seconds: ${elapsed}"
-            echo "- checks: lint, typecheck, build"
+            echo "- checks: lint, typecheck, unit-tests, build"
           } >> "$GITHUB_STEP_SUMMARY"
 
   qa-backend:
