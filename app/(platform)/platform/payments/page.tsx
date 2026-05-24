@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getRecentBillingEvents, getTotalRevenue, getMonthlyRevenue } from "@/lib/billing-events";
 import { requirePlatformAdmin } from "@/lib/platform-admin";
+import { planLabel } from "@/lib/plan-labels";
 
 export const dynamic = "force-dynamic";
 
@@ -90,7 +91,7 @@ export default async function PaymentsPage() {
                 <td className="px-4 py-2 text-right font-mono">
                   {e.amount > 0 ? fmtMoney(e.amount, e.currency) : "—"}
                 </td>
-                <td className="px-4 py-2 text-[var(--ink-muted)]">{e.plan ?? "—"}</td>
+                <td className="px-4 py-2 text-[var(--ink-muted)]">{e.plan ? planLabel(e.plan) : "—"}</td>
                 <td className="px-4 py-2 font-mono text-xs text-[var(--ink-muted)] max-w-[160px] truncate">
                   {e.txRef ?? "—"}
                 </td>
