@@ -12,8 +12,9 @@ import { getDocumentBrandingSettings } from "@/lib/document-branding";
 import { normalizeJobStatus } from "@/lib/job-status";
 import { filterSupportedJobStatuses } from "@/lib/job-status-server";
 import { can } from "@/lib/permissions";
-import { prisma } from "@/lib/prisma";
+import { prisma, orgDb } from "@/lib/prisma";
 import { requireOrgSession } from "@/lib/org-context";
+import { getCurrentUserRole } from "@/lib/session";
 import { requireModule, OrgModule } from "@/lib/module-access";
 import { JobStatus } from "@prisma/client";
 

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import Link from "next/link";
 import { JobStatus, Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";

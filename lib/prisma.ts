@@ -119,3 +119,55 @@ if (process.env.NODE_ENV !== "production") {
 // Without this, Prisma 6's lazy initializer races against incoming requests
 // (especially better-auth session checks) and throws "Engine is not yet connected".
 void prisma.$connect().catch(() => {/* errors will surface on first query */});
+
+// ── Org-scoped query layer ────────────────────────────────────────────────────
+const ORG_SCOPED_MODELS = new Set([
+  "Client", "Job", "Part", "Supplier", "Department",
+  "Complaint", "Campaign", "Lead", "Quotation", "Sale",
+  "Invoice", "Expense", "JournalEntry", "ChartOfAccount", "BankAccount",
+  "CommunicationTemplate", "CommunicationPolicy", "DocumentBrandingSettings",
+  "StockLocation", "PurchaseOrder", "PurchaseRequest",
+  "GoodsReceived", "SupplierBill", "RecurringInvoice",
+  "RepairRequest", "PosSession", "SalesTarget", "FieldVisit",
+  "StockCount", "StockTransfer", "TaxRate",
+]);
+
+const READ_OPS  = new Set(["findMany", "findFirst", "findFirstOrThrow", "findUnique", "findUniqueOrThrow", "count", "aggregate", "groupBy"]);
+const WRITE_OPS = new Set(["create", "createMany", "createManyAndReturn"]);
+const MUTATE_OPS = new Set(["update", "updateMany", "upsert", "delete", "deleteMany"]);
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function orgDb(orgId: string | null): any {
+  if (!orgId) throw new Error("orgDb called without orgId — user is not in an organisation");
+  const safeOrgId = orgId;
+  return prisma.$extends({
+    query: {
+      $allModels: {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        async $allOperations({ args, query, model, operation }: any) {
+          if (!ORG_SCOPED_MODELS.has(model)) return query(args);
+
+          if (READ_OPS.has(operation)) {
+            args = { ...args, where: { ...args.where, orgId: safeOrgId } };
+          } else if (WRITE_OPS.has(operation)) {
+            if (operation === "createMany" || operation === "createManyAndReturn") {
+              if (Array.isArray(args.data)) {
+                args = { ...args, data: args.data.map((d: Record<string, unknown>) => ({ ...d, orgId: safeOrgId })) };
+              }
+            } else if (args.data && typeof args.data === "object") {
+              args = { ...args, data: { ...args.data, orgId: safeOrgId } };
+            }
+          } else if (MUTATE_OPS.has(operation)) {
+            if (operation === "upsert") {
+              args = { ...args, where: { ...args.where, orgId: safeOrgId }, create: { ...args.create, orgId: safeOrgId }, update: args.update };
+            } else {
+              args = { ...args, where: { ...args.where, orgId: safeOrgId } };
+            }
+          }
+
+          return query(args);
+        },
+      },
+    },
+  }) as unknown as typeof prisma;
+}

@@ -206,7 +206,7 @@ async function seedDefaultCommsTemplates() {
       .sort();
 
     await prisma.communicationTemplate.upsert({
-      where: { key_channel: { key: t.key, channel: t.channel } },
+      where: { key_channel_orgId: { key: t.key, channel: t.channel, orgId: "" } },
       update: {
         label: t.label,
         subject: t.subject ?? null,
@@ -488,22 +488,15 @@ async function main() {
   const defaultPassword = process.env.SEED_PASSWORD ?? "Admin123!";
 
   // ── Ensure EIS base organisation exists ──────────────────────────────────
-  await prisma.organisation.upsert({
+  await prisma.organization.upsert({
     where: { id: "org_eis_01" },
     update: {},
     create: {
       id: "org_eis_01",
       name: "Eagle Info Solutions",
       slug: "eagle-info-solutions",
-      plan: "PROFESSIONAL",
+      plan: "GROWTH",
       isActive: true,
-      timezone: "Africa/Kampala",
-      currency: "UGX",
-      website: "https://eagleinfosolutions.com",
-      phone: "256772006344",
-      email: "info@eagleinfosolutions.com",
-      tagline: "Your trusted device repair partner",
-      enableRepairModule: true,
     },
   });
 

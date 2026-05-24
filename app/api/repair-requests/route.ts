@@ -203,7 +203,7 @@ export async function POST(request: NextRequest) {
     let resolvedOrgId: string = EIS_ORG_ID;
     let resolvedOrgName = "Eagle Info Solutions";
     if (typeof body.org_slug === "string" && body.org_slug.trim()) {
-      const org = await prisma.organisation.findUnique({
+      const org = await prisma.organization.findUnique({
         where: { slug: body.org_slug.trim() },
         select: { id: true, name: true, isActive: true },
       });

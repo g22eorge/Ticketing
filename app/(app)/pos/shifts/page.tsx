@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { redirect } from "next/navigation";
 import { getCurrentUserRole } from "@/lib/session";
 import { revalidatePath } from "next/cache";

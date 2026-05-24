@@ -114,3 +114,19 @@ export async function setBillingStatusAction(formData: FormData) {
   revalidatePath("/platform");
   revalidatePath(`/platform/orgs/${orgId}`);
 }
+
+export async function updateOrgDetailsAction(formData: FormData) {
+  await requirePlatformAdmin();
+  const orgId = formData.get("orgId") as string;
+  if (!orgId) return;
+  const data: Record<string, unknown> = {};
+  for (const key of ["name", "tagline", "website", "phone", "email", "address"]) {
+    const val = formData.get(key) as string | null;
+    if (val !== null) data[key] = val || null;
+  }
+  const enableRepair = formData.get("enableRepairModule");
+  if (enableRepair !== null) data.enableRepairModule = enableRepair === "true";
+  await prisma.organization.update({ where: { id: orgId }, data: data as never });
+  revalidatePath(`/platform/orgs/${orgId}`);
+  revalidatePath(`/platform-admin/orgs/${orgId}`);
+}
