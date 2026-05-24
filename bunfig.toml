@@ -1,7 +1,16 @@
-# Bun configuration — https://bun.sh/docs/runtime/bunfig
-
 [test]
-timeout = 30000
+# Enforce coverage floors when `bun test --coverage` is run.
+# Thresholds are intentionally conservative: some API route branches
+# (BetterAuth upstream calls, $transaction success paths) require a
+# full integration stack to exercise and are excluded from the floor.
+coverageThreshold = { line = 0.80, function = 0.72 }
 
-[install]
-exact = false
+# Only report coverage for source files — excludes node_modules, .next, tests.
+coverageIgnorePatterns = [
+  "node_modules/",
+  ".next/",
+  "tests/",
+  "prisma/",
+  "scripts/",
+  "emails/",
+]

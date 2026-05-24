@@ -1,3 +1,4 @@
+import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Cookie, type Page } from "@playwright/test";
 
 const adminEmail = process.env.E2E_ADMIN_EMAIL ?? "admin@eagle.local";
@@ -288,5 +289,48 @@ test("layout has no horizontal overflow across target viewports", async ({ page 
 
       expect(jobDetailOverflow, `/jobs/[id] overflow at ${viewport.width}x${viewport.height}: ${jobDetailOverflow.join(" | ")}`).toEqual([]);
     }
+  }
+});
+
+// ── Accessibility audit ───────────────────────────────────────────────────────
+// Run axe-core against key pages at desktop width to catch WCAG AA violations.
+// Pages that require heavy data (reports, finance) are skipped here and rely on
+// manual audits; the core navigation shell and high-traffic pages are covered.
+
+const A11Y_PATHS = [
+  "/dashboard",
+  "/jobs",
+  "/clients",
+  "/settings/profile",
+] as const;
+
+test("pages have no critical axe-core accessibility violations", async ({ page }) => {
+  await login(page, adminEmail);
+  await page.setViewportSize({ width: 1280, height: 900 });
+
+  for (const path of A11Y_PATHS) {
+    await page.goto(path);
+    await waitForAppSettled(page);
+
+    const results = await new AxeBuilder({ page })
+      // Focus on critical and serious impact only — informational/minor issues
+      // are tracked separately and addressed incrementally.
+      .withTags(["wcag2a", "wcag2aa"])
+      .disableRules([
+        // colour-contrast requires the exact rendered colours; can false-positive
+        // on CSS custom properties that axe cannot resolve at scan time.
+        "color-contrast",
+      ])
+      .analyze();
+
+    const critical = results.violations.filter(
+      (v) => v.impact === "critical" || v.impact === "serious",
+    );
+
+    expect(
+      critical,
+      `${path} has ${critical.length} critical/serious a11y violation(s):\n` +
+        critical.map((v) => `  [${v.impact}] ${v.id}: ${v.description}`).join("\n"),
+    ).toHaveLength(0);
   }
 });
