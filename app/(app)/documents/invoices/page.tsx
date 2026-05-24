@@ -1,3 +1,4 @@
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-nocheck
 import Link from "next/link";
 import { getCurrentUserRole } from "@/lib/session";
@@ -21,6 +22,8 @@ import { can } from "@/lib/permissions";
 import { orgDb, prisma } from "@/lib/prisma";
 import { ConfirmSubmitButton } from "@/components/shared/ConfirmSubmitButton";
 import { RowActionsMenu, MenuSection, MenuDestructiveRow } from "@/components/shared/RowActionsMenu";
+import { createReceiptForPayment, nextDocumentNumber } from "@/lib/commercial/document-workflow";
+import { writeSystemAuditEvent } from "@/lib/commercial/audit";
 
 const PAYMENT_METHODS: PaymentMethod[] = ["CASH", "MOBILE_MONEY", "BANK_TRANSFER", "CARD", "OTHER"];
 const INVOICE_STATUSES: InvoiceStatus[] = ["DRAFT", "ISSUED", "PAID", "VOID"];
@@ -28,14 +31,6 @@ const INVOICE_TYPES: InvoiceType[] = ["REPAIR", "SERVICE", "MERCHANDISE", "CONTR
 const DELIVERY_METHODS: DeliveryMethod[] = ["PICKUP", "DELIVERY", "COURIER"];
 
 export const dynamic = "force-dynamic";
-
-// ── Aging buckets ────────────────────────────────────────────────────────────
-const AGING_BUCKETS = [
-  { label: "Current",       min: -Infinity, max: 0,   color: "text-[var(--ink)]",   bg: "bg-[var(--panel)]",       border: "border-[var(--line)]" },
-  { label: "1–30 days",     min: 1,         max: 30,  color: "text-amber-700",      bg: "bg-amber-500/8",          border: "border-amber-400/30" },
-  { label: "31–60 days",    min: 31,        max: 60,  color: "text-orange-700",     bg: "bg-orange-500/8",         border: "border-orange-400/30" },
-  { label: "61+ days",      min: 61,        max: Infinity, color: "text-red-700",   bg: "bg-red-500/8",            border: "border-red-400/30" },
-] as const;
 
 export default async function InvoicesPage({
   searchParams,
@@ -60,8 +55,9 @@ export default async function InvoicesPage({
 
   async function createStandaloneInvoiceAction(formData: FormData) {
     "use server";
-    const { user: _u } = await getCurrentUserRole();
-    const db = orgDb(user.orgId);
+    const { user } = await getCurrentUserRole();
+    const orgId = user.orgId;
+    const db = orgDb(orgId);
     if (!["ADMIN", "OPS"].includes(user.role)) return;
 
     const clientId = String(formData.get("clientId") ?? "").trim();
@@ -82,30 +78,32 @@ export default async function InvoicesPage({
       : ("SERVICE" as InvoiceType);
     const dueDate = dueDateRaw ? new Date(dueDateRaw) : null;
 
-    const year = new Date().getFullYear();
-    const count = await db.invoice.count({ where: {} }).catch(() => 0);
-    const invoiceNumber = `INV-${year}-${String(count + 1).padStart(4, "0")}`;
-
-    await db.invoice.create({
-      data: {
-        clientId: client.id,
-        invoiceType,
-        subject,
-        invoiceNumber,
-        currency,
-        status: "ISSUED" as InvoiceStatus,
-        totalAmount: totalAmountRaw,
-        dueDate,
-        notes: notes || null,
-      },
+    const invoice = await prisma.$transaction(async (tx) => {
+      const invoiceNumber = await nextDocumentNumber(tx, "INV", "invoice");
+      return tx.invoice.create({
+        data: {
+          orgId,
+          clientId: client.id,
+          invoiceType,
+          subject,
+          invoiceNumber,
+          currency,
+          status: "ISSUED" as InvoiceStatus,
+          totalAmount: totalAmountRaw,
+          dueDate,
+          notes: notes || null,
+        },
+      });
     });
+    await writeSystemAuditEvent({ orgId, actorUserId: user.id, entityType: "Invoice", entityId: invoice.id, action: "INVOICE_CREATED", summary: `${invoice.invoiceNumber} created: ${subject}` });
     revalidatePath("/documents/invoices");
   }
 
   async function addPaymentAction(formData: FormData) {
     "use server";
-    const { user: _u } = await getCurrentUserRole();
-    const db = orgDb(user.orgId);
+    const { user } = await getCurrentUserRole();
+    const orgId = user.orgId;
+    const db = orgDb(orgId);
     if (!("ADMIN" === user.role || "OPS" === user.role || can.approveInvoices(user))) return;
 
     const invoiceId = String(formData.get("invoiceId") ?? "").trim();
@@ -133,7 +131,7 @@ export default async function InvoicesPage({
 
     const invoice = await db.invoice.findFirst({
       where: { id: invoiceId },
-      select: { id: true, totalAmount: true, paidAmount: true, jobId: true, status: true },
+      select: { id: true, totalAmount: true, paidAmount: true, jobId: true, clientId: true, status: true },
     });
     if (!invoice || invoice.status === "VOID") return;
 
@@ -145,7 +143,7 @@ export default async function InvoicesPage({
       : ("OTHER" as PaymentMethod);
 
     await prisma.$transaction(async (tx) => {
-      await tx.payment.create({
+      const payment = await tx.payment.create({
         data: {
           invoiceId: invoice.id,
           currency,
@@ -154,7 +152,17 @@ export default async function InvoicesPage({
           method: safeMethod,
           reference: reference || null,
           createdById: user.id,
+          orgId,
         },
+      });
+      await createReceiptForPayment(tx, {
+        orgId,
+        paymentId: payment.id,
+        invoiceId: invoice.id,
+        clientId: invoice.clientId,
+        amount,
+        currency,
+        issuedById: user.id,
       });
 
       const payments = await tx.payment.findMany({
@@ -283,15 +291,14 @@ export default async function InvoicesPage({
     if (!invoice || invoice.paidAmount < invoice.totalAmount) return;
 
     await prisma.$transaction(async (tx) => {
-      const year = new Date().getFullYear();
-      const count = await tx.deliveryNote.count({ where: {} }).catch(() => 0);
-      const deliveryNoteNumber = `DN-${year}-${String(count + 1).padStart(4, "0")}`;
+      const deliveryNoteNumber = await nextDocumentNumber(tx, "DN", "deliveryNote");
       const desc = invoice.job
         ? `Repair handover for ${invoice.job.jobNumber} (${invoice.job.brand} ${invoice.job.model})`
         : (invoice.subject ?? invoice.invoiceNumber);
       await tx.deliveryNote.create({
         data: {
           invoiceId: invoice.id,
+          orgId: user.orgId,
           deliveryNoteNumber,
           deliveryMethod,
           deliveredByName,
@@ -370,8 +377,6 @@ export default async function InvoicesPage({
   }
 
   const now = new Date();
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-
   // Compute aging for each outstanding invoice
   const withAging = invoices.map((inv) => {
     const balance = Math.max(0, inv.totalAmount - inv.paidAmount);
@@ -500,6 +505,7 @@ export default async function InvoicesPage({
             >
               ↓ Export CSV
             </Link>
+            <Link href="/documents/invoices" className="btn-premium rounded-lg px-3 py-1.5 text-[12px]">Create Invoice</Link>
           </div>
         </div>
 
@@ -698,7 +704,7 @@ export default async function InvoicesPage({
       {["ADMIN", "OPS"].includes(user.role) && clients.length > 0 && (
         <details className="group rounded-xl border border-[var(--line)] bg-[var(--panel)]">
           <summary className="cursor-pointer select-none px-4 py-2.5 text-[12px] font-semibold text-[var(--ink)] group-open:border-b group-open:border-[var(--line)]">
-            + New Standalone Invoice (Service / Contract / Merchandise)
+            Create Invoice (Service / Contract / Merchandise)
           </summary>
           <form
             action={createStandaloneInvoiceAction}
@@ -809,7 +815,7 @@ export default async function InvoicesPage({
                 rel="noreferrer"
                 className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--accent)]/30 bg-[var(--panel)] px-3 py-1.5 text-xs font-semibold text-[var(--ink)] transition hover:border-[var(--accent)]/60 hover:text-[var(--accent)]"
               >
-                {job.jobNumber}
+                Create Invoice · {job.jobNumber}
               </a>
             ))}
           </div>
@@ -965,7 +971,7 @@ export default async function InvoicesPage({
                       <RowActionsMenu label="Invoice actions">
                         {inv.balance > 0 && inv.status !== "VOID" ? (
                           <>
-                            <MenuSection label="Record Payment" />
+                            <MenuSection label="Generate Receipt" />
                             <form action={addPaymentAction} className="space-y-2 p-3">
                               <input type="hidden" name="invoiceId" value={inv.id} />
                               <div className="flex gap-2">
@@ -1005,14 +1011,14 @@ export default async function InvoicesPage({
                                 type="submit"
                                 className="btn-premium w-full rounded-lg px-3 py-1.5 text-xs font-semibold"
                               >
-                                Record Payment
+                                Generate Receipt
                               </button>
                             </form>
                           </>
                         ) : null}
                         {inv.balance <= 0 && inv.status !== "VOID" ? (
                           <>
-                            <MenuSection label="Delivery Note" />
+                            <MenuSection label="Generate Delivery Note" />
                             <form action={createDeliveryNoteAction} className="space-y-2 p-3">
                               <input type="hidden" name="invoiceId" value={inv.id} />
                               <input
@@ -1039,7 +1045,7 @@ export default async function InvoicesPage({
                                 type="submit"
                                 className="btn-premium w-full rounded-lg px-3 py-1.5 text-xs font-semibold"
                               >
-                                Create Note
+                                Generate Delivery Note
                               </button>
                             </form>
                           </>

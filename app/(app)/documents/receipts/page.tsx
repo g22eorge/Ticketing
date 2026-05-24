@@ -10,6 +10,7 @@ import { getCurrentUserRole } from "@/lib/session";
 import { ConfirmSubmitButton } from "@/components/shared/ConfirmSubmitButton";
 import { writeSystemAuditEvent } from "@/lib/commercial/audit";
 import { RowActionsMenu, MenuSection, MenuDestructiveRow } from "@/components/shared/RowActionsMenu";
+import { createReceiptForPayment } from "@/lib/commercial/document-workflow";
 
 const PAYMENT_METHODS: PaymentMethod[] = ["CASH", "MOBILE_MONEY", "BANK_TRANSFER", "CARD", "OTHER"];
 
@@ -27,6 +28,39 @@ export default async function ReceiptsPage({
   const params = await searchParams;
   const q = (params.q ?? "").trim();
   const period = params.period ?? "all";
+
+  async function createReceiptAction(formData: FormData) {
+    "use server";
+    const { user } = await getCurrentUserRole();
+    if (!user.orgId) return;
+    const orgId = user.orgId;
+    const db = orgDb(orgId);
+    if (!(can.viewFinancials(user) || ["ADMIN", "OPS"].includes(user.role))) redirect("/dashboard");
+
+    const invoiceId = String(formData.get("invoiceId") ?? "").trim();
+    const amount = Number(String(formData.get("amount") ?? "").trim());
+    const methodRaw = String(formData.get("method") ?? "CASH").trim();
+    const reference = String(formData.get("reference") ?? "").trim();
+    const currency = normalizeCurrency(formData.get("currency"), "UGX");
+    if (!invoiceId || !Number.isFinite(amount) || amount <= 0) return;
+
+    const method = PAYMENT_METHODS.includes(methodRaw as PaymentMethod) ? (methodRaw as PaymentMethod) : "OTHER" as PaymentMethod;
+    const invoice = await db.invoice.findFirst({ where: { id: invoiceId, status: { not: "VOID" } }, select: { id: true, totalAmount: true, paidAmount: true, clientId: true, jobId: true } });
+    if (!invoice || invoice.paidAmount + amount > invoice.totalAmount) return;
+
+    await prisma.$transaction(async (tx) => {
+      const payment = await tx.payment.create({ data: { orgId, invoiceId: invoice.id, amount, method, reference: reference || null, currency, createdById: user.id } });
+      await createReceiptForPayment(tx, { orgId, paymentId: payment.id, invoiceId: invoice.id, clientId: invoice.clientId, amount, currency, issuedById: user.id });
+      const payments = await tx.payment.findMany({ where: { invoiceId: invoice.id, orgId }, select: { amount: true, currency: true, exchangeRateToBase: true } });
+      const paidAmount = payments.reduce((sum, p) => sum + toBaseAmount({ amount: p.amount, currency: p.currency, baseCurrency: "UGX", exchangeRateToBase: p.exchangeRateToBase }), 0);
+      const isPaid = invoice.totalAmount > 0 && paidAmount >= invoice.totalAmount;
+      await tx.invoice.updateMany({ where: { id: invoice.id, orgId }, data: { paidAmount, paidAt: isPaid ? new Date() : null, status: invoice.totalAmount <= 0 ? "PAID" : isPaid ? "PAID" : "ISSUED" } });
+      if (invoice.jobId) await tx.job.updateMany({ where: { id: invoice.jobId, orgId }, data: { clientPaid: isPaid, clientPaidAt: isPaid ? new Date() : null, clientPaidById: isPaid ? user.id : null } });
+    });
+    await writeSystemAuditEvent({ orgId, actorUserId: user.id, entityType: "Invoice", entityId: invoice.id, action: "RECEIPT_CREATED", summary: "Receipt generated from invoice" });
+    revalidatePath("/documents/receipts");
+    revalidatePath("/documents/invoices");
+  }
 
   async function updateReceiptAction(formData: FormData) {
     "use server";
@@ -97,7 +131,6 @@ export default async function ReceiptsPage({
   async function deleteReceiptAction(formData: FormData) {
     "use server";
     const { user: _u } = await getCurrentUserRole();
-    const db = orgDb(user.orgId);
     if (!("ADMIN" === user.role || can.approveInvoices(user))) return;
 
     const paymentId = String(formData.get("paymentId") ?? "").trim();
@@ -210,6 +243,22 @@ export default async function ReceiptsPage({
     0,
   );
   const cashPaymentsCount = payments.filter((p) => p.method === "CASH").length;
+  type InvoiceOption = {
+    id: string;
+    invoiceNumber: string;
+    totalAmount: number;
+    paidAmount: number;
+    currency: string | null;
+    job: { jobNumber: string } | null;
+    client: { fullName: string } | null;
+  };
+
+  const invoiceOptions: InvoiceOption[] = await db.invoice.findMany({
+    where: { status: { not: "VOID" } },
+    orderBy: { issuedAt: "desc" },
+    take: 80,
+    select: { id: true, invoiceNumber: true, totalAmount: true, paidAmount: true, currency: true, job: { select: { jobNumber: true } }, client: { select: { fullName: true } } },
+  }).then((rows: InvoiceOption[]) => rows.filter((invoice) => invoice.paidAmount < invoice.totalAmount));
 
   const methodBreakdown = PAYMENT_METHODS.map((method) => {
     const mp = payments.filter((p) => p.method === method);
@@ -250,7 +299,7 @@ export default async function ReceiptsPage({
       <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
         <div className="flex items-center justify-between gap-2 border-b border-[var(--line)] px-4 py-2.5">
           <p className="text-[13px] font-bold text-[var(--ink)]">Receipts</p>
-          <Link href="/jobs/new" className="btn-premium rounded-lg px-3 py-1.5 text-[12px]">New Job</Link>
+          <Link href="/documents/invoices" className="btn-premium rounded-lg px-3 py-1.5 text-[12px]">Create Receipt</Link>
         </div>
         <div className="grid grid-cols-2 divide-x divide-y divide-[var(--line)] sm:grid-cols-4 sm:divide-y-0">
           <div className="px-4 py-2">
@@ -298,6 +347,31 @@ export default async function ReceiptsPage({
           <Link href="/documents/receipts" className="rounded-lg border border-[var(--line)] px-3 py-1.5 text-xs font-medium text-[var(--ink-muted)] hover:text-[var(--ink)]">Reset</Link>
         )}
       </form>
+
+      {invoiceOptions.length > 0 ? (
+        <details className="group rounded-xl border border-[var(--line)] bg-[var(--panel)]">
+          <summary className="cursor-pointer select-none px-4 py-2.5 text-[12px] font-semibold text-[var(--ink)] group-open:border-b group-open:border-[var(--line)]">
+            Create Receipt from invoice
+          </summary>
+          <form action={createReceiptAction} className="grid grid-cols-1 gap-3 p-4 sm:grid-cols-2 lg:grid-cols-3">
+            <select name="invoiceId" required className="h-9 rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 text-sm sm:col-span-2">
+              <option value="">Select invoice...</option>
+              {invoiceOptions.map((invoice) => (
+                <option key={invoice.id} value={invoice.id}>{invoice.invoiceNumber} - {invoice.job?.jobNumber ?? invoice.client?.fullName ?? "Invoice"} - due {formatMoney(invoice.totalAmount - invoice.paidAmount, normalizeCurrency(invoice.currency, "UGX"))}</option>
+              ))}
+            </select>
+            <input name="amount" required inputMode="decimal" placeholder="Amount" className="h-9 rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 text-sm" />
+            <select name="currency" defaultValue="UGX" className="h-9 rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 text-sm">
+              <option value="UGX">UGX</option>
+            </select>
+            <select name="method" defaultValue="CASH" className="h-9 rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 text-sm">
+              {PAYMENT_METHODS.map((method) => <option key={method} value={method}>{method.replaceAll("_", " ")}</option>)}
+            </select>
+            <input name="reference" placeholder="Reference" className="h-9 rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 text-sm" />
+            <button type="submit" className="btn-premium h-9 rounded-lg px-5 text-sm font-semibold">Create Receipt</button>
+          </form>
+        </details>
+      ) : null}
 
       {/* Method Breakdown */}
       {methodBreakdown.length > 0 && (

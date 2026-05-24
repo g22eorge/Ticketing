@@ -12,11 +12,13 @@ import { getDocumentBrandingSettings } from "@/lib/document-branding";
 import { normalizeJobStatus } from "@/lib/job-status";
 import { filterSupportedJobStatuses } from "@/lib/job-status-server";
 import { can } from "@/lib/permissions";
-import { prisma, orgDb } from "@/lib/prisma";
+import { prisma } from "@/lib/prisma";
 import { requireOrgSession } from "@/lib/org-context";
-import { getCurrentUserRole } from "@/lib/session";
 import { requireModule, OrgModule } from "@/lib/module-access";
 import { JobStatus } from "@prisma/client";
+import { assertOrgCanMutate } from "@/lib/org-write";
+import { writeSystemAuditEvent } from "@/lib/commercial/audit";
+import { ensureInvoiceFromQuotation, ensureQuotationFromJob } from "@/lib/commercial/document-workflow";
 
 type SearchParams = { q?: string; approval?: string };
 
@@ -37,8 +39,10 @@ export default async function QuotationsPage({
   // ── Server action: mark quotation as sent (sets quotedAt = now) ──────────
   async function markSent(formData: FormData) {
     "use server";
-    const { user } = await getCurrentUserRole();
-    const db = orgDb(user.orgId);
+    const { user, orgId, org } = await requireOrgSession();
+    if (!(["ADMIN", "OPS", "MANAGER", "SALES", "FINANCE"].includes(user.role) || can.viewFinancials(user))) return;
+    assertOrgCanMutate({ access: org.access, userRole: user.role, userAccessMode: user.accessMode, kind: "GENERAL" });
+
     const jobId = formData.get("jobId") as string;
     if (!jobId) return;
     await prisma.job.update({
@@ -46,6 +50,32 @@ export default async function QuotationsPage({
       data: { quotedAt: new Date() },
     });
     revalidatePath("/documents/quotations");
+  }
+
+  async function convertQuotationToInvoiceAction(formData: FormData) {
+    "use server";
+    const { user, orgId, org } = await requireOrgSession();
+    if (!(["ADMIN", "OPS", "MANAGER", "FINANCE"].includes(user.role) || can.approveInvoices(user))) return;
+    assertOrgCanMutate({ access: org.access, userRole: user.role, userAccessMode: user.accessMode, kind: "GENERAL" });
+
+    const jobId = String(formData.get("jobId") ?? "").trim();
+    const quotationId = String(formData.get("quotationId") ?? "").trim();
+    if (!jobId && !quotationId) return;
+
+    const result = await prisma.$transaction(async (tx) => {
+      const quotation = quotationId
+        ? await tx.quotation.findFirst({ where: { id: quotationId, orgId }, include: { items: true } })
+        : await ensureQuotationFromJob(tx, { orgId, jobId, userId: user.id, currency: org.baseCurrency });
+      if (!quotation) return;
+      const invoice = await ensureInvoiceFromQuotation(tx, { orgId, quotationId: quotation.id, currency: org.baseCurrency });
+      return invoice ? { invoiceId: invoice.id, invoiceNumber: invoice.invoiceNumber, quoteNumber: quotation.quoteNumber } : null;
+    });
+    if (result) {
+      await writeSystemAuditEvent({ orgId, actorUserId: user.id, entityType: "Invoice", entityId: result.invoiceId, action: "QUOTATION_CONVERTED_TO_INVOICE", summary: `${result.quoteNumber} converted to ${result.invoiceNumber}` });
+    }
+
+    revalidatePath("/documents/quotations");
+    revalidatePath("/documents/invoices");
   }
 
   const [jobs, branding] = await Promise.all([
@@ -104,6 +134,7 @@ export default async function QuotationsPage({
         clientApproved: true,
         approvalDate: true,
         client: { select: { fullName: true, phone: true } },
+        quotations: { select: { id: true, quoteNumber: true, convertedToInvoiceId: true }, orderBy: { createdAt: "desc" }, take: 1 },
       },
     }),
     getDocumentBrandingSettings(),
@@ -142,8 +173,8 @@ export default async function QuotationsPage({
             </span>
           )}
         </div>
-        <Link href="/jobs/new" className="btn-premium rounded-lg px-3 py-1.5 text-[12px]">
-          + New Job
+        <Link href="/documents/quotations" className="btn-premium rounded-lg px-3 py-1.5 text-[12px]">
+          Create Quotation
         </Link>
       </div>
 
@@ -218,10 +249,9 @@ export default async function QuotationsPage({
                   branding.sequencePadLength,
                 );
                 const canGenerate = canGenerateQuotationForStatus(job.status);
+                const persistedQuotation = job.quotations[0] ?? null;
                 const estimate = getClientBill(job);
                 const pdfUrl = `${appUrl}/api/jobs/${job.id}/quotation`;
-                const jobUrl = `${appUrl}/jobs/${job.id}`;
-
                 const clientPhone = (job.client.phone ?? "").replace(/\D/g, "");
                 const waPhone = clientPhone.startsWith("0")
                   ? "256" + clientPhone.slice(1)
@@ -385,6 +415,16 @@ export default async function QuotationsPage({
                                 </button>
                               </form>
                             )}
+                            <form action={convertQuotationToInvoiceAction}>
+                              <input type="hidden" name="jobId" value={job.id} />
+                              {persistedQuotation ? <input type="hidden" name="quotationId" value={persistedQuotation.id} /> : null}
+                              <button
+                                type="submit"
+                                className="inline-flex items-center gap-1 rounded-md border border-[var(--accent)]/35 bg-[var(--accent)]/10 px-2.5 py-1.5 text-[11px] font-semibold text-[var(--accent)] transition hover:bg-[var(--accent)]/20"
+                              >
+                                Convert to Invoice
+                              </button>
+                            </form>
                           </>
                         ) : (
                           <span className="text-[11px] text-[var(--ink-muted)]">

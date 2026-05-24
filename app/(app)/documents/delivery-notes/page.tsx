@@ -11,6 +11,7 @@ import { assertOrgCanMutate } from "@/lib/org-write";
 import { ConfirmSubmitButton } from "@/components/shared/ConfirmSubmitButton";
 import { writeSystemAuditEvent } from "@/lib/commercial/audit";
 import { RowActionsMenu, MenuSection, MenuDestructiveRow } from "@/components/shared/RowActionsMenu";
+import { nextDocumentNumber } from "@/lib/commercial/document-workflow";
 
 const DELIVERY_METHODS: DeliveryMethod[] = ["PICKUP", "DELIVERY", "COURIER"];
 
@@ -20,6 +21,51 @@ export default async function DeliveryNotesPage() {
     redirect("/dashboard");
   }
   await requireModule(OrgModule.INVOICING);
+
+  async function createDeliveryNoteAction(formData: FormData) {
+    "use server";
+    const { user, orgId, org, session } = await requireOrgSession();
+    if (!(can.viewFinancials(user) || ["ADMIN", "OPS"].includes(user.role))) redirect("/dashboard");
+    assertOrgCanMutate({ access: org.access, userRole: user.role, userAccessMode: user.accessMode, kind: "GENERAL" });
+
+    const invoiceId = String(formData.get("invoiceId") ?? "").trim();
+    const deliveredByName = String(formData.get("deliveredByName") ?? "").trim();
+    const receivedByName = String(formData.get("receivedByName") ?? "").trim();
+    const methodRaw = String(formData.get("deliveryMethod") ?? "").trim();
+    const note = String(formData.get("note") ?? "").trim();
+    if (!invoiceId || !deliveredByName || !receivedByName) return;
+
+    const invoice = await prisma.invoice.findFirst({
+      where: { id: invoiceId, orgId, status: { not: "VOID" } },
+      select: { id: true, invoiceNumber: true, paidAmount: true, totalAmount: true, subject: true, job: { select: { jobNumber: true, brand: true, model: true } } },
+    });
+    if (!invoice || invoice.paidAmount < invoice.totalAmount) return;
+
+    const deliveryMethod = DELIVERY_METHODS.includes(methodRaw as DeliveryMethod) ? (methodRaw as DeliveryMethod) : null;
+    const description = invoice.job
+      ? `Repair handover for ${invoice.job.jobNumber} (${invoice.job.brand} ${invoice.job.model})`
+      : invoice.subject ?? invoice.invoiceNumber;
+
+    const noteRecord = await prisma.$transaction(async (tx) => {
+      const deliveryNoteNumber = await nextDocumentNumber(tx, "DN", "deliveryNote");
+      return tx.deliveryNote.create({
+        data: {
+          orgId,
+          invoiceId: invoice.id,
+          deliveryNoteNumber,
+          deliveryMethod,
+          deliveredByName,
+          receivedByName,
+          note: note || null,
+          createdById: session.user.id,
+          items: { create: [{ description, quantity: 1 }] },
+        },
+      });
+    });
+    await writeSystemAuditEvent({ orgId, actorUserId: user.id, entityType: "DeliveryNote", entityId: noteRecord.id, action: "DELIVERY_NOTE_CREATED", summary: `${noteRecord.deliveryNoteNumber} generated from ${invoice.invoiceNumber}` });
+    revalidatePath("/documents/delivery-notes");
+    revalidatePath("/documents/invoices");
+  }
 
   async function updateDeliveryNoteAction(formData: FormData) {
     "use server";
@@ -143,13 +189,19 @@ export default async function DeliveryNotesPage() {
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
   const thisMonth = notes.filter((n) => n.deliveredAt >= monthStart).length;
   const uniqueSources = new Set(notes.map((n) => n.invoice?.id ?? n.sale?.id).filter(Boolean)).size;
+  const invoiceOptions = await prisma.invoice.findMany({
+    where: { orgId, status: { not: "VOID" } },
+    orderBy: { issuedAt: "desc" },
+    take: 80,
+    select: { id: true, invoiceNumber: true, totalAmount: true, paidAmount: true, job: { select: { jobNumber: true, client: { select: { fullName: true } } } }, client: { select: { fullName: true } } },
+  }).then((rows) => rows.filter((invoice) => invoice.paidAmount >= invoice.totalAmount));
 
   return (
     <section className="space-y-4">
       <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
         <div className="flex items-center justify-between gap-2 border-b border-[var(--line)] px-4 py-2.5">
           <p className="text-[13px] font-bold text-[var(--ink)]">Delivery Notes</p>
-          <Link href="/documents/invoices" className="btn-premium rounded-lg px-3 py-1.5 text-[12px]">Open Invoices</Link>
+          <Link href="/documents/invoices" className="btn-premium rounded-lg px-3 py-1.5 text-[12px]">Create Delivery Note</Link>
         </div>
         <div className="grid grid-cols-2 divide-x divide-y divide-[var(--line)] sm:grid-cols-3 sm:divide-y-0">
           <div className="px-4 py-2">
@@ -166,6 +218,30 @@ export default async function DeliveryNotesPage() {
           </div>
         </div>
       </div>
+
+      {invoiceOptions.length > 0 ? (
+        <details className="group rounded-xl border border-[var(--line)] bg-[var(--panel)]">
+          <summary className="cursor-pointer select-none px-4 py-2.5 text-[12px] font-semibold text-[var(--ink)] group-open:border-b group-open:border-[var(--line)]">
+            Create Delivery Note from paid invoice
+          </summary>
+          <form action={createDeliveryNoteAction} className="grid grid-cols-1 gap-3 p-4 sm:grid-cols-2 lg:grid-cols-3">
+            <select name="invoiceId" required className="h-9 rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 text-sm sm:col-span-2">
+              <option value="">Select paid invoice...</option>
+              {invoiceOptions.map((invoice) => (
+                <option key={invoice.id} value={invoice.id}>{invoice.invoiceNumber} - {invoice.job?.jobNumber ?? invoice.client?.fullName ?? "Invoice"}</option>
+              ))}
+            </select>
+            <input name="deliveredByName" required placeholder="Delivered by" className="h-9 rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 text-sm" />
+            <input name="receivedByName" required placeholder="Received by" className="h-9 rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 text-sm" />
+            <select name="deliveryMethod" defaultValue="" className="h-9 rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 text-sm">
+              <option value="">No method</option>
+              {DELIVERY_METHODS.map((method) => <option key={method} value={method}>{method.replaceAll("_", " ")}</option>)}
+            </select>
+            <input name="note" placeholder="Optional note" className="h-9 rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 text-sm" />
+            <button type="submit" className="btn-premium h-9 rounded-lg px-5 text-sm font-semibold">Create Delivery Note</button>
+          </form>
+        </details>
+      ) : null}
 
       <div className="overflow-x-auto rounded-xl border border-[var(--line)]">
         <table className="w-full text-left text-sm">

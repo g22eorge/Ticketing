@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 
 import { JobStatusBadge } from "@/components/jobs/JobStatusBadge";
 import { CopyButton } from "@/components/shared/CopyButton";
@@ -9,6 +10,9 @@ import { requireOrgSession } from "@/lib/org-context";
 import { requireModule, OrgModule } from "@/lib/module-access";
 import { formatEATDate } from "@/lib/date-eat";
 import { normalizeJobStatus } from "@/lib/job-status";
+import { assertOrgCanMutate } from "@/lib/org-write";
+import { writeSystemAuditEvent } from "@/lib/commercial/audit";
+import { ensureQuotationFromJob } from "@/lib/commercial/document-workflow";
 
 function DeviceIcon({ type }: { type: string }) {
   const cls = "inline-block h-3.5 w-3.5 shrink-0 text-[var(--ink-muted)]";
@@ -59,6 +63,27 @@ export default async function JobCardsPage({
   await requireModule(OrgModule.JOBS);
 
   const { q, status: statusFilter } = await searchParams;
+
+  async function convertJobCardToQuotationAction(formData: FormData) {
+    "use server";
+    const { user, orgId, org } = await requireOrgSession();
+    if (!(["ADMIN", "OPS", "MANAGER", "SALES", "FINANCE"].includes(user.role) || can.viewFinancials(user))) return;
+    assertOrgCanMutate({ access: org.access, userRole: user.role, userAccessMode: user.accessMode, kind: "GENERAL" });
+
+    const jobId = String(formData.get("jobId") ?? "").trim();
+    if (!jobId) return;
+
+    const quotation = await prisma.$transaction(async (tx) => {
+      const quotation = await ensureQuotationFromJob(tx, { orgId, jobId, userId: user.id, currency: org.baseCurrency });
+      return quotation ? { id: quotation.id, quoteNumber: quotation.quoteNumber } : null;
+    });
+    if (quotation) {
+      await writeSystemAuditEvent({ orgId, actorUserId: user.id, entityType: "Quotation", entityId: quotation.id, action: "JOB_CARD_CONVERTED_TO_QUOTATION", summary: `Job card converted to quotation ${quotation.quoteNumber}` });
+    }
+
+    revalidatePath("/documents/job-cards");
+    revalidatePath("/documents/quotations");
+  }
 
   const jobs = await prisma.job.findMany({
     where: {
@@ -113,7 +138,7 @@ export default async function JobCardsPage({
           </span>
         </p>
         <Link href="/jobs/new" className="btn-premium rounded-lg px-3 py-1.5 text-[12px]">
-          + New Job
+          Create Job Card
         </Link>
       </div>
 
@@ -253,6 +278,12 @@ export default async function JobCardsPage({
                           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
                           Print
                         </a>
+                        <form action={convertJobCardToQuotationAction}>
+                          <input type="hidden" name="jobId" value={job.id} />
+                          <button className="inline-flex items-center gap-1 rounded-md border border-[var(--accent)]/35 bg-[var(--accent)]/10 px-2.5 py-1.5 text-[11px] font-semibold text-[var(--accent)] transition hover:bg-[var(--accent)]/20">
+                            Convert to Quotation
+                          </button>
+                        </form>
 
                         {/* Copy job link */}
                         <CopyButton

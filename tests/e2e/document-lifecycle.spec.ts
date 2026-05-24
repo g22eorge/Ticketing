@@ -109,6 +109,7 @@ async function seedLifecycleFixture() {
 
   await prisma.deliveryNote.deleteMany({ where: { orgId: org.id, invoice: { jobId: job.id } } }).catch(() => undefined);
   await prisma.payment.deleteMany({ where: { orgId: org.id, invoice: { jobId: job.id } } });
+  await prisma.quotation.deleteMany({ where: { orgId: org.id, jobId: job.id } });
   await prisma.invoice.deleteMany({ where: { orgId: org.id, jobId: job.id } });
   await prisma.job.update({ where: { id: job.id }, data: { invoiceNumber: null, invoiceIssuedAt: null, clientPaid: false, clientPaidAt: null, clientPaidById: null } });
 
@@ -128,7 +129,19 @@ async function expectPdf(page: Page, path: string) {
 test("document lifecycle generates job card, quote, invoice, receipt, and delivery note", async ({ page }) => {
   const { org, user, job } = await seedLifecycleFixture();
   await login(page, user.email);
+
+  await page.goto("/documents/job-cards?q=E2E-DOC-LIFE-0001");
+  await expect(page.getByRole("link", { name: "Create Job Card" })).toBeVisible();
+  await page.getByRole("button", { name: "Convert to Quotation" }).click();
+  await expect.poll(async () => prisma.quotation.count({ where: { orgId: org.id, jobId: job.id } })).toBe(1);
+
+  await page.goto("/documents/quotations?q=E2E-DOC-LIFE-0001");
+  await expect(page.getByRole("link", { name: "Create Quotation" })).toBeVisible();
+  await page.getByRole("button", { name: "Convert to Invoice" }).click();
+  await expect.poll(async () => prisma.invoice.count({ where: { orgId: org.id, jobId: job.id } })).toBe(1);
+
   await page.goto("/documents/invoices");
+  await expect(page.getByRole("link", { name: "Create Invoice" })).toBeVisible();
 
   await expectPdf(page, `/api/jobs/${job.id}/job-card`);
   await expectPdf(page, `/api/jobs/${job.id}/quotation`);
@@ -140,6 +153,8 @@ test("document lifecycle generates job card, quote, invoice, receipt, and delive
   });
   await prisma.invoice.update({ where: { id: invoice.id }, data: { paidAmount: invoice.totalAmount, paidAt: new Date(), status: "PAID" } });
   await prisma.job.update({ where: { id: job.id }, data: { clientPaid: true, clientPaidAt: new Date(), clientPaidById: user.id, clientPaymentRef: payment.reference } });
+  await page.goto("/documents/receipts");
+  await expect(page.getByRole("link", { name: "Create Receipt" })).toBeVisible();
   await expectPdf(page, `/api/payments/${payment.id}/receipt`);
 
   const deliveryNote = await prisma.deliveryNote.create({
@@ -154,5 +169,7 @@ test("document lifecycle generates job card, quote, invoice, receipt, and delive
       items: { create: [{ description: "Lifecycle repaired device handover", quantity: 1 }] },
     },
   });
+  await page.goto("/documents/delivery-notes");
+  await expect(page.getByRole("link", { name: "Create Delivery Note" })).toBeVisible();
   await expectPdf(page, `/api/delivery-notes/${deliveryNote.id}`);
 });

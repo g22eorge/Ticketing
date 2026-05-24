@@ -44,6 +44,10 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
   }
 
   const branding = await getDocumentBrandingSettings(orgId);
+  const receipt = await prisma.receipt.findFirst({
+    where: { orgId, paymentId: payment.id },
+    select: { receiptNumber: true },
+  });
   const currency = normalizeCurrency(payment.currency, org.baseCurrency);
   const forLabel = payment.invoice?.job?.jobNumber
     ? `Repair job ${payment.invoice.job.jobNumber} (${payment.invoice.invoiceNumber})`
@@ -55,7 +59,7 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
 
   const element = createElement(PaymentReceiptDocument as never, {
     branding,
-    receiptNumber: `RCPT-${payment.id.slice(0, 8).toUpperCase()}`,
+    receiptNumber: receipt?.receiptNumber ?? `RCPT-${payment.id.slice(0, 8).toUpperCase()}`,
     receivedAt: payment.receivedAt.toLocaleString("en-GB"),
     method: prettyEnum(payment.method),
     reference: payment.reference,
