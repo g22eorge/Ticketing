@@ -582,10 +582,10 @@ export default async function ExpensesPage({ searchParams }: Props) {
             Search
           </button>
         </form>
-        <div className="flex min-w-0 flex-wrap gap-1">
+        <div className="flex w-full min-w-0 gap-1 overflow-x-auto pb-1 sm:w-auto sm:flex-wrap sm:overflow-visible sm:pb-0">
           <Link
             href={filterUrl({ category: "" })}
-            className={`max-w-full rounded-full border px-2 py-0.5 text-[11px] font-semibold transition sm:px-2.5 ${
+            className={`shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-semibold transition sm:px-2.5 ${
               !catFilter
                 ? "border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]"
                 : "border-[var(--line)] text-[var(--ink-muted)] hover:border-[var(--accent)]/50"
@@ -597,7 +597,7 @@ export default async function ExpensesPage({ searchParams }: Props) {
             <Link
               key={cat}
               href={filterUrl({ category: catFilter === cat ? "" : cat })}
-              className={`max-w-full rounded-full border px-2 py-0.5 text-[11px] font-semibold transition sm:px-2.5 ${
+              className={`shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-semibold transition sm:px-2.5 ${
                 catFilter === cat
                   ? "border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]"
                   : "border-[var(--line)] text-[var(--ink-muted)] hover:border-[var(--accent)]/50"

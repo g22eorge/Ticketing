@@ -157,7 +157,7 @@ export function JobTable({
   const paginationBar = hasPagination && (totalPages ?? 0) > 1 ? (
     <div className="flex items-center gap-1.5">
       {isPrevDisabled || !prevPageHref ? (
-        <span className="rounded-lg border border-[var(--line)] px-2.5 py-1 text-xs font-medium opacity-30 text-[var(--ink-muted)]">
+        <span className="rounded-lg border border-[var(--line)] px-2.5 py-1 text-xs font-medium text-[var(--ink-muted)]" aria-disabled="true">
           ← Prev
         </span>
       ) : (
@@ -170,7 +170,7 @@ export function JobTable({
       )}
       <span className="min-w-[3rem] text-center text-xs tabular-nums text-[var(--ink-muted)]">{page} / {totalPages}</span>
       {isNextDisabled || !nextPageHref ? (
-        <span className="rounded-lg border border-[var(--line)] px-2.5 py-1 text-xs font-medium opacity-30 text-[var(--ink-muted)]">
+        <span className="rounded-lg border border-[var(--line)] px-2.5 py-1 text-xs font-medium text-[var(--ink-muted)]" aria-disabled="true">
           Next →
         </span>
       ) : (
@@ -227,7 +227,7 @@ export function JobTable({
               ? typeof job.clientBill === "number"
                 ? <span key="priced" className="rounded px-1.5 py-0.5 text-[10px] font-semibold bg-[var(--accent)]/10 text-[#9A7A00]">Priced</span>
                 : ["AWAITING_APPROVAL", "IN_REPAIR", "READY_FOR_PICKUP"].includes(job.status)
-                  ? <span key="needs" className="rounded px-1.5 py-0.5 text-[10px] font-semibold bg-amber-50 text-amber-600">Needs pricing</span>
+                  ? <span key="needs" className="rounded px-1.5 py-0.5 text-[10px] font-semibold bg-amber-50 text-amber-800">Needs pricing</span>
                   : null
                   : null;
 
@@ -469,7 +469,7 @@ export function JobTable({
                           typeof job.clientBill === "number"
                             ? "bg-[var(--accent)]/10 text-[#9A7A00]"
                             : ["AWAITING_APPROVAL", "IN_REPAIR", "READY_FOR_PICKUP"].includes(job.status)
-                              ? "bg-amber-50 text-amber-600"
+                              ? "bg-amber-50 text-amber-800"
                               : "hidden"
                         }`}>
                           {typeof job.clientBill === "number"
@@ -548,7 +548,7 @@ export function JobTable({
                       {canDelete && deleteAction ? (
                         <form action={deleteAction} className="inline">
                           <input type="hidden" name="id" value={job.id} />
-                          <button className="whitespace-nowrap rounded-lg border border-red-200 px-2.5 py-1 text-[11px] font-medium text-red-500 transition-colors hover:border-red-300 hover:bg-red-50 hover:text-red-600">
+                          <button className="whitespace-nowrap rounded-lg border border-red-300 px-2.5 py-1 text-[11px] font-medium text-red-700 transition-colors hover:border-red-400 hover:bg-red-50 hover:text-red-800">
                             Delete
                           </button>
                         </form>
