@@ -11,10 +11,10 @@ import {
 
 describe("ALL_MODULES", () => {
   it("contains the expected 10 modules", () => {
-    const expected: OrgModule[] = [
+    const expected = [
       "JOBS", "INVENTORY", "POS", "PURCHASE_ORDERS",
       "INVOICING", "COMPLAINTS", "REPORTS", "SALES", "FIELD", "TARGETS",
-    ];
+    ] as const;
     expect(ALL_MODULES).toEqual(expected);
   });
 
