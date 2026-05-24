@@ -10,7 +10,8 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getTransactionStatus, parseMerchantRef, PLAN_PRICES, CURRENCY } from "@/lib/pesapal";
+import { getTransactionStatus, parseMerchantRef, CURRENCY } from "@/lib/pesapal";
+import { getEffectivePlanPrice } from "@/lib/plan-prices";
 import { OrgPlan } from "@prisma/client";
 import { recordBillingEvent } from "@/lib/billing-events";
 import { sendPaymentConfirmation, sendPaymentFailedAlert } from "@/lib/email";
@@ -51,8 +52,8 @@ export async function GET(req: NextRequest) {
       return NextResponse.json(ack);
     }
 
-    // Ensure the paid amount matches the intended plan.
-    const expectedAmount = PLAN_PRICES[plan];
+    // Ensure the paid amount matches the intended plan (Zoho-synced or fallback price).
+    const expectedAmount = await getEffectivePlanPrice(plan);
     if (tx.currency !== CURRENCY || typeof expectedAmount !== "number" || tx.amount !== expectedAmount) {
       return NextResponse.json(ack);
     }
