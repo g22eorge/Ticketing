@@ -177,7 +177,7 @@ export default async function LeadDetailPage({
                     ))}
                   </select>
                   <input name="note" placeholder="Optional note…" className="min-w-0 flex-1 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/15" />
-                  <button type="submit" className="rounded-lg border border-[var(--accent)]/40 bg-[var(--accent)] px-4 py-2 text-[12px] font-bold text-white shadow-sm transition hover:bg-[var(--accent)]/90">
+                  <button type="submit" className="btn-premium rounded-lg px-4 py-2 text-[12px] font-bold">
                     Update
                   </button>
                 </div>
@@ -205,7 +205,7 @@ export default async function LeadDetailPage({
                     </select>
                     <textarea name="note" required placeholder="Activity note…" rows={2} className="min-w-0 flex-1 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/15" />
                   </div>
-                  <button type="submit" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-4 py-2 text-[12px] font-semibold text-[var(--ink)] transition hover:border-[var(--accent)]/40 hover:text-[var(--accent)]">
+                  <button type="submit" className="btn-premium-secondary rounded-lg px-4 py-2 text-[12px] font-semibold">
                     Add Activity
                   </button>
                 </form>

@@ -123,7 +123,7 @@ export default async function QuotationDetailPage({
               <form action={sendAction}>
                 <button
                   type="submit"
-                  className="rounded-lg border border-[var(--accent)]/40 bg-[var(--accent)] px-4 py-2 text-[12px] font-bold text-white shadow-sm transition hover:bg-[var(--accent)]/90"
+                  className="btn-premium rounded-lg px-4 py-2 text-[12px] font-bold"
                 >
                   Send to Client
                 </button>

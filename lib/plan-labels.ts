@@ -4,10 +4,10 @@
  */
 
 export const PLAN_LABEL: Record<string, string> = {
-  FREE:         "Ekyenfuna",   // complimentary / free
-  STARTER:      "Okutandika",  // beginning
-  PROFESSIONAL: "Enkola",      // the way of working
-  ENTERPRISE:   "Obugabi",     // prosperity
+  FREE:         "Duuka",
+  STARTER:      "Duuka Plus",
+  PROFESSIONAL: "Duuka Pro",
+  ENTERPRISE:   "Duuka ProMax",
 };
 
 /** Returns the display label, falling back to the raw key if not mapped. */

@@ -254,7 +254,7 @@ export default async function CampaignsPage({ searchParams }: { searchParams: Pr
               className="w-full rounded-lg border border-[var(--line)] bg-[var(--bg)] px-3 py-2 text-sm" />
           </div>
           <div className="col-span-2 flex justify-end">
-            <button type="submit" className="rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-black">Create Campaign</button>
+            <button type="submit" className="btn-premium rounded-lg px-4 py-2 text-sm font-semibold">Create Campaign</button>
           </div>
         </form>
       </details>

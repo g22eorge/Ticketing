@@ -221,7 +221,7 @@ export function NewQuotationForm({ leadId, clientId, jobId, currency, canOverrid
         <button
           type="submit"
           disabled={isPending}
-          className="rounded-lg border border-[var(--accent)]/40 bg-[var(--accent)] px-6 py-2.5 text-[13px] font-bold text-white shadow-sm transition hover:bg-[var(--accent)]/90 disabled:opacity-60"
+          className="btn-premium rounded-lg px-6 py-2.5 text-[13px] font-bold disabled:opacity-60"
         >
           {isPending ? "Creating…" : "Create Quotation"}
         </button>

@@ -188,7 +188,7 @@ export default async function CashFlowPage({
             <select name="year" defaultValue={year} className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1.5 text-xs outline-none">
               {yearOptions.map((y) => <option key={y} value={y}>{y}</option>)}
             </select>
-            <button type="submit" className="rounded-lg bg-[var(--accent)] px-3 py-1.5 text-xs font-semibold text-white">Apply</button>
+            <button type="submit" className="btn-premium rounded-lg px-3 py-1.5 text-xs font-semibold">Apply</button>
           </form>
         </div>
       </div>

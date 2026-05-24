@@ -257,7 +257,7 @@ export default async function SalesPage({
           {activeTab === "leads" && can.createLeads(user) ? (
             <Link
               href="/sales?tab=leads&newLead=1"
-              className="rounded-lg border border-[var(--accent)]/40 bg-[var(--accent)] px-4 py-2.5 text-[12px] font-bold text-white shadow-sm transition hover:bg-[var(--accent)]/90"
+              className="btn-premium rounded-lg px-4 py-2.5 text-[12px] font-bold"
             >
               + New Lead
             </Link>
@@ -265,7 +265,7 @@ export default async function SalesPage({
           {activeTab === "quotations" && can.createQuotations(user) ? (
             <Link
               href="/sales/quotations/new"
-              className="rounded-lg border border-[var(--accent)]/40 bg-[var(--accent)] px-4 py-2.5 text-[12px] font-bold text-white shadow-sm transition hover:bg-[var(--accent)]/90"
+              className="btn-premium rounded-lg px-4 py-2.5 text-[12px] font-bold"
             >
               + New Quotation
             </Link>
@@ -345,54 +345,75 @@ export default async function SalesPage({
       {/* ── SEARCH + TABS ──────────────────────────────────────────────────── */}
       <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)]">
 
-        {/* Tab row */}
-        <div className="flex items-center justify-between border-b border-[var(--line)] pr-3">
-          <div className="flex">
-            <Link
-              href={`/sales?tab=leads${searchQ ? `&q=${encodeURIComponent(searchQ)}` : ""}`}
-              className={`px-5 py-3 text-[12px] font-semibold transition-colors ${
-                activeTab === "leads"
-                  ? "border-b-2 border-[var(--accent)] text-[var(--accent)]"
-                  : "text-[var(--ink-muted)] hover:text-[var(--ink)]"
-              }`}
-            >
-              Leads
-              <span className="ml-1.5 rounded-full bg-[var(--panel-strong)] px-1.5 py-0.5 text-[10px] font-bold text-[var(--ink-muted)]">
-                {totalLeads}
-              </span>
-            </Link>
-            {can.createQuotations(user) ? (
+        {/* Tab row + search */}
+        <div className="border-b border-[var(--line)]">
+          <div className="flex items-center justify-between pr-3">
+            <div className="flex">
               <Link
-                href={`/sales?tab=quotations${searchQ ? `&q=${encodeURIComponent(searchQ)}` : ""}`}
+                href={`/sales?tab=leads${searchQ ? `&q=${encodeURIComponent(searchQ)}` : ""}`}
                 className={`px-5 py-3 text-[12px] font-semibold transition-colors ${
-                  activeTab === "quotations"
+                  activeTab === "leads"
                     ? "border-b-2 border-[var(--accent)] text-[var(--accent)]"
                     : "text-[var(--ink-muted)] hover:text-[var(--ink)]"
                 }`}
               >
-                Quotations
+                Leads
+                <span className="ml-1.5 rounded-full bg-[var(--panel-strong)] px-1.5 py-0.5 text-[10px] font-bold text-[var(--ink-muted)]">
+                  {totalLeads}
+                </span>
               </Link>
-            ) : null}
+              {can.createQuotations(user) ? (
+                <Link
+                  href={`/sales?tab=quotations${searchQ ? `&q=${encodeURIComponent(searchQ)}` : ""}`}
+                  className={`px-5 py-3 text-[12px] font-semibold transition-colors ${
+                    activeTab === "quotations"
+                      ? "border-b-2 border-[var(--accent)] text-[var(--accent)]"
+                      : "text-[var(--ink-muted)] hover:text-[var(--ink)]"
+                  }`}
+                >
+                  Quotations
+                </Link>
+              ) : null}
+            </div>
+            {/* Search – inline on sm+ */}
+            <form method="GET" className="hidden items-center gap-1.5 sm:flex">
+              <input type="hidden" name="tab" value={activeTab} />
+              <input
+                name="q"
+                defaultValue={searchQ}
+                placeholder={activeTab === "leads" ? "Search name, phone…" : "Search quote # or name…"}
+                className="w-40 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-xs outline-none transition focus:border-[var(--accent)]/50"
+              />
+              {searchQ && (
+                <Link
+                  href={`/sales?tab=${activeTab}`}
+                  className="text-[11px] text-[var(--ink-muted)] hover:text-[var(--ink)]"
+                >
+                  ✕
+                </Link>
+              )}
+            </form>
           </div>
-
-          {/* Search */}
-          <form method="GET" className="flex items-center gap-1.5">
-            <input type="hidden" name="tab" value={activeTab} />
-            <input
-              name="q"
-              defaultValue={searchQ}
-              placeholder={activeTab === "leads" ? "Search name, phone…" : "Search quote # or name…"}
-              className="w-48 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-xs outline-none transition focus:border-[var(--accent)]/50"
-            />
-            {searchQ && (
-              <Link
-                href={`/sales?tab=${activeTab}`}
-                className="text-[11px] text-[var(--ink-muted)] hover:text-[var(--ink)]"
-              >
-                ✕
-              </Link>
-            )}
-          </form>
+          {/* Search – full-width row on mobile */}
+          <div className="px-3 pb-2 pt-1.5 sm:hidden">
+            <form method="GET" className="flex items-center gap-1.5">
+              <input type="hidden" name="tab" value={activeTab} />
+              <input
+                name="q"
+                defaultValue={searchQ}
+                placeholder={activeTab === "leads" ? "Search name, phone…" : "Search quote # or name…"}
+                className="min-w-0 flex-1 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-xs outline-none transition focus:border-[var(--accent)]/50"
+              />
+              {searchQ && (
+                <Link
+                  href={`/sales?tab=${activeTab}`}
+                  className="text-[11px] text-[var(--ink-muted)] hover:text-[var(--ink)]"
+                >
+                  ✕
+                </Link>
+              )}
+            </form>
+          </div>
         </div>
 
         {/* ── LEADS TAB ──────────────────────────────────────────────── */}
@@ -498,7 +519,7 @@ export default async function SalesPage({
                   <div className="flex items-center gap-2 pt-1">
                     <button
                       type="submit"
-                      className="rounded-lg border border-[var(--accent)]/40 bg-[var(--accent)] px-4 py-2 text-[12px] font-bold text-white shadow-sm transition hover:bg-[var(--accent)]/90"
+                      className="btn-premium rounded-lg px-4 py-2 text-[12px] font-bold"
                     >
                       Create Lead
                     </button>
@@ -599,7 +620,7 @@ export default async function SalesPage({
                               ) : <span className="opacity-40 text-[var(--ink-muted)]">—</span>}
                             </td>
                             <td className="px-4 py-3 text-right">
-                              <Link href={`/sales/leads/${lead.id}`} className="whitespace-nowrap rounded-lg border border-[var(--line)] px-2.5 py-1 text-[11px] font-semibold text-[var(--ink)] transition-colors hover:border-[var(--accent)]/50 hover:text-[var(--accent)]">Open</Link>
+                              <Link href={`/sales/leads/${lead.id}`} className="btn-premium-secondary whitespace-nowrap rounded-lg px-2.5 py-1 text-[11px] font-semibold">Open</Link>
                             </td>
                           </tr>
                         );
@@ -730,7 +751,7 @@ export default async function SalesPage({
                               ) : <span className="opacity-40 text-[var(--ink-muted)]">—</span>}
                             </td>
                             <td className="px-4 py-3 text-right">
-                              <Link href={`/sales/quotations/${q.id}`} className="whitespace-nowrap rounded-lg border border-[var(--line)] px-2.5 py-1 text-[11px] font-semibold text-[var(--ink)] transition-colors hover:border-[var(--accent)]/50 hover:text-[var(--accent)]">Open</Link>
+                              <Link href={`/sales/quotations/${q.id}`} className="btn-premium-secondary whitespace-nowrap rounded-lg px-2.5 py-1 text-[11px] font-semibold">Open</Link>
                             </td>
                           </tr>
                         );
