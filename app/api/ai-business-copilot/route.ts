@@ -25,12 +25,21 @@ const OPEN_JOB_STATUSES = [
 ] as const;
 
 const SYSTEM_PROMPT = `You are the Duuka ProMax Business Copilot for owners and managers.
-Use only the supplied tenant-scoped metrics. Do not invent data, client names, job notes,
-or private information. Focus on decision making across repairs, sales, finance, and
-inventory. Answer with concise sections: Summary, What the numbers mean, Risks,
-Recommended actions, and Follow-up questions if needed. Prioritise specific actions
-over generic advice. If the data is insufficient, say what is missing and suggest where
-in Duuka ProMax to check. Never say you cannot help if metrics were supplied.`;
+
+The user can already see the raw numbers on their dashboard — do NOT restate them.
+Your only job is to INTERPRET the data: spot what is abnormal, explain why it matters,
+and recommend specific actions.
+
+Rules:
+- Never repeat or summarise numbers the manager already sees on screen.
+- Skip generic phrases like "revenue is X" or "you have Y open jobs" — they already know.
+- Lead with the most important insight or risk, not a data recap.
+- Be direct and specific. Name the pattern, the risk, and the action.
+- Use only the supplied tenant-scoped metrics. Never invent data, client names, or job notes.
+- If a metric is zero or healthy, skip it — only flag what needs attention.
+- Respond in plain language with short sections. Use Risks and Recommended Actions only
+  when there are real issues. If everything is healthy, say so in one sentence.
+- If data is insufficient, name exactly which Duuka ProMax page has the missing information.`;
 
 function monthRange(date: Date) {
   return {
@@ -304,41 +313,59 @@ function fallbackAnswer(question: string, data: Awaited<ReturnType<typeof buildB
   const focus = question.toLowerCase();
   const risks = riskList(data);
   const actions = actionList(data);
-  const lines = [
-    "Summary",
-    `For ${data.period}, management should watch ${data.repairs.openJobs} open repair job(s), ${data.repairs.overdueJobs} overdue job(s), ${data.inventory.lowStockParts} low-stock part(s), ${formatAmount(data.finance.receivables, data.currency)} receivables, and ${formatAmount(data.finance.cashMarginSignal, data.currency)} cash margin signal.`,
-    "",
-    "What the numbers mean",
-    `Revenue signal is ${formatAmount(data.finance.totalRevenue, data.currency)} (${changePhrase(data.finance.totalRevenue, data.finance.totalRevenuePrev)}). Repairs contributed ${formatAmount(data.finance.repairRevenue, data.currency)}, POS contributed ${formatAmount(data.sales.posRevenue, data.currency)}, and paid invoices contributed ${formatAmount(data.sales.paidInvoiceRevenue, data.currency)}.`,
-    `Repairs: ${data.repairs.jobsThisMonth} new job(s), ${data.repairs.completedThisMonth} completed job(s), ${data.repairs.openJobs} open job(s), average turnaround ${formatNumber(data.repairs.averageTurnaroundDays, 1)} day(s).`,
-    `Inventory: ${data.inventory.activeParts} active part(s), ${data.inventory.lowStockParts} below reorder level, stock value around ${formatAmount(data.inventory.inventoryValue, data.currency)}, and ${data.inventory.openPurchaseOrders} open purchase order(s).`,
-    `Finance: expenses are ${formatAmount(data.finance.expenses, data.currency)} (${changePhrase(data.finance.expenses, data.finance.expensesPrev)}), receivables are ${formatAmount(data.finance.receivables, data.currency)}, and supplier payables are ${formatAmount(data.finance.payables, data.currency)}.`,
-  ];
+  const lines: string[] = [];
 
+  // Only add a focus-specific insight when there is a genuine issue to flag
   if (focus.includes("inventory") || focus.includes("stock") || focus.includes("part")) {
-    lines.push("", "Inventory focus", `Start with low-stock parts, especially anything linked to waiting repair jobs. Top low-stock examples: ${data.inventory.topLowStockParts.length ? data.inventory.topLowStockParts.map((part) => `${part.name} (${part.qtyOnHand}/${part.reorderLevel})`).join(", ") : "none detected"}.`);
+    if (data.inventory.lowStockParts > 0) {
+      lines.push(
+        "Inventory risk",
+        `${data.inventory.lowStockParts} part(s) are at or below reorder level${data.repairs.waitingForParts > 0 ? `, and ${data.repairs.waitingForParts} job(s) are already waiting for parts — these two lists need cross-referencing urgently` : ""}. Top items: ${data.inventory.topLowStockParts.map((p) => `${p.name} (${p.qtyOnHand} left, reorder at ${p.reorderLevel})`).join("; ")}.`,
+      );
+    } else {
+      lines.push("Inventory is healthy — all parts are above reorder level.");
+    }
   } else if (focus.includes("repair") || focus.includes("job") || focus.includes("technician")) {
-    lines.push("", "Repair focus", `Prioritise ${data.repairs.overdueJobs} overdue job(s), ${data.repairs.staleJobs} stale job(s), ${data.repairs.awaitingApproval} awaiting approval, and ${data.repairs.waitingForParts} waiting for parts.`);
+    if (data.repairs.overdueJobs > 0 || data.repairs.staleJobs > 0 || data.repairs.awaitingApproval > 0) {
+      const blockers = [
+        data.repairs.overdueJobs > 0 ? `${data.repairs.overdueJobs} overdue (>7 days)` : null,
+        data.repairs.staleJobs > 0 ? `${data.repairs.staleJobs} stale (no update in 3+ days)` : null,
+        data.repairs.awaitingApproval > 0 ? `${data.repairs.awaitingApproval} awaiting client approval` : null,
+        data.repairs.waitingForParts > 0 ? `${data.repairs.waitingForParts} waiting for parts` : null,
+      ].filter(Boolean).join(", ");
+      lines.push("Repair bottlenecks", `Jobs are blocked across multiple stages: ${blockers}. Each needs an assigned owner and a specific next action today.`);
+    } else {
+      lines.push("Repair pipeline is moving — no overdue or stale jobs detected.");
+    }
   } else if (focus.includes("cash") || focus.includes("finance") || focus.includes("profit") || focus.includes("expense")) {
-    lines.push("", "Finance focus", `Cash margin is ${formatAmount(data.finance.cashMarginSignal, data.currency)}. Push collections on ${data.finance.overdueInvoices} overdue invoice(s), control expenses, and review external repair costs of ${formatAmount(data.finance.externalRepairCost, data.currency)}.`);
+    if (data.finance.cashMarginSignal < 0) {
+      lines.push("Cash margin warning", `External repair costs (${formatAmount(data.finance.externalRepairCost, data.currency)}) and expenses are consuming more than revenue collected this month. Collections and cost control need immediate attention.`);
+    } else if (data.finance.overdueInvoices > 0) {
+      lines.push("Collections risk", `${data.finance.overdueInvoices} invoice(s) are overdue. Receivables sitting uncollected reduce available cash even when revenue looks healthy.`);
+    } else {
+      lines.push("Finance indicators are within normal range this month.");
+    }
   } else if (focus.includes("sale") || focus.includes("lead") || focus.includes("target")) {
-    lines.push("", "Sales focus", `There are ${data.sales.openLeads} open lead(s), ${data.sales.wonLeads} won lead(s), and pipeline value of ${formatAmount(data.sales.pipelineValue, data.currency)}. Target progress is ${data.sales.targetProgressPct === null ? "not set" : `${data.sales.targetProgressPct.toFixed(1)}%`}.`);
+    if (data.sales.targetProgressPct !== null && data.sales.targetProgressPct < 80) {
+      lines.push("Target gap", `Sales target progress is ${data.sales.targetProgressPct.toFixed(1)}% — below the 80% warning threshold. With ${data.sales.openLeads} open leads and pipeline value of ${formatAmount(data.sales.pipelineValue, data.currency)}, the gap needs active pipeline conversion this week.`);
+    } else if (data.sales.openLeads > 0) {
+      lines.push(`${data.sales.openLeads} open lead(s) in pipeline with ${formatAmount(data.sales.pipelineValue, data.currency)} estimated value. Prioritise qualified and proposal-stage leads for same-day follow-up.`);
+    } else {
+      lines.push("No open leads detected. Consider whether lead capture is being recorded in Duuka ProMax.");
+    }
+  }
+
+  if (risks.length > 0) {
+    lines.push("", "Risks", ...risks.map((r, i) => `${i + 1}. ${r}`));
   }
 
   lines.push(
     "",
-    "Risks",
-    ...(risks.length ? risks.map((risk, index) => `${index + 1}. ${risk}`) : ["1. No major cross-module risk detected from the available data."]),
-    "",
     "Recommended actions",
-    ...actions.map((action, index) => `${index + 1}. ${action}`),
-    "",
-    "Follow-up questions to ask next",
-    "1. Which repair jobs are stuck and who owns each blocker?",
-    "2. Which low-stock parts are blocking active jobs?",
-    "3. Which receivables should we collect first?",
+    ...actions.map((a, i) => `${i + 1}. ${a}`),
   );
-  return lines.join("\n\n");
+
+  return lines.filter((l) => l !== undefined).join("\n\n");
 }
 
 async function askGemini(apiKey: string, question: string, dataPack: Awaited<ReturnType<typeof buildBusinessDataPack>>) {
