@@ -55,4 +55,10 @@ describe("normalizeJobStatus()", () => {
   it("maps READY_FOR_PICKUP as a standard UI status", () => {
     expect(normalizeJobStatus("READY_FOR_PICKUP")).toBe("READY_FOR_PICKUP");
   });
+
+  it("falls back to DIAGNOSING for any completely unknown status string", () => {
+    // Covers the final fallback branch — protects against future DB migrations
+    // that add statuses before the UI is updated.
+    expect(normalizeJobStatus("SOME_FUTURE_STATUS" as never)).toBe("DIAGNOSING");
+  });
 });

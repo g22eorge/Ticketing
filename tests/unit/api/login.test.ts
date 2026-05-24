@@ -147,6 +147,32 @@ describe("POST /api/login — success path", () => {
     expect(cookie).toContain("session=xyz");
   });
 
+  it("falls back to headers.get('set-cookie') when getSetCookie returns empty array", async () => {
+    // Covers lines 117-121: else-branch where getSetCookie() is present but
+    // returns [] (e.g. older runtimes / custom Response objects) while the
+    // lower-level headers.get("set-cookie") still carries a value.
+    mockQueryRaw
+      .mockImplementationOnce(async () => [ACTIVE_USER])
+      .mockImplementationOnce(async (): Promise<[]> => []);
+    const fakeUpstream = {
+      status: 200,
+      text: async () => '{"token":"abc"}',
+      headers: {
+        get: (key: string) => {
+          if (key === "content-type") return "application/json";
+          if (key === "set-cookie") return "session=fallback; Path=/; HttpOnly";
+          return null;
+        },
+        getSetCookie: () => [] as string[],
+      },
+    } as unknown as Response;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    globalThis.fetch = mock(async () => fakeUpstream) as any;
+    const res = await POST(makePost({ email: "alice@example.com", password: "Pass1!" }));
+    const cookie = res.headers.get("set-cookie");
+    expect(cookie).toContain("session=fallback");
+  });
+
   it("returns 500 with LOGIN_FAILED code when fetch throws", async () => {
     mockQueryRaw
       .mockImplementationOnce(async () => [ACTIVE_USER])
@@ -159,7 +185,7 @@ describe("POST /api/login — success path", () => {
     expect(body.code).toBe("LOGIN_FAILED");
   });
 
-  it("redirects platform admin to /platform-admin", async () => {
+  it("redirects platform admin to /platform-admin (DB permission row)", async () => {
     // Second queryRaw returns a platform_admin permission row
     mockQueryRaw
       .mockImplementationOnce(async () => [ACTIVE_USER])
@@ -167,6 +193,34 @@ describe("POST /api/login — success path", () => {
     stubFetch(makeBetterAuthResponse(200, '{"token":"abc"}'));
     const res = await POST(makePost({ email: "alice@example.com", password: "Pass1!" }));
     expect(res.headers.get("x-login-redirect")).toBe("/platform-admin");
+  });
+
+  it("redirects platform admin via PLATFORM_ADMIN_EMAIL env var (skips DB query)", async () => {
+    // This covers the early-return branch in isPlatformAdmin (line 21):
+    //   if (configuredEmail && user.email === configuredEmail) return true
+    const prev = process.env.PLATFORM_ADMIN_EMAIL;
+    process.env.PLATFORM_ADMIN_EMAIL = "alice@example.com";
+    try {
+      // Only one queryRaw call needed — isPlatformAdmin returns true before DB query
+      mockQueryRaw.mockImplementationOnce(async () => [ACTIVE_USER]);
+      stubFetch(makeBetterAuthResponse(200, '{"token":"abc"}'));
+      const res = await POST(makePost({ email: "alice@example.com", password: "Pass1!" }));
+      expect(res.headers.get("x-login-redirect")).toBe("/platform-admin");
+    } finally {
+      process.env.PLATFORM_ADMIN_EMAIL = prev;
+    }
+  });
+
+  it("falls back to /dashboard when isPlatformAdmin DB query throws", async () => {
+    // Covers lines 30-31: catch { return false } in isPlatformAdmin
+    mockQueryRaw
+      .mockImplementationOnce(async () => [ACTIVE_USER])      // user lookup succeeds
+      .mockImplementationOnce(async () => { throw new Error("DB locked"); }); // permission check fails
+    stubFetch(makeBetterAuthResponse(200, '{"token":"abc"}'));
+    const res = await POST(makePost({ email: "alice@example.com", password: "Pass1!" }));
+    // isPlatformAdmin returns false → regular dashboard redirect
+    expect(res.headers.get("x-login-redirect")).toBe("/dashboard");
+    expect(res.status).toBe(200);
   });
 });
 
