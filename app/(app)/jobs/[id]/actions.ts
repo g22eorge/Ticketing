@@ -248,20 +248,17 @@ export async function updateJobAction(formData: FormData) {
 
   const transitions: Partial<Record<JobStatus, JobStatus[]>> = {
     RECEIVED: [JobStatus.DIAGNOSING],
-    DIAGNOSING: [
-      JobStatus.REFERRED,
-      JobStatus.IN_REPAIR,
-      JobStatus.AWAITING_APPROVAL,
-      JobStatus.CLOSED,
-    ],
-    REFERRED: [JobStatus.IN_REPAIR, JobStatus.AWAITING_APPROVAL, JobStatus.READY_FOR_PICKUP, JobStatus.COMPLETED, JobStatus.CLOSED],
-    PENDING_EXTERNAL_ASSIGNMENT: [JobStatus.IN_REPAIR, JobStatus.AWAITING_APPROVAL, JobStatus.READY_FOR_PICKUP, JobStatus.COMPLETED, JobStatus.CLOSED],
-    ASSIGNED_ONE_TIME_EXTERNAL: [JobStatus.IN_REPAIR, JobStatus.AWAITING_APPROVAL, JobStatus.READY_FOR_PICKUP, JobStatus.COMPLETED, JobStatus.CLOSED],
-    WAITING_FOR_PARTS: [JobStatus.IN_REPAIR, JobStatus.AWAITING_APPROVAL, JobStatus.READY_FOR_PICKUP, JobStatus.COMPLETED, JobStatus.CLOSED],
-    RETURNED_FROM_EXTERNAL: [JobStatus.IN_REPAIR, JobStatus.AWAITING_APPROVAL, JobStatus.READY_FOR_PICKUP, JobStatus.COMPLETED, JobStatus.CLOSED],
+    DIAGNOSING: [JobStatus.REFERRED, JobStatus.IN_REPAIR],
+    REFERRED: [JobStatus.PENDING_EXTERNAL_ASSIGNMENT, JobStatus.ASSIGNED_ONE_TIME_EXTERNAL, JobStatus.IN_EXTERNAL_REPAIR, JobStatus.AWAITING_APPROVAL],
+    PENDING_EXTERNAL_ASSIGNMENT: [JobStatus.ASSIGNED_ONE_TIME_EXTERNAL, JobStatus.IN_EXTERNAL_REPAIR, JobStatus.AWAITING_APPROVAL],
+    ASSIGNED_ONE_TIME_EXTERNAL: [JobStatus.IN_EXTERNAL_REPAIR, JobStatus.AWAITING_APPROVAL],
+    IN_EXTERNAL_REPAIR: [JobStatus.RETURNED_FROM_EXTERNAL, JobStatus.AWAITING_APPROVAL],
+    WAITING_FOR_PARTS: [JobStatus.IN_REPAIR, JobStatus.CLOSED],
+    RETURNED_FROM_EXTERNAL: [JobStatus.AWAITING_APPROVAL, JobStatus.IN_REPAIR],
     AWAITING_APPROVAL: [JobStatus.IN_REPAIR, JobStatus.CLOSED],
-    IN_REPAIR: [JobStatus.READY_FOR_PICKUP, JobStatus.COMPLETED, JobStatus.CLOSED],
-    READY_FOR_PICKUP: [JobStatus.COMPLETED, JobStatus.CLOSED],
+    IN_REPAIR: [JobStatus.WAITING_FOR_PARTS, JobStatus.READY_FOR_PICKUP, JobStatus.COMPLETED, JobStatus.CLOSED],
+    READY_FOR_PICKUP: [JobStatus.DELIVERED, JobStatus.COMPLETED, JobStatus.CLOSED],
+    DELIVERED: [JobStatus.COMPLETED],
   };
 
   if (payload.nextStatus) {
@@ -273,32 +270,25 @@ export async function updateJobAction(formData: FormData) {
 
   const roleCanTransition = (role: Role, nextStatus: JobStatus) => {
     if (role === "ADMIN") return true;
-    if (can.editDiagnosis(permissionUser)) {
-      return (
-        [
-          JobStatus.DIAGNOSING,
-          JobStatus.REFERRED,
-          JobStatus.IN_REPAIR,
-          JobStatus.READY_FOR_PICKUP,
-          JobStatus.COMPLETED,
-          JobStatus.CLOSED,
-        ] as JobStatus[]
-      ).includes(nextStatus);
-    }
-    if (role === "TECHNICIAN_INTERNAL") {
-      return (
-        [
-          JobStatus.DIAGNOSING,
-          JobStatus.REFERRED,
-          JobStatus.IN_REPAIR,
-          JobStatus.READY_FOR_PICKUP,
-          JobStatus.COMPLETED,
-          JobStatus.CLOSED,
-        ] as JobStatus[]
-      ).includes(nextStatus);
-    }
     if (role === "TECHNICIAN_EXTERNAL") {
-      return ([JobStatus.COMPLETED] as JobStatus[]).includes(nextStatus);
+      return ([JobStatus.AWAITING_APPROVAL, JobStatus.RETURNED_FROM_EXTERNAL] as JobStatus[]).includes(nextStatus);
+    }
+    if (role === "TECHNICIAN_INTERNAL" || can.editDiagnosis(permissionUser)) {
+      return (
+        [
+          JobStatus.DIAGNOSING,
+          JobStatus.REFERRED,
+          JobStatus.PENDING_EXTERNAL_ASSIGNMENT,
+          JobStatus.ASSIGNED_ONE_TIME_EXTERNAL,
+          JobStatus.IN_EXTERNAL_REPAIR,
+          JobStatus.RETURNED_FROM_EXTERNAL,
+          JobStatus.IN_REPAIR,
+          JobStatus.WAITING_FOR_PARTS,
+          JobStatus.READY_FOR_PICKUP,
+          JobStatus.COMPLETED,
+          JobStatus.CLOSED,
+        ] as JobStatus[]
+      ).includes(nextStatus);
     }
     if (role === "OPS") {
       return (
@@ -389,21 +379,14 @@ export async function updateJobAction(formData: FormData) {
     if (hasPartsNeededField) {
       data.partsNeeded = sanitizeOptionalText(payload.partsNeeded) || null;
     }
-    if (hasStatusNoteField) {
-      data.statusNote = sanitizeOptionalText(payload.statusNote) || null;
-    }
-    if (hasWorkflowReasonField) {
-      data.workflowReason = payload.workflowReason ?? "NONE";
-    }
     data.repairTimeline = timeline?.repairTimeline ?? (sanitizeOptionalText(payload.repairTimeline) || undefined);
     data.timelineMinMinutes = timeline?.timelineMinMinutes;
     data.timelineMaxMinutes = timeline?.timelineMaxMinutes;
     data.timelineConfidence = payload.timelineConfidence;
     data.timelineNote = sanitizeOptionalText(payload.timelineNote) || undefined;
     data.externalTechBill = payload.externalTechBill;
-    if (payload.nextStatus === JobStatus.COMPLETED) {
-      data.status = JobStatus.COMPLETED;
-      data.completedAt = new Date();
+    if (payload.nextStatus === JobStatus.AWAITING_APPROVAL || payload.nextStatus === JobStatus.RETURNED_FROM_EXTERNAL) {
+      data.status = payload.nextStatus;
     }
   } else {
     data.diagnosisNotes = sanitizeOptionalText(payload.diagnosisNotes) || undefined;
@@ -629,8 +612,8 @@ export async function updateJobAction(formData: FormData) {
       orgId,
       jobId: updated.id,
       userId: session.user.id,
-      action: payload.nextStatus ? "STATUS_CHANGED" : "JOB_UPDATED",
-      detail: JSON.stringify(payload),
+      action: data.status ? "STATUS_CHANGED" : "JOB_UPDATED",
+      detail: JSON.stringify({ requestedStatus: payload.nextStatus ?? null, fromStatus: existing.status, toStatus: data.status ?? existing.status }),
     },
   });
 
@@ -852,7 +835,14 @@ export async function updateOneTimeExternalAssignmentAction(formData: FormData) 
   }
 
   const payload = parsed.data;
-  const allowedOutsourceStatuses = new Set<JobStatus>([JobStatus.REFERRED, JobStatus.COMPLETED]);
+  const allowedOutsourceStatuses = new Set<JobStatus>([
+    JobStatus.REFERRED,
+    JobStatus.PENDING_EXTERNAL_ASSIGNMENT,
+    JobStatus.ASSIGNED_ONE_TIME_EXTERNAL,
+    JobStatus.IN_EXTERNAL_REPAIR,
+    JobStatus.RETURNED_FROM_EXTERNAL,
+    JobStatus.AWAITING_APPROVAL,
+  ]);
 
   const existing = await prisma.job
     .findUnique({
@@ -939,9 +929,6 @@ export async function updateOneTimeExternalAssignmentAction(formData: FormData) 
 
   if (nextStatus) {
     jobUpdate.status = nextStatus;
-    if (nextStatus === JobStatus.COMPLETED) {
-      jobUpdate.completedAt = new Date();
-    }
   } else if (existing.status === JobStatus.DIAGNOSING) {
     jobUpdate.status = JobStatus.REFERRED;
   }

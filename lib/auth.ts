@@ -41,6 +41,25 @@ function collectTrustedOrigins() {
 
 const trustedOrigins = collectTrustedOrigins();
 
+function assertProductionAuthConfig() {
+  const isRuntimeProduction = process.env.NODE_ENV === "production"
+    && process.env.NEXT_PHASE !== "phase-production-build"
+    && process.env.CI !== "true"
+    && process.env.GITHUB_ACTIONS !== "true";
+
+  if (!isRuntimeProduction) return;
+
+  if (!process.env.BETTER_AUTH_SECRET || process.env.BETTER_AUTH_SECRET.length < 32) {
+    throw new Error("Missing BETTER_AUTH_SECRET: set a stable production secret of at least 32 characters");
+  }
+
+  if (!normalizeOrigin(process.env.BETTER_AUTH_URL ?? process.env.NEXT_PUBLIC_APP_URL)) {
+    throw new Error("Missing BETTER_AUTH_URL or NEXT_PUBLIC_APP_URL: set the production app URL");
+  }
+}
+
+assertProductionAuthConfig();
+
 export const auth = betterAuth({
   secret: process.env.BETTER_AUTH_SECRET,
   baseURL: process.env.BETTER_AUTH_URL ?? process.env.NEXT_PUBLIC_APP_URL,

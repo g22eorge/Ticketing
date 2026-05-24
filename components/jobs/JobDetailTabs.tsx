@@ -576,19 +576,25 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
     return true;
   });
 
-  const allowedStatusTransitions: Partial<Record<ReturnType<typeof normalizeJobStatus>, JobStatus[]>> = {
+  const allowedStatusTransitions: Partial<Record<JobStatus, JobStatus[]>> = {
     RECEIVED: ["DIAGNOSING"],
-    DIAGNOSING: ["REFERRED", "IN_REPAIR", "AWAITING_APPROVAL", "CLOSED"],
-    REFERRED: ["IN_REPAIR", "AWAITING_APPROVAL", "READY_FOR_PICKUP", "COMPLETED", "CLOSED"],
+    DIAGNOSING: ["REFERRED", "IN_REPAIR"],
+    REFERRED: ["PENDING_EXTERNAL_ASSIGNMENT", "ASSIGNED_ONE_TIME_EXTERNAL", "IN_EXTERNAL_REPAIR", "AWAITING_APPROVAL"],
+    PENDING_EXTERNAL_ASSIGNMENT: ["ASSIGNED_ONE_TIME_EXTERNAL", "IN_EXTERNAL_REPAIR", "AWAITING_APPROVAL"],
+    ASSIGNED_ONE_TIME_EXTERNAL: ["IN_EXTERNAL_REPAIR", "AWAITING_APPROVAL"],
+    IN_EXTERNAL_REPAIR: ["RETURNED_FROM_EXTERNAL", "AWAITING_APPROVAL"],
+    RETURNED_FROM_EXTERNAL: ["AWAITING_APPROVAL", "IN_REPAIR"],
     AWAITING_APPROVAL: ["IN_REPAIR", "CLOSED"],
-    IN_REPAIR: ["READY_FOR_PICKUP", "COMPLETED", "CLOSED"],
-    READY_FOR_PICKUP: ["COMPLETED", "CLOSED"],
+    IN_REPAIR: ["WAITING_FOR_PARTS", "READY_FOR_PICKUP", "COMPLETED", "CLOSED"],
+    WAITING_FOR_PARTS: ["IN_REPAIR", "CLOSED"],
+    READY_FOR_PICKUP: ["DELIVERED", "COMPLETED", "CLOSED"],
+    DELIVERED: ["COMPLETED"],
     COMPLETED: [],
     CLOSED: [],
   };
 
   const statusKey = normalizeJobStatus(job.status);
-  const statusActions = allowedStatusTransitions[statusKey] ?? [];
+  const statusActions = allowedStatusTransitions[job.status] ?? allowedStatusTransitions[statusKey] ?? [];
   const isTerminal = job.status === "COMPLETED" || job.status === "CLOSED";
   const existingMargin =
     typeof job.clientBill === "number" && typeof job.externalTechBill === "number"

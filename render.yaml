@@ -4,7 +4,7 @@ services:
     runtime: node
     plan: starter
     buildCommand: bun install --frozen-lockfile && bunx prisma generate && bun run build
-    startCommand: bunx prisma migrate deploy && bun run start
+    startCommand: bunx prisma migrate deploy && ALLOW_EMPTY_DB_RECONCILE=1 bun run db:reconcile-empty && bun run start
     envVars:
       - key: NODE_VERSION
         value: 20
@@ -16,6 +16,8 @@ services:
         sync: false
       - key: DATABASE_URL
         value: file:/var/data/dev.db
+      - key: ALLOW_SQLITE_PRODUCTION
+        value: "1"
       - key: UPLOADS_DIR
         value: /var/data/uploads
     disk:

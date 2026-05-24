@@ -139,13 +139,13 @@ Steps:
    - `BETTER_AUTH_SECRET` (strong random string)
 4. Deploy.
 
-After first deploy, open a shell in Render and run:
+After first deploy, open a shell in Render and seed only the base admin/org data:
 
 ```bash
-bun run seed
+bun run seed:base
 ```
 
-Then log in with the seeded admin.
+Then log in with the seeded admin. `bun run seed` is a destructive demo/training seed and is guarded for disposable databases only.
 
 ### Local container run
 

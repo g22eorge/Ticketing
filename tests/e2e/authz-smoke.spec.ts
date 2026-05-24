@@ -3,6 +3,7 @@ import { expect, test, type Cookie, type Page } from "@playwright/test";
 const adminEmail = process.env.E2E_ADMIN_EMAIL ?? "admin@eagle.local";
 const password = process.env.E2E_PASSWORD ?? process.env.SEED_PASSWORD ?? "Admin123!";
 const baseUrl = process.env.E2E_BASE_URL ?? "http://127.0.0.1:4173";
+const externalTechEmail = process.env.E2E_EXTERNAL_TECH_EMAIL ?? "abdu@eagle.tech";
 
 function parseSetCookie(setCookie: string, origin: URL): Cookie {
   const [nameValue, ...attributes] = setCookie.split(";").map((value) => value.trim());
@@ -96,4 +97,16 @@ test("admin sees admin navigation and can open user settings", async ({ page }) 
   // "Create" button is revealed inside the "Add User" panel toggled by ?add=1.
   await page.goto("/settings/users?add=1");
   await expect(page.getByRole("button", { name: "Create" }).first()).toBeVisible();
+});
+
+test("external technician cannot see client navigation or seeded client PII", async ({ page }) => {
+  await login(page, externalTechEmail);
+
+  await expect(page.getByRole("link", { name: "Clients" })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Reports" })).toHaveCount(0);
+
+  await page.goto("/jobs");
+  await expect(page.getByText("Amina Okello")).toHaveCount(0);
+  await expect(page.getByText("Bello Devices Ltd")).toHaveCount(0);
+  await expect(page.getByText("08010020001")).toHaveCount(0);
 });

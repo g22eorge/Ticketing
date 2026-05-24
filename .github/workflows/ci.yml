@@ -32,7 +32,7 @@ jobs:
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
-          bun-version: latest
+          bun-version: 1.3.10
 
       - name: Cache Bun dependencies
         uses: actions/cache@v4
@@ -95,7 +95,7 @@ jobs:
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
-          bun-version: latest
+          bun-version: 1.3.10
 
       - name: Cache Bun dependencies
         uses: actions/cache@v4
@@ -115,6 +115,16 @@ jobs:
 
       - name: Prisma migrate deploy
         run: bunx prisma migrate deploy
+
+      - name: Reconcile empty migrated schema
+        env:
+          ALLOW_EMPTY_DB_RECONCILE: "1"
+        run: bun run db:reconcile-empty
+
+      - name: Verify migration drift
+        env:
+          CHECK_CURRENT_DATABASE: "1"
+        run: bun run db:drift-check
 
       - name: Seed data
         run: bun run seed
@@ -212,6 +222,16 @@ jobs:
 
       - name: Prisma migrate deploy
         run: bunx prisma migrate deploy
+
+      - name: Reconcile empty migrated schema
+        env:
+          ALLOW_EMPTY_DB_RECONCILE: "1"
+        run: bun run db:reconcile-empty
+
+      - name: Verify migration drift
+        env:
+          CHECK_CURRENT_DATABASE: "1"
+        run: bun run db:drift-check
 
       - name: Seed data
         run: bun run seed

@@ -218,15 +218,15 @@ export function ExternalTechJobView({
           >
             {isPending ? "Saving..." : "Save"}
           </button>
-          {job.status === "IN_REPAIR" || job.status === "READY_FOR_PICKUP" ? (
+          {job.status === "IN_EXTERNAL_REPAIR" || job.status === "REFERRED" ? (
             <button
               type="submit"
               name="nextStatus"
-              value="COMPLETED"
+              value="AWAITING_APPROVAL"
               disabled={isPending}
               className="btn-premium-success w-full whitespace-nowrap rounded-lg px-3 py-1.5 text-[13px] disabled:opacity-60 sm:w-auto sm:py-2 sm:text-sm"
             >
-              Mark Completed
+              Submit Estimate
             </button>
           ) : null}
           <a
