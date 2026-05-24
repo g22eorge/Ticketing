@@ -168,7 +168,7 @@ export default async function ComplaintsPage({
           <div className="px-6 py-12 text-center text-sm text-[var(--ink-muted)]">
             No complaints yet.
           </div>
-        ) : (
+        ) : (<>
           {/* ── Mobile complaint cards ── */}
           <div className="divide-y divide-[var(--line)] lg:hidden">
             {complaints.map((c) => {
@@ -275,6 +275,7 @@ export default async function ComplaintsPage({
               </tbody>
             </table>
           </div>
+        </>
         )}
       </div>
     </div>

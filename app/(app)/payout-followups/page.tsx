@@ -344,7 +344,7 @@ export default async function PayoutFollowupsPage({
               <p className="p-4 text-sm text-[var(--ink-muted)]">
                 {filters.q ? "No results for this search." : "No outstanding invoices — all settled."}
               </p>
-            ) : (
+            ) : (<>
               {/* Mobile */}
               <div className="divide-y divide-[var(--line)] lg:hidden">
                 {invoiceRows.map((inv) => {
@@ -393,6 +393,7 @@ export default async function PayoutFollowupsPage({
                   </tbody>
                 </table>
               </div>
+            </>
             )}
           </div>
         </section>
@@ -413,7 +414,7 @@ export default async function PayoutFollowupsPage({
               <p className="p-4 text-sm text-[var(--ink-muted)]">
                 {filters.q || filters.tech ? "No results for these filters." : "All repair client payments are settled."}
               </p>
-            ) : (
+            ) : (<>
               {/* Mobile */}
               <div className="divide-y divide-[var(--line)] lg:hidden">
                 {clientRows.map((job) => {
@@ -456,6 +457,7 @@ export default async function PayoutFollowupsPage({
                   </tbody>
                 </table>
               </div>
+            </>
             )}
           </div>
         </section>
@@ -476,7 +478,7 @@ export default async function PayoutFollowupsPage({
               <p className="p-4 text-sm text-[var(--ink-muted)]">
                 {filters.q ? "No results for this search." : "No outstanding supplier bills — all settled."}
               </p>
-            ) : (
+            ) : (<>
               {/* Mobile */}
               <div className="divide-y divide-[var(--line)] lg:hidden">
                 {billRows.map((bill) => {
@@ -556,6 +558,7 @@ export default async function PayoutFollowupsPage({
                   </tbody>
                 </table>
               </div>
+            </>
             )}
           </div>
         </section>
@@ -576,7 +579,7 @@ export default async function PayoutFollowupsPage({
               <p className="p-4 text-sm text-[var(--ink-muted)]">
                 {filters.q || filters.tech ? "No results for these filters." : "No pending external tech payouts — all settled."}
               </p>
-            ) : (
+            ) : (<>
               {/* Mobile */}
               <div className="divide-y divide-[var(--line)] lg:hidden">
                 {techRows.map((job) => {
@@ -620,6 +623,7 @@ export default async function PayoutFollowupsPage({
                   </tbody>
                 </table>
               </div>
+            </>
             )}
           </div>
         </section>

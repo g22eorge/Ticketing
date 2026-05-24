@@ -271,7 +271,7 @@ export default async function CashierShiftsPage({
       <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)]">
         {shifts.length === 0 ? (
           <div className="py-16 text-center text-sm text-[var(--ink-muted)]">No shifts found</div>
-        ) : (
+        ) : (<>
           {/* Mobile */}
           <div className="divide-y divide-[var(--border)] lg:hidden">
             {shifts.map((shift) => {
@@ -367,6 +367,7 @@ export default async function CashierShiftsPage({
               </tbody>
             </table>
           </div>
+        </>
         )}
       </div>
     </div>
