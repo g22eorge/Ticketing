@@ -2,21 +2,22 @@ import { NextRequest, NextResponse } from "next/server";
 import { sanitizeText, sanitizeOptionalText } from "@/lib/sanitize";
 import { createRepairRequest } from "@/lib/repairs/request";
 import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
-import { prisma } from "@/lib/prisma";
+import { orgDb, prisma } from "@/lib/prisma";
 import { deliverOutboundMessage, enqueueEmailMessage, enqueueWhatsAppMessage } from "@/lib/notifications/whatsapp-outbox";
 
-const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL || "";
+const EIS_ORG_ID = "org_eis_01";
+
 const ALLOWED_ORIGINS = [
-  process.env.ALLOWED_ORIGIN_1,
-  process.env.ALLOWED_ORIGIN_2,
-  appUrl,
-].filter(Boolean) as string[];
+  process.env.ALLOWED_ORIGIN_1 || "https://app.eagleinfosolutions.com",
+  process.env.ALLOWED_ORIGIN_2 || "https://app.eagleinfosolutions.com",
+].filter(Boolean);
 
 function getCorsHeaders(origin: string | null) {
+  // Allow any same-site origin — public company pages are served from the same deployment.
   const allowedOrigin =
-    origin && ALLOWED_ORIGINS.includes(origin)
+    origin && (ALLOWED_ORIGINS.includes(origin) || origin.includes("eagleinfosolutions.com") || origin.startsWith("http://localhost"))
       ? origin
-      : (ALLOWED_ORIGINS[0] ?? "*");
+      : "https://app.eagleinfosolutions.com";
 
   return {
     "Access-Control-Allow-Origin": allowedOrigin,
@@ -119,8 +120,6 @@ function buildSharedFields(body: Record<string, unknown>, ip: string) {
     "SELF_DROPOFF" | "SEND_WITH_DELIVERY_PERSON" | "REQUEST_PICKUP";
 
   return {
-    // orgId is resolved in POST (may be omitted for single-tenant deployments using DEFAULT_ORG_ID)
-    orgId: undefined as string | undefined,
     customerName: sanitizeText((body.customer_name as string) || ""),
     phone: normalizeUgandaPhone((phone as string) || ""),
     email: email ? (sanitizeOptionalText(email as string) ?? undefined) : undefined,
@@ -149,27 +148,6 @@ function buildSharedFields(body: Record<string, unknown>, ip: string) {
   };
 }
 
-async function resolveOrgIdFromRequest(request: NextRequest, body: Record<string, unknown>): Promise<string | undefined> {
-  const headerOrgId = request.headers.get("x-org-id")?.trim();
-  const bodyOrgId = typeof body.org_id === "string" ? body.org_id.trim() : "";
-  const orgSlug = typeof body.org_slug === "string" ? body.org_slug.trim() : "";
-
-  const candidate = headerOrgId || bodyOrgId;
-  if (candidate) {
-    const org = await prisma.organization.findUnique({ where: { id: candidate }, select: { id: true } });
-    if (!org) throw new Error("Invalid org_id");
-    return org.id;
-  }
-
-  if (orgSlug) {
-    const org = await prisma.organization.findUnique({ where: { slug: orgSlug }, select: { id: true } });
-    if (!org) throw new Error("Invalid org_slug");
-    return org.id;
-  }
-
-  return undefined;
-}
-
 async function deliverInline(outboxId: string) {
   await Promise.race([
     deliverOutboundMessage(outboxId),
@@ -182,7 +160,7 @@ export async function POST(request: NextRequest) {
   const corsHeaders = getCorsHeaders(origin);
 
   const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
-  const rl = checkRateLimit(`repair-request:${ip}`, { limit: 5, windowMs: 60 * 60_000 });
+  const rl = await checkRateLimit(`repair-request:${ip}`, { limit: 5, windowMs: 60 * 60_000 });
   if (!rl.allowed) {
     return NextResponse.json(
       { error: "Too many submissions. Please try again later." },
@@ -203,16 +181,6 @@ export async function POST(request: NextRequest) {
 
     const isBatch = Array.isArray(body.devices) && body.devices.length > 0;
 
-    let orgId: string | undefined;
-    try {
-      orgId = await resolveOrgIdFromRequest(request, body);
-    } catch (e) {
-      return NextResponse.json(
-        { success: false, error: e instanceof Error ? e.message : "Invalid organization" },
-        { status: 400, headers: corsHeaders },
-      );
-    }
-
     // ── Validation ──────────────────────────────────────────────────────────
     const customerErrors = validateCustomerAndHandover(body);
     const deviceErrors = isBatch
@@ -230,11 +198,27 @@ export async function POST(request: NextRequest) {
     const normalizedPhoneForCheck = normalizeUgandaPhone(rawPhone);
     const deviceCount = isBatch ? body.devices.length : 1;
 
+    // `org_slug` is sent by the /c/[slug] public company page.
+    // Default to EIS org for backward-compatible requests from the root page.
+    let resolvedOrgId: string = EIS_ORG_ID;
+    let resolvedOrgName = "Eagle Info Solutions";
+    if (typeof body.org_slug === "string" && body.org_slug.trim()) {
+      const org = await prisma.organisation.findUnique({
+        where: { slug: body.org_slug.trim() },
+        select: { id: true, name: true, isActive: true },
+      });
+      if (org && org.isActive) {
+        resolvedOrgId = org.id;
+        resolvedOrgName = org.name;
+      }
+    }
+    const db = orgDb(resolvedOrgId);
+
     const now = new Date();
     const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
     const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
 
-    const phoneCount = await prisma.repairRequest.count({
+    const phoneCount = await db.repairRequest.count({
       where: { phone: normalizedPhoneForCheck, createdAt: { gte: oneDayAgo } },
     });
     if (phoneCount + deviceCount > 5) {
@@ -245,7 +229,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (ip !== "unknown") {
-      const ipCount = await prisma.repairRequest.count({
+      const ipCount = await db.repairRequest.count({
         where: { submissionIp: ip, createdAt: { gte: oneHourAgo } },
       });
       if (ipCount + deviceCount > 10) {
@@ -264,7 +248,6 @@ export async function POST(request: NextRequest) {
 
     // ── Create repair request(s) ─────────────────────────────────────────────
     const shared = buildSharedFields(body, ip);
-    shared.orgId = orgId;
     const results: Array<{ requestNumber: string; requestId: string; brand: string; deviceType: string; problemDescription: string }> = [];
 
     if (isBatch) {
@@ -276,6 +259,7 @@ export async function POST(request: NextRequest) {
           brand: sanitizeText(device.brand),
           model: device.model ? sanitizeOptionalText(device.model) ?? undefined : undefined,
           problemDescription: sanitizeText(device.problem_description),
+          orgId: resolvedOrgId,
         });
         if (!result.success || !result.requestId || !result.requestNumber) {
           return NextResponse.json(
@@ -296,6 +280,7 @@ export async function POST(request: NextRequest) {
         brand: sanitizeText((body.brand as string) || (body.device_brand as string) || ""),
         model: sanitizeOptionalText((body.model as string) || (body.device_model as string)) ?? undefined,
         problemDescription: sanitizeText((body.problem_description as string) || (body.issue_description as string) || ""),
+        orgId: resolvedOrgId,
       });
       if (!result.success || !result.requestId || !result.requestNumber) {
         return NextResponse.json(
@@ -310,8 +295,8 @@ export async function POST(request: NextRequest) {
     const customerName = String(body.customer_name ?? "Customer");
     const deviceLines = results.map((r) => `• ${r.requestNumber} — ${r.brand} (${r.deviceType.replace(/_/g, " ")})`).join("\n");
     const whatsappMessage = isBatch
-      ? `Hello ${customerName},\n\nThank you! We've received your repair requests:\n\n${deviceLines}\n\nWe'll contact you shortly to confirm details for each device.\n\nBest regards,\nYour Repair Team`
-      : `Hello ${customerName},\n\nThank you for submitting your repair request (${results[0].requestNumber}).\n\nWe have received your device and will contact you shortly to confirm the diagnosis and timeline.\n\nBest regards,\nYour Repair Team`;
+      ? `Hello ${customerName},\n\nThank you for submitting your repair requests.\n\nYour requests have been received and logged successfully:\n\n${deviceLines}\n\nOur team will contact you shortly with next steps, including device drop-off/pick-up guidance and the diagnosis timeline.\n\nBest regards,\n${resolvedOrgName}`
+      : `Hello ${customerName},\n\nThank you for submitting your repair request (${results[0]!.requestNumber}).\n\nYour request has been received and logged successfully. Our team will contact you shortly with next steps, including device drop-off/pick-up guidance and the diagnosis timeline.\n\nBest regards,\n${resolvedOrgName}`;
 
     let confirmation: "queued" | "sent" | "skipped" = "skipped";
     let outboxId: string | undefined;

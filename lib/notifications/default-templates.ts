@@ -32,7 +32,7 @@ export function getDefaultCommunicationTemplates(): Array<{
         "",
         "Thank you for submitting your repair request ({requestNumber}).",
         "",
-        "We have received your device and will contact you shortly to confirm the diagnosis and timeline.",
+        "Your request has been received and logged successfully. Our team will contact you shortly with next steps, including device drop-off/pick-up guidance and the diagnosis timeline.",
         "",
         "Best regards,",
         "Your Repair Team",

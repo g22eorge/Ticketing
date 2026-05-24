@@ -1120,7 +1120,7 @@ async function MetaSection() {
       label: "Repair request confirmation",
       description: "Sent when a customer submits an online repair request.",
       useCase: "Trigger: repair request submitted via intake form",
-      body: `Hello {{1}},\n\nThank you for submitting your repair request ({{2}}).\n\nWe have received your details and will contact you shortly to confirm the diagnosis and timeline.\n\nBest regards,\nEagle Info Solutions`,
+      body: `Hello {{1}},\n\nThank you for submitting your repair request ({{2}}).\n\nYour request has been received and logged successfully. Our team will contact you shortly with next steps, including device drop-off/pick-up guidance and the diagnosis timeline.\n\nBest regards,\nEagle Info Solutions`,
       varOrder: [
         { n: 1, name: "Customer Name", systemKey: "customerName", liveExample: liveCustomerName },
         { n: 2, name: "Request Number", systemKey: "requestNumber", liveExample: liveRequestNumber },
