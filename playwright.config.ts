@@ -8,7 +8,11 @@ const databaseUrl =
   process.env.DATABASE_URL ??
   `file:${path.resolve(process.cwd(), "prisma/dev.db")}`;
 const betterAuthSecret = process.env.BETTER_AUTH_SECRET ?? "playwright_test_secret_not_for_production";
-const authEnv = `NEXT_PUBLIC_APP_URL=${baseURL} BETTER_AUTH_URL=${baseURL} BETTER_AUTH_SECRET=${betterAuthSecret} PROD=false ALLOW_SQLITE_PRODUCTION=1 E2E_DISABLE_RATE_LIMIT=1 DATABASE_URL=${databaseUrl}`;
+
+// Expose the resolved DB URL to test workers so their direct Prisma instances work
+if (!process.env.E2E_DATABASE_URL) process.env.E2E_DATABASE_URL = databaseUrl;
+if (!process.env.DATABASE_URL) process.env.DATABASE_URL = databaseUrl;
+const authEnv = `NEXT_PUBLIC_APP_URL=${baseURL} BETTER_AUTH_URL=${baseURL} BETTER_AUTH_SECRET=${betterAuthSecret} PROD=false ALLOW_SQLITE_PRODUCTION=1 E2E_DISABLE_RATE_LIMIT=1 ALLOW_DESTRUCTIVE_SEED=1 DATABASE_URL=${databaseUrl}`;
 
 const webServerBoot = `${authEnv} bunx prisma db push --skip-generate && bunx prisma generate && ${authEnv} bun run seed`;
 

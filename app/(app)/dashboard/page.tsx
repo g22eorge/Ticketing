@@ -1106,7 +1106,7 @@ export default async function DashboardPage({
             <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">
               Revenue Streams — {monthLabel(today.getFullYear(), today.getMonth() + 1)}
             </p>
-            <Link href="/reports" className="text-[11px] font-semibold text-[var(--accent)] hover:underline">Full reports →</Link>
+            <Link href="/reports" className="text-[11px] font-semibold text-[var(--ink-muted)] hover:text-[var(--ink)] hover:underline">Full reports →</Link>
           </div>
 
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -1114,7 +1114,7 @@ export default async function DashboardPage({
               { label: "Repairs",   value: repairsMtd,   color: "text-sky-600",     ring: "border-sky-500/20 bg-sky-500/8",       href: "/jobs?status=COMPLETED" },
               { label: "Products",  value: productsMtd,  color: "text-violet-600",  ring: "border-violet-500/20 bg-violet-500/8", href: "/pos" },
               { label: "Corporate", value: corporateMtd, color: "text-emerald-600", ring: "border-emerald-500/20 bg-emerald-500/8",href: "/documents/invoices" },
-              { label: "Total MTD", value: totalMtd,     color: "text-[var(--accent)]", ring: "border-[var(--accent)]/25 bg-[var(--accent)]/8", href: "/reports" },
+              { label: "Total MTD", value: totalMtd,     color: "text-[var(--ink)]", ring: "border-[var(--accent)]/25 bg-[var(--accent)]/8", href: "/reports" },
             ] as const).map((s) => (
               <Link key={s.label} href={s.href}
                 className={`rounded-xl border ${s.ring} p-4 transition hover:-translate-y-[2px]`}>

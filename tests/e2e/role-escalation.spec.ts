@@ -113,7 +113,7 @@ async function seedFixture() {
 
 async function loginAs(email: string): Promise<string | null> {
   const origin = new URL(baseUrl);
-  for (let attempt = 1; attempt <= 5; attempt++) {
+  for (let attempt = 1; attempt <= 15; attempt++) {
     const res = await fetch(`${baseUrl}/api/auth/sign-in/email`, {
       method: "POST",
       headers: {

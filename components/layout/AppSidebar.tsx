@@ -449,7 +449,7 @@ export function AppSidebar({
         </div>
         <div className="min-w-0">
           <p className="text-[13px] font-bold tracking-tight text-[var(--ink)] leading-none">Repair</p>
-          <p className="text-[10px] font-semibold text-[var(--accent)] tracking-wide mt-0.5">Manager</p>
+          <p className="text-[10px] font-semibold text-[var(--accent)] tracking-wide mt-0.5" aria-hidden="true">Manager</p>
         </div>
       </Link>
 
@@ -463,7 +463,7 @@ export function AppSidebar({
               <span className="flex h-3.5 w-3.5 shrink-0 items-center justify-center text-[var(--ink-muted)]/40 [&_svg]:h-2.5 [&_svg]:w-2.5">
                 {groupIcon(section.group)}
               </span>
-              <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/50">
+              <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]" aria-hidden="true">
                 {section.label}
               </p>
               <div className="ml-1 h-px flex-1 bg-[var(--line)]/60" />
@@ -553,8 +553,8 @@ export function AppSidebar({
 
       {/* ── Footer ── */}
       <div className="border-t border-[var(--line)] px-5 py-3 text-left">
-        <p className="truncate text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]/65">Eagle Info Solutions</p>
-        <p className="mt-1 text-[10px] font-medium tracking-[0.08em] text-[var(--ink-muted)]/45">Repair Manager</p>
+        <p className="truncate text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]" aria-hidden="true">Eagle Info Solutions</p>
+        <p className="mt-1 text-[10px] font-medium tracking-[0.08em] text-[var(--ink-muted)]" aria-hidden="true">Repair Manager</p>
       </div>
     </aside>
   );

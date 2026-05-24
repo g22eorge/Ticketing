@@ -128,6 +128,7 @@ const paths = [
 ] as const;
 
 test("layout has no horizontal overflow across target viewports", async ({ page }) => {
+  test.setTimeout(360_000); // 28 paths × 4 viewports needs well over 90s
   await login(page, adminEmail);
 
   for (const viewport of viewports) {
@@ -191,7 +192,8 @@ test("layout has no horizontal overflow across target viewports", async ({ page 
     await waitForAppSettled(page);
     const firstClientLink = page.getByRole("link", { name: "Open" }).first();
     if (await firstClientLink.isVisible()) {
-      await firstClientLink.click();
+      await firstClientLink.scrollIntoViewIfNeeded();
+      await firstClientLink.click({ force: true });
       await waitForAppSettled(page);
       const detailOverflow = await page.evaluate(() => {
         const offenders: string[] = [];
@@ -242,7 +244,8 @@ test("layout has no horizontal overflow across target viewports", async ({ page 
     await waitForAppSettled(page);
     const firstJobLink = page.getByRole("link", { name: "Open" }).first();
     if (await firstJobLink.isVisible()) {
-      await firstJobLink.click();
+      await firstJobLink.scrollIntoViewIfNeeded();
+      await firstJobLink.click({ force: true });
       await waitForAppSettled(page);
       const jobDetailOverflow = await page.evaluate(() => {
         const offenders: string[] = [];

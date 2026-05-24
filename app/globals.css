@@ -10,6 +10,7 @@
   --brand: #111111;
   --brand-deep: #000000;
   --accent: #D4AF37;
+  --accent-fg: #7A5F00;
   --accent-muted: rgba(212, 175, 55, 0.12);
   --accent-border: rgba(212, 175, 55, 0.35);
   --sidebar-bg: #FFFFFF;
@@ -33,6 +34,7 @@
     --brand: #D4AF37;
     --brand-deep: #B8960C;
     --accent: #D4AF37;
+    --accent-fg: #D4AF37;
     --accent-muted: rgba(212, 175, 55, 0.14);
     --accent-border: rgba(212, 175, 55, 0.35);
     --sidebar-bg: #0a0a0a;
@@ -50,6 +52,7 @@
   --brand: #D4AF37;
   --brand-deep: #B8960C;
   --accent: #D4AF37;
+  --accent-fg: #D4AF37;
   --accent-muted: rgba(212, 175, 55, 0.14);
   --accent-border: rgba(212, 175, 55, 0.35);
   --sidebar-bg: #0a0a0a;
@@ -66,6 +69,7 @@
   --brand: #111111;
   --brand-deep: #000000;
   --accent: #D4AF37;
+  --accent-fg: #7A5F00;
   --accent-muted: rgba(212, 175, 55, 0.12);
   --accent-border: rgba(212, 175, 55, 0.35);
   --sidebar-bg: #FFFFFF;
@@ -725,6 +729,14 @@ tr:has(details[open]) {
   :where(.panel-shadow) {
     box-shadow: 0 1px 0 rgba(17, 17, 17, 0.03), 0 6px 16px rgba(17, 17, 17, 0.06);
   }
+}
+
+/* ── Accessible accent text ──────────────────────────────────────────────── */
+/* In light mode #D4AF37 fails WCAG AA contrast on white. Override text-only
+   uses of --accent to use --accent-fg (#7A5F00, ~6:1 on white) instead.
+   Dark mode keeps --accent-fg == --accent so no change there.               */
+.text-\[var\(--accent\)\] {
+  color: var(--accent-fg) !important;
 }
 
 /* ── WhatsApp Float ─────────────────────────────────────────────────────── */

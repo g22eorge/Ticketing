@@ -441,7 +441,7 @@ export default async function JobsPage({
             <Link
               href={statusChipHref("")}
               className={`shrink-0 rounded-full border px-3 py-1 text-[11px] font-semibold transition ${
-                statusValue ? "border-[var(--line)] bg-[var(--panel)] text-[var(--ink-muted)] hover:border-[var(--accent)]/30" : "border-[var(--accent)] bg-[var(--accent)] text-white"
+                statusValue ? "border-[var(--line)] bg-[var(--panel)] text-[var(--ink-muted)] hover:border-[var(--accent)]/30" : "border-[var(--accent)] bg-[var(--accent)] text-black"
               }`}
             >
               All

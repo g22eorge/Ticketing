@@ -225,7 +225,7 @@ export function JobTable({
             // Pricing badge (admin/ops only)
             const pricingBadge = canManagePricing
               ? typeof job.clientBill === "number"
-                ? <span key="priced" className="rounded px-1.5 py-0.5 text-[10px] font-semibold bg-[var(--accent)]/10 text-[#9A7A00]">Priced</span>
+                ? <span key="priced" className="rounded px-1.5 py-0.5 text-[10px] font-semibold bg-[var(--accent)]/10 text-[#7A5F00]">Priced</span>
                 : ["AWAITING_APPROVAL", "IN_REPAIR", "READY_FOR_PICKUP"].includes(job.status)
                   ? <span key="needs" className="rounded px-1.5 py-0.5 text-[10px] font-semibold bg-amber-50 text-amber-800">Needs pricing</span>
                   : null
@@ -467,7 +467,7 @@ export function JobTable({
                       {canManagePricing && (
                         <span className={`rounded-md px-1.5 py-0.5 text-[10px] font-semibold ${
                           typeof job.clientBill === "number"
-                            ? "bg-[var(--accent)]/10 text-[#9A7A00]"
+                            ? "bg-[var(--accent)]/10 text-[#7A5F00]"
                             : ["AWAITING_APPROVAL", "IN_REPAIR", "READY_FOR_PICKUP"].includes(job.status)
                               ? "bg-amber-50 text-amber-800"
                               : "hidden"

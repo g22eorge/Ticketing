@@ -113,7 +113,7 @@ test.describe("Mobile bottom navigation at 390×844", () => {
     const dashLink = page.locator(".mobile-bottom-nav a[href='/dashboard']").first();
     if (await dashLink.isVisible()) {
       await dashLink.click();
-      await waitSettled(page);
+      await page.waitForURL("**/dashboard**", { timeout: 10000 });
       expect(page.url()).toContain("/dashboard");
     } else {
       // Dashboard may be in the "More" drawer — open it first
@@ -124,7 +124,7 @@ test.describe("Mobile bottom navigation at 390×844", () => {
         const drawerDashLink = page.getByRole("link", { name: /dashboard/i }).first();
         if (await drawerDashLink.isVisible()) {
           await drawerDashLink.click();
-          await waitSettled(page);
+          await page.waitForURL("**/dashboard**", { timeout: 10000 });
           expect(page.url()).toContain("/dashboard");
         }
       }
@@ -139,7 +139,7 @@ test.describe("Mobile bottom navigation at 390×844", () => {
     const jobsLink = page.locator(".mobile-bottom-nav a[href='/jobs']").first();
     if (await jobsLink.isVisible()) {
       await jobsLink.click();
-      await waitSettled(page);
+      await page.waitForURL("**/jobs**", { timeout: 10000 });
       expect(page.url()).toContain("/jobs");
     } else {
       // May be in the More drawer
@@ -150,7 +150,7 @@ test.describe("Mobile bottom navigation at 390×844", () => {
         const drawerJobsLink = page.getByRole("link", { name: /^jobs$/i }).first();
         if (await drawerJobsLink.isVisible()) {
           await drawerJobsLink.click();
-          await waitSettled(page);
+          await page.waitForURL("**/jobs**", { timeout: 10000 });
           expect(page.url()).toContain("/jobs");
         }
       }

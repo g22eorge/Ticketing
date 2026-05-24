@@ -243,41 +243,41 @@ export default async function ClientsPage({
             href={segmentHref("all")}
             className={`rounded-full border px-3 py-1 text-[11px] font-semibold transition-colors ${
               segment === "all"
-                ? "border-[var(--accent)] bg-[var(--accent)] text-white"
+                ? "border-[var(--accent)] bg-[var(--accent)] text-black"
                 : "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)] hover:border-[var(--accent)]/40 hover:text-[var(--ink)]"
             }`}
           >
-            <span className={`font-bold ${segment === "all" ? "text-white" : "text-[var(--ink)]"}`}>{totalClients}</span> total
+            <span className={`font-bold ${segment === "all" ? "text-black" : "text-[var(--ink)]"}`}>{totalClients}</span> total
           </Link>
           <Link
             href={segmentHref("active")}
             className={`rounded-full border px-3 py-1 text-[11px] font-semibold transition-colors ${
               segment === "active"
-                ? "border-[var(--accent)] bg-[var(--accent)] text-white"
+                ? "border-[var(--accent)] bg-[var(--accent)] text-black"
                 : "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)] hover:border-[var(--accent)]/40 hover:text-[var(--ink)]"
             }`}
           >
-            <span className={`font-bold ${segment === "active" ? "text-white" : "text-[var(--ink)]"}`}>{activeClients}</span> active
+            <span className={`font-bold ${segment === "active" ? "text-black" : "text-[var(--ink)]"}`}>{activeClients}</span> active
           </Link>
           <Link
             href={segmentHref("new")}
             className={`rounded-full border px-3 py-1 text-[11px] font-semibold transition-colors ${
               segment === "new"
-                ? "border-[var(--accent)] bg-[var(--accent)] text-white"
+                ? "border-[var(--accent)] bg-[var(--accent)] text-black"
                 : "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)] hover:border-[var(--accent)]/40 hover:text-[var(--ink)]"
             }`}
           >
-            <span className={`font-bold ${segment === "new" ? "text-white" : "text-[var(--ink)]"}`}>{newClients}</span> no job
+            <span className={`font-bold ${segment === "new" ? "text-black" : "text-[var(--ink)]"}`}>{newClients}</span> no job
           </Link>
           <Link
             href={segmentHref("high")}
             className={`rounded-full border px-3 py-1 text-[11px] font-semibold transition-colors ${
               segment === "high"
-                ? "border-[var(--accent)] bg-[var(--accent)] text-white"
+                ? "border-[var(--accent)] bg-[var(--accent)] text-black"
                 : "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)] hover:border-[var(--accent)]/40 hover:text-[var(--ink)]"
             }`}
           >
-            <span className={`font-bold ${segment === "high" ? "text-white" : "text-[var(--ink)]"}`}>{withManyJobs}</span> high activity
+            <span className={`font-bold ${segment === "high" ? "text-black" : "text-[var(--ink)]"}`}>{withManyJobs}</span> high activity
           </Link>
         </div>
         {(user.role === "ADMIN" || user.role === "OPS") ? (

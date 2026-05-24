@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
   // but we check the same env var for a quick bypass without a DB query).
   const platformAdmin = process.env.PLATFORM_ADMIN_EMAIL?.toLowerCase();
   let isExempt = process.env.E2E_DISABLE_RATE_LIMIT === "1";
-  if (platformAdmin && path.endsWith("/sign-in/email")) {
+  if (!isExempt && platformAdmin && path.endsWith("/sign-in/email")) {
     try {
       const body = await request.clone().json();
       isExempt = typeof body.email === "string" && body.email.toLowerCase() === platformAdmin;
