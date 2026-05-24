@@ -810,10 +810,10 @@ export default async function ReportsPage({
                   {commonFaults.map(([word, count]) => (
                     <span
                       key={word}
-                      className="inline-flex items-center gap-1.5 rounded-full border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1 text-xs font-medium text-[var(--ink)]"
+                      className="inline-flex max-w-full min-w-0 items-center gap-1.5 rounded-full border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1 text-xs font-medium text-[var(--ink)]"
                     >
-                      {word}
-                      <span className="rounded-full bg-[var(--ink-muted)]/20 px-1.5 py-0.5 text-[10px] font-bold text-[var(--ink-muted)]">
+                      <span className="min-w-0 break-all">{word}</span>
+                      <span className="shrink-0 rounded-full bg-[var(--ink-muted)]/20 px-1.5 py-0.5 text-[10px] font-bold text-[var(--ink-muted)]">
                         {count}
                       </span>
                     </span>
