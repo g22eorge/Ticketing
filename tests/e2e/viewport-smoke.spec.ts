@@ -90,12 +90,37 @@ const viewports = [
 ] as const;
 
 const paths = [
+  // Core
   "/dashboard",
   "/jobs",
   "/jobs/new",
   "/clients",
   "/technicians",
   "/reports",
+  // Finance
+  "/finance/journal",
+  "/finance/accounts",
+  "/finance/bank",
+  "/finance/expenses",
+  "/finance/reports/pl",
+  "/finance/reports/balance-sheet",
+  "/finance/reports/cash-flow",
+  "/finance/reports/aged-receivables",
+  // Inventory
+  "/inventory",
+  "/inventory/stock-counts",
+  "/inventory/suppliers",
+  "/inventory/purchase-orders",
+  "/inventory/purchase-requests",
+  // Sales & POS
+  "/sales",
+  "/pos",
+  "/sales/campaigns",
+  // Documents
+  "/documents/invoices",
+  "/documents/quotations",
+  "/documents/delivery-notes",
+  // Settings
   "/settings/users",
   "/settings/branding",
   "/settings/profile",
