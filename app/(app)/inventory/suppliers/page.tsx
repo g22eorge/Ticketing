@@ -1,20 +1,28 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { prisma } from "@/lib/prisma";
-import { requireOrgSession } from "@/lib/org-context";
+import { orgDb, prisma } from "@/lib/prisma";
 import { can } from "@/lib/permissions";
+import { getCurrentUserRole } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
 export default async function SuppliersPage() {
-  const { user, orgId } = await requireOrgSession();
+  const { user } = await getCurrentUserRole();
+  const db = orgDb(user.orgId);
   if (!can.manageUsers(user)) redirect("/inventory");
 
-  const suppliers = await prisma.supplier.findMany({
-    where: { orgId },
-    orderBy: { name: "asc" },
-    include: { _count: { select: { purchaseOrders: true } } },
-  });
+  const now = new Date();
+
+  const [suppliers, totalActive, outstandingBills, overdueBills] = await Promise.all([
+    db.supplier.findMany({
+      where: {},
+      orderBy: { name: "asc" },
+      include: { _count: { select: { purchaseOrders: true } } },
+    }),
+    db.supplier.count({ where: { isActive: true } }).catch(() => 0),
+    db.supplierBill.count({ where: { status: { in: ["POSTED", "PART_PAID"] } } }).catch(() => 0),
+    db.supplierBill.count({ where: { dueAt: { lt: now }, status: { notIn: ["PAID", "CANCELLED"] } } }).catch(() => 0),
+  ]);
 
   return (
     <div className="space-y-4">
@@ -33,13 +41,37 @@ export default async function SuppliersPage() {
         </div>
       </div>
 
-      <div className="rounded-xl border border-[var(--line)]">
+      {/* KPI tiles */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
+          <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Total Suppliers</p>
+          <p className="mt-1 text-xl font-bold tabular-nums text-[var(--ink)]">{suppliers.length}</p>
+          <p className="mt-0.5 text-[11px] text-[var(--ink-muted)]">registered</p>
+        </div>
+        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
+          <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Active</p>
+          <p className="mt-1 text-xl font-bold tabular-nums text-green-600">{totalActive}</p>
+          <p className="mt-0.5 text-[11px] text-[var(--ink-muted)]">currently active</p>
+        </div>
+        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
+          <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Outstanding Bills</p>
+          <p className="mt-1 text-xl font-bold tabular-nums text-amber-600">{outstandingBills}</p>
+          <p className="mt-0.5 text-[11px] text-[var(--ink-muted)]">posted or part-paid</p>
+        </div>
+        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
+          <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Overdue Bills</p>
+          <p className="mt-1 text-xl font-bold tabular-nums text-red-500">{overdueBills}</p>
+          <p className="mt-0.5 text-[11px] text-[var(--ink-muted)]">past due date</p>
+        </div>
+      </div>
+
+      <div className="overflow-x-auto rounded-xl border border-[var(--line)]">
         {suppliers.length === 0 ? (
           <div className="py-16 text-center text-sm text-[var(--ink-muted)]">
             No suppliers yet. Add your first supplier to start raising purchase orders.
           </div>
         ) : (
-          <table className="w-full text-sm">
+          <table className="w-full min-w-[600px] text-sm">
             <thead className="bg-[var(--panel-strong)] text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
               <tr>
                 <th className="px-4 py-2.5 text-left">Name</th>

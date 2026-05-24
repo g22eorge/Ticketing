@@ -33,7 +33,7 @@ export function ReceiveStockForm({ poId, items, locations }: { poId: string; ite
   }
 
   return (
-    <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] overflow-hidden">
+    <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)]">
       <div className="px-5 py-3 border-b border-[var(--line)]">
         <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Receive Stock</p>
         <p className="mt-0.5 text-xs text-[var(--ink-muted)]">Update quantities received. Part inventory will be adjusted automatically.</p>
@@ -54,7 +54,8 @@ export function ReceiveStockForm({ poId, items, locations }: { poId: string; ite
             ))}
           </select>
         </label>
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto">
+        <table className="w-full min-w-[400px] text-sm">
           <thead>
             <tr className="text-xs font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
               <th className="text-left pb-2">Item</th>
@@ -86,6 +87,7 @@ export function ReceiveStockForm({ poId, items, locations }: { poId: string; ite
             ))}
           </tbody>
         </table>
+        </div>
 
         {error && <p className="text-xs text-red-600">{error}</p>}
         {saved && <p className="text-xs text-green-600">Stock received and inventory updated.</p>}

@@ -1,9 +1,9 @@
 import Link from "next/link";
+import { getCurrentUserRole } from "@/lib/session";
 import { redirect } from "next/navigation";
-import { prisma } from "@/lib/prisma";
-import { requireOrgSession } from "@/lib/org-context";
-import { requireModule, OrgModule } from "@/lib/module-access";
+import { orgDb, prisma } from "@/lib/prisma";
 import { can } from "@/lib/permissions";
+import { formatMoney } from "@/lib/currency";
 
 export const dynamic = "force-dynamic";
 
@@ -16,18 +16,31 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export default async function PurchaseOrdersPage() {
-  await requireModule(OrgModule.PURCHASE_ORDERS);
-  const { user, orgId } = await requireOrgSession();
+  const { user } = await getCurrentUserRole();
+  const db = orgDb(user.orgId);
   if (!can.manageUsers(user)) redirect("/inventory");
 
-  const orders = await prisma.purchaseOrder.findMany({
-    where: { orgId },
-    orderBy: { createdAt: "desc" },
-    include: {
-      supplier: { select: { name: true } },
-      _count: { select: { items: true } },
-    },
-  });
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+  const [orders, pendingCount, thisMonthCount, pendingItems] = await Promise.all([
+    db.purchaseOrder.findMany({
+      where: {},
+      orderBy: { createdAt: "desc" },
+      include: {
+        supplier: { select: { name: true } },
+        _count: { select: { items: true } },
+      },
+    }),
+    db.purchaseOrder.count({ where: { status: { in: ["DRAFT", "ORDERED", "PARTIAL"] } } }).catch(() => 0),
+    db.purchaseOrder.count({ where: { createdAt: { gte: monthStart } } }).catch(() => 0),
+    prisma.purchaseOrderItem.findMany({
+      where: { po: { status: { in: ["DRAFT", "ORDERED", "PARTIAL"] } } },
+      select: { qtyOrdered: true, unitCost: true },
+    }).catch(() => [] as { qtyOrdered: number; unitCost: number }[]),
+  ]);
+
+  const pendingValue = pendingItems.reduce((sum, item) => sum + item.qtyOrdered * item.unitCost, 0);
 
   const fmt = (d: Date | null) =>
     d ? d.toLocaleDateString("en-UG", { day: "numeric", month: "short", year: "numeric" }) : "—";
@@ -49,13 +62,37 @@ export default async function PurchaseOrdersPage() {
         </div>
       </div>
 
-      <div className="rounded-xl border border-[var(--line)]">
+      {/* KPI tiles */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
+          <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Total Orders</p>
+          <p className="mt-1 text-xl font-bold tabular-nums text-[var(--ink)]">{orders.length}</p>
+          <p className="mt-0.5 text-[11px] text-[var(--ink-muted)]">all time</p>
+        </div>
+        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
+          <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Pending</p>
+          <p className="mt-1 text-xl font-bold tabular-nums text-amber-600">{pendingCount}</p>
+          <p className="mt-0.5 text-[11px] text-[var(--ink-muted)]">draft, ordered, partial</p>
+        </div>
+        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
+          <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">This Month</p>
+          <p className="mt-1 text-xl font-bold tabular-nums text-[var(--ink)]">{thisMonthCount}</p>
+          <p className="mt-0.5 text-[11px] text-[var(--ink-muted)]">raised this month</p>
+        </div>
+        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
+          <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Total Value Pending</p>
+          <p className="mt-1 text-xl font-bold tabular-nums text-[var(--ink)]">{formatMoney(pendingValue)}</p>
+          <p className="mt-0.5 text-[11px] text-[var(--ink-muted)]">open order value</p>
+        </div>
+      </div>
+
+      <div className="overflow-x-auto rounded-xl border border-[var(--line)]">
         {orders.length === 0 ? (
           <div className="py-16 text-center text-sm text-[var(--ink-muted)]">
             No purchase orders yet. Create one to start ordering stock.
           </div>
         ) : (
-          <table className="w-full text-sm">
+          <table className="w-full min-w-[600px] text-sm">
             <thead className="bg-[var(--panel-strong)] text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
               <tr>
                 <th className="px-4 py-2.5 text-left">Reference</th>

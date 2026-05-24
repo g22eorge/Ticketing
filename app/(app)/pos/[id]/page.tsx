@@ -899,8 +899,8 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
           </form>
         ) : null}
 
-        <div className="mt-3 overflow-hidden rounded-lg border border-[var(--line)]">
-          <table className="w-full text-left text-sm">
+        <div className="mt-3 overflow-x-auto rounded-lg border border-[var(--line)]">
+          <table className="w-full min-w-[420px] text-left text-sm">
             <thead className="bg-[var(--panel-strong)] text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
               <tr>
                 <th className="px-3 py-2">Item</th>
@@ -988,8 +988,8 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
           </form>
         ) : null}
 
-        <div className="mt-3 overflow-hidden rounded-lg border border-[var(--line)]">
-          <table className="w-full text-left text-sm">
+        <div className="mt-3 overflow-x-auto rounded-lg border border-[var(--line)]">
+          <table className="w-full min-w-[380px] text-left text-sm">
             <thead className="bg-[var(--panel-strong)] text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
               <tr>
                 <th className="px-3 py-2">Date</th>
@@ -1023,8 +1023,8 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
           POS quick sales do not generate delivery notes. Legacy notes remain available for audit/download only.
         </p>
 
-        <div className="mt-4 overflow-hidden rounded-lg border border-[var(--line)]">
-          <table className="w-full text-left text-sm">
+        <div className="mt-4 overflow-x-auto rounded-lg border border-[var(--line)]">
+          <table className="w-full min-w-[360px] text-left text-sm">
             <thead className="bg-[var(--panel-strong)] text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
               <tr>
                 <th className="px-3 py-2">Delivery Note</th>
@@ -1073,8 +1073,8 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
                   className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 py-2 text-sm outline-none focus:border-[var(--accent)]/50"
                 />
 
-                <div className="overflow-hidden rounded-lg border border-[var(--line)] bg-[var(--panel)]">
-                  <table className="w-full text-left text-sm">
+                <div className="overflow-x-auto rounded-lg border border-[var(--line)] bg-[var(--panel)]">
+                  <table className="w-full min-w-[320px] text-left text-sm">
                     <thead className="bg-[var(--panel-strong)] text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
                       <tr>
                         <th className="px-3 py-2">Item</th>
@@ -1168,8 +1168,8 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
                     </div>
 
                     {cn.items.length ? (
-                      <div className="mt-2 overflow-hidden rounded-lg border border-[var(--line)] bg-[var(--panel)]">
-                        <table className="w-full text-left text-sm">
+                      <div className="mt-2 overflow-x-auto rounded-lg border border-[var(--line)] bg-[var(--panel)]">
+                        <table className="w-full min-w-[280px] text-left text-sm">
                           <thead className="bg-[var(--panel-strong)] text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
                             <tr>
                               <th className="px-3 py-2">Item</th>
@@ -1217,8 +1217,8 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
                 {refunds.length === 0 ? (
                   <p className="text-sm text-[var(--ink-muted)]">No refunds yet.</p>
                 ) : (
-                  <div className="overflow-hidden rounded-lg border border-[var(--line)]">
-                    <table className="w-full text-left text-sm">
+                  <div className="overflow-x-auto rounded-lg border border-[var(--line)]">
+                    <table className="w-full min-w-[420px] text-left text-sm">
                       <thead className="bg-[var(--panel-strong)] text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
                         <tr>
                           <th className="px-3 py-2">Date</th>

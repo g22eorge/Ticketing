@@ -5,28 +5,34 @@ import type { PaymentMethod } from "@prisma/client";
 
 import { formatMoney, normalizeCurrency, toBaseAmount } from "@/lib/currency";
 import { can } from "@/lib/permissions";
-import { prisma } from "@/lib/prisma";
-import { requireOrgSession } from "@/lib/org-context";
-import { requireModule, OrgModule } from "@/lib/module-access";
-import { assertOrgCanMutate } from "@/lib/org-write";
+import { orgDb, prisma } from "@/lib/prisma";
+import { getCurrentUserRole } from "@/lib/session";
 import { ConfirmSubmitButton } from "@/components/shared/ConfirmSubmitButton";
 import { writeSystemAuditEvent } from "@/lib/commercial/audit";
 import { RowActionsMenu, MenuSection, MenuDestructiveRow } from "@/components/shared/RowActionsMenu";
 
 const PAYMENT_METHODS: PaymentMethod[] = ["CASH", "MOBILE_MONEY", "BANK_TRANSFER", "CARD", "OTHER"];
 
-export default async function ReceiptsPage() {
-  const { user, orgId, org } = await requireOrgSession();
+export default async function ReceiptsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string; period?: string }>;
+}) {
+  const { user } = await getCurrentUserRole();
+  const db = orgDb(user.orgId);
   if (!(can.viewFinancials(user) || ["ADMIN", "OPS", "FRONT_DESK"].includes(user.role))) {
     redirect("/dashboard");
   }
-  await requireModule(OrgModule.INVOICING);
+
+  const params = await searchParams;
+  const q = (params.q ?? "").trim();
+  const period = params.period ?? "all";
 
   async function updateReceiptAction(formData: FormData) {
     "use server";
-    const { user, orgId, org } = await requireOrgSession();
+    const { user: _u } = await getCurrentUserRole();
+    const db = orgDb(user.orgId);
     if (!(can.viewFinancials(user) || ["ADMIN", "OPS"].includes(user.role))) redirect("/dashboard");
-    assertOrgCanMutate({ access: org.access, userRole: user.role, userAccessMode: user.accessMode, kind: "PAYMENT" });
 
     const paymentId = String(formData.get("paymentId") ?? "").trim();
     const amount = Number(String(formData.get("amount") ?? "").trim());
@@ -38,51 +44,51 @@ export default async function ReceiptsPage() {
     const method = PAYMENT_METHODS.includes(methodRaw as PaymentMethod) ? (methodRaw as PaymentMethod) : "OTHER" as PaymentMethod;
 
     const source = await prisma.payment.findFirst({
-      where: { id: paymentId, orgId },
+      where: { id: paymentId },
       select: { invoiceId: true, saleId: true, currency: true, exchangeRateToBase: true },
     });
     if (!source) return;
 
     if (source.invoiceId) {
-      const invoice = await prisma.invoice.findFirst({ where: { id: source.invoiceId, orgId }, select: { id: true, totalAmount: true } });
+      const invoice = await db.invoice.findFirst({ where: { id: source.invoiceId }, select: { id: true, totalAmount: true } });
       if (!invoice) return;
       const otherPayments = await prisma.payment.findMany({
-        where: { invoiceId: invoice.id, orgId, id: { not: paymentId } },
+        where: { invoiceId: invoice.id, id: { not: paymentId } },
         select: { amount: true, currency: true, exchangeRateToBase: true },
       });
-      const nextPaidAmount = otherPayments.reduce((sum, p) => sum + toBaseAmount({ amount: p.amount, currency: p.currency, baseCurrency: org.baseCurrency, exchangeRateToBase: p.exchangeRateToBase }), 0)
-        + toBaseAmount({ amount, currency: source.currency, baseCurrency: org.baseCurrency, exchangeRateToBase: source.exchangeRateToBase });
+      const nextPaidAmount = otherPayments.reduce((sum, p) => sum + toBaseAmount({ amount: p.amount, currency: p.currency, baseCurrency: "UGX", exchangeRateToBase: p.exchangeRateToBase }), 0)
+        + toBaseAmount({ amount, currency: source.currency, baseCurrency: "UGX", exchangeRateToBase: source.exchangeRateToBase });
       if (nextPaidAmount > invoice.totalAmount) return;
     }
 
     await prisma.$transaction(async (tx) => {
       await tx.payment.updateMany({
-        where: { id: paymentId, orgId },
+        where: { id: paymentId },
         data: { amount, method, reference: reference || null, note: note || null },
       });
 
       if (source.invoiceId) {
-        const invoice = await tx.invoice.findFirst({ where: { id: source.invoiceId, orgId }, select: { id: true, totalAmount: true, jobId: true } });
+        const invoice = await tx.invoice.findFirst({ where: { id: source.invoiceId }, select: { id: true, totalAmount: true, jobId: true } });
         if (invoice) {
-          const payments = await tx.payment.findMany({ where: { invoiceId: invoice.id, orgId }, select: { amount: true, currency: true, exchangeRateToBase: true } });
-          const paidAmount = payments.reduce((sum, p) => sum + toBaseAmount({ amount: p.amount, currency: p.currency, baseCurrency: org.baseCurrency, exchangeRateToBase: p.exchangeRateToBase }), 0);
+          const payments = await tx.payment.findMany({ where: { invoiceId: invoice.id }, select: { amount: true, currency: true, exchangeRateToBase: true } });
+          const paidAmount = payments.reduce((sum, p) => sum + toBaseAmount({ amount: p.amount, currency: p.currency, baseCurrency: "UGX", exchangeRateToBase: p.exchangeRateToBase }), 0);
           const isPaid = invoice.totalAmount > 0 && paidAmount >= invoice.totalAmount;
-          await tx.invoice.updateMany({ where: { id: invoice.id, orgId }, data: { paidAmount, paidAt: isPaid ? new Date() : null, status: invoice.totalAmount <= 0 ? "PAID" : isPaid ? "PAID" : "ISSUED" } });
-          if (invoice.jobId) await tx.job.updateMany({ where: { id: invoice.jobId, orgId }, data: { clientPaid: isPaid, clientPaidAt: isPaid ? new Date() : null, clientPaidById: isPaid ? user.id : null } });
+          await tx.invoice.updateMany({ where: { id: invoice.id }, data: { paidAmount, paidAt: isPaid ? new Date() : null, status: invoice.totalAmount <= 0 ? "PAID" : isPaid ? "PAID" : "ISSUED" } });
+          if (invoice.jobId) await tx.job.updateMany({ where: { id: invoice.jobId }, data: { clientPaid: isPaid, clientPaidAt: isPaid ? new Date() : null, clientPaidById: isPaid ? user.id : null } });
         }
       }
 
       if (source.saleId) {
-        const sale = await tx.sale.findFirst({ where: { id: source.saleId, orgId }, select: { id: true, totalAmount: true } });
+        const sale = await tx.sale.findFirst({ where: { id: source.saleId }, select: { id: true, totalAmount: true } });
         if (sale) {
-          const agg = await tx.payment.aggregate({ where: { saleId: sale.id, orgId }, _sum: { amount: true } });
+          const agg = await tx.payment.aggregate({ where: { saleId: sale.id }, _sum: { amount: true } });
           const paidAmount = agg._sum.amount ?? 0;
           const isPaid = sale.totalAmount > 0 && paidAmount >= sale.totalAmount;
-          await tx.sale.updateMany({ where: { id: sale.id, orgId }, data: { paidAmount, paidAt: isPaid ? new Date() : null, status: isPaid ? "PAID" : "OPEN" } });
+          await tx.sale.updateMany({ where: { id: sale.id }, data: { paidAmount, paidAt: isPaid ? new Date() : null, status: isPaid ? "PAID" : "OPEN" } });
         }
       }
     });
-    await writeSystemAuditEvent({ orgId, actorUserId: user.id, entityType: "Payment", entityId: paymentId, action: "RECEIPT_UPDATED", summary: "Receipt/payment updated" });
+    await writeSystemAuditEvent({ actorUserId: user.id, entityType: "Payment", entityId: paymentId, action: "RECEIPT_UPDATED", summary: "Receipt/payment updated" });
 
     revalidatePath("/documents/receipts");
     revalidatePath("/documents/invoices");
@@ -90,53 +96,79 @@ export default async function ReceiptsPage() {
 
   async function deleteReceiptAction(formData: FormData) {
     "use server";
-    const { user, orgId, org } = await requireOrgSession();
+    const { user: _u } = await getCurrentUserRole();
+    const db = orgDb(user.orgId);
     if (!("ADMIN" === user.role || can.approveInvoices(user))) return;
-    assertOrgCanMutate({ access: org.access, userRole: user.role, userAccessMode: user.accessMode, kind: "PAYMENT" });
 
     const paymentId = String(formData.get("paymentId") ?? "").trim();
     if (!paymentId) return;
 
     const source = await prisma.payment.findFirst({
-      where: { id: paymentId, orgId },
+      where: { id: paymentId },
       select: { invoiceId: true, saleId: true },
     });
     if (!source) return;
 
     await prisma.$transaction(async (tx) => {
-      await tx.payment.deleteMany({ where: { id: paymentId, orgId } });
+      await tx.payment.deleteMany({ where: { id: paymentId } });
 
       if (source.invoiceId) {
-        const invoice = await tx.invoice.findFirst({ where: { id: source.invoiceId, orgId }, select: { id: true, totalAmount: true, jobId: true } });
+        const invoice = await tx.invoice.findFirst({ where: { id: source.invoiceId }, select: { id: true, totalAmount: true, jobId: true } });
         if (invoice) {
-          const payments = await tx.payment.findMany({ where: { invoiceId: invoice.id, orgId }, select: { amount: true, currency: true, exchangeRateToBase: true } });
-          const paidAmount = payments.reduce((sum, p) => sum + toBaseAmount({ amount: p.amount, currency: p.currency, baseCurrency: org.baseCurrency, exchangeRateToBase: p.exchangeRateToBase }), 0);
+          const payments = await tx.payment.findMany({ where: { invoiceId: invoice.id }, select: { amount: true, currency: true, exchangeRateToBase: true } });
+          const paidAmount = payments.reduce((sum, p) => sum + toBaseAmount({ amount: p.amount, currency: p.currency, baseCurrency: "UGX", exchangeRateToBase: p.exchangeRateToBase }), 0);
           const isPaid = invoice.totalAmount > 0 && paidAmount >= invoice.totalAmount;
-          await tx.invoice.updateMany({ where: { id: invoice.id, orgId }, data: { paidAmount, paidAt: isPaid ? new Date() : null, status: invoice.totalAmount <= 0 ? "PAID" : isPaid ? "PAID" : "ISSUED" } });
-          if (invoice.jobId) await tx.job.updateMany({ where: { id: invoice.jobId, orgId }, data: { clientPaid: isPaid, clientPaidAt: isPaid ? new Date() : null, clientPaidById: isPaid ? user.id : null } });
+          await tx.invoice.updateMany({ where: { id: invoice.id }, data: { paidAmount, paidAt: isPaid ? new Date() : null, status: invoice.totalAmount <= 0 ? "PAID" : isPaid ? "PAID" : "ISSUED" } });
+          if (invoice.jobId) await tx.job.updateMany({ where: { id: invoice.jobId }, data: { clientPaid: isPaid, clientPaidAt: isPaid ? new Date() : null, clientPaidById: isPaid ? user.id : null } });
         }
       }
 
       if (source.saleId) {
-        const sale = await tx.sale.findFirst({ where: { id: source.saleId, orgId }, select: { id: true, totalAmount: true } });
+        const sale = await tx.sale.findFirst({ where: { id: source.saleId }, select: { id: true, totalAmount: true } });
         if (sale) {
-          const agg = await tx.payment.aggregate({ where: { saleId: sale.id, orgId }, _sum: { amount: true } });
+          const agg = await tx.payment.aggregate({ where: { saleId: sale.id }, _sum: { amount: true } });
           const paidAmount = agg._sum.amount ?? 0;
           const isPaid = sale.totalAmount > 0 && paidAmount >= sale.totalAmount;
-          await tx.sale.updateMany({ where: { id: sale.id, orgId }, data: { paidAmount, paidAt: isPaid ? new Date() : null, status: isPaid ? "PAID" : "OPEN" } });
+          await tx.sale.updateMany({ where: { id: sale.id }, data: { paidAmount, paidAt: isPaid ? new Date() : null, status: isPaid ? "PAID" : "OPEN" } });
         }
       }
     });
-    await writeSystemAuditEvent({ orgId, actorUserId: user.id, entityType: "Payment", entityId: paymentId, action: "RECEIPT_DELETED", summary: "Receipt/payment deleted" });
+    await writeSystemAuditEvent({ actorUserId: user.id, entityType: "Payment", entityId: paymentId, action: "RECEIPT_DELETED", summary: "Receipt/payment deleted" });
 
     revalidatePath("/documents/receipts");
     revalidatePath("/documents/invoices");
   }
 
+  const now2 = new Date();
+  const thisMonthStart = new Date(now2.getFullYear(), now2.getMonth(), 1);
+  const lastMonthStart = new Date(now2.getFullYear(), now2.getMonth() - 1, 1);
+  const lastMonthEnd = new Date(now2.getFullYear(), now2.getMonth(), 0, 23, 59, 59, 999);
+  const last30Start = new Date(now2.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+  const periodFilter =
+    period === "this_month" ? { gte: thisMonthStart } :
+    period === "last_month" ? { gte: lastMonthStart, lte: lastMonthEnd } :
+    period === "last_30"    ? { gte: last30Start } :
+    undefined;
+
+  const searchWhere = q
+    ? {
+        OR: [
+          { reference: { contains: q } },
+          { note: { contains: q } },
+          { invoice: { invoiceNumber: { contains: q } } },
+          { sale: { saleNumber: { contains: q } } },
+        ],
+      }
+    : {};
+
   const payments = await prisma.payment.findMany({
-    where: { orgId },
+    where: {
+      ...(periodFilter ? { receivedAt: periodFilter } : {}),
+      ...(q ? searchWhere : {}),
+    },
     orderBy: { receivedAt: "desc" },
-    take: 120,
+    take: 200,
     select: {
       id: true,
       amount: true,
@@ -159,8 +191,8 @@ export default async function ReceiptsPage() {
       sum +
         toBaseAmount({
           amount: p.amount,
-          currency: normalizeCurrency(p.currency, org.baseCurrency),
-          baseCurrency: org.baseCurrency,
+          currency: normalizeCurrency(p.currency, "UGX"),
+          baseCurrency: "UGX",
           exchangeRateToBase: p.exchangeRateToBase,
         }),
     0,
@@ -171,13 +203,37 @@ export default async function ReceiptsPage() {
       sum +
         toBaseAmount({
           amount: p.amount,
-          currency: normalizeCurrency(p.currency, org.baseCurrency),
-          baseCurrency: org.baseCurrency,
+          currency: normalizeCurrency(p.currency, "UGX"),
+          baseCurrency: "UGX",
           exchangeRateToBase: p.exchangeRateToBase,
         }),
     0,
   );
   const cashPaymentsCount = payments.filter((p) => p.method === "CASH").length;
+
+  const methodBreakdown = PAYMENT_METHODS.map((method) => {
+    const mp = payments.filter((p) => p.method === method);
+    const count = mp.length;
+    const amount = mp.reduce(
+      (sum, p) =>
+        sum + toBaseAmount({
+          amount: p.amount,
+          currency: normalizeCurrency(p.currency, "UGX"),
+          baseCurrency: "UGX",
+          exchangeRateToBase: p.exchangeRateToBase,
+        }),
+      0,
+    );
+    const pct = receiptsTotal > 0 ? Math.round((count / receiptsTotal) * 100) : 0;
+    return { method, count, amount, pct };
+  }).filter((m) => m.count > 0);
+
+  const PERIOD_LABELS: Record<string, string> = {
+    all: "All Time",
+    this_month: "This Month",
+    last_month: "Last Month",
+    last_30: "Last 30 Days",
+  };
 
   function methodBadge(method: string) {
     switch (method) {
@@ -204,11 +260,11 @@ export default async function ReceiptsPage() {
           </div>
           <div className="px-4 py-2">
             <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">Total Amount</p>
-            <p className="text-[15px] font-black tabular-nums leading-tight text-[var(--ink)]">{formatMoney(totalAmountBase, org.baseCurrency)}</p>
+            <p className="text-[15px] font-black tabular-nums leading-tight text-[var(--ink)]">{formatMoney(totalAmountBase, "UGX")}</p>
           </div>
           <div className="px-4 py-2">
             <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">This Month</p>
-            <p className="text-[15px] font-black tabular-nums leading-tight text-[var(--accent)]">{formatMoney(thisMonthAmountBase, org.baseCurrency)}</p>
+            <p className="text-[15px] font-black tabular-nums leading-tight text-[var(--accent)]">{formatMoney(thisMonthAmountBase, "UGX")}</p>
           </div>
           <div className="px-4 py-2">
             <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">Cash</p>
@@ -217,8 +273,65 @@ export default async function ReceiptsPage() {
         </div>
       </div>
 
-      <div className="rounded-xl border border-[var(--line)]">
-        <table className="w-full text-left text-sm">
+      {/* Filters */}
+      <form className="panel-shadow flex flex-wrap items-center gap-2 rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
+        <input
+          name="q"
+          defaultValue={q}
+          placeholder="Search reference, invoice #, sale #…"
+          className="flex-1 min-w-[160px] rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-sm outline-none transition focus:border-[var(--accent)]/50 focus:ring-1 focus:ring-[var(--accent)]/20"
+        />
+        <div className="flex gap-1">
+          {(["all", "this_month", "last_month", "last_30"] as const).map((p) => (
+            <button
+              key={p}
+              type="submit"
+              name="period"
+              value={p}
+              className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${period === p ? "bg-[var(--accent)] text-white" : "bg-[var(--panel-strong)] text-[var(--ink-muted)] hover:text-[var(--ink)]"}`}
+            >
+              {PERIOD_LABELS[p]}
+            </button>
+          ))}
+        </div>
+        {(q || period !== "all") && (
+          <Link href="/documents/receipts" className="rounded-lg border border-[var(--line)] px-3 py-1.5 text-xs font-medium text-[var(--ink-muted)] hover:text-[var(--ink)]">Reset</Link>
+        )}
+      </form>
+
+      {/* Method Breakdown */}
+      {methodBreakdown.length > 0 && (
+        <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
+          <div className="border-b border-[var(--line)] bg-[var(--panel-strong)]/60 px-4 py-2">
+            <p className="text-[11px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">
+              Payment Method Breakdown
+              <span className="ml-2 font-normal text-[var(--ink-muted)]/60">{PERIOD_LABELS[period] ?? period}</span>
+            </p>
+          </div>
+          <div className="divide-y divide-[var(--line)]">
+            {methodBreakdown.map((m) => (
+              <div key={m.method} className="flex items-center gap-3 px-4 py-2">
+                <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${methodBadge(m.method)}`}>
+                  {m.method.replaceAll("_", " ")}
+                </span>
+                <div className="flex-1 min-w-0">
+                  <div className="h-1.5 overflow-hidden rounded-full bg-[var(--line)]">
+                    <div
+                      className="h-1.5 rounded-full bg-[var(--accent)] transition-all"
+                      style={{ width: `${m.pct}%` }}
+                    />
+                  </div>
+                </div>
+                <span className="shrink-0 text-[11px] tabular-nums text-[var(--ink-muted)]">{m.pct}% · {m.count}</span>
+                <span className="shrink-0 text-[11px] font-semibold tabular-nums text-[var(--ink)]">{formatMoney(m.amount, "UGX")}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="overflow-x-auto rounded-xl border border-[var(--line)]">
+        <table className="w-full min-w-[600px] text-left text-sm">
           <thead className="bg-[var(--panel-strong)] text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
             <tr>
               <th className="px-3 py-2.5">Date</th>
@@ -231,7 +344,7 @@ export default async function ReceiptsPage() {
           </thead>
           <tbody>
             {payments.map((p) => {
-              const currency = normalizeCurrency(p.currency, org.baseCurrency);
+              const currency = normalizeCurrency(p.currency, "UGX");
               const label = p.invoice?.job?.jobNumber
                 ? `Repair ${p.invoice.job.jobNumber}`
                 : p.sale?.saleNumber

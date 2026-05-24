@@ -355,8 +355,8 @@ export default async function JournalPage({
                   6 rows — leave blank to skip
                 </p>
               </div>
-              <div className="overflow-hidden rounded-lg border border-[var(--line)]">
-                <table className="w-full text-sm">
+              <div className="overflow-x-auto rounded-lg border border-[var(--line)]">
+                <table className="w-full min-w-[560px] text-sm">
                   <thead className="border-b border-[var(--line)] bg-[var(--panel)]">
                     <tr>
                       <th className="w-2/5 px-3 py-2.5 text-left text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">
@@ -621,8 +621,8 @@ export default async function JournalPage({
                 </div>
 
                 {/* ── Lines table ──────────────────────────────── */}
-                <div className="px-4 pb-3.5">
-                  <table className="w-full text-xs">
+                <div className="overflow-x-auto px-4 pb-3.5">
+                  <table className="w-full min-w-[480px] text-xs">
                     <thead>
                       <tr>
                         <th className="pb-1 text-left text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">

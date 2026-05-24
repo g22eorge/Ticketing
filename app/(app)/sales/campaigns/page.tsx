@@ -345,8 +345,8 @@ export default async function CampaignsPage({ searchParams }: { searchParams: Pr
                     No contacts added yet.
                   </div>
                 ) : (
-                  <div className="rounded-xl border border-[var(--line)] overflow-hidden">
-                    <table className="w-full text-sm">
+                  <div className="rounded-xl border border-[var(--line)] overflow-x-auto">
+                    <table className="w-full min-w-[540px] text-sm">
                       <thead className="border-b border-[var(--line)] bg-[var(--panel)]">
                         <tr>
                           <th className="px-4 py-2.5 text-left text-xs font-semibold text-[var(--ink-muted)]">Contact</th>

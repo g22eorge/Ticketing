@@ -49,9 +49,9 @@ export default async function PurchaseRequestDetailPage({ params }: { params: Pr
         <div className="rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 py-2"><p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Estimate</p><p className="mt-0.5 text-sm font-semibold text-[var(--ink)] tabular-nums">{total.toLocaleString()}</p></div>
       </div>
 
-      <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] overflow-hidden">
+      <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] overflow-x-auto">
         <div className="px-5 py-3 border-b border-[var(--line)]"><p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Items</p></div>
-        <table className="w-full text-sm">
+        <table className="w-full min-w-[480px] text-sm">
           <thead><tr className="border-b border-[var(--line)] text-xs font-semibold uppercase tracking-wide text-[var(--ink-muted)]"><th className="px-4 py-2 text-left">Description</th><th className="px-4 py-2 text-left hidden sm:table-cell">Part</th><th className="px-4 py-2 text-right">Qty</th><th className="px-4 py-2 text-right">Est. Cost</th><th className="px-4 py-2 text-right">Total</th></tr></thead>
           <tbody className="divide-y divide-[var(--line)]">{request.items.map((item) => <tr key={item.id}><td className="px-4 py-2 text-[var(--ink)]">{item.description}</td><td className="px-4 py-2 hidden sm:table-cell text-xs text-[var(--ink-muted)]">{item.part ? `${item.part.sku} · ${item.part.name}` : "-"}</td><td className="px-4 py-2 text-right tabular-nums text-[var(--ink-muted)]">{item.quantity}</td><td className="px-4 py-2 text-right tabular-nums text-[var(--ink-muted)]">{(item.estimatedUnitCost ?? 0).toLocaleString()}</td><td className="px-4 py-2 text-right tabular-nums font-semibold text-[var(--ink)]">{(item.quantity * (item.estimatedUnitCost ?? 0)).toLocaleString()}</td></tr>)}</tbody>
         </table>

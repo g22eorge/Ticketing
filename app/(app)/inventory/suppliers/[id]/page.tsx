@@ -76,7 +76,7 @@ export default async function SupplierDetailPage({
       {String(qs.priceSaved ?? "") === "1" ? <div className="rounded-xl border border-emerald-500/25 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-600">Supplier price updated.</div> : null}
 
       {/* Supplier price list */}
-      <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] overflow-hidden">
+      <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] overflow-x-auto">
         <div className="flex items-center justify-between px-5 py-3 border-b border-[var(--line)]">
           <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Price List ({prices.length})</p>
         </div>
@@ -149,7 +149,7 @@ export default async function SupplierDetailPage({
         )}
       </div>
 
-      <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] overflow-hidden">
+      <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] overflow-x-auto">
         <div className="flex items-center justify-between px-5 py-3 border-b border-[var(--line)]">
           <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]">
             Supplier Bills ({supplier.supplierBills.length})
@@ -192,7 +192,7 @@ export default async function SupplierDetailPage({
       </div>
 
       {/* Purchase orders */}
-      <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] overflow-hidden">
+      <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] overflow-x-auto">
         <div className="flex items-center justify-between px-5 py-3 border-b border-[var(--line)]">
           <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]">
             Purchase Orders ({supplier.purchaseOrders.length})
