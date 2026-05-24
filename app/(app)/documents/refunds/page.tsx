@@ -232,21 +232,69 @@ export default async function RefundsPage({
         {filtered.length === 0 ? (
           <div className="py-16 text-center text-sm text-[var(--ink-muted)]">No refunds found</div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-[var(--border)] text-[11px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
-                  <th className="px-4 py-3 text-left">Date</th>
-                  <th className="px-4 py-3 text-left">Source</th>
-                  <th className="px-4 py-3 text-left">Client</th>
-                  <th className="px-4 py-3 text-left">Method</th>
-                  <th className="px-4 py-3 text-right">Amount</th>
-                  <th className="px-4 py-3 text-left">Reference</th>
-                  <th className="px-4 py-3 text-left">Note</th>
-                  <th className="px-4 py-3 text-left">Issued By</th>
-                  {user.role === "ADMIN" && <th className="px-4 py-3" />}
-                </tr>
-              </thead>
+          <>
+            {/* Mobile cards */}
+            <div className="divide-y divide-[var(--line)] lg:hidden">
+              {filtered.map((r) => {
+                const refundCurrencyM = normalizeCurrency(r.currency, currency);
+                const sourceLabelM = r.invoice ? r.invoice.invoiceNumber : r.sale ? r.sale.saleNumber : "—";
+                const sourceHrefM = r.invoiceId ? `/documents/invoices?id=${r.invoiceId}` : r.saleId ? `/sales/${r.saleId}` : null;
+                const clientNameM = r.invoice?.job?.client?.fullName ?? r.sale?.client?.fullName ?? "—";
+                return (
+                  <div key={`m-${r.id}`} className="px-4 py-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-1.5">
+                        {sourceHrefM ? (
+                          <Link href={sourceHrefM} className="font-mono text-xs font-semibold text-[var(--accent)] hover:underline">{sourceLabelM}</Link>
+                        ) : (
+                          <span className="font-mono text-xs font-semibold text-[var(--ink)]">{sourceLabelM}</span>
+                        )}
+                        <span className={`rounded px-1 py-0.5 text-[10px] font-semibold ${r.invoiceId ? "bg-blue-50 text-blue-700" : "bg-violet-50 text-violet-700"}`}>
+                          {r.invoiceId ? "Invoice" : "Sale"}
+                        </span>
+                      </div>
+                      <span className="shrink-0 rounded bg-slate-100 px-1.5 py-0.5 text-[11px] font-semibold text-slate-700">{r.method.replace(/_/g, " ")}</span>
+                    </div>
+                    <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px]">
+                      <span className="font-medium text-[var(--ink)]">{clientNameM}</span>
+                      <span className="font-bold tabular-nums text-[var(--ink)]">{formatMoney(r.amount, refundCurrencyM)}</span>
+                      <span className="text-[var(--ink-muted)]">{r.refundedAt.toLocaleDateString()}</span>
+                    </div>
+                    {(r.reference || r.note) && (
+                      <div className="mt-0.5 flex flex-wrap gap-x-3 text-[11px] text-[var(--ink-muted)]">
+                        {r.reference && <span>Ref: <span className="font-mono">{r.reference}</span></span>}
+                        {r.note && <span className="line-clamp-1">{r.note}</span>}
+                      </div>
+                    )}
+                    <div className="mt-1 flex items-center justify-between text-[11px] text-[var(--ink-muted)]">
+                      <span>By: {r.createdBy?.name ?? "—"}</span>
+                      {user.role === "ADMIN" && (
+                        <form action={deleteRefundAction}>
+                          <input type="hidden" name="refundId" value={r.id} />
+                          <ConfirmSubmitButton message="Delete this refund? This cannot be undone." confirmLabel="Delete" className="rounded border border-red-200 px-2 py-0.5 text-[11px] font-semibold text-red-600 hover:bg-red-50">Delete</ConfirmSubmitButton>
+                        </form>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            {/* Desktop table */}
+            <div className="hidden overflow-x-auto lg:block">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-[var(--border)] text-[11px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
+                    <th className="px-4 py-3 text-left">Date</th>
+                    <th className="px-4 py-3 text-left">Source</th>
+                    <th className="px-4 py-3 text-left">Client</th>
+                    <th className="px-4 py-3 text-left">Method</th>
+                    <th className="px-4 py-3 text-right">Amount</th>
+                    <th className="px-4 py-3 text-left">Reference</th>
+                    <th className="px-4 py-3 text-left">Note</th>
+                    <th className="px-4 py-3 text-left">Issued By</th>
+                    {user.role === "ADMIN" && <th className="px-4 py-3" />}
+                  </tr>
+                </thead>
               <tbody>
                 {filtered.map((r) => {
                   const refundCurrency = normalizeCurrency(r.currency, currency);
@@ -324,7 +372,8 @@ export default async function RefundsPage({
                 })}
               </tbody>
             </table>
-          </div>
+            </div>
+          </>
         )}
       </div>
 

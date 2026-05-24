@@ -227,20 +227,61 @@ export default async function OutboxPage({
             No messages match these filters.
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[720px] text-left">
-              <thead>
-                <tr className="border-b border-[var(--line)] bg-[var(--panel-strong)]/60">
-                  {["Status", "Channel / Type", "Recipient", "Sent / Scheduled", "Delivery", "Error", "Actions"].map((h) => (
-                    <th key={h} className="px-4 py-2.5 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[var(--line)]">
-                {rows.map((r) => (
-                  <tr key={r.id} className="group align-top transition-colors hover:bg-[var(--panel-strong)]/40">
+          <>
+            {/* Mobile outbox cards */}
+            <div className="divide-y divide-[var(--line)] lg:hidden">
+              {rows.map((r) => (
+                <div key={`m-${r.id}`} className="px-4 py-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold ${STATUS_STYLES[r.status] ?? STATUS_STYLES.DEAD}`}>{r.status}</span>
+                      <span className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${CHANNEL_STYLES[r.channel] ?? ""}`}>{r.channel}</span>
+                    </div>
+                    <div className="flex shrink-0 gap-1">
+                      {r.status !== "SENT" && (
+                        <form action={retryOneAction}>
+                          <input type="hidden" name="id" value={r.id} />
+                          <button className="rounded border border-[var(--line)] px-2 py-0.5 text-[11px] font-medium hover:bg-[var(--panel-strong)]">Retry</button>
+                        </form>
+                      )}
+                      {r.status !== "DEAD" && r.status !== "SENT" && (
+                        <form action={markDeadAction}>
+                          <input type="hidden" name="id" value={r.id} />
+                          <button className="rounded border border-[var(--line)] px-2 py-0.5 text-[11px] font-medium text-[var(--ink-muted)] hover:border-red-200 hover:bg-red-50 hover:text-red-700">Discard</button>
+                        </form>
+                      )}
+                    </div>
+                  </div>
+                  <p className="mt-1 font-mono text-sm font-medium text-[var(--ink)]">{r.to}</p>
+                  <div className="mt-0.5 flex flex-wrap gap-x-3 text-[11px] text-[var(--ink-muted)]">
+                    <span>{r.type.replaceAll("_", " ").toLowerCase()}</span>
+                    {r.sentAt && <span>{fmtDate(r.sentAt)}</span>}
+                    {r.attemptCount > 0 && <span>{r.attemptCount} attempt{r.attemptCount !== 1 ? "s" : ""}</span>}
+                  </div>
+                  {r.providerDeliveryStatus && (
+                    <span className={`mt-1 inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${r.providerDeliveryStatus === "delivered" || r.providerDeliveryStatus === "read" ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]"}`}>{r.providerDeliveryStatus}</span>
+                  )}
+                  {r.lastError && (
+                    <p className="mt-0.5 line-clamp-2 text-[11px] text-red-600">{r.lastErrorCode ? `[${r.lastErrorCode}] ` : ""}{r.lastError}</p>
+                  )}
+                </div>
+              ))}
+            </div>
+            {/* Desktop table */}
+            <div className="hidden overflow-x-auto lg:block">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="border-b border-[var(--line)] bg-[var(--panel-strong)]/60">
+                    {["Status", "Channel / Type", "Recipient", "Sent / Scheduled", "Delivery", "Error", "Actions"].map((h) => (
+                      <th key={h} className="px-4 py-2.5 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[var(--line)]">
+                  {rows.map((r) => (
+                    <tr key={r.id} className="group align-top transition-colors hover:bg-[var(--panel-strong)]/40">
 
                     {/* Status */}
                     <td className="px-4 py-3">
@@ -345,7 +386,8 @@ export default async function OutboxPage({
                 ))}
               </tbody>
             </table>
-          </div>
+            </div>
+          </>
         )}
       </div>
     </div>

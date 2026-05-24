@@ -1327,7 +1327,7 @@ export default async function ReportsPage({
             </p>
 
             {/* Funnel KPIs */}
-            <div className="mt-3 grid grid-cols-3 gap-3">
+            <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
               <div className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] p-3 text-center">
                 <p className="text-xl font-bold text-[var(--ink)]">{totalLeads}</p>
                 <p className="mt-0.5 text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">

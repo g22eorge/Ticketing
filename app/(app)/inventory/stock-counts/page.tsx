@@ -65,7 +65,7 @@ export default async function StockCountsPage() {
       </div>
 
       <div className="panel-shadow overflow-x-auto rounded-xl border border-[var(--line)] bg-[var(--panel)]">
-        <table className="w-full min-w-[520px] text-sm">
+        <table className="w-full text-sm">
           <thead className="bg-[var(--panel-strong)] text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
             <tr>
               <th className="px-4 py-2.5 text-left">Count</th>

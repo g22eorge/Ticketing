@@ -237,7 +237,7 @@ export default async function CashFlowPage({
           </p>
         </div>
         <div className="overflow-x-auto">
-        <table className="w-full min-w-[480px] text-sm">
+        <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-[var(--line)] bg-[var(--panel-strong)]/40">
               <th className="px-4 py-2 text-left text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Line Item</th>

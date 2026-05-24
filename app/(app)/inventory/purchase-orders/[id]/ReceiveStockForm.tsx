@@ -55,7 +55,7 @@ export function ReceiveStockForm({ poId, items, locations }: { poId: string; ite
           </select>
         </label>
         <div className="overflow-x-auto">
-        <table className="w-full min-w-[400px] text-sm">
+        <table className="w-full text-sm">
           <thead>
             <tr className="text-xs font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
               <th className="text-left pb-2">Item</th>

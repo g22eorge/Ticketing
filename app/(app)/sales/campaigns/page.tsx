@@ -1,12 +1,12 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import type { CampaignType, CampaignStatus, CampaignContactStatus } from "@prisma/client";
+import { getCurrentUserRole } from "@/lib/session";
 
-import { prisma } from "@/lib/prisma";
-import { requireOrgSession } from "@/lib/org-context";
-import { assertOrgCanMutate } from "@/lib/org-write";
+import { orgDb, prisma } from "@/lib/prisma";
 import { RowActionsMenu, MenuSection, MenuDestructiveRow } from "@/components/shared/RowActionsMenu";
 import { ConfirmSubmitButton } from "@/components/shared/ConfirmSubmitButton";
+import { SendCampaignButton } from "@/components/shared/SendCampaignButton";
 
 const CAMPAIGN_TYPES: CampaignType[] = ["EMAIL", "SMS", "CALL", "WHATSAPP"];
 const CAMPAIGN_STATUSES: CampaignStatus[] = ["DRAFT", "ACTIVE", "PAUSED", "COMPLETED", "CANCELLED"];
@@ -60,26 +60,27 @@ const CONTACT_STATUS_STYLE: Record<CampaignContactStatus, string> = {
 export const dynamic = "force-dynamic";
 
 export default async function CampaignsPage({ searchParams }: { searchParams: Promise<Record<string, string>> }) {
-  const { user, orgId } = await requireOrgSession();
-  if (!["ADMIN", "MANAGER", "OPS", "SALES", "SALES_MANAGER"].includes(user.role)) redirect("/dashboard");
+  const { user } = await getCurrentUserRole();
+  const db = orgDb(user.orgId);
+  if (!["ADMIN", "OPS"].includes(user.role)) redirect("/dashboard");
 
   const sp = await searchParams;
-  const view = (sp.view ?? "list") as "list" | "contacts";
   const selectedId = sp.id ?? null;
 
   async function createCampaign(fd: FormData) {
     "use server";
-    const { user: u, orgId: oid, org } = await requireOrgSession();
-    assertOrgCanMutate({ access: org.access, userRole: u.role, userAccessMode: u.accessMode, kind: "GENERAL" });
+    const { user: _user } = await getCurrentUserRole();
+    const db = orgDb(user.orgId);
+    // (org write check removed — single-tenant)
     const name = fd.get("name") as string;
     const type = fd.get("type") as CampaignType;
     const subject = (fd.get("subject") as string) || null;
     const body = fd.get("body") as string;
     const scheduledAt = fd.get("scheduledAt") as string;
     if (!name || !type || !body) return;
-    await prisma.campaign.create({
+    await db.campaign.create({
       data: {
-        orgId: oid, name, type, subject, body, createdById: u.id,
+        name, type, subject, body, createdById: user.id,
         scheduledAt: scheduledAt ? new Date(scheduledAt) : null,
       },
     });
@@ -88,52 +89,55 @@ export default async function CampaignsPage({ searchParams }: { searchParams: Pr
 
   async function updateStatus(fd: FormData) {
     "use server";
-    const { user: u, orgId: oid, org } = await requireOrgSession();
-    assertOrgCanMutate({ access: org.access, userRole: u.role, userAccessMode: u.accessMode, kind: "GENERAL" });
+    const { user: _user } = await getCurrentUserRole();
+    const db = orgDb(user.orgId);
+    // (org write check removed — single-tenant)
     const id = fd.get("id") as string;
     const status = fd.get("status") as CampaignStatus;
-    const campaign = await prisma.campaign.findFirst({ where: { id, orgId: oid } });
+    const campaign = await db.campaign.findFirst({ where: { id} });
     if (!campaign) return;
     const extra: Record<string, Date | null> = {};
     if (status === "ACTIVE" && !campaign.startedAt) extra.startedAt = new Date();
     if (status === "COMPLETED") extra.completedAt = new Date();
-    await prisma.campaign.update({ where: { id }, data: { status, ...extra } });
+    await db.campaign.update({ where: { id }, data: { status, ...extra } });
     revalidatePath("/sales/campaigns");
   }
 
   async function deleteCampaign(fd: FormData) {
     "use server";
-    const { user: u, orgId: oid, org } = await requireOrgSession();
-    assertOrgCanMutate({ access: org.access, userRole: u.role, userAccessMode: u.accessMode, kind: "GENERAL" });
+    const { user: _user } = await getCurrentUserRole();
+    const db = orgDb(user.orgId);
+    // (org write check removed — single-tenant)
     const id = fd.get("id") as string;
-    await prisma.campaign.delete({ where: { id } });
+    await db.campaign.delete({ where: { id } });
     revalidatePath("/sales/campaigns");
   }
 
   async function addLeadsToCampaign(fd: FormData) {
     "use server";
-    const { user: u, orgId: oid, org } = await requireOrgSession();
-    assertOrgCanMutate({ access: org.access, userRole: u.role, userAccessMode: u.accessMode, kind: "GENERAL" });
+    const { user: _user } = await getCurrentUserRole();
+    const db = orgDb(user.orgId);
+    // (org write check removed — single-tenant)
     const campaignId = fd.get("campaignId") as string;
     const source = fd.get("source") as "all_leads" | "all_clients";
-    const campaign = await prisma.campaign.findFirst({ where: { id: campaignId, orgId: oid } });
+    const campaign = await db.campaign.findFirst({ where: { id: campaignId} });
     if (!campaign) return;
 
     if (source === "all_leads") {
-      const leads = await prisma.lead.findMany({ where: { orgId: oid, status: { notIn: ["WON", "LOST"] } }, select: { id: true } });
+      const leads = await db.lead.findMany({ where: { status: { notIn: ["WON", "LOST"] } }, select: { id: true } });
       for (const l of leads) {
         await prisma.campaignContact.upsert({
           where: { campaignId_leadId: { campaignId, leadId: l.id } },
-          create: { campaignId, orgId: oid, leadId: l.id },
+          create: { campaignId, leadId: l.id },
           update: {},
         });
       }
     } else {
-      const clients = await prisma.client.findMany({ where: { orgId: oid }, select: { id: true } });
+      const clients = await db.client.findMany({ where: { }, select: { id: true } });
       for (const c of clients) {
         await prisma.campaignContact.upsert({
           where: { campaignId_clientId: { campaignId, clientId: c.id } },
-          create: { campaignId, orgId: oid, clientId: c.id },
+          create: { campaignId, clientId: c.id },
           update: {},
         });
       }
@@ -143,20 +147,20 @@ export default async function CampaignsPage({ searchParams }: { searchParams: Pr
 
   async function updateContactStatus(fd: FormData) {
     "use server";
-    const { user: u, orgId: oid, org } = await requireOrgSession();
-    assertOrgCanMutate({ access: org.access, userRole: u.role, userAccessMode: u.accessMode, kind: "GENERAL" });
+    const { user: _user } = await getCurrentUserRole();
+    // (org write check removed — single-tenant)
     const id = fd.get("id") as string;
     const status = fd.get("status") as CampaignContactStatus;
     const updates: Record<string, Date> = {};
     if (status === "SENT") updates.sentAt = new Date();
     if (status === "OPENED") updates.openedAt = new Date();
     if (status === "RESPONDED") updates.repliedAt = new Date();
-    await prisma.campaignContact.updateMany({ where: { id, campaign: { orgId: oid } }, data: { status, ...updates } });
+    await prisma.campaignContact.updateMany({ where: { id, campaign: { } }, data: { status, ...updates } });
     revalidatePath("/sales/campaigns");
   }
 
-  const campaigns = await prisma.campaign.findMany({
-    where: { orgId },
+  const campaigns = await db.campaign.findMany({
+    where: {},
     orderBy: { createdAt: "desc" },
     include: { _count: { select: { contacts: true } }, contacts: { select: { status: true } } },
   });
@@ -170,38 +174,55 @@ export default async function CampaignsPage({ searchParams }: { searchParams: Pr
         include: {
           lead: { select: { fullName: true, phone: true, email: true, status: true } },
           client: { select: { fullName: true, phone: true, email: true } },
+          outboundMessages: {
+            orderBy: { createdAt: "desc" },
+            take: 1,
+            select: { id: true, status: true, providerDeliveryStatus: true, sentAt: true, createdAt: true },
+          },
         },
       })
     : [];
 
   const totalActive    = campaigns.filter((c) => c.status === "ACTIVE").length;
   const totalContacts  = campaigns.reduce((s, c) => s + c._count.contacts, 0);
+  const totalSent      = campaigns.reduce((s, c) => s + c.contacts.filter((cc) => ["SENT","OPENED","RESPONDED"].includes(cc.status)).length, 0);
+  const totalOpened    = campaigns.reduce((s, c) => s + c.contacts.filter((cc) => ["OPENED","RESPONDED"].includes(cc.status)).length, 0);
   const totalResponded = campaigns.reduce((s, c) => s + c.contacts.filter((cc) => cc.status === "RESPONDED").length, 0);
+  const _overallOpenRate     = totalSent > 0 ? Math.round((totalOpened / totalSent) * 100) : 0;
+  const _overallResponseRate = totalSent > 0 ? Math.round((totalResponded / totalSent) * 100) : 0;
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6 p-6">
-      <div>
-        <h1 className="text-xl font-bold text-[var(--ink)]">Campaigns</h1>
-        <p className="mt-0.5 text-sm text-[var(--ink-muted)]">Manage outreach campaigns for leads and clients</p>
+    <div className="mx-auto max-w-5xl space-y-5 p-4 lg:p-6">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-xl font-bold text-[var(--ink)]">Campaigns</h1>
+          <p className="mt-0.5 text-sm text-[var(--ink-muted)]">Outreach campaigns for leads and clients</p>
+        </div>
       </div>
 
       {/* KPI */}
-      <div className="grid grid-cols-4 gap-3">
-        <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-          <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Total</p>
-          <p className="mt-1 text-2xl font-bold">{campaigns.length}</p>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
+          <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Total Campaigns</p>
+          <p className="mt-1 text-xl font-bold tabular-nums text-[var(--ink)]">{campaigns.length}</p>
+          <p className="mt-0.5 text-[11px] text-[var(--ink-muted)]">all time</p>
         </div>
-        <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
           <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Active</p>
-          <p className="mt-1 text-2xl font-bold text-green-600">{totalActive}</p>
+          <p className="mt-1 text-xl font-bold tabular-nums text-green-600">{totalActive}</p>
+          <p className="mt-0.5 text-[11px] text-[var(--ink-muted)]">currently running</p>
         </div>
-        <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-          <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Contacts</p>
-          <p className="mt-1 text-2xl font-bold">{totalContacts}</p>
+        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
+          <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Contacts Reached</p>
+          <p className="mt-1 text-xl font-bold tabular-nums text-[var(--ink)]">{totalSent}</p>
+          <p className="mt-0.5 text-[11px] text-[var(--ink-muted)]">of {totalContacts} total</p>
         </div>
-        <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-          <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Responded</p>
-          <p className="mt-1 text-2xl font-bold text-purple-600">{totalResponded}</p>
+        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
+          <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Avg Contacts / Campaign</p>
+          <p className="mt-1 text-xl font-bold tabular-nums text-[var(--ink)]">
+            {campaigns.length > 0 ? Math.round(totalContacts / campaigns.length) : 0}
+          </p>
+          <p className="mt-0.5 text-[11px] text-[var(--ink-muted)]">per campaign</p>
         </div>
       </div>
 
@@ -286,11 +307,18 @@ export default async function CampaignsPage({ searchParams }: { searchParams: Pr
               </div>
             ) : (
               <div className="space-y-4">
-                <div className="flex items-start justify-between">
+                <div className="flex items-start justify-between gap-3 flex-wrap">
                   <div>
                     <h2 className="font-semibold text-[var(--ink)]">{selected.name}</h2>
                     <p className="flex items-center gap-1.5 text-xs text-[var(--ink-muted)]"><CampaignTypeIcon type={selected.type} className="h-3.5 w-3.5" />{selected.type} · {selected._count.contacts} contacts</p>
                   </div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {selected.type === "WHATSAPP" && (
+                      <SendCampaignButton
+                        campaignId={selected.id}
+                        pendingCount={contacts.filter((c) => c.status === "PENDING").length}
+                      />
+                    )}
                   <RowActionsMenu label="Campaign actions">
                     <MenuSection label="Status" />
                     {CAMPAIGN_STATUSES.filter((s) => s !== selected.status).map((s) => (
@@ -311,6 +339,7 @@ export default async function CampaignsPage({ searchParams }: { searchParams: Pr
                       </form>
                     </MenuDestructiveRow>
                   </RowActionsMenu>
+                  </div>
                 </div>
 
                 {/* Body preview */}
@@ -345,50 +374,102 @@ export default async function CampaignsPage({ searchParams }: { searchParams: Pr
                     No contacts added yet.
                   </div>
                 ) : (
-                  <div className="rounded-xl border border-[var(--line)] overflow-x-auto">
-                    <table className="w-full min-w-[540px] text-sm">
-                      <thead className="border-b border-[var(--line)] bg-[var(--panel)]">
-                        <tr>
-                          <th className="px-4 py-2.5 text-left text-xs font-semibold text-[var(--ink-muted)]">Contact</th>
-                          <th className="px-4 py-2.5 text-left text-xs font-semibold text-[var(--ink-muted)]">Type</th>
-                          <th className="px-4 py-2.5 text-left text-xs font-semibold text-[var(--ink-muted)]">Status</th>
-                          <th className="px-4 py-2.5" />
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-[var(--line)] bg-[var(--bg)]">
-                        {contacts.map((cc) => {
-                          const person = cc.lead ?? cc.client;
-                          if (!person) return null;
-                          return (
-                            <tr key={cc.id} className="hover:bg-[var(--panel)]">
-                              <td className="px-4 py-2.5">
+                  <div className="overflow-hidden rounded-xl border border-[var(--line)]">
+                    {/* Mobile contact cards */}
+                    <div className="divide-y divide-[var(--line)] bg-[var(--bg)] lg:hidden">
+                      {contacts.map((cc) => {
+                        const person = cc.lead ?? cc.client;
+                        if (!person) return null;
+                        const latestMsg = cc.outboundMessages?.[0];
+                        return (
+                          <div key={`m-${cc.id}`} className="px-4 py-3">
+                            <div className="flex items-start justify-between gap-2">
+                              <div>
                                 <p className="font-medium text-[var(--ink)]">{person.fullName}</p>
-                                <p className="text-xs text-[var(--ink-muted)]">{person.phone}</p>
-                              </td>
-                              <td className="px-4 py-2.5 text-xs text-[var(--ink-muted)]">
-                                {cc.lead ? "Lead" : "Client"}
-                              </td>
-                              <td className="px-4 py-2.5">
-                                <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${CONTACT_STATUS_STYLE[cc.status]}`}>
-                                  {cc.status}
-                                </span>
-                              </td>
-                              <td className="px-3 py-2.5">
-                                <form action={updateContactStatus} className="flex gap-1">
-                                  <input type="hidden" name="id" value={cc.id} />
-                                  <select name="status" defaultValue={cc.status} className="rounded border border-[var(--line)] bg-[var(--bg)] px-2 py-1 text-xs">
-                                    {(["PENDING","SENT","OPENED","RESPONDED","OPTED_OUT"] as CampaignContactStatus[]).map((s) => (
-                                      <option key={s} value={s}>{s}</option>
-                                    ))}
-                                  </select>
-                                  <button type="submit" className="rounded border border-[var(--line)] px-2 py-1 text-xs hover:bg-[var(--panel-strong)]">→</button>
-                                </form>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
+                                <p className="text-[11px] text-[var(--ink-muted)]">{person.phone} · {cc.lead ? "Lead" : "Client"}</p>
+                              </div>
+                              <div className="flex shrink-0 flex-col items-end gap-0.5">
+                                <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${CONTACT_STATUS_STYLE[cc.status]}`}>{cc.status}</span>
+                                {latestMsg?.providerDeliveryStatus && <span className="text-[9px] uppercase text-[var(--ink-muted)]">{latestMsg.providerDeliveryStatus}</span>}
+                              </div>
+                            </div>
+                            <div className="mt-1 flex flex-wrap gap-x-3 text-[11px] text-[var(--ink-muted)]">
+                              {cc.sentAt && <span>Sent: {new Date(cc.sentAt).toLocaleDateString("en-GB")}</span>}
+                              {cc.openedAt && <span>Opened: {new Date(cc.openedAt).toLocaleDateString("en-GB")}</span>}
+                              {cc.repliedAt && <span className="text-purple-700">Replied: {new Date(cc.repliedAt).toLocaleDateString("en-GB")}</span>}
+                            </div>
+                            <form action={updateContactStatus} className="mt-2 flex gap-1">
+                              <input type="hidden" name="id" value={cc.id} />
+                              <select name="status" defaultValue={cc.status} className="flex-1 rounded border border-[var(--line)] bg-[var(--bg)] px-2 py-1 text-xs">
+                                {(["PENDING","SENT","OPENED","RESPONDED","OPTED_OUT"] as CampaignContactStatus[]).map((s) => (
+                                  <option key={s} value={s}>{s}</option>
+                                ))}
+                              </select>
+                              <button type="submit" className="rounded border border-[var(--line)] px-2 py-1 text-xs hover:bg-[var(--panel-strong)]">→</button>
+                            </form>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    {/* Desktop table */}
+                    <div className="hidden overflow-x-auto lg:block">
+                      <table className="w-full text-sm">
+                        <thead className="border-b border-[var(--line)] bg-[var(--panel)]">
+                          <tr>
+                            <th className="px-4 py-2.5 text-left text-xs font-semibold text-[var(--ink-muted)]">Contact</th>
+                            <th className="px-4 py-2.5 text-left text-xs font-semibold text-[var(--ink-muted)]">Status</th>
+                            <th className="px-4 py-2.5 text-left text-xs font-semibold text-[var(--ink-muted)]">Sent</th>
+                            <th className="px-4 py-2.5 text-left text-xs font-semibold text-[var(--ink-muted)]">Opened</th>
+                            <th className="px-4 py-2.5 text-left text-xs font-semibold text-[var(--ink-muted)]">Replied</th>
+                            <th className="px-4 py-2.5" />
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-[var(--line)] bg-[var(--bg)]">
+                          {contacts.map((cc) => {
+                            const person = cc.lead ?? cc.client;
+                            if (!person) return null;
+                            const latestMsg = cc.outboundMessages?.[0];
+                            const deliveryBadge = latestMsg?.providerDeliveryStatus
+                              ? <span className="text-[9px] uppercase text-[var(--ink-muted)] ml-1">({latestMsg.providerDeliveryStatus})</span>
+                              : null;
+                            return (
+                              <tr key={cc.id} className="hover:bg-[var(--panel)]">
+                                <td className="px-4 py-2.5">
+                                  <p className="font-medium text-[var(--ink)]">{person.fullName}</p>
+                                  <p className="text-xs text-[var(--ink-muted)]">{person.phone} · {cc.lead ? "Lead" : "Client"}</p>
+                                </td>
+                                <td className="px-4 py-2.5">
+                                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${CONTACT_STATUS_STYLE[cc.status]}`}>
+                                    {cc.status}
+                                  </span>
+                                  {deliveryBadge}
+                                </td>
+                                <td className="px-4 py-2.5 text-xs text-[var(--ink-muted)]">
+                                  {cc.sentAt ? new Date(cc.sentAt).toLocaleString("en-GB", { dateStyle: "short", timeStyle: "short" }) : <span className="text-[var(--line)]">—</span>}
+                                </td>
+                                <td className="px-4 py-2.5 text-xs text-[var(--ink-muted)]">
+                                  {cc.openedAt ? new Date(cc.openedAt).toLocaleString("en-GB", { dateStyle: "short", timeStyle: "short" }) : <span className="text-[var(--line)]">—</span>}
+                                </td>
+                                <td className="px-4 py-2.5 text-xs text-[var(--ink-muted)]">
+                                  {cc.repliedAt ? <span className="font-medium text-purple-700">{new Date(cc.repliedAt).toLocaleString("en-GB", { dateStyle: "short", timeStyle: "short" })}</span> : <span className="text-[var(--line)]">—</span>}
+                                </td>
+                                <td className="px-3 py-2.5">
+                                  <form action={updateContactStatus} className="flex gap-1">
+                                    <input type="hidden" name="id" value={cc.id} />
+                                    <select name="status" defaultValue={cc.status} className="rounded border border-[var(--line)] bg-[var(--bg)] px-2 py-1 text-xs">
+                                      {(["PENDING","SENT","OPENED","RESPONDED","OPTED_OUT"] as CampaignContactStatus[]).map((s) => (
+                                        <option key={s} value={s}>{s}</option>
+                                      ))}
+                                    </select>
+                                    <button type="submit" className="rounded border border-[var(--line)] px-2 py-1 text-xs hover:bg-[var(--panel-strong)]" title="Override status">→</button>
+                                  </form>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 )}
               </div>

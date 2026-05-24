@@ -274,7 +274,82 @@ export default async function CreditNotesPage({
 
       {/* Table */}
       <div className="overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
-        <div className="overflow-x-auto">
+        {/* Mobile cards */}
+        <div className="divide-y divide-[var(--line)] lg:hidden">
+          {creditNotes.length === 0 ? (
+            <p className="px-4 py-12 text-center text-sm text-[var(--ink-muted)]">
+              {q || filter !== "all" ? "No credit notes match the filter." : "No credit notes yet. Create one from a completed sale."}
+            </p>
+          ) : creditNotes.map((cn) => {
+            const refundedTotalM = cn.refunds.reduce((s, r) => s + r.amount, 0);
+            const outstandingM = cn.totalAmount - refundedTotalM;
+            return (
+              <div key={`m-${cn.id}`} className="px-4 py-3">
+                <div className="flex items-start justify-between gap-2">
+                  <p className="font-mono text-xs font-semibold text-[var(--ink)]">{cn.creditNoteNumber}</p>
+                  {cn.itemsReceivedBackAt ? (
+                    <span className="shrink-0 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700">Received</span>
+                  ) : (
+                    <span className="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700">Pending Return</span>
+                  )}
+                </div>
+                <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] text-[var(--ink-muted)]">
+                  {cn.sale?.saleNumber && <span>Sale: <span className="font-mono text-[var(--accent)]">{cn.sale.saleNumber}</span></span>}
+                  <span>Client: <span className="text-[var(--ink)]">{cn.sale?.client?.fullName ?? "Walk-in"}</span></span>
+                </div>
+                <p className="mt-1 line-clamp-2 text-[11px] text-[var(--ink-muted)]">{cn.reason}</p>
+                <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px]">
+                  <span className="font-mono font-semibold text-[var(--ink)]">{formatMoney(cn.totalAmount, cn.currency)}</span>
+                  {refundedTotalM > 0 && <span className="text-emerald-700">Refunded: <span className="font-mono">{formatMoney(refundedTotalM, cn.currency)}</span></span>}
+                  <span className="text-[var(--ink-muted)]">Issued {fmt(cn.issuedAt)}</span>
+                </div>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {!cn.itemsReceivedBackAt && (
+                    <form action={markItemsReceivedAction}>
+                      <input type="hidden" name="creditNoteId" value={cn.id} />
+                      <button type="submit" className="rounded border border-emerald-200 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 hover:bg-emerald-50">Mark Received</button>
+                    </form>
+                  )}
+                  {outstandingM > 0 && (
+                    <details className="group relative">
+                      <summary className="cursor-pointer list-none rounded border border-[var(--gold)]/40 px-2 py-0.5 text-[11px] font-semibold text-[var(--gold)] hover:bg-[var(--gold)]/10">Refund</summary>
+                      <div className="absolute left-0 top-full z-20 mt-1 w-64 rounded-xl border border-[var(--line)] bg-[var(--panel)] p-3 shadow-lg">
+                        <form action={issueRefundFromCreditNoteAction} className="space-y-2">
+                          <input type="hidden" name="creditNoteId" value={cn.id} />
+                          <div>
+                            <label className="mb-0.5 block text-[10px] font-semibold uppercase text-[var(--ink-muted)]">Amount</label>
+                            <input name="amount" type="number" step="0.01" max={outstandingM} defaultValue={outstandingM} className="w-full rounded border border-[var(--line)] bg-[var(--bg)] px-2 py-1 text-sm text-[var(--ink)]" />
+                            <p className="mt-0.5 text-[10px] text-[var(--ink-muted)]">Max: {formatMoney(outstandingM, cn.currency)}</p>
+                          </div>
+                          <div>
+                            <label className="mb-0.5 block text-[10px] font-semibold uppercase text-[var(--ink-muted)]">Method</label>
+                            <select name="method" className="w-full rounded border border-[var(--line)] bg-[var(--bg)] px-2 py-1 text-sm text-[var(--ink)]">
+                              {PAYMENT_METHODS.map((m) => <option key={m} value={m}>{m.replace("_", " ")}</option>)}
+                            </select>
+                          </div>
+                          <input name="reference" placeholder="Reference (optional)" className="w-full rounded border border-[var(--line)] bg-[var(--bg)] px-2 py-1 text-sm text-[var(--ink)]" />
+                          <button type="submit" className="w-full rounded bg-[var(--gold)]/20 py-1.5 text-xs font-semibold text-[var(--gold)] hover:bg-[var(--gold)]/30">Issue Refund</button>
+                        </form>
+                      </div>
+                    </details>
+                  )}
+                  {user.role === "ADMIN" && cn.refunds.length === 0 && (
+                    <form action={deleteCreditNoteAction}>
+                      <input type="hidden" name="id" value={cn.id} />
+                      <ConfirmSubmitButton
+                        message={`Delete credit note ${cn.creditNoteNumber}? This cannot be undone.`}
+                        confirmLabel="Delete"
+                        className="rounded border border-red-200 px-2 py-0.5 text-[11px] font-semibold text-red-600 hover:bg-red-50"
+                      >Delete</ConfirmSubmitButton>
+                    </form>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        {/* Desktop table */}
+        <div className="hidden overflow-x-auto lg:block">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-[var(--line)] text-left text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">
@@ -377,3 +452,4 @@ export default async function CreditNotesPage({
     </div>
   );
 }
+

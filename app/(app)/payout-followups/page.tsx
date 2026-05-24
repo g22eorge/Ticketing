@@ -345,69 +345,48 @@ export default async function PayoutFollowupsPage({
                 {filters.q ? "No results for this search." : "No outstanding invoices — all settled."}
               </p>
             ) : (
-              <div className="overflow-x-auto">
+              {/* Mobile */}
+              <div className="divide-y divide-[var(--line)] lg:hidden">
+                {invoiceRows.map((inv) => {
+                  const balance = inv.totalAmount - inv.paidAmount;
+                  const overdueDays = daysOverdue(inv.dueDate);
+                  return (
+                    <div key={`m-${inv.id}`} className="px-4 py-3">
+                      <div className="mb-1 flex items-center justify-between gap-2">
+                        <Link href={`/documents/invoices/${inv.id}`} className="font-mono text-[13px] font-bold text-[var(--ink)] hover:text-[var(--accent)]">{inv.invoiceNumber}</Link>
+                        {overdueDays != null ? <span className="shrink-0 rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-semibold text-rose-700 dark:bg-rose-950/40 dark:text-rose-400">{overdueDays}d overdue</span> : <span className="text-[11px] text-emerald-600">On time</span>}
+                      </div>
+                      <p className="text-[13px] font-medium text-[var(--ink)]">{inv.client?.fullName ?? "—"} <span className="text-[11px] font-normal text-[var(--ink-muted)]">{inv.client?.phone}</span></p>
+                      <div className="mt-1 flex items-center gap-3 text-[12px]">
+                        <span className="font-semibold text-violet-700 dark:text-violet-400">{formatMoneyCompact(balance, currency)} due</span>
+                        <span className="text-[var(--ink-muted)]">{inv.dueDate ? new Date(inv.dueDate).toLocaleDateString() : "No due date"}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              {/* Desktop */}
+              <div className="hidden overflow-x-auto lg:block">
                 <table className="w-full min-w-[860px] text-sm">
-                  <thead className="bg-[var(--panel-strong)]/50">
-                    <tr>
-                      <th className={thClass}>Invoice #</th>
-                      <th className={thClass}>Client</th>
-                      <th className={thClass}>Type</th>
-                      <th className={thClass}>Subject</th>
-                      <th className={thClass}>Total</th>
-                      <th className={thClass}>Paid</th>
-                      <th className={thClass}>Balance</th>
-                      <th className={thClass}>Due Date</th>
-                      <th className={thClass}>Overdue</th>
-                      <th className={thClass}>Action</th>
-                    </tr>
-                  </thead>
+                  <thead className="bg-[var(--panel-strong)]/50"><tr>
+                    {["Invoice #","Client","Type","Subject","Total","Paid","Balance","Due Date","Overdue","Action"].map(h => <th key={h} className={thClass}>{h}</th>)}
+                  </tr></thead>
                   <tbody>
                     {invoiceRows.map((inv) => {
                       const balance = inv.totalAmount - inv.paidAmount;
                       const overdueDays = daysOverdue(inv.dueDate);
                       return (
-                        <tr key={inv.id} className="border-t border-[var(--line)] transition-colors hover:bg-[var(--panel-strong)]/30">
-                          <td className={`${tdClass} font-semibold`}>
-                            <Link href={`/documents/invoices/${inv.id}`} className="hover:text-[var(--accent)] transition-colors">
-                              {inv.invoiceNumber}
-                            </Link>
-                          </td>
-                          <td className={tdClass}>
-                            <p className="font-medium">{inv.client?.fullName ?? "—"}</p>
-                            <p className="text-xs text-[var(--ink-muted)]">{inv.client?.phone ?? ""}</p>
-                          </td>
-                          <td className={tdClass}>
-                            <span className="inline-block rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-semibold capitalize text-violet-700 dark:bg-violet-950/40 dark:text-violet-400">
-                              {inv.invoiceType.toLowerCase()}
-                            </span>
-                          </td>
+                        <tr key={`d-${inv.id}`} className="border-t border-[var(--line)] transition-colors hover:bg-[var(--panel-strong)]/30">
+                          <td className={`${tdClass} font-semibold`}><Link href={`/documents/invoices/${inv.id}`} className="hover:text-[var(--accent)] transition-colors">{inv.invoiceNumber}</Link></td>
+                          <td className={tdClass}><p className="font-medium">{inv.client?.fullName ?? "—"}</p><p className="text-xs text-[var(--ink-muted)]">{inv.client?.phone ?? ""}</p></td>
+                          <td className={tdClass}><span className="inline-block rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-semibold capitalize text-violet-700 dark:bg-violet-950/40 dark:text-violet-400">{inv.invoiceType.toLowerCase()}</span></td>
                           <td className={`${tdClass} max-w-[180px] truncate text-[var(--ink-muted)]`}>{inv.subject ?? "—"}</td>
                           <td className={tdClass}>{formatMoneyCompact(inv.totalAmount, currency)}</td>
-                          <td className={tdClass}>
-                            {inv.paidAmount > 0 ? (
-                              <span className="text-emerald-700 dark:text-emerald-400">{formatMoneyCompact(inv.paidAmount, currency)}</span>
-                            ) : <span className="text-[var(--ink-muted)]">—</span>}
-                          </td>
-                          <td className={`${tdClass} font-semibold text-violet-700 dark:text-violet-400`}>
-                            {formatMoneyCompact(balance, currency)}
-                          </td>
-                          <td className={`${tdClass} text-xs text-[var(--ink-muted)]`}>
-                            {inv.dueDate ? new Date(inv.dueDate).toLocaleDateString() : "—"}
-                          </td>
-                          <td className={tdClass}>
-                            {overdueDays != null ? (
-                              <span className="inline-block rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-semibold text-rose-700 dark:bg-rose-950/40 dark:text-rose-400">
-                                {overdueDays}d overdue
-                              </span>
-                            ) : (
-                              <span className="text-[var(--ink-muted)] text-xs">On time</span>
-                            )}
-                          </td>
-                          <td className={tdClass}>
-                            <Link href={`/documents/invoices/${inv.id}`} className="btn-premium-secondary rounded-lg px-3 py-1.5 text-sm">
-                              Open
-                            </Link>
-                          </td>
+                          <td className={tdClass}>{inv.paidAmount > 0 ? <span className="text-emerald-700 dark:text-emerald-400">{formatMoneyCompact(inv.paidAmount, currency)}</span> : <span className="text-[var(--ink-muted)]">—</span>}</td>
+                          <td className={`${tdClass} font-semibold text-violet-700 dark:text-violet-400`}>{formatMoneyCompact(balance, currency)}</td>
+                          <td className={`${tdClass} text-xs text-[var(--ink-muted)]`}>{inv.dueDate ? new Date(inv.dueDate).toLocaleDateString() : "—"}</td>
+                          <td className={tdClass}>{overdueDays != null ? <span className="inline-block rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-semibold text-rose-700 dark:bg-rose-950/40 dark:text-rose-400">{overdueDays}d overdue</span> : <span className="text-[var(--ink-muted)] text-xs">On time</span>}</td>
+                          <td className={tdClass}><Link href={`/documents/invoices/${inv.id}`} className="btn-premium-secondary rounded-lg px-3 py-1.5 text-sm">Open</Link></td>
                         </tr>
                       );
                     })}
@@ -435,55 +414,42 @@ export default async function PayoutFollowupsPage({
                 {filters.q || filters.tech ? "No results for these filters." : "All repair client payments are settled."}
               </p>
             ) : (
-              <div className="overflow-x-auto">
+              {/* Mobile */}
+              <div className="divide-y divide-[var(--line)] lg:hidden">
+                {clientRows.map((job) => {
+                  const doneAt = job.deliveredAt ?? job.completedAt;
+                  return (
+                    <div key={`m-${job.id}`} className="px-4 py-3">
+                      <div className="mb-0.5 flex items-center justify-between gap-2">
+                        <Link href={`/jobs/${job.id}?tab=financials&returnTo=/payout-followups&returnLabel=Finance+Hub`} className="font-mono text-[13px] font-bold text-[var(--accent)]">{job.jobNumber}</Link>
+                        <span className="text-[12px] font-semibold text-amber-700 dark:text-amber-400">{formatMoneyCompact(job.clientBill ?? 0, currency)}</span>
+                      </div>
+                      <p className="text-[13px] font-medium text-[var(--ink)]">{job.client?.fullName ?? "—"} <span className="text-[11px] font-normal text-[var(--ink-muted)]">{job.client?.phone}</span></p>
+                      <p className="mt-0.5 text-[11px] text-[var(--ink-muted)]">{job.assignedTo?.name ?? "Unassigned"}{doneAt ? ` · ${new Date(doneAt).toLocaleDateString()}` : ""}</p>
+                    </div>
+                  );
+                })}
+              </div>
+              {/* Desktop */}
+              <div className="hidden overflow-x-auto lg:block">
                 <table className="w-full min-w-[820px] text-sm">
-                  <thead className="bg-[var(--panel-strong)]/50">
-                    <tr>
-                      <th className={thClass}>Job</th>
-                      <th className={thClass}>Client</th>
-                      <th className={thClass}>Assigned To</th>
-                      <th className={thClass}>Type</th>
-                      <th className={thClass}>Repair Cost</th>
-                      <th className={thClass}>Client Bill</th>
-                      <th className={thClass}>Done At</th>
-                      <th className={thClass}>Action</th>
-                    </tr>
-                  </thead>
+                  <thead className="bg-[var(--panel-strong)]/50"><tr>
+                    {["Job","Client","Assigned To","Type","Repair Cost","Client Bill","Done At","Action"].map(h => <th key={h} className={thClass}>{h}</th>)}
+                  </tr></thead>
                   <tbody>
                     {clientRows.map((job) => {
                       const doneAt = job.deliveredAt ?? job.completedAt;
                       const repairCost = resolveTechCost(job.externalTechFee, job.externalTechBill);
                       return (
-                        <tr key={job.id} className="border-t border-[var(--line)] transition-colors hover:bg-[var(--panel-strong)]/30">
-                          <td className={`${tdClass} font-semibold`}>
-                            <Link href={`/jobs/${job.id}?tab=financials&returnTo=/payout-followups&returnLabel=Finance+Hub`} className="hover:text-[var(--accent)] transition-colors">
-                              {job.jobNumber}
-                            </Link>
-                          </td>
-                          <td className={tdClass}>
-                            <p className="font-medium">{job.client?.fullName ?? "—"}</p>
-                            <p className="text-xs text-[var(--ink-muted)]">{job.client?.phone ?? "—"}</p>
-                          </td>
+                        <tr key={`d-${job.id}`} className="border-t border-[var(--line)] transition-colors hover:bg-[var(--panel-strong)]/30">
+                          <td className={`${tdClass} font-semibold`}><Link href={`/jobs/${job.id}?tab=financials&returnTo=/payout-followups&returnLabel=Finance+Hub`} className="hover:text-[var(--accent)] transition-colors">{job.jobNumber}</Link></td>
+                          <td className={tdClass}><p className="font-medium">{job.client?.fullName ?? "—"}</p><p className="text-xs text-[var(--ink-muted)]">{job.client?.phone ?? "—"}</p></td>
                           <td className={tdClass}>{job.assignedTo?.name ?? "Unassigned"}</td>
-                          <td className={tdClass}>
-                            <span className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold ${job.repairPath === "EXTERNAL" ? "bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400" : "bg-[var(--accent)]/10 text-[var(--accent)]"}`}>
-                              {job.repairPath === "EXTERNAL" ? "External" : "In-house"}
-                            </span>
-                          </td>
-                          <td className={tdClass}>
-                            {repairCost > 0 ? formatMoneyCompact(repairCost, currency) : <span className="text-[var(--ink-muted)]">—</span>}
-                          </td>
-                          <td className={`${tdClass} font-semibold text-amber-700 dark:text-amber-400`}>
-                            {formatMoneyCompact(job.clientBill ?? 0, currency)}
-                          </td>
-                          <td className={`${tdClass} text-xs text-[var(--ink-muted)]`}>
-                            {doneAt ? new Date(doneAt).toLocaleDateString() : "—"}
-                          </td>
-                          <td className={tdClass}>
-                            <Link href={`/jobs/${job.id}?tab=financials&returnTo=/payout-followups&returnLabel=Finance+Hub`} className="btn-premium-secondary rounded-lg px-3 py-1.5 text-sm">
-                              Open
-                            </Link>
-                          </td>
+                          <td className={tdClass}><span className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold ${job.repairPath === "EXTERNAL" ? "bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400" : "bg-[var(--accent)]/10 text-[var(--accent)]"}`}>{job.repairPath === "EXTERNAL" ? "External" : "In-house"}</span></td>
+                          <td className={tdClass}>{repairCost > 0 ? formatMoneyCompact(repairCost, currency) : <span className="text-[var(--ink-muted)]">—</span>}</td>
+                          <td className={`${tdClass} font-semibold text-amber-700 dark:text-amber-400`}>{formatMoneyCompact(job.clientBill ?? 0, currency)}</td>
+                          <td className={`${tdClass} text-xs text-[var(--ink-muted)]`}>{doneAt ? new Date(doneAt).toLocaleDateString() : "—"}</td>
+                          <td className={tdClass}><Link href={`/jobs/${job.id}?tab=financials&returnTo=/payout-followups&returnLabel=Finance+Hub`} className="btn-premium-secondary rounded-lg px-3 py-1.5 text-sm">Open</Link></td>
                         </tr>
                       );
                     })}
@@ -511,27 +477,38 @@ export default async function PayoutFollowupsPage({
                 {filters.q ? "No results for this search." : "No outstanding supplier bills — all settled."}
               </p>
             ) : (
-              <div className="overflow-x-auto">
+              {/* Mobile */}
+              <div className="divide-y divide-[var(--line)] lg:hidden">
+                {billRows.map((bill) => {
+                  const balance = bill.totalAmount - bill.paidAmount;
+                  const overdueDays = daysOverdue(bill.dueAt);
+                  return (
+                    <div key={`m-${bill.id}`} className="px-4 py-3">
+                      <div className="mb-0.5 flex items-center justify-between gap-2">
+                        <Link href={`/inventory/supplier-bills/${bill.id}`} className="font-mono text-[13px] font-bold text-[var(--ink)] hover:text-[var(--accent)]">{bill.billNumber}</Link>
+                        {overdueDays != null ? <span className="shrink-0 rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-semibold text-rose-700 dark:bg-rose-950/40 dark:text-rose-400">{overdueDays}d overdue</span> : <span className="text-[11px] text-emerald-600">On time</span>}
+                      </div>
+                      <p className="text-[13px] font-medium text-[var(--ink)]">{bill.supplier.name}</p>
+                      <div className="mt-0.5 flex items-center gap-3 text-[12px]">
+                        <span className="font-semibold text-rose-700 dark:text-rose-400">{formatMoneyCompact(balance, currency)} due</span>
+                        {bill.dueAt && <span className="text-[var(--ink-muted)]">{new Date(bill.dueAt).toLocaleDateString()}</span>}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              {/* Desktop */}
+              <div className="hidden overflow-x-auto lg:block">
                 <table className="w-full min-w-[800px] text-sm">
-                  <thead className="bg-[var(--panel-strong)]/50">
-                    <tr>
-                      <th className={thClass}>Bill #</th>
-                      <th className={thClass}>Supplier</th>
-                      <th className={thClass}>Status</th>
-                      <th className={thClass}>Total</th>
-                      <th className={thClass}>Paid</th>
-                      <th className={thClass}>Balance</th>
-                      <th className={thClass}>Due</th>
-                      <th className={thClass}>Overdue</th>
-                      <th className={thClass}>Action</th>
-                    </tr>
-                  </thead>
+                  <thead className="bg-[var(--panel-strong)]/50"><tr>
+                    {["Bill #","Supplier","Status","Total","Paid","Balance","Due","Overdue","Action"].map(h => <th key={h} className={thClass}>{h}</th>)}
+                  </tr></thead>
                   <tbody>
                     {billRows.map((bill) => {
                       const balance = bill.totalAmount - bill.paidAmount;
                       const overdueDays = daysOverdue(bill.dueAt);
                       return (
-                        <tr key={bill.id} className="border-t border-[var(--line)] transition-colors hover:bg-[var(--panel-strong)]/30">
+                        <tr key={`d-${bill.id}`} className="border-t border-[var(--line)] transition-colors hover:bg-[var(--panel-strong)]/30">
                           <td className={`${tdClass} font-semibold`}>
                             <Link href={`/inventory/supplier-bills/${bill.id}`} className="hover:text-[var(--accent)] transition-colors">
                               {bill.billNumber}
@@ -600,51 +577,43 @@ export default async function PayoutFollowupsPage({
                 {filters.q || filters.tech ? "No results for these filters." : "No pending external tech payouts — all settled."}
               </p>
             ) : (
-              <div className="overflow-x-auto">
+              {/* Mobile */}
+              <div className="divide-y divide-[var(--line)] lg:hidden">
+                {techRows.map((job) => {
+                  const payoutDue = resolveTechCost(job.externalTechFee, job.externalTechBill);
+                  const doneAt = job.deliveredAt ?? job.completedAt;
+                  return (
+                    <div key={`m-${job.id}`} className="px-4 py-3">
+                      <div className="mb-0.5 flex items-center justify-between gap-2">
+                        <Link href={`/jobs/${job.id}?tab=financials&returnTo=/payout-followups&returnLabel=Finance+Hub`} className="font-mono text-[13px] font-bold text-[var(--accent)]">{job.jobNumber}</Link>
+                        <span className="text-[12px] font-semibold text-blue-700 dark:text-blue-400">{formatMoneyCompact(payoutDue, currency)} payout</span>
+                      </div>
+                      <p className="text-[13px] font-medium text-[var(--ink)]">{job.client?.fullName ?? "—"} <span className="text-[11px] font-normal text-[var(--ink-muted)]">{job.client?.phone}</span></p>
+                      <p className="mt-0.5 text-[11px] text-[var(--ink-muted)]">{job.assignedTo?.name ?? "Unassigned"}{doneAt ? ` · ${new Date(doneAt).toLocaleDateString()}` : ""}</p>
+                    </div>
+                  );
+                })}
+              </div>
+              {/* Desktop */}
+              <div className="hidden overflow-x-auto lg:block">
                 <table className="w-full min-w-[880px] text-sm">
-                  <thead className="bg-[var(--panel-strong)]/50">
-                    <tr>
-                      <th className={thClass}>Job</th>
-                      <th className={thClass}>Client</th>
-                      <th className={thClass}>Technician</th>
-                      <th className={thClass}>Status</th>
-                      <th className={thClass}>Client Bill</th>
-                      <th className={thClass}>Payout Due</th>
-                      <th className={thClass}>Done At</th>
-                      <th className={thClass}>Action</th>
-                    </tr>
-                  </thead>
+                  <thead className="bg-[var(--panel-strong)]/50"><tr>
+                    {["Job","Client","Technician","Status","Client Bill","Payout Due","Done At","Action"].map(h => <th key={h} className={thClass}>{h}</th>)}
+                  </tr></thead>
                   <tbody>
                     {techRows.map((job) => {
                       const payoutDue = resolveTechCost(job.externalTechFee, job.externalTechBill);
                       const doneAt = job.deliveredAt ?? job.completedAt;
                       return (
-                        <tr key={job.id} className="border-t border-[var(--line)] transition-colors hover:bg-[var(--panel-strong)]/30">
-                          <td className={`${tdClass} font-semibold`}>
-                            <Link href={`/jobs/${job.id}?tab=financials&returnTo=/payout-followups&returnLabel=Finance+Hub`} className="hover:text-[var(--accent)] transition-colors">
-                              {job.jobNumber}
-                            </Link>
-                          </td>
-                          <td className={tdClass}>
-                            <p className="font-medium">{job.client?.fullName ?? "—"}</p>
-                            <p className="text-xs text-[var(--ink-muted)]">{job.client?.phone ?? "—"}</p>
-                          </td>
+                        <tr key={`d-${job.id}`} className="border-t border-[var(--line)] transition-colors hover:bg-[var(--panel-strong)]/30">
+                          <td className={`${tdClass} font-semibold`}><Link href={`/jobs/${job.id}?tab=financials&returnTo=/payout-followups&returnLabel=Finance+Hub`} className="hover:text-[var(--accent)] transition-colors">{job.jobNumber}</Link></td>
+                          <td className={tdClass}><p className="font-medium">{job.client?.fullName ?? "—"}</p><p className="text-xs text-[var(--ink-muted)]">{job.client?.phone ?? "—"}</p></td>
                           <td className={tdClass}>{job.assignedTo?.name ?? "Unassigned"}</td>
                           <td className={tdClass}>{job.status}</td>
-                          <td className={tdClass}>
-                            {typeof job.clientBill === "number" ? formatMoneyCompact(job.clientBill, currency) : "—"}
-                          </td>
-                          <td className={`${tdClass} font-semibold text-blue-700 dark:text-blue-400`}>
-                            {formatMoneyCompact(payoutDue, currency)}
-                          </td>
-                          <td className={`${tdClass} text-xs text-[var(--ink-muted)]`}>
-                            {doneAt ? new Date(doneAt).toLocaleDateString() : "—"}
-                          </td>
-                          <td className={tdClass}>
-                            <Link href={`/jobs/${job.id}?tab=financials&returnTo=/payout-followups&returnLabel=Finance+Hub`} className="btn-premium-secondary rounded-lg px-3 py-1.5 text-sm">
-                              Open
-                            </Link>
-                          </td>
+                          <td className={tdClass}>{typeof job.clientBill === "number" ? formatMoneyCompact(job.clientBill, currency) : "—"}</td>
+                          <td className={`${tdClass} font-semibold text-blue-700 dark:text-blue-400`}>{formatMoneyCompact(payoutDue, currency)}</td>
+                          <td className={`${tdClass} text-xs text-[var(--ink-muted)]`}>{doneAt ? new Date(doneAt).toLocaleDateString() : "—"}</td>
+                          <td className={tdClass}><Link href={`/jobs/${job.id}?tab=financials&returnTo=/payout-followups&returnLabel=Finance+Hub`} className="btn-premium-secondary rounded-lg px-3 py-1.5 text-sm">Open</Link></td>
                         </tr>
                       );
                     })}

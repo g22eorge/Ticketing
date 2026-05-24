@@ -93,7 +93,7 @@ export default async function StockTransfersPage({
           <div className="px-4 py-12 text-center text-sm text-[var(--ink-muted)]">No transfer requests yet.</div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="min-w-full text-sm">
+            <table className="w-full text-sm">
               <thead className="bg-[var(--panel-strong)] text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
                 <tr>
                   <th className="px-4 py-2.5 text-left">Transfer</th>

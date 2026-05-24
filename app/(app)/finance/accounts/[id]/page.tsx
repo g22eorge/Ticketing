@@ -265,7 +265,7 @@ export default async function AccountLedgerPage({
         </div>
       ) : (
         <div className="overflow-x-auto rounded-xl border border-[var(--line)]">
-          <table className="w-full min-w-[560px] text-sm">
+          <table className="w-full text-sm">
             <thead className="border-b border-[var(--line)] bg-[var(--panel-strong)]">
               <tr>
                 <th className="px-4 py-2.5 text-left text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Date</th>

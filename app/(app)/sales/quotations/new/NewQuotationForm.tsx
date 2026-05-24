@@ -102,7 +102,7 @@ export function NewQuotationForm({ leadId, clientId, jobId, currency, canOverrid
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[600px] border-collapse text-[13px]">
+          <table className="w-full border-collapse text-[13px]">
             <thead className="bg-[var(--panel-strong)]/50 text-left text-[10px] font-bold uppercase tracking-[0.15em] text-[var(--ink-muted)]">
               <tr className="border-b border-[var(--line)]">
                 <th className="px-3 py-2">Description</th>

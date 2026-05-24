@@ -36,9 +36,9 @@ const TYPE_LABELS: Record<string, string> = {
 
 function DetailRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div className="grid grid-cols-3 gap-4 py-3 border-b border-[var(--line)] last:border-0">
+    <div className="grid grid-cols-1 gap-0.5 py-3 border-b border-[var(--line)] last:border-0 sm:grid-cols-3 sm:gap-4">
       <dt className="text-sm font-medium text-[var(--ink-muted)]">{label}</dt>
-      <dd className="col-span-2 text-sm text-[var(--ink)]">{value ?? <span className="text-[var(--ink-muted)]">—</span>}</dd>
+      <dd className="text-sm text-[var(--ink)] sm:col-span-2">{value ?? <span className="text-[var(--ink-muted)]">—</span>}</dd>
     </div>
   );
 }

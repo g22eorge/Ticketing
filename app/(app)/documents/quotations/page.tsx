@@ -180,7 +180,7 @@ export default async function QuotationsPage({
 
       {/* Table */}
       <div className="overflow-x-auto rounded-xl border border-[var(--line)]">
-        <table className="w-full min-w-[700px] text-left text-sm">
+        <table className="w-full text-left text-sm">
           <thead className="bg-[var(--panel-strong)] text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
             <tr>
               <th className="px-3 py-2.5">Job</th>

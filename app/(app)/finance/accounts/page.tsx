@@ -281,7 +281,7 @@ export default async function ChartOfAccountsPage() {
             </p>
           ) : (
             <div className="overflow-x-auto rounded-xl border border-[var(--line)]">
-              <table className="w-full min-w-[480px] text-sm">
+              <table className="w-full text-sm">
                 <thead className="border-b border-[var(--line)] bg-[var(--panel)]">
                   <tr>
                     <th className="px-4 py-2.5 text-left text-xs font-semibold text-[var(--ink-muted)]">Code</th>

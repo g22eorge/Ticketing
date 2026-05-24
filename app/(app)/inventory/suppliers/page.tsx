@@ -71,7 +71,7 @@ export default async function SuppliersPage() {
             No suppliers yet. Add your first supplier to start raising purchase orders.
           </div>
         ) : (
-          <table className="w-full min-w-[600px] text-sm">
+          <table className="w-full text-sm">
             <thead className="bg-[var(--panel-strong)] text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
               <tr>
                 <th className="px-4 py-2.5 text-left">Name</th>

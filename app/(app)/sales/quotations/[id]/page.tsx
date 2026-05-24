@@ -158,7 +158,7 @@ export default async function QuotationDetailPage({
           <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Line Items</p>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[500px] border-collapse text-[13px]">
+          <table className="w-full border-collapse text-[13px]">
             <thead className="bg-[var(--panel-strong)]/50 text-left text-[10px] font-bold uppercase tracking-[0.15em] text-[var(--ink-muted)]">
               <tr className="border-b border-[var(--line)]">
                 <th className="px-4 py-2.5">Description</th>
