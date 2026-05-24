@@ -194,7 +194,7 @@ function orderedNavForRole(role: Role, permissions: string[]) {
 function groupedNavForRole(role: Role, permissions: string[]) {
   const ordered = orderedNavForRole(role, permissions);
   const canonicalOrder: NavGroup[] = ["overview", "repairs", "inventory", "clients", "documents", "finance"];
-  const baseGroups = roleGroupOrder[role] ?? ["overview", "personal"];
+  const baseGroups = roleGroupOrder[role] ?? ["overview"];
   const missingGroups = canonicalOrder.filter(
     (group) => ordered.some((item) => item.group === group) && !baseGroups.includes(group),
   );
