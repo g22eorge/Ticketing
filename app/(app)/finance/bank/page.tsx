@@ -172,10 +172,10 @@ export default async function BankPage({
           </p>
         </div>
         <Link
-          href="/finance/journal"
+          href="/finance/accounts"
           className="rounded-lg border border-[var(--line)] px-3 py-1.5 text-xs font-medium text-[var(--ink-muted)] hover:bg-[var(--panel)]"
         >
-          Journal Entries
+          Chart of Accounts
         </Link>
       </div>
 
@@ -260,7 +260,7 @@ export default async function BankPage({
           <div className="flex justify-end sm:col-span-4">
             <button
               type="submit"
-              className="rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-black"
+              className="rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-white"
             >
               Create
             </button>
@@ -440,7 +440,7 @@ export default async function BankPage({
                     <div className="flex items-end">
                       <button
                         type="submit"
-                        className="w-full rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-black"
+                        className="w-full rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-white"
                       >
                         Add
                       </button>

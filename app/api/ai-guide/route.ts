@@ -152,7 +152,6 @@ Internal and external technicians.
 - Bank: Bank accounts and transactions.
 - Payment Tracker: External repair payout or payment follow-up tracking.
 - Recurring: Recurring invoice/billing setup.
-- Journal Entries: Accounting adjustments and double-entry records.
 - Chart of Accounts: Account setup for accounting categories.
 - Finance Reports Hub: Entry point for financial reports.
 - P&L: Profit and loss report.
@@ -600,9 +599,8 @@ function fallbackAnswer(message: string) {
       "Finance in Duuka ProMax covers accounting, cash tracking, expenses, invoices, and reports:",
       "1. Finance -> Expenses records business costs against categories/accounts.",
       "2. Finance -> Bank tracks bank accounts and transactions.",
-      "3. Finance -> Journal Entries records double-entry adjustments.",
-      "4. Finance -> Reports contains P&L, Balance Sheet, Cash Flow, Aged Receivables, Customer Statements, and Inventory Value.",
-      "5. Use Documents -> Invoices/Receipts/Credit Notes/Refunds for client-facing financial documents.",
+      "3. Finance -> Reports contains P&L, Balance Sheet, Cash Flow, Aged Receivables, Customer Statements, and Inventory Value.",
+      "4. Use Documents -> Invoices/Receipts/Credit Notes/Refunds for client-facing financial documents.",
       "If totals look wrong, check invoice status, payments, refunds, expense dates, and account mappings.",
     ].join("\n");
   }
@@ -681,7 +679,7 @@ function fallbackAnswer(message: string) {
       "7. Inventory: parts, stock alerts, suppliers, purchase requests/orders, goods received, stock counts, and transfers.",
       "8. POS and Sales: counter sales, cashier shifts, leads, campaigns, visits, quotations, and targets.",
       "9. Documents: job cards, invoices, quotations, receipts, delivery notes, credit notes, and refunds.",
-      "10. Finance: expenses, bank, journal entries, recurring billing, accounts, and financial reports.",
+      "10. Finance: expenses, bank, recurring billing, accounts, and financial reports.",
       "11. Reports: operational and technician performance reporting.",
       "12. Settings: users, profile, branding, notifications, audit logs, and maintenance tools.",
       "13. Platform Admin: organisations, plans, activation, billing, audit, and platform settings.",
@@ -698,7 +696,7 @@ function fallbackAnswer(message: string) {
     "4. Managing clients without duplicates.",
     "5. Inventory, suppliers, purchase requests, purchase orders, goods received, and stock counts.",
     "6. POS, sales, cashier shifts, leads, campaigns, quotations, and targets.",
-    "7. Finance, expenses, bank, journals, invoices, receipts, refunds, and reports.",
+    "7. Finance, expenses, bank, invoices, receipts, refunds, and reports.",
     "8. WhatsApp/email templates, outbox, notifications, and customer communication.",
     "9. Platform admin, organisations, plans, users, branding, and settings.",
   ].join("\n");

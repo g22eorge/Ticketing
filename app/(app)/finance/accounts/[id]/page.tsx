@@ -163,12 +163,6 @@ export default async function AccountLedgerPage({
         </div>
         <div className="flex gap-2">
           <Link
-            href="/finance/journal"
-            className="rounded-lg border border-[var(--line)] px-3 py-1.5 text-xs font-medium text-[var(--ink-muted)] hover:bg-[var(--panel)]"
-          >
-            Journal Entries
-          </Link>
-          <Link
             href="/finance/reports/pl"
             className="rounded-lg border border-[var(--line)] px-3 py-1.5 text-xs font-medium text-[var(--ink-muted)] hover:bg-[var(--panel)]"
           >
@@ -200,7 +194,7 @@ export default async function AccountLedgerPage({
         </select>
         <button
           type="submit"
-          className="rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-black"
+          className="rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-white"
         >
           Filter
         </button>
@@ -259,9 +253,6 @@ export default async function AccountLedgerPage({
       {lines.length === 0 ? (
         <div className="rounded-xl border border-dashed border-[var(--line)] py-14 text-center">
           <p className="text-sm text-[var(--ink-muted)]">No posted transactions for this period.</p>
-          <Link href="/finance/journal" className="mt-2 block text-xs text-[var(--accent)] underline">
-            Add journal entries
-          </Link>
         </div>
       ) : (
         <div className="overflow-x-auto rounded-xl border border-[var(--line)]">

@@ -3,19 +3,23 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import type { ExpenseCategory, PaymentMethod } from "@prisma/client";
 import { Prisma } from "@prisma/client";
+import { getCurrentUserRole } from "@/lib/session";
 
 import { can } from "@/lib/permissions";
-import { prisma } from "@/lib/prisma";
-import { requireOrgSession } from "@/lib/org-context";
-import { assertOrgCanMutate } from "@/lib/org-write";
+import { orgDb } from "@/lib/prisma";
 import { writeSystemAuditEvent } from "@/lib/commercial/audit";
+import { formatMoneyCompact } from "@/lib/currency";
 import { ConfirmSubmitButton } from "@/components/shared/ConfirmSubmitButton";
 import { RowActionsMenu, MenuDestructiveRow } from "@/components/shared/RowActionsMenu";
+import { ExpenseMonthlyChart, ExpenseCategoryPie } from "@/components/reports/FinanceCharts";
 
 export const dynamic = "force-dynamic";
 
-const CATEGORIES: ExpenseCategory[] = ["RENT","UTILITIES","SALARIES","SUPPLIES","MARKETING","TRAVEL","EQUIPMENT","MAINTENANCE","TAXES","OTHER"];
-const METHODS: PaymentMethod[] = ["CASH","MOBILE_MONEY","BANK_TRANSFER","CARD","OTHER"];
+const CATEGORIES: ExpenseCategory[] = [
+  "RENT", "UTILITIES", "SALARIES", "SUPPLIES", "MARKETING",
+  "TRAVEL", "EQUIPMENT", "MAINTENANCE", "TAXES", "OTHER",
+];
+const METHODS: PaymentMethod[] = ["CASH", "MOBILE_MONEY", "BANK_TRANSFER", "CARD", "OTHER"];
 
 const CATEGORY_LABELS: Record<ExpenseCategory, string> = {
   RENT: "Rent",
@@ -43,6 +47,8 @@ const CATEGORY_COLORS: Record<ExpenseCategory, string> = {
   OTHER: "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]",
 };
 
+const MONTHS_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
 const fmt = (d: Date | null) =>
   d ? d.toLocaleDateString("en-UG", { day: "numeric", month: "short", year: "numeric" }) : "—";
 
@@ -51,7 +57,8 @@ interface Props {
 }
 
 export default async function ExpensesPage({ searchParams }: Props) {
-  const { user, orgId, org } = await requireOrgSession();
+  const { user } = await getCurrentUserRole();
+  const db = orgDb(user.orgId);
   if (!can.viewFinancials(user)) redirect("/dashboard");
 
   const sp = await searchParams;
@@ -60,8 +67,21 @@ export default async function ExpensesPage({ searchParams }: Props) {
     : undefined;
   const q = sp.q?.trim() ?? "";
 
+  const now = new Date();
+  const thisYear = now.getFullYear();
+  const thisMonth = now.getMonth();
+
+  const ytdStart = new Date(thisYear, 0, 1);
+  const prevYtdStart = new Date(thisYear - 1, 0, 1);
+  const prevYtdEnd = new Date(thisYear - 1, thisMonth, now.getDate(), 23, 59, 59);
+  const prevMonthStart = new Date(thisYear, thisMonth - 1, 1);
+  const prevMonthEnd = new Date(thisYear, thisMonth, 0, 23, 59, 59);
+  const _thisMonthStart = new Date(thisYear, thisMonth, 1);
+
+  // 6-month trend window
+  const trendStart = new Date(thisYear, thisMonth - 5, 1);
+
   const where: Prisma.ExpenseWhereInput = {
-    orgId,
     ...(catFilter ? { category: catFilter } : {}),
     ...(q
       ? {
@@ -74,49 +94,99 @@ export default async function ExpensesPage({ searchParams }: Props) {
       : {}),
   };
 
-  const [expenses, suppliers, branches] = await Promise.all([
-    prisma.expense.findMany({
-      where,
-      include: {
-        supplier: { select: { id: true, name: true } },
-        branch: { select: { id: true, name: true } },
-        createdBy: { select: { name: true } },
-      },
-      orderBy: { createdAt: "desc" },
-      take: 200,
-    }),
-    prisma.supplier.findMany({ where: { orgId }, select: { id: true, name: true }, orderBy: { name: "asc" } }).catch(() => [] as { id: string; name: string }[]),
-    prisma.branch.findMany({ where: { orgId }, select: { id: true, name: true }, orderBy: { name: "asc" } }).catch(() => [] as { id: string; name: string }[]),
-  ]);
+  const [expenses, suppliers, trendExpenses, prevMonthExpenses, ytdExpenses, prevYtdExpenses] =
+    await Promise.all([
+      db.expense.findMany({
+        where,
+        include: {
+          supplier: { select: { id: true, name: true } },
+          createdBy: { select: { name: true } },
+        },
+        orderBy: { createdAt: "desc" },
+        take: 200,
+      }),
+      db.supplier
+        .findMany({ where: {}, select: { id: true, name: true }, orderBy: { name: "asc" } })
+        .catch(() => [] as { id: string; name: string }[]),
+      // For 6-month trend chart (all categories, no filters)
+      db.expense.findMany({
+        where: { paidAt: { gte: trendStart } },
+        select: { amount: true, paidAt: true, createdAt: true },
+      }),
+      db.expense.findMany({
+        where: { paidAt: { gte: prevMonthStart, lte: prevMonthEnd } },
+        select: { amount: true },
+      }),
+      db.expense.findMany({
+        where: { paidAt: { gte: ytdStart } },
+        select: { amount: true },
+      }),
+      db.expense.findMany({
+        where: { paidAt: { gte: prevYtdStart, lte: prevYtdEnd } },
+        select: { amount: true },
+      }),
+    ]);
+
+  const currency = "UGX";
 
   const totalAmount = expenses.reduce((sum, e) => sum + e.amount, 0);
-  const now = new Date();
+
   const thisMonthAmount = expenses
     .filter((e) => {
       const d = e.paidAt ?? e.createdAt;
-      return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+      return d.getFullYear() === thisYear && d.getMonth() === thisMonth;
     })
     .reduce((sum, e) => sum + e.amount, 0);
 
-  const byCategory = CATEGORIES.map((cat) => ({
-    cat,
-    total: expenses.filter((e) => e.category === cat).reduce((sum, e) => sum + e.amount, 0),
-    count: expenses.filter((e) => e.category === cat).length,
-  })).filter((x) => x.count > 0);
+  const prevMonthTotal = prevMonthExpenses.reduce((s, e) => s + e.amount, 0);
+  const ytdTotal = ytdExpenses.reduce((s, e) => s + e.amount, 0);
+  const prevYtdTotal = prevYtdExpenses.reduce((s, e) => s + e.amount, 0);
+  const momDelta = thisMonthAmount - prevMonthTotal;
+  const ytdDelta = ytdTotal - prevYtdTotal;
+
+  // Build 6-month trend chart data
+  const trendMonths = Array.from({ length: 6 }, (_, i) => {
+    const d = new Date(thisYear, thisMonth - (5 - i), 1);
+    return {
+      key: `${MONTHS_SHORT[d.getMonth()]}${d.getFullYear() !== thisYear ? " '" + String(d.getFullYear()).slice(2) : ""}`,
+      yr: d.getFullYear(),
+      mo: d.getMonth(),
+      amount: 0,
+    };
+  });
+  for (const e of trendExpenses) {
+    const d = e.paidAt ?? e.createdAt;
+    const bucket = trendMonths.find((m) => m.yr === d.getFullYear() && m.mo === d.getMonth());
+    if (bucket) bucket.amount += e.amount;
+  }
+  const trendData = trendMonths.map(({ key, amount }) => ({ key, amount }));
+
+  // Category breakdown (from filtered expenses)
+  const byCategory = CATEGORIES.map((cat) => {
+    const items = expenses.filter((e) => e.category === cat);
+    return {
+      cat,
+      total: items.reduce((s, e) => s + e.amount, 0),
+      count: items.length,
+    };
+  }).filter((x) => x.count > 0);
+
+  const pieData = byCategory
+    .map((x) => ({ name: CATEGORY_LABELS[x.cat], amount: x.total }))
+    .sort((a, b) => b.amount - a.amount);
 
   async function createExpenseAction(formData: FormData) {
     "use server";
-    const { user, orgId, org } = await requireOrgSession();
+    const { user } = await getCurrentUserRole();
+    const db = orgDb(user.orgId);
     if (!can.viewFinancials(user)) redirect("/dashboard");
-    assertOrgCanMutate({ access: org.access, userRole: user.role, userAccessMode: user.accessMode, kind: "GENERAL" });
 
     const description = String(formData.get("description") ?? "").trim();
     const amountRaw = Number(String(formData.get("amount") ?? "").trim());
     const categoryRaw = String(formData.get("category") ?? "OTHER").trim();
     const methodRaw = String(formData.get("method") ?? "").trim();
-    const currency = String(formData.get("currency") ?? org.baseCurrency ?? "UGX").trim();
+    const currency = String(formData.get("currency") ?? "UGX").trim();
     const supplierId = String(formData.get("supplierId") ?? "").trim() || null;
-    const branchId = String(formData.get("branchId") ?? "").trim() || null;
     const reference = String(formData.get("reference") ?? "").trim() || null;
     const notes = String(formData.get("notes") ?? "").trim() || null;
     const paidAtRaw = String(formData.get("paidAt") ?? "").trim();
@@ -125,20 +195,19 @@ export default async function ExpensesPage({ searchParams }: Props) {
 
     const category = CATEGORIES.includes(categoryRaw as ExpenseCategory)
       ? (categoryRaw as ExpenseCategory)
-      : "OTHER" as ExpenseCategory;
+      : ("OTHER" as ExpenseCategory);
     const method =
       methodRaw && METHODS.includes(methodRaw as PaymentMethod)
         ? (methodRaw as PaymentMethod)
         : null;
     const paidAt = paidAtRaw ? new Date(paidAtRaw) : null;
 
-    const count = await prisma.expense.count({ where: { orgId } });
+    const count = await db.expense.count({ where: {} });
     const year = new Date().getFullYear();
     const expenseNumber = `EXP-${year}-${String(count + 1).padStart(4, "0")}`;
 
-    const expense = await prisma.expense.create({
+    const expense = await db.expense.create({
       data: {
-        orgId,
         expenseNumber,
         description,
         amount: amountRaw,
@@ -146,7 +215,6 @@ export default async function ExpensesPage({ searchParams }: Props) {
         category,
         method: method ?? undefined,
         supplierId,
-        branchId,
         reference,
         notes,
         paidAt,
@@ -155,7 +223,6 @@ export default async function ExpensesPage({ searchParams }: Props) {
     });
 
     await writeSystemAuditEvent({
-      orgId,
       entityType: "Expense",
       entityId: expense.id,
       action: "EXPENSE_CREATED",
@@ -168,20 +235,22 @@ export default async function ExpensesPage({ searchParams }: Props) {
 
   async function deleteExpenseAction(formData: FormData) {
     "use server";
-    const { user, orgId, org } = await requireOrgSession();
-    if (!["ADMIN", "MANAGER"].includes(user.role)) redirect("/dashboard");
-    assertOrgCanMutate({ access: org.access, userRole: user.role, userAccessMode: user.accessMode, kind: "GENERAL" });
+    const { user } = await getCurrentUserRole();
+    const db = orgDb(user.orgId);
+    if (!["ADMIN"].includes(user.role)) redirect("/dashboard");
 
     const expenseId = String(formData.get("expenseId") ?? "").trim();
     if (!expenseId) return;
 
-    const expense = await prisma.expense.findFirst({ where: { id: expenseId, orgId }, select: { expenseNumber: true, description: true } });
+    const expense = await db.expense.findFirst({
+      where: { id: expenseId },
+      select: { expenseNumber: true, description: true },
+    });
     if (!expense) return;
 
-    await prisma.expense.delete({ where: { id: expenseId } });
+    await db.expense.delete({ where: { id: expenseId } });
 
     await writeSystemAuditEvent({
-      orgId,
       entityType: "Expense",
       entityId: expenseId,
       action: "EXPENSE_DELETED",
@@ -193,8 +262,7 @@ export default async function ExpensesPage({ searchParams }: Props) {
   }
 
   const canWrite = can.viewFinancials(user);
-  const canDelete = ["ADMIN", "MANAGER"].includes(user.role);
-  const currency = org.baseCurrency ?? "UGX";
+  const canDelete = ["ADMIN"].includes(user.role);
 
   const filterUrl = (params: Record<string, string | undefined>) => {
     const base = new URLSearchParams();
@@ -208,18 +276,29 @@ export default async function ExpensesPage({ searchParams }: Props) {
 
   return (
     <div className="space-y-4">
-      {/* Header */}
+      {/* ── HEADER ───────────────────────────────────────────────────────── */}
       <div className="panel-shadow flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-2.5">
         <div>
           <p className="text-[13px] font-bold text-[var(--ink)]">
             Expenses{" "}
             <span className="font-normal text-[var(--ink-muted)]">
-              · {expenses.length} records · {currency} {totalAmount.toLocaleString()} total
+              · {expenses.length} records
             </span>
           </p>
-          <p className="text-[11px] text-[var(--ink-muted)]">
-            This month: {currency} {thisMonthAmount.toLocaleString()}
-          </p>
+          <div className="mt-0.5 flex items-center gap-3">
+            <Link
+              href="/finance/reports/pl"
+              className="text-[11px] text-[var(--accent)] hover:underline"
+            >
+              P&L Statement →
+            </Link>
+            <Link
+              href={`/api/reports/export?type=expenses&month=${thisYear}-${String(thisMonth + 1).padStart(2, "0")}`}
+              className="text-[11px] text-[var(--ink-muted)] hover:text-[var(--ink)]"
+            >
+              ↓ Export CSV
+            </Link>
+          </div>
         </div>
         {canWrite && (
           <details className="group relative">
@@ -230,31 +309,64 @@ export default async function ExpensesPage({ searchParams }: Props) {
               <p className="mb-3 text-[12px] font-bold text-[var(--ink)]">Record Business Expense</p>
               <form action={createExpenseAction} className="space-y-3">
                 <div>
-                  <label className="mb-1 block text-[11px] font-semibold text-[var(--ink-muted)]">Description *</label>
-                  <input name="description" required placeholder="What was this expense for?" className="input-base w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-[12px]" />
+                  <label className="mb-1 block text-[11px] font-semibold text-[var(--ink-muted)]">
+                    Description *
+                  </label>
+                  <input
+                    name="description"
+                    required
+                    placeholder="What was this expense for?"
+                    className="input-base w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-[12px]"
+                  />
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="mb-1 block text-[11px] font-semibold text-[var(--ink-muted)]">Amount *</label>
-                    <input name="amount" type="number" min="0.01" step="0.01" required placeholder="0.00" className="input-base w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-[12px]" />
+                    <label className="mb-1 block text-[11px] font-semibold text-[var(--ink-muted)]">
+                      Amount *
+                    </label>
+                    <input
+                      name="amount"
+                      type="number"
+                      min="0.01"
+                      step="0.01"
+                      required
+                      placeholder="0.00"
+                      className="input-base w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-[12px]"
+                    />
                   </div>
                   <div>
-                    <label className="mb-1 block text-[11px] font-semibold text-[var(--ink-muted)]">Currency</label>
-                    <input name="currency" defaultValue={currency} className="input-base w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-[12px]" />
+                    <label className="mb-1 block text-[11px] font-semibold text-[var(--ink-muted)]">
+                      Currency
+                    </label>
+                    <input
+                      name="currency"
+                      defaultValue={currency}
+                      className="input-base w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-[12px]"
+                    />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="mb-1 block text-[11px] font-semibold text-[var(--ink-muted)]">Category</label>
-                    <select name="category" className="input-base w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-[12px]">
+                    <label className="mb-1 block text-[11px] font-semibold text-[var(--ink-muted)]">
+                      Category
+                    </label>
+                    <select
+                      name="category"
+                      className="input-base w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-[12px]"
+                    >
                       {CATEGORIES.map((c) => (
                         <option key={c} value={c}>{CATEGORY_LABELS[c]}</option>
                       ))}
                     </select>
                   </div>
                   <div>
-                    <label className="mb-1 block text-[11px] font-semibold text-[var(--ink-muted)]">Payment Method</label>
-                    <select name="method" className="input-base w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-[12px]">
+                    <label className="mb-1 block text-[11px] font-semibold text-[var(--ink-muted)]">
+                      Payment Method
+                    </label>
+                    <select
+                      name="method"
+                      className="input-base w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-[12px]"
+                    >
                       <option value="">— none —</option>
                       {METHODS.map((m) => (
                         <option key={m} value={m}>{m.replace(/_/g, " ")}</option>
@@ -263,13 +375,24 @@ export default async function ExpensesPage({ searchParams }: Props) {
                   </div>
                 </div>
                 <div>
-                  <label className="mb-1 block text-[11px] font-semibold text-[var(--ink-muted)]">Date Paid</label>
-                  <input name="paidAt" type="date" className="input-base w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-[12px]" />
+                  <label className="mb-1 block text-[11px] font-semibold text-[var(--ink-muted)]">
+                    Date Paid
+                  </label>
+                  <input
+                    name="paidAt"
+                    type="date"
+                    className="input-base w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-[12px]"
+                  />
                 </div>
                 {suppliers.length > 0 && (
                   <div>
-                    <label className="mb-1 block text-[11px] font-semibold text-[var(--ink-muted)]">Supplier (optional)</label>
-                    <select name="supplierId" className="input-base w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-[12px]">
+                    <label className="mb-1 block text-[11px] font-semibold text-[var(--ink-muted)]">
+                      Supplier (optional)
+                    </label>
+                    <select
+                      name="supplierId"
+                      className="input-base w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-[12px]"
+                    >
                       <option value="">— none —</option>
                       {suppliers.map((s) => (
                         <option key={s.id} value={s.id}>{s.name}</option>
@@ -277,26 +400,28 @@ export default async function ExpensesPage({ searchParams }: Props) {
                     </select>
                   </div>
                 )}
-                {branches.length > 0 && (
-                  <div>
-                    <label className="mb-1 block text-[11px] font-semibold text-[var(--ink-muted)]">Branch (optional)</label>
-                    <select name="branchId" className="input-base w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-[12px]">
-                      <option value="">— none —</option>
-                      {branches.map((b) => (
-                        <option key={b.id} value={b.id}>{b.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                )}
                 <div>
-                  <label className="mb-1 block text-[11px] font-semibold text-[var(--ink-muted)]">Reference / Receipt #</label>
-                  <input name="reference" placeholder="Invoice or receipt number" className="input-base w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-[12px]" />
+                  <label className="mb-1 block text-[11px] font-semibold text-[var(--ink-muted)]">
+                    Reference / Receipt #
+                  </label>
+                  <input
+                    name="reference"
+                    placeholder="Invoice or receipt number"
+                    className="input-base w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-[12px]"
+                  />
                 </div>
                 <div>
                   <label className="mb-1 block text-[11px] font-semibold text-[var(--ink-muted)]">Notes</label>
-                  <textarea name="notes" rows={2} className="input-base w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-[12px]" />
+                  <textarea
+                    name="notes"
+                    rows={2}
+                    className="input-base w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-[12px]"
+                  />
                 </div>
-                <button type="submit" className="btn-premium w-full rounded-lg py-2 text-[12px] font-semibold">
+                <button
+                  type="submit"
+                  className="btn-premium w-full rounded-lg py-2 text-[12px] font-semibold"
+                >
                   Save Expense
                 </button>
               </form>
@@ -305,41 +430,166 @@ export default async function ExpensesPage({ searchParams }: Props) {
         )}
       </div>
 
-      {/* KPI strip */}
-      {byCategory.length > 0 && (
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
-          {byCategory.slice(0, 5).map(({ cat, total, count }) => (
-            <Link
-              key={cat}
-              href={filterUrl({ category: catFilter === cat ? "" : cat })}
-              className={`panel-shadow rounded-xl border px-3 py-2.5 transition hover:opacity-80 ${catFilter === cat ? "ring-2 ring-[var(--accent)]" : ""} ${CATEGORY_COLORS[cat]}`}
+      {/* ── KPI STRIP ────────────────────────────────────────────────────── */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+          <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">This Month</p>
+          <p className="mt-1.5 text-2xl font-bold text-[var(--ink)] tabular-nums">
+            {formatMoneyCompact(thisMonthAmount, currency)}
+          </p>
+          {prevMonthTotal > 0 && (
+            <p
+              className={`mt-1 text-[11px] font-semibold ${
+                momDelta <= 0 ? "text-emerald-500" : "text-red-500"
+              }`}
             >
-              <p className="text-[10px] font-bold uppercase tracking-wide">{CATEGORY_LABELS[cat]}</p>
-              <p className="mt-1 text-[13px] font-bold tabular-nums">{currency} {total.toLocaleString()}</p>
-              <p className="text-[10px] opacity-70">{count} record{count !== 1 ? "s" : ""}</p>
-            </Link>
-          ))}
+              {momDelta > 0 ? "+" : "−"}
+              {formatMoneyCompact(Math.abs(momDelta), currency)} vs last month
+            </p>
+          )}
         </div>
-      )}
 
-      {/* Filter bar */}
+        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+          <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">
+            YTD {thisYear}
+          </p>
+          <p className="mt-1.5 text-2xl font-bold text-[var(--ink)] tabular-nums">
+            {formatMoneyCompact(ytdTotal, currency)}
+          </p>
+          {prevYtdTotal > 0 && (
+            <p
+              className={`mt-1 text-[11px] font-semibold ${
+                ytdDelta <= 0 ? "text-emerald-500" : "text-red-500"
+              }`}
+            >
+              {ytdDelta > 0 ? "+" : "−"}
+              {formatMoneyCompact(Math.abs(ytdDelta), currency)} vs {thisYear - 1} YTD
+            </p>
+          )}
+        </div>
+
+        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+          <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Avg / Month</p>
+          <p className="mt-1.5 text-2xl font-bold text-[var(--ink)] tabular-nums">
+            {trendData.filter((d) => d.amount > 0).length > 0
+              ? formatMoneyCompact(
+                  trendData.reduce((s, d) => s + d.amount, 0) /
+                    Math.max(1, trendData.filter((d) => d.amount > 0).length),
+                  currency,
+                )
+              : "—"}
+          </p>
+          <p className="mt-1 text-[11px] text-[var(--ink-muted)]">Last 6 months</p>
+        </div>
+
+        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+          <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">
+            Top Category
+          </p>
+          {byCategory.length > 0 ? (
+            <>
+              <p className="mt-1.5 text-2xl font-bold text-[var(--ink)] tabular-nums">
+                {formatMoneyCompact(byCategory.sort((a, b) => b.total - a.total)[0].total, currency)}
+              </p>
+              <p className="mt-1 text-[11px] text-[var(--ink-muted)]">
+                {CATEGORY_LABELS[byCategory.sort((a, b) => b.total - a.total)[0].cat]}
+              </p>
+            </>
+          ) : (
+            <p className="mt-1.5 text-[var(--ink-muted)]">—</p>
+          )}
+        </div>
+      </div>
+
+      {/* ── TREND + CATEGORY BREAKDOWN ───────────────────────────────────── */}
+      <div className="grid gap-4 lg:grid-cols-2">
+        {/* Monthly trend chart */}
+        <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+          <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">
+            Monthly Spend — Last 6 Months
+          </p>
+          <ExpenseMonthlyChart data={trendData} currency={currency} />
+          <div className="mt-3 flex items-center justify-between border-t border-[var(--line)] pt-2">
+            <p className="text-[11px] text-[var(--ink-muted)]">All categories</p>
+            <p className="text-[11px] font-semibold tabular-nums text-[var(--ink)]">
+              Total: {formatMoneyCompact(trendData.reduce((s, d) => s + d.amount, 0), currency)}
+            </p>
+          </div>
+        </section>
+
+        {/* Category breakdown */}
+        <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+          <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">
+            Spend by Category
+          </p>
+          {byCategory.length === 0 ? (
+            <p className="mt-4 text-center text-sm text-[var(--ink-muted)]">No expense data</p>
+          ) : (
+            <div className="flex gap-4">
+              <div className="flex-1 space-y-2">
+                {[...byCategory]
+                  .sort((a, b) => b.total - a.total)
+                  .map(({ cat, total, count }) => {
+                    const pct = totalAmount > 0 ? Math.round((total / totalAmount) * 100) : 0;
+                    return (
+                      <Link
+                        key={cat}
+                        href={filterUrl({ category: catFilter === cat ? "" : cat })}
+                        className="block"
+                      >
+                        <div className="flex items-center justify-between text-[12px]">
+                          <span
+                            className={`font-semibold ${catFilter === cat ? "text-[var(--accent)]" : "text-[var(--ink)]"}`}
+                          >
+                            {CATEGORY_LABELS[cat]}
+                          </span>
+                          <span className="tabular-nums text-[var(--ink-muted)]">
+                            {formatMoneyCompact(total, currency)} · {pct}%
+                          </span>
+                        </div>
+                        <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-[var(--panel-strong)]">
+                          <div
+                            className="h-full rounded-full bg-[var(--accent)]"
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                        <p className="text-[10px] text-[var(--ink-muted)]">{count} record{count !== 1 ? "s" : ""}</p>
+                      </Link>
+                    );
+                  })}
+              </div>
+              {pieData.length > 1 && (
+                <div className="hidden sm:block">
+                  <ExpenseCategoryPie data={pieData} currency={currency} />
+                </div>
+              )}
+            </div>
+          )}
+        </section>
+      </div>
+
+      {/* ── FILTER BAR ───────────────────────────────────────────────────── */}
       <div className="panel-shadow flex flex-wrap items-center gap-2 rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-2.5">
-        <form method="GET" action="/finance/expenses" className="flex flex-1 items-center gap-2">
+        <form method="GET" action="/finance/expenses" className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
           {catFilter && <input type="hidden" name="category" value={catFilter} />}
           <input
             name="q"
             defaultValue={q}
             placeholder="Search description, reference…"
-            className="input-base h-8 min-w-[180px] flex-1 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 text-[12px]"
+            className="input-base h-8 min-w-0 flex-1 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 text-[12px] sm:min-w-[180px]"
           />
           <button className="rounded-lg border border-[var(--line)] px-3 py-1.5 text-[12px] font-medium hover:bg-[var(--panel-strong)]">
             Search
           </button>
         </form>
-        <div className="flex flex-wrap gap-1">
+        <div className="flex min-w-0 flex-wrap gap-1">
           <Link
             href={filterUrl({ category: "" })}
-            className={`rounded-full border px-2.5 py-0.5 text-[11px] font-semibold transition ${!catFilter ? "border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]" : "border-[var(--line)] text-[var(--ink-muted)] hover:border-[var(--accent)]/50"}`}
+            className={`max-w-full rounded-full border px-2 py-0.5 text-[11px] font-semibold transition sm:px-2.5 ${
+              !catFilter
+                ? "border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]"
+                : "border-[var(--line)] text-[var(--ink-muted)] hover:border-[var(--accent)]/50"
+            }`}
           >
             All
           </Link>
@@ -347,7 +597,11 @@ export default async function ExpensesPage({ searchParams }: Props) {
             <Link
               key={cat}
               href={filterUrl({ category: catFilter === cat ? "" : cat })}
-              className={`rounded-full border px-2.5 py-0.5 text-[11px] font-semibold transition ${catFilter === cat ? "border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]" : "border-[var(--line)] text-[var(--ink-muted)] hover:border-[var(--accent)]/50"}`}
+              className={`max-w-full rounded-full border px-2 py-0.5 text-[11px] font-semibold transition sm:px-2.5 ${
+                catFilter === cat
+                  ? "border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]"
+                  : "border-[var(--line)] text-[var(--ink-muted)] hover:border-[var(--accent)]/50"
+              }`}
             >
               {CATEGORY_LABELS[cat]}
             </Link>
@@ -355,7 +609,7 @@ export default async function ExpensesPage({ searchParams }: Props) {
         </div>
       </div>
 
-      {/* Table */}
+      {/* ── EXPENSE TABLE ────────────────────────────────────────────────── */}
       <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -374,9 +628,14 @@ export default async function ExpensesPage({ searchParams }: Props) {
             </thead>
             <tbody>
               {expenses.map((expense) => (
-                <tr key={expense.id} className="border-t border-[var(--line)] align-middle hover:bg-[var(--panel-strong)]/40">
+                <tr
+                  key={expense.id}
+                  className="border-t border-[var(--line)] align-middle hover:bg-[var(--panel-strong)]/40"
+                >
                   <td className="px-4 py-3">
-                    <p className="mono text-[12px] font-bold text-[var(--ink)]">{expense.expenseNumber}</p>
+                    <p className="mono text-[12px] font-bold text-[var(--ink)]">
+                      {expense.expenseNumber}
+                    </p>
                     <p className="text-[11px] text-[var(--ink-muted)]">{fmt(expense.createdAt)}</p>
                   </td>
                   <td className="px-4 py-3">
@@ -384,9 +643,14 @@ export default async function ExpensesPage({ searchParams }: Props) {
                     {expense.reference && (
                       <p className="text-[11px] text-[var(--ink-muted)]">Ref: {expense.reference}</p>
                     )}
+                    {expense.notes && (
+                      <p className="text-[11px] italic text-[var(--ink-muted)]">{expense.notes}</p>
+                    )}
                   </td>
                   <td className="px-4 py-3">
-                    <span className={`rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${CATEGORY_COLORS[expense.category]}`}>
+                    <span
+                      className={`rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${CATEGORY_COLORS[expense.category]}`}
+                    >
                       {CATEGORY_LABELS[expense.category]}
                     </span>
                   </td>
@@ -437,7 +701,11 @@ export default async function ExpensesPage({ searchParams }: Props) {
           </table>
         </div>
         {expenses.length > 0 && (
-          <div className="border-t border-[var(--line)] px-4 py-2.5 text-right">
+          <div className="flex items-center justify-between border-t border-[var(--line)] px-4 py-2.5">
+            <p className="text-[11px] text-[var(--ink-muted)]">
+              {expenses.length} record{expenses.length !== 1 ? "s" : ""}
+              {catFilter ? ` · ${CATEGORY_LABELS[catFilter]}` : ""}
+            </p>
             <p className="text-[12px] font-bold text-[var(--ink)]">
               Total: {currency} {totalAmount.toLocaleString()}
             </p>

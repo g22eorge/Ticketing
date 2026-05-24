@@ -146,12 +146,6 @@ export default async function ChartOfAccountsPage() {
         </div>
         <div className="flex gap-2">
           <Link
-            href="/finance/journal"
-            className="rounded-lg border border-[var(--line)] px-3 py-1.5 text-xs font-medium text-[var(--ink-muted)] hover:bg-[var(--panel)]"
-          >
-            Journal Entries
-          </Link>
-          <Link
             href="/finance/reports/pl"
             className="rounded-lg border border-[var(--line)] px-3 py-1.5 text-xs font-medium text-[var(--ink-muted)] hover:bg-[var(--panel)]"
           >
@@ -248,7 +242,7 @@ export default async function ChartOfAccountsPage() {
           <div className="flex justify-end sm:col-span-3">
             <button
               type="submit"
-              className="rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-black"
+              className="rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-white"
             >
               Create Account
             </button>

@@ -184,7 +184,6 @@ function clientFallbackAnswer(text: string) {
       "Finance workflow:",
       "1. Expenses records business costs.",
       "2. Bank tracks accounts and transactions.",
-      "3. Journal Entries records accounting adjustments.",
       "4. Finance Reports includes P&L, Balance Sheet, Cash Flow, Customer Statements, Aged Receivables, and Inventory Value.",
     ].join("\n");
   }
@@ -209,7 +208,7 @@ function clientFallbackAnswer(text: string) {
       "7. Inventory: stock, suppliers, purchase requests/orders, goods received, counts, and transfers.",
       "8. POS/Sales: counter sales, cashier shifts, CRM leads, campaigns, visits, and targets.",
       "9. Documents: job cards, invoices, quotations, receipts, delivery notes, credit notes, and refunds.",
-      "10. Finance: expenses, bank, journals, accounts, recurring billing, and reports.",
+      "10. Finance: expenses, bank, accounts, recurring billing, and reports.",
       "11. Settings: users, profile, branding, notifications, audit logs, and maintenance.",
       "12. Platform Admin: organisations, plans, billing, activation, audit, and platform settings.",
       "The pages a user sees depend on their role and permissions.",

@@ -99,7 +99,6 @@ const paths = [
   "/technicians",
   "/reports",
   // Finance
-  "/finance/journal",
   "/finance/accounts",
   "/finance/bank",
   "/finance/expenses",

@@ -81,7 +81,7 @@ function roleTag(role: Role) {
 
 function roleTagStyle(role: Role) {
   // Don't use --ink as a background: in dark theme it's near-white.
-  if (role === "ADMIN") return "bg-[var(--accent)] text-black border border-[var(--accent)]/35";
+  if (role === "ADMIN") return "bg-[var(--accent)] text-white border border-[var(--accent)]/35";
   if (role === "OPS") return "bg-[var(--accent)]/15 text-[#9A7A00] border border-[var(--accent)]/30";
   if (role === "TECHNICIAN_INTERNAL") return "bg-blue-50 text-blue-700 border border-blue-200";
   if (role === "TECHNICIAN_EXTERNAL") return "bg-purple-50 text-purple-700 border border-purple-200";

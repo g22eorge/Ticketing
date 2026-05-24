@@ -36,6 +36,8 @@ export default async function QuotationsPage({
   // ── Server action: mark quotation as sent (sets quotedAt = now) ──────────
   async function markSent(formData: FormData) {
     "use server";
+    const { user } = await getCurrentUserRole();
+    const db = orgDb(user.orgId);
     const jobId = formData.get("jobId") as string;
     if (!jobId) return;
     await prisma.job.update({

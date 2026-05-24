@@ -86,7 +86,7 @@ export function BusinessCopilot() {
             <div
               className={`whitespace-pre-wrap rounded-xl px-3 py-2 text-sm leading-6 ${
                 message.role === "user"
-                  ? "bg-[var(--accent)] text-black"
+                  ? "bg-[var(--accent)] text-white"
                   : "border border-[var(--line)] bg-[var(--panel)] text-[var(--ink)]"
               }`}
             >
@@ -126,7 +126,7 @@ export function BusinessCopilot() {
         <button
           type="submit"
           disabled={isPending || !question.trim()}
-          className="min-h-11 rounded-lg bg-[var(--accent)] px-4 text-sm font-bold text-black transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"
+          className="min-h-11 rounded-lg bg-[var(--accent)] px-4 text-sm font-bold text-white transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {isPending ? "Thinking..." : "Ask AI"}
         </button>

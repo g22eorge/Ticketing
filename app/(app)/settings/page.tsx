@@ -157,7 +157,6 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { key: "fin-taxrates",  label: "Tax Rates",         icon: ICONS.taxrates,  adminOnly: true, externalHref: "/finance/tax-rates" },
       { key: "fin-accounts",  label: "Chart of Accounts", icon: ICONS.accounts,  adminOnly: true, externalHref: "/finance/accounts" },
-      { key: "fin-journal",   label: "Journal Entries",   icon: ICONS.journal,   adminOnly: true, externalHref: "/finance/journal" },
       { key: "fin-recurring", label: "Recurring",         icon: ICONS.recurring, opsPlus: true,   externalHref: "/finance/recurring" },
     ],
   },
@@ -187,7 +186,6 @@ const SECTION_META: Record<string, { label: string; description: string; href?: 
   // Finance & Inventory config keys — descriptions for the section header when navigated to
   "fin-taxrates":  { label: "Tax Rates",          description: "Define VAT and other tax rates used on documents.", href: "/finance/tax-rates" },
   "fin-accounts":  { label: "Chart of Accounts",  description: "Manage ledger accounts and the accounting hierarchy.",  href: "/finance/accounts" },
-  "fin-journal":   { label: "Journal Entries",    description: "Manual debit/credit journal entries.",  href: "/finance/journal" },
   "fin-recurring": { label: "Recurring",          description: "Scheduled recurring invoices and bills.",  href: "/finance/recurring" },
   "inv-locations": { label: "Locations",          description: "Manage warehouse and storage locations.",  href: "/inventory/locations" },
   "inv-suppliers": { label: "Suppliers",          description: "Manage supplier profiles and contacts.",  href: "/inventory/suppliers" },

@@ -199,7 +199,7 @@ export function ScheduleVisitForm({ users, jobs }: Props) {
         <button
           type="submit"
           disabled={isPending}
-          className="inline-flex items-center gap-2 rounded-lg bg-[var(--accent)] px-5 py-2 text-sm font-semibold text-black hover:opacity-90 transition-opacity disabled:opacity-50"
+          className="inline-flex items-center gap-2 rounded-lg bg-[var(--accent)] px-5 py-2 text-sm font-semibold text-white hover:opacity-90 transition-opacity disabled:opacity-50"
         >
           {isPending ? "Scheduling…" : "Schedule Visit"}
         </button>
