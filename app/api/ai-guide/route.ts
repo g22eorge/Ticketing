@@ -14,6 +14,10 @@ Each organisation has its own isolated data.
 
 ## Core Modules
 
+Duuka ProMax is wider than repair management. It includes repair operations,
+customer management, inventory/procurement, finance/accounting, POS, sales CRM,
+field visits, reports, communications, platform administration, and settings.
+
 ### Jobs
 The heart of the system. Every device repair starts as a Job.
 - Create: Jobs → New Job (4-step form: Client → Device → Issue → Review)
@@ -40,6 +44,8 @@ Internal and external technicians.
 - Bank: Bank account balances and transactions
 - Expenses: Record business expenses against GL accounts
 - Reports: P&L, Balance Sheet, Cash Flow, Aged Receivables
+- Tax Rates: Configure sales/purchase taxes
+- Recurring: Recurring invoices and scheduled billing
 
 ### Inventory
 - Items list with stock levels and reorder alerts
@@ -47,16 +53,122 @@ Internal and external technicians.
 - Suppliers: Vendor directory
 - Purchase Orders: Raise and track POs to suppliers
 - Purchase Requests: Internal requests before raising a PO
+- Goods Received: Receive stock against purchase orders
+- Supplier Bills: Track vendor bills and payments
+- Transfers: Move stock between locations
+- Locations: Manage storage locations
 
 ### Sales & POS
 - Sales: Record sales transactions linked to invoices
 - POS: Point-of-sale terminal for walk-in sales
 - Campaigns: Marketing campaigns with discount codes
+- Leads: Track prospects and convert them to clients/jobs/quotations
+- Visits: Track sales visits and follow-ups
+- Targets: Team or individual sales targets
+- Cashier Shifts: Open/close shifts and reconcile cash/card/mobile totals
 
 ### Documents
 - Invoices: Generate from completed jobs or manually
 - Quotations: Pre-repair cost estimates for clients
 - Delivery Notes: Accompany device handover
+- Receipts: Proof of payment
+- Credit Notes: Reverse or adjust invoices/sales
+- Refunds: Record customer refunds
+- Job Cards: Operational repair handover documents
+
+### Field Visits
+- Schedule onsite/customer visits
+- Assign field/internal/external technicians
+- Record visit outcomes, sign-offs, and notes
+
+### Communications & Notifications
+- WhatsApp/email templates for repair requests, job updates, campaigns, and reminders
+- Outbox tracks queued/sent/failed messages
+- Campaigns can target leads or clients
+- Settings contains notification templates, policies, WhatsApp config, and outbox review
+
+### Platform Admin
+- Platform admin manages organisations, plans, activation, billing events, platform settings, and tenant-level details
+- Platform admin is separate from tenant ADMIN. Tenant admins manage only their organisation.
+
+## Page Guide
+
+### Main App Pages
+- Dashboard: Home overview with pending jobs, recent activity, operational counts, and shortcuts.
+- Jobs: Central repair job list. Search, filter, open job details, track statuses, assignments, costs, documents, photos, and audit history.
+- Jobs -> New Job: Intake form for walk-in/service jobs. Captures client, device, issue description, and photos.
+- Intake: Front-desk intake/request handling for customer-submitted repair requests before they become jobs.
+- Clients: Customer directory and client history. Used by ADMIN/OPS/front desk roles; hidden from external technicians.
+- Technicians: Technician overview, assignments, and operational technician context.
+- Technicians -> My Payouts: External technician payout/status view.
+- Field Visits: Onsite/customer visit scheduling and sign-off workflow.
+- Complaints: Customer complaint tracking and resolution workflow.
+
+### Inventory Pages
+- Inventory / Parts & Stock: Parts/items catalogue, quantities, cost, reorder levels, and availability.
+- Stock Alerts: Low-stock/reorder warning page.
+- Purchase Requests: Internal purchase requests before raising supplier orders.
+- Purchase Orders: Supplier order creation and tracking.
+- Goods Received: Records stock received from suppliers, often against POs.
+- Suppliers: Vendor directory and supplier details.
+- Supplier Bills: Supplier invoice tracking and payment status.
+- Stock Counts: Physical stock count reconciliation.
+- Transfers: Moving stock between locations.
+- Locations: Storage/location setup.
+
+### Sales, POS, And Customer Revenue Pages
+- POS: Counter sales terminal for walk-in product/service sales.
+- POS -> Shifts: Cashier shift opening/closing and reconciliation.
+- Sales: Sales CRM overview.
+- Leads: Prospects, follow-ups, conversion pipeline.
+- Campaigns: Marketing campaigns to leads/clients.
+- Sales Visits: Sales/client visit tracking.
+- Targets: Sales or team target tracking.
+
+### Documents Pages
+- Job Cards: Repair handover/technical job documents.
+- Invoices: Customer billing documents.
+- Quotations: Pre-repair or sales quote documents.
+- Receipts: Proof of payment documents.
+- Delivery Notes: Device/product handover documents.
+- Credit Notes: Adjust/reverse billed amounts.
+- Refunds: Customer refund records.
+
+### Finance Pages
+- Expenses: Business expenses and operating costs.
+- Bank: Bank accounts and transactions.
+- Payment Tracker: External repair payout or payment follow-up tracking.
+- Recurring: Recurring invoice/billing setup.
+- Journal Entries: Accounting adjustments and double-entry records.
+- Chart of Accounts: Account setup for accounting categories.
+- Finance Reports Hub: Entry point for financial reports.
+- P&L: Profit and loss report.
+- Balance Sheet: Assets, liabilities, and equity.
+- Cash Flow: Cash movement report.
+- Customer Statement: Client account statement.
+- Aged Receivables: Outstanding customer balances by age.
+- Inventory Value: Stock valuation report.
+
+### Settings Pages
+- Settings: Configuration hub.
+- Users: Create/manage staff, roles, permissions, and password resets. ADMIN only inside the tenant.
+- Profile: Current user's profile details.
+- Branding: Business/document branding settings.
+- Notifications: Communication rules, templates, policies, WhatsApp setup, and outbox.
+- Audit Log: Admin review of system/user actions.
+- Data Heal: Admin maintenance/reconciliation utilities.
+
+### Public And Platform Pages
+- /platform: Public platform landing page.
+- /company: Company signup/onboarding page.
+- /c/[slug]: Public company page for tenant-specific repair requests.
+- /repair: Public repair request page.
+- /complaint: Public complaint submission page.
+- Platform Admin -> Organisations: Global tenant list for platform admin.
+- Platform Admin -> Org Detail: Tenant plan, activation, users, jobs, billing, SMS usage, and org details.
+- Platform Admin -> Payments: Platform billing/payment events.
+- Platform Admin -> Audit: Platform-level audit visibility.
+- Platform Admin -> Settings: Platform configuration.
 
 ### Reports
 Business analytics: job throughput, revenue, technician performance, device type breakdown.
@@ -111,15 +223,201 @@ Settings → Users → select user → Reset Password (sends email) or set direc
 - All status changes are logged in the job's Audit Timeline tab.
 
 ---
-Answer in plain, helpful language. Be concise — 2-4 sentences for simple questions,
-short numbered steps for procedures. If a question is outside Duuka ProMax, politely say
-you can only help with the system and suggest contacting support for other matters.`;
+Answer in plain, helpful language. Be comprehensive enough to solve the user's task:
+- Start with the direct answer.
+- Give numbered steps for procedures.
+- Include role/security notes where relevant.
+- Mention the exact page/menu/action names in Duuka ProMax.
+- Add troubleshooting checks if the user is blocked.
+- Keep answers focused on Duuka ProMax and avoid generic filler.
+If a question is outside Duuka ProMax, politely say you can only help with the system and suggest contacting support for other matters.`;
 
 // ── Route handler ─────────────────────────────────────────────────────────────
 
 export const runtime = "nodejs";
 
 type ChatMessage = { role: "user" | "model"; parts: [{ text: string }] };
+
+function fallbackAnswer(message: string) {
+  const text = message.toLowerCase();
+
+  if (text.includes("job") && (text.includes("create") || text.includes("new") || text.includes("intake"))) {
+    return [
+      "To create a repair job in Duuka ProMax:",
+      "1. Open Jobs -> New Job.",
+      "2. Enter the client name, phone, email, and organisation if available. Search by phone first to avoid duplicates.",
+      "3. Add the device type, brand, model, serial/IMEI, accessories, and physical condition notes.",
+      "4. Enter the customer's issue description in their own words.",
+      "5. Review and submit. The system creates/updates the client, generates the job number, saves the device, and starts the job as RECEIVED.",
+      "If submission fails, check required fields, duplicate phone handling, and whether your role can create jobs.",
+    ].join("\n");
+  }
+
+  if (text.includes("external") || text.includes("technician")) {
+    return [
+      "External technician access is intentionally restricted for client privacy:",
+      "1. They only see assigned jobs.",
+      "2. They can view job number, device type, brand, model, serial/IMEI, accessories, diagnosis summary, parts needed, estimate, and timeline.",
+      "3. They must not see client name, phone, email, organisation, invoices, client bill, or pricing history.",
+      "4. They can submit/update external diagnosis, parts needed, their estimate, and expected timeline.",
+      "If an external technician sees client details, treat it as a security issue and check the job detail component/API route immediately.",
+    ].join("\n");
+  }
+
+  if (text.includes("status") || text.includes("workflow")) {
+    return [
+      "The repair workflow should be moved from the job detail page so every change is audited:",
+      "1. RECEIVED -> DIAGNOSING when a technician starts checking the device.",
+      "2. DIAGNOSING -> IN_REPAIR for in-house work, or REFERRED when external repair is needed.",
+      "3. REFERRED/external states -> AWAITING_APPROVAL after the estimate/timeline is ready.",
+      "4. AWAITING_APPROVAL -> IN_REPAIR if the client approves, or CLOSED if declined/unrepairable.",
+      "5. IN_REPAIR -> READY_FOR_PICKUP or COMPLETED when work is done.",
+      "Use notes and the audit timeline to explain why a status changed.",
+    ].join("\n");
+  }
+
+  if (text.includes("invoice") || text.includes("quotation") || text.includes("quote")) {
+    return [
+      "Quotations and invoices are controlled financial documents:",
+      "1. Generate a quotation after diagnosis when the client-facing estimate is ready.",
+      "2. Use the job Documents tab or Documents -> Quotations, depending on the workflow screen.",
+      "3. Only authorised admin/finance/OPS users should see or generate client pricing documents.",
+      "4. Generate an invoice when the job is completed or ready for billing.",
+      "5. If a document cannot generate, check job status, client bill/final cost, user permissions, and document branding settings.",
+    ].join("\n");
+  }
+
+  if (text.includes("client") || text.includes("customer")) {
+    return [
+      "Clients are managed from the Clients section by authorised front-desk, OPS, and admin users.",
+      "Search by phone before creating a job to avoid duplicate client records.",
+    ].join("\n");
+  }
+
+  if (text.includes("report") || text.includes("finance")) {
+    return [
+      "Finance in Duuka ProMax covers accounting, cash tracking, expenses, invoices, and reports:",
+      "1. Finance -> Expenses records business costs against categories/accounts.",
+      "2. Finance -> Bank tracks bank accounts and transactions.",
+      "3. Finance -> Journal Entries records double-entry adjustments.",
+      "4. Finance -> Reports contains P&L, Balance Sheet, Cash Flow, Aged Receivables, Customer Statements, and Inventory Value.",
+      "5. Use Documents -> Invoices/Receipts/Credit Notes/Refunds for client-facing financial documents.",
+      "If totals look wrong, check invoice status, payments, refunds, expense dates, and account mappings.",
+    ].join("\n");
+  }
+
+  if (text.includes("inventory") || text.includes("stock") || text.includes("supplier") || text.includes("purchase")) {
+    return [
+      "Inventory and procurement workflow:",
+      "1. Inventory -> Parts & Stock shows items, quantities, costs, and reorder levels.",
+      "2. Inventory -> Purchase Requests captures internal requests before buying.",
+      "3. Inventory -> Purchase Orders sends/records orders to suppliers.",
+      "4. Inventory -> Goods Received records stock received against a PO.",
+      "5. Inventory -> Supplier Bills tracks supplier invoices and payment status.",
+      "6. Inventory -> Stock Counts reconciles physical counts with system quantities.",
+      "7. Inventory -> Transfers moves stock between locations.",
+      "If stock is wrong, review goods received, stock counts, transfers, sales, and part reservations.",
+    ].join("\n");
+  }
+
+  if (text.includes("pos") || text.includes("cashier") || text.includes("sale")) {
+    return [
+      "Sales and POS workflow:",
+      "1. POS handles walk-in counter sales and payments.",
+      "2. Cashier Shifts lets cashiers open/close shifts and reconcile cash/card/mobile totals.",
+      "3. Sales CRM tracks leads, quotations, campaigns, and sales visits.",
+      "4. Documents can issue invoices, receipts, delivery notes, credit notes, and refunds.",
+      "5. Sales managers can review targets and team performance where permissions allow.",
+      "If a sale cannot be completed, check shift status, payment method, stock availability, and user role.",
+    ].join("\n");
+  }
+
+  if (text.includes("campaign") || text.includes("lead") || text.includes("crm") || text.includes("whatsapp") || text.includes("message")) {
+    return [
+      "CRM and communications workflow:",
+      "1. Sales -> Leads records prospects and follow-ups.",
+      "2. Sales -> Campaigns sends or tracks marketing outreach to leads/clients.",
+      "3. Settings -> Notifications controls templates, policies, WhatsApp settings, and outbox review.",
+      "4. WhatsApp/email messages are queued in the outbox and can be retried if delivery fails.",
+      "5. Use approved templates for structured repair updates and campaign messages.",
+      "If messages are not sending, check WhatsApp config, template names, recipient phone format, outbox status, and retry logs.",
+    ].join("\n");
+  }
+
+  if (text.includes("platform") || text.includes("organisation") || text.includes("organization") || text.includes("company") || text.includes("tenant")) {
+    return [
+      "Platform administration manages the multi-tenant side of Duuka ProMax:",
+      "1. Platform Admin -> Organisations lists all companies/tenants.",
+      "2. Open an organisation to review users, jobs, plan, SMS usage, billing history, and company details.",
+      "3. Platform admin can activate/deactivate organisations and adjust plans.",
+      "4. Tenant admins manage users/settings only inside their own organisation.",
+      "5. If a user gets org_inactive, check the user's orgId and whether that organisation is active.",
+    ].join("\n");
+  }
+
+  if (text.includes("page") || text.includes("menu") || text.includes("module") || text.includes("tour")) {
+    return [
+      "Duuka ProMax page tour:",
+      "1. Dashboard: operational summary and shortcuts.",
+      "2. Jobs: repair job list, filters, status tracking, assignments, photos, documents, and audit timeline.",
+      "3. Intake: handles repair requests before they become jobs.",
+      "4. Clients: customer directory and job history for authorised roles.",
+      "5. Technicians: technician assignments, external technician views, and payouts.",
+      "6. Field Visits: onsite visit scheduling, assignment, and sign-off.",
+      "7. Inventory: parts, stock alerts, suppliers, purchase requests/orders, goods received, stock counts, and transfers.",
+      "8. POS and Sales: counter sales, cashier shifts, leads, campaigns, visits, quotations, and targets.",
+      "9. Documents: job cards, invoices, quotations, receipts, delivery notes, credit notes, and refunds.",
+      "10. Finance: expenses, bank, journal entries, recurring billing, accounts, and financial reports.",
+      "11. Reports: operational and technician performance reporting.",
+      "12. Settings: users, profile, branding, notifications, audit logs, and maintenance tools.",
+      "13. Platform Admin: organisations, plans, activation, billing, audit, and platform settings.",
+      "Pages shown depend on the user's role and permissions.",
+    ].join("\n");
+  }
+
+  return [
+    "I can help with system-wide Duuka ProMax workflows. Tell me the task you want to complete and I will give detailed steps.",
+    "Areas I can guide you through:",
+    "1. Creating jobs and intake requests.",
+    "2. Assigning internal or external technicians.",
+    "3. Moving jobs through diagnosis, approval, repair, and completion.",
+    "4. Managing clients without duplicates.",
+    "5. Inventory, suppliers, purchase requests, purchase orders, goods received, and stock counts.",
+    "6. POS, sales, cashier shifts, leads, campaigns, quotations, and targets.",
+    "7. Finance, expenses, bank, journals, invoices, receipts, refunds, and reports.",
+    "8. WhatsApp/email templates, outbox, notifications, and customer communication.",
+    "9. Platform admin, organisations, plans, users, branding, and settings.",
+  ].join("\n");
+}
+
+async function sendGeminiMessage(apiKey: string, history: Content[], message: string) {
+  const modelNames = [
+    process.env.GEMINI_MODEL,
+    "gemini-1.5-flash",
+    "gemini-2.0-flash",
+  ].filter((model, index, models): model is string => Boolean(model) && models.indexOf(model) === index);
+
+  let lastError: unknown;
+  for (const modelName of modelNames) {
+    try {
+      const genAI = new GoogleGenerativeAI(apiKey);
+      const model = genAI.getGenerativeModel({
+        model: modelName,
+        systemInstruction: SYSTEM_PROMPT,
+        generationConfig: {
+          temperature: 0.3,
+          maxOutputTokens: 1400,
+        },
+      });
+      const chat = model.startChat({ history });
+      return await chat.sendMessageStream(message.trim());
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  throw lastError instanceof Error ? lastError : new Error(String(lastError));
+}
 
 export async function POST(request: NextRequest) {
   const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
@@ -129,9 +427,6 @@ export async function POST(request: NextRequest) {
   }
 
   const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    return new Response("AI assistant is not configured (missing GEMINI_API_KEY).", { status: 503 });
-  }
 
   let body: { message: string; history?: ChatMessage[] };
   try {
@@ -149,20 +444,24 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({
-      model: "gemini-1.5-flash",
-      systemInstruction: SYSTEM_PROMPT,
-    });
-
     // Keep last 10 turns to stay within context budget
     const trimmedHistory: Content[] = history.slice(-10).map((m) => ({
       role: m.role,
       parts: m.parts,
     }));
 
-    const chat = model.startChat({ history: trimmedHistory });
-    const result = await chat.sendMessageStream(message.trim());
+    if (!apiKey) {
+      return new Response(fallbackAnswer(message), {
+        headers: {
+          "content-type": "text/plain; charset=utf-8",
+          "x-content-type-options": "nosniff",
+          "cache-control": "no-store",
+          "x-ai-guide-mode": "fallback",
+        },
+      });
+    }
+
+    const result = await sendGeminiMessage(apiKey, trimmedHistory, message);
 
     // Stream text chunks back to the client as plain text
     const encoder = new TextEncoder();
@@ -189,8 +488,13 @@ export async function POST(request: NextRequest) {
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error("[ai-guide] Gemini error:", msg);
-    return new Response("The AI assistant is temporarily unavailable. Please try again.", {
-      status: 502,
+    return new Response(fallbackAnswer(message), {
+      headers: {
+        "content-type": "text/plain; charset=utf-8",
+        "x-content-type-options": "nosniff",
+        "cache-control": "no-store",
+        "x-ai-guide-mode": "fallback",
+      },
     });
   }
 }

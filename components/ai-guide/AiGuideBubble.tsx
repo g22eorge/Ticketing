@@ -78,6 +78,107 @@ type HistoryEntry = { role: Role; parts: [{ text: string }] };
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
+function clientFallbackAnswer(text: string) {
+  const message = text.toLowerCase();
+  if (message.includes("job") || message.includes("intake")) {
+    return [
+      "To create a job:",
+      "1. Go to Jobs -> New Job.",
+      "2. Enter the client details and search by phone first to avoid duplicates.",
+      "3. Add device type, brand, model, serial/IMEI, accessories, and condition notes.",
+      "4. Enter the customer's issue description clearly.",
+      "5. Review and submit. The job starts as RECEIVED and appears in the job list.",
+      "If it fails, check required fields and whether your role can create jobs.",
+    ].join("\n");
+  }
+  if (message.includes("external") || message.includes("technician")) {
+    return [
+      "External technician access is restricted:",
+      "1. They only see jobs assigned to them.",
+      "2. They can see device details, diagnosis summary, parts needed, estimate, and timeline.",
+      "3. They must not see client names, phone numbers, emails, invoices, or client pricing history.",
+      "4. They can submit external diagnosis, estimate, and timeline updates.",
+    ].join("\n");
+  }
+  if (message.includes("invoice") || message.includes("quote") || message.includes("quotation")) {
+    return [
+      "For quotations and invoices:",
+      "1. Generate quotations after diagnosis when the client estimate is ready.",
+      "2. Generate invoices when the job is completed or ready for billing.",
+      "3. Use the job Documents tab or the Documents section.",
+      "4. Only authorised admin/finance/OPS users should access client pricing documents.",
+      "If generation fails, check job status, bill amount, permissions, and branding settings.",
+    ].join("\n");
+  }
+  if (message.includes("inventory") || message.includes("stock") || message.includes("supplier") || message.includes("purchase")) {
+    return [
+      "Inventory workflow:",
+      "1. Use Inventory -> Parts & Stock to manage items, quantities, costs, and reorder levels.",
+      "2. Use Purchase Requests before buying stock internally.",
+      "3. Use Purchase Orders for supplier orders.",
+      "4. Use Goods Received when stock arrives.",
+      "5. Use Stock Counts and Transfers to correct or move stock.",
+    ].join("\n");
+  }
+  if (message.includes("pos") || message.includes("cashier") || message.includes("sale")) {
+    return [
+      "Sales/POS workflow:",
+      "1. POS handles walk-in sales and payments.",
+      "2. Cashier Shifts opens/closes cashier sessions and reconciles totals.",
+      "3. Sales CRM manages leads, quotations, campaigns, visits, and targets.",
+      "4. Documents provides invoices, receipts, delivery notes, credit notes, and refunds.",
+    ].join("\n");
+  }
+  if (message.includes("finance") || message.includes("report") || message.includes("expense") || message.includes("bank")) {
+    return [
+      "Finance workflow:",
+      "1. Expenses records business costs.",
+      "2. Bank tracks accounts and transactions.",
+      "3. Journal Entries records accounting adjustments.",
+      "4. Finance Reports includes P&L, Balance Sheet, Cash Flow, Customer Statements, Aged Receivables, and Inventory Value.",
+    ].join("\n");
+  }
+  if (message.includes("company") || message.includes("organisation") || message.includes("organization") || message.includes("platform") || message.includes("tenant")) {
+    return [
+      "Platform/company workflow:",
+      "1. Platform Admin -> Organisations lists all companies.",
+      "2. Open a company to review users, jobs, plan, SMS usage, billing, and settings.",
+      "3. Platform admin can activate/deactivate companies and change plans.",
+      "4. Tenant admins only manage their own company workspace.",
+    ].join("\n");
+  }
+  if (message.includes("page") || message.includes("menu") || message.includes("module") || message.includes("tour")) {
+    return [
+      "Duuka ProMax page tour:",
+      "1. Dashboard: summary and shortcuts.",
+      "2. Jobs: repair job tracking, assignments, photos, documents, and audit history.",
+      "3. Intake: customer repair requests before job creation.",
+      "4. Clients: customer records and job history for authorised users.",
+      "5. Technicians: technician work, assignments, and payouts.",
+      "6. Field Visits: onsite visit scheduling and sign-off.",
+      "7. Inventory: stock, suppliers, purchase requests/orders, goods received, counts, and transfers.",
+      "8. POS/Sales: counter sales, cashier shifts, CRM leads, campaigns, visits, and targets.",
+      "9. Documents: job cards, invoices, quotations, receipts, delivery notes, credit notes, and refunds.",
+      "10. Finance: expenses, bank, journals, accounts, recurring billing, and reports.",
+      "11. Settings: users, profile, branding, notifications, audit logs, and maintenance.",
+      "12. Platform Admin: organisations, plans, billing, activation, audit, and platform settings.",
+      "The pages a user sees depend on their role and permissions.",
+    ].join("\n");
+  }
+  return "The online AI service is unavailable, but I can still help with Duuka ProMax system-wide workflows: repair jobs, clients, inventory, suppliers, POS, sales CRM, finance, reports, documents, WhatsApp/email, users, settings, and platform organisations. Ask about any module and I will give step-by-step guidance.";
+}
+
+function sanitizeAssistantText(text: string, prompt = "") {
+  if (
+    text.includes("AI assistant is temporarily unavailable")
+    || text.includes("AI assistant is not configured")
+    || text.includes("temporarily unavailable. Please try again")
+  ) {
+    return clientFallbackAnswer(prompt || text);
+  }
+  return text;
+}
+
 function uid() {
   return Math.random().toString(36).slice(2);
 }
@@ -184,6 +285,21 @@ export function AiGuideBubble() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // Replace stale/raw backend errors that may already be in component state after deploys.
+  useEffect(() => {
+    setMessages((prev) => {
+      let changed = false;
+      const next = prev.map((message) => {
+        if (message.role !== "model") return message;
+        const text = sanitizeAssistantText(message.text);
+        if (text === message.text) return message;
+        changed = true;
+        return { ...message, text, streaming: false };
+      });
+      return changed ? next : prev;
+    });
+  }, []);
+
   // Focus input when panel opens
   useEffect(() => {
     if (open && !minimised) {
@@ -219,9 +335,10 @@ export function AiGuideBubble() {
 
       if (!res.ok || !res.body) {
         const errText = await res.text().catch(() => "Unknown error");
+        const displayText = res.status >= 500 ? clientFallbackAnswer(text) : sanitizeAssistantText(errText, text);
         setMessages((prev) =>
           prev.map((m) =>
-            m.id === assistantId ? { ...m, text: errText, streaming: false } : m,
+            m.id === assistantId ? { ...m, text: displayText, streaming: false } : m,
           ),
         );
         return;
