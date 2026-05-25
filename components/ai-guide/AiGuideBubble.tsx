@@ -462,7 +462,7 @@ export function AiGuideBubble() {
       {!open && (
         <button
           onClick={() => { setOpen(true); setMinimised(false); }}
-          className="fixed bottom-20 right-4 z-50 flex h-13 w-13 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-all hover:scale-105 hover:shadow-xl active:scale-95 md:bottom-6 md:right-6"
+          className="fixed bottom-20 right-4 z-50 flex h-13 w-13 items-center justify-center rounded-full border border-primary/45 bg-primary/85 text-primary-foreground shadow-[0_0_0_6px_rgba(212,175,55,0.12),0_18px_42px_rgba(0,0,0,0.35)] backdrop-blur-md transition-all hover:scale-105 hover:bg-primary hover:shadow-xl active:scale-95 md:bottom-6 md:right-6"
           aria-label="Open AI guide"
         >
           <IconSparkles className="h-5 w-5" />
