@@ -5,6 +5,8 @@ import { FormEvent, useState, useTransition } from "react";
 type Message = {
   role: "user" | "assistant";
   text: string;
+  question?: string;
+  feedback?: "HELPFUL" | "NOT_HELPFUL";
 };
 
 const suggestedQuestions = [
@@ -45,7 +47,7 @@ export function BusinessCopilot() {
         });
         const answer = await response.text();
         if (!response.ok) throw new Error(answer || "AI business copilot failed.");
-        setMessages((current) => [...current, { role: "assistant", text: answer }]);
+        setMessages((current) => [...current, { role: "assistant", text: answer, question: text }]);
       } catch (err) {
         const message = err instanceof Error ? err.message : "AI business copilot failed.";
         setError(message);
@@ -63,6 +65,16 @@ export function BusinessCopilot() {
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     ask();
+  }
+
+  async function rate(index: number, message: Message, rating: "HELPFUL" | "NOT_HELPFUL") {
+    if (!message.question || !message.text) return;
+    setMessages((current) => current.map((item, itemIndex) => (itemIndex === index ? { ...item, feedback: rating } : item)));
+    await fetch("/api/ai-feedback", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ feature: "AI_BUSINESS_COPILOT", question: message.question, answer: message.text, rating }),
+    }).catch(() => {});
   }
 
   return (
@@ -92,6 +104,12 @@ export function BusinessCopilot() {
             >
               {message.text}
             </div>
+            {message.role === "assistant" && message.question ? (
+              <div className="mt-1 flex gap-1">
+                <button type="button" onClick={() => rate(index, message, "HELPFUL")} className={`rounded-full border px-2 py-0.5 text-[10px] ${message.feedback === "HELPFUL" ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-600" : "border-[var(--line)] text-[var(--ink-muted)]"}`}>Helpful</button>
+                <button type="button" onClick={() => rate(index, message, "NOT_HELPFUL")} className={`rounded-full border px-2 py-0.5 text-[10px] ${message.feedback === "NOT_HELPFUL" ? "border-amber-500/40 bg-amber-500/10 text-amber-600" : "border-[var(--line)] text-[var(--ink-muted)]"}`}>Not helpful</button>
+              </div>
+            ) : null}
           </div>
         ))}
         {isPending ? (

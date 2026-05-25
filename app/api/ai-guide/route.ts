@@ -1,7 +1,10 @@
 import { GoogleGenerativeAI, type Content } from "@google/generative-ai";
 import { NextRequest } from "next/server";
 
+import { ensureDefaultAiKnowledge, formatKnowledgeContext, retrieveAiKnowledge } from "@/lib/ai-knowledge";
+import { getAiSettings, logAiPrompt, redactPii } from "@/lib/ai-governance";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { getCurrentUserRoleOptional } from "@/lib/session";
 
 // ── System prompt ─────────────────────────────────────────────────────────────
 
@@ -702,8 +705,9 @@ function fallbackAnswer(message: string) {
   ].join("\n");
 }
 
-async function sendGeminiMessage(apiKey: string, history: Content[], message: string) {
+async function sendGeminiMessage(apiKey: string, history: Content[], message: string, configuredModel?: string | null) {
   const modelNames = [
+    configuredModel,
     process.env.GEMINI_MODEL,
     "gemini-1.5-flash",
     "gemini-2.0-flash",
@@ -739,8 +743,9 @@ export async function POST(request: NextRequest) {
   }
 
   const apiKey = process.env.GEMINI_API_KEY;
+  const { user } = await getCurrentUserRoleOptional();
 
-  let body: { message: string; history?: ChatMessage[] };
+  let body: { message: string; history?: ChatMessage[]; page?: string };
   try {
     body = await request.json();
   } catch {
@@ -768,6 +773,18 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    const settings = await getAiSettings(user?.orgId);
+    if (!settings.aiEnabled || !settings.guideEnabled) {
+      return new Response("AI Guide is disabled for this workspace.", { status: 403 });
+    }
+    await ensureDefaultAiKnowledge();
+    const safeMessage = redactPii(message);
+    const pageContext = body.page ? `Current page: ${redactPii(body.page).slice(0, 200)}` : "";
+    const knowledgeContext = formatKnowledgeContext(await retrieveAiKnowledge(`${safeMessage}\n${pageContext}`, user?.orgId, 4));
+    const groundedMessage = knowledgeContext
+      ? `${knowledgeContext}\n\n${pageContext}\n\nUser question:\n${safeMessage.trim()}`
+      : `${pageContext}\n\nUser question:\n${safeMessage.trim()}`;
+
     // Keep last 10 turns to stay within context budget
     const trimmedHistory: Content[] = history.slice(-10).map((m) => ({
       role: m.role,
@@ -775,7 +792,8 @@ export async function POST(request: NextRequest) {
     }));
 
     if (!apiKey) {
-      return new Response(fallbackAnswer(message), {
+      await logAiPrompt({ orgId: user?.orgId, userId: user?.id, feature: "AI_GUIDE", question: message, contextSummary: knowledgeContext, mode: "fallback" });
+      return new Response(fallbackAnswer(safeMessage), {
         headers: {
           "content-type": "text/plain; charset=utf-8",
           "x-content-type-options": "nosniff",
@@ -785,7 +803,8 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const result = await sendGeminiMessage(apiKey, trimmedHistory, message);
+    await logAiPrompt({ orgId: user?.orgId, userId: user?.id, feature: "AI_GUIDE", model: settings.model ?? process.env.GEMINI_MODEL ?? "gemini-1.5-flash", question: message, contextSummary: knowledgeContext, mode: "gemini" });
+    const result = await sendGeminiMessage(apiKey, trimmedHistory, groundedMessage, settings.model);
 
     // Stream text chunks back to the client as plain text
     const encoder = new TextEncoder();

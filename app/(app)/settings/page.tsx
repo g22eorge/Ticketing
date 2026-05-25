@@ -20,6 +20,7 @@ const TILES: Tile[] = [
   { href: "/settings/groups", title: "Groups", description: "Permission groups and staff membership.", roles: ["ADMIN"] },
   { href: "/settings/targets", title: "Sales Targets", description: "Monthly revenue and job targets.", roles: ["ADMIN", "SALES"] },
   { href: "/settings/branches", title: "Branches", description: "Locations and default branch rules.", roles: ["ADMIN"] },
+  { href: "/settings/ai", title: "AI Knowledge", description: "Review AI feedback and improve help articles.", roles: ["ADMIN"] },
   { href: "/settings/branding", title: "Branding", description: "Company details and document templates.", roles: ["ADMIN"] },
   { href: "/settings/notifications/templates", title: "Templates", description: "WhatsApp/email templates and status policy.", roles: ["ADMIN", "OPS"] },
   { href: "/settings/notifications/whatsapp", title: "WhatsApp", description: "Provider credentials and test sends.", roles: ["ADMIN"] },
@@ -33,7 +34,7 @@ function allowed(role: string, roles: Tile["roles"]) {
 }
 
 export default async function SettingsHomePage() {
-  const { user, org } = await requireOrgSession();
+  const { user } = await requireOrgSession();
 
   // External techs get a minimal settings page.
   if (user.role === "TECHNICIAN_EXTERNAL") {

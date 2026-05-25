@@ -2,6 +2,7 @@ import { hashPassword } from "better-auth/crypto";
 import { DeviceType, JobStatus, OutboundMessageChannel, Prisma, RepairPath, Role } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
+import { ensureDefaultAiKnowledge } from "@/lib/ai-knowledge";
 
 const PROTECTED_SEED_TABLES = ["AuditLog", "Photo", "Job", "ClientNote", "Client"] as const;
 const EIS_ORG_ID = "org_eis_01";
@@ -585,6 +586,10 @@ async function main() {
 
   await seedDefaultCommsTemplates().catch((err) => {
     console.warn("Seed: comms templates skipped/failed:", err instanceof Error ? err.message : String(err));
+  });
+
+  await ensureDefaultAiKnowledge().catch((err) => {
+    console.warn("Seed: AI knowledge skipped/failed:", err instanceof Error ? err.message : String(err));
   });
 
   await prisma.auditLog.deleteMany({});

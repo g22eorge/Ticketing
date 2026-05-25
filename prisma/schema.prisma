@@ -2984,3 +2984,62 @@ model CampaignContact {
   @@unique([campaignId, clientId])
   @@index([campaignId, status])
 }
+
+// ── AI Knowledge & Feedback ──────────────────────────────────────────────────
+
+model AiKnowledgeArticle {
+  id        String   @id @default(cuid())
+  orgId     String?
+  title     String
+  module    String
+  content   String
+  embeddingJson String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([orgId, module, isActive])
+  @@index([isActive, updatedAt])
+}
+
+model AiFeedback {
+  id        String   @id @default(cuid())
+  orgId     String?
+  userId    String?
+  feature   String
+  question  String
+  answer    String
+  rating    String
+  comment   String?
+  createdAt DateTime @default(now())
+
+  @@index([orgId, feature, createdAt])
+  @@index([rating, createdAt])
+}
+
+model AiPromptLog {
+  id              String   @id @default(cuid())
+  orgId           String?
+  userId          String?
+  feature         String
+  promptVersion   String
+  model           String?
+  questionRedacted String
+  contextSummary  String?
+  mode            String
+  createdAt       DateTime @default(now())
+
+  @@index([orgId, feature, createdAt])
+  @@index([promptVersion, createdAt])
+}
+
+model AiOrgSettings {
+  orgId                    String   @id
+  aiEnabled                Boolean  @default(true)
+  guideEnabled             Boolean  @default(true)
+  insightsEnabled          Boolean  @default(true)
+  allowOrgKnowledge        Boolean  @default(true)
+  allowPromptLogging       Boolean  @default(true)
+  model                    String?
+  updatedAt                DateTime @updatedAt
+}

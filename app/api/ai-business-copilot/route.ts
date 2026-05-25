@@ -2,6 +2,8 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextRequest } from "next/server";
 
+import { ensureDefaultAiKnowledge, formatKnowledgeContext, retrieveAiKnowledge } from "@/lib/ai-knowledge";
+import { getAiSettings, logAiPrompt, redactPii } from "@/lib/ai-governance";
 import { getClientBill, resolveTechCost } from "@/lib/billing";
 import { getAppCurrency } from "@/lib/currency";
 import { can } from "@/lib/permissions";
@@ -369,8 +371,9 @@ function fallbackAnswer(question: string, data: Awaited<ReturnType<typeof buildB
   return lines.filter((l) => l !== undefined).join("\n\n");
 }
 
-async function askGemini(apiKey: string, question: string, dataPack: Awaited<ReturnType<typeof buildBusinessDataPack>>) {
+async function askGemini(apiKey: string, question: string, dataPack: Awaited<ReturnType<typeof buildBusinessDataPack>>, knowledgeContext = "", configuredModel?: string | null) {
   const modelNames = [
+    configuredModel,
     process.env.GEMINI_MODEL,
     "gemini-1.5-flash",
     "gemini-2.0-flash",
@@ -387,8 +390,9 @@ async function askGemini(apiKey: string, question: string, dataPack: Awaited<Ret
       });
       const result = await model.generateContent([
         `Manager question: ${question}`,
+        knowledgeContext ? `Relevant Duuka ProMax knowledge base articles:\n${knowledgeContext}` : "",
         `Tenant-scoped aggregate metrics JSON:\n${JSON.stringify(dataPack, null, 2)}`,
-      ]);
+      ].filter(Boolean));
       return result.response.text().trim();
     } catch (error) {
       lastError = error;
@@ -406,6 +410,8 @@ export async function POST(request: NextRequest) {
   const { user } = await getCurrentUserRoleOptional();
   if (!user) return new Response("Unauthorized", { status: 401 });
   if (!can.viewAccountsSummary(user)) return new Response("Forbidden", { status: 403 });
+  const settings = await getAiSettings(user.orgId);
+  if (!settings.aiEnabled || !settings.insightsEnabled) return new Response("AI Insights is disabled for this workspace.", { status: 403 });
 
   let body: { question?: string };
   try {
@@ -414,21 +420,25 @@ export async function POST(request: NextRequest) {
     return new Response("Invalid request body.", { status: 400 });
   }
 
-  const question = body.question?.trim();
+  const question = redactPii(body.question?.trim() ?? "");
   if (!question) return new Response("Question is required.", { status: 400 });
   if (question.length > 1200) return new Response("Question is too long (max 1200 characters).", { status: 400 });
 
   const dataPack = await buildBusinessDataPack(user.orgId);
   const apiKey = process.env.GEMINI_API_KEY;
+  await ensureDefaultAiKnowledge();
+  const knowledgeContext = formatKnowledgeContext(await retrieveAiKnowledge(question, user.orgId, 4));
 
   if (!apiKey) {
+    await logAiPrompt({ orgId: user.orgId, userId: user.id, feature: "AI_BUSINESS_COPILOT", question, contextSummary: knowledgeContext, mode: "fallback" });
     return new Response(fallbackAnswer(question, dataPack), {
       headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "no-store", "x-ai-mode": "fallback" },
     });
   }
 
   try {
-    const text = await askGemini(apiKey, question, dataPack);
+    await logAiPrompt({ orgId: user.orgId, userId: user.id, feature: "AI_BUSINESS_COPILOT", model: settings.model ?? process.env.GEMINI_MODEL ?? "gemini-1.5-flash", question, contextSummary: knowledgeContext, mode: "gemini" });
+    const text = await askGemini(apiKey, question, dataPack, knowledgeContext, settings.model);
     return new Response(text || fallbackAnswer(question, dataPack), {
       headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "no-store" },
     });

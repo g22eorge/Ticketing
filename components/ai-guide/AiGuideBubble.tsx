@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 
 // ── Inline SVG icons (no external icon library required) ──────────────────────
 
@@ -72,6 +73,8 @@ interface Message {
   role: Role;
   text: string;
   streaming?: boolean;
+  question?: string;
+  feedback?: "HELPFUL" | "NOT_HELPFUL";
 }
 
 type HistoryEntry = { role: Role; parts: [{ text: string }] };
@@ -314,6 +317,7 @@ const SUGGESTIONS = [
 // ── Main component ────────────────────────────────────────────────────────────
 
 export function AiGuideBubble() {
+  const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [minimised, setMinimised] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
@@ -368,7 +372,7 @@ export function AiGuideBubble() {
 
     const userMsg: Message = { id: uid(), role: "user", text: text.trim() };
     const assistantId = uid();
-    const assistantMsg: Message = { id: assistantId, role: "model", text: "", streaming: true };
+    const assistantMsg: Message = { id: assistantId, role: "model", text: "", streaming: true, question: text.trim() };
 
     setMessages((prev) => [...prev, userMsg, assistantMsg]);
     setInput("");
@@ -379,7 +383,7 @@ export function AiGuideBubble() {
       const res = await fetch("/api/ai-guide", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ message: text.trim(), history }),
+        body: JSON.stringify({ message: text.trim(), history, page: pathname }),
       });
 
       if (!res.ok || !res.body) {
@@ -426,6 +430,21 @@ export function AiGuideBubble() {
     } finally {
       setBusy(false);
     }
+  }
+
+  async function rate(message: Message, rating: "HELPFUL" | "NOT_HELPFUL") {
+    if (!message.question || !message.text || message.streaming) return;
+    setMessages((prev) => prev.map((m) => (m.id === message.id ? { ...m, feedback: rating } : m)));
+    await fetch("/api/ai-feedback", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        feature: "AI_GUIDE",
+        question: message.question,
+        answer: message.text,
+        rating,
+      }),
+    }).catch(() => {});
   }
 
   function handleKey(e: React.KeyboardEvent<HTMLTextAreaElement>) {
@@ -511,6 +530,26 @@ export function AiGuideBubble() {
                         <p>{msg.text}</p>
                       )}
                     </div>
+                    {msg.role === "model" && msg.id !== "welcome" && !msg.streaming && (
+                      <div className="ml-2 mt-1 flex items-center gap-1 self-end">
+                        <button
+                          type="button"
+                          onClick={() => rate(msg, "HELPFUL")}
+                          className={`rounded-full border px-2 py-0.5 text-[10px] transition ${msg.feedback === "HELPFUL" ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-600" : "border-border text-muted-foreground hover:text-foreground"}`}
+                          aria-label="Mark AI answer helpful"
+                        >
+                          Helpful
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => rate(msg, "NOT_HELPFUL")}
+                          className={`rounded-full border px-2 py-0.5 text-[10px] transition ${msg.feedback === "NOT_HELPFUL" ? "border-amber-500/40 bg-amber-500/10 text-amber-600" : "border-border text-muted-foreground hover:text-foreground"}`}
+                          aria-label="Mark AI answer not helpful"
+                        >
+                          Not helpful
+                        </button>
+                      </div>
+                    )}
                   </div>
                 ))}
 
