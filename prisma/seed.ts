@@ -4,6 +4,7 @@ import { DeviceType, JobStatus, OutboundMessageChannel, Prisma, RepairPath, Role
 import { prisma } from "@/lib/prisma";
 
 const PROTECTED_SEED_TABLES = ["AuditLog", "Photo", "Job", "ClientNote", "Client"] as const;
+const EIS_ORG_ID = "org_eis_01";
 
 async function assertSeedCanReplaceDemoData() {
   let existingRows = 0;
@@ -278,8 +279,8 @@ async function ensureUser({
 }) {
   const user = await prisma.user.upsert({
     where: { email },
-    update: { name, role, isActive: true, emailVerified: true },
-    create: { name, email, role, isActive: true, emailVerified: true },
+    update: { name, role, orgId: EIS_ORG_ID, isActive: true, emailVerified: true },
+    create: { name, email, role, orgId: EIS_ORG_ID, isActive: true, emailVerified: true },
   });
 
   await ensureCredentialAccount(user.id, password);
@@ -314,7 +315,6 @@ async function ensureClient({
   email?: string;
   organization?: string;
 }) {
-  const EIS_ORG_ID = "org_eis_01";
   return prisma.client.upsert({
     where: { phone_orgId: { phone, orgId: EIS_ORG_ID } },
     update: { fullName, email: email ?? null, organization: organization ?? null },
@@ -489,10 +489,10 @@ async function main() {
 
   // ── Ensure EIS base organisation exists ──────────────────────────────────
   await prisma.organization.upsert({
-    where: { id: "org_eis_01" },
+    where: { id: EIS_ORG_ID },
     update: {},
     create: {
-      id: "org_eis_01",
+      id: EIS_ORG_ID,
       name: "Eagle Info Solutions",
       slug: "eagle-info-solutions",
       plan: "GROWTH",
@@ -509,7 +509,7 @@ async function main() {
 
   // E2E / CI test account — stable credentials so Playwright tests don't depend
   // on SEED_ADMIN_EMAIL. Never referenced in production workflows.
-  const e2eAdminEmail = process.env.E2E_ADMIN_EMAIL ?? "admin@dduuka.local";
+  const e2eAdminEmail = process.env.E2E_ADMIN_EMAIL ?? "admin@eagle.local";
   await ensureUser({
     name: "E2E Admin",
     email: e2eAdminEmail,
