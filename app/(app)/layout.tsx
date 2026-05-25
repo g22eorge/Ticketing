@@ -1,4 +1,5 @@
 import { ClientOnlySidebar } from "@/components/layout/ClientOnlySidebar";
+import { AiGuideBubble } from "@/components/ai-guide/AiGuideBubble";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { Header } from "@/components/layout/Header";
 import { PageThemeHeader } from "@/components/layout/PageThemeHeader";
@@ -203,6 +204,7 @@ export default async function AppLayout({
         }}
       />
       <QuickActionFAB actions={isSuspended ? [] : buildFabActions(user)} />
+      <AiGuideBubble />
     </div>
   );
 }
