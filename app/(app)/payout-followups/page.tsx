@@ -221,7 +221,7 @@ export default async function PayoutFollowupsPage({
 
   // Compute summary values
   const repairReceivable = repairSummary._sum.clientBill ?? 0;
-  const techPayoutDue = (techSummary._count.id > 0)
+  const _techPayoutDue = (techSummary._count.id > 0)
     ? (() => {
         // We need to compute resolveTechCost across aggregate — approximate via fee sum
         return (techSummary._sum.externalTechBill ?? techSummary._sum.externalTechFee ?? 0);

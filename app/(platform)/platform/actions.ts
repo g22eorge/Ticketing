@@ -85,16 +85,16 @@ export async function setOrgAiModelAction(formData: FormData) {
 export async function toggleOrgModuleAction(formData: FormData) {
   await requirePlatformAdmin();
   const orgId = formData.get("orgId") as string;
-  const module = formData.get("module") as string;
+  const orgModule = formData.get("module") as string;
   const currentlyEnabled = formData.get("currentlyEnabled") === "true";
-  if (!orgId || !module) return;
+  if (!orgId || !orgModule) return;
   try {
     if (currentlyEnabled) {
-      await prisma.orgModuleGrant.deleteMany({ where: { orgId, module: module as OrgModule } });
+      await prisma.orgModuleGrant.deleteMany({ where: { orgId, module: orgModule as OrgModule } });
     } else {
       await prisma.orgModuleGrant.upsert({
-        where: { orgId_module: { orgId, module: module as OrgModule } },
-        create: { orgId, module: module as OrgModule },
+        where: { orgId_module: { orgId, module: orgModule as OrgModule } },
+        create: { orgId, module: orgModule as OrgModule },
         update: {},
       });
     }

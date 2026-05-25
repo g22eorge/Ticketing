@@ -1,7 +1,7 @@
 // @ts-nocheck
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { orgDb, prisma } from "@/lib/prisma";
+import { orgDb } from "@/lib/prisma";
 import { can } from "@/lib/permissions";
 import { getCurrentUserRole } from "@/lib/session";
 

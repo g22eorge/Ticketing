@@ -345,12 +345,12 @@ function DashboardPeriodBar({
 
 function DashboardHero({
   title,
-  summary,
+  summary: _summary,
   primaryHref,
   primaryLabel,
   secondaryHref,
   secondaryLabel,
-  icon,
+  icon: _icon,
 }: {
   title: string;
   summary: string;

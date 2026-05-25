@@ -1,5 +1,5 @@
-// @ts-nocheck
 import Link from "next/link";
+// @ts-nocheck
 import { redirect } from "next/navigation";
 import { getCurrentUserRole } from "@/lib/session";
 

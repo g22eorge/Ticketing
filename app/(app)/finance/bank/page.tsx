@@ -74,7 +74,6 @@ export default async function BankPage({
   async function reconcile(fd: FormData) {
     "use server";
     const { user: _u } = await getCurrentUserRole();
-    const db = orgDb(user.orgId);
     const id = fd.get("id") as string;
     const tx = await prisma.bankTransaction.findFirst({ where: { id } });
     if (!tx) return;
@@ -152,7 +151,7 @@ export default async function BankPage({
   );
   const monthCredits = thisMonthTx.filter((t) => t.type === "CREDIT").reduce((s, t) => s + t.amount, 0);
   const monthDebits = thisMonthTx.filter((t) => t.type === "DEBIT").reduce((s, t) => s + t.amount, 0);
-  const monthNet = monthCredits - monthDebits;
+  const _monthNet = monthCredits - monthDebits;
 
   const unreconciledTx = allTransactions.filter((t) => !t.reconciledAt);
   const unreconciledAmount = unreconciledTx.reduce(

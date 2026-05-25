@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 
 import { BusinessCopilot } from "@/components/ai-insights/BusinessCopilot";
 import { getClientBill, resolveTechCost } from "@/lib/billing";
-import { formatMoney, formatMoneyCompact, getAppCurrency } from "@/lib/currency";
+import { formatMoneyCompact, getAppCurrency } from "@/lib/currency";
 import { can } from "@/lib/permissions";
 import { orgDb } from "@/lib/prisma";
 import { getCurrentUserRole } from "@/lib/session";

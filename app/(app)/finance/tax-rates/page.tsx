@@ -11,7 +11,7 @@ import { RowActionsMenu, MenuSection, MenuDestructiveRow } from "@/components/sh
 export const dynamic = "force-dynamic";
 
 export default async function TaxRatesPage() {
-  const { user, orgId, org } = await requireOrgSession();
+  const { user, orgId } = await requireOrgSession();
   if (!["ADMIN", "MANAGER"].includes(user.role)) redirect("/dashboard");
 
   const taxRates = await prisma.taxRate.findMany({

@@ -153,7 +153,6 @@ export default async function QuotationsPage({
   const pendingCount = jobs.filter(
     (j) => j.status === "AWAITING_APPROVAL" && j.clientApproved === null,
   ).length;
-  // eslint-disable-next-line react-hooks/purity
   const nowMs = Date.now();
 
   return (

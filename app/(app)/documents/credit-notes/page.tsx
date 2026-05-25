@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import type { PaymentMethod } from "@prisma/client";
 
-import { formatMoney, normalizeCurrency } from "@/lib/currency";
+import { formatMoney } from "@/lib/currency";
 import { can } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { requireOrgSession } from "@/lib/org-context";
@@ -452,4 +452,3 @@ export default async function CreditNotesPage({
     </div>
   );
 }
-

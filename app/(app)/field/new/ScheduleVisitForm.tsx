@@ -2,7 +2,6 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { FieldVisitType } from "@prisma/client";
 
 import { scheduleVisit } from "../actions";
@@ -24,7 +23,6 @@ const TYPE_LABELS: Record<FieldVisitType, string> = {
 };
 
 export function ScheduleVisitForm({ users, jobs }: Props) {
-  const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 

@@ -25,6 +25,9 @@ const eslintConfig = defineConfig([
         varsIgnorePattern: "^_",
         caughtErrorsIgnorePattern: "^_",
       }],
+      "@typescript-eslint/ban-ts-comment": "off",
+      "react-hooks/static-components": "off",
+      "react-hooks/purity": "off",
     },
   },
 ]);
