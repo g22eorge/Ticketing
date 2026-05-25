@@ -60,6 +60,7 @@ const nav = [
   { href: "/pos/shifts",          label: "Cashier Shifts",   group: "finance" as NavGroup, roles: ["ADMIN", "MANAGER", "OPS", "FINANCE", "FRONT_DESK"] as const },
   { href: "/targets",             label: "Targets",          group: "finance" as NavGroup, roles: ["ADMIN", "MANAGER", "OPS", "SALES_MANAGER", "TECH_MANAGER", "FINANCE"] as const },
   { href: "/reports",             label: "Reports",          group: "finance" as NavGroup, roles: ["ADMIN", "MANAGER", "OPS", "FINANCE", "SALES_MANAGER"] as const },
+  { href: "/ai-insights",         label: "AI Insights",      group: "finance" as NavGroup, roles: ["ADMIN", "MANAGER", "OPS", "FINANCE", "SALES_MANAGER"] as const },
   { href: "/payout-followups",    label: "Payment Tracker",  group: "finance" as NavGroup, roles: ["ADMIN", "MANAGER", "OPS", "FINANCE", "TECH_MANAGER", "SALES_MANAGER"] as const },
   { href: "/technicians/payouts", label: "My Payouts",       group: "finance" as NavGroup, roles: ["TECHNICIAN_EXTERNAL"] as const },
 
@@ -90,7 +91,7 @@ const roleOrder: Partial<Record<Role, readonly string[]>> = {
     "/inventory/suppliers", "/inventory/purchase-requests", "/inventory/purchase-orders", "/inventory/goods-received", "/inventory/supplier-bills",
     "/clients", "/sales", "/sales/campaigns", "/pos",
     "/documents/job-cards", "/documents/quotations", "/documents/invoices", "/documents/receipts", "/documents/delivery-notes", "/documents/credit-notes", "/documents/refunds",
-    "/finance/expenses", "/finance/tax-rates", "/finance/recurring", "/finance/accounts", "/finance/journal", "/finance/bank", "/finance/reports/pl", "/finance/reports/balance-sheet", "/pos/shifts", "/targets", "/reports", "/payout-followups",
+    "/finance/expenses", "/finance/tax-rates", "/finance/recurring", "/finance/accounts", "/finance/journal", "/finance/bank", "/finance/reports/pl", "/finance/reports/balance-sheet", "/pos/shifts", "/targets", "/reports", "/ai-insights", "/payout-followups",
     "/settings",
   ],
   MANAGER: [
@@ -100,7 +101,7 @@ const roleOrder: Partial<Record<Role, readonly string[]>> = {
     "/inventory/suppliers", "/inventory/purchase-requests", "/inventory/purchase-orders", "/inventory/goods-received", "/inventory/supplier-bills",
     "/clients", "/sales", "/sales/campaigns", "/pos",
     "/documents/job-cards", "/documents/quotations", "/documents/invoices", "/documents/receipts", "/documents/delivery-notes", "/documents/credit-notes", "/documents/refunds",
-    "/finance/expenses", "/finance/tax-rates", "/finance/recurring", "/finance/accounts", "/finance/journal", "/finance/bank", "/finance/reports/pl", "/finance/reports/balance-sheet", "/pos/shifts", "/targets", "/reports", "/payout-followups",
+    "/finance/expenses", "/finance/tax-rates", "/finance/recurring", "/finance/accounts", "/finance/journal", "/finance/bank", "/finance/reports/pl", "/finance/reports/balance-sheet", "/pos/shifts", "/targets", "/reports", "/ai-insights", "/payout-followups",
     "/settings",
   ],
   TECH_MANAGER: [
@@ -118,14 +119,14 @@ const roleOrder: Partial<Record<Role, readonly string[]>> = {
     "/inventory/suppliers", "/inventory/purchase-requests", "/inventory/purchase-orders", "/inventory/goods-received", "/inventory/supplier-bills",
     "/clients", "/sales", "/sales/campaigns", "/pos",
     "/documents/job-cards", "/documents/quotations", "/documents/invoices", "/documents/receipts", "/documents/delivery-notes", "/documents/credit-notes", "/documents/refunds",
-    "/finance/expenses", "/finance/recurring", "/finance/reports/pl", "/finance/reports/balance-sheet", "/pos/shifts", "/targets", "/reports", "/payout-followups",
+    "/finance/expenses", "/finance/recurring", "/finance/reports/pl", "/finance/reports/balance-sheet", "/pos/shifts", "/targets", "/reports", "/ai-insights", "/payout-followups",
     "/settings",
   ],
   FINANCE: [
     "/dashboard",
     "/clients",
     "/documents/invoices", "/documents/credit-notes", "/documents/refunds",
-    "/finance/expenses", "/finance/recurring", "/finance/accounts", "/finance/journal", "/finance/bank", "/finance/reports/pl", "/finance/reports/balance-sheet", "/pos/shifts", "/targets", "/reports", "/payout-followups",
+    "/finance/expenses", "/finance/recurring", "/finance/accounts", "/finance/journal", "/finance/bank", "/finance/reports/pl", "/finance/reports/balance-sheet", "/pos/shifts", "/targets", "/reports", "/ai-insights", "/payout-followups",
     "/settings",
   ],
   SALES: [
@@ -155,7 +156,7 @@ const roleOrder: Partial<Record<Role, readonly string[]>> = {
     "/settings",
   ],
   INTAKE: ["/dashboard", "/jobs", "/intake", "/technicians", "/clients", "/documents/job-cards", "/settings"],
-  SALES_MANAGER: ["/dashboard", "/jobs", "/intake", "/field", "/technicians", "/clients", "/sales", "/sales/campaigns", "/pos", "/documents/job-cards", "/documents/quotations", "/documents/invoices", "/targets", "/reports", "/payout-followups", "/settings"],
+  SALES_MANAGER: ["/dashboard", "/jobs", "/intake", "/field", "/technicians", "/clients", "/sales", "/sales/campaigns", "/pos", "/documents/job-cards", "/documents/quotations", "/documents/invoices", "/targets", "/reports", "/ai-insights", "/payout-followups", "/settings"],
   SALES_CORPORATE: ["/dashboard", "/jobs", "/clients", "/sales", "/documents/quotations", "/documents/invoices", "/settings"],
   SALES_RETAIL: ["/dashboard", "/jobs", "/clients", "/sales", "/pos", "/documents/quotations", "/documents/receipts", "/settings"],
   SALES_POS: ["/dashboard", "/pos", "/settings"],
@@ -209,6 +210,7 @@ const hrefModule: Record<string, string> = {
   "/documents/refunds":              "INVOICING",
   "/pos/shifts":                     "POS",
   "/reports":                        "REPORTS",
+  "/ai-insights":                    "REPORTS",
   "/sales":                          "SALES",
   "/targets":                        "TARGETS",
 };

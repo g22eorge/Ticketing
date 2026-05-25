@@ -108,6 +108,7 @@ const ITEMS = {
   intake:      { href: "/intake",                label: "Intake",    icon: intakeIcon },
   clients:     { href: "/clients",               label: "Clients",   icon: clientsIcon },
   reports:     { href: "/reports",               label: "Reports",   icon: reportsIcon },
+  aiInsights:  { href: "/ai-insights",           label: "AI Insights", icon: reportsIcon },
   pos:         { href: "/pos",                   label: "POS",       icon: invoiceIcon },
   inventory:   { href: "/inventory",             label: "Inventory", icon: inventoryIcon },
   payoutFollowups: { href: "/payout-followups",  label: "Payments", icon: payoutsIcon },
@@ -137,7 +138,7 @@ const hrefModule: Record<string, string> = {
   "/documents/invoices": "INVOICING", "/documents/receipts": "INVOICING",
   "/documents/delivery-notes": "INVOICING", "/documents/credit-notes": "INVOICING",
   "/documents/refunds": "INVOICING", "/pos/shifts": "POS",
-  "/reports": "REPORTS", "/sales": "SALES", "/targets": "TARGETS",
+  "/reports": "REPORTS", "/ai-insights": "REPORTS", "/sales": "SALES", "/targets": "TARGETS",
 };
 
 /* ── role-based nav config ── */
@@ -158,6 +159,7 @@ function getMoreGroups(role: Role, permissions: string[], enabledModules?: Set<s
     if (!moduleAllowed(href)) return false;
     if (href === ITEMS.clients.href) return can.viewClientInfo(permUser);
     if (href === ITEMS.reports.href) return can.viewAccountsSummary(permUser);
+    if (href === ITEMS.aiInsights.href) return can.viewAccountsSummary(permUser);
     if (href === ITEMS.pos.href) return ["ADMIN", "OPS", "FRONT_DESK"].includes(role);
     if (href === ITEMS.invoiceDocs.href) return can.viewFinancials(permUser);
     if (href === ITEMS.quotations.href) return can.viewFinancials(permUser) || role === "TECHNICIAN_INTERNAL";
@@ -187,7 +189,7 @@ function getMoreGroups(role: Role, permissions: string[], enabledModules?: Set<s
     },
     {
       title: "Management",
-      items: [ITEMS.reports, ITEMS.pos, ITEMS.cashierShifts],
+      items: [ITEMS.reports, ITEMS.aiInsights, ITEMS.pos, ITEMS.cashierShifts],
     },
     {
       title: "Finance",
