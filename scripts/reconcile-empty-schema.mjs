@@ -14,6 +14,11 @@ const DATA_TABLES = [
   "RepairRequest",
 ];
 
+const DUPLICATE_EMPTY_DB_INDEXES = [
+  "Invoice_jobId_key",
+  "Quotation_convertedToInvoiceId_key",
+];
+
 function run(command, args) {
   const result = spawnSync(command, args, { stdio: "inherit", env: process.env });
   if (result.status !== 0) process.exit(result.status ?? 1);
@@ -39,6 +44,10 @@ try {
   if (totalRows > 0) {
     console.log(`Skipping empty DB reconciliation because protected tables contain data (${totalRows} rows).`);
     process.exit(0);
+  }
+
+  for (const index of DUPLICATE_EMPTY_DB_INDEXES) {
+    await prisma.$executeRawUnsafe(`DROP INDEX IF EXISTS "${index}"`);
   }
 
   run("bunx", ["prisma", "db", "push", "--skip-generate", "--accept-data-loss"]);
