@@ -106,6 +106,42 @@ export default async function JobDetailPage({
     notFound();
   }
 
+  const clientPayments = can.viewFinancials(user)
+    ? await prisma.invoice.findUnique({
+        where: { jobId: job.id },
+        select: {
+          payments: {
+            select: {
+              id: true,
+              amount: true,
+              kind: true,
+              method: true,
+              reference: true,
+              note: true,
+              receivedAt: true,
+              createdBy: { select: { name: true } },
+            },
+            orderBy: { receivedAt: "desc" },
+          },
+        },
+      }).then((invoice) => invoice?.payments ?? []).catch(() => [])
+    : [];
+  const technicianPayouts = can.reviewExternalBills(user) || user.role === "ADMIN"
+    ? await prisma.technicianPayout.findMany({
+        where: { orgId, jobId: job.id },
+        select: {
+          id: true,
+          amount: true,
+          method: true,
+          reference: true,
+          note: true,
+          paidAt: true,
+          recordedBy: { select: { name: true } },
+        },
+        orderBy: { paidAt: "desc" },
+      }).catch(() => [])
+    : [];
+
   const technicians =
     can.assignJobs(user)
       ? await prisma.user.findMany({
@@ -224,7 +260,7 @@ export default async function JobDetailPage({
       permissions={user.permissions}
       orgBaseCurrency={org.baseCurrency}
       supportedCurrencies={org.supportedCurrencies}
-      job={{ ...jobWithBilling, outboundMessages, inboundMessages }}
+      job={{ ...jobWithBilling, outboundMessages, inboundMessages, clientPayments, technicianPayouts }}
       technicians={technicians}
       deviceHistory={deviceHistory}
       returnTo={safeReturnTo}

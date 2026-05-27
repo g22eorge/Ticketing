@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
 
-import { markMessagesReadAction, sendManualReplyAction, sendQuotationViaWhatsAppAction, sendInvoiceViaWhatsAppAction, sendJobCardViaWhatsAppAction, updateJobAction, updateOneTimeExternalAssignmentAction, recordClientPaymentAction } from "@/app/(app)/jobs/[id]/actions";
+import { markMessagesReadAction, sendManualReplyAction, sendQuotationViaWhatsAppAction, sendInvoiceViaWhatsAppAction, sendJobCardViaWhatsAppAction, updateJobAction, updateOneTimeExternalAssignmentAction, recordClientPaymentAction, recordTechnicianPayoutAction } from "@/app/(app)/jobs/[id]/actions";
 import { JobStatusBadge } from "@/components/jobs/JobStatusBadge";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { AuditTimeline } from "@/components/shared/AuditTimeline";
@@ -468,6 +468,7 @@ type Props = {
     clientPaid?: boolean;
     clientPaidAt?: Date | null;
     clientPaymentRef?: string | null;
+    invoiceNumber?: string | null;
     vatApplicable?: boolean;
     externalTechFee?: number | null;
     externalPaid?: boolean;
@@ -480,6 +481,25 @@ type Props = {
     timelineNote?: string | null;
     assignedTo?: { id: string; name: string; role: Role } | null;
     client?: { fullName: string; phone: string; email: string | null } | null;
+    clientPayments?: Array<{
+      id: string;
+      amount: number;
+      kind: string;
+      method: string;
+      reference: string | null;
+      note: string | null;
+      receivedAt: Date;
+      createdBy: { name: string } | null;
+    }>;
+    technicianPayouts?: Array<{
+      id: string;
+      amount: number;
+      method: string;
+      reference: string | null;
+      note: string | null;
+      paidAt: Date;
+      recordedBy: { name: string } | null;
+    }>;
     auditLogs: Array<{
       id: string;
       action: string;
@@ -602,6 +622,34 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
       : null;
   const vatApplicable = job.vatApplicable ?? true;
   const clientBillValue = typeof job.clientBill === "number" ? job.clientBill : 0;
+  const clientPayments = job.clientPayments ?? [];
+  const totalClientPaid = clientPayments.reduce((sum, payment) => sum + (payment.kind === "REFUND" ? -1 : 1) * payment.amount, 0);
+  const clientBalanceDue = clientBillValue - totalClientPaid;
+  const paymentStatus =
+    clientBillValue <= 0
+      ? "No bill set"
+      : totalClientPaid <= 0
+        ? "Unpaid"
+        : totalClientPaid < clientBillValue
+          ? "Partially paid"
+          : totalClientPaid === clientBillValue
+            ? "Paid"
+            : "Overpaid";
+  const technicianPayouts = job.technicianPayouts ?? [];
+  const technicianCost = typeof job.externalTechBill === "number" ? job.externalTechBill : 0;
+  const technicianPaid = technicianPayouts.reduce((sum, payout) => sum + payout.amount, 0);
+  const technicianBalance = technicianCost - technicianPaid;
+  const technicianPayoutStatus =
+    technicianCost <= 0
+      ? "No cost set"
+      : technicianPaid <= 0
+        ? "Unpaid"
+        : technicianPaid < technicianCost
+          ? "Partially paid"
+          : technicianPaid === technicianCost
+            ? "Paid"
+            : "Overpaid";
+  const cashPosition = totalClientPaid - technicianPaid;
   const repairCostBeforeVat = vatApplicable ? clientBillValue / 1.18 : clientBillValue;
   const vatAmount = vatApplicable ? Math.max(clientBillValue - repairCostBeforeVat, 0) : 0;
   const hasPayoutControls = canManagePayouts && job.repairPath === "EXTERNAL";
@@ -652,7 +700,7 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
       : job.repairPath === "IN_HOUSE"
         ? "IN_HOUSE — no technician assigned"
         : "Not set";
-  const repairCostLabel = diagnosisMode === "external" ? "External technician bill" : "Internal repair cost";
+  const repairCostLabel = "Technician Cost";
   const stageLabels = ["Intake", "Diagnosis", "Approval", "Repair", "Complete"] as const;
   const currentStageIndex =
     job.status === "RECEIVED"
@@ -693,6 +741,52 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
     job.repairTimeline ? `ETA ${etaValue}.` : "ETA not set.",
     watchLabel ? `${watchLabel} (${statusAgeHours}h in this state).` : null,
   ].filter(Boolean) as string[];
+  type AttentionItem = { label: string; action: string; tab: (typeof tabs)[number] };
+  const attentionItems = [
+    !job.repairTimeline ? { label: "ETA not set", action: "Add an ETA so the client knows when to expect progress.", tab: "timeline" as const } : null,
+    (job.status === "AWAITING_APPROVAL" && (!job.communicationStatus || job.communicationStatus === "NONE" || job.communicationStatus === "AWAITING_RESPONSE")) ? { label: "Client decision not updated", action: "Record whether the client approved, declined, or still needs follow-up.", tab: "timeline" as const } : null,
+    !job.lastClientContactAt ? { label: "Last client contact not recorded", action: "Add the latest client update or follow-up note.", tab: "timeline" as const } : null,
+    !job.diagnosisNotes && !job.externalDiagnosis ? { label: "Diagnosis missing", action: "Capture the fault found and recommended next step.", tab: "diagnosis" as const } : null,
+    !job.partsNeeded && ["DIAGNOSING", "IN_REPAIR", "WAITING_FOR_PARTS"].includes(job.status) ? { label: "Parts not recorded", action: "Record needed parts or confirm none are required.", tab: "diagnosis" as const } : null,
+    job.status === "COMPLETED" && !job.invoiceNumber ? { label: "Completed but not invoiced", action: "Generate the client invoice.", tab: "financials" as const } : null,
+    job.status === "COMPLETED" && clientBillValue > 0 && clientBalanceDue > 0 ? { label: "Completed but unpaid", action: "Follow up client payment or record received money.", tab: "financials" as const } : null,
+    clientBillValue > 0 && clientBalanceDue > 0 ? { label: "Invoice/payment follow-up needed", action: "Client still has a balance due.", tab: "financials" as const } : null,
+  ].filter(Boolean) as AttentionItem[];
+  const quickOverviewGroups = [
+    {
+      title: "Job Status",
+      rows: [
+        ["Current status", prettyEnum(job.status)],
+        ["Next action", nextActionByStatus[statusKey]],
+        ["ETA", etaValue],
+      ],
+    },
+    {
+      title: "People",
+      rows: [
+        ["Assigned technician", assignedLabel],
+        ["Last client contact", job.lastClientContactAt ? formatUtcDateTime(job.lastClientContactAt) : "Not recorded"],
+        ["Client decision", clientDecision],
+      ],
+    },
+    {
+      title: "Money",
+      rows: [
+        ["Client bill", formatBillAmount(clientBillValue)],
+        ["Amount paid", formatBillAmount(totalClientPaid)],
+        ["Balance due", formatBillAmount(clientBalanceDue)],
+        ["Payment status", paymentStatus],
+      ],
+    },
+    {
+      title: "Repair Handling",
+      rows: [
+        ["Repair path", derivedRepairPath],
+        ["Recommendation", recommendation],
+        ["Attention", attentionItems.length ? `${attentionItems.length} item(s)` : "None"],
+      ],
+    },
+  ];
 
   const canManageOneTimeExternal = role === "ADMIN" || role === "OPS" || role === "TECHNICIAN_INTERNAL";
   const oneTimeExternal = job.oneTimeExternalAssignment ?? null;
@@ -714,116 +808,6 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
     return date.toISOString().slice(0, 10);
   }
 
-  const rolePriorityBoost = (key: string) => {
-    if (role === "FRONT_DESK") {
-      if (key === "clientDecision") return 4;
-      if (key === "lastContact") return 3;
-      if (key === "nextAction") return 2;
-    }
-    if (role === "TECHNICIAN_INTERNAL") {
-      if (key === "assigned") return 4;
-      if (key === "eta") return 3;
-      if (key === "nextAction") return 2;
-    }
-    if (role === "ADMIN" || role === "OPS") {
-      if (key === "watch") return 4;
-      if (key === "nextAction") return 3;
-      if (key === "status") return 2;
-    }
-    return 0;
-  };
-
-  const quickSignals = [
-    {
-      key: "status",
-      label: "Current Status",
-      value: prettyEnum(job.status),
-      tone: "text-[var(--accent)]",
-      accent: "bg-[var(--accent)]/10 border-[var(--accent)]/30",
-      priority: 90,
-    },
-    {
-      key: "watch",
-      label: "Watch",
-      value: watchLabel ? `${watchLabel} (${statusAgeHours}h)` : `Healthy (${statusAgeHours}h in state)`,
-      tone: watchLabel ? "text-[var(--ink)]" : "text-[var(--accent)]",
-      accent: watchLabel ? "bg-[var(--panel-strong)] border-[var(--line)]" : "bg-[var(--accent)]/10 border-[var(--accent)]/30",
-      priority: watchLabel ? 88 : 40,
-    },
-    {
-      key: "assigned",
-      label: "Assigned Tech",
-      value: job.assignedTo?.name ?? job.oneTimeExternalAssignment?.technicianName ?? "Unassigned",
-      tone: job.assignedTo?.name || job.oneTimeExternalAssignment?.technicianName ? "text-[var(--ink)]" : "text-[var(--ink)]",
-      accent: job.assignedTo?.name || job.oneTimeExternalAssignment?.technicianName
-        ? "bg-[var(--panel)] border-[var(--line)]"
-        : "bg-[var(--panel-strong)] border-[var(--line)]",
-      priority: job.assignedTo?.name || job.oneTimeExternalAssignment?.technicianName ? 70 : 95,
-    },
-    {
-      key: "clientDecision",
-      label: "Client Decision",
-      value: clientDecision,
-      tone: "text-[var(--ink)]",
-      accent: "bg-[var(--panel)] border-[var(--line)]",
-      priority: job.communicationStatus === "AWAITING_RESPONSE" ? 86 : 58,
-    },
-    {
-      key: "recommendation",
-      label: "Recommendation",
-      value: recommendation,
-      tone: "text-[var(--ink)]",
-      accent: "bg-[var(--panel)] border-[var(--line)]",
-      priority: 50,
-    },
-    {
-      key: "eta",
-      label: "ETA",
-      value: etaValue,
-      tone: "text-[var(--ink)]",
-      accent: "bg-[var(--panel)] border-[var(--line)]",
-      priority: job.repairTimeline ? 64 : 74,
-    },
-    {
-      key: "nextAction",
-      label: "Next Action",
-      value: nextActionByStatus[statusKey],
-      tone: job.status === "COMPLETED" || job.status === "CLOSED" ? "text-[var(--ink)]" : "text-[var(--ink)]",
-      accent: job.status === "COMPLETED" || job.status === "CLOSED" ? "bg-[var(--panel)] border-[var(--line)]" : "bg-[var(--panel-strong)] border-[var(--line)]",
-      priority: 84,
-    },
-    {
-      key: "lastContact",
-      label: "Last Client Contact",
-      value: job.lastClientContactAt ? formatUtcDateTime(job.lastClientContactAt) : "Not recorded",
-      tone: "text-[var(--ink)]",
-      accent: "bg-[var(--panel)] border-[var(--line)]",
-      priority: job.lastClientContactAt ? 52 : 80,
-    },
-    {
-      key: "repairPath",
-      label: "Repair Path",
-      value: derivedRepairPath,
-      tone: "text-[var(--ink)]",
-      accent: "bg-[var(--panel)] border-[var(--line)]",
-      priority: 54,
-    },
-    ...(canViewFinancials
-      ? [
-          {
-            key: "clientBill",
-            label: "Client Bill",
-            value: typeof job.clientBill === "number" ? formatBillAmount(job.clientBill) : "Pending",
-            tone: "text-[var(--ink)]",
-            accent: "bg-[var(--panel)] border-[var(--line)]",
-            priority: 56,
-          },
-        ]
-      : []),
-  ]
-    .map((item) => ({ ...item, priority: item.priority + rolePriorityBoost(item.key) }))
-    .sort((a, b) => b.priority - a.priority);
-
   return (
     <div className="min-w-0 space-y-4">
       <div>
@@ -832,29 +816,31 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
           {returnLabel}
         </Link>
       </div>
-      {/* Mobile job header — compact, no card */}
-      <div className="flex items-center justify-between gap-2 sm:hidden">
-        <div className="min-w-0">
-          <h1 className="mono text-base font-bold text-[var(--ink)]">{job.jobNumber}</h1>
-          <p className="truncate text-xs text-[var(--ink-muted)]">
-            {[job.deviceType, job.brand, job.model].filter(v => v && v !== "Unknown").join(" / ")}
-          </p>
-        </div>
-        <div className="flex shrink-0 items-center gap-2">
-          <StatusShareButton jobNumber={job.jobNumber} compact />
-          <JobStatusBadge status={job.status} />
-        </div>
-      </div>
-      {/* Desktop job header — full card */}
-      <div className={`hidden sm:block ${panelShellClass}`}>
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h1 className="text-xl font-semibold">{job.jobNumber}</h1>
-            <p className="text-sm text-[var(--ink-muted)] [overflow-wrap:anywhere]">
-              {job.deviceType}{[job.brand, job.model].filter(v => v && v !== "Unknown").length > 0 ? " / " + [job.brand, job.model].filter(v => v && v !== "Unknown").join(" ") : ""}
-            </p>
+      <div className={panelShellClass}>
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="min-w-0 space-y-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="mono text-xl font-black tracking-tight text-[var(--ink)]">{job.jobNumber}</h1>
+              <JobStatusBadge status={job.status} />
+            </div>
+            <div>
+              <p className="text-lg font-bold leading-snug text-[var(--ink)] [overflow-wrap:anywhere]">{previewText(job.issueDescription, 90)}</p>
+              <p className="mt-1 text-sm text-[var(--ink-muted)] [overflow-wrap:anywhere]">
+                {job.client?.fullName ?? "No client"} · {[job.brand, job.model].filter(v => v && v !== "Unknown").join(" ") || job.deviceType}
+              </p>
+            </div>
+            <div className="grid gap-2 text-xs text-[var(--ink-muted)] sm:grid-cols-3">
+              <span>Technician: <strong className="text-[var(--ink)]">{assignedLabel}</strong></span>
+              <span>Device: <strong className="text-[var(--ink)]">{[job.deviceType, job.brand, job.model].filter(Boolean).join(" / ")}</strong></span>
+              <span>Updated: <strong className="text-[var(--ink)]">{formatUtcDateTime(job.updatedAt)}</strong></span>
+            </div>
           </div>
-          <JobStatusBadge status={job.status} />
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:justify-end">
+            <StatusShareButton jobNumber={job.jobNumber} />
+            {showJobCardAction ? <a href={`/api/jobs/${job.id}/job-card`} target="_blank" rel="noreferrer" className="btn-premium-secondary rounded-lg px-3 py-2 text-center text-xs font-semibold">Print Job Card</a> : null}
+            {showInvoiceAction ? <a href={`/api/jobs/${job.id}/invoice`} target="_blank" rel="noreferrer" className="btn-premium-secondary rounded-lg px-3 py-2 text-center text-xs font-semibold">Generate Invoice</a> : null}
+            {role !== "TECHNICIAN_EXTERNAL" ? <button type="button" onClick={() => router.push(`/jobs/${job.id}/edit`)} className="btn-premium rounded-lg px-3 py-2 text-xs font-semibold">Edit Job</button> : null}
+          </div>
         </div>
       </div>
 
@@ -882,72 +868,26 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
         ))}
       </div>
 
-       <div className="hidden min-[1025px]:block rounded-xl border border-[var(--line)] bg-[var(--panel)] p-3">
-         <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--ink-muted)]">Documents</p>
-         <div className="flex flex-wrap items-center gap-2">
-           {/* Share status link */}
-           <StatusShareButton jobNumber={job.jobNumber} />
-           {showJobCardAction || showQuotationAction || showInvoiceAction ? (
-             <details className="relative">
-               <summary className="btn-premium-secondary inline-flex cursor-pointer list-none items-center justify-center gap-2 rounded-lg px-3 py-1.5 text-[13px] sm:py-2 sm:text-sm">
-                 <span>Open</span>
-                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
-               </summary>
-               <div className="panel-shadow absolute right-0 z-20 mt-2 w-56 overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
-                 <div className="py-1">
-                   {showJobCardAction ? (
-                     <a href={`/api/jobs/${job.id}/job-card`} target="_blank" rel="noreferrer" className="flex w-full items-center gap-2.5 px-4 py-3 text-left text-sm font-medium text-[var(--ink)] transition hover:bg-[var(--panel-strong)]">
-                       Job Card PDF
-                     </a>
-                   ) : null}
-                   {showQuotationAction ? (
-                     <a href={`/api/jobs/${job.id}/quotation`} target="_blank" rel="noreferrer" className="flex w-full items-center gap-2.5 px-4 py-3 text-left text-sm font-medium text-[var(--ink)] transition hover:bg-[var(--panel-strong)]">
-                       Quotation PDF
-                     </a>
-                   ) : null}
-                   {showInvoiceAction ? (
-                     <a href={`/api/jobs/${job.id}/invoice`} target="_blank" rel="noreferrer" className="flex w-full items-center gap-2.5 px-4 py-3 text-left text-sm font-medium text-[var(--ink)] transition hover:bg-[var(--panel-strong)]">
-                       Invoice PDF
-                     </a>
-                   ) : null}
-                 </div>
-               </div>
-             </details>
-           ) : (
-             <p className="text-sm text-[var(--ink-muted)]">No documents available.</p>
-           )}
-         </div>
-         {documentHints.length > 0 ? (
-           <div className="mt-2 space-y-1">
-             {documentHints.map((hint) => (
-               <p key={hint} className="text-xs text-[var(--ink-muted)]">
-                 {hint}
-               </p>
-             ))}
-           </div>
-         ) : null}
-       </div>
-
       {active === "overview" ? (
-        <div className={panelShellClass}>
+        <div className={`${panelShellClass} space-y-4`}>
           <div className="mb-4 space-y-2">
             <p className="text-xs font-semibold uppercase tracking-wide text-[var(--ink-muted)]">Repair Journey</p>
-            <div className="flex flex-wrap gap-2">
+            <div className="grid gap-2 sm:grid-cols-5">
               {stageLabels.map((label, index) => {
                 const isDone = index < currentStageIndex;
                 const isCurrent = index === currentStageIndex;
                 return (
                   <span
                     key={label}
-                    className={`rounded-full border px-3 py-1 text-xs font-medium ${
+                    className={`rounded-xl border px-3 py-2 text-center text-xs font-semibold ${
                       isCurrent
                         ? "border-[var(--accent)] bg-[var(--accent)] text-white"
                         : isDone
-                          ? "border-[var(--accent)]/30 bg-[var(--accent)]/10 text-[var(--accent)]"
+                          ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-600"
                           : "border-[var(--line)] bg-[var(--panel)] text-[var(--ink-muted)]"
                     }`}
                   >
-                    {index + 1}. {label}
+                    {isDone ? "✓ " : isCurrent ? "• " : ""}{label}
                   </span>
                 );
               })}
@@ -960,40 +900,72 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
           </div>
 
           <div className="mb-4 rounded-md border border-[var(--accent)]/30 bg-[var(--accent)]/10 p-3">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--accent)]">Executive Brief</p>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--accent)]">Job Summary</p>
             <p className="mt-1 text-sm text-[var(--ink)] [overflow-wrap:anywhere]">{narrativeBits.join(" ")}</p>
           </div>
 
-          <div className="mb-4">
-            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--ink-muted)]">At a Glance</p>
-            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-              {quickSignals.map((signal) => (
-                <div key={signal.label} className={`rounded-md border px-3 py-2 ${signal.accent}`}>
-                  <p className="text-[11px] uppercase tracking-[0.08em] text-[var(--ink-muted)]">{signal.label}</p>
-                  <p className={`mt-1 text-sm font-medium ${signal.tone} [overflow-wrap:anywhere]`}>{signal.value}</p>
+          <div>
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--ink-muted)]">Quick Overview</p>
+            <div className="grid gap-3 lg:grid-cols-4">
+              {quickOverviewGroups.map((group) => (
+                <div key={group.title} className="rounded-xl border border-[var(--line)] bg-[var(--panel-strong)] p-3">
+                  <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">{group.title}</p>
+                  <dl className="mt-2 space-y-2">
+                    {group.rows.map(([label, value]) => (
+                      <div key={label}>
+                        <dt className="text-[10px] uppercase tracking-[0.08em] text-[var(--ink-muted)]">{label}</dt>
+                        <dd className="mt-0.5 text-sm font-semibold text-[var(--ink)] [overflow-wrap:anywhere]">{value}</dd>
+                      </div>
+                    ))}
+                  </dl>
                 </div>
               ))}
             </div>
           </div>
 
-          <div className={softSectionClass}>
-            <div className="flex flex-wrap items-start justify-between gap-2">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-[var(--ink-muted)]">Intake</p>
-                <p className="mt-1 text-sm text-[var(--ink)] [overflow-wrap:anywhere]">{previewText(job.issueDescription, 260)}</p>
+          <div className="grid gap-3 sm:grid-cols-4">
+            {[
+              ["Client Bill", formatBillAmount(clientBillValue), "text-[var(--ink)]"],
+              ["Amount Paid", formatBillAmount(totalClientPaid), "text-emerald-600"],
+              ["Balance Due", formatBillAmount(clientBalanceDue), clientBalanceDue > 0 ? "text-amber-600" : "text-emerald-600"],
+              ["Payment Status", paymentStatus, paymentStatus === "Paid" ? "text-emerald-600" : paymentStatus === "Overpaid" ? "text-blue-600" : "text-amber-600"],
+            ].map(([label, value, tone]) => (
+              <div key={label} className="rounded-xl border border-[var(--line)] bg-[var(--panel-strong)] p-3">
+                <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">{label}</p>
+                <p className={`mt-1 text-lg font-black ${tone}`}>{value}</p>
               </div>
-              {role !== "TECHNICIAN_EXTERNAL" ? (
-                <button type="button" onClick={() => router.push(`/jobs/${job.id}/edit`)} className="btn-premium-secondary rounded-lg px-3 py-1.5 text-xs">
-                  Edit Job →
-                </button>
-              ) : null}
-            </div>
+            ))}
           </div>
 
-          <div className={`mt-4 ${softSectionClass}`}>
+          <div className="rounded-xl border border-amber-500/20 bg-amber-500/8 p-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-amber-600">Attention Needed</p>
+            {attentionItems.length ? (
+              <div className="mt-2 grid gap-2 md:grid-cols-2">
+                {attentionItems.map((item) => (
+                  <button key={item.label} type="button" onClick={() => setActive(item.tab)} className="rounded-lg border border-amber-500/20 bg-[var(--panel)]/70 p-3 text-left transition hover:border-amber-500/40">
+                    <p className="text-sm font-bold text-[var(--ink)]">{item.label}</p>
+                    <p className="mt-1 text-xs text-[var(--ink-muted)]">{item.action}</p>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <p className="mt-2 text-sm text-[var(--ink-muted)]">No urgent issues detected for this job.</p>
+            )}
+          </div>
+
+          <details className={softSectionClass}>
+            <summary className="cursor-pointer text-xs font-semibold uppercase tracking-wide text-[var(--ink-muted)]">Intake Details</summary>
+            <div className="mt-3 flex flex-wrap items-start justify-between gap-2">
+              <p className="text-sm text-[var(--ink)] [overflow-wrap:anywhere]">{previewText(job.issueDescription, 500)}</p>
+            </div>
+          </details>
+
+          <details className={softSectionClass}>
+            <summary className="cursor-pointer text-xs font-semibold uppercase tracking-wide text-[var(--ink-muted)]">Diagnosis Details</summary>
+            <div className="mt-3">
             <div className="flex flex-wrap items-start justify-between gap-2">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-[var(--ink-muted)]">Diagnosis Snapshot</p>
+                <p className="text-xs font-semibold uppercase tracking-wide text-[var(--ink-muted)]">Diagnosis Summary</p>
                 <p className="mt-1 text-sm text-[var(--ink-muted)]">
                   Assigned:{" "}
                   {job.assignedTo?.name ?? job.oneTimeExternalAssignment?.technicianName ? (
@@ -1017,19 +989,40 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
             {job.partsNeeded ? (
               <p className="mt-2 text-sm text-[var(--ink)] [overflow-wrap:anywhere]">Parts: {previewText(job.partsNeeded, 180)}</p>
             ) : null}
-          </div>
+            </div>
+          </details>
 
-          <div className={`mt-4 ${softSectionClass}`}>
+          <details className={softSectionClass}>
+            <summary className="cursor-pointer text-xs font-semibold uppercase tracking-wide text-[var(--ink-muted)]">Approval Workflow</summary>
+            <div className="mt-3">
             <div className="flex flex-wrap items-start justify-between gap-2">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-[var(--ink-muted)]">Client Approval & Workflow</p>
+                <p className="text-xs font-semibold uppercase tracking-wide text-[var(--ink-muted)]">Approval & Next Steps</p>
                 <p className="mt-1 text-xs text-[var(--ink-muted)]">Decision, recommendation, workflow reason, ETA, and notes.</p>
               </div>
               <button type="button" onClick={() => setActive("timeline")} className="btn-premium-secondary rounded-lg px-3 py-1.5 text-xs">
                 Open Timeline →
               </button>
             </div>
-          </div>
+            </div>
+          </details>
+
+          <details className={softSectionClass}>
+            <summary className="cursor-pointer text-xs font-semibold uppercase tracking-wide text-[var(--ink-muted)]">Timeline</summary>
+            <div className="mt-3"><AuditTimeline items={job.auditLogs.slice(0, 6)} /></div>
+          </details>
+
+          <details className={softSectionClass}>
+            <summary className="cursor-pointer text-xs font-semibold uppercase tracking-wide text-[var(--ink-muted)]">Photos</summary>
+            <p className="mt-3 text-sm text-[var(--ink-muted)]">{job.photos.length} photo(s) attached. Open the Photos tab to upload or review images.</p>
+          </details>
+
+          {visibleTabs.includes("messages") ? (
+            <details className={softSectionClass}>
+              <summary className="cursor-pointer text-xs font-semibold uppercase tracking-wide text-[var(--ink-muted)]">Messages</summary>
+              <p className="mt-3 text-sm text-[var(--ink-muted)]">{inboundMessages.length + outboundMessages.length} message(s), {unreadCount} unread. Open the Messages tab for the full thread.</p>
+            </details>
+          ) : null}
 
           {deviceHistory.length > 0 ? (
             <div className={`mt-4 ${softSectionClass}`}>
@@ -1406,8 +1399,26 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
           }}
           className={`${panelShellClass} space-y-3 [&_*]:min-w-0`}
         >
+          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-8">
+            {[
+              ["Client Bill", formatBillAmount(clientBillValue), "text-[var(--ink)]"],
+              ["Client Paid", formatBillAmount(totalClientPaid), "text-emerald-600"],
+              ["Balance Due", formatBillAmount(clientBalanceDue), clientBalanceDue > 0 ? "text-amber-600" : "text-emerald-600"],
+              ["Technician Cost", formatBillAmount(technicianCost), "text-[var(--ink)]"],
+              ["Technician Paid", formatBillAmount(technicianPaid), "text-emerald-600"],
+              ["Technician Balance", formatBillAmount(technicianBalance), technicianBalance > 0 ? "text-amber-600" : "text-emerald-600"],
+              ["Margin / Profit", formatBillAmount(clientBillValue - technicianCost), clientBillValue - technicianCost >= 0 ? "text-emerald-600" : "text-red-500"],
+              ["Cash Position", formatBillAmount(cashPosition), cashPosition >= 0 ? "text-emerald-600" : "text-red-500"],
+            ].map(([label, value, tone]) => (
+              <div key={label} className="rounded-xl border border-[var(--line)] bg-[var(--panel-strong)] p-3">
+                <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">{label}</p>
+                <p className={`mt-1 text-lg font-black ${tone}`}>{value}</p>
+              </div>
+            ))}
+          </div>
+
           <div className={softSectionClass}>
-            <p className="text-xs font-semibold uppercase tracking-wide text-[var(--ink-muted)]">Billing</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-[var(--ink-muted)]">Billing Setup</p>
             <div className="grid gap-2 sm:grid-cols-2">
               <div>
                 <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">{repairCostLabel}</label>
@@ -1422,7 +1433,7 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
               </div>
               {canManageFinancials ? (
                 <div>
-                  <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">Client bill</label>
+                  <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">Amount Charged to Client</label>
                   <input
                     name="clientBill"
                     type="number"
@@ -1444,23 +1455,26 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
             {canManageFinancials ? (
               <div className="grid grid-cols-3 gap-2 rounded-lg bg-[var(--panel-strong)] p-2 text-center">
                 <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">Pre-VAT</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">Subtotal</p>
                   <p className="mt-0.5 text-sm font-bold text-[var(--ink)]">{formatBillAmount(repairCostBeforeVat)}</p>
                 </div>
                 <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">VAT</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">VAT amount</p>
                   <p className="mt-0.5 text-sm font-bold text-[var(--ink)]">{formatBillAmount(vatAmount)}</p>
                 </div>
                 <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">Total</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">Total Bill</p>
                   <p className="mt-0.5 text-sm font-bold text-[var(--ink)]">{formatBillAmount(clientBillValue)}</p>
                 </div>
               </div>
             ) : null}
             {canManageFinancials ? (
               <p className={`text-xs font-medium [overflow-wrap:anywhere] ${existingMargin === null ? "text-[var(--ink-muted)]" : existingMargin >= 0 ? "text-[var(--accent)]" : "text-red-500"}`}>
-                Margin: {existingMargin === null ? "Set both bills to calculate" : `${existingMargin >= 0 ? "+" : ""}${formatBillAmount(existingMargin)}`}
+                Margin: {existingMargin === null ? "Set both amounts to calculate" : `${existingMargin >= 0 ? "+" : ""}${formatBillAmount(existingMargin)}`}
               </p>
+            ) : null}
+            {clientBillValue > 0 && technicianCost > 0 && clientBillValue < technicianCost ? (
+              <p className="rounded-lg border border-red-500/25 bg-red-500/10 px-3 py-2 text-xs font-semibold text-red-600">Warning: amount charged to client is lower than technician cost.</p>
             ) : null}
             {!canManageFinancials ? (
               <p className="text-xs text-[var(--ink-muted)]">Client billing and payout controls are admin-only.</p>
@@ -1470,16 +1484,16 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
           {/* ── Client payment section ──────────────────────────────────── */}
           {canManageFinancials && typeof job.clientBill === "number" && job.clientBill > 0 ? (
             <div className={softSectionClass}>
-              <p className="text-xs font-semibold uppercase tracking-wide text-[var(--ink-muted)]">Client Payment</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-[var(--ink-muted)]">Client Payments</p>
               <div className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] p-2">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <p className="text-xs text-[var(--ink-muted)]">Payment status</p>
                   <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${job.clientPaid ? "bg-emerald-500 text-white" : "bg-amber-400/20 text-amber-700"}`}>
-                    {job.clientPaid ? "Paid" : "Unpaid"}
+                    {paymentStatus}
                   </span>
                 </div>
                 <p className="mt-1 text-xs text-[var(--ink-muted)]">
-                  Amount: {formatBillAmount(clientBillValue)}
+                  Total paid: {formatBillAmount(totalClientPaid)} · Balance due: {formatBillAmount(clientBalanceDue)}
                 </p>
                 <p className="mt-0.5 text-xs text-[var(--ink-muted)]">
                   {job.clientPaidAt
@@ -1496,7 +1510,7 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
               />
 
               <div className="rounded-lg border border-[var(--line)] bg-[var(--panel)] p-2">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Record payment</p>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Add Payment</p>
                 <form
                   action={(fd) => {
                     fd.set("jobId", job.id);
@@ -1515,7 +1529,7 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
                       router.refresh();
                     });
                   }}
-                  className="mt-2 grid gap-2 sm:grid-cols-[160px_200px_180px_1fr_auto]"
+                  className="mt-2 grid gap-2 lg:grid-cols-[140px_160px_180px_180px_1fr_auto]"
                 >
                   <input
                     name="amount"
@@ -1530,6 +1544,14 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
                     <option value="CARD">CARD</option>
                     <option value="BANK_TRANSFER">BANK TRANSFER</option>
                     <option value="OTHER">OTHER</option>
+                  </select>
+                  <select name="kind" defaultValue="PAYMENT" className={fieldClass}>
+                    <option value="PAYMENT">Payment</option>
+                    <option value="DEPOSIT">Deposit</option>
+                    <option value="PARTIAL">Partial payment</option>
+                    <option value="BALANCE">Balance payment</option>
+                    <option value="REFUND">Refund</option>
+                    <option value="ADJUSTMENT">Adjustment</option>
                   </select>
                   <div className="grid gap-2 sm:grid-cols-2">
                     <select
@@ -1563,33 +1585,38 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
                     disabled={isFinancialPending}
                     className="btn-premium w-full rounded-lg px-3 py-1.5 text-[13px] disabled:opacity-60 sm:w-auto sm:py-2 sm:text-sm"
                   >
-                    Add payment
+                    Add Payment
                   </button>
+                  <textarea name="note" placeholder="Notes (optional)" className={`${fieldClass} min-h-16 lg:col-span-full`} />
+                  <label className="flex items-center gap-2 text-xs text-[var(--ink-muted)] lg:col-span-full">
+                    <input type="checkbox" name="confirmOverpayment" value="true" /> Confirm overpayment/refund/adjustment is intentional
+                  </label>
                 </form>
                 <p className="mt-2 text-xs text-[var(--ink-muted)]">
                   Use this instead of “Mark Paid” so cash-in dashboards stay accurate.
                 </p>
               </div>
 
-              <div className="flex flex-wrap gap-2">
-                <button
-                  type="submit"
-                  name="clientPaid"
-                  value="true"
-                  disabled={isFinancialPending || job.clientPaid === true}
-                  className="btn-premium-success w-full rounded-lg px-3 py-1.5 text-[13px] disabled:opacity-60 sm:w-auto sm:py-2 sm:text-sm"
-                >
-                  Mark Client Paid
-                </button>
-                <button
-                  type="submit"
-                  name="clientPaid"
-                  value="false"
-                  disabled={isFinancialPending || job.clientPaid === false}
-                  className="btn-premium-warning w-full rounded-lg px-3 py-1.5 text-[13px] disabled:opacity-60 sm:w-auto sm:py-2 sm:text-sm"
-                >
-                  Mark Unpaid
-                </button>
+              <div className="overflow-x-auto rounded-lg border border-[var(--line)]">
+                <table className="min-w-full text-left text-xs">
+                  <thead className="bg-[var(--panel-strong)] text-[var(--ink-muted)]">
+                    <tr><th className="px-3 py-2">Date</th><th className="px-3 py-2">Type</th><th className="px-3 py-2">Method</th><th className="px-3 py-2">Amount</th><th className="px-3 py-2">Reference</th><th className="px-3 py-2">Notes</th><th className="px-3 py-2">Recorded by</th></tr>
+                  </thead>
+                  <tbody className="divide-y divide-[var(--line)]">
+                    {clientPayments.length === 0 ? <tr><td className="px-3 py-4 text-[var(--ink-muted)]" colSpan={7}>No client payments recorded yet.</td></tr> : null}
+                    {clientPayments.map((payment) => (
+                      <tr key={payment.id}>
+                        <td className="px-3 py-2">{formatUtcDateTime(payment.receivedAt)}</td>
+                        <td className="px-3 py-2">{prettyEnum(payment.kind)}</td>
+                        <td className="px-3 py-2">{prettyEnum(payment.method)}</td>
+                        <td className="px-3 py-2 font-semibold">{payment.kind === "REFUND" ? "-" : ""}{formatBillAmount(payment.amount)}</td>
+                        <td className="px-3 py-2">{payment.reference ?? "-"}</td>
+                        <td className="px-3 py-2">{payment.note ?? "-"}</td>
+                        <td className="px-3 py-2">{payment.createdBy?.name ?? "-"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
           ) : null}
@@ -1609,21 +1636,18 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
 
           {hasPayoutControls ? (
             <div className={softSectionClass}>
-              <p className="text-xs font-semibold uppercase tracking-wide text-[var(--ink-muted)]">External Technician Payout</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-[var(--ink-muted)]">Technician Payouts</p>
               <div className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] p-2">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <p className="text-xs text-[var(--ink-muted)]">Payout status</p>
                   <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${job.externalPaid ? "bg-[var(--accent)] text-white" : "bg-[var(--accent)]/20 text-[var(--accent)]"}`}>
-                    {job.externalPaid ? "Paid" : "Not paid"}
+                    {technicianPayoutStatus}
                   </span>
                 </div>
                 <p className="mt-1 text-xs text-[var(--ink-muted)]">
-                  External bill: {typeof job.externalTechBill === "number" ? formatBillAmount(job.externalTechBill) : "-"}
+                  Technician cost: {formatBillAmount(technicianCost)}
                   {" | "}
-                  Payout amount: {typeof job.externalTechFee === "number" ? formatBillAmount(job.externalTechFee) : "-"}
-                </p>
-                <p className="mt-1 text-xs text-[var(--ink-muted)]">
-                  {job.externalPaidAt ? `Paid on ${formatUtcDateTime(job.externalPaidAt)}` : "Awaiting payout confirmation"}
+                  Paid: {formatBillAmount(technicianPaid)} · Balance: {formatBillAmount(technicianBalance)}
                 </p>
               </div>
               <input
@@ -1640,11 +1664,50 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
                 placeholder="Payment reference (optional)"
                 className={fieldClass}
               />
-              <p className={`text-xs ${job.externalPaid ? "text-[var(--accent)]" : "text-[var(--accent)]"}`}>
-                {job.externalPaidAt
-                  ? `Paid on ${formatUtcDateTime(job.externalPaidAt)}`
-                  : "Not yet marked as paid"}
-              </p>
+              {technicianCost > 0 && technicianPaid > technicianCost ? (
+                <p className="rounded-lg border border-amber-500/25 bg-amber-500/10 px-3 py-2 text-xs font-semibold text-amber-600">Warning: technician payout is higher than technician cost.</p>
+              ) : null}
+              <div className="rounded-lg border border-[var(--line)] bg-[var(--panel)] p-2">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Record Technician Payout</p>
+                <form
+                  action={(fd) => {
+                    fd.set("jobId", job.id);
+                    startFinancialTransition(async () => {
+                      const res = await recordTechnicianPayoutAction(fd);
+                      if (res.error) { toast.error(res.error); return; }
+                      toast.success("Technician payout recorded");
+                      router.refresh();
+                    });
+                  }}
+                  className="mt-2 grid gap-2 sm:grid-cols-[160px_180px_1fr_auto]"
+                >
+                  <input name="amount" inputMode="decimal" placeholder="Amount" className={fieldClass} required />
+                  <select name="method" defaultValue="CASH" className={fieldClass}>
+                    <option value="CASH">CASH</option>
+                    <option value="MOBILE_MONEY">MOBILE MONEY</option>
+                    <option value="CARD">CARD</option>
+                    <option value="BANK_TRANSFER">BANK TRANSFER</option>
+                    <option value="OTHER">OTHER</option>
+                  </select>
+                  <input name="reference" placeholder="Ref / payout ID (optional)" className={fieldClass} />
+                  <button type="submit" disabled={isFinancialPending} className="btn-premium w-full rounded-lg px-3 py-2 text-sm disabled:opacity-60 sm:w-auto">Record Technician Payout</button>
+                  <textarea name="note" placeholder="Notes (optional)" className={`${fieldClass} min-h-16 sm:col-span-full`} />
+                  <label className="flex items-center gap-2 text-xs text-[var(--ink-muted)] sm:col-span-full">
+                    <input type="checkbox" name="confirmOverpayment" value="true" /> Confirm payout higher than technician cost
+                  </label>
+                </form>
+              </div>
+              <div className="overflow-x-auto rounded-lg border border-[var(--line)]">
+                <table className="min-w-full text-left text-xs">
+                  <thead className="bg-[var(--panel-strong)] text-[var(--ink-muted)]"><tr><th className="px-3 py-2">Date</th><th className="px-3 py-2">Method</th><th className="px-3 py-2">Amount</th><th className="px-3 py-2">Reference</th><th className="px-3 py-2">Notes</th><th className="px-3 py-2">Recorded by</th></tr></thead>
+                  <tbody className="divide-y divide-[var(--line)]">
+                    {technicianPayouts.length === 0 ? <tr><td className="px-3 py-4 text-[var(--ink-muted)]" colSpan={6}>No technician payouts recorded yet.</td></tr> : null}
+                    {technicianPayouts.map((payout) => (
+                      <tr key={payout.id}><td className="px-3 py-2">{formatUtcDateTime(payout.paidAt)}</td><td className="px-3 py-2">{prettyEnum(payout.method)}</td><td className="px-3 py-2 font-semibold">{formatBillAmount(payout.amount)}</td><td className="px-3 py-2">{payout.reference ?? "-"}</td><td className="px-3 py-2">{payout.note ?? "-"}</td><td className="px-3 py-2">{payout.recordedBy?.name ?? "-"}</td></tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
               <div className="flex flex-wrap gap-2">
                 <button
                   type="submit"
@@ -1660,24 +1723,6 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
                   className="btn-premium-secondary w-full rounded-lg px-3 py-1.5 text-[13px] disabled:opacity-60 sm:w-auto sm:py-2 sm:text-sm"
                 >
                   Cancel
-                </button>
-                <button
-                  type="submit"
-                  name="externalPaid"
-                  value="true"
-                  disabled={isFinancialPending || job.externalPaid === true}
-                  className="btn-premium-success w-full rounded-lg px-3 py-1.5 text-[13px] disabled:opacity-60 sm:w-auto sm:py-2 sm:text-sm"
-                >
-                  Mark Paid
-                </button>
-                <button
-                  type="submit"
-                  name="externalPaid"
-                  value="false"
-                  disabled={isFinancialPending || job.externalPaid === false}
-                  className="btn-premium-warning w-full rounded-lg px-3 py-1.5 text-[13px] disabled:opacity-60 sm:w-auto sm:py-2 sm:text-sm"
-                >
-                  Mark Unpaid
                 </button>
               </div>
             </div>

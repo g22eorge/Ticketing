@@ -13,6 +13,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { prisma } from "@/lib/prisma";
+import { resolveTechCost } from "@/lib/billing";
 import { can } from "@/lib/permissions";
 import { hasJobPayoutColumns } from "@/lib/payouts";
 import { sanitizeOptionalText } from "@/lib/sanitize";
@@ -80,8 +81,11 @@ const updateSchema = z.object({
 const recordClientPaymentSchema = z.object({
   jobId: z.string().min(1),
   amount: z.coerce.number().positive(),
+  kind: z.enum(["PAYMENT", "DEPOSIT", "PARTIAL", "BALANCE", "REFUND", "ADJUSTMENT"]).default("PAYMENT"),
   method: z.string().optional(),
   reference: z.string().optional(),
+  note: z.string().optional(),
+  confirmOverpayment: z.enum(["true", "false"]).optional(),
   currency: z.string().optional(),
   exchangeRateToBase: z.preprocess(
     (value) => {
@@ -91,6 +95,15 @@ const recordClientPaymentSchema = z.object({
     },
     z.number().positive().optional(),
   ),
+});
+
+const recordTechnicianPayoutSchema = z.object({
+  jobId: z.string().min(1),
+  amount: z.coerce.number().positive(),
+  method: z.string().optional(),
+  reference: z.string().optional(),
+  note: z.string().optional(),
+  confirmOverpayment: z.enum(["true", "false"]).optional(),
 });
 
 const oneTimeExternalSchema = z.object({
@@ -702,6 +715,7 @@ export async function recordClientPaymentAction(formData: FormData) {
       clientBill: true,
       invoiceNumber: true,
       invoiceIssuedAt: true,
+      externalTechBill: true,
     },
   });
   if (!job) return { error: "Job not found" };
@@ -715,6 +729,7 @@ export async function recordClientPaymentAction(formData: FormData) {
     ? (rawMethod as PaymentMethod)
     : PaymentMethod.OTHER;
   const reference = (payload.reference ?? "").trim();
+  const note = sanitizeOptionalText(payload.note) || null;
 
   // Ensure invoice exists (upsert by jobId). If no invoiceNumber stamped on job yet,
   // generate one using org branding settings.
@@ -750,6 +765,20 @@ export async function recordClientPaymentAction(formData: FormData) {
         select: { id: true, totalAmount: true },
       });
 
+      const existingPayments = await tx.payment.findMany({
+        where: { orgId, invoiceId: invoice.id },
+        select: { amount: true, currency: true, exchangeRateToBase: true, kind: true },
+      });
+      const existingPaidAmount = existingPayments.reduce(
+        (sum, p) => sum + (p.kind === "REFUND" ? -1 : 1) * toBaseAmount({ amount: p.amount, currency: p.currency, baseCurrency, exchangeRateToBase: p.exchangeRateToBase }),
+        0,
+      );
+      const signedAmount = payload.kind === "REFUND" ? -payload.amount : payload.amount;
+      const nextPaidAmount = existingPaidAmount + toBaseAmount({ amount: signedAmount, currency, baseCurrency, exchangeRateToBase });
+      if (nextPaidAmount > invoice.totalAmount && payload.confirmOverpayment !== "true") {
+        throw new Error("This payment will overpay the client bill. Tick confirm overpayment if this is intentional.");
+      }
+
       await tx.payment.create({
         data: {
           orgId,
@@ -759,19 +788,21 @@ export async function recordClientPaymentAction(formData: FormData) {
           exchangeRateToBase,
           amount: payload.amount,
           method: safeMethod,
+          kind: payload.kind,
           reference: reference || null,
+          note,
           createdById: session.user.id,
         },
       });
 
        const payments = await tx.payment.findMany({
-         where: { orgId, invoiceId: invoice.id },
-         select: { amount: true, currency: true, exchangeRateToBase: true },
-       });
-       const paidAmount = payments.reduce(
-         (sum, p) => sum + toBaseAmount({ amount: p.amount, currency: p.currency, baseCurrency, exchangeRateToBase: p.exchangeRateToBase }),
-         0,
-       );
+          where: { orgId, invoiceId: invoice.id },
+          select: { amount: true, currency: true, exchangeRateToBase: true, kind: true },
+        });
+        const paidAmount = payments.reduce(
+          (sum, p) => sum + (p.kind === "REFUND" ? -1 : 1) * toBaseAmount({ amount: p.amount, currency: p.currency, baseCurrency, exchangeRateToBase: p.exchangeRateToBase }),
+          0,
+        );
        const isPaid = invoice.totalAmount > 0 && paidAmount >= invoice.totalAmount;
 
       await tx.invoice.update({
@@ -796,6 +827,16 @@ export async function recordClientPaymentAction(formData: FormData) {
         },
       });
 
+      await tx.auditLog.create({
+        data: {
+          orgId,
+          jobId: job.id,
+          userId: session.user.id,
+          action: "CLIENT_PAYMENT_RECORDED",
+          detail: JSON.stringify({ amount: payload.amount, kind: payload.kind, method: safeMethod, reference: reference || null, paidAmount }),
+        },
+      });
+
       return { paidAmount, isPaid, invoiceNumber };
     });
 
@@ -808,6 +849,73 @@ export async function recordClientPaymentAction(formData: FormData) {
     const message = error instanceof Error ? error.message : "Failed to record payment";
     return { error: message };
   }
+}
+
+export async function recordTechnicianPayoutAction(formData: FormData) {
+  const { session, user, orgId, org } = await requireOrgSession();
+  assertOrgCanMutate({ access: org.access, userRole: user.role, userAccessMode: user.accessMode, kind: "PAYMENT" });
+  const permissionUser = { role: user.role, permissions: user.permissions };
+  if (!(user.role === "ADMIN" || can.reviewExternalBills(permissionUser))) return { error: "Forbidden" };
+
+  const parsed = recordTechnicianPayoutSchema.safeParse(Object.fromEntries(formData.entries()));
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Invalid payout" };
+  const payload = parsed.data;
+
+  const job = await prisma.job.findUnique({
+    where: { id: payload.jobId, orgId },
+    select: { id: true, externalTechBill: true, externalTechFee: true },
+  });
+  if (!job) return { error: "Job not found" };
+
+  const technicianCost = resolveTechCost(job.externalTechFee, job.externalTechBill);
+  const existingPayouts = await prisma.technicianPayout.findMany({ where: { orgId, jobId: job.id }, select: { amount: true } }).catch(() => []);
+  const alreadyPaid = existingPayouts.reduce((sum, p) => sum + p.amount, 0);
+  if (technicianCost > 0 && alreadyPaid + payload.amount > technicianCost && payload.confirmOverpayment !== "true") {
+    return { error: "This payout is higher than the technician cost. Tick confirm overpayment if this is intentional." };
+  }
+
+  const rawMethod = String(payload.method ?? "CASH").trim();
+  const safeMethod: PaymentMethod = (Object.values(PaymentMethod) as string[]).includes(rawMethod)
+    ? (rawMethod as PaymentMethod)
+    : PaymentMethod.OTHER;
+
+  await prisma.$transaction(async (tx) => {
+    await tx.technicianPayout.create({
+      data: {
+        orgId,
+        jobId: job.id,
+        amount: payload.amount,
+        method: safeMethod,
+        reference: sanitizeOptionalText(payload.reference) || null,
+        note: sanitizeOptionalText(payload.note) || null,
+        recordedById: session.user.id,
+      },
+    });
+    const paidTotal = alreadyPaid + payload.amount;
+    await tx.job.update({
+      where: { id: job.id, orgId },
+      data: {
+        externalPaid: technicianCost > 0 && paidTotal >= technicianCost,
+        externalPaidAt: technicianCost > 0 && paidTotal >= technicianCost ? new Date() : null,
+        externalPaidById: technicianCost > 0 && paidTotal >= technicianCost ? session.user.id : null,
+      },
+    });
+    await tx.auditLog.create({
+      data: {
+        orgId,
+        jobId: job.id,
+        userId: session.user.id,
+        action: "TECHNICIAN_PAYOUT_RECORDED",
+        detail: JSON.stringify({ amount: payload.amount, method: safeMethod, technicianCost, paidTotal }),
+      },
+    });
+  });
+
+  revalidatePath(`/jobs/${job.id}`);
+  revalidatePath("/technicians/payouts");
+  revalidatePath("/reports");
+  revalidatePath("/dashboard");
+  return { ok: true };
 }
 
 export async function updateOneTimeExternalAssignmentAction(formData: FormData) {

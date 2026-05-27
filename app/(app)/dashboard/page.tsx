@@ -939,6 +939,14 @@ export default async function DashboardPage({
       receivedToday,
       completedToday,
       receivedMtdCount,
+      cashCollectedToday,
+      expensesToday,
+      overdueJobsCount,
+      jobsNoEtaCount,
+      jobsNoClientUpdateCount,
+      completedUnpaidCount,
+      supplierBillsDueCount,
+      payoutDueJobs,
       // Sales funnel
       leadFunnel,
       // Stock alerts
@@ -995,6 +1003,15 @@ export default async function DashboardPage({
       prisma.job.count({ where: { ...orgFilter, completedAt: { gte: todayStart } } }),
       prisma.job.count({ where: { ...orgFilter, receivedAt: { gte: mtdStart, lte: today } } }),
 
+      prisma.payment.findMany({ where: { ...orgFilter, receivedAt: { gte: todayStart } }, select: { amount: true } }).catch(() => [] as { amount: number }[]),
+      prisma.expense.findMany({ where: { orgId: orgFilter.orgId ?? undefined, paidAt: { gte: todayStart } }, select: { amount: true } }).catch(() => [] as { amount: number }[]),
+      prisma.job.count({ where: { ...orgFilter, status: { in: filterSupportedJobStatuses(["RECEIVED", "DIAGNOSING", "REFERRED", "IN_EXTERNAL_REPAIR", "AWAITING_APPROVAL", "IN_REPAIR", "READY_FOR_PICKUP"]) as JobStatus[] }, receivedAt: { lt: new Date(today.getTime() - 3 * 86_400_000) } } }).catch(() => 0),
+      prisma.job.count({ where: { ...orgFilter, status: { in: filterSupportedJobStatuses(["RECEIVED", "DIAGNOSING", "REFERRED", "IN_EXTERNAL_REPAIR", "AWAITING_APPROVAL", "IN_REPAIR", "READY_FOR_PICKUP"]) as JobStatus[] }, repairTimeline: null } }).catch(() => 0),
+      prisma.job.count({ where: { ...orgFilter, status: { in: filterSupportedJobStatuses(["DIAGNOSING", "REFERRED", "IN_EXTERNAL_REPAIR", "AWAITING_APPROVAL", "IN_REPAIR", "READY_FOR_PICKUP"]) as JobStatus[] }, lastClientContactAt: null } }).catch(() => 0),
+      prisma.job.count({ where: { ...orgFilter, status: "COMPLETED", clientBill: { gt: 0 }, clientPaid: false } }).catch(() => 0),
+      prisma.supplierBill.count({ where: { ...orgFilter, dueAt: { lt: today }, status: { notIn: ["PAID", "CANCELLED"] } } }).catch(() => 0),
+      prisma.job.findMany({ where: { ...orgFilter, repairPath: "EXTERNAL", status: { in: ["COMPLETED", "DELIVERED"] }, externalPaid: false }, select: { externalTechFee: true, externalTechBill: true } }).catch(() => [] as { externalTechFee: number | null; externalTechBill: number | null }[]),
+
       prisma.lead.groupBy({ by: ["status"], where: orgFilter, _count: { status: true } }).catch(() => [] as { status: string; _count: { status: number } }[]),
 
       prisma.part.findMany({
@@ -1043,7 +1060,10 @@ export default async function DashboardPage({
     const totalBankBalance  = bankAccounts.reduce((s, a) => s + a.currentBalance, 0);
     const outstandingValue  = outstandingInvoices.reduce((s, i) => s + i.totalAmount, 0);
     const expensesValue     = expensesMtd.reduce((s, e) => s + e.amount, 0);
+    const cashTodayValue    = cashCollectedToday.reduce((s, p) => s + p.amount, 0);
+    const expensesTodayValue = expensesToday.reduce((s, e) => s + e.amount, 0);
     const payablesValue     = (payablesAgg._sum.totalAmount ?? 0) - (payablesAgg._sum.paidAmount ?? 0);
+    const technicianPayoutsDue = payoutDueJobs.reduce((sum, job) => sum + resolveTechCost(job.externalTechFee, job.externalTechBill), 0);
 
     // Low stock
     const lowStockItems = lowStockParts.filter((p) => p.qtyOnHand <= p.reorderLevel);
@@ -1088,6 +1108,15 @@ export default async function DashboardPage({
       { key: "LOST",          name: "Lost",           color: "text-red-500",       href: "/sales/leads?status=LOST" },
       { key: "STALE",         name: "Stale",          color: "text-[var(--ink-muted)]", href: "/sales/leads?status=STALE" },
     ] as const;
+    const attentionItems = [
+      { label: "Jobs awaiting approval", count: awaitingApprovalCount, href: "/jobs?status=AWAITING_APPROVAL", tone: "text-[var(--accent)]" },
+      { label: "Overdue jobs", count: overdueJobsCount, href: "/jobs?status=RECEIVED,DIAGNOSING,REFERRED,IN_EXTERNAL_REPAIR,AWAITING_APPROVAL,IN_REPAIR,READY_FOR_PICKUP", tone: "text-red-500" },
+      { label: "Jobs with no ETA", count: jobsNoEtaCount, href: "/jobs", tone: "text-amber-600" },
+      { label: "No client update", count: jobsNoClientUpdateCount, href: "/jobs", tone: "text-amber-600" },
+      { label: "Completed but unpaid", count: completedUnpaidCount, href: "/jobs?status=COMPLETED", tone: "text-red-500" },
+      { label: "Low stock items", count: lowStockItems.length, href: "/inventory", tone: "text-amber-600" },
+      { label: "Supplier bills due", count: supplierBillsDueCount, href: "/inventory/supplier-bills", tone: "text-red-500" },
+    ].filter((item) => item.count > 0);
 
     return (
       <div className="space-y-4">
@@ -1099,6 +1128,40 @@ export default async function DashboardPage({
           secondaryHref="/reports"
           secondaryLabel="Reports"
         />
+
+        <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+          {[
+            { label: "Jobs received today", value: String(receivedToday), href: "/jobs?status=RECEIVED", tone: "text-[var(--ink)]" },
+            { label: "Jobs completed today", value: String(completedToday), href: "/jobs?status=COMPLETED", tone: "text-emerald-600" },
+            { label: "Cash collected today", value: formatMoneyCompact(cashTodayValue, currency), href: "/documents/receipts", tone: "text-emerald-600" },
+            { label: "Expenses today", value: formatMoneyCompact(expensesTodayValue, currency), href: "/finance/expenses", tone: "text-red-500" },
+            { label: "Client balances due", value: formatMoneyCompact(outstandingValue, currency), href: "/documents/invoices?status=ISSUED", tone: outstandingValue > 0 ? "text-amber-600" : "text-[var(--ink)]" },
+          ].map((item) => (
+            <Link key={item.label} href={item.href} className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-3 transition hover:-translate-y-[2px]">
+              <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">{item.label}</p>
+              <p className={`mt-1 text-2xl font-black ${item.tone}`}>{item.value}</p>
+            </Link>
+          ))}
+        </section>
+
+        <section className="panel-shadow rounded-xl border border-amber-500/20 bg-amber-500/8 p-4">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-sm font-bold text-[var(--ink)]">Attention Needed</p>
+            <span className="text-xs text-[var(--ink-muted)]">What needs action now</span>
+          </div>
+          {attentionItems.length ? (
+            <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+              {attentionItems.map((item) => (
+                <Link key={item.label} href={item.href} className="rounded-lg border border-amber-500/20 bg-[var(--panel)]/80 p-3 transition hover:border-amber-500/40">
+                  <p className={`text-2xl font-black ${item.tone}`}>{item.count}</p>
+                  <p className="mt-1 text-xs font-semibold text-[var(--ink)]">{item.label}</p>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <p className="mt-2 text-sm text-[var(--ink-muted)]">No urgent issues detected right now.</p>
+          )}
+        </section>
 
         {/* ── 3 Revenue Streams ── */}
         <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
@@ -1183,6 +1246,11 @@ export default async function DashboardPage({
             <p className="mt-0.5 text-[10px] text-[var(--ink-muted)]">costs this month</p>
           </Link>
           <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+            <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Technician Payouts Due</p>
+            <p className={`mt-1.5 text-xl font-bold ${technicianPayoutsDue > 0 ? "text-amber-600" : "text-[var(--ink)]"}`}>{formatMoneyCompact(technicianPayoutsDue, currency)}</p>
+            <p className="mt-0.5 text-[10px] text-[var(--ink-muted)]">external work pending payout</p>
+          </div>
+          <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 sm:col-span-2 xl:col-span-1">
             <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Gross Margin</p>
             <p className={`mt-1.5 text-xl font-bold ${totalMtd - expensesValue >= 0 ? "text-emerald-600" : "text-red-600"}`}>
               {formatMoneyCompact(totalMtd - expensesValue, currency)}

@@ -181,6 +181,7 @@ model User {
   deliveryNotesCreated    DeliveryNote[]           @relation("DeliveryNoteCreatedBy")
   stockTransactions       PartStockTransaction[]   @relation("StockTxnBy")
   paymentsCreated         Payment[]                @relation("PaymentCreatedBy")
+  technicianPayoutsRecorded TechnicianPayout[]      @relation("TechnicianPayoutRecordedBy")
   refundsCreated          Refund[]
   creditNotesCreated      CreditNote[]             @relation("CreditNoteCreatedBy")
   creditNotesReceivedBack CreditNote[]             @relation("CreditNoteReceivedBackBy")
@@ -661,6 +662,7 @@ model Job {
   stockTransactions         PartStockTransaction[]
   quotations                Quotation[]   @relation("JobQuotation")
   fieldVisits               FieldVisit[]  @relation("JobFieldVisits")
+  technicianPayouts         TechnicianPayout[]
 
   invoice    Invoice?
   complaints Complaint[]
@@ -732,6 +734,7 @@ model Payment {
 
   amount     Float
   method     PaymentMethod @default(CASH)
+  kind       String        @default("PAYMENT")
   reference  String?
   receivedAt DateTime      @default(now())
 
@@ -744,6 +747,24 @@ model Payment {
   @@index([orgId, receivedAt])
   @@index([invoiceId])
   @@index([saleId])
+}
+
+model TechnicianPayout {
+  id           String        @id @default(cuid())
+  orgId        String
+  jobId        String
+  job          Job           @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  amount       Float
+  method       PaymentMethod @default(CASH)
+  reference    String?
+  note         String?
+  paidAt       DateTime      @default(now())
+  recordedById String?
+  recordedBy   User?         @relation("TechnicianPayoutRecordedBy", fields: [recordedById], references: [id], onDelete: SetNull)
+  createdAt    DateTime      @default(now())
+
+  @@index([orgId, paidAt])
+  @@index([jobId])
 }
 
 model Refund {
