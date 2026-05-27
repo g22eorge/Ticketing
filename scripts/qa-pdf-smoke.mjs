@@ -18,7 +18,7 @@
 import { PrismaClient } from "@prisma/client";
 
 const BASE_URL = process.env.E2E_BASE_URL ?? "http://127.0.0.1:3000";
-const ADMIN_EMAIL = process.env.SEED_ADMIN_EMAIL ?? process.env.E2E_ADMIN_EMAIL ?? "admin@eagle.local";
+const ADMIN_EMAIL = process.env.SEED_ADMIN_EMAIL ?? process.env.E2E_ADMIN_EMAIL ?? "admin@eagle.tech";
 const ADMIN_PASSWORD = process.env.SEED_PASSWORD ?? process.env.E2E_PASSWORD ?? "Admin123!";
 
 const prisma = new PrismaClient({ log: [] });

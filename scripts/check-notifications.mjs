@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 const base = process.env.SMOKE_BASE_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
-const email = process.env.SMOKE_EMAIL ?? "admin@eagle.local";
+const email = process.env.SMOKE_EMAIL ?? "admin@eagle.tech";
 const password = process.env.SMOKE_PASSWORD ?? "Admin123!";
 
 function cookieHeaderFromSetCookie(setCookieValues) {
