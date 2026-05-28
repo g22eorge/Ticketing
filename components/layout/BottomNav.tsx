@@ -19,192 +19,136 @@ type NavGroup = {
   items: NavItem[];
 };
 
-/* ── icons ── */
-const homeIcon = (
-  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/>
-  </svg>
-);
-const jobsIcon = (
-  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M9 14v6"/><path d="M15 14v6"/><path d="M9 18h6"/>
-  </svg>
-);
-const boardIcon = (
-  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <rect width="18" height="18" x="3" y="3" rx="2"/><path d="M8 7v7"/><path d="M12 7v4"/><path d="M16 7v9"/>
-  </svg>
-);
-const profileIcon = (
-  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 0 0-16 0"/>
-  </svg>
-);
-const moreIcon = (
-  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>
-  </svg>
-);
-const intakeIcon = (
-  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-  </svg>
-);
-const clientsIcon = (
-  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-  </svg>
-);
-const reportsIcon = (
-  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/>
-  </svg>
-);
-const usersIcon = (
-  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/>
-  </svg>
-);
-const brandingIcon = (
-  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
-  </svg>
-);
-const payoutsIcon = (
-  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
-  </svg>
-);
-const inventoryIcon = (
-  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M3 7h18v13H3z"/><path d="M3 7l3-4h12l3 4"/><path d="M9 12h6"/>
-  </svg>
-);
-const messagesIcon = (
-  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-  </svg>
-);
-const notificationsIcon = (
-  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M15 17h5l-1.4-1.4A2 2 0 0 1 18 14.2V11a6 6 0 1 0-12 0v3.2a2 2 0 0 1-.6 1.4L4 17h5"/>
-    <path d="M9 17a3 3 0 0 0 6 0"/>
-  </svg>
-);
-const invoiceIcon = (
-  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-    <path d="M14 2v6h6"/>
-    <path d="M8 13h8"/>
-    <path d="M8 17h5"/>
-  </svg>
-);
+/* ────────────────────────────── icons ──────────────────────────────────── */
 
-/* ── named items ── */
+function Icon({ d, size = 22, children }: { d: string | string[]; size?: number; children?: React.ReactNode }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      {(Array.isArray(d) ? d : d ? [d] : []).map((path, i) => <path key={i} d={path} />)}
+      {children}
+    </svg>
+  );
+}
+
+const homeIcon      = <Icon d={["m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z","M9 22V12h6v10"]} />;
+const intakeIcon    = <Icon d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />;
+const jobsIcon      = <Icon d={["M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2","M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2","M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2","M9 14l2 2 4-4"]} />;
+const boardIcon     = <Icon d={["M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2","M23 21v-2a4 4 0 0 0-3-3.87","M16 3.13a4 4 0 0 1 0 7.75"]}><circle cx="9" cy="7" r="4" /></Icon>;
+const moreIcon      = <Icon d="" size={22}><circle cx="5" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.2" fill="currentColor" stroke="none"/></Icon>;
+const clientsIcon   = <Icon d={["M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2","M22 21v-2a4 4 0 0 0-3-3.87","M16 3.13a4 4 0 0 1 0 7.75"]}><circle cx="9" cy="7" r="4" /></Icon>;
+const reportsIcon   = <Icon d={["M3 3v18h18","m19 9-5 5-4-4-3 3"]} />;
+const inventoryIcon = <Icon d={["M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z","M3.27 6.96 12 12.01l8.73-5.05","M12 22.08V12"]} />;
+const posIcon       = <Icon d={["M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z","M3 6h18","M16 10a4 4 0 0 1-8 0"]} />;
+const payoutsIcon   = <Icon d={["M12 2v20","M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"]} />;
+const docIcon       = <Icon d={["M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z","M14 2v6h6","M8 13h8","M8 17h5"]} />;
+const expensesIcon  = <Icon d={["M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm-8 2a2 2 0 1 1-4 0 2 2 0 0 1 4 0Z"]} />;
+const fieldIcon     = <Icon d={["M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"]}><circle cx="12" cy="10" r="3" /></Icon>;
+const complaintsIcon = <Icon d={["M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z","M12 9v4","M12 17h.01"]} />;
+const salesIcon     = <Icon d={["M22 12h-4l-3 9L9 3l-3 9H2"]} />;
+const aiIcon        = <Icon d={["M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 0 2h-1v1a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-1H1a1 1 0 0 1 0-2h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2z","M7.5 13.5c.83 0 1.5-.67 1.5-1.5S8.33 10.5 7.5 10.5 6 11.17 6 12s.67 1.5 1.5 1.5z","M16.5 13.5c.83 0 1.5-.67 1.5-1.5s-.67-1.5-1.5-1.5S15 11.17 15 12s.67 1.5 1.5 1.5z"]} />;
+const targetsIcon   = <Icon d="" size={22}><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="5" /><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/></Icon>;
+
+/* ─────────────────────────── named items ──────────────────────────────── */
 const ITEMS = {
-  dashboard:   { href: "/dashboard",            label: "Home",      icon: homeIcon },
-  jobs:        { href: "/jobs",                  label: "Queue",     icon: jobsIcon },
-  board:       { href: "/technicians",           label: "Techs",     icon: boardIcon },
-  intake:      { href: "/intake",                label: "Intake",    icon: intakeIcon },
-  clients:     { href: "/clients",               label: "Clients",   icon: clientsIcon },
-  reports:     { href: "/reports",               label: "Reports",   icon: reportsIcon },
-  aiInsights:  { href: "/ai-insights",           label: "AI Insights", icon: reportsIcon },
-  pos:         { href: "/pos",                   label: "POS",       icon: invoiceIcon },
-  inventory:   { href: "/inventory",             label: "Inventory", icon: inventoryIcon },
-  payoutFollowups: { href: "/payout-followups",  label: "Payments", icon: payoutsIcon },
-  payouts:     { href: "/technicians/payouts",   label: "Payouts",   icon: payoutsIcon },
-  jobCards:    { href: "/documents/job-cards",   label: "Job Cards",  icon: invoiceIcon },
-  quotations:  { href: "/documents/quotations",  label: "Quotes",    icon: invoiceIcon },
-  invoiceDocs: { href: "/documents/invoices",    label: "Invoices",  icon: invoiceIcon },
-  receipts:    { href: "/documents/receipts",    label: "Receipts",  icon: invoiceIcon },
-  deliveryNotes:{ href: "/documents/delivery-notes", label: "Delivery", icon: invoiceIcon },
-  creditNotes:  { href: "/documents/credit-notes",   label: "Credit Notes", icon: invoiceIcon },
-  refunds:      { href: "/documents/refunds",        label: "Refunds",      icon: invoiceIcon },
-  cashierShifts:{ href: "/pos/shifts",               label: "Shifts",       icon: invoiceIcon },
-  expenses:     { href: "/finance/expenses",         label: "Expenses",     icon: invoiceIcon },
-  taxRates:     { href: "/finance/tax-rates",        label: "Tax Rates",    icon: invoiceIcon },
-  recurring:    { href: "/finance/recurring",        label: "Recurring",    icon: invoiceIcon },
+  dashboard:      { href: "/dashboard",                 label: "Home",         icon: homeIcon      },
+  jobs:           { href: "/jobs",                      label: "Queue",        icon: jobsIcon      },
+  board:          { href: "/technicians",               label: "Techs",        icon: boardIcon     },
+  intake:         { href: "/intake",                    label: "Intake",       icon: intakeIcon    },
+  clients:        { href: "/clients",                   label: "Clients",      icon: clientsIcon   },
+  reports:        { href: "/reports",                   label: "Reports",      icon: reportsIcon   },
+  aiInsights:     { href: "/ai-insights",               label: "AI Insights",  icon: aiIcon        },
+  pos:            { href: "/pos",                       label: "POS",          icon: posIcon       },
+  inventory:      { href: "/inventory",                 label: "Inventory",    icon: inventoryIcon },
+  payoutFollowups:{ href: "/payout-followups",          label: "Payments",     icon: payoutsIcon   },
+  payouts:        { href: "/technicians/payouts",       label: "Payouts",      icon: payoutsIcon   },
+  jobCards:       { href: "/documents/job-cards",       label: "Job Cards",    icon: docIcon       },
+  quotations:     { href: "/documents/quotations",      label: "Quotes",       icon: docIcon       },
+  invoiceDocs:    { href: "/documents/invoices",        label: "Invoices",     icon: docIcon       },
+  receipts:       { href: "/documents/receipts",        label: "Receipts",     icon: docIcon       },
+  deliveryNotes:  { href: "/documents/delivery-notes",  label: "Delivery",     icon: docIcon       },
+  creditNotes:    { href: "/documents/credit-notes",    label: "Credit Notes", icon: docIcon       },
+  refunds:        { href: "/documents/refunds",         label: "Refunds",      icon: docIcon       },
+  cashierShifts:  { href: "/pos/shifts",                label: "Shifts",       icon: posIcon       },
+  expenses:       { href: "/finance/expenses",          label: "Expenses",     icon: expensesIcon  },
+  taxRates:       { href: "/finance/tax-rates",         label: "Tax Rates",    icon: docIcon       },
+  recurring:      { href: "/finance/recurring",         label: "Recurring",    icon: payoutsIcon   },
+  sales:          { href: "/sales",                     label: "Sales",        icon: salesIcon     },
+  field:          { href: "/field",                     label: "Field",        icon: fieldIcon     },
+  complaints:     { href: "/complaints",                label: "Complaints",   icon: complaintsIcon},
+  targets:        { href: "/targets",                   label: "Targets",      icon: targetsIcon   },
 } satisfies Record<string, NavItem>;
 
-/* ── module guard ── */
+/* ───────────────────────── module guard ──────────────────────────────── */
 const hrefModule: Record<string, string> = {
   "/jobs": "JOBS", "/intake": "JOBS", "/technicians": "JOBS",
   "/clients": "JOBS", "/payout-followups": "JOBS",
   "/complaints": "COMPLAINTS", "/field": "FIELD",
-  "/inventory": "INVENTORY",
-  "/pos": "POS",
-  "/procurement": "PURCHASE_ORDERS",
+  "/inventory": "INVENTORY", "/pos": "POS",
   "/documents/job-cards": "INVOICING", "/documents/quotations": "INVOICING",
   "/documents/invoices": "INVOICING", "/documents/receipts": "INVOICING",
   "/documents/delivery-notes": "INVOICING", "/documents/credit-notes": "INVOICING",
   "/documents/refunds": "INVOICING", "/pos/shifts": "POS",
-  "/reports": "REPORTS", "/ai-insights": "REPORTS", "/sales": "SALES", "/targets": "TARGETS",
+  "/reports": "REPORTS", "/ai-insights": "REPORTS",
+  "/sales": "SALES", "/targets": "TARGETS",
 };
 
-/* ── role-based nav config ── */
-function getPrimaryItems(role: Role, permissions: string[], enabledModules?: Set<string>): NavItem[] {
-  const permUser = { role, permissions };
-  const allowed = (href: string) => !enabledModules || !hrefModule[href] || enabledModules.has(hrefModule[href]);
-
-  if (role === "TECHNICIAN_EXTERNAL" || !can.viewIntake(permUser)) {
-    return [ITEMS.dashboard, ITEMS.jobs, ITEMS.board].filter((i) => allowed(i.href));
+/* ─────────────────── role-based nav config ─────────────────────────── */
+function getPrimaryItems(role: Role, permissions: string[], mods?: Set<string>): NavItem[] {
+  const perm = { role, permissions };
+  const ok   = (href: string) => !mods || !hrefModule[href] || mods.has(hrefModule[href]);
+  if (role === "TECHNICIAN_EXTERNAL" || !can.viewIntake(perm)) {
+    return [ITEMS.dashboard, ITEMS.jobs, ITEMS.board].filter((i) => ok(i.href));
   }
-  return [ITEMS.dashboard, ITEMS.intake, ITEMS.jobs].filter((i) => allowed(i.href));
+  return [ITEMS.dashboard, ITEMS.intake, ITEMS.jobs].filter((i) => ok(i.href));
 }
 
-function getMoreGroups(role: Role, permissions: string[], enabledModules?: Set<string>): NavGroup[] {
-  const permUser = { role, permissions };
-  const moduleAllowed = (href: string) => !enabledModules || !hrefModule[href] || enabledModules.has(hrefModule[href]);
-  const allow = (href: string) => {
-    if (!moduleAllowed(href)) return false;
-    if (href === ITEMS.clients.href) return can.viewClientInfo(permUser);
-    if (href === ITEMS.reports.href) return can.viewAccountsSummary(permUser);
-    if (href === ITEMS.aiInsights.href) return can.viewAccountsSummary(permUser);
-    if (href === ITEMS.pos.href) return ["ADMIN", "OPS", "FRONT_DESK"].includes(role);
-    if (href === ITEMS.invoiceDocs.href) return can.viewFinancials(permUser);
-    if (href === ITEMS.quotations.href) return can.viewFinancials(permUser) || role === "TECHNICIAN_INTERNAL";
-    if (href === ITEMS.jobCards.href) return can.generateJobCards(permUser);
-    if (href === ITEMS.receipts.href) return can.viewFinancials(permUser);
-    if (href === ITEMS.deliveryNotes.href) return can.viewFinancials(permUser) || ["OPS", "FRONT_DESK", "ADMIN"].includes(role);
-    if (href === ITEMS.creditNotes.href) return can.viewFinancials(permUser);
-    if (href === ITEMS.refunds.href) return can.viewFinancials(permUser);
-    if (href === ITEMS.cashierShifts.href) return ["ADMIN", "MANAGER", "OPS", "FINANCE", "FRONT_DESK"].includes(role);
-    if (href === ITEMS.expenses.href) return can.viewFinancials(permUser);
-    if (href === ITEMS.taxRates.href) return ["ADMIN", "MANAGER"].includes(role);
-    if (href === ITEMS.recurring.href) return can.viewFinancials(permUser);
-    if (href === ITEMS.payoutFollowups.href) return can.reviewExternalBills(permUser) || can.approveInvoices(permUser);
-    if (href === ITEMS.inventory.href) return ["ADMIN", "OPS", "TECHNICIAN_INTERNAL"].includes(role);
-    if (href === ITEMS.board.href) return role !== "TECHNICIAN_EXTERNAL";
-    return true;
+function getMoreGroups(role: Role, permissions: string[], mods?: Set<string>): NavGroup[] {
+  const perm = { role, permissions };
+  const modOk = (href: string) => !mods || !hrefModule[href] || mods.has(hrefModule[href]);
+  const allow = (href: string): boolean => {
+    if (!modOk(href)) return false;
+    switch (href) {
+      case ITEMS.clients.href:        return can.viewClientInfo(perm);
+      case ITEMS.reports.href:        return can.viewAccountsSummary(perm);
+      case ITEMS.aiInsights.href:     return can.viewAccountsSummary(perm);
+      case ITEMS.pos.href:            return ["ADMIN","OPS","FRONT_DESK","MANAGER"].includes(role);
+      case ITEMS.cashierShifts.href:  return ["ADMIN","MANAGER","OPS","FINANCE","FRONT_DESK"].includes(role);
+      case ITEMS.invoiceDocs.href:
+      case ITEMS.receipts.href:
+      case ITEMS.creditNotes.href:
+      case ITEMS.refunds.href:
+      case ITEMS.expenses.href:
+      case ITEMS.recurring.href:      return can.viewFinancials(perm);
+      case ITEMS.quotations.href:     return can.viewFinancials(perm) || role === "TECHNICIAN_INTERNAL";
+      case ITEMS.jobCards.href:       return can.generateJobCards(perm);
+      case ITEMS.deliveryNotes.href:  return can.viewFinancials(perm) || ["OPS","FRONT_DESK","ADMIN"].includes(role);
+      case ITEMS.taxRates.href:       return ["ADMIN","MANAGER"].includes(role);
+      case ITEMS.payoutFollowups.href:return can.reviewExternalBills(perm) || can.approveInvoices(perm);
+      case ITEMS.inventory.href:      return ["ADMIN","OPS","TECHNICIAN_INTERNAL","MANAGER"].includes(role);
+      case ITEMS.board.href:          return role !== "TECHNICIAN_EXTERNAL";
+      case ITEMS.sales.href:          return can.createLeads(perm);
+      case ITEMS.field.href:          return can.manageFieldVisits(perm);
+      case ITEMS.complaints.href:     return modOk("/complaints");
+      case ITEMS.targets.href:        return can.viewTeamTargets(perm);
+      default: return true;
+    }
   };
 
   const groups: NavGroup[] = [
-    {
-      title: "Documents",
-      items: [ITEMS.jobCards, ITEMS.quotations, ITEMS.invoiceDocs, ITEMS.receipts, ITEMS.deliveryNotes, ITEMS.creditNotes, ITEMS.refunds],
-    },
-    {
-      title: "Operations",
-      items: [ITEMS.clients, ITEMS.inventory, ITEMS.payoutFollowups, ITEMS.board],
-    },
-    {
-      title: "Management",
-      items: [ITEMS.reports, ITEMS.aiInsights, ITEMS.pos, ITEMS.cashierShifts],
-    },
-    {
-      title: "Finance",
-      items: [ITEMS.expenses, ITEMS.recurring, ITEMS.taxRates],
-    },
+    { title: "Customers",  items: [ITEMS.clients, ITEMS.sales, ITEMS.complaints] },
+    { title: "Documents",  items: [ITEMS.jobCards, ITEMS.quotations, ITEMS.invoiceDocs, ITEMS.receipts, ITEMS.deliveryNotes, ITEMS.creditNotes, ITEMS.refunds] },
+    { title: "Operations", items: [ITEMS.inventory, ITEMS.field, ITEMS.payoutFollowups, ITEMS.board] },
+    { title: "Sales",      items: [ITEMS.pos, ITEMS.cashierShifts, ITEMS.targets] },
+    { title: "Finance",    items: [ITEMS.expenses, ITEMS.recurring, ITEMS.taxRates] },
+    { title: "Analytics",  items: [ITEMS.reports, ITEMS.aiInsights] },
   ];
 
   return groups
-    .map((group) => ({
-      ...group,
-      items: group.items.filter((item) => allow(item.href)),
-    }))
-    .filter((group) => group.items.length > 0);
+    .map((g) => ({ ...g, items: g.items.filter((i) => allow(i.href)) }))
+    .filter((g) => g.items.length > 0);
 }
 
+/* ═══════════════════════════ BottomNav ════════════════════════════════ */
 export function BottomNav({
   role,
   permissions = [],
@@ -223,10 +167,10 @@ export function BottomNav({
     complaints?: number;
   };
 }) {
-  const pathname = usePathname();
-  const router = useRouter();
-  const [open, setOpen] = useState(false);
-  const [isSigningOut, setIsSigningOut] = useState(false);
+  const pathname      = usePathname();
+  const router        = useRouter();
+  const [open, setOpen]         = useState(false);
+  const [isSigningOut, setSO]   = useState(false);
 
   const primaryItems = getPrimaryItems(role, permissions, enabledModules);
   const moreGroups   = getMoreGroups(role, permissions, enabledModules);
@@ -235,144 +179,198 @@ export function BottomNav({
   const isActive = (href: string) =>
     pathname === href || (href !== "/dashboard" && pathname.startsWith(href));
 
-  const anyExtraActive = moreGroups.some((group) => group.items.some((item) => isActive(item.href)));
+  const anyExtraActive = moreGroups.some((g) => g.items.some((i) => isActive(i.href)));
+
+  const getBadge = (href: string): number | undefined => {
+    if (href === "/jobs")     return badges?.receivedJobs ?? badges?.jobs;
+    if (href === "/intake")   return badges?.pendingRequests;
+    return undefined;
+  };
+  const getMoreBadge = (href: string): number | undefined => {
+    if (href === "/inventory")       return badges?.inventory;
+    if (href === "/payout-followups")return badges?.paymentFollowups;
+    if (href === "/complaints")      return badges?.complaints;
+    return undefined;
+  };
 
   return (
     <>
-      <nav className="mobile-bottom-nav glass fixed inset-x-0 bottom-0 z-40 border-t border-[var(--line)] bg-[var(--panel)]/95 backdrop-blur-md lg:hidden">
-        <div className="mx-auto flex max-w-lg items-center justify-around px-1 pt-1 pb-[max(env(safe-area-inset-bottom),0.375rem)]">
+      {/* ── The bar ──────────────────────────────────────────────────── */}
+      <nav
+        aria-label="Primary navigation"
+        className="fixed inset-x-0 bottom-0 z-40 border-t border-[var(--line)] bg-[var(--panel)]/96 backdrop-blur-xl lg:hidden"
+      >
+        {/* Safe-area padding + content */}
+        <div
+          className="mx-auto flex max-w-lg items-end justify-around px-1"
+          style={{ paddingBottom: "max(env(safe-area-inset-bottom), 6px)", paddingTop: "6px" }}
+        >
           {primaryItems.map((item) => {
             const active = isActive(item.href);
-            const jobsCount =
-              item.href === "/jobs"
-                ? (badges?.receivedJobs ?? badges?.jobs)
-                : item.href === "/intake"
-                  ? badges?.pendingRequests
-                  : undefined;
+            const badge  = getBadge(item.href);
             return (
               <Link
                 key={item.href}
                 href={item.href}
                 onClick={() => setOpen(false)}
-                className={`flex min-w-0 flex-1 flex-col items-center gap-0.5 py-1 text-[10px] font-semibold transition-colors ${
-                  active ? "text-[var(--accent)]" : "text-[var(--ink-muted)] hover:text-[var(--ink)]"
-                }`}
+                className="flex min-w-0 flex-1 flex-col items-center gap-0.5"
+                aria-current={active ? "page" : undefined}
               >
-                <span className={`relative flex items-center justify-center rounded-xl px-4 py-1 transition-all duration-200 ${
+                {/* Icon container */}
+                <span className={`relative flex h-9 w-9 items-center justify-center rounded-2xl transition-all duration-200 ${
                   active
-                    ? "bg-[var(--accent)]/12 shadow-[0_1px_3px_rgba(212,175,55,0.15)]"
-                    : "bg-transparent"
+                    ? "bg-[var(--accent)]/15 text-[var(--accent)]"
+                    : "text-[var(--ink-muted)] hover:text-[var(--ink)]"
                 }`}>
                   {item.icon}
-                  {typeof jobsCount === "number" && jobsCount > 0 ? (
-                    <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--accent)] px-1 text-[9px] font-bold leading-none text-black">
-                      {jobsCount > 99 ? "99+" : jobsCount}
+                  {typeof badge === "number" && badge > 0 && (
+                    <span className="absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[var(--accent)] px-1 text-[9px] font-black leading-none text-black">
+                      {badge > 99 ? "99+" : badge}
                     </span>
-                  ) : null}
+                  )}
                 </span>
-                <span className={`tracking-wide ${active ? "font-bold" : ""}`}>{item.label}</span>
+                {/* Label */}
+                <span className={`text-[10px] leading-none tracking-wide ${
+                  active
+                    ? "font-bold text-[var(--accent)]"
+                    : "font-medium text-[var(--ink-muted)]"
+                }`}>
+                  {item.label}
+                </span>
+                {/* Active underline pip */}
+                <span className={`mt-0.5 h-0.5 w-4 rounded-full transition-all duration-200 ${
+                  active ? "bg-[var(--accent)]" : "bg-transparent"
+                }`} />
               </Link>
             );
           })}
 
+          {/* More button */}
           {hasExtra && (
             <button
               type="button"
               onClick={() => setOpen(true)}
-              className={`flex min-w-0 flex-1 flex-col items-center gap-0.5 py-1 text-[10px] font-semibold transition-colors ${
-                anyExtraActive ? "text-[var(--accent)]" : "text-[var(--ink-muted)] hover:text-[var(--ink)]"
-              }`}
+              className="flex min-w-0 flex-1 flex-col items-center gap-0.5"
+              aria-expanded={open}
+              aria-label="More navigation"
             >
-              <span className={`flex items-center justify-center rounded-xl px-4 py-1 transition-all duration-200 ${
+              <span className={`flex h-9 w-9 items-center justify-center rounded-2xl transition-all duration-200 ${
                 anyExtraActive
-                  ? "bg-[var(--accent)]/12 shadow-[0_1px_3px_rgba(212,175,55,0.15)]"
-                  : "bg-transparent"
+                  ? "bg-[var(--accent)]/15 text-[var(--accent)]"
+                  : "text-[var(--ink-muted)] hover:text-[var(--ink)]"
               }`}>
                 {moreIcon}
               </span>
-              <span className={`tracking-wide ${anyExtraActive ? "font-bold" : ""}`}>More</span>
+              <span className={`text-[10px] leading-none tracking-wide ${
+                anyExtraActive ? "font-bold text-[var(--accent)]" : "font-medium text-[var(--ink-muted)]"
+              }`}>
+                More
+              </span>
+              <span className={`mt-0.5 h-0.5 w-4 rounded-full transition-all duration-200 ${
+                anyExtraActive ? "bg-[var(--accent)]" : "bg-transparent"
+              }`} />
             </button>
           )}
-
         </div>
       </nav>
 
+      {/* ── More drawer ──────────────────────────────────────────────── */}
       {open && (
         <>
+          {/* Scrim */}
           <div
-            className="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm lg:hidden"
+            className="fixed inset-0 z-40 bg-black/40 backdrop-blur-[2px] lg:hidden"
             onClick={() => setOpen(false)}
+            aria-hidden="true"
           />
-          <div className="fixed inset-x-0 bottom-16 z-50 mx-auto max-h-[76vh] max-w-sm overflow-hidden rounded-t-2xl border border-[var(--line)] bg-[var(--panel)] shadow-[0_-8px_40px_rgba(0,0,0,0.14)] lg:hidden">
-            {/* Drag handle */}
-            <div className="mx-auto mt-2.5 h-1 w-10 rounded-full bg-[var(--line)]" />
 
-            <div className="flex items-center justify-between px-4 pb-2 pt-3">
-              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]">More</p>
+          {/* Sheet */}
+          <div
+            role="dialog"
+            aria-label="More options"
+            className="fixed inset-x-0 bottom-0 z-50 mx-auto max-h-[82vh] max-w-md overflow-hidden rounded-t-3xl border-t border-[var(--line)] bg-[var(--panel)] shadow-[0_-12px_48px_rgba(0,0,0,0.18)] lg:hidden"
+          >
+            {/* Drag handle */}
+            <div className="flex justify-center pb-1 pt-3">
+              <span className="h-1 w-9 rounded-full bg-[var(--line)]" />
+            </div>
+
+            {/* Sheet header */}
+            <div className="flex items-center justify-between px-5 pb-3">
+              <p className="text-[13px] font-bold text-[var(--ink)]">Navigation</p>
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                className="rounded-full border border-[var(--line)] bg-[var(--panel-strong)] p-1.5 text-[var(--ink-muted)] transition hover:bg-[var(--line)]"
+                className="flex h-7 w-7 items-center justify-center rounded-full border border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)] transition hover:bg-[var(--panel-strong)]/80"
+                aria-label="Close"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M18 6 6 18M6 6l12 12"/>
                 </svg>
               </button>
             </div>
 
-            <div className="max-h-[calc(76vh-64px)] overflow-y-auto px-4 pb-6">
-              <div className="grid grid-cols-2 gap-2">
-                {moreGroups.flatMap((group) =>
-                  group.items.map((item) => {
-                    const active = isActive(item.href);
-                    const moreBadge =
-                      item.href === "/inventory"
-                        ? badges?.inventory
-                        : item.href === "/payout-followups"
-                          ? badges?.paymentFollowups
-                          : undefined;
-                    return (
-                      <Link
-                        key={item.href}
-                        href={item.href}
-                        onClick={() => setOpen(false)}
-                        className={`flex items-center gap-2.5 rounded-xl border px-3 py-3 text-[12px] font-semibold transition-all ${
-                          active
-                            ? "border-[var(--accent)]/40 bg-[var(--accent)]/10 text-[#9A7A00] shadow-[0_1px_4px_rgba(212,175,55,0.12)]"
-                            : "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink)] hover:border-[var(--accent)]/25 active:scale-[0.97]"
-                        }`}
-                      >
-                        <span className={`shrink-0 ${active ? "text-[var(--accent)]" : "text-[var(--ink-muted)]"}`}>{item.icon}</span>
-                        <span className="truncate">{item.label}</span>
-                        {typeof moreBadge === "number" && moreBadge > 0 ? (
-                          <span className="ml-auto shrink-0 rounded-full border border-[var(--line)] bg-[var(--panel)] px-1.5 py-0.5 text-[10px] font-semibold text-[var(--ink-muted)]">
-                            {moreBadge > 99 ? "99+" : moreBadge}
-                          </span>
-                        ) : null}
-                      </Link>
-                    );
-                  })
-                )}
+            {/* Scrollable content */}
+            <div className="max-h-[calc(82vh-80px)] overflow-y-auto px-4 pb-8">
+              <div className="space-y-4">
+                {moreGroups.map((group) => (
+                  <div key={group.title}>
+                    {/* Group header */}
+                    <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]/70">
+                      {group.title}
+                    </p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {group.items.map((item) => {
+                        const active = isActive(item.href);
+                        const moreBadge = getMoreBadge(item.href);
+                        return (
+                          <Link
+                            key={item.href}
+                            href={item.href}
+                            onClick={() => setOpen(false)}
+                            aria-current={active ? "page" : undefined}
+                            className={`relative flex items-center gap-2.5 rounded-2xl border px-3 py-3 text-[12px] font-semibold transition-all active:scale-[0.97] ${
+                              active
+                                ? "border-[var(--accent)]/35 bg-[var(--accent)]/10 text-[var(--accent)] shadow-[0_1px_6px_rgba(212,175,55,0.14)]"
+                                : "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink)] hover:border-[var(--accent)]/20 hover:bg-[var(--panel)]"
+                            }`}
+                          >
+                            <span className={`shrink-0 ${active ? "text-[var(--accent)]" : "text-[var(--ink-muted)]"}`}>
+                              {item.icon}
+                            </span>
+                            <span className="truncate leading-snug">{item.label}</span>
+                            {typeof moreBadge === "number" && moreBadge > 0 && (
+                              <span className="absolute right-2.5 top-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--accent)] px-1 text-[9px] font-black leading-none text-black">
+                                {moreBadge > 99 ? "99+" : moreBadge}
+                              </span>
+                            )}
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
               </div>
 
+              {/* Sign out */}
               <button
                 type="button"
                 disabled={isSigningOut}
                 onClick={async () => {
-                  setIsSigningOut(true);
+                  setSO(true);
                   const result = await authClient.signOut();
                   if (result.error) {
                     toast.error(result.error.message || "Sign out failed");
-                    setIsSigningOut(false);
+                    setSO(false);
                     return;
                   }
                   setOpen(false);
                   router.push("/login");
                   router.refresh();
                 }}
-                className="mt-3 flex w-full items-center gap-2.5 rounded-xl border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-3 text-[12px] font-semibold text-[var(--ink-muted)] transition hover:border-red-200 hover:bg-red-50 hover:text-red-600 disabled:opacity-50 active:scale-[0.98]"
+                className="mt-4 flex w-full items-center gap-3 rounded-2xl border border-[var(--line)] bg-[var(--panel-strong)] px-4 py-3 text-[12px] font-semibold text-[var(--ink-muted)] transition hover:border-red-400/30 hover:bg-red-500/10 hover:text-red-600 disabled:opacity-50 active:scale-[0.98] dark:hover:text-red-400"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/>
                 </svg>
                 {isSigningOut ? "Signing out…" : "Sign out"}
@@ -384,3 +382,4 @@ export function BottomNav({
     </>
   );
 }
+
