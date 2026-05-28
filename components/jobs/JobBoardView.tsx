@@ -15,11 +15,11 @@ type BoardCol = {
 };
 
 const COLUMNS: BoardCol[] = [
-  { key: "RECEIVED",          label: "Received",          dot: "bg-blue-500",    strip: "bg-blue-500",    badge: "bg-blue-100 text-blue-700",    text: "text-blue-700" },
-  { key: "DIAGNOSING",        label: "Diagnosing",        dot: "bg-amber-500",   strip: "bg-amber-500",   badge: "bg-amber-100 text-amber-700",   text: "text-amber-700" },
-  { key: "REFERRED",          label: "Referred",          dot: "bg-purple-500",  strip: "bg-purple-500",  badge: "bg-purple-100 text-purple-700",  text: "text-purple-700" },
-  { key: "AWAITING_APPROVAL", label: "Awaiting Approval", dot: "bg-orange-500",  strip: "bg-orange-500",  badge: "bg-orange-100 text-orange-700",  text: "text-orange-700" },
-  { key: "IN_REPAIR",         label: "In Repair",         dot: "bg-emerald-500", strip: "bg-emerald-500", badge: "bg-emerald-100 text-emerald-700", text: "text-emerald-700" },
+  { key: "RECEIVED",          label: "Received",          dot: "bg-blue-500",    strip: "bg-blue-500",    badge: "bg-blue-500/10 text-blue-700 dark:text-blue-400",    text: "text-blue-700 dark:text-blue-400" },
+  { key: "DIAGNOSING",        label: "Diagnosing",        dot: "bg-amber-500",   strip: "bg-amber-500",   badge: "bg-amber-500/10 text-amber-700 dark:text-amber-400",   text: "text-amber-700 dark:text-amber-400" },
+  { key: "REFERRED",          label: "Referred",          dot: "bg-purple-500",  strip: "bg-purple-500",  badge: "bg-purple-500/10 text-purple-700 dark:text-purple-400",  text: "text-purple-700 dark:text-purple-400" },
+  { key: "AWAITING_APPROVAL", label: "Awaiting Approval", dot: "bg-orange-500",  strip: "bg-orange-500",  badge: "bg-orange-500/10 text-orange-700 dark:text-orange-400",  text: "text-orange-700 dark:text-orange-400" },
+  { key: "IN_REPAIR",         label: "In Repair",         dot: "bg-emerald-500", strip: "bg-emerald-500", badge: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400", text: "text-emerald-700 dark:text-emerald-400" },
 ];
 
 function ageInDays(receivedAt: Date | string): number {
@@ -102,9 +102,9 @@ export function JobBoardView({
                             <span
                               className={`rounded-full px-1.5 py-0.5 text-[9px] font-semibold ${
                                 age >= 7
-                                  ? "bg-red-100 text-red-700"
+                                  ? "bg-red-500/10 text-red-700 dark:text-red-400"
                                   : age >= 3
-                                    ? "bg-amber-100 text-amber-700"
+                                    ? "bg-amber-500/10 text-amber-700 dark:text-amber-400"
                                     : "bg-[var(--panel-strong)] text-[var(--ink-muted)]"
                               }`}
                             >
