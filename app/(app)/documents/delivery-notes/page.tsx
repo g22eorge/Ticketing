@@ -200,7 +200,10 @@ export default async function DeliveryNotesPage() {
     <section className="space-y-4">
       <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
         <div className="flex items-center justify-between gap-2 border-b border-[var(--line)] px-4 py-2.5">
-          <p className="text-[13px] font-bold text-[var(--ink)]">Delivery Notes</p>
+          <div>
+            <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Documents</p>
+            <p className="text-[13px] font-bold text-[var(--ink)]">Delivery Notes</p>
+          </div>
           <Link href="/documents/invoices" className="btn-premium rounded-lg px-3 py-1.5 text-[12px]">Create Delivery Note</Link>
         </div>
         <div className="grid grid-cols-2 divide-x divide-y divide-[var(--line)] sm:grid-cols-3 sm:divide-y-0">

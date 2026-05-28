@@ -490,7 +490,10 @@ export default async function InvoicesPage({
       {/* ── HEADER ─────────────────────────────────────────────────────────── */}
       <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)]">
         <div className="flex items-center justify-between gap-2 border-b border-[var(--line)] px-4 py-2.5">
-          <p className="text-[13px] font-bold text-[var(--ink)]">Invoices</p>
+          <div>
+            <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Documents</p>
+            <p className="text-[13px] font-bold text-[var(--ink)]">Invoices</p>
+          </div>
           <div className="flex gap-2">
             <Link
               href="/jobs/new"

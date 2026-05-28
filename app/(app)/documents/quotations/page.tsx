@@ -160,12 +160,15 @@ export default async function QuotationsPage({
       {/* Header */}
       <div className="panel-shadow flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-2.5">
         <div className="flex items-center gap-3">
-          <p className="text-[13px] font-bold text-[var(--ink)]">
-            Quotations{" "}
-            <span className="font-normal text-[var(--ink-muted)]">
-              · {jobs.length}
-            </span>
-          </p>
+          <div>
+            <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Documents</p>
+            <p className="text-[13px] font-bold text-[var(--ink)]">
+              Quotations{" "}
+              <span className="font-normal text-[var(--ink-muted)]">
+                · {jobs.length}
+              </span>
+            </p>
+          </div>
           {pendingCount > 0 && (
             <span className="rounded-full border border-amber-500/30 bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold text-amber-600">
               {pendingCount} awaiting client
