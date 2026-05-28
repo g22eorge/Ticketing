@@ -50,9 +50,12 @@ export default async function PurchaseOrdersPage() {
     <div className="space-y-4">
       {/* Header */}
       <div className="panel-shadow flex items-center justify-between gap-2 rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-2.5">
-        <p className="text-[13px] font-bold text-[var(--ink)]">
-          Purchase Orders · <span className="font-normal text-[var(--ink-muted)]">{orders.length}</span>
-        </p>
+        <div>
+          <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Inventory</p>
+          <p className="text-[13px] font-bold text-[var(--ink)]">
+            Purchase Orders <span className="font-normal text-[var(--ink-muted)]">· {orders.length}</span>
+          </p>
+        </div>
         <div className="flex items-center gap-2">
           <Link href="/inventory" className="inline-flex items-center rounded-lg border border-[var(--line)] px-3 py-1.5 text-xs font-semibold text-[var(--ink)] transition hover:border-[var(--accent)]/50 hover:text-[var(--accent)]">
             ← Inventory

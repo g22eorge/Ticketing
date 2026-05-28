@@ -36,8 +36,8 @@ export default async function StockCountsPage() {
     <div className="space-y-4">
       <div className="panel-shadow flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-2.5">
         <div>
-          <Link href="/inventory" className="text-xs font-semibold text-[var(--ink-muted)] hover:text-[var(--ink)]">← Inventory</Link>
-          <p className="mt-1 text-[13px] font-bold text-[var(--ink)]">Stock Counts <span className="font-normal text-[var(--ink-muted)]">· {counts.length}</span></p>
+          <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Inventory</p>
+          <p className="text-[13px] font-bold text-[var(--ink)]">Stock Counts <span className="font-normal text-[var(--ink-muted)]">· {counts.length}</span></p>
         </div>
         <Link href="/inventory/stock-counts/new" className="btn-premium rounded-lg px-3 py-1.5 text-[12px]">New Count</Link>
       </div>
