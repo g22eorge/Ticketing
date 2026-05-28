@@ -22,7 +22,7 @@ async function sendRenderedWhatsApp(
     if (orgCfg?.smsFallback) {
       const atCfg = getAtConfig(orgCfg);
       if (atCfg) {
-        console.log("[WhatsApp→SMS] Falling back to Africa's Talking SMS for", phone);
+        console.info("[WhatsApp→SMS] Falling back to Africa's Talking SMS for", phone.slice(0, -4) + "****");
         const smsResult = await sendSms(phone, rendered.body, atCfg, orgId);
         if (smsResult.success) return { success: true, messageId: smsResult.messageId };
       }
@@ -308,7 +308,7 @@ export async function sendWhatsAppTemplateMessage(
     const data = await response.json();
     const messageId = data.messages?.[0]?.id;
     if (messageId) {
-      console.log("[WhatsApp] Template message sent:", templateName, messageId);
+      console.info("[WhatsApp] Template message sent:", templateName, messageId);
       return { success: true, messageId };
     }
     return { success: false, error: "No message ID returned" };
@@ -381,7 +381,7 @@ async function sendWhatsAppMessageInternal({
     const messageId = data.messages?.[0]?.id;
 
     if (messageId) {
-      console.log("[WhatsApp] Message sent:", messageId);
+      console.info("[WhatsApp] Message sent:", messageId);
       return { success: true, messageId };
     }
 
