@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import Link from "next/link";
 
 
@@ -465,15 +466,15 @@ export default async function TechniciansPage({
                       const isSpotlight = spotlightJobIds.has(job.id);
                       const isFirstNonSpotlight = !isSpotlight && idx > 0 && spotlightJobIds.has(sortedJobs[idx - 1].id);
                       return (
-                        <>
+                        <Fragment key={job.id}>
                           {isFirstNonSpotlight && (
-                            <tr key={`sep-${job.id}`} aria-hidden="true">
+                            <tr aria-hidden="true">
                               <td colSpan={9} className="py-0">
                                 <div className="mx-4 border-t-2 border-dashed border-[var(--accent)]/20" />
                               </td>
                             </tr>
                           )}
-                          <tr key={job.id} className={`group transition-colors hover:bg-[var(--panel-strong)]/40 ${isSpotlight ? "bg-[var(--accent)]/[0.04]" : ""}`}>
+                          <tr className={`group transition-colors hover:bg-[var(--panel-strong)]/40 ${isSpotlight ? "bg-[var(--accent)]/[0.04]" : ""}`}>
                             <td className="p-0 w-[3px]" aria-hidden="true">
                               <div className={`h-full min-h-[3rem] w-[3px] ${isSpotlight ? "bg-[var(--accent)]" : strip}`} />
                             </td>
@@ -538,7 +539,7 @@ export default async function TechniciansPage({
                             </div>
                           </td>
                           </tr>
-                        </>
+                        </Fragment>
                       );
                     })}
                 </tbody>
