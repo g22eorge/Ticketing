@@ -1274,16 +1274,16 @@ export default async function DashboardPage({
 
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             {([
-              { label: "Repairs",   value: repairsMtd,   pct: totalMtd > 0 ? Math.round(repairsMtd / totalMtd * 100) : 0,   color: "text-sky-600",     ring: "border-sky-500/20 bg-sky-500/8",       href: "/jobs?status=COMPLETED" },
-              { label: "Products",  value: productsMtd,  pct: totalMtd > 0 ? Math.round(productsMtd / totalMtd * 100) : 0,  color: "text-violet-600",  ring: "border-violet-500/20 bg-violet-500/8", href: "/pos" },
-              { label: "Corporate", value: corporateMtd, pct: totalMtd > 0 ? Math.round(corporateMtd / totalMtd * 100) : 0, color: "text-emerald-600", ring: "border-emerald-500/20 bg-emerald-500/8",href: "/documents/invoices" },
-              { label: "Total Revenue (MTD)", value: totalMtd, pct: null, color: "text-[var(--ink)]", ring: "border-[var(--accent)]/25 bg-[var(--accent)]/8", href: "/reports" },
+              { label: "Repairs",   value: repairsMtd,   pct: totalMtd > 0 ? Math.round(repairsMtd / totalMtd * 100) : 0,   color: "text-sky-600",     pctColor: "text-sky-700",     ring: "border-sky-500/20 bg-sky-500/8",       href: "/jobs?status=COMPLETED" },
+              { label: "Products",  value: productsMtd,  pct: totalMtd > 0 ? Math.round(productsMtd / totalMtd * 100) : 0,  color: "text-violet-600",  pctColor: "text-violet-700",  ring: "border-violet-500/20 bg-violet-500/8", href: "/pos" },
+              { label: "Corporate", value: corporateMtd, pct: totalMtd > 0 ? Math.round(corporateMtd / totalMtd * 100) : 0, color: "text-emerald-600", pctColor: "text-emerald-700", ring: "border-emerald-500/20 bg-emerald-500/8",href: "/documents/invoices" },
+              { label: "Total Revenue (MTD)", value: totalMtd, pct: null, color: "text-[var(--ink)]", pctColor: "text-[var(--ink-muted)]", ring: "border-[var(--accent)]/25 bg-[var(--accent)]/8", href: "/reports" },
             ] as const).map((s) => (
               <Link key={s.label} href={s.href} className={`rounded-xl border ${s.ring} p-4 transition hover:-translate-y-[2px]`}>
                 <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">{s.label}</p>
                 <p className={`mt-1.5 text-2xl font-bold ${s.color}`}>{formatMoneyCompact(s.value, currency)}</p>
                 {s.pct !== null ? (
-                  <p className={`mt-0.5 text-[10px] font-semibold ${s.color}`}>{s.pct}%</p>
+                  <p className={`mt-0.5 text-[10px] font-semibold ${s.pctColor}`}>{s.pct}%</p>
                 ) : (
                   <p className="mt-0.5 text-[10px] text-[var(--ink-muted)]">{formatMoney(s.value, currency)}</p>
                 )}
