@@ -36,12 +36,12 @@ export default async function ScheduleVisitPage() {
   ]);
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6 p-6">
-      <div>
-        <h1 className="text-xl font-semibold text-[var(--ink)]">Schedule Field Visit</h1>
-        <p className="text-sm text-[var(--ink-muted)] mt-0.5">
-          Create a new field visit and assign it to a technician.
-        </p>
+    <div className="mx-auto max-w-2xl space-y-4 p-6">
+      <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
+        <div className="px-4 py-3">
+          <p className="text-[13px] font-bold text-[var(--ink)]">Schedule Field Visit</p>
+          <p className="text-[11px] text-[var(--ink-muted)]">Create a new field visit and assign it to a technician.</p>
+        </div>
       </div>
 
       <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] p-6">

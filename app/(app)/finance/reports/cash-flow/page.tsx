@@ -168,29 +168,31 @@ export default async function CashFlowPage({
   return (
     <div className="space-y-5 p-4 md:p-5">
       {/* ── Header ────────────────────────────────────────────────────────── */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <p className="text-xs uppercase tracking-[0.16em] text-[var(--ink-muted)]">Finance · Reports</p>
-          <h1 className="mt-0.5 text-xl font-bold text-[var(--ink)]">Cash Flow Statement</h1>
-          <p className="mt-0.5 text-sm text-[var(--ink-muted)]">{periodLabel}</p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Link href="/finance/reports" className="btn-premium-secondary rounded-lg px-3 py-1.5 text-xs">← Reports</Link>
-          <form className="flex flex-wrap gap-1.5" method="GET">
-            <select name="mode" defaultValue={mode} className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1.5 text-xs outline-none">
-              <option value="month">Monthly</option>
-              <option value="ytd">YTD</option>
-            </select>
-            <select name="month" defaultValue={month} className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1.5 text-xs outline-none">
-              {monthOptions.map((m) => (
-                <option key={m.value} value={m.value}>{m.label}</option>
-              ))}
-            </select>
-            <select name="year" defaultValue={year} className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1.5 text-xs outline-none">
-              {yearOptions.map((y) => <option key={y} value={y}>{y}</option>)}
-            </select>
-            <button type="submit" className="btn-premium rounded-lg px-3 py-1.5 text-xs font-semibold">Apply</button>
-          </form>
+      <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
+        <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
+          <div>
+            <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Finance · Reports</p>
+            <p className="text-[13px] font-bold text-[var(--ink)]">Cash Flow Statement</p>
+            <p className="text-[11px] text-[var(--ink-muted)]">{periodLabel}</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Link href="/finance/reports" className="btn-premium-secondary rounded-lg px-3 py-1.5 text-xs">← Reports</Link>
+            <form className="flex flex-wrap gap-1.5" method="GET">
+              <select name="mode" defaultValue={mode} className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1.5 text-xs outline-none">
+                <option value="month">Monthly</option>
+                <option value="ytd">YTD</option>
+              </select>
+              <select name="month" defaultValue={month} className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1.5 text-xs outline-none">
+                {monthOptions.map((m) => (
+                  <option key={m.value} value={m.value}>{m.label}</option>
+                ))}
+              </select>
+              <select name="year" defaultValue={year} className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1.5 text-xs outline-none">
+                {yearOptions.map((y) => <option key={y} value={y}>{y}</option>)}
+              </select>
+              <button type="submit" className="btn-premium rounded-lg px-3 py-1.5 text-xs font-semibold">Apply</button>
+            </form>
+          </div>
         </div>
       </div>
 

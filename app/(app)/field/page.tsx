@@ -172,25 +172,27 @@ export default async function FieldPage({
     <div className="space-y-5 p-4 md:p-5">
 
       {/* ── Header ── */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <p className="text-xs uppercase tracking-[0.16em] text-[var(--ink-muted)]">Service</p>
-          <h1 className="mt-0.5 text-xl font-bold text-[var(--ink)]">Field Visits</h1>
-          <p className="mt-0.5 text-sm text-[var(--ink-muted)]">
-            {isManager ? "All scheduled field visits" : "Your assigned field visits"}
-          </p>
+      <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
+        <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
+          <div>
+            <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Service</p>
+            <p className="text-[13px] font-bold text-[var(--ink)]">Field Visits</p>
+            <p className="text-[11px] text-[var(--ink-muted)]">
+              {isManager ? "All scheduled field visits" : "Your assigned field visits"}
+            </p>
+          </div>
+          {isManager && (
+            <Link
+              href="/field/new"
+              className="btn-premium inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[12px]"
+            >
+              <svg viewBox="0 0 20 20" fill="currentColor" className="h-3.5 w-3.5" aria-hidden="true">
+                <path d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z" />
+              </svg>
+              Schedule Visit
+            </Link>
+          )}
         </div>
-        {isManager && (
-          <Link
-            href="/field/new"
-            className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-white hover:opacity-90 transition-opacity"
-          >
-            <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4" aria-hidden="true">
-              <path d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z" />
-            </svg>
-            Schedule Visit
-          </Link>
-        )}
       </div>
 
       {/* ── KPI tiles ── */}

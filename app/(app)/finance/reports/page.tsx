@@ -74,10 +74,12 @@ export default async function FinanceReportsPage() {
 
   return (
     <div className="space-y-5 p-4 md:p-5">
-      <div>
-        <p className="text-xs uppercase tracking-[0.16em] text-[var(--ink-muted)]">Finance</p>
-        <h1 className="mt-0.5 text-xl font-bold text-[var(--ink)]">Financial Reports</h1>
-        <p className="mt-1 text-sm text-[var(--ink-muted)]">Statements, analysis and export tools</p>
+      <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
+        <div className="px-4 py-3">
+          <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Finance</p>
+          <p className="text-[13px] font-bold text-[var(--ink)]">Financial Reports</p>
+          <p className="text-[11px] text-[var(--ink-muted)]">Statements, analysis and export tools</p>
+        </div>
       </div>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {reports.map((r) => (
