@@ -18,9 +18,11 @@ export default async function NewPurchaseRequestPage() {
 
   return (
     <div className="max-w-3xl space-y-4">
-      <div>
-        <h1 className="text-xl font-bold text-[var(--ink)]">New Purchase Request</h1>
-        <p className="mt-0.5 text-sm text-[var(--ink-muted)]">Request approval before creating a purchase order.</p>
+      <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
+        <div className="px-4 py-3">
+          <p className="text-[13px] font-bold text-[var(--ink)]">New Purchase Request</p>
+          <p className="text-[11px] text-[var(--ink-muted)]">Request approval before creating a purchase order.</p>
+        </div>
       </div>
       <NewPurchaseRequestForm suppliers={suppliers} parts={parts} />
     </div>

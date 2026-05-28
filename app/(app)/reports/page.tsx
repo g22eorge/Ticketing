@@ -620,47 +620,46 @@ export default async function ReportsPage({
   return (
     <div className="space-y-4">
       {/* ── HEADER ─────────────────────────────────────────────────────────── */}
-      <section className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-bold text-[var(--ink)]">Reports</h1>
-          <p className="mt-0.5 text-xs text-[var(--ink-muted)]">
-            {period === "year" ? `${selectedYear} Annual` : selectedMonthString}
-          </p>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          {/* Period toggle */}
-          <div className="flex rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] p-0.5">
+      <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
+        <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
+          <div>
+            <p className="text-[13px] font-bold text-[var(--ink)]">Reports</p>
+            <p className="text-[11px] text-[var(--ink-muted)]">
+              {period === "year" ? `${selectedYear} Annual` : selectedMonthString}
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Period toggle */}
+            <div className="flex rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] p-0.5">
+              <Link
+                href={`/reports?period=month&month=${selectedMonthString}&tab=${tab}`}
+                className={`rounded-md px-3 py-1.5 text-xs font-semibold transition ${period === "month" ? "bg-[var(--panel)] text-[var(--ink)] shadow-sm" : "text-[var(--ink-muted)] hover:text-[var(--ink)]"}`}
+              >
+                Monthly
+              </Link>
+              <Link
+                href={`/reports?period=year&year=${selectedYear}&tab=${tab}`}
+                className={`rounded-md px-3 py-1.5 text-xs font-semibold transition ${period === "year" ? "bg-[var(--panel)] text-[var(--ink)] shadow-sm" : "text-[var(--ink-muted)] hover:text-[var(--ink)]"}`}
+              >
+                Annual
+              </Link>
+            </div>
+            {/* Month / year selector */}
+            <MonthSelectForm
+              options={selectableMonths}
+              name={period === "year" ? "year" : "month"}
+              value={period === "year" ? String(selectedYear) : selectedMonthString}
+              hiddenFields={{ period, tab }}
+            />
             <Link
-              href={`/reports?period=month&month=${selectedMonthString}&tab=${tab}`}
-              className={`rounded-md px-3 py-1.5 text-xs font-semibold transition ${period === "month" ? "bg-[var(--panel)] text-[var(--ink)] shadow-sm" : "text-[var(--ink-muted)] hover:text-[var(--ink)]"}`}
+              href="/jobs"
+              className="rounded-lg border border-[var(--line)] px-3 py-1.5 text-xs font-semibold text-[var(--ink-muted)] hover:bg-[var(--panel-strong)] hover:text-[var(--ink)]"
             >
-              Monthly
-            </Link>
-            <Link
-              href={`/reports?period=year&year=${selectedYear}&tab=${tab}`}
-              className={`rounded-md px-3 py-1.5 text-xs font-semibold transition ${period === "year" ? "bg-[var(--panel)] text-[var(--ink)] shadow-sm" : "text-[var(--ink-muted)] hover:text-[var(--ink)]"}`}
-            >
-              Annual
+              View Jobs
             </Link>
           </div>
-
-          {/* Month / year selector */}
-          <MonthSelectForm
-            options={selectableMonths}
-            name={period === "year" ? "year" : "month"}
-            value={period === "year" ? String(selectedYear) : selectedMonthString}
-            hiddenFields={{ period, tab }}
-          />
-
-          <Link
-            href="/jobs"
-            className="rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 py-1.5 text-xs font-semibold text-[var(--ink-muted)] hover:text-[var(--ink)]"
-          >
-            View Jobs
-          </Link>
         </div>
-      </section>
+      </div>
 
       {/* ── TAB NAV ─────────────────────────────────────────────────────────── */}
       <div className="flex gap-1 rounded-xl border border-[var(--line)] bg-[var(--panel-strong)] p-1">

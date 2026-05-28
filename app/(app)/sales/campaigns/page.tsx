@@ -194,10 +194,12 @@ export default async function CampaignsPage({ searchParams }: { searchParams: Pr
 
   return (
     <div className="mx-auto max-w-5xl space-y-5 p-4 lg:p-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-bold text-[var(--ink)]">Campaigns</h1>
-          <p className="mt-0.5 text-sm text-[var(--ink-muted)]">Outreach campaigns for leads and clients</p>
+      <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
+        <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
+          <div>
+            <p className="text-[13px] font-bold text-[var(--ink)]">Campaigns</p>
+            <p className="text-[11px] text-[var(--ink-muted)]">Outreach campaigns for leads and clients</p>
+          </div>
         </div>
       </div>
 

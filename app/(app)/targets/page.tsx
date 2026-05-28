@@ -194,36 +194,34 @@ export default async function TargetsPage({ searchParams }: { searchParams: Sear
 
   return (
     <div className="space-y-8 p-4 md:p-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-[var(--ink)]">Targets &amp; Productivity</h1>
-          <p className="mt-0.5 text-sm text-[var(--ink-muted)]">
-            {periodLabel} — {label}
-          </p>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          <form className="flex gap-1" method="GET" action="/targets">
-            {PERIOD_OPTIONS.map((opt) => (
-              <button
-                key={opt.value}
-                type="submit"
-                name="period"
-                value={opt.value}
-                className={`rounded-lg px-3 py-1.5 text-sm font-medium transition ${
-                  period === opt.value
-                    ? "bg-[var(--accent)] text-white"
-                    : "bg-[var(--surface)] text-[var(--ink-muted)] hover:text-[var(--ink)]"
-                }`}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </form>
-
-          {canSet && (
-            <SetTargetDialog users={allUsers} departments={departments} branches={branches} />
-          )}
+      <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
+        <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
+          <div>
+            <p className="text-[13px] font-bold text-[var(--ink)]">Targets &amp; Productivity</p>
+            <p className="text-[11px] text-[var(--ink-muted)]">{periodLabel} — {label}</p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <form className="flex gap-1 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] p-0.5" method="GET" action="/targets">
+              {PERIOD_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  type="submit"
+                  name="period"
+                  value={opt.value}
+                  className={`rounded-md px-3 py-1.5 text-xs font-semibold transition ${
+                    period === opt.value
+                      ? "bg-[var(--panel)] text-[var(--ink)] shadow-sm"
+                      : "text-[var(--ink-muted)] hover:text-[var(--ink)]"
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </form>
+            {canSet && (
+              <SetTargetDialog users={allUsers} departments={departments} branches={branches} />
+            )}
+          </div>
         </div>
       </div>
 

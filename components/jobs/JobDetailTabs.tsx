@@ -1746,21 +1746,37 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
                 <div className="overflow-x-auto rounded-lg border border-[var(--line)]">
                   <table className="min-w-full text-left text-xs">
                     <thead className="bg-[var(--panel-strong)] text-[var(--ink-muted)]">
-                      <tr><th className="px-3 py-2">Date</th><th className="px-3 py-2">Type</th><th className="px-3 py-2">Method</th><th className="px-3 py-2">Amount</th><th className="px-3 py-2">Reference</th><th className="px-3 py-2">Notes</th><th className="px-3 py-2">Recorded by</th></tr>
+                      <tr><th className="px-3 py-2">Date</th><th className="px-3 py-2">Type</th><th className="px-3 py-2">Method</th><th className="px-3 py-2">Amount</th><th className="px-3 py-2">Balance</th><th className="px-3 py-2">Reference</th><th className="px-3 py-2">Notes</th><th className="px-3 py-2">Recorded by</th></tr>
                     </thead>
                     <tbody className="divide-y divide-[var(--line)]">
-                      {clientPayments.length === 0 ? <tr><td className="px-3 py-4 text-[var(--ink-muted)]" colSpan={7}>No payments recorded yet.</td></tr> : null}
-                      {clientPayments.map((payment) => (
-                        <tr key={payment.id}>
-                          <td className="px-3 py-2">{formatUtcDateTime(payment.receivedAt)}</td>
-                          <td className="px-3 py-2">{prettyEnum(payment.kind)}</td>
-                          <td className="px-3 py-2">{prettyEnum(payment.method)}</td>
-                          <td className="px-3 py-2 font-semibold">{payment.kind === "REFUND" ? "-" : ""}{formatBillAmount(payment.amount)}</td>
-                          <td className="px-3 py-2">{payment.reference ?? "-"}</td>
-                          <td className="px-3 py-2">{payment.note ?? "-"}</td>
-                          <td className="px-3 py-2">{payment.createdBy?.name ?? "-"}</td>
-                        </tr>
-                      ))}
+                      {(() => {
+                        if (clientPayments.length === 0) {
+                          return <tr><td className="px-3 py-4 text-[var(--ink-muted)]" colSpan={8}>No payments recorded yet.</td></tr>;
+                        }
+                        const billAmount = typeof job.clientBill === "number" ? job.clientBill : 0;
+                        const sorted = [...clientPayments].sort(
+                          (a, b) => new Date(a.receivedAt).getTime() - new Date(b.receivedAt).getTime(),
+                        );
+                        let runningPaid = 0;
+                        return sorted.map((payment) => {
+                          runningPaid += payment.kind === "REFUND" ? -payment.amount : payment.amount;
+                          const balance = billAmount - runningPaid;
+                          return (
+                            <tr key={payment.id}>
+                              <td className="px-3 py-2">{formatUtcDateTime(payment.receivedAt)}</td>
+                              <td className="px-3 py-2">{prettyEnum(payment.kind)}</td>
+                              <td className="px-3 py-2">{prettyEnum(payment.method)}</td>
+                              <td className="px-3 py-2 font-semibold tabular-nums">{payment.kind === "REFUND" ? "-" : ""}{formatBillAmount(payment.amount)}</td>
+                              <td className={`px-3 py-2 font-semibold tabular-nums ${balance < 0 ? "text-blue-600 dark:text-blue-400" : balance === 0 ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600"}`}>
+                                {balance < 0 ? `${formatBillAmount(Math.abs(balance))} over` : balance === 0 ? `${formatBillAmount(0)} ✓` : formatBillAmount(balance)}
+                              </td>
+                              <td className="px-3 py-2">{payment.reference ?? "-"}</td>
+                              <td className="px-3 py-2">{payment.note ?? "-"}</td>
+                              <td className="px-3 py-2">{payment.createdBy?.name ?? "-"}</td>
+                            </tr>
+                          );
+                        });
+                      })()}
                     </tbody>
                   </table>
                 </div>

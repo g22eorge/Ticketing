@@ -162,29 +162,34 @@ export default async function RefundsPage({
   const saleAmount = saleRefundTotal._sum.amount ?? 0;
 
   return (
-    <div className="space-y-6 p-4 md:p-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-[var(--ink)]">Refunds</h1>
-          <p className="mt-0.5 text-sm text-[var(--ink-muted)]">All cash refunds issued against invoices and sales</p>
-        </div>
-      </div>
-
-      {/* KPI strip */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {[
-          { label: "Total Refunds", value: String(totalRefunds), sub: "all time" },
-          { label: "Total Refunded", value: formatMoney(totalAmount, currency), sub: "all sources" },
-          { label: "Invoice Refunds", value: formatMoney(invoiceAmount, currency), sub: "from invoices" },
-          { label: "Sale Refunds", value: formatMoney(saleAmount, currency), sub: "from sales" },
-        ].map((kpi) => (
-          <div key={kpi.label} className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3">
-            <p className="text-[11px] font-medium uppercase tracking-wide text-[var(--ink-muted)]">{kpi.label}</p>
-            <p className="mt-1 text-[15px] font-black tabular-nums text-[var(--ink)]">{kpi.value}</p>
-            <p className="text-[11px] text-[var(--ink-muted)]">{kpi.sub}</p>
+    <div className="space-y-4 p-4 md:p-6">
+      {/* Header + KPI panel */}
+      <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--line)] px-4 py-2.5">
+          <div>
+            <p className="text-[13px] font-bold text-[var(--ink)]">Refunds</p>
+            <p className="text-[11px] text-[var(--ink-muted)]">All cash refunds issued against invoices and sales</p>
           </div>
-        ))}
+        </div>
+        <div className="grid grid-cols-2 divide-x divide-y divide-[var(--line)] sm:grid-cols-4 sm:divide-y-0">
+          <div className="px-4 py-2.5">
+            <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">Total Refunds</p>
+            <p className="text-[15px] font-black tabular-nums leading-tight text-[var(--ink)]">{totalRefunds}</p>
+            <p className="text-[10px] text-[var(--ink-muted)]">all time</p>
+          </div>
+          <div className="px-4 py-2.5">
+            <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">Total Refunded</p>
+            <p className="text-[15px] font-black tabular-nums leading-tight text-[var(--ink)]">{formatMoney(totalAmount, currency)}</p>
+          </div>
+          <div className="px-4 py-2.5">
+            <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">Invoice Refunds</p>
+            <p className="text-[15px] font-black tabular-nums leading-tight text-[var(--ink)]">{formatMoney(invoiceAmount, currency)}</p>
+          </div>
+          <div className="px-4 py-2.5">
+            <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">Sale Refunds</p>
+            <p className="text-[15px] font-black tabular-nums leading-tight text-[var(--accent)]">{formatMoney(saleAmount, currency)}</p>
+          </div>
+        </div>
       </div>
 
       {/* Filters */}

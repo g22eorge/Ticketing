@@ -205,54 +205,67 @@ export default async function CreditNotesPage({
     d ? new Date(d).toLocaleDateString("en-UG", { day: "numeric", month: "short", year: "numeric" }) : "—";
 
   return (
-    <div className="space-y-5">
-      {/* Header */}
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-bold text-[var(--ink)]">Credit Notes</h1>
-          <p className="mt-0.5 text-sm text-[var(--ink-muted)]">Sales returns and adjustments</p>
-        </div>
-        {["ADMIN", "OPS", "MANAGER"].includes(user.role) && (
-          <details className="group relative">
-            <summary className="cursor-pointer list-none rounded-lg border border-[var(--gold)]/40 bg-[var(--gold)]/10 px-4 py-2 text-sm font-semibold text-[var(--gold)] hover:bg-[var(--gold)]/20">
-              + New Credit Note
-            </summary>
-            <div className="absolute right-0 top-full z-20 mt-1 w-80 rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 shadow-lg">
-              <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-[var(--ink-muted)]">Issue Credit Note</p>
-              <form action={createCreditNoteAction} className="space-y-3">
-                <select name="saleId" required className="w-full rounded-lg border border-[var(--line)] bg-[var(--bg)] px-3 py-2 text-sm text-[var(--ink)]">
-                  <option value="">Select sale…</option>
-                  {eligibleSales.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.saleNumber}{s.client?.fullName ? ` — ${s.client.fullName}` : ""} ({formatMoney(s.totalAmount, s.currency)})
-                    </option>
-                  ))}
-                </select>
-                <textarea name="reason" required placeholder="Reason for credit note…" rows={2} className="w-full rounded-lg border border-[var(--line)] bg-[var(--bg)] px-3 py-2 text-sm text-[var(--ink)] resize-none" />
-                <input type="hidden" name="items" value={JSON.stringify([{ description: "Credit for returned items", quantity: 1, unitPrice: 0 }])} />
-                <p className="text-[11px] text-[var(--ink-muted)]">Items and amounts can be managed after creation.</p>
-                <button type="submit" className="w-full rounded-lg bg-[var(--gold)]/20 py-2 text-sm font-semibold text-[var(--gold)] hover:bg-[var(--gold)]/30">
-                  Create Credit Note
-                </button>
-              </form>
-            </div>
-          </details>
-        )}
-      </div>
-
-      {/* KPIs */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {[
-          { label: "Total Credit Notes", value: creditNotes.length, mono: false },
-          { label: "Pending Return", value: pendingReturn, mono: false, warn: pendingReturn > 0 },
-          { label: "Total Value", value: formatMoney(totalValue, currency), mono: true },
-          { label: "Total Refunded", value: formatMoney(totalRefunded, currency), mono: true },
-        ].map((kpi) => (
-          <div key={kpi.label} className={`rounded-xl border px-4 py-3 ${kpi.warn ? "border-amber-200 bg-amber-50" : "border-[var(--line)] bg-[var(--panel)]"}`}>
-            <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-[var(--ink-muted)]">{kpi.label}</p>
-            <p className={`mt-1 text-xl font-bold ${kpi.mono ? "font-mono tabular-nums" : ""} ${kpi.warn ? "text-amber-700" : "text-[var(--ink)]"}`}>{kpi.value}</p>
+    <div className="space-y-4">
+      {/* Header panel */}
+      <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--line)] px-4 py-2.5">
+          <div>
+            <p className="text-[13px] font-bold text-[var(--ink)]">Credit Notes</p>
+            <p className="text-[11px] text-[var(--ink-muted)]">Sales returns and adjustments</p>
           </div>
-        ))}
+          <div className="flex items-center gap-3">
+            {pendingReturn > 0 && (
+              <span className="rounded-full bg-amber-400/20 px-2.5 py-0.5 text-[11px] font-semibold text-amber-700">
+                {pendingReturn} awaiting return
+              </span>
+            )}
+            {["ADMIN", "OPS", "MANAGER"].includes(user.role) && (
+              <details className="group relative">
+                <summary className="btn-premium cursor-pointer list-none rounded-lg px-3 py-1.5 text-[12px]">
+                  + New Credit Note
+                </summary>
+                <div className="absolute right-0 top-full z-20 mt-1 w-80 rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 shadow-lg">
+                  <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-[var(--ink-muted)]">Issue Credit Note</p>
+                  <form action={createCreditNoteAction} className="space-y-3">
+                    <select name="saleId" required className="w-full rounded-lg border border-[var(--line)] bg-[var(--bg)] px-3 py-2 text-sm text-[var(--ink)]">
+                      <option value="">Select sale…</option>
+                      {eligibleSales.map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.saleNumber}{s.client?.fullName ? ` — ${s.client.fullName}` : ""} ({formatMoney(s.totalAmount, s.currency)})
+                        </option>
+                      ))}
+                    </select>
+                    <textarea name="reason" required placeholder="Reason for credit note…" rows={2} className="w-full rounded-lg border border-[var(--line)] bg-[var(--bg)] px-3 py-2 text-sm text-[var(--ink)] resize-none" />
+                    <input type="hidden" name="items" value={JSON.stringify([{ description: "Credit for returned items", quantity: 1, unitPrice: 0 }])} />
+                    <p className="text-[11px] text-[var(--ink-muted)]">Items and amounts can be managed after creation.</p>
+                    <button type="submit" className="w-full rounded-lg bg-[var(--gold)]/20 py-2 text-sm font-semibold text-[var(--gold)] hover:bg-[var(--gold)]/30">
+                      Create Credit Note
+                    </button>
+                  </form>
+                </div>
+              </details>
+            )}
+          </div>
+        </div>
+        {/* KPI tiles */}
+        <div className="grid grid-cols-2 divide-x divide-y divide-[var(--line)] sm:grid-cols-4 sm:divide-y-0">
+          <div className="px-4 py-2.5">
+            <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">Total</p>
+            <p className="text-[15px] font-black tabular-nums leading-tight text-[var(--ink)]">{creditNotes.length}</p>
+          </div>
+          <div className={`px-4 py-2.5 ${pendingReturn > 0 ? "bg-amber-50/50 dark:bg-amber-950/20" : ""}`}>
+            <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">Pending Return</p>
+            <p className={`text-[15px] font-black tabular-nums leading-tight ${pendingReturn > 0 ? "text-amber-600" : "text-[var(--ink)]"}`}>{pendingReturn}</p>
+          </div>
+          <div className="px-4 py-2.5">
+            <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">Total Value</p>
+            <p className="text-[15px] font-black tabular-nums leading-tight text-[var(--ink)]">{formatMoney(totalValue, currency)}</p>
+          </div>
+          <div className="px-4 py-2.5">
+            <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">Total Refunded</p>
+            <p className="text-[15px] font-black tabular-nums leading-tight text-[var(--accent)]">{formatMoney(totalRefunded, currency)}</p>
+          </div>
+        </div>
       </div>
 
       {/* Filters */}

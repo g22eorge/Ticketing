@@ -164,19 +164,19 @@ export default async function BankPage({
   return (
     <div className="space-y-5 p-4 lg:p-6">
       {/* ── HEADER ───────────────────────────────────────────────────────── */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-[var(--ink)]">Bank Accounts</h1>
-          <p className="mt-0.5 text-sm text-[var(--ink-muted)]">
-            Manage accounts, record transactions, and reconcile
-          </p>
+      <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
+        <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
+          <div>
+            <p className="text-[13px] font-bold text-[var(--ink)]">Bank Accounts</p>
+            <p className="text-[11px] text-[var(--ink-muted)]">Manage accounts, record transactions, and reconcile</p>
+          </div>
+          <Link
+            href="/finance/accounts"
+            className="rounded-lg border border-[var(--line)] px-3 py-1.5 text-xs font-medium text-[var(--ink-muted)] hover:bg-[var(--panel-strong)]"
+          >
+            Chart of Accounts
+          </Link>
         </div>
-        <Link
-          href="/finance/accounts"
-          className="rounded-lg border border-[var(--line)] px-3 py-1.5 text-xs font-medium text-[var(--ink-muted)] hover:bg-[var(--panel)]"
-        >
-          Chart of Accounts
-        </Link>
       </div>
 
       {/* ── SUMMARY STRIP ────────────────────────────────────────────────── */}

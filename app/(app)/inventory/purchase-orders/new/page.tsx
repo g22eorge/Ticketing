@@ -35,9 +35,11 @@ export default async function NewPurchaseOrderPage({
 
   return (
     <div className="space-y-4 max-w-2xl">
-      <div>
-        <h1 className="text-xl font-bold text-[var(--ink)]">New Purchase Order</h1>
-        <p className="mt-0.5 text-sm text-[var(--ink-muted)]">Order stock from a supplier.</p>
+      <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
+        <div className="px-4 py-3">
+          <p className="text-[13px] font-bold text-[var(--ink)]">New Purchase Order</p>
+          <p className="text-[11px] text-[var(--ink-muted)]">Order stock from a supplier.</p>
+        </div>
       </div>
       <NewPurchaseOrderForm
         suppliers={suppliers}

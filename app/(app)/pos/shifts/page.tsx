@@ -134,10 +134,12 @@ export default async function CashierShiftsPage({
   return (
     <div className="space-y-6 p-4 md:p-6">
       {/* Header */}
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-bold text-[var(--ink)]">Cashier Shifts</h1>
-          <p className="mt-0.5 text-sm text-[var(--ink-muted)]">Open and close shifts, reconcile cash at end of day</p>
+      <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
+        <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
+          <div>
+            <p className="text-[13px] font-bold text-[var(--ink)]">Cashier Shifts</p>
+            <p className="text-[11px] text-[var(--ink-muted)]">Open and close shifts, reconcile cash at end of day</p>
+          </div>
         </div>
       </div>
 

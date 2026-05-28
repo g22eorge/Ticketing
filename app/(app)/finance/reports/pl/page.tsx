@@ -160,24 +160,26 @@ export default async function PLPage({
   return (
     <div className="space-y-5 p-4 lg:p-6">
       {/* ── HEADER ───────────────────────────────────────────────────────── */}
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-bold text-[var(--ink)]">Profit & Loss</h1>
-          <p className="text-sm text-[var(--ink-muted)]">{periodLabel}</p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Link
-            href={`/finance/reports/balance-sheet?year=${year}&month=${month}`}
-            className="rounded-lg border border-[var(--line)] px-3 py-1.5 text-xs font-medium hover:bg-[var(--panel)]"
-          >
-            Balance Sheet →
-          </Link>
-          <Link
-            href="/finance/accounts"
-            className="rounded-lg border border-[var(--line)] px-3 py-1.5 text-xs font-medium hover:bg-[var(--panel)]"
-          >
-            Chart of Accounts
-          </Link>
+      <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
+        <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
+          <div>
+            <p className="text-[13px] font-bold text-[var(--ink)]">Profit &amp; Loss</p>
+            <p className="text-[11px] text-[var(--ink-muted)]">{periodLabel}</p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Link
+              href={`/finance/reports/balance-sheet?year=${year}&month=${month}`}
+              className="rounded-lg border border-[var(--line)] px-3 py-1.5 text-xs font-medium hover:bg-[var(--panel-strong)]"
+            >
+              Balance Sheet →
+            </Link>
+            <Link
+              href="/finance/accounts"
+              className="rounded-lg border border-[var(--line)] px-3 py-1.5 text-xs font-medium hover:bg-[var(--panel-strong)]"
+            >
+              Chart of Accounts
+            </Link>
+          </div>
         </div>
       </div>
 

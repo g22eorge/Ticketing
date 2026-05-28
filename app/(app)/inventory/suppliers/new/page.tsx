@@ -22,9 +22,11 @@ export default function NewSupplierPage() {
 
   return (
     <div className="space-y-4 max-w-lg">
-      <div>
-        <h1 className="text-xl font-bold text-[var(--ink)]">New Supplier</h1>
-        <p className="mt-0.5 text-sm text-[var(--ink-muted)]">Add a supplier to raise purchase orders against.</p>
+      <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
+        <div className="px-4 py-3">
+          <p className="text-[13px] font-bold text-[var(--ink)]">New Supplier</p>
+          <p className="text-[11px] text-[var(--ink-muted)]">Add a supplier to raise purchase orders against.</p>
+        </div>
       </div>
 
       <form onSubmit={handleSubmit} className="rounded-xl border border-[var(--line)] bg-[var(--panel)] p-5 space-y-4">
