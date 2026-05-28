@@ -384,7 +384,7 @@ export default async function ChartOfAccountsPage() {
                                     <input type="hidden" name="id" value={acc.id} />
                                     <ConfirmSubmitButton
                                       message="Delete this account? Cannot be undone if it has no transactions."
-                                      className="w-full px-3 py-1.5 text-left text-sm text-red-600 hover:bg-red-50"
+                                      className="w-full px-3 py-1.5 text-left text-sm text-red-600 hover:bg-red-500/10 dark:text-red-400"
                                     >
                                       Delete
                                     </ConfirmSubmitButton>

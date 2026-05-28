@@ -789,7 +789,7 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
           {canDeleteSale ? (
             <form action={deleteSaleAction}>
               <input type="hidden" name="saleId" value={sale.id} />
-              <ConfirmSubmitButton message="Delete this open POS sale? Stock will be restored." className="rounded-lg border border-red-200 px-3 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-50">Delete Sale</ConfirmSubmitButton>
+              <ConfirmSubmitButton message="Delete this open POS sale? Stock will be restored." className="rounded-lg border border-red-400/30 bg-red-500/5 px-3 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-500/10 dark:text-red-400">Delete Sale</ConfirmSubmitButton>
             </form>
           ) : null}
         </div>
@@ -940,7 +940,7 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
                         <form action={deleteItemAction}>
                           <input type="hidden" name="saleId" value={sale.id} />
                           <input type="hidden" name="itemId" value={it.id} />
-                          <ConfirmSubmitButton message="Delete this POS line item? Stock will be restored if linked to inventory." className="rounded-md border border-red-200 px-2.5 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-50">Delete</ConfirmSubmitButton>
+                          <ConfirmSubmitButton message="Delete this POS line item? Stock will be restored if linked to inventory." className="rounded-md border border-red-400/30 bg-red-500/5 px-2.5 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-500/10 dark:text-red-400">Delete</ConfirmSubmitButton>
                         </form>
                       </div>
                     </td>

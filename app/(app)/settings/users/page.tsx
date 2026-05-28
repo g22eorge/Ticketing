@@ -996,7 +996,7 @@ export default async function UsersPage({
                     <input type="hidden" name="q" value={q} />
                     <button
                       type="submit"
-                      className={`rounded border px-2 py-0.5 text-[10px] font-semibold transition-colors ${selectedUser.isActive ? "border-red-200 text-red-600 hover:bg-red-50" : "border-emerald-200 text-emerald-600 hover:bg-emerald-50"}`}
+                      className={`rounded border px-2 py-0.5 text-[10px] font-semibold transition-colors ${selectedUser.isActive ? "border-red-400/30 text-red-600 hover:bg-red-500/10 dark:text-red-400" : "border-emerald-400/30 text-emerald-600 hover:bg-emerald-500/10 dark:text-emerald-400"}`}
                     >
                       {selectedUser.isActive ? "Deactivate" : "Reactivate"}
                     </button>

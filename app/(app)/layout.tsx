@@ -157,6 +157,7 @@ export default async function AppLayout({
         permissions={user.permissions}
         isPlatformAdmin={isPlatformAdmin}
         enabledModules={enabledModules}
+        orgName={org?.name}
         badges={{
           jobs: activeJobsCount,
           receivedJobs: receivedJobsCount,

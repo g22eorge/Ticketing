@@ -410,11 +410,13 @@ export function AppSidebar({
   badges,
   isPlatformAdmin = false,
   enabledModules,
+  orgName,
 }: {
   role: Role;
   permissions?: string[];
   isPlatformAdmin?: boolean;
   enabledModules?: Set<string>;
+  orgName?: string | null;
   badges?: {
     jobs?: number;
     receivedJobs?: number;
@@ -441,17 +443,18 @@ export function AppSidebar({
       >
         <div className="overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)] shadow-sm">
           <Image
-            src="/eagle-info-logo.png"
-            alt="Logo"
+            src="/app-logo.png"
+            alt="Duuka Pro Max"
             width={36}
             height={36}
             className="h-9 w-9 object-cover"
             priority
+            onError={(e) => { (e.target as HTMLImageElement).src = "/eagle-info-logo.png"; }}
           />
         </div>
         <div className="min-w-0">
-          <p className="text-[13px] font-bold tracking-tight text-[var(--ink)] leading-none">Repair</p>
-          <p className="text-[10px] font-semibold text-[var(--accent)] tracking-wide mt-0.5" aria-hidden="true">Manager</p>
+          <p className="text-[13px] font-bold tracking-tight text-[var(--ink)] leading-none">Duuka Pro</p>
+          <p className="text-[10px] font-semibold text-[var(--accent)] tracking-wide mt-0.5" aria-hidden="true">Max</p>
         </div>
       </Link>
 
@@ -555,8 +558,10 @@ export function AppSidebar({
 
       {/* ── Footer ── */}
       <div className="border-t border-[var(--line)] px-5 py-3 text-left">
-        <p className="truncate text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]" aria-hidden="true">Eagle Info Solutions</p>
-        <p className="mt-1 text-[10px] font-medium tracking-[0.08em] text-[var(--ink-muted)]" aria-hidden="true">Duuka ProMax</p>
+        {orgName && (
+          <p className="truncate text-[11px] font-semibold text-[var(--ink)]" title={orgName}>{orgName}</p>
+        )}
+        <p className="mt-0.5 text-[10px] font-medium tracking-[0.08em] text-[var(--accent)]" aria-hidden="true">Duuka Pro Max</p>
       </div>
     </aside>
   );

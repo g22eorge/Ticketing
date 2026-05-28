@@ -337,7 +337,7 @@ export default async function CampaignsPage({ searchParams }: { searchParams: Pr
                     <MenuDestructiveRow>
                       <form action={deleteCampaign}>
                         <input type="hidden" name="id" value={selected.id} />
-                        <ConfirmSubmitButton message="Delete this campaign and all contact records?" className="w-full px-3 py-1.5 text-left text-sm text-red-600 hover:bg-red-50">
+                        <ConfirmSubmitButton message="Delete this campaign and all contact records?" className="w-full px-3 py-1.5 text-left text-sm text-red-600 hover:bg-red-500/10 dark:text-red-400">
                           Delete Campaign
                         </ConfirmSubmitButton>
                       </form>

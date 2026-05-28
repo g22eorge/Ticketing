@@ -35,9 +35,9 @@ export default async function LoginPage() {
           <div className="relative">
             <div className="flex items-center gap-3">
               <div className="overflow-hidden rounded-xl border border-white/10">
-                <Image src="/app-logo.png" alt="Dduuka ProMax" width={36} height={36} className="h-9 w-9 object-cover" priority />
+                <Image src="/app-logo.png" alt="Duuka Pro Max" width={36} height={36} className="h-9 w-9 object-cover" priority />
               </div>
-              <span className="text-xs font-semibold uppercase tracking-[0.22em] text-white/50">Dduuka ProMax</span>
+              <span className="text-xs font-semibold uppercase tracking-[0.22em] text-white/50">Duuka Pro Max</span>
             </div>
           </div>
 
@@ -115,7 +115,7 @@ export default async function LoginPage() {
           </div>
 
           <div className="relative flex items-center justify-between">
-            <p className="text-[11px] text-white/25">© {new Date().getFullYear()} Dduuka ProMax</p>
+            <p className="text-[11px] text-white/25">© {new Date().getFullYear()} Duuka Pro Max</p>
             <a
               href="https://app.eagleinfosolutions.com"
               target="_blank"
@@ -134,17 +134,17 @@ export default async function LoginPage() {
             {/* Mobile-only logo */}
             <div className="mb-8 flex flex-col items-center lg:hidden">
               <div className="overflow-hidden rounded-2xl border border-white/10 shadow-lg shadow-black/40">
-                <Image src="/app-logo.png" alt="Dduuka ProMax" width={56} height={56} className="h-14 w-14 object-cover" priority />
+                <Image src="/app-logo.png" alt="Duuka Pro Max" width={56} height={56} className="h-14 w-14 object-cover" priority />
               </div>
-              <p className="mt-3 text-xs font-semibold uppercase tracking-[0.22em] text-white/40">Dduuka ProMax</p>
+              <p className="mt-3 text-xs font-semibold uppercase tracking-[0.22em] text-white/40">Duuka Pro Max</p>
             </div>
 
             {/* Desktop logo row */}
             <div className="mb-8 hidden items-center gap-3 lg:flex">
               <div className="overflow-hidden rounded-xl border border-white/10">
-                <Image src="/app-logo.png" alt="Dduuka ProMax" width={36} height={36} className="h-9 w-9 object-cover" priority />
+                <Image src="/app-logo.png" alt="Duuka Pro Max" width={36} height={36} className="h-9 w-9 object-cover" priority />
               </div>
-              <span className="text-xs font-semibold uppercase tracking-[0.22em] text-white/40">Dduuka ProMax</span>
+              <span className="text-xs font-semibold uppercase tracking-[0.22em] text-white/40">Duuka Pro Max</span>
             </div>
 
             <h2 className="text-2xl font-semibold text-white">Sign in</h2>

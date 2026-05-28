@@ -601,7 +601,7 @@ export default async function JournalPage({
                             <input type="hidden" name="id" value={entry.id} />
                             <ConfirmSubmitButton
                               message="Delete this draft entry? This cannot be undone."
-                              className="w-full px-3 py-1.5 text-left text-sm text-red-600 hover:bg-red-50"
+                              className="w-full px-3 py-1.5 text-left text-sm text-red-600 hover:bg-red-500/10 dark:text-red-400"
                             >
                               Delete Draft
                             </ConfirmSubmitButton>

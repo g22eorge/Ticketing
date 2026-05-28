@@ -216,7 +216,7 @@ export default async function CashFlowPage({
             ) : "No prior data"}
           </p>
         </div>
-        <div className={`panel-shadow rounded-xl border px-4 py-3 ${netOperating >= 0 ? "border-emerald-200 bg-emerald-50/40" : "border-red-200 bg-red-50/40"}`}>
+        <div className={`panel-shadow rounded-xl border px-4 py-3 ${netOperating >= 0 ? "border-emerald-400/30 bg-emerald-500/10" : "border-red-400/30 bg-red-500/10"}`}>
           <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Net Cash Flow</p>
           <p className={`mt-1 text-2xl font-bold ${netOperating >= 0 ? "text-emerald-700" : "text-red-600"}`}>
             {netOperating >= 0 ? "+" : ""}{formatMoneyCompact(netOperating, currency)}
@@ -294,7 +294,7 @@ export default async function CashFlowPage({
               <td className="hidden px-4 py-2.5 text-right tabular-nums text-[var(--ink-muted)] md:table-cell">({formatMoney(priorSupplierPayments.reduce((s, p) => s + p.amount, 0), currency)})</td>
               <td className="hidden px-4 py-2.5 text-right text-[11px] md:table-cell">—</td>
             </tr>
-            <tr className="border-t border-[var(--line)] bg-red-50/20 font-medium hover:bg-red-50/30">
+            <tr className="border-t border-[var(--line)] bg-red-500/5 font-medium hover:bg-red-500/10">
               <td className="px-4 py-2.5 pl-6 text-sm font-semibold text-[var(--ink)]">Total Cash Outflows</td>
               <td className="px-4 py-2.5 text-right font-bold tabular-nums text-red-600">({formatMoney(totalOutflow, currency)})</td>
               <td className="hidden px-4 py-2.5 text-right font-semibold tabular-nums text-[var(--ink-muted)] md:table-cell">({formatMoney(priorOutflow, currency)})</td>
@@ -304,7 +304,7 @@ export default async function CashFlowPage({
             </tr>
 
             {/* ── Net Operating ── */}
-            <tr className={`border-t-2 border-[var(--line)] ${netOperating >= 0 ? "bg-emerald-50/50" : "bg-red-50/50"}`}>
+            <tr className={`border-t-2 border-[var(--line)] ${netOperating >= 0 ? "bg-emerald-500/10" : "bg-red-500/10"}`}>
               <td className="px-4 py-3 pl-4 text-sm font-bold text-[var(--ink)]">Net Operating Cash Flow</td>
               <td className={`px-4 py-3 text-right text-base font-bold tabular-nums ${netOperating >= 0 ? "text-emerald-700" : "text-red-600"}`}>
                 {netOperating >= 0 ? "+" : ""}{formatMoney(netOperating, currency)}
@@ -394,7 +394,7 @@ export default async function CashFlowPage({
       )}
 
       {/* ── Summary callout ───────────────────────────────────────────────── */}
-      <div className={`panel-shadow rounded-xl border px-4 py-3 ${netOperating >= 0 ? "border-emerald-200 bg-emerald-50/40" : "border-red-200 bg-red-50/40"}`}>
+      <div className={`panel-shadow rounded-xl border px-4 py-3 ${netOperating >= 0 ? "border-emerald-400/30 bg-emerald-500/10" : "border-red-400/30 bg-red-500/10"}`}>
         <p className="text-xs font-semibold text-[var(--ink)]">
           {netOperating >= 0
             ? `Cash positive: ${formatMoney(netOperating, currency)} more came in than went out during ${periodLabel}.`

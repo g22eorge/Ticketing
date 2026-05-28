@@ -304,13 +304,13 @@ export default async function CashierShiftsPage({
                         <form action={closeShiftAction}>
                           <input type="hidden" name="shiftId" value={shift.id} />
                           <input type="hidden" name="closingCash" value="0" />
-                          <ConfirmSubmitButton message="Force close this shift? Closing cash will be set to 0." confirmLabel="Force Close" className="rounded border border-orange-200 px-2 py-0.5 text-[11px] font-semibold text-orange-600 hover:bg-orange-50">Force close</ConfirmSubmitButton>
+                          <ConfirmSubmitButton message="Force close this shift? Closing cash will be set to 0." confirmLabel="Force Close" className="rounded border border-orange-400/30 px-2 py-0.5 text-[11px] font-semibold text-orange-600 hover:bg-orange-500/10 dark:text-orange-400">Force close</ConfirmSubmitButton>
                         </form>
                       )}
                       {user.role === "ADMIN" && !isOpen && (
                         <form action={deleteShiftAction}>
                           <input type="hidden" name="shiftId" value={shift.id} />
-                          <ConfirmSubmitButton message="Delete this shift record? This cannot be undone." confirmLabel="Delete" className="rounded border border-red-200 px-2 py-0.5 text-[11px] font-semibold text-red-600 hover:bg-red-50">Delete</ConfirmSubmitButton>
+                          <ConfirmSubmitButton message="Delete this shift record? This cannot be undone." confirmLabel="Delete" className="rounded border border-red-400/30 px-2 py-0.5 text-[11px] font-semibold text-red-600 hover:bg-red-500/10 dark:text-red-400">Delete</ConfirmSubmitButton>
                         </form>
                       )}
                     </div>
@@ -356,10 +356,10 @@ export default async function CashierShiftsPage({
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
                             {isOpen && shift.cashierId !== user.id && (
-                              <form action={closeShiftAction}><input type="hidden" name="shiftId" value={shift.id} /><input type="hidden" name="closingCash" value="0" /><ConfirmSubmitButton message="Force close this shift? Closing cash will be set to 0." confirmLabel="Force Close" className="rounded border border-orange-200 px-2 py-0.5 text-[11px] font-semibold text-orange-600 hover:bg-orange-50">Force close</ConfirmSubmitButton></form>
+                              <form action={closeShiftAction}><input type="hidden" name="shiftId" value={shift.id} /><input type="hidden" name="closingCash" value="0" /><ConfirmSubmitButton message="Force close this shift? Closing cash will be set to 0." confirmLabel="Force Close" className="rounded border border-orange-400/30 px-2 py-0.5 text-[11px] font-semibold text-orange-600 hover:bg-orange-500/10 dark:text-orange-400">Force close</ConfirmSubmitButton></form>
                             )}
                             {user.role === "ADMIN" && !isOpen && (
-                              <form action={deleteShiftAction}><input type="hidden" name="shiftId" value={shift.id} /><ConfirmSubmitButton message="Delete this shift record? This cannot be undone." confirmLabel="Delete" className="rounded border border-red-200 px-2 py-0.5 text-[11px] font-semibold text-red-600 hover:bg-red-50">Delete</ConfirmSubmitButton></form>
+                              <form action={deleteShiftAction}><input type="hidden" name="shiftId" value={shift.id} /><ConfirmSubmitButton message="Delete this shift record? This cannot be undone." confirmLabel="Delete" className="rounded border border-red-400/30 px-2 py-0.5 text-[11px] font-semibold text-red-600 hover:bg-red-500/10 dark:text-red-400">Delete</ConfirmSubmitButton></form>
                             )}
                           </div>
                         </td>

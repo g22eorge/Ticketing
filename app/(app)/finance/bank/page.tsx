@@ -339,7 +339,7 @@ export default async function BankPage({
                         <input type="hidden" name="id" value={activeAccount.id} />
                         <ConfirmSubmitButton
                           message="Delete this bank account and all its transactions?"
-                          className="w-full px-3 py-1.5 text-left text-sm text-red-600 hover:bg-red-50"
+                          className="w-full px-3 py-1.5 text-left text-sm text-red-600 hover:bg-red-500/10 dark:text-red-400"
                         >
                           Delete Account
                         </ConfirmSubmitButton>

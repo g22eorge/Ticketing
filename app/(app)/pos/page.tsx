@@ -258,7 +258,7 @@ export default async function PosPage() {
                       {canDeleteSale ? (
                         <form action={deleteSaleAction}>
                           <input type="hidden" name="saleId" value={s.id} />
-                          <ConfirmSubmitButton message="Delete this open POS sale? Stock will be restored." className="rounded-md border border-red-200 px-2.5 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-50">Delete</ConfirmSubmitButton>
+                          <ConfirmSubmitButton message="Delete this open POS sale? Stock will be restored." className="rounded-md border border-red-400/30 bg-red-500/5 px-2.5 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-500/10 dark:text-red-400">Delete</ConfirmSubmitButton>
                         </form>
                       ) : null}
                     </div>
@@ -305,7 +305,7 @@ export default async function PosPage() {
                             {canDeleteSale ? (
                               <form action={deleteSaleAction}>
                                 <input type="hidden" name="saleId" value={s.id} />
-                                <ConfirmSubmitButton message="Delete this open POS sale? Stock will be restored." className="rounded-md border border-red-200 px-2.5 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-50">Delete</ConfirmSubmitButton>
+                                <ConfirmSubmitButton message="Delete this open POS sale? Stock will be restored." className="rounded-md border border-red-400/30 bg-red-500/5 px-2.5 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-500/10 dark:text-red-400">Delete</ConfirmSubmitButton>
                               </form>
                             ) : null}
                           </div>

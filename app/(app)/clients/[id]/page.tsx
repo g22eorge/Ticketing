@@ -357,7 +357,7 @@ export default async function ClientDetailPage({
 
         <div className="space-y-2 px-4 pb-4">
           {!notesFeatureAvailable ? (
-            <p className="rounded-lg border border-amber-200/60 bg-amber-50/60 px-3 py-2 text-xs text-amber-700">Notes timeline needs the latest DB migration — run <code className="font-mono">bunx prisma migrate dev</code> and restart.</p>
+            <p className="rounded-lg border border-amber-400/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">Notes timeline needs the latest DB migration — run <code className="font-mono">bunx prisma migrate dev</code> and restart.</p>
           ) : null}
 
           {client.notesEntries.length === 0 ? (

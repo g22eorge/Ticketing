@@ -353,7 +353,7 @@ export default async function CreditNotesPage({
                       <ConfirmSubmitButton
                         message={`Delete credit note ${cn.creditNoteNumber}? This cannot be undone.`}
                         confirmLabel="Delete"
-                        className="rounded border border-red-200 px-2 py-0.5 text-[11px] font-semibold text-red-600 hover:bg-red-50"
+                        className="rounded border border-red-400/30 px-2 py-0.5 text-[11px] font-semibold text-red-600 hover:bg-red-500/10 dark:text-red-400"
                       >Delete</ConfirmSubmitButton>
                     </form>
                   )}
@@ -443,7 +443,7 @@ export default async function CreditNotesPage({
                             <ConfirmSubmitButton
                               message={`Delete credit note ${cn.creditNoteNumber}? This cannot be undone.`}
                               confirmLabel="Delete"
-                              className="rounded border border-red-200 px-2 py-0.5 text-[11px] font-semibold text-red-600 hover:bg-red-50"
+                              className="rounded border border-red-400/30 px-2 py-0.5 text-[11px] font-semibold text-red-600 hover:bg-red-500/10 dark:text-red-400"
                             >Delete</ConfirmSubmitButton>
                           </form>
                         )}

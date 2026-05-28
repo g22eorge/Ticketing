@@ -524,21 +524,21 @@ export default async function NotificationTemplatesPage({
         <div className="mt-4 flex flex-wrap gap-2">
           {user.role === "ADMIN" ? (
             <form action={deduplicateTemplates}>
-              <button type="submit" className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-100">
+              <button type="submit" className="rounded-lg border border-red-400/30 bg-red-500/10 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-500/20 dark:text-red-400">
                 Remove Duplicates
               </button>
             </form>
           ) : null}
           {user.role === "ADMIN" ? (
             <form action={applyMetaMigration}>
-              <button type="submit" className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700 hover:bg-blue-100">
+              <button type="submit" className="rounded-lg border border-blue-400/30 bg-blue-500/10 px-3 py-2 text-sm font-medium text-blue-700 hover:bg-blue-500/20 dark:text-blue-400">
                 Apply Migration
               </button>
             </form>
           ) : null}
         </div>
         {templates.length === 0 ? (
-          <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-700">
+          <div className="mt-3 rounded-lg border border-amber-400/30 bg-amber-500/10 px-4 py-3 text-xs text-amber-700 dark:text-amber-400">
             No templates found. Click <strong>Create Default Templates</strong> to populate all 8 WhatsApp and email templates.
           </div>
         ) : null}

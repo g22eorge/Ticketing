@@ -45,12 +45,12 @@ export default async function WhatsAppSettingsPage() {
             </p>
           </div>
           {health?.ok ? (
-            <span className="flex shrink-0 items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700">
+            <span className="flex shrink-0 items-center gap-1.5 rounded-full border border-emerald-400/30 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 dark:text-emerald-400">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
               Connected
             </span>
           ) : summary.configured ? (
-            <span className="flex shrink-0 items-center gap-1.5 rounded-full border border-red-200 bg-red-50 px-2.5 py-1 text-[11px] font-semibold text-red-700">
+            <span className="flex shrink-0 items-center gap-1.5 rounded-full border border-red-400/30 bg-red-500/10 px-2.5 py-1 text-[11px] font-semibold text-red-700 dark:text-red-400">
               <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
               Error
             </span>
@@ -99,7 +99,7 @@ export default async function WhatsAppSettingsPage() {
             </div>
           </div>
         ) : (
-          <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-700">
+          <div className="rounded-lg border border-amber-400/30 bg-amber-500/10 px-4 py-3 text-xs text-amber-700 dark:text-amber-400">
             WhatsApp is not configured. Set <code className="font-mono">WHATSAPP_ACCESS_TOKEN</code>,{" "}
             <code className="font-mono">WHATSAPP_PHONE_NUMBER_ID</code>, and{" "}
             <code className="font-mono">WHATSAPP_BUSINESS_NUMBER</code> in your environment.
@@ -107,7 +107,7 @@ export default async function WhatsAppSettingsPage() {
         )}
 
         {health && !health.ok && (
-          <div className="mt-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-xs text-red-700">
+          <div className="mt-3 rounded-lg border border-red-400/30 bg-red-500/10 px-4 py-3 text-xs text-red-700 dark:text-red-400">
             <span className="font-semibold">API error:</span> {health.error}
           </div>
         )}

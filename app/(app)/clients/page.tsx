@@ -328,7 +328,7 @@ export default async function ClientsPage({
             </summary>
             <form action={createClientAction} noValidate className="px-3 pb-3">
               {filters.createError ? (
-                <p className="mb-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-600">
+                <p className="mb-2 rounded-lg border border-red-400/30 bg-red-500/10 px-3 py-2 text-xs text-red-700 dark:text-red-400">
                   {filters.createError}
                 </p>
               ) : null}
@@ -505,7 +505,7 @@ export default async function ClientsPage({
                             <input type="hidden" name="id" value={client.id} />
                             <button
                               disabled={client._count.jobs > 0}
-                              className="whitespace-nowrap rounded-lg border border-red-200 px-2.5 py-1 text-[11px] font-medium text-red-500 transition-colors hover:border-red-300 hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-40"
+                              className="whitespace-nowrap rounded-lg border border-red-400/30 bg-red-500/5 px-2.5 py-1 text-[11px] font-medium text-red-600 transition-colors hover:bg-red-500/10 dark:text-red-400 disabled:cursor-not-allowed disabled:opacity-40"
                             >
                               Delete
                             </button>

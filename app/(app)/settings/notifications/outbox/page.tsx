@@ -247,7 +247,7 @@ export default async function OutboxPage({
                       {r.status !== "DEAD" && r.status !== "SENT" && (
                         <form action={markDeadAction}>
                           <input type="hidden" name="id" value={r.id} />
-                          <button className="rounded border border-[var(--line)] px-2 py-0.5 text-[11px] font-medium text-[var(--ink-muted)] hover:border-red-200 hover:bg-red-50 hover:text-red-700">Discard</button>
+                          <button className="rounded border border-[var(--line)] px-2 py-0.5 text-[11px] font-medium text-[var(--ink-muted)] hover:border-red-400/30 hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400">Discard</button>
                         </form>
                       )}
                     </div>
@@ -375,7 +375,7 @@ export default async function OutboxPage({
                         {r.status !== "DEAD" && r.status !== "SENT" ? (
                           <form action={markDeadAction}>
                             <input type="hidden" name="id" value={r.id} />
-                            <button type="submit" className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-xs font-medium text-[var(--ink-muted)] transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-700">
+                            <button type="submit" className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-xs font-medium text-[var(--ink-muted)] transition-colors hover:border-red-400/30 hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400">
                               Discard
                             </button>
                           </form>

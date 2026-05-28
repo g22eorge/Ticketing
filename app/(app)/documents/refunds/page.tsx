@@ -259,7 +259,7 @@ export default async function RefundsPage({
                           {r.invoiceId ? "Invoice" : "Sale"}
                         </span>
                       </div>
-                      <span className="shrink-0 rounded bg-slate-100 px-1.5 py-0.5 text-[11px] font-semibold text-slate-700">{r.method.replace(/_/g, " ")}</span>
+                      <span className="shrink-0 rounded border border-[var(--line)] bg-[var(--panel-strong)] px-1.5 py-0.5 text-[11px] font-semibold text-[var(--ink-muted)]">{r.method.replace(/_/g, " ")}</span>
                     </div>
                     <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px]">
                       <span className="font-medium text-[var(--ink)]">{clientNameM}</span>
@@ -277,7 +277,7 @@ export default async function RefundsPage({
                       {user.role === "ADMIN" && (
                         <form action={deleteRefundAction}>
                           <input type="hidden" name="refundId" value={r.id} />
-                          <ConfirmSubmitButton message="Delete this refund? This cannot be undone." confirmLabel="Delete" className="rounded border border-red-200 px-2 py-0.5 text-[11px] font-semibold text-red-600 hover:bg-red-50">Delete</ConfirmSubmitButton>
+                          <ConfirmSubmitButton message="Delete this refund? This cannot be undone." confirmLabel="Delete" className="rounded border border-red-400/30 px-2 py-0.5 text-[11px] font-semibold text-red-600 hover:bg-red-500/10 dark:text-red-400">Delete</ConfirmSubmitButton>
                         </form>
                       )}
                     </div>
@@ -345,7 +345,7 @@ export default async function RefundsPage({
                       </td>
                       <td className="px-4 py-3 font-medium text-[var(--ink)]">{clientName}</td>
                       <td className="px-4 py-3">
-                        <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] font-semibold text-slate-700">
+                        <span className="rounded border border-[var(--line)] bg-[var(--panel-strong)] px-1.5 py-0.5 text-[11px] font-semibold text-[var(--ink-muted)]">
                           {r.method.replace(/_/g, " ")}
                         </span>
                       </td>
@@ -368,7 +368,7 @@ export default async function RefundsPage({
                             <ConfirmSubmitButton
                               message="Delete this refund? This cannot be undone."
                               confirmLabel="Delete"
-                              className="rounded border border-red-200 px-2 py-0.5 text-[11px] font-semibold text-red-600 hover:bg-red-50"
+                              className="rounded border border-red-400/30 px-2 py-0.5 text-[11px] font-semibold text-red-600 hover:bg-red-500/10 dark:text-red-400"
                             >Delete</ConfirmSubmitButton>
                           </form>
                         </td>

@@ -72,13 +72,13 @@ export default async function PlatformPage() {
       {(expiringOrgs.length > 0 || pastDueOrgs.length > 0) && (
         <div className="space-y-2">
           {pastDueOrgs.map((org) => (
-            <div key={org.id} className="flex items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm">
+            <div key={org.id} className="flex items-center justify-between gap-3 rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-2.5 text-sm">
               <div className="flex items-center gap-2">
                 <span className="text-red-500">●</span>
-                <span className="font-semibold text-red-800">{org.name}</span>
-                <span className="text-red-600">is past due</span>
+                <span className="font-semibold text-red-800 dark:text-red-300">{org.name}</span>
+                <span className="text-red-600 dark:text-red-400">is past due</span>
               </div>
-              <a href={`/platform/orgs/${org.id}`} className="rounded-lg border border-red-200 bg-white/60 px-2.5 py-1 text-xs font-semibold text-red-700 hover:bg-white">
+              <a href={`/platform/orgs/${org.id}`} className="rounded-lg border border-red-400/30 bg-red-500/5 px-2.5 py-1 text-xs font-semibold text-red-700 hover:bg-red-500/15 dark:text-red-400">
                 Fix →
               </a>
             </div>
@@ -86,13 +86,13 @@ export default async function PlatformPage() {
           {expiringOrgs.map((org) => {
             const days = Math.ceil((new Date(org.trialEndsAt!).getTime() - now) / 86_400_000);
             return (
-              <div key={org.id} className="flex items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm">
+              <div key={org.id} className="flex items-center justify-between gap-3 rounded-xl border border-amber-400/30 bg-amber-500/10 px-4 py-2.5 text-sm">
                 <div className="flex items-center gap-2">
                   <span className="text-amber-500">●</span>
-                  <span className="font-semibold text-amber-800">{org.name}</span>
-                  <span className="text-amber-700">trial expires in {days} day{days !== 1 ? "s" : ""}</span>
+                  <span className="font-semibold text-amber-800 dark:text-amber-300">{org.name}</span>
+                  <span className="text-amber-700 dark:text-amber-400">trial expires in {days} day{days !== 1 ? "s" : ""}</span>
                 </div>
-                <a href={`/platform/orgs/${org.id}`} className="rounded-lg border border-amber-200 bg-white/60 px-2.5 py-1 text-xs font-semibold text-amber-700 hover:bg-white">
+                <a href={`/platform/orgs/${org.id}`} className="rounded-lg border border-amber-400/30 bg-amber-500/5 px-2.5 py-1 text-xs font-semibold text-amber-700 hover:bg-amber-500/15 dark:text-amber-400">
                   Extend →
                 </a>
               </div>

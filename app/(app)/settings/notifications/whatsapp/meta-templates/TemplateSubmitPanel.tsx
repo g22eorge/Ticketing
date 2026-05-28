@@ -143,7 +143,7 @@ export function TemplateSubmitPanel({ templates }: { templates: TemplateDefiniti
       </div>
 
       {/* Requirements */}
-      <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 text-[13px] text-blue-900 space-y-1">
+      <div className="rounded-xl border border-blue-400/30 bg-blue-500/10 p-4 text-[13px] text-blue-900 dark:text-blue-300 space-y-1">
         <p className="font-semibold">Requirements</p>
         <ul className="list-disc list-inside space-y-0.5">
           <li><code className="bg-blue-100 px-1 rounded font-mono text-xs">WHATSAPP_ACCESS_TOKEN</code> needs <strong>whatsapp_business_management</strong> permission</li>
@@ -215,12 +215,12 @@ export function TemplateSubmitPanel({ templates }: { templates: TemplateDefiniti
               {isOpen && (
                 <div className="border-t border-[var(--line)] px-5 py-4 space-y-4 bg-[var(--bg)]">
                   {st.state === "error" && (
-                    <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+                    <div className="rounded-lg border border-red-400/30 bg-red-500/10 px-3 py-2 text-xs text-red-700 dark:text-red-400">
                       <span className="font-semibold">Error:</span> {st.message}
                     </div>
                   )}
                   {st.state === "ok" && (
-                    <div className="rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-xs text-green-800">
+                    <div className="rounded-lg border border-emerald-400/30 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-700 dark:text-emerald-400">
                       {st.action === "updated" ? "↻ Updated existing template" : "✓ Submitted new template"} · Status: <strong>{st.metaStatus}</strong> · ID: <code className="font-mono">{st.id}</code>
                     </div>
                   )}
@@ -296,7 +296,7 @@ export function TemplateSubmitPanel({ templates }: { templates: TemplateDefiniti
       </div>
 
       {allDone && submitAll === "done" && (
-        <div className="rounded-xl border border-green-200 bg-green-50 p-4 text-sm text-green-900">
+        <div className="rounded-xl border border-emerald-400/30 bg-emerald-500/10 p-4 text-sm text-emerald-700 dark:text-emerald-400">
           <p className="font-semibold mb-1">Submission complete</p>
           <p className="text-xs">
             PENDING templates are under review — UTILITY templates approve in minutes.

@@ -226,9 +226,6 @@ export default async function AiInsightsPage() {
         <div>
           <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">AI · Analytics</p>
           <p className="mt-0.5 text-[13px] font-bold text-[var(--ink)]">Business Insights</p>
-          <p className="mt-2 max-w-3xl text-sm text-[var(--ink-muted)]">
-            System-wide decision support across repairs, sales, finance, and inventory. These insights use live tenant-scoped data and are designed to become the data pack for AI-generated reports.
-          </p>
         </div>
         <div className="flex flex-wrap gap-2 text-xs font-semibold">
           <Link href="/reports" className="rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 py-2 text-[var(--ink)] hover:border-[var(--accent)]/40">Operations Reports</Link>

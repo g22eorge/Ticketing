@@ -350,7 +350,7 @@ export default async function TechniciansPage({
               </Link>
             ))}
             {hasActiveFilters ? (
-              <Link href="/technicians" className="rounded-full border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-[11px] font-semibold text-[var(--ink-muted)] hover:border-red-200 hover:text-red-600">
+              <Link href="/technicians" className="rounded-full border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-[11px] font-semibold text-[var(--ink-muted)] hover:border-red-400/30 hover:text-red-600 dark:hover:text-red-400">
                 Clear filters
               </Link>
             ) : null}
@@ -416,7 +416,7 @@ export default async function TechniciansPage({
                             </div>
                           ) : null}
                           {job.timelineNote ? (
-                            <p className="rounded-md border border-amber-200 bg-amber-50 px-2 py-1 text-[11px] text-amber-700">
+                            <p className="rounded-md border border-amber-400/30 bg-amber-500/10 px-2 py-1 text-[11px] text-amber-700 dark:text-amber-400">
                               Delay: {shortText(job.timelineNote, 88)}
                             </p>
                           ) : null}
