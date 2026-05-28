@@ -892,7 +892,6 @@ export default async function UsersPage({
   return (
     <div className="space-y-3">
       <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
-        <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Settings</p>
         <p className="text-[13px] font-bold text-[var(--ink)]">User Management</p>
         <p className="text-[11px] text-[var(--ink-muted)]">Manage team access, roles and permissions</p>
       </div>

@@ -54,7 +54,6 @@ export default async function DataHealPage({
       <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
-            <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Settings</p>
             <p className="text-[13px] font-bold text-[var(--ink)]">Data Heal</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">

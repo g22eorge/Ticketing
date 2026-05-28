@@ -63,10 +63,9 @@ export default async function SettingsAuditPage({
       <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
         <div className="flex items-center justify-between gap-2">
           <div>
-            <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Settings</p>
             <p className="text-[13px] font-bold text-[var(--ink)]">Audit Timeline</p>
           </div>
-          <a href={exportHref} className="rounded-lg border border-[var(--line)] px-3 py-1.5 text-xs font-semibold text-[var(--ink-muted)] hover:text-[var(--ink)]">
+          <a href={exportHref} className="btn-premium-secondary rounded-lg px-3 py-1.5 text-xs font-semibold">
             ↓ Export CSV
           </a>
         </div>

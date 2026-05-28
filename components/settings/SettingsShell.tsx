@@ -115,31 +115,36 @@ export function SettingsShell({
           </div>
         </div>
 
-        <div className="mt-5 flex flex-wrap gap-2">
+        <div className="mt-5 flex flex-wrap gap-1.5">
           {filteredItems.map((item) => {
             const active = isActive(pathname, item.href);
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                className={`rounded-full border px-3 py-1.5 text-xs font-bold transition ${
+                className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-all ${
                   active
-                    ? "border-[var(--accent)] bg-[var(--accent)] text-[var(--accent-contrast)]"
-                    : "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)] hover:border-[var(--accent)]/35 hover:text-[var(--ink)]"
+                    ? "border-[var(--accent)]/70 bg-[var(--accent)] text-[var(--accent-contrast)] shadow-sm"
+                    : "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)] hover:border-[var(--accent)]/40 hover:bg-[var(--panel)] hover:text-[var(--ink)]"
                 }`}
               >
+                {active && (
+                  <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-current opacity-80" />
+                )}
                 {item.label}
               </Link>
             );
           })}
         </div>
 
-        <div className="mt-3">
+        <div className="mt-3 min-h-[1.25rem]">
           {filteredItems.length === 0 ? (
             <p className="text-sm text-[var(--ink-muted)]">No settings match &ldquo;{q}&rdquo;.</p>
           ) : (
-            <p className="text-sm text-[var(--ink-muted)]">
-              {activeItem?.description ?? "Manage workspace configuration and your account."}
+            <p className="text-[12px] text-[var(--ink-muted)]">
+              {activeItem
+                ? <><span className="font-medium text-[var(--ink)]">{activeItem.label}</span> — {activeItem.description}</>
+                : "Select a section above to get started."}
             </p>
           )}
         </div>

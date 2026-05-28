@@ -166,7 +166,6 @@ export default async function SalesTargetsPage({
     <div className="space-y-4">
       {/* Header */}
       <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
-        <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Settings</p>
         <p className="text-[13px] font-bold text-[var(--ink)]">Sales Targets</p>
         <p className="mt-0.5 text-[11px] text-[var(--ink-muted)]">
           Set monthly revenue targets per staff member or for the team.
