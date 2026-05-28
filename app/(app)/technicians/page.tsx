@@ -208,6 +208,19 @@ export default async function TechniciansPage({
   ];
   return (
     <div className="space-y-4">
+
+      {/* ── Page header ── */}
+      <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
+        <div className="flex items-center justify-between gap-2 px-4 py-3">
+          <div>
+            <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Workbench</p>
+            <p className="text-[13px] font-bold text-[var(--ink)]">Technicians</p>
+            <p className="text-[11px] text-[var(--ink-muted)]">Active assignments and repair board</p>
+          </div>
+          <Link href="/settings/users" className="btn-premium-secondary rounded-lg px-3 py-1.5 text-[12px]">Manage staff →</Link>
+        </div>
+      </div>
+
       {/* ── Technician KPI tiles ── */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">

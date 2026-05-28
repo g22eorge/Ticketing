@@ -450,7 +450,7 @@ export default async function ClientsPage({
                   <th className="hidden px-4 py-2.5 2xl:table-cell">Email</th>
                   <th className="hidden px-4 py-2.5 2xl:table-cell">Organization</th>
                   <th className="px-4 py-2.5">Jobs</th>
-                  <th className="px-4 py-2.5">Updated</th>
+                  <th className="px-4 py-2.5">Joined</th>
                   <th className="px-4 py-2.5 text-right">Actions</th>
                 </tr>
               </thead>
@@ -490,7 +490,7 @@ export default async function ClientsPage({
                       </span>
                     </td>
                     <td className="whitespace-nowrap px-4 py-3 align-middle text-[var(--ink-muted)]">
-                      {formatEATDate(client.updatedAt)}
+                      {formatEATDate(client.createdAt)}
                     </td>
                     <td className="px-4 py-3 align-middle">
                       <div className="flex items-center justify-end gap-2">

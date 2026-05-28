@@ -20,21 +20,21 @@ const LEAD_STATUS_LABELS: Record<LeadStatus, string> = {
 };
 
 const LEAD_STATUS_COLORS: Record<LeadStatus, string> = {
-  NEW:           "border-blue-200 bg-blue-50 text-blue-700",
-  CONTACTED:     "border-purple-200 bg-purple-50 text-purple-700",
-  QUALIFIED:     "border-yellow-200 bg-yellow-50 text-yellow-700",
-  PROPOSAL_SENT: "border-orange-200 bg-orange-50 text-orange-700",
-  WON:           "border-green-200 bg-green-50 text-green-700",
-  LOST:          "border-red-200 bg-red-50 text-red-600",
-  STALE:         "border-slate-200 bg-slate-50 text-slate-500",
+  NEW:           "border-blue-400/30 bg-blue-500/10 text-blue-700 dark:text-blue-400",
+  CONTACTED:     "border-purple-400/30 bg-purple-500/10 text-purple-700 dark:text-purple-400",
+  QUALIFIED:     "border-amber-400/30 bg-amber-500/10 text-amber-700 dark:text-amber-400",
+  PROPOSAL_SENT: "border-orange-400/30 bg-orange-500/10 text-orange-700 dark:text-orange-400",
+  WON:           "border-emerald-400/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
+  LOST:          "border-red-400/30 bg-red-500/10 text-red-700 dark:text-red-400",
+  STALE:         "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]",
 };
 
 const QUOTATION_STATUS_COLORS: Record<string, string> = {
-  DRAFT:    "border-slate-200 bg-slate-50 text-slate-600",
-  SENT:     "border-blue-200 bg-blue-50 text-blue-700",
-  ACCEPTED: "border-green-200 bg-green-50 text-green-700",
-  REJECTED: "border-red-200 bg-red-50 text-red-600",
-  EXPIRED:  "border-slate-200 bg-slate-100 text-slate-500",
+  DRAFT:    "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]",
+  SENT:     "border-blue-400/30 bg-blue-500/10 text-blue-700 dark:text-blue-400",
+  ACCEPTED: "border-emerald-400/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
+  REJECTED: "border-red-400/30 bg-red-500/10 text-red-700 dark:text-red-400",
+  EXPIRED:  "border-[var(--line)] bg-[var(--panel-strong)]/60 text-[var(--ink-muted)]",
 };
 
 type SearchParams = {
@@ -250,8 +250,9 @@ export default async function SalesPage({
       {/* ── HEADER ─────────────────────────────────────────────────────────── */}
       <div className="panel-shadow flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
         <div>
-          <h1 className="text-base font-bold text-[var(--ink)]">Sales CRM</h1>
-          <p className="mt-0.5 text-[11px] text-[var(--ink-muted)]">Leads pipeline and quotations</p>
+          <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">CRM</p>
+          <p className="text-[13px] font-bold text-[var(--ink)]">Sales</p>
+          <p className="text-[11px] text-[var(--ink-muted)]">Leads pipeline and quotations</p>
         </div>
         <div className="flex items-center gap-2">
           {activeTab === "leads" && can.createLeads(user) ? (
