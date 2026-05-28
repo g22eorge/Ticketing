@@ -51,9 +51,10 @@ export default async function AdminOrgsPage() {
     <div className="space-y-4">
       <div className="panel-shadow flex items-center justify-between rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-2.5">
         <div>
+          <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Admin</p>
           <p className="text-[13px] font-bold text-[var(--ink)]">Organisation Module Access</p>
           <p className="text-[11px] text-[var(--ink-muted)]">
-            Platform admin — toggle which modules each org can access
+            Toggle which modules each org can access
           </p>
         </div>
         <span className="rounded-full border border-amber-400/30 bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:text-amber-400">
