@@ -266,7 +266,7 @@ export async function GET(
         detail: JSON.stringify({ invoiceNumber }),
         orgId,
       },
-    });
+    }).catch(() => { /* audit log failure must never block PDF delivery */ });
   }
 
   const invoiceElement = createElement(InvoiceDoc as never, {

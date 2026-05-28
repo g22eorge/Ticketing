@@ -207,6 +207,8 @@ export default async function JobCardsPage({
               jobs.map((job) => {
                 const pdfUrl = `${appUrl}/api/jobs/${job.id}/job-card`;
                 const jobUrl = `${appUrl}/jobs/${job.id}`;
+                const pdfHref = `/api/jobs/${job.id}/job-card`;
+                const jobHref = `/jobs/${job.id}`;
                 const clientPhone = job.client.phone.replace(/\D/g, "");
                 const waPhone = clientPhone.startsWith("0")
                   ? "256" + clientPhone.slice(1)
@@ -269,7 +271,7 @@ export default async function JobCardsPage({
                       <div className="flex items-center justify-end gap-1.5 flex-wrap">
                         {/* Print PDF */}
                         <a
-                          href={pdfUrl}
+                          href={pdfHref}
                           target="_blank"
                           rel="noreferrer"
                           title="Open job card PDF"

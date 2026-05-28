@@ -252,7 +252,7 @@ export async function saveDocumentBrandingSettings(orgId: string, data: Branding
   `;
 }
 
-export async function getDocumentBrandingSettings(orgId?: string) {
+export async function getDocumentBrandingSettings(orgId?: string): Promise<BrandingSettings> {
   if (hasDelegate()) {
     const delegate = (prisma as unknown as {
       documentBrandingSettings: {
@@ -261,19 +261,22 @@ export async function getDocumentBrandingSettings(orgId?: string) {
       };
     }).documentBrandingSettings;
 
-    const existing = await delegate.findFirst({ where: orgId ? { orgId } : { id: "singleton" } });
-    if (existing) {
-      return coerceRow(existing);
-    }
+    // Try org-specific first, then singleton, then defaults — never throw.
+    const byOrg = orgId ? await delegate.findFirst({ where: { orgId } }).catch(() => null) : null;
+    if (byOrg) return coerceRow(byOrg);
 
-    if (orgId) {
-      const { id: _id, ...brandingDefaults } = defaultBranding;
-      const created = await delegate.create({ data: { ...brandingDefaults, orgId } as BrandingSettings & { orgId: string } });
-      return coerceRow(created);
-    }
+    const singleton = await delegate.findFirst({ where: { id: "singleton" } }).catch(() => null);
+    if (singleton) return coerceRow(singleton);
 
-    const created = await delegate.create({ data: defaultBranding });
-    return coerceRow(created);
+    // No record exists — try to create one; if FK constraint fails (org not in DB yet) just return defaults.
+    const { id: _unusedId, ...brandingWithoutId } = defaultBranding;
+    const created = await (orgId
+      ? delegate.create({ data: { ...brandingWithoutId, orgId } as BrandingSettings & { orgId: string } })
+      : delegate.create({ data: defaultBranding })
+    ).catch(() => null);
+    if (created) return coerceRow(created);
+
+    return { ...defaultBranding };
   }
 
   return getViaRaw();

@@ -350,6 +350,7 @@ function DashboardHero({
   primaryLabel,
   secondaryHref,
   secondaryLabel,
+  extraActions,
   icon: _icon,
 }: {
   title: string;
@@ -358,6 +359,7 @@ function DashboardHero({
   primaryLabel: string;
   secondaryHref?: string;
   secondaryLabel?: string;
+  extraActions?: { href: string; label: string }[];
   icon?: React.ReactNode;
 }) {
   return (
@@ -375,6 +377,15 @@ function DashboardHero({
             {secondaryLabel}
           </Link>
         ) : null}
+        {extraActions?.map((action) => (
+          <Link
+            key={action.href}
+            href={action.href}
+            className="inline-flex items-center rounded-lg border border-[var(--line)] px-3 py-1.5 text-xs font-semibold text-[var(--ink)] transition hover:border-[var(--accent)]/50 hover:text-[var(--accent)]"
+          >
+            {action.label}
+          </Link>
+        ))}
       </div>
     </div>
   );
@@ -917,6 +928,8 @@ export default async function DashboardPage({
     const currency = getAppCurrency();
     const today = new Date();
     const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0, 0);
+    const yesterdayStart = new Date(todayStart.getTime() - 86_400_000);
+    const yesterdayEnd = new Date(todayStart.getTime() - 1);
     const mtdStart = new Date(today.getFullYear(), today.getMonth(), 1, 0, 0, 0, 0);
     const last6Months = monthSequence(today.getFullYear(), today.getMonth() + 1, 6);
     const orgFilter = user.orgId ? { orgId: user.orgId } : {};
@@ -959,6 +972,15 @@ export default async function DashboardPage({
       completedForTrend,
       salesForTrend,
       invoicesForTrend,
+      // Tech pending jobs (all active statuses)
+      techPendingJobs,
+      // Yesterday comparison
+      receivedYesterday,
+      completedYesterday,
+      cashYesterdayRaw,
+      expensesYesterdayRaw,
+      // Per-tech payout due
+      techPayoutByTech,
     ] = await Promise.all([
       prisma.job.groupBy({ by: ["status"], where: orgFilter, _count: { status: true } }),
 
@@ -1021,8 +1043,8 @@ export default async function DashboardPage({
 
       prisma.job.findMany({
         where: { ...orgFilter, status: "COMPLETED", completedAt: { gte: mtdStart }, assignedToId: { not: null } },
-        select: { assignedToId: true, assignedTo: { select: { name: true } } },
-      }).catch(() => [] as { assignedToId: string | null; assignedTo: { name: string } | null }[]),
+        select: { assignedToId: true, assignedTo: { select: { name: true } }, clientBill: true, receivedAt: true, completedAt: true },
+      }).catch(() => [] as { assignedToId: string | null; assignedTo: { name: string } | null; clientBill: number | null; receivedAt: Date; completedAt: Date | null }[]),
 
       prisma.job.findMany({
         where: orgFilter,
@@ -1046,6 +1068,17 @@ export default async function DashboardPage({
         where: { ...orgFilter, status: "PAID", paidAt: { gte: last6Months[0].start, lte: last6Months[5].end } },
         select: { totalAmount: true, paidAt: true },
       }).catch(() => [] as { totalAmount: number; paidAt: Date | null }[]),
+
+      prisma.job.findMany({
+        where: { ...orgFilter, status: { in: filterSupportedJobStatuses(["RECEIVED", "DIAGNOSING", "REFERRED", "IN_EXTERNAL_REPAIR", "AWAITING_APPROVAL", "IN_REPAIR", "READY_FOR_PICKUP"]) as JobStatus[] }, assignedToId: { not: null } },
+        select: { assignedToId: true },
+      }).catch(() => [] as { assignedToId: string | null }[]),
+
+      prisma.job.count({ where: { ...orgFilter, receivedAt: { gte: yesterdayStart, lte: yesterdayEnd } } }).catch(() => 0),
+      prisma.job.count({ where: { ...orgFilter, completedAt: { gte: yesterdayStart, lte: yesterdayEnd } } }).catch(() => 0),
+      prisma.payment.findMany({ where: { ...orgFilter, receivedAt: { gte: yesterdayStart, lte: yesterdayEnd } }, select: { amount: true } }).catch(() => [] as { amount: number }[]),
+      prisma.expense.findMany({ where: { orgId: orgFilter.orgId ?? undefined, paidAt: { gte: yesterdayStart, lte: yesterdayEnd } }, select: { amount: true } }).catch(() => [] as { amount: number }[]),
+      prisma.job.findMany({ where: { ...orgFilter, repairPath: "EXTERNAL", status: { in: filterSupportedJobStatuses(["COMPLETED", "DELIVERED"]) as JobStatus[] }, externalPaid: false, assignedToId: { not: null } }, select: { assignedToId: true, externalTechFee: true, externalTechBill: true } }).catch(() => [] as { assignedToId: string | null; externalTechFee: number | null; externalTechBill: number | null }[]),
     ]);
 
     // Revenue stream totals
@@ -1065,15 +1098,33 @@ export default async function DashboardPage({
     const payablesValue     = (payablesAgg._sum.totalAmount ?? 0) - (payablesAgg._sum.paidAmount ?? 0);
     const technicianPayoutsDue = payoutDueJobs.reduce((sum, job) => sum + resolveTechCost(job.externalTechFee, job.externalTechBill), 0);
 
+    // Yesterday comparison values
+    const cashYesterdayValue = cashYesterdayRaw.reduce((s, p) => s + p.amount, 0);
+    const expensesYesterdayValue = expensesYesterdayRaw.reduce((s, e) => s + e.amount, 0);
+
+    // Per-tech payout due map
+    const techPayoutDueMap = new Map<string, number>();
+    for (const j of techPayoutByTech) {
+      if (!j.assignedToId) continue;
+      techPayoutDueMap.set(j.assignedToId, (techPayoutDueMap.get(j.assignedToId) ?? 0) + resolveTechCost(j.externalTechFee, j.externalTechBill));
+    }
+
     // Low stock
     const lowStockItems = lowStockParts.filter((p) => p.qtyOnHand <= p.reorderLevel);
 
     // Tech leaderboard
-    const techMap = new Map<string, { name: string; count: number }>();
+    const techPendingMap = new Map<string, number>();
+    for (const j of techPendingJobs) {
+      if (!j.assignedToId) continue;
+      techPendingMap.set(j.assignedToId, (techPendingMap.get(j.assignedToId) ?? 0) + 1);
+    }
+    const techMap = new Map<string, { name: string; count: number; pending: number; revenue: number; totalDays: number; payoutDue: number }>();
     for (const j of techCompletedMtd) {
       if (!j.assignedToId || !j.assignedTo) continue;
-      const e = techMap.get(j.assignedToId) ?? { name: j.assignedTo.name, count: 0 };
+      const e = techMap.get(j.assignedToId) ?? { name: j.assignedTo.name, count: 0, pending: techPendingMap.get(j.assignedToId) ?? 0, revenue: 0, totalDays: 0, payoutDue: techPayoutDueMap.get(j.assignedToId) ?? 0 };
       e.count += 1;
+      e.revenue += getClientBill(j) ?? 0;
+      if (j.completedAt) e.totalDays += Math.round((new Date(j.completedAt).getTime() - new Date(j.receivedAt).getTime()) / 86_400_000);
       techMap.set(j.assignedToId, e);
     }
     const techLeaderboard = [...techMap.values()].sort((a, b) => b.count - a.count).slice(0, 5);
@@ -1109,86 +1160,137 @@ export default async function DashboardPage({
       { key: "STALE",         name: "Stale",          color: "text-[var(--ink-muted)]", href: "/sales/leads?status=STALE" },
     ] as const;
     const attentionItems = [
-      { label: "Jobs awaiting approval", count: awaitingApprovalCount, href: "/jobs?status=AWAITING_APPROVAL", tone: "text-[var(--accent)]" },
-      { label: "Overdue jobs", count: overdueJobsCount, href: "/jobs?status=RECEIVED,DIAGNOSING,REFERRED,IN_EXTERNAL_REPAIR,AWAITING_APPROVAL,IN_REPAIR,READY_FOR_PICKUP", tone: "text-red-500" },
-      { label: "Jobs with no ETA", count: jobsNoEtaCount, href: "/jobs", tone: "text-amber-600" },
-      { label: "No client update", count: jobsNoClientUpdateCount, href: "/jobs", tone: "text-amber-600" },
-      { label: "Completed but unpaid", count: completedUnpaidCount, href: "/jobs?status=COMPLETED", tone: "text-red-500" },
-      { label: "Low stock items", count: lowStockItems.length, href: "/inventory", tone: "text-amber-600" },
-      { label: "Supplier bills due", count: supplierBillsDueCount, href: "/inventory/supplier-bills", tone: "text-red-500" },
-    ].filter((item) => item.count > 0);
+      { label: "Jobs Awaiting Approval", description: "Needs client decision", count: awaitingApprovalCount, href: "/jobs?status=AWAITING_APPROVAL", tone: "text-[var(--accent)]" },
+      { label: "Jobs with No Client Update", description: "No update in 48h+", count: jobsNoClientUpdateCount, href: "/jobs", tone: "text-amber-600" },
+      { label: "Overdue Jobs", description: "Past expected date", count: overdueJobsCount, href: "/jobs?status=RECEIVED,DIAGNOSING,REFERRED,IN_EXTERNAL_REPAIR,AWAITING_APPROVAL,IN_REPAIR,READY_FOR_PICKUP", tone: "text-red-500" },
+      { label: "Completed but Unpaid", description: "Awaiting client payment", count: completedUnpaidCount, href: "/jobs?status=COMPLETED", tone: "text-red-500" },
+      { label: "Jobs with No ETA", description: "ETA not set by technician", count: jobsNoEtaCount, href: "/jobs", tone: "text-amber-600" },
+      { label: "Low Stock Alerts", description: lowStockItems.length === 0 ? "All items in stock" : `${lowStockItems.length} item${lowStockItems.length !== 1 ? "s" : ""} below reorder level`, count: lowStockItems.length, href: "/inventory", tone: "text-amber-600" },
+    ];
 
     return (
       <div className="space-y-4">
-        <DashboardHero
-          title="Business Overview"
-          summary={`${receivedToday} jobs in · ${completedToday} completed today`}
-          primaryHref="/jobs/new"
-          primaryLabel="New Job"
-          secondaryHref="/reports"
-          secondaryLabel="Reports"
-        />
 
-        <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+        {/* ── Quick action bar ── */}
+        <div className="flex flex-wrap items-center justify-center gap-2 py-1">
+          <Link href="/jobs/new" className="btn-premium inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold">
+            + New Job
+          </Link>
           {[
-            { label: "Jobs received today", value: String(receivedToday), href: "/jobs?status=RECEIVED", tone: "text-[var(--ink)]" },
-            { label: "Jobs completed today", value: String(completedToday), href: "/jobs?status=COMPLETED", tone: "text-emerald-600" },
-            { label: "Cash collected today", value: formatMoneyCompact(cashTodayValue, currency), href: "/documents/receipts", tone: "text-emerald-600" },
-            { label: "Expenses today", value: formatMoneyCompact(expensesTodayValue, currency), href: "/finance/expenses", tone: "text-red-500" },
-            { label: "Client balances due", value: formatMoneyCompact(outstandingValue, currency), href: "/documents/invoices?status=ISSUED", tone: outstandingValue > 0 ? "text-amber-600" : "text-[var(--ink)]" },
-          ].map((item) => (
-            <Link key={item.label} href={item.href} className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-3 transition hover:-translate-y-[2px]">
-              <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">{item.label}</p>
-              <p className={`mt-1 text-2xl font-black ${item.tone}`}>{item.value}</p>
+            { href: "/pos", label: "Record Sale" },
+            { href: "/finance/expenses", label: "Add Expense" },
+            { href: "/reports", label: "Reports" },
+          ].map((a) => (
+            <Link key={a.href} href={a.href}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--line)] px-4 py-2 text-sm font-semibold text-[var(--ink)] transition hover:border-[var(--accent)]/50 hover:text-[var(--accent)]">
+              {a.label}
             </Link>
           ))}
+        </div>
+
+        {/* ── Today at a Glance ── */}
+        <section>
+          <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Today at a Glance</p>
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+            {([
+              { label: "Jobs Received",      value: String(receivedToday),                   sub: `Yesterday: ${receivedYesterday}`,                                          href: "/jobs?status=RECEIVED",               tone: "text-[var(--ink)]",                                           iconBg: "bg-sky-500/15",     iconColor: "text-sky-600",    icon: "↙" },
+              { label: "Jobs Completed",     value: String(completedToday),                  sub: `Yesterday: ${completedYesterday}`,                                         href: "/jobs?status=COMPLETED",              tone: "text-emerald-600",                                            iconBg: "bg-emerald-500/15", iconColor: "text-emerald-600", icon: "✓" },
+              { label: "Cash Collected",     value: formatMoneyCompact(cashTodayValue, currency),     sub: `Yesterday: ${formatMoneyCompact(cashYesterdayValue, currency)}`,   href: "/documents/receipts",                 tone: "text-emerald-600",                                            iconBg: "bg-violet-500/15",  iconColor: "text-violet-600", icon: "$" },
+              { label: "Expenses Today",     value: formatMoneyCompact(expensesTodayValue, currency), sub: `Yesterday: ${formatMoneyCompact(expensesYesterdayValue, currency)}`, href: "/finance/expenses",                tone: "text-red-500",                                                iconBg: "bg-red-500/15",     iconColor: "text-red-600",    icon: "↑" },
+              { label: "Client Balances Due",value: formatMoneyCompact(outstandingValue, currency),   sub: `Unpaid jobs: ${completedUnpaidCount}`,                             href: "/documents/invoices?status=ISSUED",   tone: outstandingValue > 0 ? "text-amber-600" : "text-[var(--ink)]", iconBg: "bg-amber-500/15",   iconColor: "text-amber-600",  icon: "◎" },
+            ] as const).map((item) => (
+              <Link key={item.label} href={item.href}
+                className="panel-shadow flex items-start gap-3 rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px]">
+                <div className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-base font-bold ${item.iconBg} ${item.iconColor}`}>{item.icon}</div>
+                <div className="min-w-0">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-[var(--ink-muted)]">{item.label}</p>
+                  <p className={`mt-1 text-2xl font-black leading-none ${item.tone}`}>{item.value}</p>
+                  <p className="mt-1 text-[10px] text-[var(--ink-muted)]">{item.sub}</p>
+                </div>
+              </Link>
+            ))}
+          </div>
         </section>
 
-        <section className="panel-shadow rounded-xl border border-amber-500/20 bg-amber-500/8 p-4">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="text-sm font-bold text-[var(--ink)]">Attention Needed</p>
-            <span className="text-xs text-[var(--ink-muted)]">What needs action now</span>
-          </div>
-          {attentionItems.length ? (
-            <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+        {/* ── Attention Needed + Quick Actions ── */}
+        <div className="grid gap-3 lg:grid-cols-3">
+
+          {/* Attention Needed */}
+          <section className="panel-shadow rounded-xl border border-amber-500/20 bg-amber-500/8 p-4 lg:col-span-2">
+            <div className="mb-3 flex items-center gap-2">
+              <p className="text-sm font-bold text-[var(--ink)]">Attention Needed</p>
+              {attentionItems.filter((i) => i.count > 0).length > 0 && (
+                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
+                  {attentionItems.filter((i) => i.count > 0).length}
+                </span>
+              )}
+            </div>
+            <div className="grid gap-2 sm:grid-cols-2">
               {attentionItems.map((item) => (
-                <Link key={item.label} href={item.href} className="rounded-lg border border-amber-500/20 bg-[var(--panel)]/80 p-3 transition hover:border-amber-500/40">
-                  <p className={`text-2xl font-black ${item.tone}`}>{item.count}</p>
-                  <p className="mt-1 text-xs font-semibold text-[var(--ink)]">{item.label}</p>
+                <Link key={item.label} href={item.href}
+                  className="flex items-start gap-3 rounded-lg border border-amber-500/20 bg-[var(--panel)]/80 p-3 transition hover:border-amber-500/40">
+                  <p className={`text-xl font-black leading-none ${item.count > 0 ? item.tone : "text-[var(--ink-muted)]"}`}>{item.count}</p>
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold text-[var(--ink)]">{item.label}</p>
+                    <p className="text-[10px] text-[var(--ink-muted)]">{item.description}</p>
+                  </div>
                 </Link>
               ))}
             </div>
-          ) : (
-            <p className="mt-2 text-sm text-[var(--ink-muted)]">No urgent issues detected right now.</p>
-          )}
-        </section>
+            <Link href="/jobs" className="mt-3 block text-[11px] font-semibold text-amber-600 hover:underline">View All Alerts →</Link>
+          </section>
 
-        {/* ── 3 Revenue Streams ── */}
+          {/* Quick Actions */}
+          <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+            <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Quick Actions</p>
+            <div className="grid grid-cols-2 gap-2">
+              {([
+                { href: "/jobs/new",                        label: "New Repair Job",        icon: "🔧", bg: "bg-sky-500/10",    color: "text-sky-600" },
+                { href: "/documents/receipts",               label: "Record Payment",        icon: "💳", bg: "bg-emerald-500/10",color: "text-emerald-600" },
+                { href: "/pos",                             label: "Add Product Sale",      icon: "🛍️", bg: "bg-violet-500/10", color: "text-violet-600" },
+                { href: "/finance/expenses",                label: "Add Expense",           icon: "📤", bg: "bg-red-500/10",    color: "text-red-600" },
+                { href: "/inventory/purchase-orders/new",   label: "Purchase Order",        icon: "📦", bg: "bg-amber-500/10",  color: "text-amber-600" },
+                { href: "/inventory?filter=low",            label: "Check Low Stock",       icon: "📊", bg: "bg-orange-500/10", color: "text-orange-600" },
+              ] as const).map((action) => (
+                <Link key={action.href} href={action.href}
+                  className="flex flex-col items-center gap-2 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-3.5 text-center transition hover:border-[var(--accent)]/40 hover:bg-[var(--accent)]/5">
+                  <span className={`flex h-9 w-9 items-center justify-center rounded-lg text-lg ${action.bg} ${action.color}`}>{action.icon}</span>
+                  <p className="text-[10px] font-semibold leading-tight text-[var(--ink)]">{action.label}</p>
+                </Link>
+              ))}
+            </div>
+          </section>
+
+        </div>
+
+        {/* ── Revenue Summary ── */}
         <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
           <div className="mb-3 flex items-center justify-between">
             <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">
-              Revenue Streams — {monthLabel(today.getFullYear(), today.getMonth() + 1)}
+              Revenue Summary — {monthLabel(today.getFullYear(), today.getMonth() + 1)}
             </p>
             <Link href="/reports" className="text-[11px] font-semibold text-[var(--ink-muted)] hover:text-[var(--ink)] hover:underline">Full reports →</Link>
           </div>
 
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             {([
-              { label: "Repairs",   value: repairsMtd,   color: "text-sky-600",     ring: "border-sky-500/20 bg-sky-500/8",       href: "/jobs?status=COMPLETED" },
-              { label: "Products",  value: productsMtd,  color: "text-violet-600",  ring: "border-violet-500/20 bg-violet-500/8", href: "/pos" },
-              { label: "Corporate", value: corporateMtd, color: "text-emerald-600", ring: "border-emerald-500/20 bg-emerald-500/8",href: "/documents/invoices" },
-              { label: "Total MTD", value: totalMtd,     color: "text-[var(--ink)]", ring: "border-[var(--accent)]/25 bg-[var(--accent)]/8", href: "/reports" },
+              { label: "Repairs",   value: repairsMtd,   pct: totalMtd > 0 ? Math.round(repairsMtd / totalMtd * 100) : 0,   color: "text-sky-600",     ring: "border-sky-500/20 bg-sky-500/8",       href: "/jobs?status=COMPLETED" },
+              { label: "Products",  value: productsMtd,  pct: totalMtd > 0 ? Math.round(productsMtd / totalMtd * 100) : 0,  color: "text-violet-600",  ring: "border-violet-500/20 bg-violet-500/8", href: "/pos" },
+              { label: "Corporate", value: corporateMtd, pct: totalMtd > 0 ? Math.round(corporateMtd / totalMtd * 100) : 0, color: "text-emerald-600", ring: "border-emerald-500/20 bg-emerald-500/8",href: "/documents/invoices" },
+              { label: "Total Revenue (MTD)", value: totalMtd, pct: null, color: "text-[var(--ink)]", ring: "border-[var(--accent)]/25 bg-[var(--accent)]/8", href: "/reports" },
             ] as const).map((s) => (
-              <Link key={s.label} href={s.href}
-                className={`rounded-xl border ${s.ring} p-4 transition hover:-translate-y-[2px]`}>
+              <Link key={s.label} href={s.href} className={`rounded-xl border ${s.ring} p-4 transition hover:-translate-y-[2px]`}>
                 <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">{s.label}</p>
                 <p className={`mt-1.5 text-2xl font-bold ${s.color}`}>{formatMoneyCompact(s.value, currency)}</p>
-                <p className="mt-0.5 text-[10px] text-[var(--ink-muted)]">{formatMoney(s.value, currency)}</p>
+                {s.pct !== null ? (
+                  <p className={`mt-0.5 text-[10px] font-semibold ${s.color}`}>{s.pct}%</p>
+                ) : (
+                  <p className="mt-0.5 text-[10px] text-[var(--ink-muted)]">{formatMoney(s.value, currency)}</p>
+                )}
               </Link>
             ))}
           </div>
 
-          {/* 6-month stream bars */}
           <div className="-mx-1 mt-4 overflow-x-auto px-1 pb-1 [scrollbar-width:none]">
             <div className="min-w-max">
               <div className="mb-2 flex items-center gap-3 px-1 text-[10px] text-[var(--ink-muted)]">
@@ -1219,45 +1321,33 @@ export default async function DashboardPage({
           </div>
         </section>
 
-        {/* ── Financial Position ── */}
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
-          <Link href="/finance/bank"
-            className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px]">
-            <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Bank Balance</p>
-            <p className="mt-1.5 text-xl font-bold text-[var(--ink)]">{formatMoneyCompact(totalBankBalance, currency)}</p>
-            <p className="mt-0.5 text-[10px] text-[var(--ink-muted)]">{bankAccounts.length} account{bankAccounts.length !== 1 ? "s" : ""}</p>
-          </Link>
-          <Link href="/documents/invoices?status=ISSUED"
-            className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px]">
-            <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Receivable</p>
-            <p className={`mt-1.5 text-xl font-bold ${outstandingValue > 0 ? "text-amber-600" : "text-[var(--ink)]"}`}>{formatMoneyCompact(outstandingValue, currency)}</p>
-            <p className="mt-0.5 text-[10px] text-[var(--ink-muted)]">{outstandingInvoices.length} unpaid invoice{outstandingInvoices.length !== 1 ? "s" : ""}</p>
-          </Link>
-          <Link href="/inventory/supplier-bills?status=POSTED"
-            className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px]">
-            <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Payables</p>
-            <p className={`mt-1.5 text-xl font-bold ${payablesValue > 0 ? "text-red-500" : "text-[var(--ink)]"}`}>{formatMoneyCompact(payablesValue, currency)}</p>
-            <p className="mt-0.5 text-[10px] text-[var(--ink-muted)]">outstanding to suppliers</p>
-          </Link>
-          <Link href="/finance/expenses"
-            className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px]">
-            <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Expenses MTD</p>
-            <p className="mt-1.5 text-xl font-bold text-red-600">{formatMoneyCompact(expensesValue, currency)}</p>
-            <p className="mt-0.5 text-[10px] text-[var(--ink-muted)]">costs this month</p>
-          </Link>
-          <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-            <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Technician Payouts Due</p>
-            <p className={`mt-1.5 text-xl font-bold ${technicianPayoutsDue > 0 ? "text-amber-600" : "text-[var(--ink)]"}`}>{formatMoneyCompact(technicianPayoutsDue, currency)}</p>
-            <p className="mt-0.5 text-[10px] text-[var(--ink-muted)]">external work pending payout</p>
+        {/* ── Financial Position (list) ── */}
+        <section className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
+          <div className="border-b border-[var(--line)] px-4 py-2.5">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Financial Position</p>
           </div>
-          <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 sm:col-span-2 xl:col-span-1">
-            <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Gross Margin</p>
-            <p className={`mt-1.5 text-xl font-bold ${totalMtd - expensesValue >= 0 ? "text-emerald-600" : "text-red-600"}`}>
-              {formatMoneyCompact(totalMtd - expensesValue, currency)}
-            </p>
-            <p className="mt-0.5 text-[10px] text-[var(--ink-muted)]">revenue − expenses</p>
+          <div className="divide-y divide-[var(--line)]">
+            {([
+              { icon: "🏦", bg: "bg-sky-500/10",     label: "Cash & Bank Balance",          sub: `${bankAccounts.length} account${bankAccounts.length !== 1 ? "s" : ""}`,              value: totalBankBalance,          tone: "text-[var(--ink)]",                                            href: "/finance/bank" },
+              { icon: "📄", bg: "bg-amber-500/10",   label: "Receivables (Unpaid Invoices)", sub: `${outstandingInvoices.length} unpaid invoice${outstandingInvoices.length !== 1 ? "s" : ""}`, value: outstandingValue, tone: outstandingValue > 0 ? "text-amber-600" : "text-[var(--ink)]",  href: "/documents/invoices?status=ISSUED" },
+              { icon: "📦", bg: "bg-red-500/10",     label: "Payables (To Suppliers)",       sub: "outstanding to suppliers",                                                              value: payablesValue,             tone: payablesValue > 0 ? "text-red-500" : "text-[var(--ink)]",      href: "/inventory/supplier-bills?status=POSTED" },
+              { icon: "💸", bg: "bg-red-500/10",     label: "Expenses This Month",           sub: "costs this month",                                                                      value: expensesValue,             tone: "text-red-600",                                                 href: "/finance/expenses" },
+              { icon: "📈", bg: "bg-emerald-500/10", label: "Gross Margin (MTD)",            sub: `Revenue − Expenses · ${totalMtd > 0 ? Math.round((totalMtd - expensesValue) / totalMtd * 100) : 0}%`, value: totalMtd - expensesValue, tone: (totalMtd - expensesValue) >= 0 ? "text-emerald-600" : "text-red-600", href: "/reports" },
+              { icon: "🔧", bg: "bg-amber-500/10",   label: "Technician Payouts Due",        sub: `${payoutDueJobs.length} pending payout${payoutDueJobs.length !== 1 ? "s" : ""}`,       value: technicianPayoutsDue,      tone: technicianPayoutsDue > 0 ? "text-amber-600" : "text-[var(--ink)]", href: "/jobs?repairPath=EXTERNAL" },
+            ] as const).map((item) => (
+              <Link key={item.label} href={item.href}
+                className="flex items-center gap-3 px-4 py-3 transition hover:bg-[var(--panel-strong)]">
+                <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-base ${item.bg}`}>{item.icon}</span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-semibold text-[var(--ink)]">{item.label}</p>
+                  <p className="text-[10px] text-[var(--ink-muted)]">{item.sub}</p>
+                </div>
+                <p className={`shrink-0 text-sm font-bold ${item.tone}`}>{formatMoneyCompact(item.value, currency)}</p>
+                <span className="shrink-0 text-[var(--ink-muted)]">›</span>
+              </Link>
+            ))}
           </div>
-        </div>
+        </section>
 
         {/* ── Low stock alert ── */}
         {lowStockItems.length > 0 && (
@@ -1271,42 +1361,62 @@ export default async function DashboardPage({
           </div>
         )}
 
-        {/* ── Live Repair Pipeline ── */}
+        {/* ── Repair Pipeline (icon + flow) ── */}
         <section className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
-          <div className="border-b border-[var(--line)] px-3 py-2.5 flex flex-wrap items-center justify-between gap-2">
+          <div className="border-b border-[var(--line)] px-4 py-2.5 flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-3">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Live Repair Pipeline</p>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Repair Pipeline</p>
               {conversionRate > 0 && <span className="text-[10px] text-[var(--ink-muted)]">{conversionRate}% conversion</span>}
               {avgJobValue > 0 && <span className="text-[10px] text-[var(--ink-muted)]">· avg {formatMoneyCompact(avgJobValue, currency)}/job</span>}
             </div>
-            <div className="flex items-center gap-2 text-[11px] text-[var(--ink-muted)]">
-              <span className="rounded border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-1">{receivedToday} in · <span className="text-[var(--accent)]">{completedToday} out</span> today</span>
-              {awaitingApprovalCount > 0 && (
-                <Link href="/jobs?status=AWAITING_APPROVAL" className="rounded border border-[var(--accent)]/35 bg-[var(--accent)]/10 px-2 py-1 font-semibold text-[var(--accent)]">
-                  {awaitingApprovalCount} awaiting
-                </Link>
-              )}
-              <Link href="/jobs" className="ml-1 font-semibold text-[var(--accent)] hover:underline">All jobs →</Link>
+            <Link href="/jobs" className="text-[11px] font-semibold text-[var(--accent)] hover:underline">All jobs →</Link>
+          </div>
+          <div className="overflow-x-auto [scrollbar-width:thin]">
+            <div className="flex min-w-max items-center gap-1 px-4 py-4">
+              {(() => {
+                const PIPE_ICONS: Record<string, string> = {
+                  RECEIVED: "↙", DIAGNOSING: "🔍", REFERRED: "↗", IN_EXTERNAL_REPAIR: "🔧",
+                  AWAITING_APPROVAL: "⏳", IN_REPAIR: "🛠", READY_FOR_PICKUP: "📦", COMPLETED: "✓",
+                };
+                const visibleStages = statusData.filter((s) => s.key !== "CLOSED");
+                return visibleStages.map((s, i) => {
+                  const isUrgent   = s.key === "AWAITING_APPROVAL" && s.value > 0;
+                  const isPositive = (s.key === "READY_FOR_PICKUP" || s.key === "COMPLETED") && s.value > 0;
+                  return (
+                    <React.Fragment key={s.key}>
+                      <Link href={`/jobs?status=${s.key}`}
+                        className="flex min-w-[72px] flex-col items-center gap-1 rounded-lg px-2 py-2 transition hover:bg-[var(--panel-strong)]">
+                        <div className={`flex h-10 w-10 items-center justify-center rounded-full border-2 text-base font-bold ${
+                          isUrgent   ? "border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]" :
+                          isPositive ? "border-emerald-500 bg-emerald-500/10 text-emerald-600" :
+                          s.value > 0 ? "border-sky-400/40 bg-sky-500/8 text-sky-600" :
+                          "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]"
+                        }`}>{PIPE_ICONS[s.key] ?? "●"}</div>
+                        <p className={`text-xl font-bold leading-none ${s.value === 0 ? "text-[var(--ink-muted)]" : isUrgent ? "text-[var(--accent)]" : isPositive ? "text-emerald-600" : "text-[var(--ink)]"}`}>{s.value}</p>
+                        <p className="text-center text-[9px] leading-tight text-[var(--ink-muted)]">{s.name}</p>
+                      </Link>
+                      {i < visibleStages.length - 1 && (
+                        <span className="shrink-0 text-sm text-[var(--ink-muted)]">→</span>
+                      )}
+                    </React.Fragment>
+                  );
+                });
+              })()}
             </div>
           </div>
-          <div className="flex snap-x overflow-x-auto [scrollbar-width:thin]">
-            {statusData.filter((s) => s.key !== "CLOSED").map((s) => {
-              const isUrgent    = s.key === "AWAITING_APPROVAL" && s.value > 0;
-              const isPositive  = (s.key === "READY_FOR_PICKUP" || s.key === "COMPLETED") && s.value > 0;
-              return (
-                <Link key={s.key} href={`/jobs?status=${s.key}`}
-                  className={`flex min-w-[88px] shrink-0 flex-col items-center border-r border-[var(--line)] px-3 py-3.5 text-center transition hover:bg-[var(--panel-strong)] last:border-r-0 ${isUrgent ? "bg-[var(--accent)]/5" : ""}`}>
-                  <p className={`text-xl font-bold ${s.value === 0 ? "text-[var(--ink-muted)]" : isUrgent ? "text-[var(--accent)]" : isPositive ? "text-emerald-600" : "text-[var(--ink)]"}`}>
-                    {s.value}
-                  </p>
-                  <p className="mt-0.5 text-[10px] leading-tight text-[var(--ink-muted)]">{s.name}</p>
-                </Link>
-              );
-            })}
+          <div className="flex flex-wrap items-center gap-4 border-t border-[var(--line)] px-4 py-2">
+            <span className="flex items-center gap-1.5 text-[10px] text-[var(--ink-muted)]"><span className="h-2 w-2 rounded-full bg-emerald-500" />On Track</span>
+            <span className="flex items-center gap-1.5 text-[10px] text-[var(--ink-muted)]"><span className="h-2 w-2 rounded-full bg-amber-500" />Needs Attention</span>
+            <span className="flex items-center gap-1.5 text-[10px] text-[var(--ink-muted)]"><span className="h-2 w-2 rounded-full bg-red-500" />Delayed</span>
+            {awaitingApprovalCount > 0 && (
+              <Link href="/jobs?status=AWAITING_APPROVAL" className="ml-auto rounded border border-[var(--accent)]/35 bg-[var(--accent)]/10 px-2 py-1 text-[11px] font-semibold text-[var(--accent)]">
+                {awaitingApprovalCount} awaiting approval
+              </Link>
+            )}
           </div>
         </section>
 
-        {/* ── Sales Funnel Pipeline ── */}
+        {/* ── Sales Funnel ── */}
         <section className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
           <div className="border-b border-[var(--line)] px-3 py-2.5 flex items-center justify-between gap-2">
             <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Sales Funnel</p>
@@ -1326,13 +1436,14 @@ export default async function DashboardPage({
           </div>
         </section>
 
-        {/* ── Recent Activity + Tech Leaderboard ── */}
+        {/* ── Recent Activity + Technician Leaderboard ── */}
         <div className="grid gap-3 lg:grid-cols-2">
+
           {/* Recent Activity */}
           <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)]">
             <div className="border-b border-[var(--line)] px-4 py-2.5 flex items-center justify-between">
               <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Recent Activity</p>
-              <Link href="/jobs" className="text-[11px] font-semibold text-[var(--accent)] hover:underline">All jobs →</Link>
+              <Link href="/jobs" className="text-[11px] font-semibold text-[var(--accent)] hover:underline">All activity →</Link>
             </div>
             {recentJobs.length === 0 ? (
               <p className="px-4 py-6 text-sm text-[var(--ink-muted)]">No jobs yet.</p>
@@ -1364,37 +1475,62 @@ export default async function DashboardPage({
             )}
           </section>
 
-          {/* Tech Leaderboard */}
+          {/* Technician Leaderboard */}
           <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)]">
-            <div className="border-b border-[var(--line)] px-4 py-2.5">
+            <div className="border-b border-[var(--line)] px-4 py-2.5 flex items-center justify-between">
               <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">
-                Tech Leaderboard — {monthLabel(today.getFullYear(), today.getMonth() + 1)}
+                Technician Leaderboard — {monthLabel(today.getFullYear(), today.getMonth() + 1)}
               </p>
+              <Link href="/technicians" className="text-[11px] font-semibold text-[var(--accent)] hover:underline">Full leaderboard →</Link>
             </div>
             {techLeaderboard.length === 0 ? (
               <p className="px-4 py-6 text-sm text-[var(--ink-muted)]">No completed jobs this month.</p>
             ) : (
-              <div className="divide-y divide-[var(--line)]">
-                {techLeaderboard.map((tech, i) => {
-                  const maxCount = techLeaderboard[0].count;
-                  const pct = maxCount > 0 ? Math.round((tech.count / maxCount) * 100) : 0;
-                  return (
-                    <div key={tech.name} className="flex items-center gap-3 px-4 py-2.5">
-                      <span className="w-4 shrink-0 text-[10px] font-bold text-[var(--ink-muted)]">#{i + 1}</span>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-xs font-semibold text-[var(--ink)]">{tech.name}</p>
-                        <div className="mt-1 h-1 w-full rounded-full bg-[var(--line)]">
-                          <div className="h-1 rounded-full bg-[var(--accent)]" style={{ width: `${pct}%` }} />
-                        </div>
-                      </div>
-                      <span className="shrink-0 text-sm font-bold text-[var(--ink)]">{tech.count}</span>
-                      <span className="shrink-0 text-[10px] text-[var(--ink-muted)]">jobs</span>
-                    </div>
-                  );
-                })}
+              <div className="overflow-x-auto [scrollbar-width:thin]">
+                <table className="w-full text-left">
+                  <thead>
+                    <tr className="border-b border-[var(--line)]">
+                      <th className="px-3 py-2 text-[9px] font-bold uppercase tracking-wider text-[var(--ink-muted)]">#</th>
+                      <th className="px-2 py-2 text-[9px] font-bold uppercase tracking-wider text-[var(--ink-muted)]">Technician</th>
+                      <th className="px-2 py-2 text-center text-[9px] font-bold uppercase tracking-wider text-[var(--ink-muted)]">Completed</th>
+                      <th className="px-2 py-2 text-center text-[9px] font-bold uppercase tracking-wider text-[var(--ink-muted)]">In Progress</th>
+                      <th className="px-2 py-2 text-center text-[9px] font-bold uppercase tracking-wider text-[var(--ink-muted)]">Avg. TAT</th>
+                      <th className="px-2 py-2 text-right text-[9px] font-bold uppercase tracking-wider text-[var(--ink-muted)]">Revenue</th>
+                      <th className="px-3 py-2 text-right text-[9px] font-bold uppercase tracking-wider text-[var(--ink-muted)]">Payout Due</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[var(--line)]">
+                    {techLeaderboard.map((tech, i) => {
+                      const avgDays = tech.count > 0 ? (tech.totalDays / tech.count).toFixed(1) : null;
+                      return (
+                        <tr key={tech.name} className="transition hover:bg-[var(--panel-strong)]">
+                          <td className="px-3 py-3 text-[11px] font-bold text-[var(--ink-muted)]">
+                            {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `#${i + 1}`}
+                          </td>
+                          <td className="px-2 py-3">
+                            <div className="flex items-center gap-2">
+                              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--accent)]/15 text-[11px] font-bold text-[var(--accent)]">
+                                {tech.name.charAt(0).toUpperCase()}
+                              </div>
+                              <span className="text-xs font-semibold text-[var(--ink)]">{tech.name}</span>
+                            </div>
+                          </td>
+                          <td className="px-2 py-3 text-center text-sm font-bold text-emerald-600">{tech.count}</td>
+                          <td className={`px-2 py-3 text-center text-sm font-bold ${tech.pending > 0 ? "text-amber-600" : "text-[var(--ink-muted)]"}`}>{tech.pending}</td>
+                          <td className="px-2 py-3 text-center text-xs text-[var(--ink-muted)]">{avgDays !== null ? `${avgDays}d` : "—"}</td>
+                          <td className="px-2 py-3 text-right text-xs font-semibold text-[var(--ink)]">{formatMoneyCompact(tech.revenue, currency)}</td>
+                          <td className={`px-3 py-3 text-right text-xs font-bold ${tech.payoutDue > 0 ? "text-red-500" : "text-[var(--ink-muted)]"}`}>
+                            {formatMoneyCompact(tech.payoutDue, currency)}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
             )}
           </section>
+
         </div>
 
       </div>

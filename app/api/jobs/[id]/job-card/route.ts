@@ -156,7 +156,7 @@ export async function GET(
         detail: JSON.stringify({ documentNumber }),
         orgId,
       },
-    });
+    }).catch(() => { /* audit log failure must never block PDF delivery */ });
   }
 
   const docElement = createElement(JobCardDoc as never, {

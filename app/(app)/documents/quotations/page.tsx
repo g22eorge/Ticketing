@@ -251,6 +251,7 @@ export default async function QuotationsPage({
                 const persistedQuotation = job.quotations[0] ?? null;
                 const estimate = getClientBill(job);
                 const pdfUrl = `${appUrl}/api/jobs/${job.id}/quotation`;
+                const pdfHref = `/api/jobs/${job.id}/quotation`;
                 const clientPhone = (job.client.phone ?? "").replace(/\D/g, "");
                 const waPhone = clientPhone.startsWith("0")
                   ? "256" + clientPhone.slice(1)
@@ -372,7 +373,7 @@ export default async function QuotationsPage({
                           <>
                             {/* PDF */}
                             <a
-                              href={pdfUrl}
+                              href={pdfHref}
                               target="_blank"
                               rel="noreferrer"
                               title="Open quotation PDF"

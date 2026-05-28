@@ -191,7 +191,7 @@ export async function GET(
         detail: JSON.stringify({ quotationNumber }),
         orgId,
       },
-    });
+    }).catch(() => { /* audit log failure must never block PDF delivery */ });
   }
 
   const docElement = createElement(QuoteDoc as never, {
