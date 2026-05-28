@@ -275,7 +275,7 @@ export default async function BrandingPage({
   return (
     <div className="min-w-0 space-y-4">
       {params.profileSaved || params.saved || params.error ? (
-        <div className={`panel-shadow rounded-xl border px-4 py-3 text-sm ${params.error ? "border-red-200 bg-red-50 text-red-700" : "border-emerald-200 bg-emerald-50 text-emerald-700"}`}>
+        <div className={`panel-shadow rounded-xl border px-4 py-3 text-sm ${params.error ? "border-red-400/30 bg-red-500/10 text-red-700 dark:text-red-400" : "border-emerald-400/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"}`}>
           {params.profileSaved ? "Document settings saved." : null}
           {params.saved ? "Logo updated successfully." : null}
           {params.error ? params.error.replaceAll("+", " ") : null}

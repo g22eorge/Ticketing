@@ -19,9 +19,9 @@ function AgeBadge({ receivedAt, status }: { receivedAt: Date; status: string }) 
   }
   const cls =
     days >= 8
-      ? "bg-red-50 text-red-700 dark:bg-red-950/30 dark:text-red-400"
+      ? "bg-red-500/10 text-red-700 dark:text-red-400"
       : days >= 4
-        ? "bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-500"
+        ? "bg-amber-500/10 text-amber-700 dark:text-amber-400"
         : "bg-[var(--panel-strong)] text-[var(--ink-muted)]";
   return (
     <span className={`rounded-md px-1.5 py-0.5 text-[11px] font-semibold tabular-nums ${cls}`}>
@@ -499,7 +499,7 @@ export function JobTable({
                           typeof job.clientBill === "number"
                             ? "bg-[var(--accent)]/10 text-[#7A5F00]"
                             : ["AWAITING_APPROVAL", "IN_REPAIR", "READY_FOR_PICKUP"].includes(job.status)
-                              ? "bg-amber-50 text-amber-800"
+                              ? "border border-amber-400/30 bg-amber-500/10 text-amber-700 dark:text-amber-400"
                               : "hidden"
                         }`}>
                           {typeof job.clientBill === "number"

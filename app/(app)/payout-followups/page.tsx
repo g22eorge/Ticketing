@@ -446,7 +446,7 @@ export default async function PayoutFollowupsPage({
                           <td className={`${tdClass} font-semibold`}><Link href={`/jobs/${job.id}?tab=financials&returnTo=/payout-followups&returnLabel=Finance+Hub`} className="hover:text-[var(--accent)] transition-colors">{job.jobNumber}</Link></td>
                           <td className={tdClass}><p className="font-medium">{job.client?.fullName ?? "—"}</p><p className="text-xs text-[var(--ink-muted)]">{job.client?.phone ?? "—"}</p></td>
                           <td className={tdClass}>{job.assignedTo?.name ?? "Unassigned"}</td>
-                          <td className={tdClass}><span className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold ${job.repairPath === "EXTERNAL" ? "bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400" : "bg-[var(--accent)]/10 text-[var(--accent)]"}`}>{job.repairPath === "EXTERNAL" ? "External" : "In-house"}</span></td>
+                          <td className={tdClass}><span className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold ${job.repairPath === "EXTERNAL" ? "border border-blue-400/30 bg-blue-500/10 text-blue-700 dark:text-blue-400" : "bg-[var(--accent)]/10 text-[var(--accent)]"}`}>{job.repairPath === "EXTERNAL" ? "External" : "In-house"}</span></td>
                           <td className={tdClass}>{repairCost > 0 ? formatMoneyCompact(repairCost, currency) : <span className="text-[var(--ink-muted)]">—</span>}</td>
                           <td className={`${tdClass} font-semibold text-amber-700 dark:text-amber-400`}>{formatMoneyCompact(job.clientBill ?? 0, currency)}</td>
                           <td className={`${tdClass} text-xs text-[var(--ink-muted)]`}>{doneAt ? new Date(doneAt).toLocaleDateString() : "—"}</td>
@@ -520,7 +520,7 @@ export default async function PayoutFollowupsPage({
                           <td className={tdClass}>
                             <span className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold ${
                               bill.status === "PART_PAID"
-                                ? "bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400"
+                                ? "border border-amber-400/30 bg-amber-500/10 text-amber-700 dark:text-amber-400"
                                 : "bg-[var(--panel-strong)] text-[var(--ink-muted)]"
                             }`}>
                               {bill.status === "PART_PAID" ? "Part paid" : "Posted"}
