@@ -173,6 +173,18 @@ export default async function PosPage() {
           </a>
         </section>
       ) : null}
+      {/* ── Page header ── */}
+      <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
+        <div className="flex items-center justify-between gap-2 px-4 py-3">
+          <div>
+            <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Point of Sale</p>
+            <p className="text-[13px] font-bold text-[var(--ink)]">Sales</p>
+            <p className="text-[11px] text-[var(--ink-muted)]">Walk-in and retail transactions</p>
+          </div>
+          <Link href="/pos/shifts" className="btn-premium-secondary rounded-lg px-3 py-1.5 text-[12px]">Shifts →</Link>
+        </div>
+      </div>
+
       {/* ── KPI tiles ── */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">

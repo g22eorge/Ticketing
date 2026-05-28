@@ -97,7 +97,7 @@ function TargetCard({ target, currency }: { target: TargetRecord; currency: stri
 function TargetSection({ title, targets, currency }: { title: string; targets: TargetRecord[]; currency: string }) {
   return (
     <section>
-      <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-[var(--ink-muted)]">{title}</h2>
+      <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]">{title}</p>
       {targets.length === 0 ? (
         <p className="rounded-lg border border-dashed border-[var(--line)] p-6 text-center text-sm text-[var(--ink-muted)]">
           No targets set for this period.

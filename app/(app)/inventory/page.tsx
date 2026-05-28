@@ -203,11 +203,12 @@ export default async function InventoryPage({
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="panel-shadow flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-2.5">
-        <p className="text-[13px] font-bold text-[var(--ink)]">
-          Inventory{" "}
-          <span className="font-normal text-[var(--ink-muted)]">· {parts.length} parts</span>
-        </p>
+      <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
+      <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
+        <div>
+          <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Warehouse</p>
+          <p className="text-[13px] font-bold text-[var(--ink)]">Inventory <span className="font-normal text-[var(--ink-muted)]">· {parts.length} parts</span></p>
+        </div>
         {canManage && (
             <div className="flex flex-wrap items-center gap-2">
             <Link href="/inventory/locations" className="inline-flex items-center rounded-lg border border-[var(--line)] px-3 py-1.5 text-xs font-semibold text-[var(--ink)] transition hover:border-[var(--accent)]/50 hover:text-[var(--accent)]">
@@ -224,6 +225,7 @@ export default async function InventoryPage({
             </Link>
           </div>
         )}
+      </div>
       </div>
 
       {/* KPI strip */}

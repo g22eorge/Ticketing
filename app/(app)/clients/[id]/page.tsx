@@ -203,9 +203,16 @@ export default async function ClientDetailPage({
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--line)] px-4 py-2.5">
           <div className="min-w-0">
             <p className="truncate text-[13px] font-bold text-[var(--ink)]">{client.fullName}</p>
-            <p className="text-[11px] text-[var(--ink-muted)]">{client.phone}{client.email ? ` · ${client.email}` : ""}</p>
+            <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[11px] text-[var(--ink-muted)]">
+              <a href={`tel:${client.phone}`} className="transition hover:text-[var(--accent)]">{client.phone}</a>
+              {client.email ? <><span className="opacity-40">·</span><span>{client.email}</span></> : null}
+              {client.organization ? <><span className="opacity-40">·</span><span className="truncate">{client.organization}</span></> : null}
+            </div>
+            <p className="mt-0.5 text-[10px] text-[var(--ink-muted)]/60">Joined {formatEATDate(client.createdAt)} · last activity {formatEATDateTime(latestActivity)}</p>
           </div>
-          <p className="shrink-0 text-[11px] text-[var(--ink-muted)]">Last: {formatEATDateTime(latestActivity)}</p>
+          {canEdit ? (
+            <Link href="/jobs/new" className="btn-premium shrink-0 rounded-lg px-3 py-1.5 text-[12px]">+ New Repair</Link>
+          ) : null}
         </div>
         <div className="grid grid-cols-2 divide-x divide-y divide-[var(--line)] sm:grid-cols-4 sm:divide-y-0">
           <div className="px-4 py-2">
@@ -338,26 +345,29 @@ export default async function ClientDetailPage({
         )}
       </div>
 
-      <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-        <h2 className="font-semibold">Client Notes</h2>
-        <form action={addClientNote} className="mt-3 flex flex-col gap-2">
+      <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
+        <div className="border-b border-[var(--line)] px-4 py-2.5">
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Client Notes</p>
+          <p className="text-[11px] text-[var(--ink-muted)]">Internal notes visible to your team only</p>
+        </div>
+        <form action={addClientNote} className="flex flex-col gap-2 p-4">
           <textarea name="body" required placeholder="Add note" className="min-h-24 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm outline-none transition focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/20" />
           <button type="submit" disabled={!notesFeatureAvailable} className="btn-premium self-start rounded-lg px-3 py-2 text-sm text-white disabled:opacity-60">Add Note</button>
         </form>
 
-        {!notesFeatureAvailable ? (
-          <p className="mt-2 text-xs text-[var(--ink-muted)]">Notes timeline needs latest DB migration. Run `bunx prisma migrate dev` and restart dev server.</p>
-        ) : null}
+        <div className="space-y-2 px-4 pb-4">
+          {!notesFeatureAvailable ? (
+            <p className="rounded-lg border border-amber-200/60 bg-amber-50/60 px-3 py-2 text-xs text-amber-700">Notes timeline needs the latest DB migration — run <code className="font-mono">bunx prisma migrate dev</code> and restart.</p>
+          ) : null}
 
-        <div className="mt-4 space-y-2">
           {client.notesEntries.length === 0 ? (
-            <p className="text-sm text-[var(--ink-muted)]">No timeline notes yet.</p>
+            <p className="text-[12px] text-[var(--ink-muted)]">No notes yet.</p>
           ) : (
             client.notesEntries.map((note: ClientDetail["notesEntries"][number]) => (
               <div key={note.id} className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] p-3">
-                <p className="text-sm">{note.body}</p>
-                <p className="mt-1 text-xs text-[var(--ink-muted)]">
-                  {note.author.name} • {formatEATDateTime(note.createdAt)}
+                <p className="text-sm leading-relaxed">{note.body}</p>
+                <p className="mt-1.5 text-[10px] text-[var(--ink-muted)]">
+                  {note.author.name} · {formatEATDateTime(note.createdAt)}
                 </p>
               </div>
             ))
