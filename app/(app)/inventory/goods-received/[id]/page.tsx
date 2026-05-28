@@ -32,15 +32,13 @@ export default async function GoodsReceivedDetailPage({ params }: { params: Prom
     <div className="max-w-3xl space-y-6">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <Link href="/inventory/goods-received" className="text-xs font-semibold text-[var(--ink-muted)] hover:text-[var(--ink)]">
-            ← Goods Received
-          </Link>
-          <h1 className="mt-1 text-xl font-bold text-[var(--ink)]">{grn.grnNumber}</h1>
+          <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Inventory · GRN</p>
+          <p className="mt-0.5 font-mono text-[13px] font-bold text-[var(--ink)]">{grn.grnNumber}</p>
           <p className="mt-0.5 text-sm text-[var(--ink-muted)]">
             Supplier: <Link href={`/inventory/suppliers/${grn.supplier.id}`} className="text-[var(--gold)] hover:underline">{grn.supplier.name}</Link>
           </p>
         </div>
-        <span className="mt-1 rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">{grn.status}</span>
+        <span className="mt-1 rounded-full border border-emerald-400/30 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-400">{grn.status}</span>
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">

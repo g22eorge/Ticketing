@@ -739,8 +739,8 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
       <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 sm:p-5">
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--accent)]">POS Sale</p>
-            <h1 className="mt-0.5 text-lg font-bold text-[var(--ink)]">{sale.saleNumber}</h1>
+            <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">POS · Sale</p>
+            <p className="mt-0.5 font-mono text-[13px] font-bold text-[var(--ink)]">{sale.saleNumber}</p>
             {sale.client ? <p className="mt-0.5 text-xs text-[var(--ink-muted)]">{sale.client.fullName}</p> : null}
           </div>
           <span className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${

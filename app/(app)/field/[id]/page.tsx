@@ -90,23 +90,12 @@ export default async function FieldVisitDetailPage({
 
   return (
     <div className="mx-auto max-w-2xl space-y-6 p-6">
-      <div className="flex items-center gap-3">
-        <Link
-          href="/field"
-          className="flex items-center gap-1 text-sm text-[var(--ink-muted)] hover:text-[var(--ink)] transition-colors"
-        >
-          <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4" aria-hidden="true">
-            <path fillRule="evenodd" d="M17 10a.75.75 0 0 1-.75.75H5.612l4.158 3.96a.75.75 0 1 1-1.04 1.08l-5.5-5.25a.75.75 0 0 1 0-1.08l5.5-5.25a.75.75 0 1 1 1.04 1.08L5.612 9.25H16.25A.75.75 0 0 1 17 10Z" clipRule="evenodd" />
-          </svg>
-          Field Visits
-        </Link>
-      </div>
-
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-xl font-semibold text-[var(--ink)]">
+          <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Field · Visit</p>
+          <p className="mt-0.5 text-[13px] font-bold text-[var(--ink)]">
             {TYPE_LABELS[visit.type] ?? visit.type} Visit
-          </h1>
+          </p>
           <p className="text-sm text-[var(--ink-muted)] mt-0.5">
             Scheduled {formatEATDateTime(visit.scheduledAt)}
           </p>
@@ -118,7 +107,7 @@ export default async function FieldVisitDetailPage({
 
       {visit.job && (
         <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-          <h2 className="mb-3 text-xs font-bold uppercase tracking-wide text-[var(--ink-muted)]">Linked Job</h2>
+          <p className="mb-3 text-xs font-bold uppercase tracking-wide text-[var(--ink-muted)]">Linked Job</p>
           <dl className="divide-y divide-[var(--line)]">
             <DetailRow
               label="Job Number"
@@ -137,7 +126,7 @@ export default async function FieldVisitDetailPage({
       )}
 
       <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-        <h2 className="mb-3 text-xs font-bold uppercase tracking-wide text-[var(--ink-muted)]">Visit Details</h2>
+        <p className="mb-3 text-xs font-bold uppercase tracking-wide text-[var(--ink-muted)]">Visit Details</p>
         <dl className="divide-y divide-[var(--line)]">
           <DetailRow label="Type" value={TYPE_LABELS[visit.type] ?? visit.type} />
           <DetailRow label="Assigned To" value={visit.assignedTo.name} />
@@ -153,7 +142,7 @@ export default async function FieldVisitDetailPage({
       </div>
 
       <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-        <h2 className="mb-3 text-xs font-bold uppercase tracking-wide text-[var(--ink-muted)]">Location & Contact</h2>
+        <p className="mb-3 text-xs font-bold uppercase tracking-wide text-[var(--ink-muted)]">Location & Contact</p>
         <dl className="divide-y divide-[var(--line)]">
           <DetailRow label="Address" value={visit.address} />
           {(visit.gpsLat && visit.gpsLng) && (
@@ -178,7 +167,7 @@ export default async function FieldVisitDetailPage({
 
       {(visit.notes || visit.outcomeNotes || visit.signoffName) && (
         <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-          <h2 className="mb-3 text-xs font-bold uppercase tracking-wide text-[var(--ink-muted)]">Notes & Sign-off</h2>
+          <p className="mb-3 text-xs font-bold uppercase tracking-wide text-[var(--ink-muted)]">Notes & Sign-off</p>
           <dl className="divide-y divide-[var(--line)]">
             {visit.notes && <DetailRow label="Notes" value={visit.notes} />}
             {visit.outcomeNotes && <DetailRow label="Outcome Notes" value={visit.outcomeNotes} />}
@@ -190,7 +179,7 @@ export default async function FieldVisitDetailPage({
 
       {canAct && !["COMPLETED", "FAILED", "CANCELLED"].includes(visit.status) && (
         <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-          <h2 className="mb-4 text-xs font-bold uppercase tracking-wide text-[var(--ink-muted)]">Actions</h2>
+          <p className="mb-4 text-xs font-bold uppercase tracking-wide text-[var(--ink-muted)]">Actions</p>
           <VisitActions
             visitId={visit.id}
             status={visit.status}

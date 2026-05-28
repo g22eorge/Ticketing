@@ -61,12 +61,10 @@ export default async function PurchaseOrderDetailPage({
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <Link href="/inventory/purchase-orders" className="text-xs font-semibold text-[var(--ink-muted)] hover:text-[var(--ink)]">
-            ← Purchase Orders
-          </Link>
-          <h1 className="mt-1 text-xl font-bold text-[var(--ink)]">
+          <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Inventory · Purchase Order</p>
+          <p className="mt-0.5 font-mono text-[13px] font-bold text-[var(--ink)]">
             {po.reference ?? `PO-${po.id.slice(-6).toUpperCase()}`}
-          </h1>
+          </p>
           <p className="mt-0.5 text-sm text-[var(--ink-muted)]">
             Supplier:{" "}
             <Link href={`/inventory/suppliers/${po.supplier.id}`} className="text-[var(--gold)] hover:underline">

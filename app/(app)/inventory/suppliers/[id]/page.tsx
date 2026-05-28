@@ -58,10 +58,8 @@ export default async function SupplierDetailPage({
     <div className="space-y-6 max-w-2xl">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <Link href="/inventory/suppliers" className="text-xs font-semibold text-[var(--ink-muted)] hover:text-[var(--ink)]">
-            ← Suppliers
-          </Link>
-          <h1 className="mt-1 text-xl font-bold text-[var(--ink)]">{supplier.name}</h1>
+          <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Inventory · Supplier</p>
+          <p className="mt-0.5 text-[13px] font-bold text-[var(--ink)]">{supplier.name}</p>
         </div>
         <span className={`mt-1 rounded-full px-3 py-1 text-xs font-semibold ${supplier.isActive ? "border border-emerald-400/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" : "border border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]"}`}>
           {supplier.isActive ? "Active" : "Inactive"}

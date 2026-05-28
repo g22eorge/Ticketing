@@ -35,11 +35,11 @@ export default async function PurchaseRequestDetailPage({ params }: { params: Pr
     <div className="max-w-3xl space-y-6">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <Link href="/inventory/purchase-requests" className="text-xs font-semibold text-[var(--ink-muted)] hover:text-[var(--ink)]">← Purchase Requests</Link>
-          <h1 className="mt-1 text-xl font-bold text-[var(--ink)]">{request.requestNumber}</h1>
+          <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Inventory · Purchase Request</p>
+          <p className="mt-0.5 font-mono text-[13px] font-bold text-[var(--ink)]">{request.requestNumber}</p>
           <p className="mt-0.5 text-sm text-[var(--ink-muted)]">Requested by {request.requestedBy.name || request.requestedBy.email}</p>
         </div>
-        <span className="mt-1 rounded-full bg-sky-100 px-3 py-1 text-xs font-semibold text-sky-700">{request.status}</span>
+        <span className="mt-1 rounded-full border border-sky-400/30 bg-sky-500/10 px-3 py-1 text-xs font-semibold text-sky-700 dark:text-sky-400">{request.status}</span>
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">

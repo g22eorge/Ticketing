@@ -36,11 +36,11 @@ export default async function SupplierBillDetailPage({ params }: { params: Promi
     <div className="max-w-3xl space-y-6">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <Link href="/inventory/supplier-bills" className="text-xs font-semibold text-[var(--ink-muted)] hover:text-[var(--ink)]">← Supplier Bills</Link>
-          <h1 className="mt-1 text-xl font-bold text-[var(--ink)]">{bill.billNumber}</h1>
+          <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Inventory · Supplier Bill</p>
+          <p className="mt-0.5 font-mono text-[13px] font-bold text-[var(--ink)]">{bill.billNumber}</p>
           <p className="mt-0.5 text-sm text-[var(--ink-muted)]">Supplier: <Link href={`/inventory/suppliers/${bill.supplier.id}`} className="text-[var(--gold)] hover:underline">{bill.supplier.name}</Link></p>
         </div>
-        <span className="mt-1 rounded-full bg-sky-100 px-3 py-1 text-xs font-semibold text-sky-700">{bill.status}</span>
+        <span className="mt-1 rounded-full border border-sky-400/30 bg-sky-500/10 px-3 py-1 text-xs font-semibold text-sky-700 dark:text-sky-400">{bill.status}</span>
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
