@@ -191,9 +191,14 @@ export default async function GroupsPage({ searchParams }: { searchParams: Promi
 
   return (
     <section className="space-y-4">
-      <div className="panel-shadow flex items-center justify-between gap-2 rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-2.5">
-        <p className="text-[13px] font-bold text-[var(--ink)]">Groups</p>
-        <Link href="/settings/users" className="btn-premium rounded-lg px-3 py-1.5 text-[12px]">Users</Link>
+      <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
+        <div className="flex items-center justify-between gap-2">
+          <div>
+            <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Settings</p>
+            <p className="text-[13px] font-bold text-[var(--ink)]">Permission Groups</p>
+          </div>
+          <Link href="/settings/users" className="btn-premium rounded-lg px-3 py-1.5 text-[12px]">Users →</Link>
+        </div>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[360px_1fr]">

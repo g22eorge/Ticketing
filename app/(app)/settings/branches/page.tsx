@@ -20,7 +20,8 @@ export default async function BranchesPage() {
 
   return (
     <div className="space-y-4 max-w-2xl">
-      <div className="panel-shadow flex items-center rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-2.5">
+      <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
+        <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Settings</p>
         <p className="text-[13px] font-bold text-[var(--ink)]">Branches</p>
       </div>
 

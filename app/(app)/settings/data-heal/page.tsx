@@ -51,15 +51,20 @@ export default async function DataHealPage({
 
   return (
     <div className="space-y-4">
-      <div className="panel-shadow flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-2.5">
-        <p className="text-[13px] font-bold text-[var(--ink)]">Data Heal</p>
-        <div className="flex flex-wrap items-center gap-2">
-          <span className={`rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${unresolved > 0 ? "border-amber-400/30 bg-amber-500/10 text-amber-700 dark:text-amber-400" : "border-emerald-400/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"}`}>
-            {unresolved} unresolved
-          </span>
-          <span className="rounded-full border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-0.5 text-[11px] text-[var(--ink-muted)]">
-            Last: {lastHealedAt ? new Date(lastHealedAt.createdAt).toLocaleString() : "Never"}
-          </span>
+      <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Settings</p>
+            <p className="text-[13px] font-bold text-[var(--ink)]">Data Heal</p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className={`rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${unresolved > 0 ? "border-amber-400/30 bg-amber-500/10 text-amber-700 dark:text-amber-400" : "border-emerald-400/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"}`}>
+              {unresolved} unresolved
+            </span>
+            <span className="rounded-full border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-0.5 text-[11px] text-[var(--ink-muted)]">
+              Last: {lastHealedAt ? new Date(lastHealedAt.createdAt).toLocaleString() : "Never"}
+            </span>
+          </div>
         </div>
       </div>
 
