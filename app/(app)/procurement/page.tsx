@@ -43,10 +43,11 @@ export default async function ProcurementPage() {
 
   return (
     <div className="space-y-4">
-      <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
+      <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
+        <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Inventory</p>
         <p className="text-[13px] font-bold text-[var(--ink)]">Procurement</p>
-        <p className="mt-1 text-[12px] text-[var(--ink-muted)]">
-          Supplier purchasing, receiving, and supplier bill payment workflows.
+        <p className="mt-0.5 text-[11px] text-[var(--ink-muted)]">
+          Supplier purchasing, receiving, and bill payment workflows.
         </p>
       </div>
 

@@ -252,6 +252,7 @@ export default async function RecurringInvoicesPage() {
       {/* Header */}
       <div className="panel-shadow flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-2.5">
         <div>
+          <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Finance</p>
           <p className="text-[13px] font-bold text-[var(--ink)]">
             Recurring Invoices{" "}
             <span className="font-normal text-[var(--ink-muted)]">

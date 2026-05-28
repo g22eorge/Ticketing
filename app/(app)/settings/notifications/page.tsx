@@ -22,26 +22,34 @@ export default async function NotificationSettingsPage() {
 
   return (
     <div className="space-y-4">
-      {/* Shortcuts */}
-      {canSeeOutbox || canSeeTemplates || canSeeWhatsApp ? (
-        <div className="panel-shadow flex flex-wrap gap-2 rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
-          {canSeeOutbox ? (
-            <Link href="/settings/notifications/outbox" className="btn-premium-secondary rounded-lg px-3 py-1.5 text-sm">
-              Outbox
-            </Link>
-          ) : null}
-          {canSeeTemplates ? (
-            <Link href="/settings/notifications/templates" className="btn-premium-secondary rounded-lg px-3 py-1.5 text-sm">
-              Templates
-            </Link>
-          ) : null}
-          {canSeeWhatsApp ? (
-            <Link href="/settings/notifications/whatsapp" className="btn-premium-secondary rounded-lg px-3 py-1.5 text-sm">
-              WhatsApp
-            </Link>
-          ) : null}
+      {/* Header */}
+      <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Settings</p>
+            <p className="text-[13px] font-bold text-[var(--ink)]">Notifications</p>
+          </div>
+          {(canSeeOutbox || canSeeTemplates || canSeeWhatsApp) && (
+            <div className="flex flex-wrap gap-1.5">
+              {canSeeOutbox && (
+                <Link href="/settings/notifications/outbox" className="btn-premium-secondary rounded-lg px-3 py-1.5 text-xs">
+                  Outbox
+                </Link>
+              )}
+              {canSeeTemplates && (
+                <Link href="/settings/notifications/templates" className="btn-premium-secondary rounded-lg px-3 py-1.5 text-xs">
+                  Templates
+                </Link>
+              )}
+              {canSeeWhatsApp && (
+                <Link href="/settings/notifications/whatsapp" className="btn-premium-secondary rounded-lg px-3 py-1.5 text-xs">
+                  WhatsApp
+                </Link>
+              )}
+            </div>
+          )}
         </div>
-      ) : null}
+      </div>
 
       {canSeeOutbox ? (
         <div className="panel-shadow flex items-center justify-between rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">

@@ -143,6 +143,7 @@ export default async function BalanceSheetPage({
       <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
         <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
           <div>
+            <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Finance · Reports</p>
             <p className="text-[13px] font-bold text-[var(--ink)]">Balance Sheet</p>
             <p className="text-[11px] text-[var(--ink-muted)]">As of {MONTHS[month - 1]} {year}</p>
           </div>
