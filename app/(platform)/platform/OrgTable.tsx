@@ -5,18 +5,18 @@ import Link from "next/link";
 import { setPlanAction, setBillingStatusAction } from "./actions";
 
 const STATUS_CHIP: Record<string, string> = {
-  TRIALING:  "bg-blue-100  text-blue-700  border-blue-200",
-  ACTIVE:    "bg-emerald-100 text-emerald-700 border-emerald-200",
-  PAST_DUE:  "bg-red-100   text-red-700   border-red-200",
+  TRIALING:  "bg-blue-500/10   text-blue-700   border-blue-400/30   dark:text-blue-400",
+  ACTIVE:    "bg-emerald-500/10 text-emerald-700 border-emerald-400/30 dark:text-emerald-400",
+  PAST_DUE:  "bg-red-500/10    text-red-700    border-red-400/30    dark:text-red-400",
   CANCELLED: "bg-[var(--panel-strong)] text-[var(--ink-muted)] border-[var(--line)]",
 };
 
 const PLAN_CHIP: Record<string, string> = {
   STARTER:    "bg-[var(--panel-strong)] text-[var(--ink-muted)] border-[var(--line)]",
-  STANDARD:   "bg-sky-100    text-sky-700    border-sky-200",
-  GROWTH:     "bg-amber-100  text-amber-700  border-amber-200",
-  PREMIUM:    "bg-violet-100 text-violet-700 border-violet-200",
-  ENTERPRISE: "bg-purple-100 text-purple-700 border-purple-200",
+  STANDARD:   "bg-sky-500/10    text-sky-700    border-sky-400/30    dark:text-sky-400",
+  GROWTH:     "bg-amber-500/10  text-amber-700  border-amber-400/30  dark:text-amber-400",
+  PREMIUM:    "bg-violet-500/10 text-violet-700 border-violet-400/30 dark:text-violet-400",
+  ENTERPRISE: "bg-purple-500/10 text-purple-700 border-purple-400/30 dark:text-purple-400",
 };
 
 export type OrgRow = {

@@ -77,12 +77,12 @@ export default async function PaymentsPage() {
                 <td className="px-4 py-2 text-[var(--ink)]">{e.event}</td>
                 <td className="px-4 py-2">
                   <span
-                    className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
+                    className={`rounded-full border px-2 py-0.5 text-xs font-semibold ${
                       e.status === "successful"
-                        ? "bg-green-100 text-green-700"
+                        ? "border-emerald-400/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
                         : e.status === "cancelled"
-                        ? "bg-gray-100 text-gray-600"
-                        : "bg-red-100 text-red-700"
+                        ? "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]"
+                        : "border-red-400/30 bg-red-500/10 text-red-700 dark:text-red-400"
                     }`}
                   >
                     {e.status}

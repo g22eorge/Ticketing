@@ -6,10 +6,10 @@ import type { OrgRow } from "./OrgTable";
 
 const PLAN_CHIP: Record<string, string> = {
   STARTER:    "bg-[var(--panel-strong)] text-[var(--ink-muted)] border-[var(--line)]",
-  STANDARD:   "bg-sky-100    text-sky-700    border-sky-200",
-  GROWTH:     "bg-amber-100  text-amber-700  border-amber-200",
-  PREMIUM:    "bg-violet-100 text-violet-700 border-violet-200",
-  ENTERPRISE: "bg-purple-100 text-purple-700 border-purple-200",
+  STANDARD:   "bg-sky-500/10    text-sky-700    border-sky-400/30    dark:text-sky-400",
+  GROWTH:     "bg-amber-500/10  text-amber-700  border-amber-400/30  dark:text-amber-400",
+  PREMIUM:    "bg-violet-500/10 text-violet-700 border-violet-400/30 dark:text-violet-400",
+  ENTERPRISE: "bg-purple-500/10 text-purple-700 border-purple-400/30 dark:text-purple-400",
 };
 
 export const dynamic = "force-dynamic";

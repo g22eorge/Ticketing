@@ -43,16 +43,16 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 const STATUS_COLORS: Record<string, string> = {
-  RECEIVED: "bg-slate-100 text-slate-700",
-  DIAGNOSING: "bg-blue-100 text-blue-700",
-  REFERRED: "bg-purple-100 text-purple-700",
-  IN_EXTERNAL_REPAIR: "bg-purple-100 text-purple-700",
-  AWAITING_APPROVAL: "bg-amber-100 text-amber-700",
-  AWAITING_RESPONSE: "bg-amber-100 text-amber-700",
-  IN_REPAIR: "bg-orange-100 text-orange-700",
-  READY_FOR_PICKUP: "bg-green-100 text-green-700",
-  COMPLETED: "bg-emerald-100 text-emerald-700",
-  CLOSED: "bg-gray-100 text-gray-600",
+  RECEIVED:           "border border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]",
+  DIAGNOSING:         "border border-blue-400/30   bg-blue-500/10   text-blue-700   dark:text-blue-400",
+  REFERRED:           "border border-purple-400/30 bg-purple-500/10 text-purple-700 dark:text-purple-400",
+  IN_EXTERNAL_REPAIR: "border border-purple-400/30 bg-purple-500/10 text-purple-700 dark:text-purple-400",
+  AWAITING_APPROVAL:  "border border-amber-400/30  bg-amber-500/10  text-amber-700  dark:text-amber-400",
+  AWAITING_RESPONSE:  "border border-amber-400/30  bg-amber-500/10  text-amber-700  dark:text-amber-400",
+  IN_REPAIR:          "border border-orange-400/30 bg-orange-500/10 text-orange-700 dark:text-orange-400",
+  READY_FOR_PICKUP:   "border border-green-400/30  bg-green-500/10  text-green-700  dark:text-green-400",
+  COMPLETED:          "border border-emerald-400/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
+  CLOSED:             "border border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]",
 };
 
 // ── Page ──────────────────────────────────────────────────────────────────────
@@ -122,7 +122,7 @@ export default async function PublicStatusPage({
             </p>
             <p className="text-[11px] text-gray-400">Repair Status Tracker</p>
           </div>
-          <span className={`rounded-full px-3 py-1 text-xs font-semibold ${STATUS_COLORS[job.status] ?? "bg-gray-100 text-gray-600"}`}>
+          <span className={`rounded-full px-3 py-1 text-xs font-semibold ${STATUS_COLORS[job.status] ?? "border border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]"}`}>
             {STATUS_LABELS[job.status] ?? job.status}
           </span>
         </div>

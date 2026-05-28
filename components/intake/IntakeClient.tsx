@@ -206,7 +206,7 @@ function RequestDrawer({
               <button
                 type="button"
                 onClick={() => setConfirmDelete(true)}
-                className="rounded-lg px-2.5 py-1.5 text-xs font-semibold border border-red-200 bg-red-50 text-red-700 hover:bg-red-100 transition-colors"
+                className="rounded-lg px-2.5 py-1.5 text-xs font-semibold border border-red-400/30 bg-red-500/10 text-red-700 hover:bg-red-500/20 dark:text-red-400 transition-colors"
               >
                 Delete
               </button>

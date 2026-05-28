@@ -76,10 +76,10 @@ export default async function PlatformSettingsPage() {
       <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] p-5">
         <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Environment</p>
         <div className="flex items-center gap-2">
-          <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+          <span className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${
             process.env.PESAPAL_ENV === "production"
-              ? "bg-green-100 text-green-700"
-              : "bg-amber-100 text-amber-700"
+              ? "border-emerald-400/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
+              : "border-amber-400/30 bg-amber-500/10 text-amber-700 dark:text-amber-400"
           }`}>
             {process.env.PESAPAL_ENV === "production" ? "Production" : "Sandbox"}
           </span>

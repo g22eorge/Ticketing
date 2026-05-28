@@ -63,10 +63,10 @@ export default async function PlatformPage() {
     new Intl.NumberFormat("en-UG", { style: "currency", currency: "UGX", maximumFractionDigits: 0 }).format(n);
 
   const PLAN_CHIP: Record<string, string> = {
-    FREE:         "border-[var(--line)]   bg-[var(--panel-strong)] text-[var(--ink-muted)]",
-    STARTER:      "border-sky-200         bg-sky-100    text-sky-700",
-    PROFESSIONAL: "border-amber-200       bg-amber-100  text-amber-700",
-    ENTERPRISE:   "border-purple-200      bg-purple-100 text-purple-700",
+    FREE:         "border-[var(--line)]      bg-[var(--panel-strong)] text-[var(--ink-muted)]",
+    STARTER:      "border-sky-400/30         bg-sky-500/10    text-sky-700    dark:text-sky-400",
+    PROFESSIONAL: "border-amber-400/30       bg-amber-500/10  text-amber-700  dark:text-amber-400",
+    ENTERPRISE:   "border-purple-400/30      bg-purple-500/10 text-purple-700 dark:text-purple-400",
   };
 
   return (

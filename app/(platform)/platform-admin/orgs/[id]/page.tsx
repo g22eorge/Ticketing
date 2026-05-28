@@ -13,9 +13,9 @@ export const dynamic = "force-dynamic";
 
 const PLAN_CHIP: Record<string, string> = {
   FREE:         "bg-[var(--panel-strong)] text-[var(--ink-muted)] border-[var(--line)]",
-  STARTER:      "bg-sky-100    text-sky-700    border-sky-200",
-  PROFESSIONAL: "bg-amber-100  text-amber-700  border-amber-200",
-  ENTERPRISE:   "bg-purple-100 text-purple-700 border-purple-200",
+  STARTER:      "bg-sky-500/10    text-sky-700    border-sky-400/30    dark:text-sky-400",
+  PROFESSIONAL: "bg-amber-500/10  text-amber-700  border-amber-400/30  dark:text-amber-400",
+  ENTERPRISE:   "bg-purple-500/10 text-purple-700 border-purple-400/30 dark:text-purple-400",
 };
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
@@ -91,7 +91,7 @@ export default async function OrgDetailPage({ params }: { params: Promise<{ id: 
               {planLabel(org.plan)}
             </span>
             {!org.isActive && (
-              <span className="rounded-full border border-red-200 bg-red-50 px-2.5 py-0.5 text-[11px] font-semibold text-red-600">
+              <span className="rounded-full border border-red-400/30 bg-red-500/10 px-2.5 py-0.5 text-[11px] font-semibold text-red-700 dark:text-red-400">
                 INACTIVE
               </span>
             )}
@@ -234,7 +234,7 @@ export default async function OrgDetailPage({ params }: { params: Promise<{ id: 
                   </span>
                 </td>
                 <td className="px-4 py-2.5">
-                  <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${u.isActive ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]"}`}>
+                  <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${u.isActive ? "border-emerald-400/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" : "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]"}`}>
                     {u.isActive ? "Active" : "Inactive"}
                   </span>
                 </td>
@@ -270,7 +270,7 @@ export default async function OrgDetailPage({ params }: { params: Promise<{ id: 
                   <td className="px-4 py-2 text-[var(--ink-muted)]">{fmt(e.createdAt)}</td>
                   <td className="px-4 py-2 text-[var(--ink)]">{e.event}</td>
                   <td className="px-4 py-2">
-                    <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${e.status === "successful" ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-red-200 bg-red-50 text-red-700"}`}>
+                    <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${e.status === "successful" ? "border-emerald-400/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" : "border-red-400/30 bg-red-500/10 text-red-700 dark:text-red-400"}`}>
                       {e.status}
                     </span>
                   </td>
@@ -289,7 +289,7 @@ export default async function OrgDetailPage({ params }: { params: Promise<{ id: 
       </div>
 
       {/* Danger zone */}
-      <div className="rounded-xl border border-red-200 bg-red-50/40 p-5 space-y-3">
+      <div className="rounded-xl border border-red-400/30 bg-red-500/5 p-5 space-y-3">
         <SectionTitle>Danger Zone</SectionTitle>
         <div className="flex flex-wrap items-center gap-4">
           <form action={toggleOrgActive}>
@@ -299,8 +299,8 @@ export default async function OrgDetailPage({ params }: { params: Promise<{ id: 
               type="submit"
               className={`rounded-lg border px-4 py-2 text-xs font-semibold transition-colors ${
                 org.isActive
-                  ? "border-red-200 bg-red-100 text-red-700 hover:bg-red-200"
-                  : "border-emerald-200 bg-emerald-100 text-emerald-700 hover:bg-emerald-200"
+                  ? "border-red-400/30 bg-red-500/10 text-red-700 hover:bg-red-500/20 dark:text-red-400"
+                  : "border-emerald-400/30 bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/20 dark:text-emerald-400"
               }`}
             >
               {org.isActive ? "Deactivate Organisation" : "Reactivate Organisation"}

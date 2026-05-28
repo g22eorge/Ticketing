@@ -53,7 +53,7 @@ export function BranchList({ branches }: { branches: Branch[] }) {
                         <span className="rounded-full bg-[var(--gold)]/15 px-2 py-0.5 text-[10px] font-bold text-[var(--gold)]">DEFAULT</span>
                       )}
                       {!b.isActive && (
-                        <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-semibold text-gray-500">INACTIVE</span>
+                        <span className="rounded-full border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-0.5 text-[10px] font-semibold text-[var(--ink-muted)]">INACTIVE</span>
                       )}
                     </div>
                     {b.address && <p className="mt-0.5 text-xs text-[var(--ink-muted)] truncate">{b.address}</p>}
