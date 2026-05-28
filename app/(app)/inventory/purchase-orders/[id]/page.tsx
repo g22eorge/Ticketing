@@ -9,11 +9,11 @@ import { POMetaForm } from "./POMetaForm";
 export const dynamic = "force-dynamic";
 
 const STATUS_COLORS: Record<string, string> = {
-  DRAFT:     "bg-gray-100 text-gray-600",
-  ORDERED:   "bg-blue-100 text-blue-700",
-  PARTIAL:   "bg-amber-100 text-amber-700",
-  RECEIVED:  "bg-green-100 text-green-700",
-  CANCELLED: "bg-red-100 text-red-600",
+  DRAFT:     "border border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]",
+  ORDERED:   "border border-blue-400/30 bg-blue-500/10 text-blue-700 dark:text-blue-400",
+  PARTIAL:   "border border-amber-400/30 bg-amber-500/10 text-amber-700 dark:text-amber-400",
+  RECEIVED:  "border border-green-400/30 bg-green-500/10 text-green-700 dark:text-green-400",
+  CANCELLED: "border border-red-400/30 bg-red-500/10 text-red-700 dark:text-red-400",
 };
 
 export default async function PurchaseOrderDetailPage({

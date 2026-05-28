@@ -64,12 +64,12 @@ type WorkflowReason =
 type HighlightReason = Exclude<WorkflowReason, "NONE">;
 
 const workflowReasonConfig: Record<HighlightReason, { badge: string; label: string }> = {
-  PARTS_PENDING:        { badge: "bg-amber-50 text-amber-600 border border-amber-200",   label: "Parts pending" },
-  SPECIALIST_ESCALATION:{ badge: "bg-violet-50 text-violet-700 border border-violet-200", label: "Escalated" },
-  CLIENT_DECLINED:      { badge: "bg-red-50 text-red-600 border border-red-200",          label: "Declined" },
-  UNREPAIRABLE:         { badge: "bg-red-50 text-red-600 border border-red-200",          label: "Unrepairable" },
-  CUSTOMER_CANCELLED:   { badge: "bg-gray-50 text-gray-500 border border-gray-200",       label: "Cancelled" },
-  OTHER:                { badge: "bg-gray-50 text-gray-600 border border-gray-200",       label: "Other" },
+  PARTS_PENDING:        { badge: "bg-amber-500/10 text-amber-700 border border-amber-400/30 dark:text-amber-400",   label: "Parts pending" },
+  SPECIALIST_ESCALATION:{ badge: "bg-violet-500/10 text-violet-700 border border-violet-400/30 dark:text-violet-400", label: "Escalated" },
+  CLIENT_DECLINED:      { badge: "bg-red-500/10 text-red-700 border border-red-400/30 dark:text-red-400",           label: "Declined" },
+  UNREPAIRABLE:         { badge: "bg-red-500/10 text-red-700 border border-red-400/30 dark:text-red-400",           label: "Unrepairable" },
+  CUSTOMER_CANCELLED:   { badge: "border border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]",    label: "Cancelled" },
+  OTHER:                { badge: "border border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]",    label: "Other" },
 };
 
 const deviceLabel: Record<string, string> = {
@@ -250,7 +250,7 @@ export function JobTable({
               ? typeof job.clientBill === "number"
                 ? <span key="priced" className="rounded px-1.5 py-0.5 text-[10px] font-semibold bg-[var(--accent)]/10 text-[#7A5F00]">Priced</span>
                 : ["AWAITING_APPROVAL", "IN_REPAIR", "READY_FOR_PICKUP"].includes(job.status)
-                  ? <span key="needs" className="rounded px-1.5 py-0.5 text-[10px] font-semibold bg-amber-50 text-amber-800">Needs pricing</span>
+                  ? <span key="needs" className="rounded border border-amber-400/30 px-1.5 py-0.5 text-[10px] font-semibold bg-amber-500/10 text-amber-700 dark:text-amber-400">Needs pricing</span>
                   : null
                   : null;
 

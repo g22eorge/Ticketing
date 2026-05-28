@@ -254,7 +254,7 @@ export default async function RefundsPage({
                         ) : (
                           <span className="font-mono text-xs font-semibold text-[var(--ink)]">{sourceLabelM}</span>
                         )}
-                        <span className={`rounded px-1 py-0.5 text-[10px] font-semibold ${r.invoiceId ? "bg-blue-50 text-blue-700" : "bg-violet-50 text-violet-700"}`}>
+                        <span className={`rounded px-1 py-0.5 text-[10px] font-semibold ${r.invoiceId ? "border border-blue-400/30 bg-blue-500/10 text-blue-700 dark:text-blue-400" : "border border-violet-400/30 bg-violet-500/10 text-violet-700 dark:text-violet-400"}`}>
                           {r.invoiceId ? "Invoice" : "Sale"}
                         </span>
                       </div>
@@ -337,7 +337,7 @@ export default async function RefundsPage({
                               CN: {r.creditNote.creditNoteNumber}
                             </span>
                           )}
-                          <span className={`inline-flex w-fit rounded px-1 py-0.5 text-[10px] font-semibold ${r.invoiceId ? "bg-blue-50 text-blue-700" : "bg-violet-50 text-violet-700"}`}>
+                          <span className={`inline-flex w-fit rounded px-1 py-0.5 text-[10px] font-semibold ${r.invoiceId ? "border border-blue-400/30 bg-blue-500/10 text-blue-700 dark:text-blue-400" : "border border-violet-400/30 bg-violet-500/10 text-violet-700 dark:text-violet-400"}`}>
                             {r.invoiceId ? "Invoice" : "Sale"}
                           </span>
                         </div>

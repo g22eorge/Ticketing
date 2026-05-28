@@ -37,8 +37,8 @@ export function ATSmsConfigForm({ orgId, smsFallback, platformConfigured, stats 
         <span
           className={`shrink-0 rounded-full border px-2.5 py-1 text-[11px] font-semibold ${
             platformConfigured
-              ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-              : "border-amber-200 bg-amber-50 text-amber-700"
+              ? "border-emerald-400/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
+              : "border-amber-400/30 bg-amber-500/10 text-amber-700 dark:text-amber-400"
           }`}
         >
           {platformConfigured ? "Available" : "Not available"}

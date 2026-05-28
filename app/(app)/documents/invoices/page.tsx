@@ -478,11 +478,11 @@ export default async function InvoicesPage({
     .slice(0, 5);
 
   const typeBadgeCls: Record<string, string> = {
-    REPAIR: "bg-blue-50 text-blue-700",
-    SERVICE: "bg-violet-50 text-violet-700",
-    MERCHANDISE: "bg-orange-50 text-orange-700",
-    CONTRACT: "bg-teal-50 text-teal-700",
-    OTHER: "bg-slate-100 text-slate-600",
+    REPAIR:       "border border-blue-400/30 bg-blue-500/10 text-blue-700 dark:text-blue-400",
+    SERVICE:      "border border-violet-400/30 bg-violet-500/10 text-violet-700 dark:text-violet-400",
+    MERCHANDISE:  "border border-orange-400/30 bg-orange-500/10 text-orange-700 dark:text-orange-400",
+    CONTRACT:     "border border-teal-400/30 bg-teal-500/10 text-teal-700 dark:text-teal-400",
+    OTHER:        "border border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]",
   };
 
   return (
