@@ -101,6 +101,9 @@ export default async function PublicStatusPage({
   const isClosed = job.status === "CLOSED";
   const fmt = (d: Date) =>
     d.toLocaleDateString("en-UG", { day: "numeric", month: "short", year: "numeric" });
+  const ageDays = Math.floor((Date.now() - new Date(job.receivedAt).getTime()) / (1000 * 60 * 60 * 24));
+  const isTerminal = job.status === "COMPLETED" || job.status === "CLOSED";
+  const ageLabel = ageDays === 0 ? "Received today" : ageDays === 1 ? "1 day ago" : `${ageDays} days ago`;
 
   const timelineLabel = job.repairTimeline ??
     (job.timelineMinMinutes && job.timelineMaxMinutes
@@ -147,19 +150,30 @@ export default async function PublicStatusPage({
             <div>
               <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Received</p>
               <p className="mt-0.5 text-sm font-medium text-gray-700">{fmt(job.receivedAt)}</p>
+              <p className="text-[11px] text-gray-400">{ageLabel}</p>
             </div>
-            {job.completedAt && (
+            {job.completedAt ? (
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Completed</p>
                 <p className="mt-0.5 text-sm font-medium text-gray-700">{fmt(job.completedAt)}</p>
               </div>
-            )}
-            {timelineLabel && !job.completedAt && (
+            ) : !isTerminal ? (
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Est. Time</p>
-                <p className="mt-0.5 text-sm font-medium text-gray-700">{timelineLabel}</p>
+                {timelineLabel ? (
+                  <>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Est. Time</p>
+                    <p className="mt-0.5 text-sm font-medium text-gray-700">{timelineLabel}</p>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Wait Time</p>
+                    <p className={`mt-0.5 text-sm font-semibold ${ageDays > 7 ? "text-amber-600" : "text-gray-700"}`}>
+                      {ageDays === 0 ? "Same day" : ageDays === 1 ? "1 day" : `${ageDays} days`}
+                    </p>
+                  </>
+                )}
               </div>
-            )}
+            ) : null}
           </div>
 
           {/* Status note */}

@@ -28,6 +28,7 @@ type SearchParams = {
   sort?: string;
   view?: string;
   adv?: string;
+  overdue?: string;
 };
 
 type JobWithClient = Prisma.JobGetPayload<{
@@ -149,6 +150,12 @@ export default async function JobsPage({
             ...(filters.from ? { gte: new Date(filters.from) } : {}),
             ...(filters.to ? { lte: new Date(filters.to) } : {}),
           },
+        }
+      : {}),
+    ...(filters.overdue === "1"
+      ? {
+          receivedAt: { lte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
+          status: { notIn: filterSupportedJobStatuses(["COMPLETED", "CLOSED", "DELIVERED"]) as JobStatus[] },
         }
       : {}),
     ...assignedScopeFilter,
@@ -355,7 +362,7 @@ export default async function JobsPage({
   const returnTo = returnToQuery ? `/jobs?${returnToQuery}` : "/jobs";
 
   const hasAdvancedFilters = Boolean(filters.deviceType || filters.repairPath || filters.pricing || filters.from || filters.to || sort === "job_number_desc");
-  const hasAnyFilter = Boolean(filters.q || filters.status || hasAdvancedFilters);
+  const hasAnyFilter = Boolean(filters.q || filters.status || filters.overdue || hasAdvancedFilters);
   const showAdv = filters.adv === "1" || hasAdvancedFilters;
 
   const ctrlClass = "rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] text-[var(--ink)] outline-none transition focus:border-[var(--accent)]/60 focus:ring-2 focus:ring-[var(--accent)]/14";
@@ -373,6 +380,15 @@ export default async function JobsPage({
   const advToggleHref = (() => {
     const params = new URLSearchParams(preserved);
     if (filters.adv === "1") params.delete("adv"); else params.set("adv", "1");
+    const qs = params.toString();
+    return qs ? `/jobs?${qs}` : "/jobs";
+  })();
+
+  const overdueChipHref = (() => {
+    const params = new URLSearchParams(Object.fromEntries(
+      Object.entries(preserved).filter(([k]) => k !== "page" && k !== "overdue"),
+    ));
+    if (filters.overdue !== "1") params.set("overdue", "1");
     const qs = params.toString();
     return qs ? `/jobs?${qs}` : "/jobs";
   })();
@@ -457,6 +473,17 @@ export default async function JobsPage({
                 {statusOptionLabel[s]}
               </Link>
             ))}
+            <div className="mx-1 h-4 w-px shrink-0 bg-[var(--line)]" aria-hidden="true" />
+            <Link
+              href={overdueChipHref}
+              className={`shrink-0 rounded-full border px-3 py-1 text-[11px] font-semibold transition ${
+                filters.overdue === "1"
+                  ? "border-red-500 bg-red-500/10 text-red-700 dark:border-red-400 dark:bg-red-950/30 dark:text-red-400"
+                  : "border-[var(--line)] bg-[var(--panel)] text-[var(--ink-muted)] hover:border-red-400/50 hover:text-red-600"
+              }`}
+            >
+              Overdue 7+d
+            </Link>
           </div>
 
           {/* Right actions */}

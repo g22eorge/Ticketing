@@ -7,6 +7,29 @@ function deviceName(brand?: string | null, model?: string | null) {
   return [b, m].filter(Boolean).join(" ") || null;
 }
 
+function jobAgeDays(receivedAt: Date): number {
+  return Math.floor((Date.now() - new Date(receivedAt).getTime()) / (1000 * 60 * 60 * 24));
+}
+
+function AgeBadge({ receivedAt, status }: { receivedAt: Date; status: string }) {
+  const terminal = status === "COMPLETED" || status === "CLOSED";
+  const days = jobAgeDays(receivedAt);
+  if (terminal) {
+    return <span className="text-[11px] tabular-nums text-[var(--ink-muted)]/50">{days}d</span>;
+  }
+  const cls =
+    days >= 8
+      ? "bg-red-50 text-red-700 dark:bg-red-950/30 dark:text-red-400"
+      : days >= 4
+        ? "bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-500"
+        : "bg-[var(--panel-strong)] text-[var(--ink-muted)]";
+  return (
+    <span className={`rounded-md px-1.5 py-0.5 text-[11px] font-semibold tabular-nums ${cls}`}>
+      {days}d
+    </span>
+  );
+}
+
 
 import { JobStatusBadge, statusStripClass } from "@/components/jobs/JobStatusBadge";
 import { formatMoney } from "@/lib/currency";
@@ -343,6 +366,7 @@ export function JobTable({
                         <span className="shrink-0 opacity-40">·</span>
                       ) : null}
                       <span className="shrink-0">{formatEATDate(job.receivedAt)}</span>
+                      <AgeBadge receivedAt={job.receivedAt} status={job.status} />
                       {canSeeAssignment && job.assignedTo ? (
                         <>
                           <span className="shrink-0 opacity-40">·</span>
@@ -389,6 +413,7 @@ export function JobTable({
               {canSeeClient ? <th className="px-4 py-2.5 text-left text-[10px] font-bold uppercase tracking-[0.15em] text-[var(--ink-muted)]">Client</th> : null}
               {canSeeAssignment ? <th className="hidden px-4 py-2.5 text-left text-[10px] font-bold uppercase tracking-[0.15em] text-[var(--ink-muted)] 2xl:table-cell">Assigned</th> : null}
               <th className="px-4 py-2.5 text-left text-[10px] font-bold uppercase tracking-[0.15em] text-[var(--ink-muted)]">Received</th>
+              <th className="px-4 py-2.5 text-left text-[10px] font-bold uppercase tracking-[0.15em] text-[var(--ink-muted)]">Age</th>
               <th className="px-4 py-2.5 text-left text-[10px] font-bold uppercase tracking-[0.15em] text-[var(--ink-muted)]">Flag</th>
               {canSeeCost ? <th className="hidden px-4 py-2.5 text-right text-[10px] font-bold uppercase tracking-[0.15em] text-[var(--ink-muted)] 2xl:table-cell">{showClientFacingCostOnly ? "Cost" : "Ext. Bill"}</th> : null}
               <th className="px-4 py-2.5 text-right text-[10px] font-bold uppercase tracking-[0.15em] text-[var(--ink-muted)]">Actions</th>
@@ -454,6 +479,11 @@ export function JobTable({
                   {/* Received */}
                   <td className="whitespace-nowrap px-4 py-3 align-middle text-[var(--ink-muted)]">
                     {formatEATDate(job.receivedAt)}
+                  </td>
+
+                  {/* Age */}
+                  <td className="whitespace-nowrap px-4 py-3 align-middle">
+                    <AgeBadge receivedAt={job.receivedAt} status={job.status} />
                   </td>
 
                   {/* Flag */}
