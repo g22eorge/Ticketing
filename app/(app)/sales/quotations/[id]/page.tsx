@@ -10,11 +10,11 @@ import { formatMoney } from "@/lib/currency";
 import { updateQuotationStatus } from "../../actions";
 
 const QUOTATION_STATUS_COLORS: Record<QuotationStatus, string> = {
-  DRAFT: "border-slate-200 bg-slate-50 text-slate-600",
-  SENT: "border-blue-200 bg-blue-50 text-blue-700",
-  ACCEPTED: "border-green-200 bg-green-50 text-green-700",
-  REJECTED: "border-red-200 bg-red-50 text-red-600",
-  EXPIRED: "border-slate-200 bg-slate-100 text-slate-500",
+  DRAFT:    "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]",
+  SENT:     "border-blue-400/30 bg-blue-500/10 text-blue-700 dark:text-blue-400",
+  ACCEPTED: "border-green-400/30 bg-green-500/10 text-green-700 dark:text-green-400",
+  REJECTED: "border-red-400/30 bg-red-500/10 text-red-700 dark:text-red-400",
+  EXPIRED:  "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]",
 };
 
 export default async function QuotationDetailPage({

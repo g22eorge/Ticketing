@@ -435,9 +435,9 @@ export default async function BillingPage({
             <p className="mt-1 text-2xl font-bold text-[var(--ink)]">{PLAN_LABELS[org.plan]}</p>
           </div>
           <span className={`rounded-full px-3 py-1 text-xs font-semibold ${
-             org.billingStatus === "ACTIVE"    ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" :
-             org.billingStatus === "TRIALING"  ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" :
-             org.billingStatus === "PAST_DUE"  ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400" :
+             org.billingStatus === "ACTIVE"    ? "border border-emerald-400/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" :
+             org.billingStatus === "TRIALING"  ? "border border-blue-400/30 bg-blue-500/10 text-blue-700 dark:text-blue-400" :
+             org.billingStatus === "PAST_DUE"  ? "border border-red-400/30 bg-red-500/10 text-red-700 dark:text-red-400" :
                                                  "bg-[var(--border)] text-[var(--ink-muted)]"
            }`}>
             {org.billingStatus === "TRIALING" ? (isFreeStarter ? "Free" : "Free trial") :

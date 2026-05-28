@@ -18,12 +18,12 @@ const STATUS_LABELS: Record<FieldVisitStatus, string> = {
 };
 
 const STATUS_COLORS: Record<FieldVisitStatus, string> = {
-  SCHEDULED: "bg-blue-100 text-blue-800",
-  EN_ROUTE: "bg-yellow-100 text-yellow-800",
-  ARRIVED: "bg-orange-100 text-orange-800",
-  COMPLETED: "bg-green-100 text-green-800",
-  FAILED: "bg-red-100 text-red-800",
-  CANCELLED: "bg-gray-100 text-gray-600",
+  SCHEDULED: "border border-blue-400/30 bg-blue-500/10 text-blue-700 dark:text-blue-400",
+  EN_ROUTE:  "border border-yellow-400/30 bg-yellow-500/10 text-yellow-700 dark:text-yellow-400",
+  ARRIVED:   "border border-orange-400/30 bg-orange-500/10 text-orange-700 dark:text-orange-400",
+  COMPLETED: "border border-emerald-400/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
+  FAILED:    "border border-red-400/30 bg-red-500/10 text-red-700 dark:text-red-400",
+  CANCELLED: "border border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]",
 };
 
 const TYPE_LABELS: Record<string, string> = {

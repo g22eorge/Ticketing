@@ -207,11 +207,11 @@ export default async function CashierShiftsPage({
 
       {/* Close my open shift */}
       {myOpenShift && (
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+        <div className="rounded-xl border border-emerald-400/30 bg-emerald-500/10 p-4">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <h2 className="text-sm font-bold text-emerald-800">Your Shift is Open</h2>
-              <p className="text-[12px] text-emerald-700">
+              <h2 className="text-sm font-bold text-emerald-700 dark:text-emerald-300">Your Shift is Open</h2>
+              <p className="text-[12px] text-emerald-700 dark:text-emerald-400">
                 Opened {myOpenShift.openedAt.toLocaleString()} · Opening cash: {formatMoney(myOpenShift.openingCash, currency)}
               </p>
             </div>
@@ -285,9 +285,9 @@ export default async function CashierShiftsPage({
                   <div className="mb-1 flex items-center justify-between gap-2">
                     <span className="font-medium text-[var(--ink)]">
                       {cashierMap[shift.cashierId] ?? shift.cashierId.slice(0, 8)}
-                      {shift.cashierId === user.id && <span className="ml-1.5 rounded bg-blue-50 px-1 py-0.5 text-[10px] font-semibold text-blue-700">you</span>}
+                      {shift.cashierId === user.id && <span className="ml-1.5 rounded border border-blue-400/30 bg-blue-500/10 px-1 py-0.5 text-[10px] font-semibold text-blue-700 dark:text-blue-400">you</span>}
                     </span>
-                    <span className={`rounded px-1.5 py-0.5 text-[11px] font-semibold ${isOpen ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-600"}`}>{shift.status}</span>
+                    <span className={`rounded px-1.5 py-0.5 text-[11px] font-semibold ${isOpen ? "border border-emerald-400/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" : "border border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]"}`}>{shift.status}</span>
                   </div>
                   <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-[11px] text-[var(--ink-muted)]">
                     <span>Open: {shift.openedAt.toLocaleString()}</span>
@@ -343,9 +343,9 @@ export default async function CashierShiftsPage({
                     <tr key={`d-${shift.id}`} className="border-b border-[var(--border)] last:border-0 hover:bg-[var(--surface-raised)]">
                       <td className="px-4 py-3 font-medium text-[var(--ink)]">
                         {cashierMap[shift.cashierId] ?? shift.cashierId.slice(0, 8)}
-                        {shift.cashierId === user.id && <span className="ml-1.5 rounded bg-blue-50 px-1 py-0.5 text-[10px] font-semibold text-blue-700">you</span>}
+                        {shift.cashierId === user.id && <span className="ml-1.5 rounded border border-blue-400/30 bg-blue-500/10 px-1 py-0.5 text-[10px] font-semibold text-blue-700 dark:text-blue-400">you</span>}
                       </td>
-                      <td className="px-4 py-3"><span className={`rounded px-1.5 py-0.5 text-[11px] font-semibold ${isOpen ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-600"}`}>{shift.status}</span></td>
+                      <td className="px-4 py-3"><span className={`rounded px-1.5 py-0.5 text-[11px] font-semibold ${isOpen ? "border border-emerald-400/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" : "border border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]"}`}>{shift.status}</span></td>
                       <td className="whitespace-nowrap px-4 py-3 text-[var(--ink-muted)]">{shift.openedAt.toLocaleString()}</td>
                       <td className="whitespace-nowrap px-4 py-3 text-[var(--ink-muted)]">{shift.closedAt ? shift.closedAt.toLocaleString() : "—"}</td>
                       <td className="whitespace-nowrap px-4 py-3 text-right tabular-nums text-[var(--ink)]">{formatMoney(shift.openingCash, currency)}</td>

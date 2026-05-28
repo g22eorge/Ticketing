@@ -611,7 +611,7 @@ export default async function NotificationTemplatesPage({
                 <details key={t.id} className="group/details rounded-xl border border-[var(--line)] bg-[var(--panel-strong)] p-3" open={false}>
                   <summary className="cursor-pointer list-none">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${t.isActive ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-[var(--line)] bg-[var(--panel)] text-[var(--ink-muted)]"}`}>
+                      <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${t.isActive ? "border-emerald-400/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" : "border-[var(--line)] bg-[var(--panel)] text-[var(--ink-muted)]"}`}>
                         {t.isActive ? "Active" : "Inactive"}
                       </span>
                       <span className="font-mono text-[11px] text-[var(--ink)]">{t.key}</span>
@@ -620,11 +620,11 @@ export default async function NotificationTemplatesPage({
                       </span>
                       <span className="text-sm font-semibold text-[var(--ink)]">{t.label}</span>
                       {t.metaTemplateName ? (
-                        <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-mono text-emerald-700">
+                        <span className="rounded-full border border-emerald-400/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-mono text-emerald-700 dark:text-emerald-400">
                           meta: {t.metaTemplateName}
                         </span>
                       ) : (
-                        <span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
+                        <span className="rounded-full border border-amber-400/30 bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:text-amber-400">
                           no meta name
                         </span>
                       )}

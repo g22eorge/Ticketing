@@ -483,7 +483,7 @@ export default async function ClientsPage({
                         client._count.jobs >= 3
                           ? "border border-[var(--accent)]/30 bg-[var(--accent)]/10 text-[#9A7A00]"
                           : client._count.jobs > 0
-                            ? "border border-blue-200 bg-blue-50 text-blue-700"
+                            ? "border border-blue-400/30 bg-blue-500/10 text-blue-700 dark:text-blue-400"
                             : "border border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]"
                       }`}>
                         {client._count.jobs}

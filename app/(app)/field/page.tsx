@@ -20,12 +20,12 @@ const STATUS_LABELS: Record<FieldVisitStatus, string> = {
 };
 
 const STATUS_COLORS: Record<FieldVisitStatus, string> = {
-  SCHEDULED:  "bg-blue-100 text-blue-800",
-  EN_ROUTE:   "bg-yellow-100 text-yellow-800",
-  ARRIVED:    "bg-orange-100 text-orange-800",
-  COMPLETED:  "bg-emerald-100 text-emerald-800",
-  FAILED:     "bg-red-100 text-red-800",
-  CANCELLED:  "bg-gray-100 text-gray-600",
+  SCHEDULED:  "border border-blue-400/30 bg-blue-500/10 text-blue-700 dark:text-blue-400",
+  EN_ROUTE:   "border border-yellow-400/30 bg-yellow-500/10 text-yellow-700 dark:text-yellow-400",
+  ARRIVED:    "border border-orange-400/30 bg-orange-500/10 text-orange-700 dark:text-orange-400",
+  COMPLETED:  "border border-emerald-400/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
+  FAILED:     "border border-red-400/30 bg-red-500/10 text-red-700 dark:text-red-400",
+  CANCELLED:  "border border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]",
 };
 
 const TYPE_LABELS: Record<string, string> = {
@@ -37,11 +37,11 @@ const TYPE_LABELS: Record<string, string> = {
 };
 
 const TYPE_COLORS: Record<string, string> = {
-  COLLECTION:   "bg-purple-100 text-purple-800",
-  DELIVERY:     "bg-teal-100 text-teal-800",
-  ONSITE_REPAIR:"bg-red-100 text-red-800",
-  ASSESSMENT:   "bg-indigo-100 text-indigo-800",
-  FOLLOWUP:     "bg-gray-100 text-gray-700",
+  COLLECTION:    "border border-purple-400/30 bg-purple-500/10 text-purple-700 dark:text-purple-400",
+  DELIVERY:      "border border-teal-400/30 bg-teal-500/10 text-teal-700 dark:text-teal-400",
+  ONSITE_REPAIR: "border border-red-400/30 bg-red-500/10 text-red-700 dark:text-red-400",
+  ASSESSMENT:    "border border-indigo-400/30 bg-indigo-500/10 text-indigo-700 dark:text-indigo-400",
+  FOLLOWUP:      "border border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]",
 };
 
 const TAB_OPTIONS = [

@@ -56,7 +56,7 @@ export default async function AdminOrgsPage() {
             Platform admin — toggle which modules each org can access
           </p>
         </div>
-        <span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
+        <span className="rounded-full border border-amber-400/30 bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:text-amber-400">
           Platform Admin
         </span>
       </div>
@@ -80,8 +80,8 @@ export default async function AdminOrgsPage() {
                 <span
                   className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${
                     org.isActive
-                      ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                      : "border-red-200 bg-red-50 text-red-600"
+                      ? "border-emerald-400/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
+                      : "border-red-400/30 bg-red-500/10 text-red-700 dark:text-red-400"
                   }`}
                 >
                   {org.billingStatus}

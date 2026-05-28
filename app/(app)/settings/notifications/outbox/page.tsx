@@ -24,15 +24,15 @@ const STATUSES = Object.values(OutboundMessageStatus);
 const TYPES = Object.values(OutboundMessageType);
 
 const STATUS_STYLES: Record<string, string> = {
-  SENT: "border-emerald-200 bg-emerald-50 text-emerald-700",
-  PENDING: "border-amber-200 bg-amber-50 text-amber-700",
-  FAILED: "border-red-200 bg-red-50 text-red-700",
-  DEAD: "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]",
+  SENT:    "border-emerald-400/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
+  PENDING: "border-amber-400/30 bg-amber-500/10 text-amber-700 dark:text-amber-400",
+  FAILED:  "border-red-400/30 bg-red-500/10 text-red-700 dark:text-red-400",
+  DEAD:    "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]",
 };
 
 const CHANNEL_STYLES: Record<string, string> = {
   WHATSAPP: "border-[#25D366]/30 bg-[#25D366]/8 text-[#128C42]",
-  EMAIL: "border-blue-200 bg-blue-50 text-blue-700",
+  EMAIL:    "border-blue-400/30 bg-blue-500/10 text-blue-700 dark:text-blue-400",
 };
 
 function shortId(id: string) {
@@ -259,7 +259,7 @@ export default async function OutboxPage({
                     {r.attemptCount > 0 && <span>{r.attemptCount} attempt{r.attemptCount !== 1 ? "s" : ""}</span>}
                   </div>
                   {r.providerDeliveryStatus && (
-                    <span className={`mt-1 inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${r.providerDeliveryStatus === "delivered" || r.providerDeliveryStatus === "read" ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]"}`}>{r.providerDeliveryStatus}</span>
+                    <span className={`mt-1 inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${r.providerDeliveryStatus === "delivered" || r.providerDeliveryStatus === "read" ? "border-emerald-400/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" : "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]"}`}>{r.providerDeliveryStatus}</span>
                   )}
                   {r.lastError && (
                     <p className="mt-0.5 line-clamp-2 text-[11px] text-red-600">{r.lastErrorCode ? `[${r.lastErrorCode}] ` : ""}{r.lastError}</p>
@@ -329,7 +329,7 @@ export default async function OutboxPage({
                     <td className="px-4 py-3">
                       {r.providerDeliveryStatus ? (
                         <>
-                          <span className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${r.providerDeliveryStatus === "delivered" || r.providerDeliveryStatus === "read" ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]"}`}>
+                          <span className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${r.providerDeliveryStatus === "delivered" || r.providerDeliveryStatus === "read" ? "border-emerald-400/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" : "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]"}`}>
                             {r.providerDeliveryStatus}
                           </span>
                           {r.providerDeliveryAt ? (
