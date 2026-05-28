@@ -497,13 +497,13 @@ export default async function InvoicesPage({
           <div className="flex gap-2">
             <Link
               href="/jobs/new"
-              className="rounded-lg border border-[var(--line)] px-3 py-1.5 text-[12px] font-medium text-[var(--ink-muted)] hover:border-[var(--accent)]/40"
+              className="btn-premium-secondary rounded-lg px-3 py-1.5 text-[12px] font-medium"
             >
               New Job
             </Link>
             <Link
               href={`/api/reports/export?type=invoices&month=${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`}
-              className="rounded-lg border border-[var(--line)] px-3 py-1.5 text-[12px] font-medium text-[var(--ink-muted)] hover:border-[var(--accent)]/40"
+              className="btn-premium-secondary rounded-lg px-3 py-1.5 text-[12px] font-medium"
             >
               ↓ Export CSV
             </Link>

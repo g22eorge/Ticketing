@@ -307,7 +307,7 @@ export default async function JournalPage({
         </div>
       ) : (
         <details className="rounded-xl border border-[var(--line)] bg-[var(--panel)]">
-          <summary className="cursor-pointer px-5 py-3.5 text-sm font-semibold text-[var(--ink)] hover:bg-[var(--panel-strong)]/40 rounded-xl">
+          <summary className="cursor-pointer list-none px-5 py-3.5 text-sm font-semibold text-[var(--ink)] hover:bg-[var(--panel-strong)]/40 rounded-xl">
             + New Journal Entry
           </summary>
           <form action={createEntry} className="space-y-4 border-t border-[var(--line)] p-5">
@@ -433,7 +433,7 @@ export default async function JournalPage({
             <div className="flex justify-end">
               <button
                 type="submit"
-                className="rounded-lg bg-[var(--accent)] px-5 py-2 text-sm font-semibold text-black"
+                className="btn-premium rounded-lg px-5 py-2 text-sm font-semibold"
               >
                 Save as Draft
               </button>
@@ -481,7 +481,7 @@ export default async function JournalPage({
         />
         <button
           type="submit"
-          className="rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-black"
+          className="btn-premium-secondary rounded-lg px-4 py-2 text-sm font-semibold"
         >
           Filter
         </button>

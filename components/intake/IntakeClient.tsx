@@ -249,7 +249,7 @@ function RequestDrawer({
                 <ActionBtn
                   label="Reject"
                   disabled={pending}
-                  className="bg-black text-white border border-black hover:bg-black/80"
+                  className="border border-red-400/30 bg-red-500/5 text-red-600 hover:bg-red-500/10 dark:text-red-400"
                   onClick={() => act("REJECTED")}
                   icon={<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>}
                 />
@@ -449,7 +449,7 @@ function RowActions({
             disabled={pending}
             onClick={(e) => act("REJECTED", e)}
             title="Reject"
-            className="inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-semibold bg-black text-white border border-black hover:bg-black/80 disabled:opacity-40 transition-colors"
+            className="inline-flex items-center gap-1 rounded-md border border-red-400/30 bg-red-500/5 px-2.5 py-1 text-xs font-semibold text-red-600 hover:bg-red-500/10 disabled:opacity-40 transition-colors dark:text-red-400"
           >
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
             Reject
@@ -687,7 +687,7 @@ export function IntakeClient({
               onClick={() => setFilter(tab.key)}
               className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors
                 ${active
-                  ? "bg-black text-white"
+                  ? "border border-[var(--accent)]/50 bg-[var(--accent)] text-black"
                   : "bg-[var(--panel)] border border-[var(--line)] text-[var(--ink-muted)] hover:bg-[var(--panel-strong)]"
                 }`}
             >

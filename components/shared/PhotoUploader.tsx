@@ -77,7 +77,7 @@ export function PhotoUploader({
           <option value="other">Other</option>
         </select>
         <input name="files" type="file" accept="image/png,image/jpeg,image/webp" multiple required />
-        <button disabled={isPending} className="rounded-md bg-black px-3 py-2 text-sm text-white">
+        <button disabled={isPending} className="btn-premium rounded-lg px-3 py-2 text-sm disabled:opacity-60">
           Upload
         </button>
       </form>

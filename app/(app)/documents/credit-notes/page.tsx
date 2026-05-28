@@ -321,7 +321,7 @@ export default async function CreditNotesPage({
                   {!cn.itemsReceivedBackAt && (
                     <form action={markItemsReceivedAction}>
                       <input type="hidden" name="creditNoteId" value={cn.id} />
-                      <button type="submit" className="rounded border border-emerald-200 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 hover:bg-emerald-50">Mark Received</button>
+                      <button type="submit" className="rounded border border-emerald-400/30 bg-emerald-500/5 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 hover:bg-emerald-500/10 dark:text-emerald-400">Mark Received</button>
                     </form>
                   )}
                   {outstandingM > 0 && (
@@ -405,7 +405,7 @@ export default async function CreditNotesPage({
                         {!cn.itemsReceivedBackAt && (
                           <form action={markItemsReceivedAction}>
                             <input type="hidden" name="creditNoteId" value={cn.id} />
-                            <button type="submit" className="rounded border border-emerald-200 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 hover:bg-emerald-50">
+                            <button type="submit" className="rounded border border-emerald-400/30 bg-emerald-500/5 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 hover:bg-emerald-500/10 dark:text-emerald-400">
                               Mark Received
                             </button>
                           </form>

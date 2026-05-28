@@ -197,7 +197,7 @@ export default async function CashierShiftsPage({
             </div>
             <button
               type="submit"
-              className="h-9 rounded-lg bg-emerald-600 px-5 text-sm font-semibold text-white hover:opacity-90"
+              className="btn-premium h-9 rounded-lg px-5 text-sm font-semibold"
             >
               Open Shift
             </button>

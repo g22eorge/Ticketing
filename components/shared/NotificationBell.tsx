@@ -107,7 +107,7 @@ export function NotificationBell() {
         onClick={() => {
           setIsOpen(!isOpen);
         }}
-        className="relative flex items-center gap-2 rounded-md border border-black bg-black px-3 py-2 text-white"
+        className="btn-premium-secondary relative flex items-center gap-2 rounded-lg px-3 py-2"
         aria-label="Notifications"
       >
         <svg

@@ -45,7 +45,7 @@ export function SendCampaignButton({ campaignId, pendingCount }: { campaignId: s
       <button
         onClick={handleSend}
         disabled={state === "loading"}
-        className="rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700 disabled:opacity-60 transition-colors"
+        className="btn-premium rounded-lg px-4 py-2 text-sm font-semibold disabled:opacity-60"
       >
         {state === "loading" ? "Sending…" : (
           <span className="inline-flex items-center gap-1.5">

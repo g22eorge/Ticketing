@@ -80,7 +80,7 @@ export default async function SettingsAuditPage({
               <option key={item} value={item}>{item}</option>
             ))}
           </select>
-          <button type="submit" className="rounded-lg bg-[var(--accent)]/15 px-4 py-2 text-sm font-semibold text-[var(--accent-text)] hover:bg-[var(--accent)]/20">
+          <button type="submit" className="btn-premium-secondary rounded-lg px-4 py-2 text-sm font-semibold">
             Apply filter
           </button>
         </div>

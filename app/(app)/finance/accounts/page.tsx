@@ -184,7 +184,7 @@ export default async function ChartOfAccountsPage() {
 
       {/* ── CREATE FORM ──────────────────────────────────────────────────── */}
       <details className="rounded-xl border border-[var(--line)] bg-[var(--panel)]">
-        <summary className="cursor-pointer px-5 py-3 text-sm font-semibold text-[var(--ink)]">
+        <summary className="cursor-pointer list-none px-5 py-3.5 text-sm font-semibold text-[var(--ink)] hover:bg-[var(--panel-strong)]/40 rounded-xl">
           + Add Account
         </summary>
         <form
@@ -244,7 +244,7 @@ export default async function ChartOfAccountsPage() {
           <div className="flex justify-end sm:col-span-3">
             <button
               type="submit"
-              className="rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-white"
+              className="btn-premium rounded-lg px-4 py-2 text-sm font-semibold"
             >
               Create Account
             </button>
