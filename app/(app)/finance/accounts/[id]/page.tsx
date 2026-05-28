@@ -135,19 +135,12 @@ export default async function AccountLedgerPage({
       {/* ── HEADER ───────────────────────────────────────────────────────── */}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <div className="flex items-center gap-2">
-            <Link
-              href="/finance/accounts"
-              className="text-[11px] text-[var(--ink-muted)] hover:text-[var(--ink)]"
-            >
-              ← Chart of Accounts
-            </Link>
-          </div>
-          <h1 className="mt-1 text-xl font-bold text-[var(--ink)]">
+          <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Finance · Accounts</p>
+          <p className="mt-0.5 text-[13px] font-bold text-[var(--ink)]">
             <span className="font-mono text-[var(--accent)]">{account.code}</span>
             {" "}
             {account.name}
-          </h1>
+          </p>
           <div className="mt-1 flex items-center gap-2">
             <span className={`rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${TYPE_COLOR[account.type] ?? ""}`}>
               {account.type}

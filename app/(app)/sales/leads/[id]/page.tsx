@@ -124,12 +124,8 @@ export default async function LeadDetailPage({
       <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
-            <div className="mb-1 flex items-center gap-2">
-              <Link href="/sales?tab=leads" className="text-[11px] text-[var(--ink-muted)] hover:text-[var(--ink)] hover:underline">
-                ← Sales
-              </Link>
-            </div>
-            <h1 className="text-lg font-bold text-[var(--ink)]">{lead.fullName}</h1>
+            <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Sales · Lead</p>
+            <p className="text-[13px] font-bold text-[var(--ink)]">{lead.fullName}</p>
             <div className="mt-1 flex flex-wrap items-center gap-2 text-[12px] text-[var(--ink-muted)]">
               <span>{lead.phone}</span>
               {lead.email ? <><span className="opacity-40">·</span><span>{lead.email}</span></> : null}
@@ -167,7 +163,7 @@ export default async function LeadDetailPage({
             <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
               <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Update Status</p>
               {filters.statusError ? (
-                <p className="mb-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-600">{filters.statusError}</p>
+                <p className="mb-2 rounded-lg border border-red-400/30 bg-red-500/10 px-3 py-2 text-xs text-red-700 dark:text-red-400">{filters.statusError}</p>
               ) : null}
               <form action={updateStatusAction} className="space-y-2">
                 <div className="flex flex-wrap gap-2">
@@ -193,7 +189,7 @@ export default async function LeadDetailPage({
             {canEdit ? (
               <div className="border-b border-[var(--line)] px-4 py-3">
                 {filters.activityError ? (
-                  <p className="mb-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-600">{filters.activityError}</p>
+                  <p className="mb-2 rounded-lg border border-red-400/30 bg-red-500/10 px-3 py-2 text-xs text-red-700 dark:text-red-400">{filters.activityError}</p>
                 ) : null}
                 <form action={addActivityAction} className="space-y-2">
                   <div className="flex flex-wrap gap-2">

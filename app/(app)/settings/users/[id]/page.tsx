@@ -575,8 +575,8 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
           <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-3">
             <div className="mb-3 flex items-start justify-between gap-2">
               <div>
-                <Link href="/settings/users" className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60 hover:text-[var(--ink-muted)]">← Users</Link>
-                <p className="mt-1 text-[13px] font-semibold text-[var(--ink)]">{target.name}</p>
+                <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Settings · User</p>
+                <p className="mt-0.5 text-[13px] font-semibold text-[var(--ink)]">{target.name}</p>
                 <p className="text-[11px] text-[var(--ink-muted)]">{target.email}</p>
               </div>
               <div className="flex flex-wrap items-center gap-1.5 pt-0.5">

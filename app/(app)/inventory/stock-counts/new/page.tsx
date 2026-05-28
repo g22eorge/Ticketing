@@ -22,6 +22,7 @@ export default async function NewStockCountPage() {
     <div className="max-w-4xl space-y-4">
       <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
         <div className="px-4 py-3">
+          <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Inventory</p>
           <p className="text-[13px] font-bold text-[var(--ink)]">New Stock Count</p>
           <p className="text-[11px] text-[var(--ink-muted)]">Record physical counts and submit variances for approval.</p>
         </div>

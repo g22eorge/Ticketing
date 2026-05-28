@@ -91,12 +91,8 @@ export default async function QuotationDetailPage({
       <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <div className="mb-1">
-              <Link href="/sales?tab=quotations" className="text-[11px] text-[var(--ink-muted)] hover:text-[var(--ink)] hover:underline">
-                ← Quotations
-              </Link>
-            </div>
-            <h1 className="font-mono text-lg font-bold text-[var(--ink)]">{quotation.quoteNumber}</h1>
+            <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Sales · Quotation</p>
+            <p className="font-mono text-[13px] font-bold text-[var(--ink)]">{quotation.quoteNumber}</p>
             <div className="mt-1 flex flex-wrap items-center gap-2 text-[12px] text-[var(--ink-muted)]">
               {recipientName ? <span>For: {recipientName}</span> : null}
               {quotation.job ? (
@@ -133,7 +129,7 @@ export default async function QuotationDetailPage({
               <form action={acceptAction}>
                 <button
                   type="submit"
-                  className="rounded-lg border border-green-300 bg-green-50 px-4 py-2 text-[12px] font-bold text-green-700 shadow-sm transition hover:bg-green-100"
+                  className="rounded-lg border border-green-400/30 bg-green-500/10 px-4 py-2 text-[12px] font-bold text-green-700 shadow-sm transition hover:bg-green-500/20 dark:text-green-400"
                 >
                   Mark Accepted
                 </button>
@@ -143,7 +139,7 @@ export default async function QuotationDetailPage({
               <form action={rejectAction}>
                 <button
                   type="submit"
-                  className="rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-[12px] font-bold text-red-600 shadow-sm transition hover:bg-red-100"
+                  className="rounded-lg border border-red-400/30 bg-red-500/10 px-4 py-2 text-[12px] font-bold text-red-700 shadow-sm transition hover:bg-red-500/20 dark:text-red-400"
                 >
                   Mark Rejected
                 </button>
