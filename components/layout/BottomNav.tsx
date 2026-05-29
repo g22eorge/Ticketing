@@ -1,11 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { useState } from "react";
-import { toast } from "sonner";
+import { usePathname } from "next/navigation";
 import { can } from "@/lib/permissions";
-import { authClient } from "@/lib/auth-client";
 import type { Role } from "@prisma/client";
 
 type NavItem = {
@@ -194,10 +191,7 @@ export function BottomNav({
     complaints?: number;
   };
 }) {
-  const pathname      = usePathname();
-  const router        = useRouter();
-  const [open, setOpen]         = useState(false);
-  const [isSigningOut, setSO]   = useState(false);
+  const pathname = usePathname();
 
   const primaryItems = getPrimaryItems(role, permissions, enabledModules);
   const moreGroups   = getMoreGroups(role, permissions, enabledModules);
@@ -239,7 +233,7 @@ export function BottomNav({
               <Link
                 key={item.href}
                 href={item.href}
-                onClick={() => setOpen(false)}
+                onClick={() => {}}
                 className="flex min-w-0 flex-1 flex-col items-center gap-0.5"
                 aria-current={active ? "page" : undefined}
               >
@@ -272,146 +266,36 @@ export function BottomNav({
             );
           })}
 
-          {/* More button */}
-          {hasExtra && (
-            <button
-              type="button"
-              onClick={() => setOpen(true)}
-              className="flex min-w-0 flex-1 flex-col items-center gap-0.5"
-              aria-expanded={open}
-              aria-label="More navigation"
-            >
-              <span className={`flex h-9 w-9 items-center justify-center transition-all duration-200 ${
-                anyExtraActive
-                  ? "text-[var(--accent)]"
-                  : "text-[var(--ink-muted)] hover:text-[var(--ink)]"
-              }`}>
-                {moreIcon}
-              </span>
-              <span className={`text-[10px] leading-none tracking-wide ${
-                anyExtraActive ? "font-bold text-[var(--accent)]" : "font-medium text-[var(--ink-muted)]"
-              }`}>
-                More
-              </span>
-              <span className={`mt-0.5 h-0.5 w-4 rounded-full transition-all duration-200 ${
-                anyExtraActive ? "bg-[var(--accent)]" : "bg-transparent"
-              }`} />
-            </button>
-          )}
+          {/* More → full-screen /more page */}
+          <Link
+            href="/more"
+            className="flex min-w-0 flex-1 flex-col items-center gap-0.5"
+            aria-label="More navigation"
+          >
+            {(() => {
+              const moreActive = isActive("/more") || anyExtraActive;
+              return (
+                <>
+                  <span className={`flex h-9 w-9 items-center justify-center transition-all duration-200 ${
+                    moreActive ? "text-[var(--accent)]" : "text-[var(--ink-muted)] hover:text-[var(--ink)]"
+                  }`}>
+                    {moreIcon}
+                  </span>
+                  <span className={`text-[10px] leading-none tracking-wide ${
+                    moreActive ? "font-bold text-[var(--accent)]" : "font-medium text-[var(--ink-muted)]"
+                  }`}>
+                    More
+                  </span>
+                  <span className={`mt-0.5 h-0.5 w-5 rounded-full transition-all duration-200 ${
+                    moreActive ? "bg-[var(--accent)]" : "bg-transparent"
+                  }`} />
+                </>
+              );
+            })()}
+          </Link>
         </div>
       </nav>
 
-      {/* ── More drawer ──────────────────────────────────────────────── */}
-      {open && (
-        <>
-          {/* Scrim */}
-          <div
-            className="fixed inset-0 z-40 bg-black/40 backdrop-blur-[2px] lg:hidden"
-            onClick={() => setOpen(false)}
-            aria-hidden="true"
-          />
-
-          {/* Sheet */}
-          <div
-            role="dialog"
-            aria-label="More options"
-            className="fixed inset-x-0 bottom-0 z-50 mx-auto max-h-[82vh] max-w-md overflow-hidden rounded-t-3xl border-t border-[var(--line)] bg-[var(--panel)] shadow-[0_-12px_48px_rgba(0,0,0,0.18)] lg:hidden"
-          >
-            {/* Drag handle */}
-            <div className="flex justify-center pb-1 pt-3">
-              <span className="h-1 w-9 rounded-full bg-[var(--line)]" />
-            </div>
-
-            {/* Sheet header */}
-            <div className="flex items-center justify-between px-5 pb-3">
-              <p className="text-[13px] font-bold text-[var(--ink)]">Navigation</p>
-              <button
-                type="button"
-                onClick={() => setOpen(false)}
-                className="flex h-7 w-7 items-center justify-center rounded-full border border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)] transition hover:bg-[var(--panel-strong)]/80"
-                aria-label="Close"
-              >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <path d="M18 6 6 18M6 6l12 12"/>
-                </svg>
-              </button>
-            </div>
-
-            {/* Scrollable content */}
-            <div className="max-h-[calc(82vh-80px)] overflow-y-auto px-4 pb-8">
-              <div className="space-y-5">
-                {moreGroups.map((group) => (
-                  <div key={group.title}>
-                    {/* Group header */}
-                    <p className="mb-3 text-[9px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/60">
-                      {group.title}
-                    </p>
-                    {/* 3-column icon tile grid — larger touch targets, premium feel */}
-                    <div className="grid grid-cols-3 gap-2">
-                      {group.items.map((item) => {
-                        const active = isActive(item.href);
-                        const moreBadge = getMoreBadge(item.href);
-                        return (
-                          <button
-                            key={item.href}
-                            type="button"
-                            aria-current={active ? "page" : undefined}
-                            onClick={() => { setOpen(false); router.push(item.href); }}
-                            className={`relative flex flex-col items-center gap-2 rounded-2xl border px-2 py-3.5 text-[11px] font-semibold transition-all active:scale-[0.96] ${
-                              active
-                                ? "border-[var(--accent)]/40 bg-[var(--accent)]/10 text-[var(--accent)]"
-                                : "border-white/[0.06] bg-[var(--panel-strong)] text-[var(--ink-muted)]"
-                            }`}
-                          >
-                            {/* Icon with accent circle on active */}
-                            <span className={`flex h-10 w-10 items-center justify-center rounded-xl transition-colors ${
-                              active ? "bg-[var(--accent)]/20" : "bg-[var(--panel)]"
-                            }`}>
-                              <span className={active ? "text-[var(--accent)]" : "text-[var(--ink-muted)]"}>
-                                {item.icon}
-                              </span>
-                            </span>
-                            <span className="truncate w-full text-center leading-tight">{item.label}</span>
-                            {typeof moreBadge === "number" && moreBadge > 0 && (
-                              <span className="absolute right-2 top-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--accent)] px-1 text-[9px] font-black leading-none text-black">
-                                {moreBadge > 99 ? "99+" : moreBadge}
-                              </span>
-                            )}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Sign out */}
-              <button
-                type="button"
-                disabled={isSigningOut}
-                onClick={async () => {
-                  setSO(true);
-                  const result = await authClient.signOut();
-                  if (result.error) {
-                    toast.error(result.error.message || "Sign out failed");
-                    setSO(false);
-                    return;
-                  }
-                  setOpen(false);
-                  router.push("/login");
-                  router.refresh();
-                }}
-                className="mt-4 flex w-full items-center gap-3 rounded-2xl border border-[var(--line)] bg-[var(--panel-strong)] px-4 py-3 text-[12px] font-semibold text-[var(--ink-muted)] transition hover:border-red-400/30 hover:bg-red-500/10 hover:text-red-600 disabled:opacity-50 active:scale-[0.98] dark:hover:text-red-400"
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/>
-                </svg>
-                {isSigningOut ? "Signing out…" : "Sign out"}
-              </button>
-            </div>
-          </div>
-        </>
-      )}
     </>
   );
 }

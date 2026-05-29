@@ -792,6 +792,29 @@ tr:has(details[open]) {
   }
 }
 
+/* ── Mobile page transitions: slide-in from right ──────────────────────────── */
+/*
+ * Applied to .mobile-page-shell (the <div> wrapping every page in the app
+ * layout). On screens < 1024px every route change gets a smooth slide-in.
+ * The animation is short (220ms) so it feels native, not sluggish.
+ */
+@media (max-width: 1023px) {
+  .mobile-page-shell {
+    animation: mobileSlideIn 220ms cubic-bezier(0.25, 0, 0, 1) both;
+  }
+}
+
+@keyframes mobileSlideIn {
+  from {
+    opacity: 0.6;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
 /* ── Mobile document list: transforms overflow-x tables into stacked cards ── */
 /*
  * Usage: add class "doc-list" to the overflow-x-auto wrapper div around a

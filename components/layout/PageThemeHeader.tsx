@@ -1,7 +1,7 @@
 "use client";
 
 import { Role } from "@prisma/client";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 function pageMeta(pathname: string, role: Role) {
@@ -90,10 +90,30 @@ function roleTagStyle(role: Role) {
   return "bg-[var(--panel-strong)] text-[var(--ink-muted)]";
 }
 
+// Root-level pages where we never show a back button
+const ROOT_PATHS = new Set([
+  "/dashboard", "/jobs", "/finance", "/reports", "/more",
+  "/inventory", "/pos", "/clients", "/sales", "/technicians",
+  "/intake", "/payout-followups", "/ai-insights", "/settings",
+  "/field", "/complaints", "/targets",
+]);
+
+function isSubPage(pathname: string) {
+  // Direct children of known roots: /jobs/new, /jobs/:id, /inventory/suppliers, etc.
+  const parts = pathname.split("/").filter(Boolean);
+  if (parts.length < 2) return false;
+  // Exact root match → not a sub-page
+  if (ROOT_PATHS.has(pathname)) return false;
+  // Settings sub-pages (/settings/users, etc.) → sub-page
+  return true;
+}
+
 export function PageThemeHeader({ role }: { role: Role }) {
   const pathname = usePathname();
+  const router = useRouter();
   const meta = pageMeta(pathname, role);
   const [resolvedSubtitle, setResolvedSubtitle] = useState<{ path: string; text: string } | null>(null);
+  const showBack = isSubPage(pathname);
 
   useEffect(() => {
     let cancelled = false;
@@ -125,14 +145,29 @@ export function PageThemeHeader({ role }: { role: Role }) {
 
   return (
     <>
-      {/* Mobile: minimal text — no card, no role badge */}
-      <div className="flex items-baseline gap-2 sm:hidden">
-        <h1 className="text-[13px] font-bold tracking-tight text-[var(--ink)]">{meta.title}</h1>
-        {subtitle ? (
-          <span className="rounded border border-[var(--line)] bg-[var(--panel-strong)] px-1.5 py-0.5 font-mono text-[10px] font-medium text-[var(--ink-muted)]">
-            {subtitle}
-          </span>
+      {/* Mobile: back button (on sub-pages) + page title */}
+      <div className="flex items-center gap-2 sm:hidden">
+        {showBack ? (
+          <button
+            type="button"
+            onClick={() => router.back()}
+            aria-label="Go back"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-[var(--ink-muted)] transition active:bg-[var(--panel-strong)]"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M19 12H5"/><path d="m12 5-7 7 7 7"/>
+            </svg>
+          </button>
         ) : null}
+        <div className="flex min-w-0 flex-1 items-baseline gap-2">
+          <h1 className="text-[14px] font-bold tracking-tight text-[var(--ink)]">{meta.title}</h1>
+          {subtitle ? (
+            <span className="rounded border border-[var(--line)] bg-[var(--panel-strong)] px-1.5 py-0.5 font-mono text-[10px] font-medium text-[var(--ink-muted)]">
+              {subtitle}
+            </span>
+          ) : null}
+        </div>
       </div>
 
       {/* sm+: compact card with accent bar and role badge */}
