@@ -34,6 +34,7 @@ export default async function JournalPage({
 }) {
   const { user } = await getCurrentUserRole();
   if (!can.viewFinancials(user)) redirect("/dashboard");
+  const db = orgDb(user.orgId);
 
   const sp = await searchParams;
   const now    = new Date();
@@ -104,28 +105,37 @@ export default async function JournalPage({
 
   async function postEntry(fd: FormData) {
     "use server";
+    const { user: _u } = await getCurrentUserRole();
+    if (!_u.orgId) return;
+    const _db = orgDb(_u.orgId);
     const id = fd.get("id") as string;
-    const entry = await prisma.journalEntry.findFirst({ where: { id, status: "DRAFT" } });
+    const entry = await _db.journalEntry.findFirst({ where: { id, status: "DRAFT" } });
     if (!entry) return;
-    await prisma.journalEntry.update({ where: { id }, data: { status: "POSTED", postedAt: new Date() } });
+    await _db.journalEntry.update({ where: { id }, data: { status: "POSTED", postedAt: new Date() } });
     revalidatePath("/finance/journal");
   }
 
   async function voidEntry(fd: FormData) {
     "use server";
+    const { user: _u } = await getCurrentUserRole();
+    if (!_u.orgId) return;
+    const _db = orgDb(_u.orgId);
     const id = fd.get("id") as string;
-    const entry = await prisma.journalEntry.findFirst({ where: { id, status: "POSTED" } });
+    const entry = await _db.journalEntry.findFirst({ where: { id, status: "POSTED" } });
     if (!entry) return;
-    await prisma.journalEntry.update({ where: { id }, data: { status: "VOID" } });
+    await _db.journalEntry.update({ where: { id }, data: { status: "VOID" } });
     revalidatePath("/finance/journal");
   }
 
   async function deleteEntry(fd: FormData) {
     "use server";
+    const { user: _u } = await getCurrentUserRole();
+    if (!_u.orgId) return;
+    const _db = orgDb(_u.orgId);
     const id = fd.get("id") as string;
-    const entry = await prisma.journalEntry.findFirst({ where: { id, status: "DRAFT" } });
+    const entry = await _db.journalEntry.findFirst({ where: { id, status: "DRAFT" } });
     if (!entry) return;
-    await prisma.journalEntry.delete({ where: { id } });
+    await _db.journalEntry.delete({ where: { id } });
     revalidatePath("/finance/journal");
   }
 
@@ -149,7 +159,7 @@ export default async function JournalPage({
     draftCount,
     voidCount,
   ] = await Promise.all([
-    prisma.journalEntry.findMany({
+    db.journalEntry.findMany({
       where: {
         ...(statusFilter !== "all" ? { status: statusFilter as JournalEntryStatus } : {}),
         date: periodFilter,
@@ -160,28 +170,28 @@ export default async function JournalPage({
       include: {
         lines: {
           include: { account: { select: { code: true, name: true } } },
-          orderBy: { debit: "desc" }, // debits first for readability
+          orderBy: { debit: "desc" },
         },
       },
     }),
-    prisma.chartOfAccount.findMany({ where: { isActive: true }, orderBy: { code: "asc" } }),
-    prisma.journalEntry.aggregate({
+    db.chartOfAccount.findMany({ where: { isActive: true }, orderBy: { code: "asc" } }),
+    db.journalEntry.aggregate({
       where: { status: "POSTED", date: { gte: thisMonthStart } },
       _sum: { totalAmount: true },
       _count: true,
     }),
-    prisma.journalEntry.aggregate({
+    db.journalEntry.aggregate({
       where: { status: "POSTED", date: { gte: lastMonthStart, lte: lastMonthEnd } },
       _sum: { totalAmount: true },
       _count: true,
     }),
-    prisma.journalEntry.aggregate({
+    db.journalEntry.aggregate({
       where: { status: "POSTED", date: { gte: ytdStart } },
       _sum: { totalAmount: true },
       _count: true,
     }),
-    prisma.journalEntry.count({ where: { status: "DRAFT" } }),
-    prisma.journalEntry.count({ where: { status: "VOID" } }),
+    db.journalEntry.count({ where: { status: "DRAFT" } }),
+    db.journalEntry.count({ where: { status: "VOID" } }),
   ]);
 
   // ── KPI computations ──────────────────────────────────────────────────────
