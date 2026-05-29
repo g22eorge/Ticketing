@@ -58,6 +58,51 @@ function daysOverdue(date: Date | null): number | null {
   return diff > 0 ? diff : null;
 }
 
+// ── Server action: mark external tech payout as paid ─────────────────────────
+
+async function markExternalTechPaid(formData: FormData) {
+  "use server";
+  const { user, orgId, org } = await requireOrgSession();
+  if (!can.reviewExternalBills({ role: user.role, permissions: user.permissions ?? [] }) && user.role !== "ADMIN") return;
+
+  // assertOrgCanMutate check
+  const { assertOrgCanMutate } = await import("@/lib/org-write");
+  assertOrgCanMutate({ access: org.access, userRole: user.role, userAccessMode: user.accessMode, kind: "GENERAL" });
+
+  const jobId = String(formData.get("jobId") ?? "").trim();
+  if (!jobId) return;
+
+  const job = await prisma.job.findFirst({
+    where: { id: jobId, orgId },
+    select: { id: true, externalTechFee: true, externalTechBill: true },
+  });
+  if (!job) return;
+
+  await prisma.job.update({
+    where: { id: jobId },
+    data: {
+      externalPaid: true,
+      externalPaidAt: new Date(),
+      externalPaidById: user.id,
+    },
+  });
+
+  // Audit log
+  await prisma.auditLog.create({
+    data: {
+      orgId,
+      jobId,
+      userId: user.id,
+      action: "EXTERNAL_TECH_PAYOUT_MARKED",
+      detail: JSON.stringify({ markedAt: new Date().toISOString() }),
+    },
+  }).catch(() => {});
+
+  const { revalidatePath } = await import("next/cache");
+  revalidatePath("/payout-followups");
+  revalidatePath(`/jobs/${jobId}`);
+}
+
 export default async function PayoutFollowupsPage({
   searchParams,
 }: {
@@ -593,6 +638,15 @@ export default async function PayoutFollowupsPage({
                       </div>
                       <p className="text-[13px] font-medium text-[var(--ink)]">{job.client?.fullName ?? "—"} <span className="text-[11px] font-normal text-[var(--ink-muted)]">{job.client?.phone}</span></p>
                       <p className="mt-0.5 text-[11px] text-[var(--ink-muted)]">{job.assignedTo?.name ?? "Unassigned"}{doneAt ? ` · ${new Date(doneAt).toLocaleDateString()}` : ""}</p>
+                      {/* Mark Paid action */}
+                      <form action={markExternalTechPaid} className="mt-2">
+                        <input type="hidden" name="jobId" value={job.id} />
+                        <button type="submit"
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 py-1.5 text-[11px] font-bold text-emerald-700 transition hover:bg-emerald-500/20 dark:text-emerald-400">
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden><polyline points="20 6 9 17 4 12"/></svg>
+                          Mark Paid — {formatMoneyCompact(payoutDue, currency)}
+                        </button>
+                      </form>
                     </div>
                   );
                 })}
@@ -616,7 +670,20 @@ export default async function PayoutFollowupsPage({
                           <td className={tdClass}>{typeof job.clientBill === "number" ? formatMoneyCompact(job.clientBill, currency) : "—"}</td>
                           <td className={`${tdClass} font-semibold text-blue-700 dark:text-blue-400`}>{formatMoneyCompact(payoutDue, currency)}</td>
                           <td className={`${tdClass} text-xs text-[var(--ink-muted)]`}>{doneAt ? new Date(doneAt).toLocaleDateString() : "—"}</td>
-                          <td className={tdClass}><Link href={`/jobs/${job.id}?tab=financials&returnTo=/payout-followups&returnLabel=Finance+Hub`} className="btn-premium-secondary rounded-lg px-3 py-1.5 text-sm">Open</Link></td>
+                          <td className={tdClass}>
+                            <div className="flex items-center gap-1.5">
+                              {/* Mark Paid directly on this page */}
+                              <form action={markExternalTechPaid}>
+                                <input type="hidden" name="jobId" value={job.id} />
+                                <button type="submit"
+                                  className="inline-flex items-center gap-1 rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-2.5 py-1.5 text-xs font-bold text-emerald-700 transition hover:bg-emerald-500/20 dark:text-emerald-400">
+                                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden><polyline points="20 6 9 17 4 12"/></svg>
+                                  Mark Paid
+                                </button>
+                              </form>
+                              <Link href={`/jobs/${job.id}?tab=financials&returnTo=/payout-followups&returnLabel=Finance+Hub`} className="btn-premium-secondary rounded-lg px-2.5 py-1.5 text-xs">Open</Link>
+                            </div>
+                          </td>
                         </tr>
                       );
                     })}
