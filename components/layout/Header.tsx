@@ -112,9 +112,12 @@ export function Header({
               <NotificationBell />
             ) : null}
 
-            {/* Desktop: theme toggle + settings gear */}
-            <div className="hidden sm:flex items-center divide-x divide-[var(--line)] overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel-strong)]">
-              <ThemeToggle />
+            {/* Theme toggle — visible on ALL screen sizes */}
+            <ThemeToggle />
+
+            {/* Desktop: settings gear only (theme toggle is now standalone above) */}
+            <div className="hidden sm:flex items-center overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel-strong)]">
+              {/* ThemeToggle moved out — settings gear remains desktop-only */}
               <button
                 type="button"
                 onClick={() => openSettings("profile")}
@@ -316,7 +319,7 @@ function ThemeToggle() {
       title={isDark ? "Switch to light" : "Switch to dark"}
       aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
       aria-pressed={isDark}
-      className="flex h-9 w-9 items-center justify-center text-[var(--ink-muted)] transition hover:bg-[var(--panel)] hover:text-[var(--ink)]"
+      className="flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)] transition hover:border-[var(--accent)]/30 hover:text-[var(--ink)]"
     >
       {isDark ? (
         /* Moon — currently dark, click to go light */

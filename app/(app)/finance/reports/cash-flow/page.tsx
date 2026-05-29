@@ -239,7 +239,7 @@ export default async function CashFlowPage({
             Statement of Cash Flows — {periodLabel}
           </p>
         </div>
-        <div className="overflow-x-auto">
+        <div className="doc-list overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-[var(--line)] bg-[var(--panel-strong)]/40">

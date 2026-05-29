@@ -505,7 +505,7 @@ export default async function PLPage({
                 <p className="text-[11px] text-[var(--ink-muted)]">Revenue · Expenses · Net</p>
               </div>
               <PLTrendChart data={trendData} currency={currency} />
-              <div className="mt-4 overflow-x-auto">
+              <div className="mt-4 doc-list overflow-x-auto">
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-[var(--line)]">

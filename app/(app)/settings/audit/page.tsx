@@ -85,7 +85,7 @@ export default async function SettingsAuditPage({
         </div>
       </form>
 
-      <div className="overflow-x-auto rounded-xl border border-[var(--line)] bg-[var(--panel)]">
+      <div className="doc-list overflow-x-auto rounded-xl border border-[var(--line)] bg-[var(--panel)]">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-[var(--line)] text-left text-xs font-semibold uppercase tracking-wide text-[var(--ink-muted)]">

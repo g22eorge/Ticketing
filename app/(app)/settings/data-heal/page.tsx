@@ -93,7 +93,7 @@ export default async function DataHealPage({
         {preview.changes.length === 0 ? (
           <p className="px-4 py-6 text-sm text-[var(--ink-muted)]">No healable placeholder rows found.</p>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="doc-list overflow-x-auto">
             <table className="min-w-full text-sm">
               <thead className="bg-[var(--panel-strong)] text-xs uppercase tracking-[0.08em] text-[var(--ink-muted)]">
                 <tr>
