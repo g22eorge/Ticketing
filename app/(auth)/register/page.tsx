@@ -35,7 +35,7 @@ export default async function RegisterPage() {
           <div className="pointer-events-none absolute -right-10 bottom-20 h-60 w-60 rounded-full bg-[#D4AF37]/6 blur-[60px]" />
 
           <div className="relative">
-            <AppLogoDark height={38} priority />
+            <AppLogoDark height={52} priority />
           </div>
 
           <div className="relative space-y-8">
@@ -72,12 +72,12 @@ export default async function RegisterPage() {
 
             {/* Mobile logo */}
             <div className="mb-8 flex justify-center lg:hidden">
-              <AppLogoDark height={48} priority />
+              <AppLogoDark height={64} priority />
             </div>
 
             {/* Desktop logo row */}
             <div className="mb-8 hidden lg:flex">
-              <AppLogoDark height={36} priority />
+              <AppLogoDark height={48} priority />
             </div>
 
             <h2 className="text-2xl font-semibold text-white">Create your account</h2>

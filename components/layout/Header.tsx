@@ -139,7 +139,7 @@ export function Header({
             href="/dashboard"
             className="flex items-center lg:hidden transition-opacity hover:opacity-75"
           >
-            <AppLogo height={30} priority />
+            <AppLogo height={40} priority />
           </Link>
 
           {/* Spacer */}

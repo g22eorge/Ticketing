@@ -168,7 +168,7 @@ function DuukaSaasLanding() {
       <nav className="sticky top-0 z-40 border-b border-white/6 bg-[#050505]/90 px-4 py-3 backdrop-blur-md">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <AppLogoDark height={32} priority />
+            <AppLogoDark height={44} priority />
           </div>
           <div className="flex items-center gap-2">
             <Link href="/register" className="hidden rounded-lg border border-[#D4AF37]/30 bg-[#D4AF37]/10 px-4 py-2 text-xs font-semibold text-[#D4AF37] transition hover:bg-[#D4AF37]/20 sm:inline-flex">

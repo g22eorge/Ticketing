@@ -27,7 +27,7 @@ export default async function AcceptInvitePage({ params }: Props) {
 
           {/* Logo */}
           <div className="flex justify-center">
-            <AppLogoDark height={44} priority />
+            <AppLogoDark height={60} priority />
           </div>
 
           {isInvalid ? (

@@ -442,7 +442,7 @@ export function AppSidebar({
         href="/"
         className="flex items-center px-5 py-4 border-b border-[var(--line)] hover:opacity-80 transition-opacity"
       >
-        <AppLogo height={36} priority />
+        <AppLogo height={48} priority />
       </Link>
 
       {/* ── Navigation ── */}
