@@ -191,16 +191,23 @@ export default async function DocumentTemplatesPage() {
 
                       {/* Card body */}
                       <div className="flex flex-1 flex-col gap-1.5 p-3">
-                        {/* Top row: number badge + "Current" indicator */}
+                        {/* Top row: number badge + status badges */}
                         <div className="flex items-center justify-between gap-1">
                           <span className="rounded bg-[var(--panel-strong)] px-1.5 py-0.5 text-[10px] font-bold tabular-nums text-[var(--ink-muted)]">
                             T-{String(t.templateNumber).padStart(2, "0")}
                           </span>
-                          {isCurrent ? (
-                            <span className="rounded-full bg-[var(--accent)]/15 px-1.5 py-0.5 text-[10px] font-bold text-[var(--accent)]">
-                              Current
-                            </span>
-                          ) : null}
+                          <div className="flex items-center gap-1">
+                            {t.templateNumber === 1 && !isCurrent && (
+                              <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-1.5 py-0.5 text-[9px] font-bold text-emerald-600">
+                                ★ Recommended
+                              </span>
+                            )}
+                            {isCurrent ? (
+                              <span className="rounded-full bg-[var(--accent)]/15 px-1.5 py-0.5 text-[10px] font-bold text-[var(--accent)]">
+                                Current
+                              </span>
+                            ) : null}
+                          </div>
                         </div>
 
                         {/* Label */}
