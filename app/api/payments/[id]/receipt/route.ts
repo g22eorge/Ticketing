@@ -7,6 +7,7 @@ import { getDocumentBrandingSettings } from "@/lib/document-branding";
 import { requireOrgSession } from "@/lib/org-context";
 import { can } from "@/lib/permissions";
 import { PaymentReceiptDocument } from "@/lib/pdf/PaymentReceiptDocument";
+import { resolveInvoiceLogo } from "@/lib/pdf/pdf-utils";
 import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
@@ -43,7 +44,10 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  const branding = await getDocumentBrandingSettings(orgId);
+  const [branding, logoUrl] = await Promise.all([
+    getDocumentBrandingSettings(orgId),
+    resolveInvoiceLogo(),
+  ]);
   const receipt = await prisma.receipt.findFirst({
     where: { orgId, paymentId: payment.id },
     select: { receiptNumber: true },
@@ -58,7 +62,7 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
         : "Payment";
 
   const element = createElement(PaymentReceiptDocument as never, {
-    branding,
+    branding: { ...branding, companyLogoUrl: logoUrl ?? null },
     receiptNumber: receipt?.receiptNumber ?? `RCPT-${payment.id.slice(0, 8).toUpperCase()}`,
     receivedAt: payment.receivedAt.toLocaleString("en-GB"),
     method: prettyEnum(payment.method),

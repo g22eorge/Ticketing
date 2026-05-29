@@ -2,16 +2,16 @@ import type { OrgPlan } from "@prisma/client";
 
 import type { ComponentType } from "react";
 
-import { InvoiceDocument }         from "@/lib/pdf/InvoiceDocument";
-import { InvoiceDocumentV2 }       from "@/lib/pdf/InvoiceDocumentV2";
-import { InvoiceDocumentMinimal }  from "@/lib/pdf/InvoiceDocumentMinimal";
-import { InvoiceDocumentPremium }  from "@/lib/pdf/InvoiceDocumentPremium";
-import { InvoiceDocumentExecutive }from "@/lib/pdf/InvoiceDocumentExecutive";
-import { JobCardDocument }          from "@/lib/pdf/JobCardDocument";
+import { EagleInfoInvoiceAdapter }  from "@/lib/pdf/EagleInfoInvoiceAdapter";
+import { InvoiceDocumentV2 }        from "@/lib/pdf/InvoiceDocumentV2";
+import { InvoiceDocumentMinimal }   from "@/lib/pdf/InvoiceDocumentMinimal";
+import { InvoiceDocumentPremium }   from "@/lib/pdf/InvoiceDocumentPremium";
+import { InvoiceDocumentExecutive } from "@/lib/pdf/InvoiceDocumentExecutive";
+import { EagleInfoJobCardDocument } from "@/lib/pdf/EagleInfoJobCardDocument";
 import { JobCardDocumentCompact }   from "@/lib/pdf/JobCardDocumentCompact";
 import { JobCardDocumentTechnical } from "@/lib/pdf/JobCardDocumentTechnical";
 import { JobCardDocumentPremium }   from "@/lib/pdf/JobCardDocumentPremium";
-import { QuotationDocument }        from "@/lib/pdf/QuotationDocument";
+import { EagleInfoQuotationAdapter }from "@/lib/pdf/EagleInfoQuotationAdapter";
 import { QuotationDocumentMinimal } from "@/lib/pdf/QuotationDocumentMinimal";
 import { SaleReceiptDocument }          from "@/lib/pdf/SaleReceiptDocument";
 import { SaleReceiptDocumentThermal }   from "@/lib/pdf/SaleReceiptDocumentThermal";
@@ -150,28 +150,28 @@ export function InvoiceTemplateComponent(key: TemplateKey): ComponentType<any> {
   if (key === "invoice_premium")   return InvoiceDocumentPremium;
   if (key === "invoice_minimal")   return InvoiceDocumentMinimal;
   if (key === "invoice_executive") return InvoiceDocumentExecutive;
-  // invoice_classic (default)
-  return InvoiceDocument;
+  // invoice_classic (default) — Eagle Info house style
+  return EagleInfoInvoiceAdapter;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function QuotationTemplateComponent(key: TemplateKey): ComponentType<any> {
   if (key === "quote_minimal")   return QuotationDocumentMinimal;
   if (key === "quote_detailed")  return QuotationDocumentMinimal;
-  if (key === "quote_modern")    return InvoiceDocumentV2;      // reuse modern green style
-  if (key === "quote_executive") return InvoiceDocumentExecutive; // reuse dark exec style
-  // quote_classic (default)
-  return QuotationDocument;
+  if (key === "quote_modern")    return InvoiceDocumentV2;
+  if (key === "quote_executive") return InvoiceDocumentExecutive;
+  // quote_classic (default) — Eagle Info house style
+  return EagleInfoQuotationAdapter;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function JobCardTemplateComponent(key: TemplateKey): ComponentType<any> {
   if (key === "job_card_compact")   return JobCardDocumentCompact;
-  if (key === "job_card_detailed")  return JobCardDocument;        // base = detailed amber
+  if (key === "job_card_detailed")  return EagleInfoJobCardDocument; // detailed = Eagle Info clean
   if (key === "job_card_technical") return JobCardDocumentTechnical;
   if (key === "job_card_premium")   return JobCardDocumentPremium;
-  // job_card_classic (default)
-  return JobCardDocument;
+  // job_card_classic (default) — Eagle Info house style
+  return EagleInfoJobCardDocument;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

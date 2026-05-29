@@ -6,6 +6,7 @@ import { getDocumentBrandingSettings } from "@/lib/document-branding";
 import { requireOrgSession } from "@/lib/org-context";
 import { can } from "@/lib/permissions";
 import { DeliveryNoteDocument } from "@/lib/pdf/DeliveryNoteDocument";
+import { resolveInvoiceLogo } from "@/lib/pdf/pdf-utils";
 import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
@@ -76,13 +77,16 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  const branding = await getDocumentBrandingSettings(orgId);
+  const [branding, logoUrl] = await Promise.all([
+    getDocumentBrandingSettings(orgId),
+    resolveInvoiceLogo(),
+  ]);
   const sourceRef = note.invoice?.invoiceNumber
     ? `${note.invoice.invoiceNumber}${note.invoice.job ? ` / ${note.invoice.job.jobNumber}` : ""}`
     : (note.sale?.invoiceNumber ?? note.sale?.saleNumber ?? "-");
   const clientName = note.invoice?.job?.client.fullName ?? note.sale?.client?.fullName ?? "-";
   const element = createElement(DeliveryNoteDocument as never, {
-    branding,
+    branding: { ...branding, companyLogoUrl: logoUrl ?? null },
     deliveryNoteNumber: note.deliveryNoteNumber,
     deliveredAt: note.deliveredAt.toLocaleString("en-GB"),
     saleRef: sourceRef,

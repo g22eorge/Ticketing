@@ -1,4 +1,61 @@
-import { Document, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
+/**
+ * Delivery Note — Eagle Info house style.
+ * Matches the clean white design from Quote_EISL-000014.pdf.
+ */
+import { Document, Image, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
+
+const INK     = "#0f172a";
+const MUTED   = "#6B7280";
+const DIVIDER = "#E5E7EB";
+const WHITE   = "#FFFFFF";
+const LABEL   = 7;
+
+const s = StyleSheet.create({
+  page: { paddingHorizontal: 40, paddingVertical: 36, fontSize: 9, fontFamily: "Helvetica", color: INK, backgroundColor: WHITE },
+
+  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 },
+  headerLeft: { flex: 1, paddingRight: 24 },
+  logo: { width: 72, height: 36, marginBottom: 6, objectFit: "contain" },
+  companyName: { fontSize: 13, fontFamily: "Helvetica-Bold", marginBottom: 3 },
+  companyLine: { fontSize: 8, color: MUTED, marginBottom: 1.5 },
+  infoRow: { flexDirection: "row", gap: 4, marginBottom: 1.5 },
+  infoLabel: { fontSize: 8, fontFamily: "Helvetica-Bold", width: 38 },
+  headerRight: { width: 180, alignItems: "flex-end" },
+  docTitle: { fontSize: 22, fontFamily: "Helvetica-Bold", marginBottom: 3 },
+  docNumber: { fontSize: 8.5, color: MUTED, marginBottom: 8 },
+  refBox: { borderWidth: 1, borderColor: DIVIDER, borderRadius: 4, paddingHorizontal: 10, paddingVertical: 7, alignItems: "flex-end", width: "100%" },
+  refLabel: { fontSize: LABEL, fontFamily: "Helvetica-Bold", color: MUTED, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 3 },
+  refValue: { fontSize: 10, fontFamily: "Helvetica-Bold" },
+
+  hr: { borderTopWidth: 1, borderTopColor: DIVIDER, marginBottom: 16 },
+
+  grid2: { flexDirection: "row", gap: 24, marginBottom: 16 },
+  col: { flex: 1 },
+  sectionLabel: { fontSize: LABEL, fontFamily: "Helvetica-Bold", color: MUTED, textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 6, borderBottomWidth: 1, borderBottomColor: DIVIDER, paddingBottom: 4 },
+  fieldRow: { flexDirection: "row", borderBottomWidth: 1, borderBottomColor: DIVIDER, paddingVertical: 4.5 },
+  fieldLabel: { width: 80, fontSize: 8.5, color: MUTED },
+  fieldValue: { flex: 1, fontSize: 8.5, fontFamily: "Helvetica-Bold" },
+
+  // Items table
+  table: { marginBottom: 16 },
+  tableHead: { flexDirection: "row", borderBottomWidth: 1.5, borderBottomColor: INK, paddingBottom: 4 },
+  th: { fontSize: 8, fontFamily: "Helvetica-Bold", textTransform: "uppercase", letterSpacing: 0.4 },
+  tableRow: { flexDirection: "row", borderBottomWidth: 1, borderBottomColor: DIVIDER, paddingVertical: 7 },
+  colNum:  { width: 24 },
+  colDesc: { flex: 1 },
+  colQty:  { width: 60, textAlign: "right" },
+
+  // Footer
+  footerDivider: { borderTopWidth: 1, borderTopColor: DIVIDER, marginTop: 20, marginBottom: 14 },
+  sigRow: { flexDirection: "row", gap: 24 },
+  sigCol: { flex: 1 },
+  sigLine: { borderBottomWidth: 1, borderBottomColor: INK, marginTop: 28, marginBottom: 5 },
+  sigLabel: { fontSize: 7.5, color: MUTED },
+  sigName: { fontSize: 8.5, fontFamily: "Helvetica-Bold" },
+
+  noteLabel: { fontSize: LABEL, fontFamily: "Helvetica-Bold", color: MUTED, textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 4 },
+  noteText: { fontSize: 8.5, color: INK, lineHeight: 1.5, marginBottom: 12 },
+});
 
 type DeliveryItem = { description: string; quantity: number };
 
@@ -10,6 +67,7 @@ type Props = {
     companyAddressLine2: string;
     companyContacts: string;
     companyEmail?: string | null;
+    companyLogoUrl?: string | null;
   };
   deliveryNoteNumber: string;
   deliveredAt: string;
@@ -23,97 +81,111 @@ type Props = {
   items: DeliveryItem[];
 };
 
-const s = StyleSheet.create({
-  page: { padding: 20, fontSize: 10, color: "#0f172a" },
-  title: { fontSize: 16, fontWeight: 700 },
-  muted: { color: "#475569" },
-  metaGrid: { flexDirection: "row", gap: 12, marginTop: 12 },
-  metaCol: { flexGrow: 1 },
-  label: { fontSize: 9, color: "#64748b" },
-  value: { fontSize: 11, fontWeight: 600 },
-  table: { marginTop: 12, borderWidth: 1, borderColor: "#e2e8f0", borderRadius: 8, overflow: "hidden" },
-  thead: { backgroundColor: "#f1f5f9", flexDirection: "row" },
-  th: { padding: 8, fontSize: 9, fontWeight: 700, color: "#475569" },
-  tr: { flexDirection: "row", borderTopWidth: 1, borderTopColor: "#e2e8f0" },
-  td: { padding: 8 },
-});
+export function DeliveryNoteDocument({ branding, deliveryNoteNumber, deliveredAt, saleRef, clientName, deliveredByName, receivedByName, receivedBySignatureText, deliveryMethod, note, items }: Props) {
+  const address = [branding.companyAddressLine1, branding.companyAddressLine2].filter(Boolean).join(", ");
 
-export function DeliveryNoteDocument(props: Props) {
   return (
-    <Document title={`Delivery Note ${props.deliveryNoteNumber}`}>
+    <Document title={`Delivery Note ${deliveryNoteNumber}`}>
       <Page size="A4" style={s.page}>
-        <Text style={s.title}>Delivery Note</Text>
-        <Text style={s.muted}>{props.branding.companyName}</Text>
-        {props.branding.companyTagline ? <Text style={s.muted}>{props.branding.companyTagline}</Text> : null}
 
-        <View style={s.metaGrid}>
-          <View style={s.metaCol}>
-            <Text style={s.label}>Delivery Note #</Text>
-            <Text style={s.value}>{props.deliveryNoteNumber}</Text>
-            <Text style={[s.label, { marginTop: 6 }]}>Delivered</Text>
-            <Text style={s.value}>{props.deliveredAt}</Text>
+        {/* Header */}
+        <View style={s.header}>
+          <View style={s.headerLeft}>
+            {branding.companyLogoUrl
+              // eslint-disable-next-line jsx-a11y/alt-text
+              ? <Image style={s.logo} src={branding.companyLogoUrl} />
+              : null}
+            <Text style={s.companyName}>{branding.companyName}</Text>
+            {address ? <Text style={s.companyLine}>{address}</Text> : null}
+            {branding.companyContacts ? (
+              <View style={s.infoRow}><Text style={s.infoLabel}>PHONE:</Text><Text style={s.companyLine}>{branding.companyContacts}</Text></View>
+            ) : null}
+            {branding.companyEmail ? (
+              <View style={s.infoRow}><Text style={s.infoLabel}>EMAIL:</Text><Text style={s.companyLine}>{branding.companyEmail}</Text></View>
+            ) : null}
           </View>
-          <View style={s.metaCol}>
-            <Text style={s.label}>Sale / Invoice</Text>
-            <Text style={s.value}>{props.saleRef}</Text>
-            <Text style={[s.label, { marginTop: 6 }]}>Client</Text>
-            <Text style={s.value}>{props.clientName}</Text>
+          <View style={s.headerRight}>
+            <Text style={s.docTitle}>Delivery Note</Text>
+            <Text style={s.docNumber}>#{deliveryNoteNumber}</Text>
+            <View style={s.refBox}>
+              <Text style={s.refLabel}>Reference</Text>
+              <Text style={s.refValue}>{saleRef}</Text>
+            </View>
           </View>
         </View>
 
-        <View style={s.metaGrid}>
-          <View style={s.metaCol}>
-            <Text style={s.label}>Delivered By</Text>
-            <Text style={s.value}>{props.deliveredByName}</Text>
+        <View style={s.hr} />
+
+        {/* Client + Delivery info */}
+        <View style={s.grid2}>
+          <View style={s.col}>
+            <Text style={s.sectionLabel}>Delivered To</Text>
+            {[
+              { label: "Client",   value: clientName },
+              { label: "Method",   value: deliveryMethod ?? "-" },
+              { label: "Date",     value: deliveredAt },
+            ].map((r, i) => (
+              <View key={i} style={s.fieldRow}>
+                <Text style={s.fieldLabel}>{r.label}</Text>
+                <Text style={s.fieldValue}>{r.value}</Text>
+              </View>
+            ))}
           </View>
-          <View style={s.metaCol}>
-            <Text style={s.label}>Received By</Text>
-            <Text style={s.value}>{props.receivedByName}</Text>
+          <View style={s.col}>
+            <Text style={s.sectionLabel}>Dispatch Details</Text>
+            {[
+              { label: "Dispatched by", value: deliveredByName },
+              { label: "Received by",   value: receivedByName },
+            ].map((r, i) => (
+              <View key={i} style={s.fieldRow}>
+                <Text style={s.fieldLabel}>{r.label}</Text>
+                <Text style={s.fieldValue}>{r.value}</Text>
+              </View>
+            ))}
           </View>
         </View>
 
-        <View style={s.metaGrid}>
-          <View style={s.metaCol}>
-            <Text style={s.label}>Delivery Method</Text>
-            <Text style={s.value}>{props.deliveryMethod ?? "-"}</Text>
-          </View>
-          <View style={s.metaCol}>
-            <Text style={s.label}>Signature</Text>
-            <Text style={s.value}>{props.receivedBySignatureText ?? "_____________________"}</Text>
-          </View>
-        </View>
-
+        {/* Items */}
         <View style={s.table}>
-          <View style={s.thead}>
-            <Text style={[s.th, { width: "80%" }]}>Item</Text>
-            <Text style={[s.th, { width: "20%" }]}>Qty</Text>
+          <View style={s.tableHead}>
+            <Text style={[s.th, s.colNum]}>#</Text>
+            <Text style={[s.th, s.colDesc]}>Description</Text>
+            <Text style={[s.th, s.colQty]}>Qty</Text>
           </View>
-          {props.items.map((it, idx) => (
-            <View key={`${idx}:${it.description}`} style={s.tr}>
-              <Text style={[s.td, { width: "80%" }]}>{it.description}</Text>
-              <Text style={[s.td, { width: "20%" }]}>{String(it.quantity)}</Text>
+          {items.map((it, i) => (
+            <View key={i} style={s.tableRow}>
+              <Text style={[{ fontSize: 9 }, s.colNum]}>{i + 1}</Text>
+              <Text style={[{ fontSize: 9 }, s.colDesc]}>{it.description}</Text>
+              <Text style={[{ fontSize: 9 }, s.colQty]}>{String(it.quantity)}</Text>
             </View>
           ))}
-          {props.items.length === 0 ? (
-            <View style={s.tr}>
-              <Text style={[s.td, { width: "100%" }]}>No items</Text>
-            </View>
-          ) : null}
         </View>
 
-        {props.note ? (
-          <View style={{ marginTop: 12 }}>
-            <Text style={s.label}>Note</Text>
-            <Text style={s.value}>{props.note}</Text>
-          </View>
+        {/* Note */}
+        {note ? (
+          <>
+            <Text style={s.noteLabel}>Notes</Text>
+            <Text style={s.noteText}>{note}</Text>
+          </>
         ) : null}
 
-        <View style={{ marginTop: 16 }}>
-          <Text style={s.muted}>{props.branding.companyAddressLine1}</Text>
-          <Text style={s.muted}>{props.branding.companyAddressLine2}</Text>
-          <Text style={s.muted}>{props.branding.companyContacts}</Text>
-          {props.branding.companyEmail ? <Text style={s.muted}>{props.branding.companyEmail}</Text> : null}
+        {/* Signatures */}
+        <View style={s.footerDivider} />
+        <View style={s.sigRow}>
+          <View style={s.sigCol}>
+            <Text style={s.sigName}>{deliveredByName}</Text>
+            <View style={s.sigLine} />
+            <Text style={s.sigLabel}>Dispatched by</Text>
+          </View>
+          <View style={s.sigCol}>
+            <Text style={s.sigName}>{receivedByName}</Text>
+            <View style={s.sigLine} />
+            <Text style={s.sigLabel}>
+              {receivedBySignatureText ? receivedBySignatureText : "Client signature (confirmation of receipt)"}
+            </Text>
+          </View>
         </View>
+
       </Page>
     </Document>
   );
