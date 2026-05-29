@@ -87,7 +87,9 @@ export function SaleReceiptDocument({ sale, branding }: { sale: Sale; branding: 
       clientEmail={null}
       clientLocation={null}
       lineItems={lineItems}
-      subTotal={sale.discountAmount > 0 ? formatMoney(sale.subtotal, currency) : null}
+      subTotal={sale.discountAmount > 0 || sale.vatAmount > 0 ? formatMoney(sale.subtotal, currency) : null}
+      vatLabel={sale.vatAmount > 0 ? `VAT (${branding?.vatRatePercent ?? 18}%)` : null}
+      vatAmount={sale.vatAmount > 0 ? formatMoney(sale.vatAmount, currency) : null}
       totalLabel="Total"
       totalAmount={formatMoney(sale.totalAmount, currency)}
       paymentMade={sale.paidAmount > 0 ? formatMoney(sale.paidAmount, currency) : null}

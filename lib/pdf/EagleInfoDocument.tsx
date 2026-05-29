@@ -146,7 +146,9 @@ export type EagleInfoDocumentProps = {
 
   // Totals
   subTotal?: string | null;
-  totalLabel?: string;       // "Total"
+  vatLabel?: string | null;   // e.g. "VAT (18%)"
+  vatAmount?: string | null;  // pre-formatted
+  totalLabel?: string;        // "Total"
   totalAmount: string;
   paymentMade?: string | null;
   balanceDue: string;
@@ -165,7 +167,7 @@ export function EagleInfoDocument(props: EagleInfoDocumentProps) {
     docTitle, docNumber, docDate, terms, dueDate,
     clientName, clientEmail, clientPhone, clientLocation,
     lineItems,
-    subTotal, totalLabel = "Total", totalAmount, paymentMade, balanceDue,
+    subTotal, vatLabel, vatAmount, totalLabel = "Total", totalAmount, paymentMade, balanceDue,
     notes, paymentTo, termsText,
   } = props;
 
@@ -273,6 +275,12 @@ export function EagleInfoDocument(props: EagleInfoDocumentProps) {
             <View style={s.totalRow}>
               <Text style={s.totalLabel}>Sub Total</Text>
               <Text style={s.totalValue}>{subTotal}</Text>
+            </View>
+          ) : null}
+          {vatLabel && vatAmount ? (
+            <View style={s.totalRow}>
+              <Text style={s.totalLabel}>{vatLabel}</Text>
+              <Text style={s.totalValue}>{vatAmount}</Text>
             </View>
           ) : null}
           <View style={s.totalRowBold}>

@@ -76,8 +76,8 @@ function groupedTemplates() {
 
 type Props = {
   accounts: Account[];
-  /** Server action – defined in the page and passed down as a prop. */
-  createEntry: (fd: FormData) => Promise<void>;
+  /** Server action – returns { ok: true } on success or { error: string } on failure. */
+  createEntry: (fd: FormData) => Promise<{ ok?: boolean; error?: string } | undefined | void>;
 };
 
 export function NewJournalEntryForm({ accounts, createEntry }: Props) {
@@ -87,6 +87,7 @@ export function NewJournalEntryForm({ accounts, createEntry }: Props) {
   const [date,        setDate]        = useState(new Date().toISOString().slice(0, 10));
   const [reference,   setReference]   = useState("");
   const [lines,       setLines]       = useState<Line[]>(emptyLines());
+  const [serverError, setServerError] = useState<string | null>(null);
   const [isPending,   startTransition] = useTransition();
 
   // ── Template application ───────────────────────────────────────────────
@@ -134,8 +135,13 @@ export function NewJournalEntryForm({ accounts, createEntry }: Props) {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
     startTransition(async () => {
-      await createEntry(fd);
-      // Reset form on success
+      setServerError(null);
+      const result = await createEntry(fd);
+      if (result && "error" in result && result.error) {
+        setServerError(result.error);
+        return; // keep the form intact so the user can fix it
+      }
+      // Reset only on confirmed success
       setActiveId(null);
       setDescription("");
       setDate(new Date().toISOString().slice(0, 10));
@@ -418,6 +424,11 @@ export function NewJournalEntryForm({ accounts, createEntry }: Props) {
           </p>
         </div>
 
+        {serverError && (
+          <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-600">
+            {serverError}
+          </p>
+        )}
         <div className="flex justify-end">
           <button
             type="submit"

@@ -62,6 +62,7 @@ export function NotificationBell() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(false);
   // Panel geometry — computed from the button's bounding rect on open
   const [rect, setRect] = useState<{ top: number; right: number } | null>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
@@ -71,14 +72,16 @@ export function NotificationBell() {
   const fetchNotifications = useCallback(async () => {
     try {
       const res = await fetch("/api/notifications?all=false&limit=30");
-      if (!res.ok) return;
-      const ct = res.headers.get("content-type") ?? "";
-      if (!ct.includes("application/json")) return;
+      if (!res.ok || !res.headers.get("content-type")?.includes("application/json")) {
+        setFetchError(true);
+        return;
+      }
       const data = await res.json();
       setNotifications(data.notifications ?? []);
       setUnreadCount(data.unreadCount ?? 0);
+      setFetchError(false);
     } catch {
-      // silent
+      setFetchError(true);
     } finally {
       setIsLoading(false);
     }
@@ -145,12 +148,12 @@ export function NotificationBell() {
     await fetch("/api/notifications/read-all", { method: "POST" }).catch(() => {});
   }
 
-  // Click a notification → mark it read + navigate to the job
+  // Click a notification → mark it read, close panel, navigate if linked
   async function handleClick(n: Notification) {
     await markRead(n.id);
+    setIsOpen(false);
     if (n.job?.id) {
       router.push(`/jobs/${n.job.id}`);
-      setIsOpen(false);
     }
   }
 
@@ -247,6 +250,12 @@ export function NotificationBell() {
                     </div>
                   </div>
                 ))}
+              </div>
+            ) : fetchError ? (
+              <div className="flex flex-col items-center gap-2 px-4 py-10 text-center">
+                <span className="text-2xl opacity-40">⚠️</span>
+                <p className="text-sm font-medium text-[var(--ink-muted)]">Couldn&apos;t load notifications</p>
+                <p className="text-xs text-[var(--ink-muted)]/70">Check your connection — will retry shortly.</p>
               </div>
             ) : notifications.length === 0 ? (
               <div className="flex flex-col items-center gap-2 px-4 py-10 text-center">

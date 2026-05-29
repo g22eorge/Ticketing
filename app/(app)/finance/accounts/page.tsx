@@ -81,6 +81,8 @@ export default async function ChartOfAccountsPage() {
     "use server";
     const { user: _u } = await getCurrentUserRole();
     if (!_u.orgId) return;
+    // Only ADMIN and MANAGER can seed default accounts
+    if (!["ADMIN", "MANAGER"].includes(_u.role)) return;
     const db = orgDb(_u.orgId);
 
     // Fetch codes that already exist so we can skip them

@@ -34,6 +34,7 @@ export default async function JournalPage({
 }) {
   const { user } = await getCurrentUserRole();
   if (!can.viewFinancials(user)) redirect("/dashboard");
+  if (!user.orgId) redirect("/dashboard");
   const db = orgDb(user.orgId);
 
   const sp = await searchParams;
@@ -77,11 +78,12 @@ export default async function JournalPage({
       const desc   = ((fd.get(`lines[${i}][description]`) as string) || "").trim();
       if (debit > 0 || credit > 0) lines.push({ accountId, debit, credit, description: desc });
     }
-    if (lines.length < 2) return;
+    if (lines.length < 2) return { error: "At least 2 lines are required." };
 
     const totalDebit  = lines.reduce((s, l) => s + l.debit, 0);
     const totalCredit = lines.reduce((s, l) => s + l.credit, 0);
-    if (Math.abs(totalDebit - totalCredit) > 0.01) return;
+    if (Math.abs(totalDebit - totalCredit) > 0.01)
+      return { error: `Entry is not balanced — debits ${totalDebit.toFixed(2)} ≠ credits ${totalCredit.toFixed(2)}.` };
 
     const count = await db.journalEntry.count({});
     const entryYear   = new Date(dateStr).getFullYear();
@@ -101,6 +103,7 @@ export default async function JournalPage({
       },
     });
     revalidatePath("/finance/journal");
+    return { ok: true };
   }
 
   async function postEntry(fd: FormData) {

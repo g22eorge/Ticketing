@@ -35,8 +35,8 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
       reference: true,
       receivedAt: true,
       createdBy: { select: { name: true } },
-      sale: { select: { id: true, saleNumber: true } },
-      invoice: { select: { id: true, invoiceNumber: true, job: { select: { id: true, jobNumber: true } } } },
+      sale: { select: { id: true, saleNumber: true, client: { select: { fullName: true, phone: true } } } },
+      invoice: { select: { id: true, invoiceNumber: true, job: { select: { id: true, jobNumber: true, client: { select: { fullName: true, phone: true } } } } } },
     },
   });
 
@@ -61,6 +61,13 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
         ? `Invoice ${payment.invoice.invoiceNumber}`
         : "Payment";
 
+  const clientName = payment.invoice?.job?.client?.fullName
+    ?? payment.sale?.client?.fullName
+    ?? null;
+  const clientPhone = payment.invoice?.job?.client?.phone
+    ?? payment.sale?.client?.phone
+    ?? null;
+
   const element = createElement(PaymentReceiptDocument as never, {
     branding: { ...branding, companyLogoUrl: logoUrl ?? null },
     receiptNumber: receipt?.receiptNumber ?? `RCPT-${payment.id.slice(0, 8).toUpperCase()}`,
@@ -70,6 +77,8 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
     amountLabel: formatMoney(payment.amount, currency),
     forLabel,
     receivedBy: payment.createdBy?.name ?? user.name,
+    clientName,
+    clientPhone,
   });
 
   const pdf = await renderToBuffer(element as never);
