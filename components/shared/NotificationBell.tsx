@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { formatDistanceToNow } from "date-fns";
 
@@ -60,7 +61,9 @@ export function NotificationBell() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const panelRef = useRef<HTMLDivElement>(null);
+  // Panel geometry — computed from the button's bounding rect on open
+  const [rect, setRect] = useState<{ top: number; right: number } | null>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
   const router = useRouter();
 
   const fetchNotifications = useCallback(async () => {
@@ -90,9 +93,11 @@ export function NotificationBell() {
   useEffect(() => {
     if (!isOpen) return;
     function handle(e: MouseEvent) {
-      if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
-        setIsOpen(false);
-      }
+      const panel = document.getElementById("notif-panel");
+      if (
+        btnRef.current && !btnRef.current.contains(e.target as Node) &&
+        panel && !panel.contains(e.target as Node)
+      ) setIsOpen(false);
     }
     document.addEventListener("mousedown", handle);
     return () => document.removeEventListener("mousedown", handle);
@@ -108,8 +113,23 @@ export function NotificationBell() {
     return () => document.removeEventListener("keydown", handle);
   }, [isOpen]);
 
+  // Close on scroll (repositioning would be needed otherwise)
+  useEffect(() => {
+    if (!isOpen) return;
+    const handle = () => setIsOpen(false);
+    window.addEventListener("scroll", handle, true);
+    return () => window.removeEventListener("scroll", handle, true);
+  }, [isOpen]);
+
+  function openPanel() {
+    if (btnRef.current) {
+      const r = btnRef.current.getBoundingClientRect();
+      setRect({ top: r.bottom, right: window.innerWidth - r.right });
+    }
+    setIsOpen((v) => !v);
+  }
+
   async function markRead(id: string) {
-    // Optimistic update
     setNotifications((prev) =>
       prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)),
     );
@@ -131,12 +151,32 @@ export function NotificationBell() {
     }
   }
 
+  // Panel width: 22rem on desktop, full viewport minus margin on mobile
+  const panelWidth = typeof window !== "undefined"
+    ? Math.min(22 * 16, window.innerWidth - 16)
+    : 352;
+
+  const panelStyle: React.CSSProperties = rect
+    ? {
+        position: "fixed",
+        top: rect.top + 8,
+        right: rect.right,
+        width: panelWidth,
+        // Ensure left edge doesn't clip off-screen
+        maxWidth: `calc(100vw - 1rem)`,
+        // Cap height to viewport, leaving room for the button + gap
+        maxHeight: `calc(100dvh - ${rect.top + 24}px)`,
+        zIndex: 9999,
+      }
+    : { display: "none" };
+
   return (
-    <div className="relative" ref={panelRef}>
+    <>
       {/* ── Bell button ── */}
       <button
+        ref={btnRef}
         type="button"
-        onClick={() => setIsOpen((v) => !v)}
+        onClick={openPanel}
         aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ""}`}
         aria-expanded={isOpen}
         aria-haspopup="dialog"
@@ -153,14 +193,22 @@ export function NotificationBell() {
         )}
       </button>
 
-      {/* ── Dropdown panel ── */}
-      {isOpen && (
+      {/* ── Dropdown panel (portalled to body so it's never clipped) ── */}
+      {isOpen && typeof document !== "undefined" && createPortal(
         <div
+          id="notif-panel"
           role="dialog"
           aria-label="Notifications"
-          className="absolute right-0 top-full z-[200] mt-2 w-[22rem] max-w-[calc(100vw-1rem)] overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--panel)] shadow-2xl"
-          style={{ boxShadow: "0 24px 48px rgba(0,0,0,.45)" }}
+          style={{ ...panelStyle, animation: "notifPanelIn 120ms ease-out both" }}
+          className="overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--panel)] shadow-2xl"
         >
+          <style>{`
+            @keyframes notifPanelIn {
+              from { opacity: 0; transform: scale(0.97) translateY(-6px); }
+              to   { opacity: 1; transform: scale(1) translateY(0); }
+            }
+          `}</style>
+
           {/* Header */}
           <div className="flex items-center justify-between border-b border-[var(--line)] px-4 py-3">
             <div className="flex items-center gap-2">
@@ -181,8 +229,8 @@ export function NotificationBell() {
             )}
           </div>
 
-          {/* List */}
-          <div className="max-h-[26rem] overflow-y-auto overscroll-contain">
+          {/* List — scrollable, height fills remaining panel space */}
+          <div className="overflow-y-auto overscroll-contain" style={{ maxHeight: "calc(100% - 90px)" }}>
             {isLoading ? (
               <div className="space-y-0">
                 {[1, 2, 3].map((i) => (
@@ -200,7 +248,7 @@ export function NotificationBell() {
                 <span className="text-2xl opacity-30">🔔</span>
                 <p className="text-sm font-medium text-[var(--ink-muted)]">All caught up</p>
                 <p className="text-xs text-[var(--ink-muted)]/70">
-                  Notifications appear here when job statuses change, approvals are needed, or techs are assigned.
+                  Alerts appear here when job statuses change, approvals are needed, or techs are assigned.
                 </p>
               </div>
             ) : (
@@ -259,8 +307,9 @@ export function NotificationBell() {
               Notification settings →
             </button>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
-    </div>
+    </>
   );
 }
