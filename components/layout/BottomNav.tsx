@@ -198,7 +198,7 @@ export function BottomNav({
       {/* ── The bar ──────────────────────────────────────────────────── */}
       <nav
         aria-label="Primary navigation"
-        className="fixed inset-x-0 bottom-0 z-40 border-t border-[var(--line)] bg-[var(--panel)]/96 backdrop-blur-xl lg:hidden"
+        className="mobile-bottom-nav fixed inset-x-0 bottom-0 z-40 border-t border-[var(--line)] bg-[var(--panel)]/96 backdrop-blur-xl lg:hidden"
       >
         {/* Safe-area padding + content */}
         <div

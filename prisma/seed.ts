@@ -454,11 +454,11 @@ async function main() {
     "FIELD",
     "TARGETS",
   ] as const;
-  for (const module of modules) {
+  for (const mod of modules) {
     await prisma.orgModuleGrant.upsert({
-      where: { orgId_module: { orgId: EIS_ORG_ID, module } },
+      where: { orgId_module: { orgId: EIS_ORG_ID, module: mod } },
       update: {},
-      create: { orgId: EIS_ORG_ID, module },
+      create: { orgId: EIS_ORG_ID, module: mod },
     });
   }
 
