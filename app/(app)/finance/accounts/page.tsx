@@ -336,7 +336,7 @@ export default async function ChartOfAccountsPage() {
               No {type.toLowerCase()} accounts yet.
             </p>
           ) : (
-            <div className="overflow-x-auto rounded-xl border border-[var(--line)]">
+            <div className="doc-list overflow-x-auto rounded-xl border border-[var(--line)]">
               <table className="w-full text-sm">
                 <thead className="border-b border-[var(--line)] bg-[var(--panel)]">
                   <tr>

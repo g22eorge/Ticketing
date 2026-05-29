@@ -346,7 +346,7 @@ export default async function RecurringInvoicesPage() {
 
       {/* List */}
       <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
-        <div className="overflow-x-auto">
+        <div className="doc-list overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-[var(--panel-strong)] text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
               <tr>
@@ -369,6 +369,9 @@ export default async function RecurringInvoicesPage() {
                     <td className="px-4 py-3">
                       <p className="font-medium text-[var(--ink)]">{rec.subject}</p>
                       <p className="text-[11px] text-[var(--ink-muted)]">{rec.items.length} line{rec.items.length !== 1 ? "s" : ""}</p>
+                      <p className="mt-0.5 text-[10px] text-[var(--ink-muted)] md:hidden">
+                        {FREQ_LABELS[rec.frequency as Frequency] ?? rec.frequency} · {TYPE_LABELS[rec.invoiceType] ?? rec.invoiceType}
+                      </p>
                     </td>
                     <td className="px-4 py-3 text-[13px] text-[var(--ink)]">{rec.client.fullName}</td>
                     <td className="hidden px-4 py-3 text-[12px] text-[var(--ink-muted)] md:table-cell">

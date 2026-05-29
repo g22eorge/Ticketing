@@ -613,7 +613,7 @@ export default async function ExpensesPage({ searchParams }: Props) {
 
       {/* ── EXPENSE TABLE ────────────────────────────────────────────────── */}
       <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
-        <div className="overflow-x-auto">
+        <div className="doc-list overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-[var(--panel-strong)] text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
               <tr>

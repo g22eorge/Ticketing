@@ -305,7 +305,7 @@ export default async function InventoryPage({
             No parts yet.{canManage ? <> <Link href="#add-part" className="text-[var(--accent)] hover:underline">Add your first part</Link> above.</> : null}
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="doc-list overflow-x-auto">
             <table className="min-w-full text-sm">
               <thead className="bg-[var(--panel-strong)] text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
                 <tr>
@@ -333,6 +333,7 @@ export default async function InventoryPage({
                       <td className="px-4 py-3">
                         <p className="font-semibold text-[var(--ink)]">{part.name}</p>
                         {isLow ? <p className="mt-0.5 text-[10px] font-semibold text-amber-600">Low stock</p> : null}
+                        <p className="mt-0.5 text-[10px] text-[var(--ink-muted)] sm:hidden">{part.sku}{part.manufacturer ? ` · ${part.manufacturer}` : ""}</p>
                       </td>
                       <td className="hidden px-4 py-3 text-[var(--ink-muted)] sm:table-cell">{part.sku}</td>
                       <td className="hidden px-4 py-3 text-[var(--ink-muted)] lg:table-cell">{part.manufacturer ?? "—"}</td>
