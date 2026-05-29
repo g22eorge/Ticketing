@@ -157,12 +157,13 @@ export async function GET(req: NextRequest) {
   const logoUrl = await resolveLogoDataUri();
 
   try {
-    let element: React.ReactElement;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let element: any;
     let filename: string;
 
     if (kind === "INVOICE") {
       const Comp = InvoiceTemplateComponent(key);
-      element = createElement(Comp as React.ComponentType<Record<string, unknown>>, {
+      element = createElement(Comp as never, {
         ...company,
         companyLogoUrl:    logoUrl,
         documentTitle:     "INVOICE — PREVIEW",
@@ -203,7 +204,7 @@ export async function GET(req: NextRequest) {
       filename = `preview-invoice-${key}.pdf`;
     } else if (kind === "QUOTATION") {
       const Comp = QuotationTemplateComponent(key);
-      element = createElement(Comp as React.ComponentType<Record<string, unknown>>, {
+      element = createElement(Comp as never, {
         ...company,
         companyLogoUrl:    logoUrl,
         quotationNumber:   SAMPLE.documentNumber,
@@ -243,7 +244,7 @@ export async function GET(req: NextRequest) {
       filename = `preview-quotation-${key}.pdf`;
     } else if (kind === "JOB_CARD") {
       const Comp = JobCardTemplateComponent(key);
-      element = createElement(Comp as React.ComponentType<Record<string, unknown>>, {
+      element = createElement(Comp as never, {
         ...company,
         companyLogoUrl:    logoUrl,
         documentNumber:    SAMPLE.repairId,
@@ -272,7 +273,7 @@ export async function GET(req: NextRequest) {
       filename = `preview-job-card-${key}.pdf`;
     } else {
       // RECEIPT — use SaleReceiptDocument with dummy sale
-      const Comp = ReceiptTemplateComponent(key);
+      const Comp = ReceiptTemplateComponent(key) as never;
       const brandingForReceipt = {
         documentTitle:     branding.documentTitle || "Receipt",
         companyName:       company.companyName,
@@ -283,7 +284,7 @@ export async function GET(req: NextRequest) {
         companyAddressLine2: company.companyAddressLine2,
         vatRatePercent:    branding.vatRatePercent ?? 18,
       };
-      element = createElement(Comp as React.ComponentType<Record<string, unknown>>, {
+      element = createElement(Comp, {
         sale:     SAMPLE_SALE,
         branding: brandingForReceipt,
       });
@@ -299,7 +300,12 @@ export async function GET(req: NextRequest) {
       },
     });
   } catch (err) {
-    console.error("[template-preview]", err);
-    return NextResponse.json({ error: "Failed to render preview" }, { status: 500 });
+    const msg   = err instanceof Error ? err.message : String(err);
+    const stack = err instanceof Error ? err.stack   : undefined;
+    console.error("[template-preview]", msg, stack);
+    return NextResponse.json(
+      { error: "Failed to render preview", detail: msg },
+      { status: 500 },
+    );
   }
 }
