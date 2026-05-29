@@ -39,6 +39,9 @@ const PUBLIC_PATHS = [
   "/apple-icon",
   "/icon.svg",
   "/eagle-info-logo.png",
+  "/logo-dark.png",
+  "/logo-light.png",
+  "/app-logo.png",
 ];
 
 /** Extract the best available client IP from request headers. */
