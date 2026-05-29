@@ -62,10 +62,36 @@ export default async function FinancePage() {
     { label: "Net",          value: formatMoneyCompact(revTotal - expTotal, currency), color: revTotal - expTotal >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400" },
   ];
 
+  // Month-over-month revenue (last month for % change)
+  const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 1);
+  const invoicesPaidLastMonth = await db.invoice.aggregate({
+    where: { orgId, status: "PAID", paidAt: { gte: lastMonthStart, lt: lastMonthEnd } },
+    _sum: { totalAmount: true },
+  }).catch(() => ({ _sum: { totalAmount: null } }));
+  const revLastMonth = invoicesPaidLastMonth._sum.totalAmount ?? 0;
+  const revPct = revLastMonth > 0 ? Math.round(((revTotal - revLastMonth) / revLastMonth) * 100) : null;
+
   return (
     <div className="space-y-5 pb-24 lg:pb-6">
-      {/* ── Page header ──────────────────────────────────────────── */}
-      <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
+
+      {/* ── Mobile Hero: Revenue this month (Revolut-style) ──────── */}
+      <div className="lg:hidden flex flex-col items-center gap-1 rounded-3xl bg-[var(--panel)] px-6 py-7">
+        <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Month Revenue</p>
+        <p className="mt-1 text-[32px] font-black leading-none tracking-tight text-[var(--ink)]">
+          {formatMoneyCompact(revTotal, currency)}
+        </p>
+        {/* Accent underline */}
+        <div className="mt-1 h-[3px] w-20 rounded-full bg-gradient-to-r from-emerald-400 to-[var(--accent)] opacity-80" aria-hidden="true" />
+        {revPct !== null && (
+          <p className={`mt-2 text-[12px] font-bold ${revPct >= 0 ? "text-emerald-500" : "text-red-400"}`}>
+            {revPct >= 0 ? "↑" : "↓"} {Math.abs(revPct)}% vs last month
+          </p>
+        )}
+      </div>
+
+      {/* ── Desktop page header ───────────────────────────────────── */}
+      <div className="panel-shadow hidden overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)] lg:block">
         <div className="px-4 py-4">
           <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Finance</p>
           <p className="text-[15px] font-bold text-[var(--ink)]">Finance Hub</p>
@@ -73,24 +99,27 @@ export default async function FinancePage() {
             {now.toLocaleDateString("en-UG", { month: "long", year: "numeric" })}
           </p>
         </div>
-
-        {/* Mobile stat strip */}
-        <div className="grid grid-cols-4 divide-x divide-[var(--line)] border-t border-[var(--line)] lg:hidden">
-          {STATS.map((s) => (
-            <div key={s.label} className="flex flex-col items-center px-1 py-3">
-              <span className={`text-[13px] font-black ${s.color}`}>{s.value}</span>
-              <span className="mt-0.5 text-center text-[9px] leading-tight text-[var(--ink-muted)]">{s.label}</span>
-            </div>
-          ))}
-        </div>
       </div>
 
       {/* ── Quick actions grid ────────────────────────────────────── */}
+      {/* Mobile: 2 columns of larger tiles */}
       <section>
-        <p className="mb-2 px-1 text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]">
-          Quick Access
-        </p>
-        <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-5">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:hidden">
+          {QUICK_ACTIONS.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className="flex items-center gap-3 rounded-2xl border border-[var(--line)] bg-[var(--panel)] px-4 py-4 transition-all active:scale-[0.97] active:bg-[var(--panel-strong)]"
+            >
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[var(--panel-strong)]">
+                <NavIcon d={item.icon} color={item.color} />
+              </span>
+              <span className="text-[13px] font-semibold leading-tight text-[var(--ink)]">{item.label}</span>
+            </Link>
+          ))}
+        </div>
+        {/* Desktop: original compact grid */}
+        <div className="hidden gap-2 lg:grid lg:grid-cols-5">
           {QUICK_ACTIONS.map((item) => (
             <Link
               key={item.href}

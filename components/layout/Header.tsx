@@ -107,16 +107,14 @@ export function Header({
 
           {/* ── Action pill group ─────────────────────────────────────── */}
           <div className="flex items-center gap-1">
-            {/* Notifications — outside overflow-hidden so the dropdown isn't clipped */}
+            {/* Notifications */}
             {can.viewNotifications({ role: role as never, permissions }) ? (
               <NotificationBell />
             ) : null}
 
-            <div className="flex items-center divide-x divide-[var(--line)] overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel-strong)]">
-              {/* Theme toggle */}
+            {/* Desktop: theme toggle + settings gear */}
+            <div className="hidden sm:flex items-center divide-x divide-[var(--line)] overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel-strong)]">
               <ThemeToggle />
-
-              {/* Settings gear */}
               <button
                 type="button"
                 onClick={() => openSettings("profile")}
@@ -134,16 +132,17 @@ export function Header({
 
           {/* ── User menu ─────────────────────────────────────────────── */}
           <div className="relative">
+            {/* Mobile: 34px avatar circle only — acts as menu trigger */}
             <button
               type="button"
               onClick={() => setMenuOpen((v) => !v)}
               aria-haspopup="menu"
               aria-expanded={menuOpen}
-              className="flex items-center gap-2 rounded-xl border border-[var(--line)] bg-[var(--panel-strong)] py-1.5 pl-1.5 pr-2.5 transition hover:border-[var(--accent)]/40"
+              className="flex items-center gap-2 rounded-xl border border-[var(--line)] bg-[var(--panel-strong)] py-1.5 pl-1.5 pr-2.5 transition hover:border-[var(--accent)]/40 sm:pl-1.5 sm:pr-2.5"
               title="Account menu"
             >
-              {/* Avatar */}
-              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[var(--accent)] text-[11px] font-black text-black select-none">
+              {/* Avatar — 34px on mobile, 28px on desktop */}
+              <div className="flex h-[34px] w-[34px] sm:h-7 sm:w-7 shrink-0 items-center justify-center rounded-lg bg-[var(--accent)] text-[12px] sm:text-[11px] font-black text-black select-none">
                 {initials(userName)}
               </div>
               {/* Name + role (desktop only) */}
@@ -155,7 +154,8 @@ export function Header({
                   {roleDisplay(role)}
                 </span>
               </div>
-              <svg className="h-3.5 w-3.5 text-[var(--ink-muted)] transition-transform duration-150" style={{ transform: menuOpen ? "rotate(180deg)" : "none" }} viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              {/* Chevron — desktop only */}
+              <svg className="hidden sm:block h-3.5 w-3.5 text-[var(--ink-muted)] transition-transform duration-150" style={{ transform: menuOpen ? "rotate(180deg)" : "none" }} viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                 <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 10.94l3.71-3.71a.75.75 0 1 1 1.06 1.06l-4.24 4.24a.75.75 0 0 1-1.06 0L5.21 8.29a.75.75 0 0 1 .02-1.08Z" clipRule="evenodd" />
               </svg>
             </button>

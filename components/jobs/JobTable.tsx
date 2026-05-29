@@ -280,9 +280,9 @@ export function JobTable({
                 {/* Card content */}
                 <div className="relative z-10 px-4 py-3.5 pl-5">
 
-                  {/* Row 1: Job # left · ETA / age badge right */}
-                  <div className="mb-2 flex items-start justify-between gap-2">
-                    <span className="mono text-[10px] font-semibold tracking-wider text-[var(--ink-muted)]/60">
+                  {/* Row 1: Job # left · ETA badge right */}
+                  <div className="mb-1.5 flex items-center justify-between gap-2">
+                    <span className="mono text-[10px] font-semibold tracking-wider text-[var(--ink-muted)]/55">
                       {job.jobNumber}
                     </span>
                     {isActive ? (
@@ -293,36 +293,30 @@ export function JobTable({
                             ? "bg-amber-500/15 text-amber-500"
                             : "bg-red-500/15 text-red-500"
                       }`}>
-                        {job.repairTimeline ?? `${ageDays}d`}
-                        {" remaining"}
+                        {job.repairTimeline ? job.repairTimeline : `${ageDays}d`}
                       </span>
                     ) : null}
                   </div>
 
-                  {/* Row 2: Device name HERO + cost right */}
+                  {/* Row 2: Device name HERO (17px bold) + cost right-aligned bold */}
                   <div className="mb-1 flex items-start justify-between gap-3">
-                    <p className="min-w-0 truncate text-[16px] font-bold leading-snug tracking-tight text-[var(--ink)]">
+                    <p className="min-w-0 truncate text-[17px] font-bold leading-snug tracking-tight text-[var(--ink)]">
                       {deviceName(job.brand, job.model) ?? (deviceLabel[job.deviceType] ?? job.deviceType)}
                     </p>
                     {costValue ? (
-                      <span className="shrink-0 text-[14px] font-black text-[var(--ink)]">{costValue}</span>
+                      <span className="shrink-0 text-[15px] font-black text-[var(--ink)]">{costValue}</span>
                     ) : null}
                   </div>
 
-                  {/* Row 3: Client name + balance hint */}
-                  <div className="mb-2 flex items-center justify-between gap-2">
+                  {/* Row 3: Client name (13px muted) */}
+                  <div className="mb-2.5">
                     {canSeeClient && job.clientName ? (
-                      <p className="min-w-0 truncate text-[12px] font-medium text-[var(--ink-muted)]">
+                      <p className="min-w-0 truncate text-[13px] font-medium text-[var(--ink-muted)]">
                         {job.clientName}
                       </p>
                     ) : (
                       <div />
                     )}
-                    {canSeeClient && costValue ? (
-                      <p className="shrink-0 text-[10px] text-[var(--ink-muted)]">
-                        Balance: {costValue}
-                      </p>
-                    ) : null}
                   </div>
 
                   {/* Row 4: Status badge + device chip + flag */}

@@ -10,9 +10,9 @@ type StatusConfig = {
 
 const statusConfig: Record<ReturnType<typeof normalizeJobStatus>, StatusConfig> = {
   RECEIVED: {
-    dot: "bg-[var(--ink)]/35",
+    dot: "bg-sky-400",
     badge: "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]",
-    strip: "bg-[var(--line)]",
+    strip: "bg-sky-400",
     label: "Received",
     help: "Job received, waiting to be worked on.",
   },
@@ -31,16 +31,16 @@ const statusConfig: Record<ReturnType<typeof normalizeJobStatus>, StatusConfig> 
     help: "Job has been referred for external handling.",
   },
   AWAITING_APPROVAL: {
-    dot: "bg-amber-400",
+    dot: "bg-orange-400",
     badge: "border-amber-400/30 bg-amber-500/10 text-amber-700 dark:text-amber-400",
-    strip: "bg-amber-400",
+    strip: "bg-orange-400",
     label: "Awaiting",
     help: "Waiting for client approval to proceed.",
   },
   IN_REPAIR: {
-    dot: "bg-emerald-500",
+    dot: "bg-violet-500",
     badge: "border-emerald-400/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
-    strip: "bg-emerald-500",
+    strip: "bg-violet-500",
     label: "In Repair",
     help: "Repair is actively in progress.",
   },
@@ -61,7 +61,7 @@ const statusConfig: Record<ReturnType<typeof normalizeJobStatus>, StatusConfig> 
   CLOSED: {
     dot: "bg-[var(--ink)]/30",
     badge: "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]",
-    strip: "bg-[var(--line)]",
+    strip: "bg-[var(--ink-muted)]/30",
     label: "Closed",
     help: "Job closed without successful repair.",
   },

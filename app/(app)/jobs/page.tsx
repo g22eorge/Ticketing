@@ -282,6 +282,23 @@ export default async function JobsPage({
     }
   }
 
+  // Status counts for mobile chip labels
+  const statusCountsRaw = await prisma.job.groupBy({
+    by: ["status"],
+    where: { orgId, ...roleScopeFilter },
+    _count: { status: true },
+  }).catch(() => [] as Array<{ status: string; _count: { status: number } }>);
+
+  // Build map from DB status → count, then aggregate into UI statuses
+  const dbStatusCountMap = new Map<string, number>(
+    statusCountsRaw.map((r) => [r.status, r._count.status]),
+  );
+  const uiStatusCountMap = new Map<string, number>();
+  for (const [uiStatus, dbStatusList] of Object.entries(UI_TO_DB_STATUSES)) {
+    const total = dbStatusList.reduce((sum, s) => sum + (dbStatusCountMap.get(s) ?? 0), 0);
+    if (total > 0) uiStatusCountMap.set(uiStatus, total);
+  }
+
   const isBoard = filters.view === "board";
 
   // Board view: load all active jobs (up to 200) without pagination.
@@ -415,56 +432,65 @@ export default async function JobsPage({
       {/* ═══ MOBILE header + chips ═══════════════════════════════════════ */}
       <div className="sm:hidden -mx-4 px-4">
 
-        {/* Row 1: title + count + actions */}
-        <div className="flex items-center justify-between gap-2 pb-3">
-          <div className="flex items-center gap-2">
-            <h2 className="text-[18px] font-black tracking-tight text-[var(--ink)]">Repairs</h2>
-            {total > 0 && (
-              <span className="rounded-full bg-[var(--accent)] px-2 py-0.5 text-[11px] font-black text-black">
-                {total}
-              </span>
-            )}
-          </div>
-          <div className="flex items-center gap-1.5">
-            {/* Search */}
-            <SearchToggle
-              basePath="/jobs"
-              defaultValue={filters.q}
-              placeholder={isExternalTech ? "Search job #" : lookupByPhone ? "Search job #, name, phone…" : "Search job #…"}
-              preserve={{
-                status: filters.status,
-                view: filters.view,
-                deviceType: filters.deviceType,
-                repairPath: filters.repairPath,
-                pricing: filters.pricing,
-                sort: sort !== "received_desc" ? sort : undefined,
-                from: filters.from,
-                to: filters.to,
-              }}
-            />
-            {/* Filter toggle */}
-            {!isExternalTech ? (
-              <Link
-                href={advToggleHref}
-                aria-label="Filters"
-                className={`relative flex h-9 w-9 items-center justify-center rounded-xl border transition ${
-                  hasAdvancedFilters
-                    ? "border-[var(--accent)]/50 bg-[var(--accent)]/10 text-[var(--accent)]"
-                    : "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]"
-                }`}
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/>
-                </svg>
-                {hasAdvancedFilters ? (
-                  <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-[var(--accent)]" />
-                ) : null}
-              </Link>
-            ) : null}
-          </div>
+        {/* Row 1: title + count */}
+        <div className="flex items-center gap-2 pb-3">
+          <h2 className="text-[18px] font-black tracking-tight text-[var(--ink)]">Repairs</h2>
+          {total > 0 && (
+            <span className="rounded-full bg-[var(--accent)] px-2 py-0.5 text-[11px] font-black text-black">
+              {total}
+            </span>
+          )}
         </div>
 
-        {/* Row 2: Status chips — horizontal scroll, no box */}
+        {/* Row 2: Always-visible search bar */}
+        <form method="GET" action="/jobs" className="mb-3 flex items-center gap-2">
+          {filters.status ? <input type="hidden" name="status" value={filters.status} /> : null}
+          {filters.view ? <input type="hidden" name="view" value={filters.view} /> : null}
+          {filters.deviceType ? <input type="hidden" name="deviceType" value={filters.deviceType} /> : null}
+          {filters.repairPath ? <input type="hidden" name="repairPath" value={filters.repairPath} /> : null}
+          {filters.pricing ? <input type="hidden" name="pricing" value={filters.pricing} /> : null}
+          {sort !== "received_desc" ? <input type="hidden" name="sort" value={sort} /> : null}
+          {filters.from ? <input type="hidden" name="from" value={filters.from} /> : null}
+          {filters.to ? <input type="hidden" name="to" value={filters.to} /> : null}
+          <div className="relative flex-1">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--ink-muted)]/50" aria-hidden="true">
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <input
+              type="search"
+              name="q"
+              defaultValue={filters.q}
+              placeholder={isExternalTech ? "Search job #" : lookupByPhone ? "Search name, phone, job #…" : "Search job #…"}
+              className="h-10 w-full rounded-2xl border border-[var(--line)] bg-[var(--panel-strong)] pl-9 pr-4 text-[13px] text-[var(--ink)] placeholder:text-[var(--ink-muted)]/50 outline-none focus:border-[var(--accent)]/60 focus:ring-2 focus:ring-[var(--accent)]/14"
+            />
+            {filters.q ? (
+              <a href={`/jobs?${new URLSearchParams(Object.fromEntries(Object.entries(filters).filter(([k]) => k !== "q") as [string,string][])).toString()}`} className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--ink-muted)]/50 hover:text-[var(--ink-muted)]" aria-label="Clear search">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </a>
+            ) : null}
+          </div>
+          {/* Filter toggle */}
+          {!isExternalTech ? (
+            <Link
+              href={advToggleHref}
+              aria-label="Filters"
+              className={`relative flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border transition ${
+                hasAdvancedFilters
+                  ? "border-[var(--accent)]/50 bg-[var(--accent)]/10 text-[var(--accent)]"
+                  : "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]"
+              }`}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/>
+              </svg>
+              {hasAdvancedFilters ? (
+                <span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-[var(--accent)]" />
+              ) : null}
+            </Link>
+          ) : null}
+        </form>
+
+        {/* Row 3: Status chips — horizontal scroll with counts */}
         <div className="flex gap-2 overflow-x-auto pb-2 [scrollbar-width:none]">
           <Link
             href={statusChipHref("")}
@@ -474,21 +500,25 @@ export default async function JobsPage({
                 : "border border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]"
             }`}
           >
-            All {!statusValue && total > 0 ? total : ""}
+            All {!statusValue && total > 0 ? `(${total})` : ""}
           </Link>
-          {UI_JOB_STATUSES.map((s) => (
-            <Link
-              key={s}
-              href={statusChipHref(s)}
-              className={`shrink-0 rounded-full px-4 py-1.5 text-[12px] font-bold transition ${
-                statusValue === s
-                  ? "bg-[var(--accent)] text-black"
-                  : "border border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]"
-              }`}
-            >
-              {statusOptionLabel[s].replace(" for Pickup", "").replace("ing Approval", "")}
-            </Link>
-          ))}
+          {UI_JOB_STATUSES.map((s) => {
+            const cnt = uiStatusCountMap.get(s);
+            return (
+              <Link
+                key={s}
+                href={statusChipHref(s)}
+                className={`shrink-0 rounded-full px-4 py-1.5 text-[12px] font-bold transition ${
+                  statusValue === s
+                    ? "bg-[var(--accent)] text-black"
+                    : "border border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]"
+                }`}
+              >
+                {statusOptionLabel[s].replace(" for Pickup", "").replace("ing Approval", "")}
+                {cnt !== undefined && cnt > 0 ? ` (${cnt})` : ""}
+              </Link>
+            );
+          })}
           <Link
             href={overdueChipHref}
             className={`shrink-0 rounded-full px-4 py-1.5 text-[12px] font-bold transition ${
