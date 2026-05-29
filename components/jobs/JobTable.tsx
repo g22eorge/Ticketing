@@ -228,8 +228,8 @@ export function JobTable({
         {paginationBar}
       </div>
 
-      {/* ── Mobile list ── */}
-      <div className="lg:hidden">
+      {/* ── Mobile list — borderless card stack ── */}
+      <div className="overflow-hidden rounded-2xl border border-[var(--line)]/60 bg-[var(--panel)] lg:hidden">
         {jobs.map((job) => {
             const strip = statusStripClass(job.status);
             const hasFlag = job.workflowReason && job.workflowReason !== "NONE";

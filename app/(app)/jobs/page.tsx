@@ -403,14 +403,143 @@ export default async function JobsPage({
       {can.createJob(user) ? (
         <Link
           href="/jobs/new"
-          className="jobs-fab fixed bottom-[calc(env(safe-area-inset-bottom)+3.25rem)] right-4 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-[var(--accent)] text-white shadow-[0_4px_20px_rgba(212,175,55,0.45)] transition-transform sm:hidden"
+          className="jobs-fab fixed bottom-[calc(env(safe-area-inset-bottom)+3.25rem)] right-4 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-[var(--accent)] shadow-[0_4px_20px_rgba(212,175,55,0.45)] transition-transform sm:hidden"
           aria-label="New Job"
         >
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="black" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
           </svg>
         </Link>
       ) : null}
+
+      {/* ═══ MOBILE header + chips ═══════════════════════════════════════ */}
+      <div className="sm:hidden -mx-4 px-4">
+
+        {/* Row 1: title + count + actions */}
+        <div className="flex items-center justify-between gap-2 pb-3">
+          <div className="flex items-center gap-2">
+            <h2 className="text-[18px] font-black tracking-tight text-[var(--ink)]">Repairs</h2>
+            {total > 0 && (
+              <span className="rounded-full bg-[var(--accent)] px-2 py-0.5 text-[11px] font-black text-black">
+                {total}
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-1.5">
+            {/* Search */}
+            <SearchToggle
+              basePath="/jobs"
+              defaultValue={filters.q}
+              placeholder={isExternalTech ? "Search job #" : lookupByPhone ? "Search job #, name, phone…" : "Search job #…"}
+              preserve={{
+                status: filters.status,
+                view: filters.view,
+                deviceType: filters.deviceType,
+                repairPath: filters.repairPath,
+                pricing: filters.pricing,
+                sort: sort !== "received_desc" ? sort : undefined,
+                from: filters.from,
+                to: filters.to,
+              }}
+            />
+            {/* Filter toggle */}
+            {!isExternalTech ? (
+              <Link
+                href={advToggleHref}
+                aria-label="Filters"
+                className={`relative flex h-9 w-9 items-center justify-center rounded-xl border transition ${
+                  hasAdvancedFilters
+                    ? "border-[var(--accent)]/50 bg-[var(--accent)]/10 text-[var(--accent)]"
+                    : "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]"
+                }`}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/>
+                </svg>
+                {hasAdvancedFilters ? (
+                  <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-[var(--accent)]" />
+                ) : null}
+              </Link>
+            ) : null}
+          </div>
+        </div>
+
+        {/* Row 2: Status chips — horizontal scroll, no box */}
+        <div className="flex gap-2 overflow-x-auto pb-2 [scrollbar-width:none]">
+          <Link
+            href={statusChipHref("")}
+            className={`shrink-0 rounded-full px-4 py-1.5 text-[12px] font-bold transition ${
+              !statusValue
+                ? "bg-[var(--accent)] text-black"
+                : "border border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]"
+            }`}
+          >
+            All {!statusValue && total > 0 ? total : ""}
+          </Link>
+          {UI_JOB_STATUSES.map((s) => (
+            <Link
+              key={s}
+              href={statusChipHref(s)}
+              className={`shrink-0 rounded-full px-4 py-1.5 text-[12px] font-bold transition ${
+                statusValue === s
+                  ? "bg-[var(--accent)] text-black"
+                  : "border border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]"
+              }`}
+            >
+              {statusOptionLabel[s].replace(" for Pickup", "").replace("ing Approval", "")}
+            </Link>
+          ))}
+          <Link
+            href={overdueChipHref}
+            className={`shrink-0 rounded-full px-4 py-1.5 text-[12px] font-bold transition ${
+              filters.overdue === "1"
+                ? "bg-red-500 text-white"
+                : "border border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]"
+            }`}
+          >
+            Overdue
+          </Link>
+        </div>
+
+        {/* Advanced filters — mobile */}
+        {showAdv ? (
+          <form className="mb-3 grid grid-cols-2 gap-2 rounded-2xl border border-[var(--line)] bg-[var(--panel)] p-3">
+            {filters.q ? <input type="hidden" name="q" value={filters.q} /> : null}
+            {filters.status ? <input type="hidden" name="status" value={filters.status} /> : null}
+            <select name="deviceType" defaultValue={filters.deviceType} className={ctrlClass}>
+              <option value="">All devices</option>
+              <option value="PHONE_ANDROID">Android</option>
+              <option value="PHONE_IPHONE">iPhone</option>
+              <option value="TABLET">Tablet</option>
+              <option value="WINDOWS_PC">Windows</option>
+              <option value="MAC">Mac</option>
+              <option value="OTHER">Other</option>
+            </select>
+            <select name="repairPath" defaultValue={filters.repairPath} className={ctrlClass}>
+              <option value="">All paths</option>
+              <option value="IN_HOUSE">In-house</option>
+              <option value="EXTERNAL">External</option>
+            </select>
+            <select name="sort" defaultValue={sort} className={ctrlClass}>
+              <option value="received_desc">Newest first</option>
+              <option value="job_number_desc">Job # desc</option>
+            </select>
+            {!isExternalTech && can.approveInvoices(user) ? (
+              <select name="pricing" defaultValue={pricingFilter} className={ctrlClass}>
+                <option value="">All pricing</option>
+                <option value="needs">Needs pricing</option>
+                <option value="priced">Priced</option>
+              </select>
+            ) : null}
+            <div className="col-span-2 flex gap-2">
+              <button type="submit" className="btn-premium flex-1 rounded-xl py-2 text-[13px] font-semibold">Apply</button>
+              {hasAnyFilter ? <Link href="/jobs" className="flex-1 rounded-xl border border-[var(--line)] py-2 text-center text-[13px] text-[var(--ink-muted)]">Reset</Link> : null}
+            </div>
+          </form>
+        ) : null}
+
+      </div>
+      {/* ═══ END mobile header ═══════════════════════════════════════════ */}
 
       {/* ── External tech notice ── */}
       {isExternalTech ? (
@@ -422,8 +551,8 @@ export default async function JobsPage({
         </div>
       ) : null}
 
-      {/* ── Filter bar ── */}
-      <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
+      {/* ── Desktop filter bar (hidden on mobile) ── */}
+      <div className="panel-shadow hidden overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)] sm:block">
         {/* Row: view toggle | status chips | actions */}
         <div className="flex items-center gap-2 px-3 py-2">
           {/* View toggle */}
@@ -595,13 +724,16 @@ export default async function JobsPage({
           <JobBoardView jobs={boardRows} showClient={!isExternalTech} />
         )
       ) : rows.length === 0 ? (
-        <div className="panel-shadow flex flex-col items-center gap-2 rounded-xl border border-[var(--line)] bg-[var(--panel)] py-14 text-center">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-8 w-8 text-[var(--ink-muted)]/40" aria-hidden="true">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 0 0 2.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 0 0-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25Z" />
-          </svg>
-          <p className="text-sm font-medium text-[var(--ink-muted)]">No jobs match the current filters</p>
+        <div className="flex flex-col items-center gap-3 rounded-2xl border border-[var(--line)] bg-[var(--panel)] py-16 text-center">
+          <span className="text-4xl opacity-25">🔧</span>
+          <p className="text-[14px] font-semibold text-[var(--ink-muted)]">No repairs found</p>
+          <p className="text-[12px] text-[var(--ink-muted)]/60">
+            {hasAnyFilter ? "Try a different status or clear filters" : "New jobs will appear here"}
+          </p>
           {hasAnyFilter && (
-            <Link href="/jobs" className="mt-1 text-xs text-[var(--accent)] underline-offset-2 hover:underline">Clear filters</Link>
+            <Link href="/jobs" className="mt-1 inline-flex rounded-full border border-[var(--accent)]/40 px-4 py-1.5 text-[12px] font-semibold text-[var(--accent)]">
+              Clear filters
+            </Link>
           )}
         </div>
       ) : (
