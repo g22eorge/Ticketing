@@ -20,13 +20,8 @@ type HeaderProps = {
   permissions?: string[];
   isPlatformAdmin?: boolean;
   orgName?: string | null;
-  orgUsers?: Array<{
-    id: string;
-    name: string;
-    email: string;
-    role: string;
-    isActive: boolean;
-  }>;
+  /** Passed through to SettingsPanel for admin password-reset; not shown in the dropdown. */
+  orgUsers?: Array<{ id: string; name: string; email: string; role: string; isActive: boolean }>;
 };
 
 function roleDisplay(role: string) {
@@ -69,38 +64,6 @@ function initials(name: string) {
     .toUpperCase() || "?";
 }
 
-function UserListSection({
-  title,
-  users,
-  onSelect,
-}: {
-  title: string;
-  users: NonNullable<HeaderProps["orgUsers"]>;
-  onSelect: (userId: string) => void;
-}) {
-  if (users.length === 0) return null;
-  return (
-    <div>
-      <p className="mb-1 px-1 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">{title}</p>
-      <div className="max-h-36 overflow-y-auto rounded-lg border border-[var(--line)] bg-[var(--panel-strong)]">
-        {users.map((user) => (
-          <button
-            key={user.id}
-            role="menuitem"
-            type="button"
-            onClick={() => onSelect(user.id)}
-            className="flex w-full flex-col rounded-md px-3 py-2 text-left transition hover:bg-[var(--panel)]"
-          >
-            <span className="truncate text-[12px] font-semibold text-[var(--ink)]">{user.name}</span>
-            <span className="truncate text-[10px] text-[var(--ink-muted)]">
-              {roleDisplay(user.role)}{!user.isActive ? " · inactive" : ""}
-            </span>
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
 
 export function Header({
   userName,
@@ -117,9 +80,6 @@ export function Header({
   const [menuOpen, setMenuOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settingsInitialSection, setSettingsInitialSection] = useState<"profile" | "password">("profile");
-
-  const admins = orgUsers.filter((u) => u.role === "ADMIN");
-  const others  = orgUsers.filter((u) => u.role !== "ADMIN");
 
   const closeMenu = () => setMenuOpen(false);
   const openSettings = (section: "profile" | "password" = "profile") => {
@@ -243,16 +203,9 @@ export function Header({
                   {/* Admin section */}
                   {role === "ADMIN" && (
                     <div className="border-t border-[var(--line)] py-1">
-                      <p className="px-3 pb-1 pt-2 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Admin</p>
                       <MenuItem icon={
                         <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4"><path d="M11 5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/><path d="M2.046 15.253c-.18.01-.34-.092-.382-.266a6.5 6.5 0 0 1 11.672 0c-.042.174-.202.276-.382.266a34.816 34.816 0 0 0-10.908 0Z"/><path d="M16.75 9.5a.75.75 0 0 0-1.5 0v1.25H14a.75.75 0 0 0 0 1.5h1.25V13.5a.75.75 0 0 0 1.5 0v-1.25H18a.75.75 0 0 0 0-1.5h-1.25V9.5Z"/></svg>
                       } label="Manage users" onClick={() => { closeMenu(); router.push("/settings/users"); }} />
-                      {orgUsers.length > 0 && (
-                        <div className="space-y-2 px-3 pb-2 pt-1">
-                          <UserListSection title="Admins" users={admins} onSelect={(id) => { closeMenu(); router.push(`/settings/users/${id}`); }} />
-                          <UserListSection title="Team" users={others} onSelect={(id) => { closeMenu(); router.push(`/settings/users/${id}`); }} />
-                        </div>
-                      )}
                     </div>
                   )}
 
