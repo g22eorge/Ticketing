@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
-import Image from "next/image";
 
 import { LoginForm } from "@/app/(auth)/login/login-form";
+import { AppLogoDark } from "@/components/ui/AppLogo";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 
@@ -33,12 +33,7 @@ export default async function LoginPage() {
           <div className="pointer-events-none absolute -right-10 bottom-20 h-60 w-60 rounded-full bg-[#D4AF37]/6 blur-[60px]" />
 
           <div className="relative">
-            <div className="flex items-center gap-3">
-              <div className="overflow-hidden rounded-xl border border-white/10">
-                <Image src="/app-logo.png" alt="Duuka Pro Max" width={36} height={36} className="h-9 w-9 object-cover" priority />
-              </div>
-              <span className="text-xs font-semibold uppercase tracking-[0.22em] text-white/50">Duuka Pro Max</span>
-            </div>
+            <AppLogoDark height={38} priority />
           </div>
 
           <div className="relative space-y-7">
@@ -132,19 +127,13 @@ export default async function LoginPage() {
           <div className="w-full max-w-sm">
 
             {/* Mobile-only logo */}
-            <div className="mb-8 flex flex-col items-center lg:hidden">
-              <div className="overflow-hidden rounded-2xl border border-white/10 shadow-lg shadow-black/40">
-                <Image src="/app-logo.png" alt="Duuka Pro Max" width={56} height={56} className="h-14 w-14 object-cover" priority />
-              </div>
-              <p className="mt-3 text-xs font-semibold uppercase tracking-[0.22em] text-white/40">Duuka Pro Max</p>
+            <div className="mb-8 flex justify-center lg:hidden">
+              <AppLogoDark height={48} priority />
             </div>
 
             {/* Desktop logo row */}
-            <div className="mb-8 hidden items-center gap-3 lg:flex">
-              <div className="overflow-hidden rounded-xl border border-white/10">
-                <Image src="/app-logo.png" alt="Duuka Pro Max" width={36} height={36} className="h-9 w-9 object-cover" priority />
-              </div>
-              <span className="text-xs font-semibold uppercase tracking-[0.22em] text-white/40">Duuka Pro Max</span>
+            <div className="mb-8 hidden lg:flex">
+              <AppLogoDark height={36} priority />
             </div>
 
             <h2 className="text-2xl font-semibold text-white">Sign in</h2>

@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -9,6 +8,7 @@ import { toast } from "sonner";
 import { authClient } from "@/lib/auth-client";
 import { NotificationBell } from "@/components/shared/NotificationBell";
 import { useTheme } from "@/components/layout/ThemeProvider";
+import { AppLogo } from "@/components/ui/AppLogo";
 import { SettingsPanel } from "@/components/settings/SettingsPanel";
 import { can } from "@/lib/permissions";
 
@@ -137,23 +137,9 @@ export function Header({
           {/* Mobile brand (sidebar takes over on lg+) */}
           <Link
             href="/dashboard"
-            className="flex items-center gap-2.5 lg:hidden transition-opacity hover:opacity-75"
+            className="flex items-center lg:hidden transition-opacity hover:opacity-75"
           >
-            <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-lg border border-[var(--line)] bg-[var(--panel)] shadow-sm">
-              <Image
-                src="/app-logo.png"
-                alt="Duuka Pro Max"
-                width={32}
-                height={32}
-                className="h-8 w-8 object-cover"
-                priority
-                onError={(e) => { (e.target as HTMLImageElement).src = "/eagle-info-logo.png"; }}
-              />
-            </div>
-            <div className="leading-none">
-              <p className="text-[12px] font-bold text-[var(--ink)] tracking-tight">Duuka Pro</p>
-              <p className="text-[9px] font-semibold text-[var(--accent)] tracking-wide">Max</p>
-            </div>
+            <AppLogo height={30} priority />
           </Link>
 
           {/* Spacer */}

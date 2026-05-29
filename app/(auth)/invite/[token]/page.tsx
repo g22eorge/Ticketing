@@ -1,5 +1,4 @@
-import Image from "next/image";
-
+import { AppLogoDark } from "@/components/ui/AppLogo";
 import { prisma } from "@/lib/prisma";
 import { AcceptForm } from "./AcceptForm";
 
@@ -27,11 +26,8 @@ export default async function AcceptInvitePage({ params }: Props) {
         <div className="w-full max-w-sm space-y-8">
 
           {/* Logo */}
-          <div className="flex flex-col items-center gap-3">
-            <div className="overflow-hidden rounded-2xl border border-white/10 shadow-lg shadow-black/40">
-              <Image src="/eagle-info-logo.png" alt="Logo" width={52} height={52} className="h-13 w-13 object-cover" priority />
-            </div>
-            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-white/40">Duuka ProMax</p>
+          <div className="flex justify-center">
+            <AppLogoDark height={44} priority />
           </div>
 
           {isInvalid ? (

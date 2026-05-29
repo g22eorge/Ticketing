@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { getSession } from "@/lib/session";
 import { RepairRequestForm } from "@/components/public/RepairRequestForm";
+import { AppLogoDark } from "@/components/ui/AppLogo";
 
 export async function generateMetadata(): Promise<Metadata> {
   const host = (await headers()).get("host")?.toLowerCase() ?? "";
@@ -167,13 +167,7 @@ function DuukaSaasLanding() {
       <nav className="sticky top-0 z-40 border-b border-white/6 bg-[#050505]/90 px-4 py-3 backdrop-blur-md">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="overflow-hidden rounded-xl border border-white/10">
-              <Image src="/app-logo.png" alt="Duuka ProMax" width={34} height={34} className="h-8 w-8 object-cover" priority />
-            </div>
-            <div>
-              <p className="text-sm font-bold leading-none text-white">Duuka ProMax</p>
-              <p className="mt-0.5 text-[10px] font-medium uppercase tracking-[0.16em] text-[#D4AF37]/60">AI-powered business SaaS</p>
-            </div>
+            <AppLogoDark height={32} priority />
           </div>
           <div className="flex items-center gap-2">
             <Link href="/register" className="hidden rounded-lg border border-[#D4AF37]/30 bg-[#D4AF37]/10 px-4 py-2 text-xs font-semibold text-[#D4AF37] transition hover:bg-[#D4AF37]/20 sm:inline-flex">
@@ -275,15 +269,9 @@ export default async function Page() {
       <nav className="sticky top-0 z-40 border-b border-white/6 bg-[#050505]/90 px-4 py-3 backdrop-blur-md">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4">
 
-          {/* Brand: Eagle Info Solutions, powered by Dduuka ProMax */}
+          {/* Brand */}
           <div className="flex items-center gap-3">
-            <div className="overflow-hidden rounded-xl border border-white/10">
-              <Image src="/app-logo.png" alt="Eagle Info Solutions" width={32} height={32} className="h-8 w-8 object-cover" priority />
-            </div>
-            <div>
-              <p className="text-sm font-bold leading-none text-white">Eagle Info Solutions</p>
-              <p className="mt-0.5 text-[10px] font-medium uppercase tracking-[0.16em] text-[#D4AF37]/60">Powered by Dduuka ProMax</p>
-            </div>
+            <AppLogoDark height={32} priority />
           </div>
 
           {/* Nav actions */}
@@ -338,9 +326,7 @@ export default async function Page() {
             <div className="lg:max-w-sm lg:pt-2 lg:sticky lg:top-24">
               {/* Company badge */}
               <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/5 px-4 py-1.5">
-                <div className="h-4 w-4 overflow-hidden rounded-md border border-white/15">
-                  <Image src="/app-logo.png" alt="" width={16} height={16} className="h-4 w-4 object-cover" />
-                </div>
+                <AppLogoDark height={16} />
                 <span className="text-[11px] font-semibold text-white/60">Eagle Info Solutions</span>
               </div>
 
@@ -593,13 +579,7 @@ export default async function Page() {
         <div className="mx-auto max-w-6xl">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div className="overflow-hidden rounded-lg border border-white/10">
-                <Image src="/app-logo.png" alt="Eagle Info Solutions" width={28} height={28} className="h-7 w-7 object-cover" />
-              </div>
-              <div>
-                <p className="text-xs font-bold text-white">Eagle Info Solutions</p>
-                <p className="text-[10px] text-white/30">Powered by Dduuka ProMax · © {new Date().getFullYear()}</p>
-              </div>
+              <AppLogoDark height={28} />
             </div>
             <div className="flex flex-wrap items-center gap-3">
               {[

@@ -1,11 +1,11 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { Role } from "@prisma/client";
 import { usePathname } from "next/navigation";
 
 import { can } from "@/lib/permissions";
+import { AppLogo } from "@/components/ui/AppLogo";
 
 type NavGroup = "overview" | "service" | "stock" | "customers" | "documents" | "finance" | "personal";
 
@@ -440,23 +440,9 @@ export function AppSidebar({
       {/* ── Brand ── */}
       <Link
         href="/"
-        className="flex items-center gap-3 px-5 py-5 border-b border-[var(--line)] hover:bg-[var(--panel)] transition-colors"
+        className="flex items-center px-5 py-4 border-b border-[var(--line)] hover:opacity-80 transition-opacity"
       >
-        <div className="overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)] shadow-sm">
-          <Image
-            src="/app-logo.png"
-            alt="Duuka Pro Max"
-            width={36}
-            height={36}
-            className="h-9 w-9 object-cover"
-            priority
-            onError={(e) => { (e.target as HTMLImageElement).src = "/eagle-info-logo.png"; }}
-          />
-        </div>
-        <div className="min-w-0">
-          <p className="text-[13px] font-bold tracking-tight text-[var(--ink)] leading-none">Duuka Pro</p>
-          <p className="text-[10px] font-semibold text-[var(--accent)] tracking-wide mt-0.5" aria-hidden="true">Max</p>
-        </div>
+        <AppLogo height={36} priority />
       </Link>
 
       {/* ── Navigation ── */}
