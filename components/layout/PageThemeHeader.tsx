@@ -90,7 +90,7 @@ function roleTagStyle(role: Role) {
   return "bg-[var(--panel-strong)] text-[var(--ink-muted)]";
 }
 
-// Root-level pages where we never show a back button
+// Root-level pages — mobile shows no header at all (each page has its own native header)
 const ROOT_PATHS = new Set([
   "/dashboard", "/jobs", "/finance", "/reports", "/more",
   "/inventory", "/pos", "/clients", "/sales", "/technicians",
@@ -99,13 +99,15 @@ const ROOT_PATHS = new Set([
 ]);
 
 function isSubPage(pathname: string) {
-  // Direct children of known roots: /jobs/new, /jobs/:id, /inventory/suppliers, etc.
   const parts = pathname.split("/").filter(Boolean);
   if (parts.length < 2) return false;
-  // Exact root match → not a sub-page
   if (ROOT_PATHS.has(pathname)) return false;
-  // Settings sub-pages (/settings/users, etc.) → sub-page
   return true;
+}
+
+// On mobile, root pages have their own custom headers — hide PageThemeHeader completely
+function isMobileRootPage(pathname: string) {
+  return ROOT_PATHS.has(pathname);
 }
 
 export function PageThemeHeader({ role }: { role: Role }) {
@@ -114,6 +116,7 @@ export function PageThemeHeader({ role }: { role: Role }) {
   const meta = pageMeta(pathname, role);
   const [resolvedSubtitle, setResolvedSubtitle] = useState<{ path: string; text: string } | null>(null);
   const showBack = isSubPage(pathname);
+  const hideMobile = isMobileRootPage(pathname); // root pages have own native headers
 
   useEffect(() => {
     let cancelled = false;
@@ -145,8 +148,9 @@ export function PageThemeHeader({ role }: { role: Role }) {
 
   return (
     <>
-      {/* Mobile: back button (on sub-pages) + page title */}
-      <div className="flex items-center gap-2 sm:hidden">
+      {/* Mobile: hidden on root pages (they have their own native headers).
+          On sub-pages: back arrow + page title. */}
+      <div className={`flex items-center gap-2 sm:hidden ${hideMobile ? "hidden" : ""}`}>
         {showBack ? (
           <button
             type="button"

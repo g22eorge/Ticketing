@@ -792,6 +792,28 @@ tr:has(details[open]) {
   }
 }
 
+/* ── Mobile-first layout: strip ERP chrome, feel native ────────────────────── */
+/*
+ * On mobile screens the app should feel like a purpose-built dashboard app
+ * (Moniepoint, Airtel Money, Revolut Business) — not a desktop ERP squeezed
+ * into a phone. These rules:
+ *  • Reduce the vertical gap between sections
+ *  • Let the background show through (no card-in-card nesting)
+ *  • Hide panel-shadow decorations that look desktop-y
+ */
+@media (max-width: 1023px) {
+  /* Tighter vertical rhythm — desktop uses space-y-4 (1rem gaps);
+     on mobile 0.75rem is more app-like */
+  .mobile-page-shell > .space-y-4 > * + * {
+    margin-top: 0.75rem;
+  }
+
+  /* panel-shadow on mobile is subtle — no heavy box-shadow */
+  .panel-shadow {
+    box-shadow: none !important;
+  }
+}
+
 /* ── Mobile page transitions: slide-in from right ──────────────────────────── */
 /*
  * Applied to .mobile-page-shell (the <div> wrapping every page in the app

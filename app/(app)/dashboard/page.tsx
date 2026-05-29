@@ -1184,19 +1184,17 @@ export default async function DashboardPage({
           userName={user.name}
           orgName={(await prisma.organization.findUnique({ where: { id: user.orgId! }, select: { name: true } }).catch(() => null))?.name ?? "Dduuka ProMax"}
           receivedToday={receivedToday}
-          receivedYesterday={receivedYesterday}
           completedToday={completedToday}
-          completedYesterday={completedYesterday}
           inRepairCount={inRepairCount}
           readyForPickupCount={readyForPickupCount}
+          awaitingApprovalCount={awaitingApprovalCount}
+          receivedCount={statusCount.get("RECEIVED") ?? 0}
+          overdueCount={overdueJobsCount}
+          completedUnpaidCount={completedUnpaidCount}
           cashTodayValue={cashTodayValue}
           cashYesterdayValue={cashYesterdayValue}
-          depositsHeld={depositsHeld}
           outstandingValue={outstandingValue}
-          expensesTodayValue={expensesTodayValue}
-          expensesYesterdayValue={expensesYesterdayValue}
           revenueMtd={totalMtd}
-          profitMtd={profitMtd}
           currency={currency}
         />
 
