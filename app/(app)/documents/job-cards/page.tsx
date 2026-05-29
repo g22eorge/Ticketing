@@ -283,7 +283,7 @@ export default async function JobCardsPage({
                         </a>
                         <form action={convertJobCardToQuotationAction}>
                           <input type="hidden" name="jobId" value={job.id} />
-                          <button className="inline-flex items-center gap-1 rounded-md border border-[var(--accent)]/35 bg-[var(--accent)]/10 px-2.5 py-1.5 text-[11px] font-semibold text-[var(--accent)] transition hover:bg-[var(--accent)]/20">
+                          <button type="submit" className="inline-flex items-center gap-1 rounded-md border border-[var(--accent)]/35 bg-[var(--accent)]/10 px-2.5 py-1.5 text-[11px] font-semibold text-[var(--accent)] transition hover:bg-[var(--accent)]/20">
                             Convert to Quotation
                           </button>
                         </form>

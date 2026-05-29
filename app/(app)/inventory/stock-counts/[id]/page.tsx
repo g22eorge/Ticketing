@@ -112,13 +112,13 @@ export default async function StockCountDetailPage({ params }: { params: Promise
           <div className="flex gap-2">
             <form action={approveStockCountAction}>
               <input type="hidden" name="id" value={count.id} />
-              <button className="rounded-lg border border-emerald-400/30 bg-emerald-500/10 px-3 py-2 font-semibold text-emerald-700 dark:text-emerald-400">
+              <button type="submit" className="rounded-lg border border-emerald-400/30 bg-emerald-500/10 px-3 py-2 font-semibold text-emerald-700 dark:text-emerald-400">
                 Approve and adjust stock
               </button>
             </form>
             <form action={cancelStockCountAction}>
               <input type="hidden" name="id" value={count.id} />
-              <button className="rounded-lg border border-[var(--line)] px-3 py-2 font-semibold text-red-600 dark:text-red-400">
+              <button type="submit" className="rounded-lg border border-[var(--line)] px-3 py-2 font-semibold text-red-600 dark:text-red-400">
                 Cancel
               </button>
             </form>

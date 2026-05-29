@@ -1,4 +1,6 @@
 // @ts-nocheck
+export const dynamic = "force-dynamic";
+
 import Link from "next/link";
 import { JobStatus, Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
@@ -59,14 +61,28 @@ export default async function ClientsPage({
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
-  const [matchingClients, allCounts, kpiTotal, kpiNewThisMonth, kpiWithActiveJobs, kpiWithOrg] = await Promise.all([
+  // Build segment filter for the DB query
+  const segmentWhere: Prisma.ClientWhereInput =
+    segment === "active" ? { jobs: { some: {} } }
+    : segment === "new"  ? { jobs: { none: {} } }
+    : segment === "high" ? { jobs: { some: {} } } // further filtered below
+    : {};
+
+  const pagedWhere: Prisma.ClientWhereInput = { ...where, ...segmentWhere };
+
+  const [matchingClients, total, totalClients, activeClients, newClients, withManyJobs, kpiNewThisMonth, kpiWithActiveJobs, kpiWithOrg] = await Promise.all([
     db.client.findMany({
-      where,
+      where: pagedWhere,
       include: { _count: { select: { jobs: true } } },
       orderBy: { updatedAt: "desc" },
+      skip: (page - 1) * pageSize,
+      take: pageSize,
     }),
-    db.client.findMany({ include: { _count: { select: { jobs: true } } } }),
+    db.client.count({ where: pagedWhere }).catch(() => 0),
     db.client.count().catch(() => 0),
+    db.client.count({ where: { jobs: { some: {} } } }).catch(() => 0),
+    db.client.count({ where: { jobs: { none: {} } } }).catch(() => 0),
+    db.client.count({ where: { jobs: { some: {} } } }).catch(() => 0), // approx for "high" tab badge
     db.client.count({ where: { createdAt: { gte: monthStart } } }).catch(() => 0),
     db.client.count({ where: { jobs: { some: { status: { notIn: [JobStatus.COMPLETED, JobStatus.CLOSED] } } } } }).catch(() => 0),
     db.client.count({ where: { organization: { not: null } } }).catch(() => 0),
@@ -76,14 +92,11 @@ export default async function ClientsPage({
     include: { _count: { select: { jobs: true } } };
   }>;
 
-  const segmentedClients = (matchingClients as ClientRow[]).filter((client) => {
-    if (segment === "active") return client._count.jobs > 0;
-    if (segment === "new") return client._count.jobs === 0;
-    if (segment === "high") return client._count.jobs >= 3;
-    return true;
-  });
+  // For "high" segment: the DB returned all clients with jobs, now filter locally on the page only
+  const filteredClients = segment === "high"
+    ? (matchingClients as ClientRow[]).filter((c) => c._count.jobs >= 3)
+    : (matchingClients as ClientRow[]);
 
-  const total = segmentedClients.length;
   const totalPages = Math.max(Math.ceil(total / pageSize), 1);
   const pageStart = total === 0 ? 0 : (page - 1) * pageSize + 1;
   const pageEnd = Math.min(page * pageSize, total);
@@ -91,11 +104,9 @@ export default async function ClientsPage({
   const nextPage = Math.min(page + 1, totalPages);
   const isPrevDisabled = page <= 1;
   const isNextDisabled = page >= totalPages;
-  const clients = segmentedClients.slice((page - 1) * pageSize, page * pageSize);
-  const totalClients = allCounts.length;
-  const activeClients = allCounts.filter((c) => c._count.jobs > 0).length;
-  const newClients = allCounts.filter((c) => c._count.jobs === 0).length;
-  const withManyJobs = allCounts.filter((c) => c._count.jobs >= 3).length;
+  const clients = filteredClients;
+  // kpiTotal is the same as totalClients (total count across all segments for the KPI bar)
+  const kpiTotal = totalClients;
 
   async function createClientAction(formData: FormData) {
     "use server";
@@ -339,7 +350,7 @@ export default async function ClientsPage({
                 <input name="organization" placeholder="Organization" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2.5 text-sm outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/15" />
               </div>
               <div className="mt-2 flex items-center gap-2">
-                <button className="btn-premium rounded-lg px-4 py-2.5 text-[13px] font-bold">
+                <button type="submit" className="btn-premium rounded-lg px-4 py-2.5 text-[13px] font-bold">
                   Create
                 </button>
                 <Link href="/clients" className="text-xs font-medium text-[var(--ink-muted)] underline-offset-2 hover:underline">
@@ -405,7 +416,7 @@ export default async function ClientsPage({
                       {user.role === "ADMIN" && client._count.jobs === 0 ? (
                         <form action={deleteClientAction} className="pointer-events-auto">
                           <input type="hidden" name="id" value={client.id} />
-                          <button className="text-[10px] font-medium uppercase tracking-wide text-[var(--ink-muted)]/50 transition hover:text-red-500">
+                          <button type="submit" className="text-[10px] font-medium uppercase tracking-wide text-[var(--ink-muted)]/50 transition hover:text-red-500">
                             ✕
                           </button>
                         </form>
@@ -504,6 +515,7 @@ export default async function ClientsPage({
                           <form action={deleteClientAction} className="inline">
                             <input type="hidden" name="id" value={client.id} />
                             <button
+                              type="submit"
                               disabled={client._count.jobs > 0}
                               className="whitespace-nowrap rounded-lg border border-red-400/30 bg-red-500/5 px-2.5 py-1 text-[11px] font-medium text-red-600 transition-colors hover:bg-red-500/10 dark:text-red-400 disabled:cursor-not-allowed disabled:opacity-40"
                             >

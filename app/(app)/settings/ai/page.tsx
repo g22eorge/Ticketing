@@ -122,7 +122,7 @@ export default async function AiSettingsPage() {
             </label>
           ))}
           <input name="model" defaultValue={settings?.model ?? ""} placeholder="Model override, e.g. gemini-1.5-flash" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm text-[var(--ink)] outline-none md:col-span-2" />
-          <button className="btn-premium rounded-lg px-4 py-2 text-sm">Save AI Settings</button>
+          <button type="submit" className="btn-premium rounded-lg px-4 py-2 text-sm">Save AI Settings</button>
         </div>
       </form>
 
@@ -142,7 +142,7 @@ export default async function AiSettingsPage() {
             <option value="org">This workspace only</option>
             <option value="global">Global default</option>
           </select>
-          <button className="btn-premium rounded-lg px-4 py-2 text-sm">Save Article</button>
+          <button type="submit" className="btn-premium rounded-lg px-4 py-2 text-sm">Save Article</button>
         </form>
 
         <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
@@ -177,7 +177,7 @@ export default async function AiSettingsPage() {
                 <form action={toggleArticleAction}>
                   <input type="hidden" name="id" value={article.id} />
                   <input type="hidden" name="isActive" value={String(article.isActive)} />
-                  <button className="rounded-lg border border-[var(--line)] px-2 py-1 text-[11px] text-[var(--ink-muted)]">
+                  <button type="submit" className="rounded-lg border border-[var(--line)] px-2 py-1 text-[11px] text-[var(--ink-muted)]">
                     {article.isActive ? "Disable" : "Enable"}
                   </button>
                 </form>

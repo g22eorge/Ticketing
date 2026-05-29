@@ -112,7 +112,7 @@ export const can = {
     || hasExtraPermission(user, "can_view_accounts_summary"),
 
   approveInvoices: (user: PermissionUser) =>
-    ["ADMIN", "MANAGER", "FINANCE", "SALES_MANAGER", "TECH_MANAGER"].includes(user.role)
+    ["ADMIN", "MANAGER", "FINANCE", "SALES_MANAGER", "TECH_MANAGER", "OPS", "FRONT_DESK"].includes(user.role)
     || hasExtraPermission(user, "can_approve_invoices"),
 
   approvePayouts: (user: PermissionUser) =>

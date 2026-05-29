@@ -935,7 +935,7 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
                         <form id={`edit-item-${it.id}`} action={updateItemAction}>
                           <input type="hidden" name="saleId" value={sale.id} />
                           <input type="hidden" name="itemId" value={it.id} />
-                          <button className="btn-premium-secondary rounded-md px-2.5 py-1.5 text-xs">Save</button>
+                          <button type="submit" className="btn-premium-secondary rounded-md px-2.5 py-1.5 text-xs">Save</button>
                         </form>
                         <form action={deleteItemAction}>
                           <input type="hidden" name="saleId" value={sale.id} />

@@ -580,7 +580,7 @@ export default async function ExpensesPage({ searchParams }: Props) {
             placeholder="Search description, reference…"
             className="input-base h-8 min-w-0 flex-1 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 text-[12px] sm:min-w-[180px]"
           />
-          <button className="rounded-lg border border-[var(--line)] px-3 py-1.5 text-[12px] font-medium hover:bg-[var(--panel-strong)]">
+          <button type="submit" className="rounded-lg border border-[var(--line)] px-3 py-1.5 text-[12px] font-medium hover:bg-[var(--panel-strong)]">
             Search
           </button>
         </form>

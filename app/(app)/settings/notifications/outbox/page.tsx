@@ -241,13 +241,13 @@ export default async function OutboxPage({
                       {r.status !== "SENT" && (
                         <form action={retryOneAction}>
                           <input type="hidden" name="id" value={r.id} />
-                          <button className="rounded border border-[var(--line)] px-2 py-0.5 text-[11px] font-medium hover:bg-[var(--panel-strong)]">Retry</button>
+                          <button type="submit" className="rounded border border-[var(--line)] px-2 py-0.5 text-[11px] font-medium hover:bg-[var(--panel-strong)]">Retry</button>
                         </form>
                       )}
                       {r.status !== "DEAD" && r.status !== "SENT" && (
                         <form action={markDeadAction}>
                           <input type="hidden" name="id" value={r.id} />
-                          <button className="rounded border border-[var(--line)] px-2 py-0.5 text-[11px] font-medium text-[var(--ink-muted)] hover:border-red-400/30 hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400">Discard</button>
+                          <button type="submit" className="rounded border border-[var(--line)] px-2 py-0.5 text-[11px] font-medium text-[var(--ink-muted)] hover:border-red-400/30 hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400">Discard</button>
                         </form>
                       )}
                     </div>
