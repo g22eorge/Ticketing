@@ -38,15 +38,24 @@ const moreIcon      = <Icon d="" size={22}><circle cx="5" cy="12" r="1.2" fill="
 const clientsIcon   = <Icon d={["M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2","M22 21v-2a4 4 0 0 0-3-3.87","M16 3.13a4 4 0 0 1 0 7.75"]}><circle cx="9" cy="7" r="4" /></Icon>;
 const reportsIcon   = <Icon d={["M3 3v18h18","m19 9-5 5-4-4-3 3"]} />;
 const inventoryIcon = <Icon d={["M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z","M3.27 6.96 12 12.01l8.73-5.05","M12 22.08V12"]} />;
-const posIcon       = <Icon d={["M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z","M3 6h18","M16 10a4 4 0 0 1-8 0"]} />;
-const payoutsIcon   = <Icon d={["M12 2v20","M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"]} />;
-const docIcon       = <Icon d={["M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z","M14 2v6h6","M8 13h8","M8 17h5"]} />;
-const expensesIcon  = <Icon d={["M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm-8 2a2 2 0 1 1-4 0 2 2 0 0 1 4 0Z"]} />;
-const fieldIcon     = <Icon d={["M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"]}><circle cx="12" cy="10" r="3" /></Icon>;
-const complaintsIcon = <Icon d={["M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z","M12 9v4","M12 17h.01"]} />;
-const salesIcon     = <Icon d={["M22 12h-4l-3 9L9 3l-3 9H2"]} />;
-const aiIcon        = <Icon d={["M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 0 2h-1v1a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-1H1a1 1 0 0 1 0-2h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2z","M7.5 13.5c.83 0 1.5-.67 1.5-1.5S8.33 10.5 7.5 10.5 6 11.17 6 12s.67 1.5 1.5 1.5z","M16.5 13.5c.83 0 1.5-.67 1.5-1.5s-.67-1.5-1.5-1.5S15 11.17 15 12s.67 1.5 1.5 1.5z"]} />;
-const targetsIcon   = <Icon d="" size={22}><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="5" /><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/></Icon>;
+const posIcon         = <Icon d={["M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z","M3 6h18","M16 10a4 4 0 0 1-8 0"]} />;
+const payoutsIcon     = <Icon d={["M12 2v20","M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"]} />;
+const jobCardIcon     = <Icon d={["M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2","M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2","M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2","M9 14l2 2 4-4"]} />;
+const quoteIcon       = <Icon d={["M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z","M14 2v6h6","M10 13h4","M8 17h8","M8 9h2"]} />;
+const invoiceIcon     = <Icon d={["M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z","M14 2v6h6","M16 13H8","M16 17H8","M10 9H8"]}  />;
+const receiptIcon     = <Icon d={["M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z","M9 12h6","M9 16h6","M9 8h2"]} />;
+const deliveryIcon    = <Icon d={["M1 3h15v13H1z","M16 8h4l3 3v5h-7V8z","M5.5 21a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z","M18.5 21a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z"]} />;
+const creditNoteIcon  = <Icon d={["M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z","M14 2v6h6","M9 15l2-2 2 2","M13 13l-2 2-2-2","M12 11v4"]} />;
+const refundIcon      = <Icon d={["M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8","M3 3v5h5","M12 7v5l4 2"]} />;
+const expensesIcon    = <Icon d={["M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm-8 2a2 2 0 1 1-4 0 2 2 0 0 1 4 0Z"]} />;
+const fieldIcon       = <Icon d={["M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"]}><circle cx="12" cy="10" r="3" /></Icon>;
+const complaintsIcon  = <Icon d={["M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z","M12 9v4","M12 17h.01"]} />;
+const salesIcon       = <Icon d={["M22 12h-4l-3 9L9 3l-3 9H2"]} />;
+const aiIcon          = <Icon d={["M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 0 2h-1v1a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-1H1a1 1 0 0 1 0-2h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2z","M7.5 13.5c.83 0 1.5-.67 1.5-1.5S8.33 10.5 7.5 10.5 6 11.17 6 12s.67 1.5 1.5 1.5z","M16.5 13.5c.83 0 1.5-.67 1.5-1.5s-.67-1.5-1.5-1.5S15 11.17 15 12s.67 1.5 1.5 1.5z"]} />;
+const targetsIcon     = <Icon d="" size={22}><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="5" /><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/></Icon>;
+const recurringIcon   = <Icon d={["M17 1l4 4-4 4","M3 11V9a4 4 0 0 1 4-4h14","M7 23l-4-4 4-4","M21 13v2a4 4 0 0 1-4 4H3"]} />;
+const taxIcon         = <Icon d={["M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z","M14 2v6h6","M9 13l6 0","M9 9h1","M9 17h1","M14 9h1","M14 17h1"]} />;
+const shiftsIcon      = <Icon d={["M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z","M12 6v6l4 2"]} />;
 
 /* ─────────────────────────── named items ──────────────────────────────── */
 const ITEMS = {
@@ -61,17 +70,17 @@ const ITEMS = {
   inventory:      { href: "/inventory",                 label: "Inventory",    icon: inventoryIcon },
   payoutFollowups:{ href: "/payout-followups",          label: "Payments",     icon: payoutsIcon   },
   payouts:        { href: "/technicians/payouts",       label: "Payouts",      icon: payoutsIcon   },
-  jobCards:       { href: "/documents/job-cards",       label: "Job Cards",    icon: docIcon       },
-  quotations:     { href: "/documents/quotations",      label: "Quotes",       icon: docIcon       },
-  invoiceDocs:    { href: "/documents/invoices",        label: "Invoices",     icon: docIcon       },
-  receipts:       { href: "/documents/receipts",        label: "Receipts",     icon: docIcon       },
-  deliveryNotes:  { href: "/documents/delivery-notes",  label: "Delivery",     icon: docIcon       },
-  creditNotes:    { href: "/documents/credit-notes",    label: "Credit Notes", icon: docIcon       },
-  refunds:        { href: "/documents/refunds",         label: "Refunds",      icon: docIcon       },
-  cashierShifts:  { href: "/pos/shifts",                label: "Shifts",       icon: posIcon       },
+  jobCards:       { href: "/documents/job-cards",       label: "Job Cards",    icon: jobCardIcon   },
+  quotations:     { href: "/documents/quotations",      label: "Quotes",       icon: quoteIcon     },
+  invoiceDocs:    { href: "/documents/invoices",        label: "Invoices",     icon: invoiceIcon   },
+  receipts:       { href: "/documents/receipts",        label: "Receipts",     icon: receiptIcon   },
+  deliveryNotes:  { href: "/documents/delivery-notes",  label: "Delivery",     icon: deliveryIcon  },
+  creditNotes:    { href: "/documents/credit-notes",    label: "Credit Notes", icon: creditNoteIcon},
+  refunds:        { href: "/documents/refunds",         label: "Refunds",      icon: refundIcon    },
+  cashierShifts:  { href: "/pos/shifts",                label: "Shifts",       icon: shiftsIcon    },
   expenses:       { href: "/finance/expenses",          label: "Expenses",     icon: expensesIcon  },
-  taxRates:       { href: "/finance/tax-rates",         label: "Tax Rates",    icon: docIcon       },
-  recurring:      { href: "/finance/recurring",         label: "Recurring",    icon: payoutsIcon   },
+  taxRates:       { href: "/finance/tax-rates",         label: "Tax Rates",    icon: taxIcon       },
+  recurring:      { href: "/finance/recurring",         label: "Recurring",    icon: recurringIcon },
   sales:          { href: "/sales",                     label: "Sales",        icon: salesIcon     },
   field:          { href: "/field",                     label: "Field",        icon: fieldIcon     },
   complaints:     { href: "/complaints",                label: "Complaints",   icon: complaintsIcon},
@@ -324,11 +333,11 @@ export function BottomNav({
                         const active = isActive(item.href);
                         const moreBadge = getMoreBadge(item.href);
                         return (
-                          <Link
+                          <button
                             key={item.href}
-                            href={item.href}
-                            onClick={() => setOpen(false)}
+                            type="button"
                             aria-current={active ? "page" : undefined}
+                            onClick={() => { setOpen(false); router.push(item.href); }}
                             className={`relative flex items-center gap-2.5 rounded-2xl border px-3 py-3 text-[12px] font-semibold transition-all active:scale-[0.97] ${
                               active
                                 ? "border-[var(--accent)]/35 bg-[var(--accent)]/10 text-[var(--accent)] shadow-[0_1px_6px_rgba(212,175,55,0.14)]"
@@ -344,7 +353,7 @@ export function BottomNav({
                                 {moreBadge > 99 ? "99+" : moreBadge}
                               </span>
                             )}
-                          </Link>
+                          </button>
                         );
                       })}
                     </div>
