@@ -75,24 +75,6 @@
   --sidebar-bg: #FFFFFF;
 }
 
-/* ── Theme-aware logo switching ─────────────────────────────────────────────
-   .app-logo-light → shown in light mode, hidden in dark
-   .app-logo-dark  → hidden in light mode, shown in dark
-   Covers three cases: explicit dark (.theme-blackgold), explicit light (.light),
-   and system preference (@media).                                             */
-
-.app-logo-light { display: block; }
-.app-logo-dark  { display: none;  }
-
-/* Explicit dark mode */
-.theme-blackgold .app-logo-light { display: none;  }
-.theme-blackgold .app-logo-dark  { display: block; }
-
-/* System dark mode (no explicit override class) */
-@media (prefers-color-scheme: dark) {
-  html:not(.light) .app-logo-light { display: none;  }
-  html:not(.light) .app-logo-dark  { display: block; }
-}
 
 /* Inputs inside the dark theme must have dark backgrounds and light text. */
 .theme-blackgold :where(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea) {
