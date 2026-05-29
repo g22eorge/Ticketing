@@ -13,6 +13,8 @@ import {
   ExpenseCategory,
   InvoiceStatus,
   JobStatus,
+  NotificationChannel,
+  NotificationType,
   PaymentMethod,
   Prisma,
   RepairPath,
@@ -1748,6 +1750,116 @@ async function main() {
   }
 
   console.log(`POS sales seeded (${salesData.length}).`);
+
+  // ─── Notifications ─────────────────────────────────────────────────────────
+  // Seed realistic in-app notifications so the bell is non-empty from day one.
+  // We clear existing seed org notifications first (idempotent re-runs).
+  await prisma.notification.deleteMany({ where: { orgId: EIS_ORG_ID } });
+
+  const adminOpsIds = [admin.id, ops.id];
+  const now = Date.now();
+  const hr = 60 * 60 * 1000;
+
+  type NotifRow = {
+    type: NotificationType;
+    title: string;
+    message: string;
+    jobId?: string;
+    userId: string;
+    channel: NotificationChannel;
+    isRead: boolean;
+    orgId: string;
+    createdAt: Date;
+  };
+
+  const notifRows: NotifRow[] = [];
+
+  for (const job of jobs) {
+    const device = `${job.brand} ${job.model}`;
+    // We need the client name — fetch it to build a realistic message
+    const clientRecord = await prisma.client.findUnique({ where: { id: job.clientId }, select: { fullName: true } }).catch(() => null);
+    const clientName = clientRecord?.fullName ?? "Client";
+
+    if (job.status === "COMPLETED" || job.status === "DELIVERED") {
+      for (const uid of adminOpsIds) {
+        notifRows.push({
+          type: NotificationType.STATUS_CHANGE,
+          title: "Job Completed",
+          message: `Job ${job.jobNumber} (${clientName} · ${device}) has been completed.`,
+          jobId: job.id,
+          userId: uid,
+          channel: NotificationChannel.DASHBOARD,
+          isRead: true,
+          orgId: EIS_ORG_ID,
+          createdAt: new Date(now - Math.round(Math.random() * 5 * 24) * hr),
+        });
+      }
+    } else if (job.status === "AWAITING_APPROVAL") {
+      for (const uid of adminOpsIds) {
+        notifRows.push({
+          type: NotificationType.APPROVAL_NEEDED,
+          title: "Approval Needed",
+          message: `Job ${job.jobNumber} (${clientName} · ${device}) is awaiting client approval.`,
+          jobId: job.id,
+          userId: uid,
+          channel: NotificationChannel.DASHBOARD,
+          isRead: false,
+          orgId: EIS_ORG_ID,
+          createdAt: new Date(now - Math.round(Math.random() * 2 * 24) * hr),
+        });
+      }
+    } else if (job.status === "IN_REPAIR" || job.status === "READY_FOR_PICKUP") {
+      for (const uid of adminOpsIds) {
+        notifRows.push({
+          type: NotificationType.STATUS_CHANGE,
+          title: job.status === "READY_FOR_PICKUP" ? "Ready for Pickup" : "In Repair",
+          message: `Job ${job.jobNumber} (${clientName} · ${device}) is now ${job.status === "READY_FOR_PICKUP" ? "ready for pickup" : "in repair"}.`,
+          jobId: job.id,
+          userId: uid,
+          channel: NotificationChannel.DASHBOARD,
+          isRead: job.status !== "READY_FOR_PICKUP",
+          orgId: EIS_ORG_ID,
+          createdAt: new Date(now - Math.round(Math.random() * 3 * 24) * hr),
+        });
+      }
+    } else if (job.status === "RECEIVED") {
+      for (const uid of adminOpsIds) {
+        notifRows.push({
+          type: NotificationType.STATUS_CHANGE,
+          title: "New Job Received",
+          message: `Job ${job.jobNumber} (${clientName} · ${device}) has been received.`,
+          jobId: job.id,
+          userId: uid,
+          channel: NotificationChannel.DASHBOARD,
+          isRead: false,
+          orgId: EIS_ORG_ID,
+          createdAt: new Date(now - Math.round(Math.random() * 12) * hr),
+        });
+      }
+    }
+
+    // Technician assignment notifications
+    if (job.assignedToId) {
+      notifRows.push({
+        type: NotificationType.JOB_ASSIGNED,
+        title: "Job Assigned",
+        message: `You have been assigned job ${job.jobNumber} – ${device}.`,
+        jobId: job.id,
+        userId: job.assignedToId,
+        channel: NotificationChannel.DASHBOARD,
+        isRead: ["COMPLETED", "DELIVERED", "CLOSED"].includes(job.status),
+        orgId: EIS_ORG_ID,
+        createdAt: new Date(now - Math.round(Math.random() * 4 * 24) * hr),
+      });
+    }
+  }
+
+  if (notifRows.length > 0) {
+    await prisma.notification.createMany({ data: notifRows });
+  }
+
+  const unreadCount = notifRows.filter((n) => !n.isRead).length;
+  console.log(`Notifications seeded (${notifRows.length} total, ${unreadCount} unread).`);
 
   // ─── Summary ───────────────────────────────────────────────────────────────
   console.log("\n=== Seed complete ===");
