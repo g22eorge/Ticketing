@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { formatDistanceToNow } from "date-fns";
 
@@ -14,10 +14,45 @@ interface Notification {
   job?: {
     id: string;
     jobNumber: string;
-    client: {
-      fullName: string;
-    };
+    client?: { fullName: string } | null;
   } | null;
+}
+
+function typeIcon(type: string) {
+  switch (type) {
+    case "APPROVAL_NEEDED":
+      return (
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-amber-500/15 text-amber-400">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+        </span>
+      );
+    case "JOB_ASSIGNED":
+      return (
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-500/15 text-blue-400">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+          </svg>
+        </span>
+      );
+    case "ESTIMATE_SUBMITTED":
+      return (
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-purple-500/15 text-purple-400">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/>
+          </svg>
+        </span>
+      );
+    default:
+      return (
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--accent)]/15 text-[var(--accent)]">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>
+          </svg>
+        </span>
+      );
+  }
 }
 
 export function NotificationBell() {
@@ -25,164 +60,186 @@ export function NotificationBell() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
-  useEffect(() => {
-    fetchNotifications();
-    const interval = setInterval(fetchNotifications, 30000);
-    return () => clearInterval(interval);
-  }, []);
-
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  async function fetchNotifications() {
+  const fetchNotifications = useCallback(async () => {
     try {
-      const res = await fetch("/api/notifications");
-      if (!res.ok) {
-        setError(`Status: ${res.status}`);
-        return;
-      }
-      const contentType = res.headers.get("content-type") || "";
-      if (!contentType.includes("application/json")) {
-        setError("Session expired");
-        return;
-      }
+      const res = await fetch("/api/notifications?all=true&limit=30");
+      if (!res.ok) return;
+      const ct = res.headers.get("content-type") ?? "";
+      if (!ct.includes("application/json")) return;
       const data = await res.json();
-      setNotifications(data.notifications || []);
-      setUnreadCount(data.unreadCount || 0);
-      setError(null);
-    } catch (err) {
-      console.error("Notification fetch error:", err);
-      setError(err instanceof Error ? err.message : "Unknown error");
+      setNotifications(data.notifications ?? []);
+      setUnreadCount(data.unreadCount ?? 0);
+    } catch {
+      // silent — don't break the UI
     } finally {
       setIsLoading(false);
     }
+  }, []);
+
+  // Initial fetch + 30-second poll
+  useEffect(() => {
+    fetchNotifications();
+    const id = setInterval(fetchNotifications, 30_000);
+    return () => clearInterval(id);
+  }, [fetchNotifications]);
+
+  // Close on outside click
+  useEffect(() => {
+    if (!isOpen) return;
+    function handle(e: MouseEvent) {
+      if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handle);
+    return () => document.removeEventListener("mousedown", handle);
+  }, [isOpen]);
+
+  // Close on Escape
+  useEffect(() => {
+    if (!isOpen) return;
+    function handle(e: KeyboardEvent) {
+      if (e.key === "Escape") setIsOpen(false);
+    }
+    document.addEventListener("keydown", handle);
+    return () => document.removeEventListener("keydown", handle);
+  }, [isOpen]);
+
+  async function markRead(id: string) {
+    // Optimistic update
+    setNotifications((prev) =>
+      prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)),
+    );
+    setUnreadCount((c) => Math.max(0, c - 1));
+    await fetch(`/api/notifications/${id}`, { method: "POST" }).catch(() => {});
   }
 
-  async function markAsRead(id: string) {
-    try {
-      await fetch(`/api/notifications/${id}`, { method: "POST" });
-      setNotifications((prev) =>
-        prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
-      );
-      setUnreadCount((prev) => Math.max(0, prev - 1));
-    } catch (error) {
-      console.error("Failed to mark as read", error);
-    }
+  async function markAllRead() {
+    setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+    setUnreadCount(0);
+    await fetch("/api/notifications/read-all", { method: "POST" }).catch(() => {});
   }
 
-  async function markAllAsRead() {
-    try {
-      await fetch("/api/notifications/read-all", { method: "POST" });
-      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
-      setUnreadCount(0);
-    } catch (error) {
-      console.error("Failed to mark all as read", error);
+  async function handleClick(n: Notification) {
+    if (!n.isRead) await markRead(n.id);
+    if (n.job?.id) {
+      router.push(`/jobs/${n.job.id}`);
+      setIsOpen(false);
     }
-  }
-
-  function handleNotificationClick(notif: Notification) {
-    if (!notif.isRead) {
-      markAsRead(notif.id);
-    }
-    if (notif.job?.id) {
-      router.push(`/jobs/${notif.job.id}`);
-    }
-    setIsOpen(false);
   }
 
   return (
-    <div className="relative" ref={dropdownRef}>
+    <div className="relative" ref={panelRef}>
+      {/* ── Bell button ── */}
       <button
-        onClick={() => {
-          setIsOpen(!isOpen);
-        }}
-        className="btn-premium-secondary relative flex items-center gap-2 rounded-lg px-3 py-2"
-        aria-label="Notifications"
+        type="button"
+        onClick={() => setIsOpen((v) => !v)}
+        aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ""}`}
+        aria-expanded={isOpen}
+        aria-haspopup="dialog"
+        className="relative flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)] transition hover:border-[var(--accent)]/30 hover:bg-[var(--panel)] hover:text-[var(--ink)]"
       >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="18"
-          height="18"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
-          <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/>
+          <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>
         </svg>
-        <span className="hidden text-xs font-bold sm:inline">Alerts</span>
         {unreadCount > 0 && (
-          <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-[var(--accent)] text-[10px] font-bold text-white">
+          <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-[var(--accent)] text-[9px] font-black text-black">
             {unreadCount > 9 ? "9+" : unreadCount}
           </span>
         )}
       </button>
-      {error && <span className="ml-2 text-[10px] text-[var(--accent)]">{error}</span>}
 
+      {/* ── Dropdown panel ── */}
       {isOpen && (
-        <div className="absolute right-0 top-full z-50 mt-2 w-80 max-h-96 overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)] shadow-lg">
+        <div
+          role="dialog"
+          aria-label="Notifications"
+          className="absolute right-0 top-full z-[200] mt-2 w-[22rem] max-w-[calc(100vw-1rem)] overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--panel)] shadow-2xl"
+          style={{ boxShadow: "0 24px 48px rgba(0,0,0,.45)" }}
+        >
+          {/* Header */}
           <div className="flex items-center justify-between border-b border-[var(--line)] px-4 py-3">
-            <p className="text-sm font-semibold text-[var(--ink)]">Notifications</p>
+            <div className="flex items-center gap-2">
+              <p className="text-[13px] font-semibold text-[var(--ink)]">Notifications</p>
+              {unreadCount > 0 && (
+                <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-[var(--accent)] px-1.5 text-[10px] font-black text-black">
+                  {unreadCount}
+                </span>
+              )}
+            </div>
             {unreadCount > 0 && (
               <button
-                onClick={markAllAsRead}
-                className="text-[11px] text-[var(--accent)] hover:underline"
+                onClick={markAllRead}
+                className="text-[11px] font-medium text-[var(--accent)] transition hover:underline"
               >
                 Mark all read
               </button>
             )}
           </div>
 
-          <div className="max-h-80 overflow-y-auto">
+          {/* List */}
+          <div className="max-h-[26rem] overflow-y-auto overscroll-contain">
             {isLoading ? (
-              <div className="p-4 text-center text-sm text-[var(--ink-muted)]">
-                Loading...
+              <div className="space-y-0">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="flex items-start gap-3 px-4 py-3">
+                    <div className="h-7 w-7 shrink-0 animate-pulse rounded-full bg-[var(--panel-strong)]" />
+                    <div className="flex-1 space-y-1.5 pt-0.5">
+                      <div className="h-3 w-2/3 animate-pulse rounded bg-[var(--panel-strong)]" />
+                      <div className="h-2.5 w-full animate-pulse rounded bg-[var(--panel-strong)]" />
+                    </div>
+                  </div>
+                ))}
               </div>
             ) : notifications.length === 0 ? (
-              <div className="p-4 text-center text-sm text-[var(--ink-muted)]">
-                No notifications
+              <div className="flex flex-col items-center gap-2 px-4 py-10 text-center">
+                <span className="text-2xl opacity-30">🔔</span>
+                <p className="text-sm font-medium text-[var(--ink-muted)]">All caught up</p>
+                <p className="text-xs text-[var(--ink-muted)]/70">
+                  Notifications appear here when job statuses change, approvals are needed, or techs are assigned.
+                </p>
               </div>
             ) : (
-              notifications.map((notif) => (
+              notifications.map((n, i) => (
                 <button
-                  key={notif.id}
-                  onClick={() => handleNotificationClick(notif)}
-                  className={`w-full border-b border-[var(--line)] px-4 py-3 text-left transition hover:bg-[var(--panel-strong)] ${
-                    !notif.isRead ? "bg-[var(--accent)]/5" : ""
+                  key={n.id}
+                  onClick={() => handleClick(n)}
+                  className={`group w-full border-b border-[var(--line)] px-4 py-3 text-left transition-colors last:border-0 hover:bg-[var(--panel-strong)] ${
+                    !n.isRead ? "bg-[var(--accent)]/5" : ""
                   }`}
+                  style={{ animationDelay: `${i * 20}ms` }}
                 >
-                  <div className="flex items-start gap-2">
-                    <div
-                      className={`mt-1 h-2 w-2 shrink-0 rounded-full ${
-                        notif.isRead ? "bg-transparent" : "bg-[var(--accent)]"
-                      }`}
-                    />
+                  <div className="flex items-start gap-3">
+                    {typeIcon(n.type)}
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium text-[var(--ink)]">
-                        {notif.title}
+                      <div className="flex items-start justify-between gap-2">
+                        <p className={`text-[13px] leading-tight ${!n.isRead ? "font-semibold text-[var(--ink)]" : "font-medium text-[var(--ink-muted)]"}`}>
+                          {n.title}
+                        </p>
+                        {!n.isRead && (
+                          <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-[var(--accent)]" />
+                        )}
+                      </div>
+                      <p className="mt-0.5 line-clamp-2 text-[11px] leading-relaxed text-[var(--ink-muted)]">
+                        {n.message}
                       </p>
-                      <p className="mt-0.5 truncate text-xs text-[var(--ink-muted)]">
-                        {notif.message}
-                      </p>
-                      <p className="mt-1 text-[10px] text-[var(--ink-muted)]">
-                        {formatDistanceToNow(new Date(notif.createdAt), {
-                          addSuffix: true,
-                        })}
-                      </p>
+                      <div className="mt-1.5 flex items-center gap-2">
+                        <p className="text-[10px] text-[var(--ink-muted)]/60">
+                          {formatDistanceToNow(new Date(n.createdAt), { addSuffix: true })}
+                        </p>
+                        {n.job?.jobNumber && (
+                          <>
+                            <span className="text-[var(--ink-muted)]/30">·</span>
+                            <span className="text-[10px] font-medium text-[var(--accent)]/70 group-hover:text-[var(--accent)]">
+                              {n.job.jobNumber}
+                            </span>
+                          </>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </button>
@@ -190,15 +247,16 @@ export function NotificationBell() {
             )}
           </div>
 
-          <div className="border-t border-[var(--line)] px-4 py-2">
+          {/* Footer */}
+          <div className="border-t border-[var(--line)] px-4 py-2.5">
             <button
               onClick={() => {
                 router.push("/settings/notifications");
                 setIsOpen(false);
-            }}
-              className="w-full text-center text-xs text-[var(--accent)] hover:underline"
+              }}
+              className="w-full text-center text-[11px] font-medium text-[var(--ink-muted)] transition hover:text-[var(--accent)]"
             >
-              Notification Settings
+              Notification settings →
             </button>
           </div>
         </div>
