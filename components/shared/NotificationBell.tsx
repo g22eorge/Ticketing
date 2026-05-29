@@ -57,6 +57,7 @@ function typeIcon(type: string) {
 }
 
 export function NotificationBell() {
+  // Only unread notifications are shown — the list empties as you read them
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
@@ -66,9 +67,10 @@ export function NotificationBell() {
   const btnRef = useRef<HTMLButtonElement>(null);
   const router = useRouter();
 
+  // Fetch UNREAD only — after they're read they drop off the list
   const fetchNotifications = useCallback(async () => {
     try {
-      const res = await fetch("/api/notifications?all=true&limit=30");
+      const res = await fetch("/api/notifications?all=false&limit=30");
       if (!res.ok) return;
       const ct = res.headers.get("content-type") ?? "";
       if (!ct.includes("application/json")) return;
@@ -76,7 +78,7 @@ export function NotificationBell() {
       setNotifications(data.notifications ?? []);
       setUnreadCount(data.unreadCount ?? 0);
     } catch {
-      // silent — don't break the UI
+      // silent
     } finally {
       setIsLoading(false);
     }
@@ -113,7 +115,7 @@ export function NotificationBell() {
     return () => document.removeEventListener("keydown", handle);
   }, [isOpen]);
 
-  // Close on scroll (repositioning would be needed otherwise)
+  // Close on scroll
   useEffect(() => {
     if (!isOpen) return;
     const handle = () => setIsOpen(false);
@@ -129,46 +131,49 @@ export function NotificationBell() {
     setIsOpen((v) => !v);
   }
 
+  // Mark a single notification as read → remove it from the list immediately
   async function markRead(id: string) {
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)),
-    );
+    setNotifications((prev) => prev.filter((n) => n.id !== id));
     setUnreadCount((c) => Math.max(0, c - 1));
     await fetch(`/api/notifications/${id}`, { method: "POST" }).catch(() => {});
   }
 
+  // Mark all read → clear the entire list
   async function markAllRead() {
-    setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+    setNotifications([]);
     setUnreadCount(0);
     await fetch("/api/notifications/read-all", { method: "POST" }).catch(() => {});
   }
 
+  // Click a notification → mark it read + navigate to the job
   async function handleClick(n: Notification) {
-    if (!n.isRead) await markRead(n.id);
+    await markRead(n.id);
     if (n.job?.id) {
       router.push(`/jobs/${n.job.id}`);
       setIsOpen(false);
     }
   }
 
-  // Panel width: 22rem on desktop, full viewport minus margin on mobile
-  const panelWidth = typeof window !== "undefined"
-    ? Math.min(22 * 16, window.innerWidth - 16)
-    : 352;
-
-  const panelStyle: React.CSSProperties = rect
-    ? {
-        position: "fixed",
-        top: rect.top + 8,
-        right: rect.right,
-        width: panelWidth,
-        // Ensure left edge doesn't clip off-screen
-        maxWidth: `calc(100vw - 1rem)`,
-        // Cap height to viewport, leaving room for the button + gap
-        maxHeight: `calc(100dvh - ${rect.top + 24}px)`,
-        zIndex: 9999,
-      }
-    : { display: "none" };
+  // ── Panel positioning ───────────────────────────────────────────────────────
+  // Clamp so the LEFT edge never goes off-screen (≥8px from left viewport edge).
+  const panelStyle: React.CSSProperties = (() => {
+    if (!rect || typeof window === "undefined") return { display: "none" };
+    const vw = window.innerWidth;
+    const desiredWidth = Math.min(22 * 16, vw - 16); // max 352 or viewport-16
+    // Right edge offset: how many px from the viewport's right edge
+    const safeRight = Math.max(8, rect.right);
+    // How much width fits before hitting the left margin (8px)
+    const maxWidth = vw - safeRight - 8;
+    const width = Math.min(desiredWidth, maxWidth);
+    return {
+      position: "fixed",
+      top: rect.top + 8,
+      right: safeRight,
+      width,
+      maxHeight: `calc(100dvh - ${rect.top + 24}px)`,
+      zIndex: 9999,
+    };
+  })();
 
   return (
     <>
@@ -193,7 +198,7 @@ export function NotificationBell() {
         )}
       </button>
 
-      {/* ── Dropdown panel (portalled to body so it's never clipped) ── */}
+      {/* ── Dropdown panel (portalled to body) ── */}
       {isOpen && typeof document !== "undefined" && createPortal(
         <div
           id="notif-panel"
@@ -219,20 +224,20 @@ export function NotificationBell() {
                 </span>
               )}
             </div>
-            {unreadCount > 0 && (
+            {notifications.length > 0 && (
               <button
                 onClick={markAllRead}
                 className="text-[11px] font-medium text-[var(--accent)] transition hover:underline"
               >
-                Mark all read
+                Clear all
               </button>
             )}
           </div>
 
-          {/* List — scrollable, height fills remaining panel space */}
+          {/* List */}
           <div className="overflow-y-auto overscroll-contain" style={{ maxHeight: "calc(100% - 90px)" }}>
             {isLoading ? (
-              <div className="space-y-0">
+              <div>
                 {[1, 2, 3].map((i) => (
                   <div key={i} className="flex items-start gap-3 px-4 py-3">
                     <div className="h-7 w-7 shrink-0 animate-pulse rounded-full bg-[var(--panel-strong)]" />
@@ -256,21 +261,18 @@ export function NotificationBell() {
                 <button
                   key={n.id}
                   onClick={() => handleClick(n)}
-                  className={`group w-full border-b border-[var(--line)] px-4 py-3 text-left transition-colors last:border-0 hover:bg-[var(--panel-strong)] ${
-                    !n.isRead ? "bg-[var(--accent)]/5" : ""
-                  }`}
+                  className="group w-full border-b border-[var(--line)] bg-[var(--accent)]/5 px-4 py-3 text-left transition-colors last:border-0 hover:bg-[var(--panel-strong)]"
                   style={{ animationDelay: `${i * 20}ms` }}
                 >
                   <div className="flex items-start gap-3">
                     {typeIcon(n.type)}
                     <div className="min-w-0 flex-1">
                       <div className="flex items-start justify-between gap-2">
-                        <p className={`text-[13px] leading-tight ${!n.isRead ? "font-semibold text-[var(--ink)]" : "font-medium text-[var(--ink-muted)]"}`}>
+                        <p className="text-[13px] font-semibold leading-tight text-[var(--ink)]">
                           {n.title}
                         </p>
-                        {!n.isRead && (
-                          <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-[var(--accent)]" />
-                        )}
+                        {/* Unread dot */}
+                        <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-[var(--accent)]" />
                       </div>
                       <p className="mt-0.5 line-clamp-2 text-[11px] leading-relaxed text-[var(--ink-muted)]">
                         {n.message}
@@ -298,10 +300,7 @@ export function NotificationBell() {
           {/* Footer */}
           <div className="border-t border-[var(--line)] px-4 py-2.5">
             <button
-              onClick={() => {
-                router.push("/settings/notifications");
-                setIsOpen(false);
-              }}
+              onClick={() => { router.push("/settings/notifications"); setIsOpen(false); }}
               className="w-full text-center text-[11px] font-medium text-[var(--ink-muted)] transition hover:text-[var(--accent)]"
             >
               Notification settings →
