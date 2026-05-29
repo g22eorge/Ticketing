@@ -1522,48 +1522,93 @@ export default async function DashboardPage({
             {techLeaderboard.length === 0 ? (
               <p className="px-4 py-6 text-sm text-[var(--ink-muted)]">No completed jobs this month.</p>
             ) : (
-              <div className="overflow-x-auto [scrollbar-width:thin]">
-                <table className="w-full text-left">
-                  <thead>
-                    <tr className="border-b border-[var(--line)]">
-                      <th className="px-3 py-2 text-[9px] font-bold uppercase tracking-wider text-[var(--ink-muted)]">#</th>
-                      <th className="px-2 py-2 text-[9px] font-bold uppercase tracking-wider text-[var(--ink-muted)]">Technician</th>
-                      <th className="px-2 py-2 text-center text-[9px] font-bold uppercase tracking-wider text-[var(--ink-muted)]">Completed</th>
-                      <th className="px-2 py-2 text-center text-[9px] font-bold uppercase tracking-wider text-[var(--ink-muted)]">In Progress</th>
-                      <th className="px-2 py-2 text-center text-[9px] font-bold uppercase tracking-wider text-[var(--ink-muted)]">Avg. TAT</th>
-                      <th className="px-2 py-2 text-right text-[9px] font-bold uppercase tracking-wider text-[var(--ink-muted)]">Revenue</th>
-                      <th className="px-3 py-2 text-right text-[9px] font-bold uppercase tracking-wider text-[var(--ink-muted)]">Payout Due</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[var(--line)]">
-                    {techLeaderboard.map((tech, i) => {
-                      const avgDays = tech.count > 0 ? (tech.totalDays / tech.count).toFixed(1) : null;
-                      return (
-                        <tr key={tech.name} className="transition hover:bg-[var(--panel-strong)]">
-                          <td className="px-3 py-3 text-[11px] font-bold text-[var(--ink-muted)]">
-                            {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `#${i + 1}`}
-                          </td>
-                          <td className="px-2 py-3">
-                            <div className="flex items-center gap-2">
-                              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--accent)]/15 text-[11px] font-bold text-[var(--accent)]">
-                                {tech.name.charAt(0).toUpperCase()}
+              <>
+                {/* ── Mobile: compact card rows ── */}
+                <div className="divide-y divide-[var(--line)] lg:hidden">
+                  {techLeaderboard.map((tech, i) => {
+                    const avgDays = tech.count > 0 ? (tech.totalDays / tech.count).toFixed(1) : null;
+                    const medal = i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : null;
+                    return (
+                      <div key={tech.name} className="flex items-center gap-3 px-4 py-3">
+                        {/* Avatar + rank */}
+                        <div className="relative shrink-0">
+                          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--accent)]/15 text-[13px] font-black text-[var(--accent)]">
+                            {tech.name.charAt(0).toUpperCase()}
+                          </div>
+                          {medal && (
+                            <span className="absolute -right-1 -top-1 text-[10px] leading-none">{medal}</span>
+                          )}
+                          {!medal && (
+                            <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-[var(--panel-strong)] text-[8px] font-bold text-[var(--ink-muted)]">
+                              {i + 1}
+                            </span>
+                          )}
+                        </div>
+                        {/* Name + stats */}
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-[13px] font-semibold text-[var(--ink)]">{tech.name}</p>
+                          <p className="mt-0.5 text-[11px] text-[var(--ink-muted)]">
+                            <span className="text-emerald-500 font-bold">{tech.count}</span> done
+                            {tech.pending > 0 && <> · <span className="text-amber-500 font-bold">{tech.pending}</span> active</>}
+                            {avgDays && <> · {avgDays}d avg</>}
+                          </p>
+                        </div>
+                        {/* Revenue */}
+                        <div className="shrink-0 text-right">
+                          <p className="text-[12px] font-bold text-[var(--ink)]">{formatMoneyCompact(tech.revenue, currency)}</p>
+                          {tech.payoutDue > 0 && (
+                            <p className="text-[10px] font-semibold text-red-500">{formatMoneyCompact(tech.payoutDue, currency)} due</p>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* ── Desktop: full table ── */}
+                <div className="hidden overflow-x-auto [scrollbar-width:thin] lg:block">
+                  <table className="w-full text-left">
+                    <thead>
+                      <tr className="border-b border-[var(--line)]">
+                        <th className="px-3 py-2 text-[9px] font-bold uppercase tracking-wider text-[var(--ink-muted)]">#</th>
+                        <th className="px-2 py-2 text-[9px] font-bold uppercase tracking-wider text-[var(--ink-muted)]">Technician</th>
+                        <th className="px-2 py-2 text-center text-[9px] font-bold uppercase tracking-wider text-[var(--ink-muted)]">Done</th>
+                        <th className="px-2 py-2 text-center text-[9px] font-bold uppercase tracking-wider text-[var(--ink-muted)]">Active</th>
+                        <th className="px-2 py-2 text-center text-[9px] font-bold uppercase tracking-wider text-[var(--ink-muted)]">Avg TAT</th>
+                        <th className="px-2 py-2 text-right text-[9px] font-bold uppercase tracking-wider text-[var(--ink-muted)]">Revenue</th>
+                        <th className="px-3 py-2 text-right text-[9px] font-bold uppercase tracking-wider text-[var(--ink-muted)]">Payout Due</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[var(--line)]">
+                      {techLeaderboard.map((tech, i) => {
+                        const avgDays = tech.count > 0 ? (tech.totalDays / tech.count).toFixed(1) : null;
+                        return (
+                          <tr key={tech.name} className="transition hover:bg-[var(--panel-strong)]">
+                            <td className="px-3 py-3 text-[11px] font-bold text-[var(--ink-muted)]">
+                              {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `#${i + 1}`}
+                            </td>
+                            <td className="px-2 py-3">
+                              <div className="flex items-center gap-2">
+                                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--accent)]/15 text-[11px] font-bold text-[var(--accent)]">
+                                  {tech.name.charAt(0).toUpperCase()}
+                                </div>
+                                <span className="text-xs font-semibold text-[var(--ink)]">{tech.name}</span>
                               </div>
-                              <span className="text-xs font-semibold text-[var(--ink)]">{tech.name}</span>
-                            </div>
-                          </td>
-                          <td className="px-2 py-3 text-center text-sm font-bold text-emerald-600">{tech.count}</td>
-                          <td className={`px-2 py-3 text-center text-sm font-bold ${tech.pending > 0 ? "text-amber-600" : "text-[var(--ink-muted)]"}`}>{tech.pending}</td>
-                          <td className="px-2 py-3 text-center text-xs text-[var(--ink-muted)]">{avgDays !== null ? `${avgDays}d` : "—"}</td>
-                          <td className="px-2 py-3 text-right text-xs font-semibold text-[var(--ink)]">{formatMoneyCompact(tech.revenue, currency)}</td>
-                          <td className={`px-3 py-3 text-right text-xs font-bold ${tech.payoutDue > 0 ? "text-red-500" : "text-[var(--ink-muted)]"}`}>
-                            {formatMoneyCompact(tech.payoutDue, currency)}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+                            </td>
+                            <td className="px-2 py-3 text-center text-sm font-bold text-emerald-600">{tech.count}</td>
+                            <td className={`px-2 py-3 text-center text-sm font-bold ${tech.pending > 0 ? "text-amber-600" : "text-[var(--ink-muted)]"}`}>{tech.pending}</td>
+                            <td className="px-2 py-3 text-center text-xs text-[var(--ink-muted)]">{avgDays !== null ? `${avgDays}d` : "—"}</td>
+                            <td className="px-2 py-3 text-right text-xs font-semibold text-[var(--ink)]">{formatMoneyCompact(tech.revenue, currency)}</td>
+                            <td className={`px-3 py-3 text-right text-xs font-bold ${tech.payoutDue > 0 ? "text-red-500" : "text-[var(--ink-muted)]"}`}>
+                              {formatMoneyCompact(tech.payoutDue, currency)}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </>
             )}
           </section>
 
