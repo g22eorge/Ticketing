@@ -225,7 +225,7 @@ export function BottomNav({
       {/* ── The bar ──────────────────────────────────────────────────── */}
       <nav
         aria-label="Primary navigation"
-        className="mobile-bottom-nav fixed inset-x-0 bottom-0 z-40 border-t border-[var(--line)] bg-[var(--panel)]/96 backdrop-blur-xl lg:hidden"
+        className="mobile-bottom-nav fixed inset-x-0 bottom-0 z-40 border-t border-white/[0.07] bg-[var(--panel)]/95 backdrop-blur-2xl lg:hidden"
       >
         {/* Safe-area padding + content */}
         <div
@@ -339,14 +339,15 @@ export function BottomNav({
 
             {/* Scrollable content */}
             <div className="max-h-[calc(82vh-80px)] overflow-y-auto px-4 pb-8">
-              <div className="space-y-4">
+              <div className="space-y-5">
                 {moreGroups.map((group) => (
                   <div key={group.title}>
                     {/* Group header */}
-                    <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]/70">
+                    <p className="mb-3 text-[9px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/60">
                       {group.title}
                     </p>
-                    <div className="grid grid-cols-2 gap-2">
+                    {/* 3-column icon tile grid — larger touch targets, premium feel */}
+                    <div className="grid grid-cols-3 gap-2">
                       {group.items.map((item) => {
                         const active = isActive(item.href);
                         const moreBadge = getMoreBadge(item.href);
@@ -356,18 +357,23 @@ export function BottomNav({
                             type="button"
                             aria-current={active ? "page" : undefined}
                             onClick={() => { setOpen(false); router.push(item.href); }}
-                            className={`relative flex items-center gap-2.5 rounded-2xl border px-3 py-3 text-[12px] font-semibold transition-all active:scale-[0.97] ${
+                            className={`relative flex flex-col items-center gap-2 rounded-2xl border px-2 py-3.5 text-[11px] font-semibold transition-all active:scale-[0.96] ${
                               active
-                                ? "border-[var(--accent)]/35 bg-[var(--accent)]/10 text-[var(--accent)] shadow-[0_1px_6px_rgba(212,175,55,0.14)]"
-                                : "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink)] hover:border-[var(--accent)]/20 hover:bg-[var(--panel)]"
+                                ? "border-[var(--accent)]/40 bg-[var(--accent)]/10 text-[var(--accent)]"
+                                : "border-white/[0.06] bg-[var(--panel-strong)] text-[var(--ink-muted)]"
                             }`}
                           >
-                            <span className={`shrink-0 ${active ? "text-[var(--accent)]" : "text-[var(--ink-muted)]"}`}>
-                              {item.icon}
+                            {/* Icon with accent circle on active */}
+                            <span className={`flex h-10 w-10 items-center justify-center rounded-xl transition-colors ${
+                              active ? "bg-[var(--accent)]/20" : "bg-[var(--panel)]"
+                            }`}>
+                              <span className={active ? "text-[var(--accent)]" : "text-[var(--ink-muted)]"}>
+                                {item.icon}
+                              </span>
                             </span>
-                            <span className="truncate leading-snug">{item.label}</span>
+                            <span className="truncate w-full text-center leading-tight">{item.label}</span>
                             {typeof moreBadge === "number" && moreBadge > 0 && (
-                              <span className="absolute right-2.5 top-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--accent)] px-1 text-[9px] font-black leading-none text-black">
+                              <span className="absolute right-2 top-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--accent)] px-1 text-[9px] font-black leading-none text-black">
                                 {moreBadge > 99 ? "99+" : moreBadge}
                               </span>
                             )}
