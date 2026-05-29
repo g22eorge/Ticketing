@@ -248,8 +248,8 @@ type Props = {
   subtotalValue?: string;   // pre-formatted subtotal, falls back to repairCost
 };
 
-function BulletField({ value }: { value: string }) {
-  const lines = value.split(/\n|\||;/g).map((l) => l.trim()).filter(Boolean);
+function BulletField({ value }: { value: string | null | undefined }) {
+  const lines = (value ?? "").split(/\n|\||;/g).map((l) => l.trim()).filter(Boolean);
   if (lines.length === 0) return <Text style={{ fontSize: 8, color: LIGHT }}>N/A</Text>;
   return (
     <View>
@@ -272,7 +272,42 @@ const LI_COLORS_V2 = {
   labelMuted:  MID,
 };
 
-export function InvoiceDocumentV2(props: Props) {
+export function InvoiceDocumentV2(rawProps: Props) {
+  // Sanitise all string props — react-pdf's textkit crashes when a Text node receives
+  // undefined as content (calls undefined.split('')). Coerce everything upfront.
+  const s2 = (v: string | undefined | null) => v ?? "";
+  const props: Props = {
+    ...rawProps,
+    companyName:           s2(rawProps.companyName),
+    companyAddressLine1:   s2(rawProps.companyAddressLine1),
+    companyAddressLine2:   s2(rawProps.companyAddressLine2),
+    companyContacts:       s2(rawProps.companyContacts),
+    invoiceNumber:         s2(rawProps.invoiceNumber),
+    dateIssued:            s2(rawProps.dateIssued),
+    repairId:              s2(rawProps.repairId),
+    preparedByName:        s2(rawProps.preparedByName),
+    preparedByRole:        s2(rawProps.preparedByRole),
+    clientName:            s2(rawProps.clientName),
+    clientPhone:           s2(rawProps.clientPhone),
+    clientEmail:           s2(rawProps.clientEmail),
+    clientOrganization:    s2(rawProps.clientOrganization),
+    deviceType:            s2(rawProps.deviceType),
+    deviceLabel:           s2(rawProps.deviceLabel),
+    serialOrImei:          s2(rawProps.serialOrImei),
+    workDone:              s2(rawProps.workDone),
+    partsReplaced:         s2(rawProps.partsReplaced),
+    diagnosisSummary:      s2(rawProps.diagnosisSummary),
+    repairCost:            s2(rawProps.repairCost),
+    vatLabel:              s2(rawProps.vatLabel),
+    vatAmount:             s2(rawProps.vatAmount),
+    totalAmountPayable:    s2(rawProps.totalAmountPayable),
+    status:                s2(rawProps.status),
+    currency:              s2(rawProps.currency),
+    termsText:             s2(rawProps.termsText),
+    footerText:            s2(rawProps.footerText),
+    signatureCompanyLabel: s2(rawProps.signatureCompanyLabel),
+    signatureClientLabel:  s2(rawProps.signatureClientLabel),
+  };
   const isRepairMode  = !props.documentMode || props.documentMode === "REPAIR";
   const showLineItems = Boolean(props.lineItems?.length);
 
@@ -455,7 +490,7 @@ export function InvoiceDocumentV2(props: Props) {
         <View style={s.section}>
           <View style={s.sectionHead}><Text style={s.sectionTitle}>Terms & Conditions</Text></View>
           <View style={s.sectionBody}>
-            {props.termsText.split("\n").map((l) => l.trim()).filter(Boolean).map((line, i) => (
+            {(props.termsText ?? "").split("\n").map((l) => l.trim()).filter(Boolean).map((line, i) => (
               <Text key={i} style={s.termItem}>• {line}</Text>
             ))}
           </View>

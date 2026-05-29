@@ -426,8 +426,8 @@ type InvoiceDocProps = {
   subtotalValue?: string;
 };
 
-function toBulletLines(value: string) {
-  const lines = value
+function toBulletLines(value: string | null | undefined) {
+  const lines = (value ?? "")
     .split(/\n|\||;/g)
     .map((line) => line.replace(/\s+/g, " ").trim())
     .filter(Boolean);
@@ -639,7 +639,7 @@ export function InvoiceDocument(props: InvoiceDocProps) {
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Terms & Conditions</Text>
-          {props.termsText
+          {(props.termsText ?? "")
             .split("\n")
             .map((line) => line.trim())
             .filter(Boolean)

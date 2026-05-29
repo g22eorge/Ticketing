@@ -194,7 +194,7 @@ type Props = {
 };
 
 function BulletField({ value }: { value: string }) {
-  const lines = value.split(/\n|\||;/g).map((l) => l.trim()).filter(Boolean);
+  const lines = (value ?? "").split(/\n|\||;/g).map((l) => l.trim()).filter(Boolean);
   if (lines.length === 0) return <Text style={s.fieldValue}>N/A</Text>;
   return (
     <View>

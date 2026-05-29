@@ -196,7 +196,7 @@ export function InvoiceDocumentMinimal(props: Props) {
         {/* ── Terms ── */}
         <View style={s.section}>
           <Text style={s.secTitle}>Terms &amp; Conditions</Text>
-          {props.termsText.split("\n").filter(Boolean).map((l, i) => (
+          {(props.termsText ?? "").split("\n").filter(Boolean).map((l, i) => (
             <Text key={i} style={s.termItem}>— {l}</Text>
           ))}
         </View>

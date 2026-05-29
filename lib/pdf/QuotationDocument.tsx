@@ -235,7 +235,7 @@ type Props = {
 };
 
 function BulletField({ value }: { value: string }) {
-  const lines = value.split(/\n|\||;/g).map((l) => l.trim()).filter(Boolean);
+  const lines = (value ?? "").split(/\n|\||;/g).map((l) => l.trim()).filter(Boolean);
   if (lines.length === 0) return <Text style={{ fontSize: 8, color: LIGHT }}>N/A</Text>;
   return (
     <View>
@@ -415,7 +415,7 @@ export function QuotationDocument(props: Props) {
         <View style={s.section}>
           <View style={s.sectionHead}><Text style={s.sectionTitle}>Terms & Conditions</Text></View>
           <View style={s.sectionBody}>
-            {props.termsText.split("\n").map((l) => l.trim()).filter(Boolean).map((line, i) => (
+            {(props.termsText ?? "").split("\n").map((l) => l.trim()).filter(Boolean).map((line, i) => (
               <Text key={i} style={s.termItem}>• {line}</Text>
             ))}
           </View>

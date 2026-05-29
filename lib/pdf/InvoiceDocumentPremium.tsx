@@ -210,7 +210,7 @@ export function InvoiceDocumentPremium(props: Props) {
           {/* ── Terms ── */}
           <View style={[s.diagCard, { marginBottom: 14 }]}>
             <Text style={s.secLbl}>Terms &amp; Conditions</Text>
-            {props.termsText.split("\n").filter(Boolean).map((l, i) => (
+            {(props.termsText ?? "").split("\n").filter(Boolean).map((l, i) => (
               <Text key={i} style={s.termItem}>– {l}</Text>
             ))}
           </View>
