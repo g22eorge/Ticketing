@@ -114,14 +114,19 @@ function getPrimaryItems(role: Role, permissions: string[], mods?: Set<string>):
 function getMoreGroups(role: Role, permissions: string[], mods?: Set<string>): NavGroup[] {
   const perm = { role, permissions };
   const modOk = (href: string) => !mods || !hrefModule[href] || mods.has(hrefModule[href]);
+
+  // Roles for which "board" is already a PRIMARY nav item — don't duplicate in More.
+  const boardInPrimary = role === "TECHNICIAN_EXTERNAL" || !can.viewIntake(perm);
+
   const allow = (href: string): boolean => {
     if (!modOk(href)) return false;
     switch (href) {
       case ITEMS.clients.href:        return can.viewClientInfo(perm);
       case ITEMS.reports.href:        return can.viewAccountsSummary(perm);
       case ITEMS.aiInsights.href:     return can.viewAccountsSummary(perm);
+      // Shifts page guard: ADMIN, OPS, FRONT_DESK only
       case ITEMS.pos.href:            return ["ADMIN","OPS","FRONT_DESK","MANAGER"].includes(role);
-      case ITEMS.cashierShifts.href:  return ["ADMIN","MANAGER","OPS","FINANCE","FRONT_DESK"].includes(role);
+      case ITEMS.cashierShifts.href:  return ["ADMIN","OPS","FRONT_DESK"].includes(role);
       case ITEMS.invoiceDocs.href:
       case ITEMS.receipts.href:
       case ITEMS.creditNotes.href:
@@ -133,11 +138,15 @@ function getMoreGroups(role: Role, permissions: string[], mods?: Set<string>): N
       case ITEMS.deliveryNotes.href:  return can.viewFinancials(perm) || ["OPS","FRONT_DESK","ADMIN"].includes(role);
       case ITEMS.taxRates.href:       return ["ADMIN","MANAGER"].includes(role);
       case ITEMS.payoutFollowups.href:return can.reviewExternalBills(perm) || can.approveInvoices(perm);
-      case ITEMS.inventory.href:      return ["ADMIN","OPS","TECHNICIAN_INTERNAL","MANAGER"].includes(role);
-      case ITEMS.board.href:          return role !== "TECHNICIAN_EXTERNAL";
+      // Inventory page guard: ADMIN, MANAGER, TECH_MANAGER, OPS, TECHNICIAN_INTERNAL
+      case ITEMS.inventory.href:      return ["ADMIN","OPS","TECHNICIAN_INTERNAL","MANAGER","TECH_MANAGER"].includes(role);
+      // Board/Techs: skip if already a primary item for this role (avoids duplicate)
+      case ITEMS.board.href:          return !boardInPrimary;
       case ITEMS.sales.href:          return can.createLeads(perm);
-      case ITEMS.field.href:          return can.manageFieldVisits(perm);
-      case ITEMS.complaints.href:     return modOk("/complaints");
+      // Field page: accessible to managers AND field techs who can record signoffs
+      case ITEMS.field.href:          return can.manageFieldVisits(perm) || can.recordFieldSignoffs(perm);
+      // Complaints page guard: ADMIN, MANAGER, TECH_MANAGER, OPS
+      case ITEMS.complaints.href:     return modOk("/complaints") && ["ADMIN","MANAGER","TECH_MANAGER","OPS"].includes(role);
       case ITEMS.targets.href:        return can.viewTeamTargets(perm);
       default: return true;
     }
