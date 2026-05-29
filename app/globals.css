@@ -791,3 +791,94 @@ tr:has(details[open]) {
     height: 100%;
   }
 }
+
+/* ── Mobile document list: transforms overflow-x tables into stacked cards ── */
+/*
+ * Usage: add class "doc-list" to the overflow-x-auto wrapper div around a
+ * <table>. On screens < 640 px the table collapses into one card per row,
+ * all hidden columns become visible, and the actions row gets a tinted footer.
+ * The desktop table layout is completely untouched (sm+).
+ */
+@media (max-width: 639px) {
+  /* Wrapper resets */
+  .doc-list {
+    overflow-x: visible !important;
+    border: none !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  /* Table becomes a block flow */
+  .doc-list > table {
+    display: block;
+    width: 100%;
+    border: none;
+    background: transparent;
+  }
+
+  /* Hide the column header row */
+  .doc-list > table > thead {
+    display: none !important;
+  }
+
+  /* tbody becomes a vertical stack of cards */
+  .doc-list > table > tbody {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0;
+  }
+
+  /* Each row is a card */
+  .doc-list > table > tbody > tr {
+    display: block !important;
+    border: 1px solid var(--line) !important;
+    border-radius: 0.875rem !important;
+    overflow: hidden;
+    background: var(--panel) !important;
+    transition: box-shadow 0.15s;
+  }
+  .doc-list > table > tbody > tr:hover {
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06) !important;
+    background: var(--panel) !important;
+  }
+
+  /* Every cell is a full-width block — override all Tailwind show/hide utilities */
+  .doc-list > table > tbody > tr > td {
+    display: block !important;
+    width: 100% !important;
+    padding: 0.5rem 0.875rem !important;
+    border: none !important;
+    border-top: 1px solid var(--line) !important;
+    vertical-align: top !important;
+  }
+
+  /* First cell (document/job number) is the card "headline" — slightly more padding, no top border */
+  .doc-list > table > tbody > tr > td:first-child {
+    border-top: none !important;
+    padding-top: 0.75rem !important;
+    padding-bottom: 0.5rem !important;
+  }
+
+  /* Last cell (actions) gets a subtle tinted footer background */
+  .doc-list > table > tbody > tr > td:last-child {
+    background: var(--panel-strong) !important;
+    padding-top: 0.625rem !important;
+    padding-bottom: 0.625rem !important;
+  }
+
+  /* Buttons inside action cells wrap naturally; give them breathing room */
+  .doc-list > table > tbody > tr > td:last-child > *,
+  .doc-list > table > tbody > tr > td:last-child > div {
+    flex-wrap: wrap !important;
+    gap: 0.375rem !important;
+  }
+
+  /* Empty cells (—, null) collapse so they don't leave blank space */
+  .doc-list > table > tbody > tr > td:empty {
+    display: none !important;
+    border: none !important;
+    padding: 0 !important;
+  }
+}

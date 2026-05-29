@@ -825,7 +825,7 @@ export default async function InvoicesPage({
       )}
 
       {/* ── INVOICE TABLE ──────────────────────────────────────────────────── */}
-      <div className="overflow-x-auto rounded-xl border border-[var(--line)]">
+      <div className="doc-list overflow-x-auto rounded-xl border border-[var(--line)]">
         <table className="w-full text-left text-sm">
           <thead className="bg-[var(--panel-strong)] text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
             <tr>
@@ -879,6 +879,8 @@ export default async function InvoicesPage({
                     >
                       {inv.invoiceType.charAt(0) + inv.invoiceType.slice(1).toLowerCase()}
                     </span>
+                    {/* Client name visible on mobile (column hidden at md) */}
+                    <p className="mt-1 text-[12px] font-medium text-[var(--ink)] md:hidden">{clientName}</p>
                   </td>
                   <td className="hidden px-4 py-3 md:table-cell">
                     <p className="font-medium text-[var(--ink)]">{clientName}</p>

@@ -246,7 +246,7 @@ export default async function DeliveryNotesPage() {
         </details>
       ) : null}
 
-      <div className="overflow-x-auto rounded-xl border border-[var(--line)]">
+      <div className="doc-list overflow-x-auto rounded-xl border border-[var(--line)]">
         <table className="w-full text-left text-sm">
           <thead className="bg-[var(--panel-strong)] text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
             <tr>
@@ -264,6 +264,10 @@ export default async function DeliveryNotesPage() {
                 <td className="px-3 py-2.5">
                   <p className="mono font-bold text-[var(--ink)]">{n.deliveryNoteNumber}</p>
                   <p className="text-xs text-[var(--ink-muted)]">{n.deliveredByName} → {n.receivedByName}</p>
+                  {/* Client + source visible on mobile (those columns hidden at md/lg) */}
+                  <p className="mt-0.5 text-[11px] font-medium text-[var(--ink)] lg:hidden">
+                    {n.invoice?.job?.client.fullName ?? n.sale?.client?.fullName ?? ""}
+                  </p>
                 </td>
                 <td className="hidden px-3 py-2.5 md:table-cell">
                   {n.invoice ? (
