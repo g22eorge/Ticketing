@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { JobStatusBadge } from "@/components/jobs/JobStatusBadge";
 import { CopyButton } from "@/components/shared/CopyButton";
+import { RowActionsMenu, MenuSection } from "@/components/shared/RowActionsMenu";
 import { getClientBill } from "@/lib/billing";
 import { formatMoney, getAppCurrency } from "@/lib/currency";
 import { formatEATDate } from "@/lib/date-eat";
@@ -371,79 +372,76 @@ export default async function QuotationsPage({
 
                     {/* Actions */}
                     <td className="px-3 py-2.5">
-                      <div className="flex items-center justify-end gap-1.5 flex-wrap">
+                      <div className="flex items-center justify-end gap-1.5">
                         {canGenerate ? (
                           <>
-                            {/* PDF */}
+                            {/* Primary: PDF */}
                             <a
                               href={pdfHref}
                               target="_blank"
                               rel="noreferrer"
                               title="Open quotation PDF"
-                              className="inline-flex items-center gap-1 rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1.5 text-[11px] font-semibold text-[var(--ink)] transition hover:border-[var(--accent)]/40 hover:text-[var(--accent)]"
+                              className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)] transition hover:border-[var(--accent)]/40 hover:text-[var(--accent)]"
                             >
-                              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                              PDF
+                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                             </a>
 
-                            {/* Copy quote link */}
-                            <CopyButton
-                              text={pdfUrl}
-                              label="Copy"
-                              title="Copy quotation PDF link"
-                            />
-
-                            {/* WhatsApp */}
-                            <a
-                              href={`https://wa.me/${waPhone}?text=${waQuoteText}`}
-                              target="_blank"
-                              rel="noreferrer"
-                              title="Send quote via WhatsApp"
-                              className="inline-flex items-center gap-1 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1.5 text-[11px] font-semibold text-emerald-600 transition hover:bg-emerald-500/20"
-                            >
-                              <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347"/></svg>
-                              Send
-                            </a>
-
-                            {/* Mark as sent (if not yet sent) */}
-                            {!job.quotedAt && (
-                              <form action={markSent}>
+                            {/* Overflow: share, mark sent, convert */}
+                            <RowActionsMenu label="Quotation actions">
+                              <MenuSection label="Share" />
+                              <a
+                                href={`https://wa.me/${waPhone}?text=${waQuoteText}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="flex w-full items-center gap-2 px-5 py-1.5 text-[12px] font-medium text-emerald-600 transition hover:bg-[var(--panel-strong)]"
+                              >
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347"/></svg>
+                                Send via WhatsApp
+                              </a>
+                              <div className="px-3 py-1">
+                                <CopyButton
+                                  text={pdfUrl}
+                                  label="Copy PDF link"
+                                  title="Copy quotation PDF link"
+                                  className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-[12px] font-medium text-[var(--ink)] transition hover:bg-[var(--panel-strong)]"
+                                />
+                              </div>
+                              {!job.quotedAt && (
+                                <>
+                                  <MenuSection label="Status" />
+                                  <form action={markSent} className="px-3 py-1.5">
+                                    <input type="hidden" name="jobId" value={job.id} />
+                                    <button type="submit" className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-[12px] font-medium text-sky-600 transition hover:bg-[var(--panel-strong)]">
+                                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden><polyline points="20 6 9 17 4 12"/></svg>
+                                      Mark as sent
+                                    </button>
+                                  </form>
+                                </>
+                              )}
+                              <MenuSection label="Convert" />
+                              <form action={convertQuotationToInvoiceAction} className="px-3 py-1.5">
                                 <input type="hidden" name="jobId" value={job.id} />
-                                <button
-                                  type="submit"
-                                  title="Mark quotation as sent"
-                                  className="inline-flex items-center gap-1 rounded-md border border-sky-500/30 bg-sky-500/10 px-2.5 py-1.5 text-[11px] font-semibold text-sky-600 transition hover:bg-sky-500/20"
-                                >
-                                  ✓ Mark sent
+                                {persistedQuotation ? <input type="hidden" name="quotationId" value={persistedQuotation.id} /> : null}
+                                <button type="submit" className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-[12px] font-medium text-[var(--accent)] transition hover:bg-[var(--panel-strong)]">
+                                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" x2="12" y1="18" y2="12"/><line x1="9" x2="15" y1="15" y2="15"/></svg>
+                                  Convert to Invoice
                                 </button>
                               </form>
-                            )}
-                            <form action={convertQuotationToInvoiceAction}>
-                              <input type="hidden" name="jobId" value={job.id} />
-                              {persistedQuotation ? <input type="hidden" name="quotationId" value={persistedQuotation.id} /> : null}
-                              <button
-                                type="submit"
-                                className="inline-flex items-center gap-1 rounded-md border border-[var(--accent)]/35 bg-[var(--accent)]/10 px-2.5 py-1.5 text-[11px] font-semibold text-[var(--accent)] transition hover:bg-[var(--accent)]/20"
-                              >
-                                Convert to Invoice
-                              </button>
-                            </form>
+                            </RowActionsMenu>
                           </>
                         ) : (
                           <span className="text-[11px] text-[var(--ink-muted)]">
-                            {["RECEIVED"].includes(job.status)
-                              ? "Needs diagnosis"
-                              : "No estimate yet"}
+                            {["RECEIVED"].includes(job.status) ? "Needs diagnosis" : "No estimate yet"}
                           </span>
                         )}
 
-                        {/* Always show view job link */}
+                        {/* Always: view job */}
                         <Link
                           href={`/jobs/${job.id}`}
-                          title="Open job detail"
-                          className="inline-flex items-center rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-1.5 text-[11px] text-[var(--ink-muted)] transition hover:border-[var(--accent)]/40 hover:text-[var(--accent)]"
+                          title="Open job"
+                          className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)] transition hover:border-[var(--accent)]/40 hover:text-[var(--accent)]"
                         >
-                          →
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
                         </Link>
                       </div>
                     </td>
