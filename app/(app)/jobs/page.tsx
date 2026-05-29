@@ -353,6 +353,7 @@ export default async function JobsPage({
       receivedAt: job.receivedAt,
       externalTechBill: getExternalTechBill(job),
       clientBill: getClientBill(job),
+      repairTimeline: (job as typeof job & { repairTimeline?: string | null }).repairTimeline ?? null,
       workflowReason: withWorkflow.workflowReason ?? null,
     };
   });

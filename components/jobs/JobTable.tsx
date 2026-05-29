@@ -49,6 +49,7 @@ export type JobRow = {
   receivedAt: Date;
   externalTechBill?: number | null;
   clientBill?: number | null;
+  repairTimeline?: string | null;
   workflowReason?: WorkflowReason | null;
 };
 
@@ -257,13 +258,17 @@ export function JobTable({
             const canDownloadQuotation = canUseQuotations && quotationStatuses.has(job.status);
             const canDownloadInvoice = canUseInvoices && invoiceStatuses.has(job.status);
 
+            // Compute age days for "X days remaining" badge
+            const ageDays = Math.floor((Date.now() - job.receivedAt.getTime()) / 86_400_000);
+            const isActive = !["COMPLETED", "CLOSED", "DELIVERED"].includes(job.status);
+
             return (
               <div
                 key={job.id}
-                className="relative border-b border-[var(--line)]/70 bg-[var(--panel)] last:border-b-0 transition-colors hover:bg-[var(--panel-strong)]/40"
+                className="relative border-b border-[var(--line)]/70 bg-[var(--panel)] last:border-b-0 transition-colors hover:bg-[var(--panel-strong)]/30 active:bg-[var(--panel-strong)]/60"
               >
-                {/* Status strip — 5px for clear visual weight */}
-                <span className={`absolute inset-y-0 left-0 w-[5px] ${strip}`} aria-hidden="true" />
+                {/* Status strip */}
+                <span className={`absolute inset-y-0 left-0 w-[4px] ${strip}`} aria-hidden="true" />
 
                 {/* Full-bleed tap target */}
                 <Link
@@ -272,78 +277,56 @@ export function JobTable({
                   aria-label={`Open job ${job.jobNumber}`}
                 />
 
-                {/* Card content — pointer-events-none so taps fall through to link */}
-                <div className="pointer-events-none relative z-10 px-4 py-3 pl-6">
+                {/* Card content */}
+                <div className="relative z-10 px-4 py-3.5 pl-5">
 
-                  {/* Row 1: Job # (muted reference) + secondary actions / tap cue */}
-                  <div className="mb-1.5 flex items-center justify-between gap-2">
-                    <span className="mono text-[10px] font-medium tracking-wide text-[var(--ink-muted)]/50">
+                  {/* Row 1: Job # left · ETA / age badge right */}
+                  <div className="mb-2 flex items-start justify-between gap-2">
+                    <span className="mono text-[10px] font-semibold tracking-wider text-[var(--ink-muted)]/60">
                       {job.jobNumber}
                     </span>
-                    {(canEditPage || canUseJobCards || canDownloadQuotation || canDownloadInvoice || (canDelete && deleteAction)) ? (
-                      <div className="pointer-events-auto flex items-center gap-3">
-                        {canUseJobCards ? (
-                          <a
-                            href={`/api/jobs/${job.id}/job-card`}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="text-[10px] font-medium uppercase tracking-wide text-[var(--ink-muted)]/60 transition hover:text-[var(--ink-muted)]"
-                          >
-                            Card
-                          </a>
-                        ) : null}
-                        {canDownloadQuotation ? (
-                          <a
-                            href={`/api/jobs/${job.id}/quotation`}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="text-[10px] font-medium uppercase tracking-wide text-[var(--ink-muted)]/60 transition hover:text-[var(--ink-muted)]"
-                          >
-                            Quote
-                          </a>
-                        ) : null}
-                        {canDownloadInvoice ? (
-                          <a
-                            href={`/api/jobs/${job.id}/invoice`}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="text-[10px] font-medium uppercase tracking-wide text-[var(--ink-muted)]/60 transition hover:text-[var(--ink-muted)]"
-                          >
-                            Inv
-                          </a>
-                        ) : null}
-                        {canEditPage ? (
-                          <Link
-                            href={`/jobs/${job.id}/edit${returnTo ? `?returnTo=${encodeURIComponent(returnTo)}` : ""}`}
-                            className="text-[10px] font-medium uppercase tracking-wide text-[var(--ink-muted)]/60 transition hover:text-[var(--ink-muted)]"
-                          >
-                            Edit
-                          </Link>
-                        ) : null}
-                        {canDelete && deleteAction ? (
-                          <form action={deleteAction}>
-                            <input type="hidden" name="id" value={job.id} />
-                            <button className="text-[10px] font-medium uppercase tracking-wide text-[var(--ink-muted)]/50 transition hover:text-red-500">
-                              ✕
-                            </button>
-                          </form>
-                        ) : null}
-                      </div>
-                    ) : (
-                      /* Tap affordance */
-                      <svg viewBox="0 0 6 10" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="h-2.5 w-1.5 shrink-0 text-[var(--ink-muted)]/25" aria-hidden="true">
-                        <path d="M1 1l4 4-4 4"/>
-                      </svg>
-                    )}
+                    {isActive ? (
+                      <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold leading-tight ${
+                        ageDays <= 2
+                          ? "bg-emerald-500/15 text-emerald-500"
+                          : ageDays <= 5
+                            ? "bg-amber-500/15 text-amber-500"
+                            : "bg-red-500/15 text-red-500"
+                      }`}>
+                        {job.repairTimeline ?? `${ageDays}d`}
+                        {" remaining"}
+                      </span>
+                    ) : null}
                   </div>
 
-                  {/* Row 2: Device — the HERO element */}
-                  <p className="mb-1.5 truncate text-[15px] font-bold leading-snug tracking-tight text-[var(--ink)]">
-                    {deviceName(job.brand, job.model) ?? (deviceLabel[job.deviceType] ?? job.deviceType)}
-                  </p>
+                  {/* Row 2: Device name HERO + cost right */}
+                  <div className="mb-1 flex items-start justify-between gap-3">
+                    <p className="min-w-0 truncate text-[16px] font-bold leading-snug tracking-tight text-[var(--ink)]">
+                      {deviceName(job.brand, job.model) ?? (deviceLabel[job.deviceType] ?? job.deviceType)}
+                    </p>
+                    {costValue ? (
+                      <span className="shrink-0 text-[14px] font-black text-[var(--ink)]">{costValue}</span>
+                    ) : null}
+                  </div>
 
-                  {/* Row 3: Status + device type chip + flag */}
-                  <div className="mb-2 flex flex-wrap items-center gap-1.5">
+                  {/* Row 3: Client name + balance hint */}
+                  <div className="mb-2 flex items-center justify-between gap-2">
+                    {canSeeClient && job.clientName ? (
+                      <p className="min-w-0 truncate text-[12px] font-medium text-[var(--ink-muted)]">
+                        {job.clientName}
+                      </p>
+                    ) : (
+                      <div />
+                    )}
+                    {canSeeClient && costValue ? (
+                      <p className="shrink-0 text-[10px] text-[var(--ink-muted)]">
+                        Balance: {costValue}
+                      </p>
+                    ) : null}
+                  </div>
+
+                  {/* Row 4: Status badge + device chip + flag */}
+                  <div className="flex flex-wrap items-center gap-1.5">
                     <JobStatusBadge status={job.status} />
                     <span className="inline-flex items-center gap-1 rounded-md bg-[var(--panel-strong)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--ink-muted)]">
                       <DeviceIcon type={job.deviceType} />
@@ -354,35 +337,32 @@ export function JobTable({
                         {flagCfg.label}
                       </span>
                     ) : null}
-                  </div>
+                    {pricingBadge}
 
-                  {/* Row 4: Meta footer — client · date · tech | cost */}
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex min-w-0 items-center gap-1 text-[11px] text-[var(--ink-muted)]">
-                      {canSeeClient && job.clientName ? (
-                        <span className="min-w-0 truncate">{job.clientName}</span>
-                      ) : null}
-                      {canSeeClient && job.clientName ? (
-                        <span className="shrink-0 opacity-40">·</span>
-                      ) : null}
-                      <span className="shrink-0">{formatEATDate(job.receivedAt)}</span>
-                      <AgeBadge receivedAt={job.receivedAt} status={job.status} />
-                      {canSeeAssignment && job.assignedTo ? (
-                        <>
-                          <span className="shrink-0 opacity-40">·</span>
-                          <span className="max-w-[5rem] truncate">{job.assignedTo}</span>
-                        </>
-                      ) : null}
-                    </div>
-                    {costValue ? (
-                      <span className="shrink-0 text-[13px] font-bold text-[var(--ink)]">{costValue}</span>
+                    {/* Inline doc actions (pointer-events-auto since card is pointer-events-none via Link) */}
+                    {(canUseJobCards || canDownloadQuotation || canDownloadInvoice || canEditPage || (canDelete && deleteAction)) ? (
+                      <div className="pointer-events-auto ml-auto flex items-center gap-2">
+                        {canUseJobCards ? (
+                          <a href={`/api/jobs/${job.id}/job-card`} target="_blank" rel="noreferrer" className="text-[10px] font-semibold text-[var(--ink-muted)]/60 transition hover:text-[var(--ink-muted)]">Card</a>
+                        ) : null}
+                        {canDownloadQuotation ? (
+                          <a href={`/api/jobs/${job.id}/quotation`} target="_blank" rel="noreferrer" className="text-[10px] font-semibold text-[var(--ink-muted)]/60 transition hover:text-[var(--ink-muted)]">Quote</a>
+                        ) : null}
+                        {canDownloadInvoice ? (
+                          <a href={`/api/jobs/${job.id}/invoice`} target="_blank" rel="noreferrer" className="text-[10px] font-semibold text-[var(--ink-muted)]/60 transition hover:text-[var(--ink-muted)]">Inv</a>
+                        ) : null}
+                        {canEditPage ? (
+                          <Link href={`/jobs/${job.id}/edit${returnTo ? `?returnTo=${encodeURIComponent(returnTo)}` : ""}`} className="text-[10px] font-semibold text-[var(--ink-muted)]/60 transition hover:text-[var(--ink-muted)]">Edit</Link>
+                        ) : null}
+                        {canDelete && deleteAction ? (
+                          <form action={deleteAction}>
+                            <input type="hidden" name="id" value={job.id} />
+                            <button className="text-[10px] font-semibold text-[var(--ink-muted)]/40 transition hover:text-red-500">✕</button>
+                          </form>
+                        ) : null}
+                      </div>
                     ) : null}
                   </div>
-
-                  {/* Row 5: Pricing badge — own line so it never crushes the footer */}
-                  {pricingBadge ? (
-                    <div className="mt-1.5">{pricingBadge}</div>
-                  ) : null}
 
                 </div>
               </div>

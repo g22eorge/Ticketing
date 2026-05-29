@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import Link from "next/link";
 import React from "react";
 
+import { MobileHomeDashboard } from "@/components/mobile/MobileHomeDashboard";
 import { PersistedDisclosure } from "@/components/mobile/PersistedDisclosure";
 import { StickyKpiRow } from "@/components/mobile/StickyKpiRow";
 import { MonthSelectForm } from "@/components/shared/MonthSelectForm";
@@ -1137,6 +1138,11 @@ export default async function DashboardPage({
       const key = normalizeJobStatus(item.status as JobStatus);
       statusCount.set(key, (statusCount.get(key) ?? 0) + item._count.status);
     }
+    // Mobile-specific derived counts
+    const inRepairCount      = statusCount.get("IN_REPAIR") ?? 0;
+    const readyForPickupCount = statusCount.get("READY_FOR_PICKUP") ?? 0;
+    const depositsHeld = bankAccounts.reduce((s, a) => s + Math.max(0, a.currentBalance), 0);
+    const profitMtd    = totalMtd - expensesValue;
     const statusData = UI_JOB_STATUSES.map((status) => ({
       key: status, name: statusLabel[status], value: statusCount.get(status) ?? 0,
     }));
@@ -1173,8 +1179,31 @@ export default async function DashboardPage({
     return (
       <div className="space-y-4">
 
+        {/* ── Mobile home screen (Airtel Money-inspired, hidden on desktop) ── */}
+        <MobileHomeDashboard
+          userName={user.name}
+          orgName={(await prisma.organization.findUnique({ where: { id: user.orgId! }, select: { name: true } }).catch(() => null))?.name ?? "Dduuka ProMax"}
+          receivedToday={receivedToday}
+          receivedYesterday={receivedYesterday}
+          completedToday={completedToday}
+          completedYesterday={completedYesterday}
+          inRepairCount={inRepairCount}
+          readyForPickupCount={readyForPickupCount}
+          cashTodayValue={cashTodayValue}
+          cashYesterdayValue={cashYesterdayValue}
+          depositsHeld={depositsHeld}
+          outstandingValue={outstandingValue}
+          expensesTodayValue={expensesTodayValue}
+          expensesYesterdayValue={expensesYesterdayValue}
+          revenueMtd={totalMtd}
+          profitMtd={profitMtd}
+          currency={currency}
+        />
+
+        {/* ── Desktop dashboard starts here (hidden on mobile) ── */}
+
         {/* ── Quick action bar ── */}
-        <div className="flex flex-wrap items-center justify-center gap-2 py-1">
+        <div className="hidden lg:flex flex-wrap items-center justify-center gap-2 py-1">
           <Link href="/jobs/new" className="btn-premium inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold">
             + New Job
           </Link>
@@ -1190,8 +1219,8 @@ export default async function DashboardPage({
           ))}
         </div>
 
-        {/* ── Today at a Glance ── */}
-        <section>
+        {/* ── Today at a Glance (desktop only — mobile sees MobileHomeDashboard above) ── */}
+        <section className="hidden lg:block">
           <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Today at a Glance</p>
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
             {([
@@ -1214,8 +1243,8 @@ export default async function DashboardPage({
           </div>
         </section>
 
-        {/* ── Attention Needed + Quick Actions ── */}
-        <div className="grid gap-3 lg:grid-cols-3">
+        {/* ── Attention Needed + Quick Actions (desktop only) ── */}
+        <div className="hidden lg:grid gap-3 lg:grid-cols-3">
 
           {/* Attention Needed */}
           <section className="panel-shadow rounded-xl border border-amber-500/20 bg-amber-500/8 p-4 lg:col-span-2">
