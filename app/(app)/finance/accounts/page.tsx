@@ -10,6 +10,7 @@ import { formatMoneyCompact } from "@/lib/currency";
 import { ConfirmSubmitButton } from "@/components/shared/ConfirmSubmitButton";
 import { RowActionsMenu, MenuSection, MenuDestructiveRow } from "@/components/shared/RowActionsMenu";
 import { can } from "@/lib/permissions";
+import { DEFAULT_COA } from "@/lib/default-coa";
 
 const ACCOUNT_TYPES: AccountType[] = ["ASSET", "LIABILITY", "EQUITY", "REVENUE", "EXPENSE"];
 
@@ -73,6 +74,32 @@ export default async function ChartOfAccountsPage() {
     const hasLines = await prisma.journalLine.findFirst({ where: { accountId: id } });
     if (hasLines) return;
     await db.chartOfAccount.delete({ where: { id } });
+    revalidatePath("/finance/accounts");
+  }
+
+  async function seedDefaults() {
+    "use server";
+    const { user: _u } = await getCurrentUserRole();
+    if (!_u.orgId) return;
+    const db = orgDb(_u.orgId);
+
+    // Fetch codes that already exist so we can skip them
+    const existing = await db.chartOfAccount.findMany({ select: { code: true } });
+    const existingCodes = new Set(existing.map((a: { code: string }) => a.code));
+
+    const toCreate = DEFAULT_COA.filter((a) => !existingCodes.has(a.code));
+    if (toCreate.length === 0) return;
+
+    await db.chartOfAccount.createMany({
+      data: toCreate.map((a) => ({
+        code:        a.code,
+        name:        a.name,
+        type:        a.type,
+        description: a.description ?? null,
+        isSystem:    false,
+        isActive:    true,
+      })),
+    });
     revalidatePath("/finance/accounts");
   }
 
@@ -155,6 +182,39 @@ export default async function ChartOfAccountsPage() {
           </div>
         </div>
       </div>
+
+      {/* ── DEFAULT ACCOUNTS BANNER ─────────────────────────────────────── */}
+      {accounts.length === 0 ? (
+        <div className="flex flex-col items-center gap-4 rounded-xl border border-dashed border-[var(--accent)]/40 bg-[var(--accent)]/5 px-6 py-8 text-center">
+          <div className="text-3xl">📒</div>
+          <div>
+            <p className="text-sm font-semibold text-[var(--ink)]">No accounts yet</p>
+            <p className="mt-1 text-xs text-[var(--ink-muted)]">
+              Load the standard chart of accounts to get started instantly —
+              40 accounts covering assets, liabilities, equity, revenue, and expenses.
+              You can edit or delete them afterwards.
+            </p>
+          </div>
+          <form action={seedDefaults}>
+            <button
+              type="submit"
+              className="btn-premium rounded-lg px-5 py-2.5 text-sm font-semibold"
+            >
+              Load standard accounts
+            </button>
+          </form>
+        </div>
+      ) : (
+        <form action={seedDefaults} className="flex justify-end">
+          <button
+            type="submit"
+            title="Adds any missing standard accounts — existing codes are skipped"
+            className="rounded-lg border border-[var(--line)] px-3 py-1.5 text-xs font-medium text-[var(--ink-muted)] hover:bg-[var(--panel-strong)]"
+          >
+            + Load standard defaults
+          </button>
+        </form>
+      )}
 
       {/* ── ACCOUNT TYPE KPI STRIP ───────────────────────────────────────── */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
