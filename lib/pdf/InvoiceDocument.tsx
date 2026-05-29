@@ -7,6 +7,8 @@ import {
   View,
 } from "@react-pdf/renderer";
 
+import { LineItemsTable, type PdfLineItem } from "./pdf-line-items";
+
 const styles = StyleSheet.create({
   page: {
     padding: 20,
@@ -418,6 +420,10 @@ type InvoiceDocProps = {
   footerText: string;
   signatureCompanyLabel: string;
   signatureClientLabel: string;
+  // ── optional line-items (product / service / contract mode) ─────────────────
+  lineItems?:     PdfLineItem[];
+  documentMode?:  string;   // "REPAIR" | "PRODUCT" | "SERVICE" | "CONTRACT"
+  subtotalValue?: string;
 };
 
 function toBulletLines(value: string) {
@@ -444,7 +450,18 @@ function BulletField({ value }: { value: string }) {
   );
 }
 
+const LI_COLORS_CLASSIC = {
+  headerBg:    "#0f3b7a",
+  headerText:  "#ffffff",
+  rowBorderBg: "#dde7f3",
+  altRowBg:    "#f6faff",
+  totalAccent: "#0f3b7a",
+  labelMuted:  "#475569",
+};
+
 export function InvoiceDocument(props: InvoiceDocProps) {
+  const isRepairMode  = !props.documentMode || props.documentMode === "REPAIR";
+  const showLineItems = Boolean(props.lineItems?.length);
   const recommendation = props.recommendation.trim();
   const showRecommendation =
     recommendation.length > 0
@@ -506,18 +523,36 @@ export function InvoiceDocument(props: InvoiceDocProps) {
             </View>
           </View>
 
-          <View style={styles.colHalf}>
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Device</Text>
-              <View style={styles.row}><Text style={styles.label}>Type</Text><Text style={styles.value}>{props.deviceType}</Text></View>
-              <View style={styles.row}><Text style={styles.label}>Model</Text><Text style={styles.value}>{props.deviceLabel}</Text></View>
-              <View style={styles.row}><Text style={styles.label}>Serial/IMEI</Text><Text style={styles.value}>{props.serialOrImei}</Text></View>
-              <View style={styles.row}><Text style={styles.label}>Accessories</Text><Text style={styles.value}>{props.accessories}</Text></View>
-              <View style={styles.row}><Text style={styles.label}>Condition</Text><Text style={styles.value}>{props.physicalCondition}</Text></View>
+          {isRepairMode && (
+            <View style={styles.colHalf}>
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Device</Text>
+                <View style={styles.row}><Text style={styles.label}>Type</Text><Text style={styles.value}>{props.deviceType}</Text></View>
+                <View style={styles.row}><Text style={styles.label}>Model</Text><Text style={styles.value}>{props.deviceLabel}</Text></View>
+                <View style={styles.row}><Text style={styles.label}>Serial/IMEI</Text><Text style={styles.value}>{props.serialOrImei}</Text></View>
+                <View style={styles.row}><Text style={styles.label}>Accessories</Text><Text style={styles.value}>{props.accessories}</Text></View>
+                <View style={styles.row}><Text style={styles.label}>Condition</Text><Text style={styles.value}>{props.physicalCondition}</Text></View>
+              </View>
             </View>
-          </View>
+          )}
         </View>
 
+        {/* Line items table — product / service / contract mode */}
+        {showLineItems && (
+          <LineItemsTable
+            items={props.lineItems!}
+            colors={LI_COLORS_CLASSIC}
+            hasDiscount={props.lineItems!.some((i) => Boolean(i.discount))}
+            subtotalValue={props.subtotalValue ?? props.repairCost}
+            vatLabel={props.vatApplicable ? props.vatLabel : undefined}
+            vatValue={props.vatApplicable ? props.vatAmount : undefined}
+            totalLabel="Total Amount Payable"
+            totalValue={props.totalAmountPayable}
+          />
+        )}
+
+        {/* Diagnosis & Work — shown only in repair mode without line items */}
+        {isRepairMode && !showLineItems && (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Diagnosis & Work</Text>
           <View style={styles.summaryCompactRow}>
@@ -576,27 +611,31 @@ export function InvoiceDocument(props: InvoiceDocProps) {
             </View>
           </View>
         </View>
+        )}
 
-        <View style={styles.section} wrap={false}>
-          <Text style={styles.sectionTitle}>Cost Breakdown</Text>
-          <View style={styles.costWrap}>
-            <View style={styles.costRow}>
-              <Text style={styles.costLabel}>Repair Cost</Text>
-              <Text style={styles.costValue}>{props.repairCost}</Text>
-            </View>
-            {props.vatApplicable ? (
+        {/* Cost Breakdown — hidden when line items table is shown (it includes its own totals) */}
+        {!showLineItems && (
+          <View style={styles.section} wrap={false}>
+            <Text style={styles.sectionTitle}>Cost Breakdown</Text>
+            <View style={styles.costWrap}>
               <View style={styles.costRow}>
-                <Text style={styles.costLabel}>{props.vatLabel}</Text>
-                <Text style={styles.costValue}>{props.vatAmount}</Text>
+                <Text style={styles.costLabel}>{isRepairMode ? "Repair Cost" : "Subtotal"}</Text>
+                <Text style={styles.costValue}>{props.repairCost}</Text>
               </View>
-            ) : null}
-            <View style={styles.costDivider} />
-            <View style={styles.totalRow}>
-              <Text style={styles.totalLabel}>Total Amount Payable</Text>
-              <Text style={styles.totalValue}>{props.totalAmountPayable}</Text>
+              {props.vatApplicable ? (
+                <View style={styles.costRow}>
+                  <Text style={styles.costLabel}>{props.vatLabel}</Text>
+                  <Text style={styles.costValue}>{props.vatAmount}</Text>
+                </View>
+              ) : null}
+              <View style={styles.costDivider} />
+              <View style={styles.totalRow}>
+                <Text style={styles.totalLabel}>Total Amount Payable</Text>
+                <Text style={styles.totalValue}>{props.totalAmountPayable}</Text>
+              </View>
             </View>
           </View>
-        </View>
+        )}
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Terms & Conditions</Text>

@@ -2,12 +2,21 @@ import type { OrgPlan } from "@prisma/client";
 
 import type { ComponentType } from "react";
 
-import { InvoiceDocument } from "@/lib/pdf/InvoiceDocument";
-import { InvoiceDocumentV2 } from "@/lib/pdf/InvoiceDocumentV2";
-import { JobCardDocument } from "@/lib/pdf/JobCardDocument";
-import { QuotationDocument } from "@/lib/pdf/QuotationDocument";
+import { InvoiceDocument }         from "@/lib/pdf/InvoiceDocument";
+import { InvoiceDocumentV2 }       from "@/lib/pdf/InvoiceDocumentV2";
+import { InvoiceDocumentMinimal }  from "@/lib/pdf/InvoiceDocumentMinimal";
+import { InvoiceDocumentPremium }  from "@/lib/pdf/InvoiceDocumentPremium";
+import { InvoiceDocumentExecutive }from "@/lib/pdf/InvoiceDocumentExecutive";
+import { JobCardDocument }          from "@/lib/pdf/JobCardDocument";
+import { JobCardDocumentCompact }   from "@/lib/pdf/JobCardDocumentCompact";
+import { JobCardDocumentTechnical } from "@/lib/pdf/JobCardDocumentTechnical";
+import { JobCardDocumentPremium }   from "@/lib/pdf/JobCardDocumentPremium";
+import { QuotationDocument }        from "@/lib/pdf/QuotationDocument";
 import { QuotationDocumentMinimal } from "@/lib/pdf/QuotationDocumentMinimal";
-import { SaleReceiptDocument } from "@/lib/pdf/SaleReceiptDocument";
+import { SaleReceiptDocument }          from "@/lib/pdf/SaleReceiptDocument";
+import { SaleReceiptDocumentThermal }   from "@/lib/pdf/SaleReceiptDocumentThermal";
+import { SaleReceiptDocumentBranded }   from "@/lib/pdf/SaleReceiptDocumentBranded";
+import { SaleReceiptDocumentExecutive } from "@/lib/pdf/SaleReceiptDocumentExecutive";
 
 export type DocKind = "INVOICE" | "QUOTATION" | "JOB_CARD" | "RECEIPT";
 
@@ -137,29 +146,40 @@ function fallbackKeyForKind(kind: DocKind) {
 // supplying a compatible props object.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function InvoiceTemplateComponent(key: TemplateKey): ComponentType<any> {
-  if (key === "invoice_modern") return InvoiceDocumentV2;
-  if (key === "invoice_premium") return InvoiceDocumentV2;
-  if (key === "invoice_minimal") return InvoiceDocument;
-  if (key === "invoice_executive") return InvoiceDocument;
-  // Legacy key mapping (invoice_green was the old GROWTH key)
+  if (key === "invoice_modern")    return InvoiceDocumentV2;
+  if (key === "invoice_premium")   return InvoiceDocumentPremium;
+  if (key === "invoice_minimal")   return InvoiceDocumentMinimal;
+  if (key === "invoice_executive") return InvoiceDocumentExecutive;
+  // invoice_classic (default)
   return InvoiceDocument;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function QuotationTemplateComponent(key: TemplateKey): ComponentType<any> {
-  if (key === "quote_minimal") return QuotationDocumentMinimal;
-  if (key === "quote_detailed") return QuotationDocumentMinimal;
-  if (key === "quote_modern") return QuotationDocument;
-  if (key === "quote_executive") return QuotationDocument;
+  if (key === "quote_minimal")   return QuotationDocumentMinimal;
+  if (key === "quote_detailed")  return QuotationDocumentMinimal;
+  if (key === "quote_modern")    return InvoiceDocumentV2;      // reuse modern green style
+  if (key === "quote_executive") return InvoiceDocumentExecutive; // reuse dark exec style
+  // quote_classic (default)
   return QuotationDocument;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function JobCardTemplateComponent(_key: TemplateKey): ComponentType<any> {
+export function JobCardTemplateComponent(key: TemplateKey): ComponentType<any> {
+  if (key === "job_card_compact")   return JobCardDocumentCompact;
+  if (key === "job_card_detailed")  return JobCardDocument;        // base = detailed amber
+  if (key === "job_card_technical") return JobCardDocumentTechnical;
+  if (key === "job_card_premium")   return JobCardDocumentPremium;
+  // job_card_classic (default)
   return JobCardDocument;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function ReceiptTemplateComponent(_key: TemplateKey): ComponentType<any> {
+export function ReceiptTemplateComponent(key: TemplateKey): ComponentType<any> {
+  if (key === "receipt_thermal")   return SaleReceiptDocumentThermal;
+  if (key === "receipt_branded")   return SaleReceiptDocumentBranded;
+  if (key === "receipt_itemized")  return SaleReceiptDocumentBranded;  // itemized = branded variant
+  if (key === "receipt_executive") return SaleReceiptDocumentExecutive;
+  // receipt_classic (default)
   return SaleReceiptDocument;
 }

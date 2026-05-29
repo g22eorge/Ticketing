@@ -1,5 +1,7 @@
 import { Document, Image, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
 
+import { LineItemsTable, type PdfLineItem } from "./pdf-line-items";
+
 const GREEN = "#059669";
 const GREEN_DARK = "#065f46";
 const GREEN_LIGHT = "#d1fae5";
@@ -240,6 +242,10 @@ type Props = {
   footerText: string;
   signatureCompanyLabel: string;
   signatureClientLabel: string;
+  // ── optional line-items (product / service / contract mode) ─────────────────
+  lineItems?:     PdfLineItem[];
+  documentMode?:  string;   // "REPAIR" | "PRODUCT" | "SERVICE" | "CONTRACT"
+  subtotalValue?: string;   // pre-formatted subtotal, falls back to repairCost
 };
 
 function BulletField({ value }: { value: string }) {
@@ -257,7 +263,19 @@ function BulletField({ value }: { value: string }) {
   );
 }
 
+const LI_COLORS_V2 = {
+  headerBg:    GREEN,
+  headerText:  WHITE,
+  rowBorderBg: "#d1fae5",
+  altRowBg:    "#f0fdf4",
+  totalAccent: GREEN_DARK,
+  labelMuted:  MID,
+};
+
 export function InvoiceDocumentV2(props: Props) {
+  const isRepairMode  = !props.documentMode || props.documentMode === "REPAIR";
+  const showLineItems = Boolean(props.lineItems?.length);
+
   return (
     <Document>
       <Page size="A4" style={s.page}>
@@ -346,47 +364,66 @@ export function InvoiceDocumentV2(props: Props) {
               </View>
             </View>
           </View>
-          <View style={s.col}>
-            <View style={s.section}>
-              <View style={s.sectionHead}><Text style={s.sectionTitle}>Device Repaired</Text></View>
-              <View style={s.sectionBody}>
-                <View style={s.row}><Text style={s.label}>Type</Text><Text style={s.value}>{props.deviceType}</Text></View>
-                <View style={s.row}><Text style={s.label}>Model</Text><Text style={s.value}>{props.deviceLabel}</Text></View>
-                <View style={s.row}><Text style={s.label}>Serial/IMEI</Text><Text style={s.value}>{props.serialOrImei || "N/A"}</Text></View>
-                <View style={s.row}><Text style={s.label}>Prepared By</Text><Text style={s.value}>{props.preparedByName}</Text></View>
-              </View>
-            </View>
-          </View>
-        </View>
-
-        {/* Work done */}
-        <View style={s.section}>
-          <View style={s.sectionHead}><Text style={s.sectionTitle}>Services Rendered</Text></View>
-          <View style={s.sectionBody}>
-            <View style={s.detailGrid}>
-              <View style={s.detailCol}>
-                <View style={s.detailCard}>
-                  <Text style={s.fieldLabel}>Diagnosis</Text>
-                  <BulletField value={props.diagnosisSummary} />
-                </View>
-              </View>
-              <View style={s.detailCol}>
-                <View style={s.detailCard}>
-                  <Text style={s.fieldLabel}>Work Performed</Text>
-                  <BulletField value={props.workDone} />
-                </View>
-              </View>
-              <View style={s.detailCol}>
-                <View style={s.detailCard}>
-                  <Text style={s.fieldLabel}>Parts Replaced</Text>
-                  <BulletField value={props.partsReplaced} />
+          {isRepairMode && (
+            <View style={s.col}>
+              <View style={s.section}>
+                <View style={s.sectionHead}><Text style={s.sectionTitle}>Device Repaired</Text></View>
+                <View style={s.sectionBody}>
+                  <View style={s.row}><Text style={s.label}>Type</Text><Text style={s.value}>{props.deviceType}</Text></View>
+                  <View style={s.row}><Text style={s.label}>Model</Text><Text style={s.value}>{props.deviceLabel}</Text></View>
+                  <View style={s.row}><Text style={s.label}>Serial/IMEI</Text><Text style={s.value}>{props.serialOrImei || "N/A"}</Text></View>
+                  <View style={s.row}><Text style={s.label}>Prepared By</Text><Text style={s.value}>{props.preparedByName}</Text></View>
                 </View>
               </View>
             </View>
-          </View>
+          )}
         </View>
 
-        {/* Cost */}
+        {/* Work done — shown only in repair mode without line items */}
+        {isRepairMode && !showLineItems && (
+          <View style={s.section}>
+            <View style={s.sectionHead}><Text style={s.sectionTitle}>Services Rendered</Text></View>
+            <View style={s.sectionBody}>
+              <View style={s.detailGrid}>
+                <View style={s.detailCol}>
+                  <View style={s.detailCard}>
+                    <Text style={s.fieldLabel}>Diagnosis</Text>
+                    <BulletField value={props.diagnosisSummary} />
+                  </View>
+                </View>
+                <View style={s.detailCol}>
+                  <View style={s.detailCard}>
+                    <Text style={s.fieldLabel}>Work Performed</Text>
+                    <BulletField value={props.workDone} />
+                  </View>
+                </View>
+                <View style={s.detailCol}>
+                  <View style={s.detailCard}>
+                    <Text style={s.fieldLabel}>Parts Replaced</Text>
+                    <BulletField value={props.partsReplaced} />
+                  </View>
+                </View>
+              </View>
+            </View>
+          </View>
+        )}
+
+        {/* Line items table — replaces services when provided */}
+        {showLineItems && (
+          <LineItemsTable
+            items={props.lineItems!}
+            colors={LI_COLORS_V2}
+            hasDiscount={props.lineItems!.some((i) => Boolean(i.discount))}
+            subtotalValue={props.subtotalValue ?? props.repairCost}
+            vatLabel={props.vatApplicable ? props.vatLabel : undefined}
+            vatValue={props.vatApplicable ? props.vatAmount : undefined}
+            totalLabel="Total Payable"
+            totalValue={props.totalAmountPayable}
+          />
+        )}
+
+        {/* Cost — shown only when no line items (table has its own totals) */}
+        {!showLineItems && (
         <View style={s.section} wrap={false}>
           <View style={s.sectionHead}><Text style={s.sectionTitle}>Amount Due</Text></View>
           <View style={s.sectionBody}>
@@ -412,6 +449,7 @@ export function InvoiceDocumentV2(props: Props) {
             </View>
           </View>
         </View>
+        )}
 
         {/* Terms */}
         <View style={s.section}>

@@ -7,6 +7,7 @@ import { formatMoney, normalizeCurrency } from "@/lib/currency";
 import { getDocumentBrandingSettings } from "@/lib/document-branding";
 import { canGenerateInvoiceForStatus, formatQuotationNumber } from "@/lib/documents";
 import { compactText, compactListText, prettyEnum, resolveInvoiceLogo } from "@/lib/pdf/pdf-utils";
+import type { PdfLineItem } from "@/lib/pdf/pdf-line-items";
 import { InvoiceTemplateComponent, resolveTemplateKey } from "@/lib/pdf/templates";
 import { prisma } from "@/lib/prisma";
 
@@ -44,6 +45,21 @@ export async function generateInvoiceBuffer(
     return { ok: false, error: "Invoice can only be generated after repair reaches pickup/completion stage" };
   }
 
+  // Pull Invoice record (if one exists) to get line items and document type
+  const invoiceRecord = await prisma.invoice.findUnique({
+    where: { jobId: job.id },
+    select: {
+      invoiceType: true,
+      lines: {
+        select: {
+          description: true, quantity: true, unitPrice: true,
+          discountAmount: true, lineTotal: true,
+        },
+        orderBy: { createdAt: "asc" },
+      },
+    },
+  }).catch(() => null);
+
   const orgId = job.orgId ?? undefined;
   const org = orgId ? await prisma.organization.findUnique({ where: { id: orgId }, select: { plan: true, baseCurrency: true } }).catch(() => null) : null;
   const currency = normalizeCurrency(org?.baseCurrency, "UGX");
@@ -59,6 +75,26 @@ export async function generateInvoiceBuffer(
   const vatRate = Math.max(0, branding.vatRatePercent) / 100;
   const repairCost = vatApplicable && clientBill > 0 ? clientBill / (1 + vatRate) : clientBill;
   const vatAmount = vatApplicable ? Math.max(clientBill - repairCost, 0) : 0;
+
+  // Build line items from Invoice.lines (if any)
+  const rawLines = invoiceRecord?.lines ?? [];
+  const lineItems: PdfLineItem[] | undefined = rawLines.length > 0
+    ? rawLines.map((l) => ({
+        description: l.description,
+        quantity:    l.quantity,
+        unitPrice:   formatMoney(l.unitPrice, currency),
+        discount:    l.discountAmount > 0 ? formatMoney(l.discountAmount, currency) : undefined,
+        lineTotal:   formatMoney(l.lineTotal, currency),
+      }))
+    : undefined;
+
+  // Determine document mode from invoice type
+  const invType = invoiceRecord?.invoiceType;
+  const documentMode =
+    invType === "MERCHANDISE" ? "PRODUCT" :
+    invType === "SERVICE"     ? "SERVICE" :
+    invType === "CONTRACT"    ? "CONTRACT" :
+    "REPAIR";
   const issuedAtDate = new Date();
   const logoUrl = await resolveInvoiceLogo();
   const normalizedFooterText = branding.footerText.trim();
@@ -121,6 +157,10 @@ export async function generateInvoiceBuffer(
     footerText: normalizedFooterText,
     signatureCompanyLabel: branding.signatureCompanyLabel,
     signatureClientLabel: branding.signatureClientLabel,
+    // line-items support
+    lineItems,
+    documentMode,
+    subtotalValue: lineItems ? formatMoney(repairCost, currency) : undefined,
   });
 
   const pdf = await renderToBuffer(docElement as never);

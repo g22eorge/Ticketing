@@ -61,6 +61,9 @@ export default async function DocumentTemplatesPage() {
     .catch(() => null);
   const plan: OrgPlan = (org?.plan as OrgPlan) ?? "STARTER";
 
+  // ADMIN and MANAGER can access all templates regardless of plan tier.
+  const bypassPlanGate = user.role === "ADMIN" || user.role === "MANAGER";
+
   const settings = await getDocumentBrandingSettings(orgId);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -91,8 +94,12 @@ export default async function DocumentTemplatesPage() {
       .catch(() => null);
     const actionPlan: OrgPlan = (orgRow?.plan as OrgPlan) ?? "STARTER";
 
-    const allowed = templatesFor(kind, actionPlan);
-    if (!allowed.some((t) => t.key === key)) return;
+    // ADMIN and MANAGER bypass plan tier restrictions
+    const isAdminBypass = actionUser.role === "ADMIN" || actionUser.role === "MANAGER";
+    if (!isAdminBypass) {
+      const allowed = templatesFor(kind, actionPlan);
+      if (!allowed.some((t) => t.key === key)) return;
+    }
 
     const field = KIND_FIELD_MAP[kind];
 
@@ -164,7 +171,7 @@ export default async function DocumentTemplatesPage() {
             <div className="p-4">
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
                 {allTemplates.map((t) => {
-                  const isAllowed  = templatesFor(kind, plan).some((d) => d.key === t.key);
+                  const isAllowed  = bypassPlanGate || templatesFor(kind, plan).some((d) => d.key === t.key);
                   const isCurrent  = t.key === currentKey;
 
                   return (
