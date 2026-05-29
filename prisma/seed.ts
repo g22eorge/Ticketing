@@ -529,6 +529,35 @@ async function main() {
     phone: "+256772100008",
   });
 
+  // ── E2E test users ─────────────────────────────────────────────────────────
+  // These must exist with password "Admin123!" so qa:e2e can log in without
+  // knowing SEED_PASSWORD (which may differ across environments).
+  // Emails match the E2E_EXTERNAL_TECH_EMAIL / E2E_EXTERNAL_TECH_EMAILS defaults
+  // in authz-smoke.spec.ts and external-tech-privacy.spec.ts.
+  await ensureUser({
+    name: "Abdulrahman Ssemwanga",
+    email: "abdu@eagle.tech",
+    role: "TECHNICIAN_EXTERNAL",
+    password: "Admin123!",
+    phone: "+256772200001",
+  });
+
+  await ensureUser({
+    name: "Ryan Ochieng",
+    email: "ryan@eagle.tech",
+    role: "TECHNICIAN_EXTERNAL",
+    password: "Admin123!",
+    phone: "+256772200002",
+  });
+
+  await ensureUser({
+    name: "Daniel Tumwebaze",
+    email: "dan@eagle.tech",
+    role: "TECHNICIAN_EXTERNAL",
+    password: "Admin123!",
+    phone: "+256772200003",
+  });
+
   const finance = await ensureUser({
     name: "Fatima Finance",
     email: "finance@eagle.test",
