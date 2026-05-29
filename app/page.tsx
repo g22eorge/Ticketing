@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
@@ -269,9 +270,10 @@ export default async function Page() {
       <nav className="sticky top-0 z-40 border-b border-white/6 bg-[#050505]/90 px-4 py-3 backdrop-blur-md">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4">
 
-          {/* Brand */}
-          <div className="flex items-center gap-3">
-            <AppLogoDark height={32} priority />
+          {/* Brand — Eagle Info Solutions */}
+          <div className="flex items-center gap-2">
+            <Image src="/eagle-info-logo.png" alt="Eagle Info Solutions" width={32} height={32} className="h-8 w-8 object-contain" priority />
+            <span className="text-sm font-bold text-white">Eagle Info Solutions</span>
           </div>
 
           {/* Nav actions */}
@@ -326,7 +328,7 @@ export default async function Page() {
             <div className="lg:max-w-sm lg:pt-2 lg:sticky lg:top-24">
               {/* Company badge */}
               <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/5 px-4 py-1.5">
-                <AppLogoDark height={16} />
+                <Image src="/eagle-info-logo.png" alt="" width={16} height={16} className="h-4 w-4 object-contain" />
                 <span className="text-[11px] font-semibold text-white/60">Eagle Info Solutions</span>
               </div>
 
@@ -579,7 +581,11 @@ export default async function Page() {
         <div className="mx-auto max-w-6xl">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <AppLogoDark height={28} />
+              <Image src="/eagle-info-logo.png" alt="Eagle Info Solutions" width={28} height={28} className="h-7 w-7 object-contain" />
+              <div>
+                <p className="text-xs font-bold text-white">Eagle Info Solutions</p>
+                <p className="text-[10px] text-white/30">Powered by Duuka ProMax · © {new Date().getFullYear()}</p>
+              </div>
             </div>
             <div className="flex flex-wrap items-center gap-3">
               {[
