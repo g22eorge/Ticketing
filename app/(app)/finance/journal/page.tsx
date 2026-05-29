@@ -5,11 +5,12 @@ import { revalidatePath } from "next/cache";
 import type { JournalEntryStatus } from "@prisma/client";
 import { getCurrentUserRole } from "@/lib/session";
 
-import { prisma } from "@/lib/prisma";
+import { orgDb, prisma } from "@/lib/prisma";
 import { formatMoney, formatMoneyCompact } from "@/lib/currency";
 import { RowActionsMenu, MenuSection, MenuDestructiveRow } from "@/components/shared/RowActionsMenu";
 import { ConfirmSubmitButton } from "@/components/shared/ConfirmSubmitButton";
 import { can } from "@/lib/permissions";
+import { NewJournalEntryForm } from "@/components/finance/NewJournalEntryForm";
 
 const MONTHS = [
   "January","February","March","April","May","June",
@@ -57,6 +58,9 @@ export default async function JournalPage({
   async function createEntry(fd: FormData) {
     "use server";
     const { user: _u } = await getCurrentUserRole();
+    if (!_u.orgId) return;
+    const db = orgDb(_u.orgId);
+
     const description = (fd.get("description") as string)?.trim();
     const dateStr     = fd.get("date") as string;
     const reference   = ((fd.get("reference") as string) || "").trim() || null;
@@ -78,12 +82,13 @@ export default async function JournalPage({
     const totalCredit = lines.reduce((s, l) => s + l.credit, 0);
     if (Math.abs(totalDebit - totalCredit) > 0.01) return;
 
-    const count = await prisma.journalEntry.count({});
+    const count = await db.journalEntry.count({});
     const entryYear   = new Date(dateStr).getFullYear();
     const entryNumber = `JE-${entryYear}-${String(count + 1).padStart(4, "0")}`;
 
-    await prisma.journalEntry.create({
+    await db.journalEntry.create({
       data: {
+        orgId: _u.orgId,
         entryNumber,
         date: new Date(dateStr),
         description,
@@ -310,135 +315,7 @@ export default async function JournalPage({
           <summary className="cursor-pointer list-none px-5 py-3.5 text-sm font-semibold text-[var(--ink)] hover:bg-[var(--panel-strong)]/40 rounded-xl">
             + New Journal Entry
           </summary>
-          <form action={createEntry} className="space-y-4 border-t border-[var(--line)] p-5">
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-              <div>
-                <label className="mb-1.5 block text-xs font-semibold text-[var(--ink-muted)]">
-                  Date *
-                </label>
-                <input
-                  name="date"
-                  type="date"
-                  required
-                  defaultValue={new Date().toISOString().slice(0, 10)}
-                  className="w-full rounded-lg border border-[var(--line)] bg-[var(--bg)] px-3 py-2 text-sm"
-                />
-              </div>
-              <div>
-                <label className="mb-1.5 block text-xs font-semibold text-[var(--ink-muted)]">
-                  Description *
-                </label>
-                <input
-                  name="description"
-                  required
-                  placeholder="e.g. Monthly rent — May 2025"
-                  className="w-full rounded-lg border border-[var(--line)] bg-[var(--bg)] px-3 py-2 text-sm"
-                />
-              </div>
-              <div>
-                <label className="mb-1.5 block text-xs font-semibold text-[var(--ink-muted)]">
-                  Reference / Source Doc
-                </label>
-                <input
-                  name="reference"
-                  placeholder="INV-001, Receipt #42…"
-                  className="w-full rounded-lg border border-[var(--line)] bg-[var(--bg)] px-3 py-2 text-sm"
-                />
-              </div>
-            </div>
-
-            {/* Line items table */}
-            <div>
-              <div className="mb-2 flex items-center justify-between">
-                <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">
-                  Line Items — Σ Debits must equal Σ Credits
-                </p>
-                <p className="text-[11px] text-[var(--ink-muted)]">
-                  6 rows — leave blank to skip
-                </p>
-              </div>
-              <div className="overflow-x-auto rounded-lg border border-[var(--line)]">
-                <table className="w-full text-sm">
-                  <thead className="border-b border-[var(--line)] bg-[var(--panel)]">
-                    <tr>
-                      <th className="w-2/5 px-3 py-2.5 text-left text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">
-                        Account *
-                      </th>
-                      <th className="px-3 py-2.5 text-left text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">
-                        Memo
-                      </th>
-                      <th className="px-3 py-2.5 text-right text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">
-                        Debit (DR)
-                      </th>
-                      <th className="px-3 py-2.5 text-right text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">
-                        Credit (CR)
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[var(--line)] bg-[var(--bg)]">
-                    {[0, 1, 2, 3, 4, 5].map((i) => (
-                      <tr key={i}>
-                        <td className="px-3 py-2">
-                          <select
-                            name={`lines[${i}][accountId]`}
-                            className="w-full rounded border border-[var(--line)] bg-[var(--bg)] px-2 py-1.5 text-xs"
-                          >
-                            <option value="">— Select account —</option>
-                            {accounts.map((a) => (
-                              <option key={a.id} value={a.id}>
-                                {a.code} — {a.name}
-                              </option>
-                            ))}
-                          </select>
-                        </td>
-                        <td className="px-3 py-2">
-                          <input
-                            name={`lines[${i}][description]`}
-                            placeholder="optional memo"
-                            className="w-full rounded border border-[var(--line)] bg-[var(--bg)] px-2 py-1.5 text-xs"
-                          />
-                        </td>
-                        <td className="px-3 py-2">
-                          <input
-                            name={`lines[${i}][debit]`}
-                            type="number"
-                            min="0"
-                            step="1"
-                            placeholder="0"
-                            className="w-28 rounded border border-[var(--line)] bg-[var(--bg)] px-2 py-1.5 text-xs text-right"
-                          />
-                        </td>
-                        <td className="px-3 py-2">
-                          <input
-                            name={`lines[${i}][credit]`}
-                            type="number"
-                            min="0"
-                            step="1"
-                            placeholder="0"
-                            className="w-28 rounded border border-[var(--line)] bg-[var(--bg)] px-2 py-1.5 text-xs text-right"
-                          />
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              <p className="mt-2 flex items-start gap-1.5 text-[11px] text-[var(--ink-muted)]">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="mt-0.5 h-3 w-3 shrink-0" aria-hidden><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-                Saved as <strong>Draft</strong>. Entry is rejected server-side if Σ Debit ≠ Σ Credit.
-                Post manually after review.
-              </p>
-            </div>
-
-            <div className="flex justify-end">
-              <button
-                type="submit"
-                className="btn-premium rounded-lg px-5 py-2 text-sm font-semibold"
-              >
-                Save as Draft
-              </button>
-            </div>
-          </form>
+          <NewJournalEntryForm accounts={accounts} createEntry={createEntry} />
         </details>
       )}
 
