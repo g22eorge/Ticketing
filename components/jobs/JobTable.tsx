@@ -363,13 +363,10 @@ export function JobTable({
             );
           })}
 
-        {/* Mobile pagination */}
-        {hasPagination && (totalPages ?? 0) > 1 ? (
-          <div className="flex items-center justify-between border-t border-[var(--line)] px-4 py-3">
-            <span className="text-xs text-[var(--ink-muted)]">
-              <span className="font-semibold text-[var(--ink)]">{pageStart}–{pageEnd}</span> of {total}
-            </span>
-            {paginationBar}
+        {/* Mobile: show total count only, no pagination (continuous scroll) */}
+        {hasPagination && total != null && total > 0 ? (
+          <div className="border-t border-[var(--line)] px-4 py-3 text-center">
+            <span className="text-[11px] text-[var(--ink-muted)]">{total} repair{total !== 1 ? "s" : ""}</span>
           </div>
         ) : null}
       </div>

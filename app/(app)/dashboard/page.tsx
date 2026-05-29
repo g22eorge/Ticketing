@@ -957,6 +957,7 @@ export default async function DashboardPage({
       receivedMtdCount,
       cashCollectedToday,
       expensesToday,
+      posSalesToday,
       overdueJobsCount,
       jobsNoEtaCount,
       jobsNoClientUpdateCount,
@@ -1030,6 +1031,8 @@ export default async function DashboardPage({
 
       prisma.payment.findMany({ where: { ...orgFilter, receivedAt: { gte: todayStart } }, select: { amount: true } }).catch(() => [] as { amount: number }[]),
       prisma.expense.findMany({ where: { orgId: orgFilter.orgId ?? undefined, paidAt: { gte: todayStart } }, select: { amount: true } }).catch(() => [] as { amount: number }[]),
+      // POS sales today — for mobile dashboard combined revenue
+      prisma.sale.findMany({ where: { ...orgFilter, status: "PAID", paidAt: { gte: todayStart } }, select: { totalAmount: true } }).catch(() => [] as { totalAmount: number }[]),
       prisma.job.count({ where: { ...orgFilter, status: { in: filterSupportedJobStatuses(["RECEIVED", "DIAGNOSING", "REFERRED", "IN_EXTERNAL_REPAIR", "AWAITING_APPROVAL", "IN_REPAIR", "READY_FOR_PICKUP"]) as JobStatus[] }, receivedAt: { lt: new Date(today.getTime() - 3 * 86_400_000) } } }).catch(() => 0),
       prisma.job.count({ where: { ...orgFilter, status: { in: filterSupportedJobStatuses(["RECEIVED", "DIAGNOSING", "REFERRED", "IN_EXTERNAL_REPAIR", "AWAITING_APPROVAL", "IN_REPAIR", "READY_FOR_PICKUP"]) as JobStatus[] }, repairTimeline: null } }).catch(() => 0),
       prisma.job.count({ where: { ...orgFilter, status: { in: filterSupportedJobStatuses(["DIAGNOSING", "REFERRED", "IN_EXTERNAL_REPAIR", "AWAITING_APPROVAL", "IN_REPAIR", "READY_FOR_PICKUP"]) as JobStatus[] }, lastClientContactAt: null } }).catch(() => 0),
@@ -1097,6 +1100,8 @@ export default async function DashboardPage({
     const outstandingValue  = outstandingInvoices.reduce((s, i) => s + i.totalAmount, 0);
     const expensesValue     = expensesMtd.reduce((s, e) => s + e.amount, 0);
     const cashTodayValue    = cashCollectedToday.reduce((s, p) => s + p.amount, 0);
+    const salesTodayValue   = posSalesToday.reduce((s, x) => s + x.totalAmount, 0);
+    const revenueTodayValue = cashTodayValue + salesTodayValue;
     const expensesTodayValue = expensesToday.reduce((s, e) => s + e.amount, 0);
     const payablesValue     = (payablesAgg._sum.totalAmount ?? 0) - (payablesAgg._sum.paidAmount ?? 0);
     const technicianPayoutsDue = payoutDueJobs.reduce((sum, job) => sum + resolveTechCost(job.externalTechFee, job.externalTechBill), 0);
@@ -1193,6 +1198,8 @@ export default async function DashboardPage({
           completedUnpaidCount={completedUnpaidCount}
           cashTodayValue={cashTodayValue}
           cashYesterdayValue={cashYesterdayValue}
+          salesTodayValue={salesTodayValue}
+          revenueTodayValue={revenueTodayValue}
           outstandingValue={outstandingValue}
           revenueMtd={totalMtd}
           currency={currency}

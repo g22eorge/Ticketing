@@ -101,20 +101,30 @@ export default async function FinancePage() {
         </div>
       </div>
 
+      {/* ── Mobile stats strip ───────────────────────────────────── */}
+      <div className="grid grid-cols-2 gap-2.5 lg:hidden">
+        {STATS.map((s) => (
+          <div key={s.label} className="rounded-2xl bg-[var(--panel)] px-4 py-3.5">
+            <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">{s.label}</p>
+            <p className={`mt-1 text-[20px] font-black leading-none ${s.color}`}>{s.value}</p>
+          </div>
+        ))}
+      </div>
+
       {/* ── Quick actions grid ────────────────────────────────────── */}
-      {/* Mobile: 2 columns of larger tiles */}
+      {/* Mobile: 2 columns, icon row on left + label */}
       <section>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:hidden">
+        <div className="grid grid-cols-2 gap-2.5 lg:hidden">
           {QUICK_ACTIONS.map((item) => (
             <Link
               key={item.href}
               href={item.href}
-              className="flex items-center gap-3 rounded-2xl border border-[var(--line)] bg-[var(--panel)] px-4 py-4 transition-all active:scale-[0.97] active:bg-[var(--panel-strong)]"
+              className="flex items-center gap-3 rounded-2xl bg-[var(--panel)] px-4 py-3.5 transition-all active:opacity-80"
             >
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[var(--panel-strong)]">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--panel-strong)]">
                 <NavIcon d={item.icon} color={item.color} />
               </span>
-              <span className="text-[13px] font-semibold leading-tight text-[var(--ink)]">{item.label}</span>
+              <span className="text-[13px] font-semibold leading-snug text-[var(--ink)]">{item.label}</span>
             </Link>
           ))}
         </div>

@@ -100,7 +100,8 @@ export default async function JobsPage({
   const pricingFilter = filters.pricing === "needs" || filters.pricing === "priced" ? filters.pricing : "";
   const payoutFilter = filters.payout === "due" || filters.payout === "paid" ? filters.payout : "";
   const page = Math.max(Number(filters.page ?? "1") || 1, 1);
-  const pageSize = 20;
+  // Mobile gets a large batch for continuous scroll; desktop uses pages
+  const pageSize = 60;
   const sort = filters.sort === "job_number_desc" ? "job_number_desc" : "received_desc";
   const orderBy = sort === "job_number_desc" ? { jobNumber: "desc" as const } : { receivedAt: "desc" as const };
   const internalCanSearchAll =
@@ -416,17 +417,9 @@ export default async function JobsPage({
   return (
     <div className="space-y-4 pb-[calc(env(safe-area-inset-bottom)+5.25rem)] sm:pb-4">
 
-      {/* ── FAB: New Job — mobile only ── */}
+      {/* ── New Job shortcut — desktop only; mobile uses Quick Actions on home ── */}
       {can.createJob(user) ? (
-        <Link
-          href="/jobs/new"
-          className="jobs-fab fixed bottom-[calc(env(safe-area-inset-bottom)+3.25rem)] right-4 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-[var(--accent)] shadow-[0_4px_20px_rgba(212,175,55,0.45)] transition-transform sm:hidden"
-          aria-label="New Job"
-        >
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="black" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-          </svg>
-        </Link>
+        <Link href="/jobs/new" className="hidden" aria-label="New Job" />
       ) : null}
 
       {/* ═══ MOBILE header + chips ═══════════════════════════════════════ */}
