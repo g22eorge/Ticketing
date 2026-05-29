@@ -63,11 +63,13 @@ export default async function DocumentTemplatesPage() {
 
   const settings = await getDocumentBrandingSettings(orgId);
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const s = settings as any;
   const currentKeys: Record<DocKind, TemplateKey> = {
-    INVOICE:   resolveTemplateKey({ kind: "INVOICE",   requestedKey: (settings as Record<string, string>).invoiceTemplateKey,   plan }),
-    QUOTATION: resolveTemplateKey({ kind: "QUOTATION", requestedKey: (settings as Record<string, string>).quotationTemplateKey, plan }),
-    JOB_CARD:  resolveTemplateKey({ kind: "JOB_CARD",  requestedKey: (settings as Record<string, string>).jobCardTemplateKey,   plan }),
-    RECEIPT:   resolveTemplateKey({ kind: "RECEIPT",   requestedKey: (settings as Record<string, string>).receiptTemplateKey,   plan }),
+    INVOICE:   resolveTemplateKey({ kind: "INVOICE",   requestedKey: s.invoiceTemplateKey,   plan }),
+    QUOTATION: resolveTemplateKey({ kind: "QUOTATION", requestedKey: s.quotationTemplateKey, plan }),
+    JOB_CARD:  resolveTemplateKey({ kind: "JOB_CARD",  requestedKey: s.jobCardTemplateKey,   plan }),
+    RECEIPT:   resolveTemplateKey({ kind: "RECEIPT",   requestedKey: s.receiptTemplateKey,   plan }),
   };
 
   // ── Server action ───────────────────────────────────────────────────────────
@@ -210,11 +212,23 @@ export default async function DocumentTemplatesPage() {
                         </span>
                       </div>
 
-                      {/* Action or lock */}
-                      {isAllowed ? (
-                        <div className="border-t border-[var(--line)] px-3 py-2">
-                          {isCurrent ? (
-                            <span className="block text-center text-[11px] text-[var(--ink-muted)]">Active</span>
+                      {/* Action row */}
+                      <div className="border-t border-[var(--line)] px-3 py-2 space-y-1.5">
+                        {/* Preview — always available */}
+                        <a
+                          href={`/api/templates/preview?key=${t.key}&kind=${kind}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="flex w-full items-center justify-center gap-1 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-1 text-[11px] font-medium text-[var(--ink-muted)] transition hover:border-[var(--accent)]/40 hover:text-[var(--ink)]"
+                        >
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                          Preview PDF
+                        </a>
+
+                        {/* Set as default / locked / active */}
+                        {isAllowed ? (
+                          isCurrent ? (
+                            <span className="block text-center text-[11px] text-[var(--ink-muted)]">✓ Active</span>
                           ) : (
                             <form action={setTemplateAction}>
                               <input type="hidden" name="key"  value={t.key} />
@@ -226,15 +240,13 @@ export default async function DocumentTemplatesPage() {
                                 Set as default
                               </button>
                             </form>
-                          )}
-                        </div>
-                      ) : (
-                        <div className="border-t border-[var(--line)] px-3 py-2">
+                          )
+                        ) : (
                           <p className="text-center text-[11px] text-[var(--ink-muted)]">
                             Requires {planLabel(t.minPlan)}
                           </p>
-                        </div>
-                      )}
+                        )}
+                      </div>
 
                       {/* Lock overlay for locked templates */}
                       {!isAllowed ? (
