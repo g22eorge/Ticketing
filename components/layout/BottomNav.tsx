@@ -52,6 +52,8 @@ const fieldIcon       = <Icon d={["M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1
 const complaintsIcon  = <Icon d={["M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z","M12 9v4","M12 17h.01"]} />;
 const salesIcon       = <Icon d={["M22 12h-4l-3 9L9 3l-3 9H2"]} />;
 const aiIcon          = <Icon d={["M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 0 2h-1v1a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-1H1a1 1 0 0 1 0-2h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2z","M7.5 13.5c.83 0 1.5-.67 1.5-1.5S8.33 10.5 7.5 10.5 6 11.17 6 12s.67 1.5 1.5 1.5z","M16.5 13.5c.83 0 1.5-.67 1.5-1.5s-.67-1.5-1.5-1.5S15 11.17 15 12s.67 1.5 1.5 1.5z"]} />;
+const financeNavIcon  = <Icon d={["M12 2v20","M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"]} />;
+const activityNavIcon = <Icon d={["M22 12h-4l-3 9L9 3l-3 9H2"]} />;
 const targetsIcon     = <Icon d="" size={22}><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="5" /><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/></Icon>;
 const recurringIcon   = <Icon d={["M17 1l4 4-4 4","M3 11V9a4 4 0 0 1 4-4h14","M7 23l-4-4 4-4","M21 13v2a4 4 0 0 1-4 4H3"]} />;
 const taxIcon         = <Icon d={["M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z","M14 2v6h6","M9 13l6 0","M9 9h1","M9 17h1","M14 9h1","M14 17h1"]} />;
@@ -85,12 +87,15 @@ const ITEMS = {
   field:          { href: "/field",                     label: "Field",        icon: fieldIcon     },
   complaints:     { href: "/complaints",                label: "Complaints",   icon: complaintsIcon},
   targets:        { href: "/targets",                   label: "Targets",      icon: targetsIcon   },
+  finance:        { href: "/finance",                   label: "Finance",      icon: financeNavIcon  },
+  activity:       { href: "/reports",                   label: "Activity",     icon: activityNavIcon },
 } satisfies Record<string, NavItem>;
 
 /* ───────────────────────── module guard ──────────────────────────────── */
 const hrefModule: Record<string, string> = {
   "/jobs": "JOBS", "/intake": "JOBS", "/technicians": "JOBS",
   "/clients": "JOBS", "/payout-followups": "JOBS",
+  "/finance": "INVOICING",
   "/complaints": "COMPLAINTS", "/field": "FIELD",
   "/inventory": "INVENTORY", "/pos": "POS",
   "/documents/job-cards": "INVOICING", "/documents/quotations": "INVOICING",
@@ -107,6 +112,10 @@ function getPrimaryItems(role: Role, permissions: string[], mods?: Set<string>):
   const ok   = (href: string) => !mods || !hrefModule[href] || mods.has(hrefModule[href]);
   if (role === "TECHNICIAN_EXTERNAL" || !can.viewIntake(perm)) {
     return [ITEMS.dashboard, ITEMS.jobs, ITEMS.board].filter((i) => ok(i.href));
+  }
+  // ADMIN / OPS / MANAGER get a 4-tab premium bar: Home | Repairs | Finance | Activity
+  if (["ADMIN", "OPS", "MANAGER"].includes(role)) {
+    return [ITEMS.dashboard, ITEMS.jobs, ITEMS.finance, ITEMS.activity].filter((i) => ok(i.href));
   }
   return [ITEMS.dashboard, ITEMS.intake, ITEMS.jobs].filter((i) => ok(i.href));
 }
@@ -234,10 +243,10 @@ export function BottomNav({
                 className="flex min-w-0 flex-1 flex-col items-center gap-0.5"
                 aria-current={active ? "page" : undefined}
               >
-                {/* Icon container */}
-                <span className={`relative flex h-9 w-9 items-center justify-center rounded-2xl transition-all duration-200 ${
+                {/* Icon — no pill background, just color shift */}
+                <span className={`relative flex h-9 w-9 items-center justify-center transition-all duration-200 ${
                   active
-                    ? "bg-[var(--accent)]/15 text-[var(--accent)]"
+                    ? "text-[var(--accent)]"
                     : "text-[var(--ink-muted)] hover:text-[var(--ink)]"
                 }`}>
                   {item.icon}
@@ -255,8 +264,8 @@ export function BottomNav({
                 }`}>
                   {item.label}
                 </span>
-                {/* Active underline pip */}
-                <span className={`mt-0.5 h-0.5 w-4 rounded-full transition-all duration-200 ${
+                {/* Active gold underline dot */}
+                <span className={`mt-0.5 h-0.5 w-5 rounded-full transition-all duration-200 ${
                   active ? "bg-[var(--accent)]" : "bg-transparent"
                 }`} />
               </Link>
@@ -272,9 +281,9 @@ export function BottomNav({
               aria-expanded={open}
               aria-label="More navigation"
             >
-              <span className={`flex h-9 w-9 items-center justify-center rounded-2xl transition-all duration-200 ${
+              <span className={`flex h-9 w-9 items-center justify-center transition-all duration-200 ${
                 anyExtraActive
-                  ? "bg-[var(--accent)]/15 text-[var(--accent)]"
+                  ? "text-[var(--accent)]"
                   : "text-[var(--ink-muted)] hover:text-[var(--ink)]"
               }`}>
                 {moreIcon}

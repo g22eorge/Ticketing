@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 
 import { MonthSelectForm } from "@/components/shared/MonthSelectForm";
 import { TechnicianBarChart } from "@/components/reports/ReportsCharts";
+import { MobileActivityFeed } from "@/components/reports/MobileActivityFeed";
 import { getClientBill, getExternalTechBill, resolveTechCost } from "@/lib/billing";
 import { formatMoney, formatMoneyCompact, toBaseAmount } from "@/lib/currency";
 import { formatEATMonthLabel } from "@/lib/date-eat";
@@ -621,6 +622,9 @@ export default async function ReportsPage({
 
   return (
     <div className="space-y-4">
+      {/* ── MOBILE ACTIVITY FEED (lg:hidden) ───────────────────────────────── */}
+      <MobileActivityFeed orgId={orgId} />
+
       {/* ── HEADER ─────────────────────────────────────────────────────────── */}
       <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
         <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
