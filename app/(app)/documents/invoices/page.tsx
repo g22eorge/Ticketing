@@ -487,9 +487,25 @@ export default async function InvoicesPage({
 
   return (
     <section className="space-y-4">
-      {/* ── HEADER ─────────────────────────────────────────────────────────── */}
+      {/* ── Mobile native header (Invoices is now a primary nav tab) ────────── */}
+      <div className="sm:hidden -mx-4 px-4 pb-1">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-[18px] font-black tracking-tight text-[var(--ink)]">Invoices</h2>
+            <p className="text-[11px] text-[var(--ink-muted)]">Sales · Repairs · Corporate</p>
+          </div>
+          <div className="flex gap-1.5">
+            <Link href="/jobs/new" className="inline-flex items-center rounded-xl border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-[12px] font-semibold text-[var(--ink)]">
+              + New Job
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      {/* ── HEADER ────────────────────────────────────────────────────────── */}
       <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)]">
-        <div className="flex items-center justify-between gap-2 border-b border-[var(--line)] px-4 py-2.5">
+        {/* Desktop title row — mobile uses the native header above */}
+        <div className="hidden sm:flex items-center justify-between gap-2 border-b border-[var(--line)] px-4 py-2.5">
           <div>
             <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Documents</p>
             <p className="text-[13px] font-bold text-[var(--ink)]">Invoices</p>

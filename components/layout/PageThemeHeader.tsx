@@ -96,6 +96,8 @@ const ROOT_PATHS = new Set([
   "/inventory", "/pos", "/clients", "/sales", "/technicians",
   "/intake", "/payout-followups", "/ai-insights", "/settings",
   "/field", "/complaints", "/targets",
+  // Bottom-nav primary tabs — each has its own native header on mobile
+  "/documents/invoices",
 ]);
 
 function isSubPage(pathname: string) {

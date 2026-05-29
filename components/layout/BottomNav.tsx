@@ -84,6 +84,7 @@ const ITEMS = {
   field:          { href: "/field",                     label: "Field",        icon: fieldIcon     },
   complaints:     { href: "/complaints",                label: "Complaints",   icon: complaintsIcon},
   targets:        { href: "/targets",                   label: "Targets",      icon: targetsIcon   },
+  invoices:       { href: "/documents/invoices",         label: "Invoices",     icon: invoiceIcon     },
   finance:        { href: "/finance",                   label: "Finance",      icon: financeNavIcon  },
   activity:       { href: "/reports",                   label: "Activity",     icon: activityNavIcon },
 } satisfies Record<string, NavItem>;
@@ -112,7 +113,7 @@ function getPrimaryItems(role: Role, permissions: string[], mods?: Set<string>):
   }
   // ADMIN / OPS / MANAGER get a 4-tab premium bar: Home | Repairs | Finance | Activity
   if (["ADMIN", "OPS", "MANAGER"].includes(role)) {
-    return [ITEMS.dashboard, ITEMS.jobs, ITEMS.finance, ITEMS.activity].filter((i) => ok(i.href));
+    return [ITEMS.dashboard, ITEMS.jobs, ITEMS.invoices, ITEMS.activity].filter((i) => ok(i.href));
   }
   return [ITEMS.dashboard, ITEMS.intake, ITEMS.jobs].filter((i) => ok(i.href));
 }
