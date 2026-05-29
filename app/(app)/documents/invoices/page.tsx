@@ -42,6 +42,12 @@ export default async function InvoicesPage({
     redirect("/dashboard");
   }
 
+  // Org base currency for the Collect Revenue section totals
+  const orgRow = user.orgId
+    ? await prisma.organization.findUnique({ where: { id: user.orgId }, select: { baseCurrency: true } }).catch(() => null)
+    : null;
+  const orgCurrency = normalizeCurrency(orgRow?.baseCurrency, "UGX");
+
   const params = await searchParams;
   const typeFilter = params.type ?? "all";
   const statusFilter = params.status ?? "all";
@@ -413,11 +419,22 @@ export default async function InvoicesPage({
   const readyJobs = await db.job
     .findMany({
       where: { status: { in: ["READY_FOR_PICKUP", "COMPLETED", "CLOSED"] }, invoiceIssuedAt: null },
-      orderBy: { updatedAt: "desc" },
-      take: 50,
-      select: { id: true, jobNumber: true },
+      orderBy: { completedAt: "asc" }, // oldest first — most urgent to collect
+      take: 20,
+      select: {
+        id: true,
+        jobNumber: true,
+        status: true,
+        brand: true,
+        model: true,
+        clientBill: true,
+        completedAt: true,
+        receivedAt: true,
+        client: { select: { fullName: true, phone: true } },
+      },
     })
     .catch(() => []);
+  const readyJobsTotal = readyJobs.reduce((s, j) => s + (j.clientBill ?? 0), 0);
 
   const clients = await db.client
     .findMany({
@@ -818,25 +835,79 @@ export default async function InvoicesPage({
         </details>
       )}
 
-      {/* ── REPAIR JOBS READY TO INVOICE ──────────────────────────────────── */}
+      {/* ── COLLECT REVENUE ──────────────────────────────────────────────── */}
       {readyJobs.length > 0 && (
-        <div className="rounded-xl border border-[var(--accent)]/20 bg-[var(--accent)]/5 p-4">
-          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--accent)]">
-            Repair Jobs Ready to Invoice
-          </p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            {readyJobs.slice(0, 12).map((job) => (
-              <a
-                key={job.id}
-                href={`/api/jobs/${job.id}/invoice`}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--accent)]/30 bg-[var(--panel)] px-3 py-1.5 text-xs font-semibold text-[var(--ink)] transition hover:border-[var(--accent)]/60 hover:text-[var(--accent)]"
-              >
-                Create Invoice · {job.jobNumber}
-              </a>
-            ))}
+        <div className="overflow-hidden rounded-xl border border-emerald-500/20 bg-[var(--panel)]">
+
+          {/* Header row */}
+          <div className="flex items-center justify-between gap-3 border-b border-emerald-500/15 bg-emerald-500/8 px-4 py-3">
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.16em] text-emerald-600">
+                Collect Revenue
+              </p>
+              <p className="mt-0.5 text-[11px] text-[var(--ink-muted)]">
+                {readyJobs.length} repair{readyJobs.length !== 1 ? "s" : ""} completed but not yet invoiced
+              </p>
+            </div>
+            <div className="text-right shrink-0">
+              <p className="text-[18px] font-black leading-none text-emerald-600">
+                {formatMoneyCompact(readyJobsTotal, orgCurrency)}
+              </p>
+              <p className="mt-0.5 text-[10px] text-[var(--ink-muted)]">potential</p>
+            </div>
           </div>
+
+          {/* Job rows */}
+          <div className="divide-y divide-[var(--line)]/60">
+            {readyJobs.map((job) => {
+              const device = [job.brand, job.model].filter(Boolean).join(" ") || "Device";
+              const doneAt  = job.completedAt ?? job.receivedAt;
+              const ageDays = Math.floor((Date.now() - new Date(doneAt).getTime()) / 86_400_000);
+              const isStale = ageDays >= 3;
+              return (
+                <div key={job.id} className="flex items-center gap-3 px-4 py-3">
+                  {/* Client + device */}
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-[13px] font-semibold text-[var(--ink)]">
+                      {job.client?.fullName ?? "Client"}
+                    </p>
+                    <p className="mt-0.5 text-[11px] text-[var(--ink-muted)]">
+                      {device} · {job.jobNumber}
+                    </p>
+                  </div>
+
+                  {/* Age indicator */}
+                  <div className="shrink-0 text-right">
+                    <span className={`text-[11px] font-semibold ${isStale ? "text-amber-500" : "text-[var(--ink-muted)]"}`}>
+                      {ageDays === 0 ? "Today" : `${ageDays}d ago`}
+                    </span>
+                    {job.clientBill ? (
+                      <p className="mt-0.5 text-[12px] font-black text-emerald-600">
+                        {formatMoneyCompact(job.clientBill, orgCurrency)}
+                      </p>
+                    ) : null}
+                  </div>
+
+                  {/* Invoice action */}
+                  <a
+                    href={`/api/jobs/${job.id}/invoice`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="shrink-0 inline-flex items-center gap-1 rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-2.5 py-1.5 text-[11px] font-bold text-emerald-700 transition hover:bg-emerald-500/20"
+                  >
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                    Invoice
+                  </a>
+                </div>
+              );
+            })}
+          </div>
+
+          {readyJobs.length >= 20 && (
+            <div className="border-t border-[var(--line)]/60 px-4 py-2.5 text-center">
+              <p className="text-[11px] text-[var(--ink-muted)]">Showing 20 most urgent — visit <Link href="/jobs" className="text-[var(--accent)] hover:underline">/jobs</Link> for all</p>
+            </div>
+          )}
         </div>
       )}
 
