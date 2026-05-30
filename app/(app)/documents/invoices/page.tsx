@@ -504,76 +504,61 @@ export default async function InvoicesPage({
 
   return (
     <section className="space-y-4">
-      {/* ── Mobile native header ──────────────────────────────────────────── */}
-      <div className="sm:hidden -mx-4 px-4 pb-2">
+      {/* ══ MOBILE ONLY — clean, focused header ══════════════════════════════ */}
+      <div className="sm:hidden -mx-4 px-4">
+
+        {/* Title row */}
         <div className="flex items-center justify-between gap-3 mb-3">
-          <div>
-            <h2 className="text-[18px] font-black tracking-tight text-[var(--ink)]">Invoices</h2>
-            <p className="text-[11px] text-[var(--ink-muted)]">Sales · Repairs · Corporate</p>
-          </div>
-          {/* Mobile: one focused action — add standalone invoice */}
-          <a href="#create-invoice"
-            className="inline-flex items-center gap-1 rounded-xl bg-[var(--accent)] px-3 py-2 text-[12px] font-bold text-black">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            Invoice
-          </a>
+          <h2 className="text-[18px] font-black tracking-tight text-[var(--ink)]">Invoices</h2>
+          {/* Minimal search */}
+          <form method="GET" className="flex-1 max-w-[180px]">
+            <input
+              name="q"
+              defaultValue={q}
+              placeholder="Search…"
+              className="w-full rounded-xl border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-[13px] text-[var(--ink)] outline-none focus:border-[var(--accent)]/50"
+            />
+          </form>
         </div>
-        {/* Mobile status filter chips */}
-        <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none]">
+
+        {/* Status chips — one tap filtering */}
+        <div className="flex gap-2 overflow-x-auto pb-3 [scrollbar-width:none]">
           {[
-            { label: "All", value: "all" },
-            { label: "Unpaid", value: "ISSUED" },
-            { label: "Paid", value: "PAID" },
-            { label: "Overdue", value: "overdue" },
-            { label: "Draft", value: "DRAFT" },
-          ].map((chip) => {
-            const isActive = chip.value === "overdue"
-              ? agingFilter !== "all"
-              : chip.value === "all"
-                ? statusFilter === "all" && agingFilter === "all"
-                : statusFilter === chip.value;
-            const href = chip.value === "overdue"
-              ? `/documents/invoices?aging=${agingFilter !== "all" ? "all" : "1-30"}`
-              : `/documents/invoices?status=${chip.value === "all" ? "" : chip.value}`.replace("?status=", chip.value === "all" ? "" : "?status=");
-            return (
-              <Link key={chip.value} href={chip.value === "all" ? "/documents/invoices" : `/documents/invoices?${chip.value === "overdue" ? "aging=1-30" : `status=${chip.value}`}`}
-                className={`shrink-0 rounded-full px-4 py-1.5 text-[12px] font-bold transition ${
-                  isActive ? "bg-[var(--accent)] text-black" : "border border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]"
-                }`}>
-                {chip.label}
-              </Link>
-            );
-          })}
+            { label: `All${filtered.length > 0 ? ` ${filtered.length}` : ""}`, href: "/documents/invoices", active: statusFilter === "all" && agingFilter === "all" },
+            { label: "Unpaid",  href: "/documents/invoices?status=ISSUED",   active: statusFilter === "ISSUED" },
+            { label: "Paid",    href: "/documents/invoices?status=PAID",     active: statusFilter === "PAID" },
+            { label: "Overdue", href: "/documents/invoices?aging=1-30",      active: agingFilter !== "all" },
+            { label: "Draft",   href: "/documents/invoices?status=DRAFT",    active: statusFilter === "DRAFT" },
+          ].map((chip) => (
+            <Link key={chip.href} href={chip.href}
+              className={`shrink-0 rounded-full px-4 py-1.5 text-[12px] font-bold transition ${
+                chip.active ? "bg-[var(--accent)] text-black" : "border border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]"
+              }`}>
+              {chip.label}
+            </Link>
+          ))}
         </div>
       </div>
+      {/* ══ END MOBILE ONLY ════════════════════════════════════════════════════ */}
 
-      {/* ── HEADER ────────────────────────────────────────────────────────── */}
-      <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)]">
-        {/* Desktop title row — mobile uses the native header above */}
-        <div className="hidden sm:flex items-center justify-between gap-2 border-b border-[var(--line)] px-4 py-2.5">
+      {/* ── DESKTOP ONLY: full header panel ──────────────────────────────── */}
+      <div className="panel-shadow hidden rounded-xl border border-[var(--line)] bg-[var(--panel)] sm:block">
+        {/* Desktop title + actions */}
+        <div className="flex items-center justify-between gap-2 border-b border-[var(--line)] px-4 py-2.5">
           <div>
             <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Documents</p>
             <p className="text-[13px] font-bold text-[var(--ink)]">Invoices</p>
           </div>
           <div className="flex gap-2">
-            <Link
-              href="/jobs/new"
-              className="btn-premium-secondary rounded-lg px-3 py-1.5 text-[12px] font-medium"
-            >
-              New Job
-            </Link>
-            <Link
-              href={`/api/reports/export?type=invoices&month=${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`}
-              className="btn-premium-secondary rounded-lg px-3 py-1.5 text-[12px] font-medium"
-            >
+            <Link href={`/api/reports/export?type=invoices&month=${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`}
+              className="btn-premium-secondary rounded-lg px-3 py-1.5 text-[12px] font-medium">
               ↓ Export CSV
             </Link>
-            {/* Standalone invoice (non-job) OR scroll to the create form below */}
             <a href="#create-invoice" className="btn-premium rounded-lg px-3 py-1.5 text-[12px]">+ New Invoice</a>
           </div>
         </div>
 
-        {/* Receivables summary */}
+        {/* Receivables summary (desktop only) */}
         <div className="grid grid-cols-2 divide-x divide-y divide-[var(--line)] sm:grid-cols-4 sm:divide-y-0">
           <div className="px-4 py-3">
             <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">Total Billed</p>
@@ -674,9 +659,9 @@ export default async function InvoicesPage({
         })}
       </div>
 
-      {/* ── CRITICAL OVERDUE ALERTS ────────────────────────────────────────── */}
+      {/* ── CRITICAL OVERDUE ALERTS (desktop only — mobile sees Collect Revenue) ── */}
       {criticalOverdue.length > 0 && (
-        <div className="rounded-xl border border-red-300/40 bg-red-500/5 p-4">
+        <div className="hidden sm:block rounded-xl border border-red-300/40 bg-red-500/5 p-4">
           <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.14em] text-red-700">
             Overdue — Needs Attention
           </p>
@@ -764,9 +749,9 @@ export default async function InvoicesPage({
         </button>
       </form>
 
-      {/* ── STANDALONE INVOICE CREATION ─────────────────────────────────────── */}
+      {/* ── STANDALONE INVOICE CREATION (desktop only) ───────────────────────── */}
       {["ADMIN", "OPS"].includes(user.role) && clients.length > 0 && (
-        <details id="create-invoice" className="group rounded-xl border border-[var(--line)] bg-[var(--panel)]">
+        <details id="create-invoice" className="group hidden rounded-xl border border-[var(--line)] bg-[var(--panel)] sm:block">
           <summary className="cursor-pointer select-none px-4 py-2.5 text-[12px] font-semibold text-[var(--ink)] group-open:border-b group-open:border-[var(--line)]">
             + Create Invoice (Service / Contract / Merchandise)
           </summary>
