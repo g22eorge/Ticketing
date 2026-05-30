@@ -1797,18 +1797,18 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
                 </label>
               ) : null}
               {canManageFinancials ? (
-                <div className="grid grid-cols-3 rounded-xl border border-[var(--line)] bg-[var(--panel)] text-center">
-                  <div className="px-2 py-2">
-                    <p className="text-[9px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">Subtotal</p>
-                    <p className="mt-0.5 text-xs font-bold text-[var(--ink)] tabular-nums">{formatBillAmount(repairCostBeforeVat)}</p>
+                <div className="divide-y divide-[var(--line)] rounded-xl border border-[var(--line)] bg-[var(--panel)]">
+                  <div className="flex items-center justify-between px-3 py-2">
+                    <p className="text-xs text-[var(--ink-muted)]">Subtotal</p>
+                    <p className="text-xs font-bold tabular-nums text-[var(--ink)]">{formatBillAmount(repairCostBeforeVat)}</p>
                   </div>
-                  <div className="border-x border-[var(--line)] px-2 py-2">
-                    <p className="text-[9px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">VAT 18%</p>
-                    <p className="mt-0.5 text-xs font-bold text-[var(--ink)] tabular-nums">{formatBillAmount(vatAmount)}</p>
+                  <div className="flex items-center justify-between px-3 py-2">
+                    <p className="text-xs text-[var(--ink-muted)]">VAT (18%)</p>
+                    <p className="text-xs font-bold tabular-nums text-[var(--ink)]">{formatBillAmount(vatAmount)}</p>
                   </div>
-                  <div className="px-2 py-2">
-                    <p className="text-[9px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">Total</p>
-                    <p className="mt-0.5 text-xs font-black text-[var(--accent)] tabular-nums">{formatBillAmount(clientBillValue)}</p>
+                  <div className="flex items-center justify-between px-3 py-2">
+                    <p className="text-xs font-semibold text-[var(--ink)]">Total</p>
+                    <p className="text-sm font-black tabular-nums text-[var(--accent)]">{formatBillAmount(clientBillValue)}</p>
                   </div>
                 </div>
               ) : null}
