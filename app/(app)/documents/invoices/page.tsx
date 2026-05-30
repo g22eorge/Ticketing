@@ -505,51 +505,155 @@ export default async function InvoicesPage({
 
   return (
     <section className="space-y-4">
-      {/* ══ MOBILE ONLY — clean, focused header ══════════════════════════════ */}
-      <div className="lg:hidden -mx-4 px-4">
+      {/* ══════════════════════════════════════════════════════════════════════
+          MOBILE ONLY — premium dark header + context-aware action panel
+          Hidden on desktop (lg:hidden). Desktop panel below takes over.
+          ════════════════════════════════════════════════════════════════════ */}
+      <div className="lg:hidden -mx-4">
 
-        {/* Title row */}
-        <div className="flex items-center gap-2 mb-3">
-          <h2 className="text-[18px] font-black tracking-tight text-[var(--ink)] flex-1">Invoices</h2>
-          {/* New Invoice — passes ?create=1 to auto-open the form below */}
+        {/* ── Top bar: title + New Invoice ── */}
+        <div className="flex items-center justify-between gap-3 px-4 pb-3">
+          <div>
+            <h2 className="text-[20px] font-black tracking-tight text-[var(--ink)]">Invoices</h2>
+            <p className="text-[11px] text-[var(--ink-muted)] mt-0.5">
+              {filtered.length} {statusFilter !== "all" ? statusFilter.toLowerCase() : agingFilter !== "all" ? "overdue" : "total"}
+            </p>
+          </div>
           <Link href="/documents/invoices?create=1#create-invoice"
-            className="inline-flex items-center gap-1 rounded-xl bg-[var(--accent)] px-3 py-2 text-[12px] font-bold text-black shrink-0">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            className="inline-flex items-center gap-1.5 rounded-2xl bg-[var(--accent)] px-4 py-2.5 text-[13px] font-black text-black shadow-[0_4px_16px_rgba(212,175,55,0.3)]">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             New Invoice
           </Link>
-          {/* Minimal search */}
-          <form method="GET" className="shrink-0 w-[120px]">
-            <input
-              name="q"
-              defaultValue={q}
-              placeholder="Search…"
-              className="w-full rounded-xl border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-[13px] text-[var(--ink)] outline-none focus:border-[var(--accent)]/50"
-            />
-          </form>
         </div>
 
-        {/* Status chips — one tap filtering */}
-        <div className="flex gap-2 overflow-x-auto pb-3 [scrollbar-width:none]">
-          {[
-            { label: `All${filtered.length > 0 ? ` ${filtered.length}` : ""}`, href: "/documents/invoices", active: statusFilter === "all" && agingFilter === "all" },
-            { label: "Unpaid",  href: "/documents/invoices?status=ISSUED",   active: statusFilter === "ISSUED" },
-            { label: "Paid",    href: "/documents/invoices?status=PAID",     active: statusFilter === "PAID" },
-            { label: "Overdue", href: "/documents/invoices?aging=1-30",      active: agingFilter !== "all" },
-            { label: "Draft",   href: "/documents/invoices?status=DRAFT",    active: statusFilter === "DRAFT" },
-          ].map((chip) => (
+        {/* ── Status chips ── */}
+        <div className="flex gap-2 overflow-x-auto px-4 pb-3 [scrollbar-width:none]">
+          {([
+            { label: "All",     count: invoices.filter(i=>!i.isVoid).length, href: "/documents/invoices",            active: statusFilter === "all" && agingFilter === "all" },
+            { label: "Unpaid",  count: invoices.filter(i=>!i.isPaid && !i.isVoid && i.status !== "DRAFT").length,     href: "/documents/invoices?status=ISSUED",  active: statusFilter === "ISSUED" },
+            { label: "Paid",    count: invoices.filter(i=>i.isPaid).length,                                           href: "/documents/invoices?status=PAID",    active: statusFilter === "PAID"   },
+            { label: "Overdue", count: invoices.filter(i=>!i.isPaid && !i.isVoid && i.daysOverdue > 0).length,        href: "/documents/invoices?aging=1-30",     active: agingFilter !== "all"     },
+            { label: "Draft",   count: invoices.filter(i=>i.status === "DRAFT").length,                               href: "/documents/invoices?status=DRAFT",   active: statusFilter === "DRAFT"  },
+          ] as const).map((chip) => (
             <Link key={chip.href} href={chip.href}
               className={`shrink-0 rounded-full px-4 py-1.5 text-[12px] font-bold transition ${
-                chip.active ? "bg-[var(--accent)] text-black" : "border border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]"
+                chip.active
+                  ? "bg-[var(--accent)] text-black"
+                  : "border border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]"
               }`}>
-              {chip.label}
+              {chip.label}{chip.count > 0 ? ` ${chip.count}` : ""}
             </Link>
           ))}
         </div>
+
+        {/* ── Context-aware action panel — changes with filter ── */}
+        {(() => {
+          // OVERDUE filter: show overdue invoices with urgency
+          if (agingFilter !== "all") {
+            const overdueInvs = filtered.filter(i => !i.isPaid && !i.isVoid && i.daysOverdue > 0)
+              .sort((a,b) => b.daysOverdue - a.daysOverdue).slice(0, 5);
+            if (overdueInvs.length === 0) return null;
+            const overdueTotal = overdueInvs.reduce((s,i) => s + i.balance, 0);
+            return (
+              <div className="mx-4 mb-3 overflow-hidden rounded-2xl border border-red-500/20 bg-red-500/[0.06]">
+                <div className="flex items-center justify-between px-4 py-3 border-b border-red-500/15">
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-[0.16em] text-red-500">⚠ Overdue</p>
+                    <p className="text-[11px] text-[var(--ink-muted)]">{overdueInvs.length} invoice{overdueInvs.length !== 1 ? "s" : ""} past due</p>
+                  </div>
+                  <p className="text-[16px] font-black text-red-500">{formatMoneyCompact(overdueTotal, orgCurrency)}</p>
+                </div>
+                {overdueInvs.map(inv => {
+                  const client = inv.job?.client?.fullName ?? inv.client?.fullName ?? "Client";
+                  return (
+                    <div key={inv.id} className="flex items-center gap-3 px-4 py-3 border-b border-red-500/10 last:border-0">
+                      <div className="flex-1 min-w-0">
+                        <p className="truncate text-[13px] font-semibold text-[var(--ink)]">{client}</p>
+                        <p className="text-[10px] text-red-500 font-bold">{inv.daysOverdue}d overdue · {inv.invoiceNumber}</p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="text-[13px] font-black text-red-500">{formatMoneyCompact(inv.balance, orgCurrency)}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          }
+
+          // UNPAID filter: show collect payment actions
+          if (statusFilter === "ISSUED") {
+            const unpaidInvs = filtered.filter(i => !i.isPaid && !i.isVoid).slice(0, 5);
+            if (unpaidInvs.length === 0) return null;
+            const unpaidTotal = unpaidInvs.reduce((s,i) => s + i.balance, 0);
+            return (
+              <div className="mx-4 mb-3 overflow-hidden rounded-2xl border border-amber-500/20 bg-amber-500/[0.06]">
+                <div className="flex items-center justify-between px-4 py-3 border-b border-amber-500/15">
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-[0.16em] text-amber-500">Collect Payment</p>
+                    <p className="text-[11px] text-[var(--ink-muted)]">{unpaidInvs.length} awaiting payment</p>
+                  </div>
+                  <p className="text-[16px] font-black text-amber-500">{formatMoneyCompact(unpaidTotal, orgCurrency)}</p>
+                </div>
+                {unpaidInvs.map(inv => {
+                  const client = inv.job?.client?.fullName ?? inv.client?.fullName ?? "Client";
+                  return (
+                    <div key={inv.id} className="flex items-center gap-3 px-4 py-3 border-b border-amber-500/10 last:border-0">
+                      <div className="flex-1 min-w-0">
+                        <p className="truncate text-[13px] font-semibold text-[var(--ink)]">{client}</p>
+                        <p className="text-[10px] text-[var(--ink-muted)]">{inv.invoiceNumber} · {formatMoneyCompact(inv.balance, orgCurrency)}</p>
+                      </div>
+                      <span className="text-[11px] font-bold text-amber-500 shrink-0">Pending →</span>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          }
+
+          // ALL / default filter: Collect Revenue (uninvoiced jobs)
+          if (readyJobs.length > 0 && (statusFilter === "all" || !statusFilter)) {
+            return (
+              <div className="mx-4 mb-3 overflow-hidden rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.06]">
+                <div className="flex items-center justify-between px-4 py-3 border-b border-emerald-500/15">
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-[0.16em] text-emerald-500">Collect Revenue</p>
+                    <p className="text-[11px] text-[var(--ink-muted)]">{readyJobs.length} repair{readyJobs.length !== 1 ? "s" : ""} ready to invoice</p>
+                  </div>
+                  <p className="text-[16px] font-black text-emerald-500">{formatMoneyCompact(readyJobsTotal, orgCurrency)}</p>
+                </div>
+                {readyJobs.slice(0, 4).map(job => {
+                  const ageDays = Math.floor((Date.now() - new Date(job.completedAt ?? job.receivedAt).getTime()) / 86_400_000);
+                  return (
+                    <div key={job.id} className="flex items-center gap-3 px-4 py-3 border-b border-emerald-500/10 last:border-0">
+                      <div className="flex-1 min-w-0">
+                        <p className="truncate text-[13px] font-semibold text-[var(--ink)]">{job.client?.fullName ?? "Client"}</p>
+                        <p className="text-[10px] text-[var(--ink-muted)]">
+                          {[job.brand, job.model].filter(Boolean).join(" ")} · {ageDays === 0 ? "today" : `${ageDays}d ago`}
+                        </p>
+                      </div>
+                      <div className="text-right shrink-0 flex items-center gap-2">
+                        {job.clientBill ? <p className="text-[12px] font-black text-emerald-500">{formatMoneyCompact(job.clientBill, orgCurrency)}</p> : null}
+                        <a href={`/api/jobs/${job.id}/invoice`} target="_blank" rel="noreferrer"
+                          className="rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-2.5 py-1.5 text-[11px] font-bold text-emerald-600 transition hover:bg-emerald-500/20">
+                          Invoice
+                        </a>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          }
+
+          return null;
+        })()}
+
       </div>
-      {/* ══ END MOBILE ONLY ════════════════════════════════════════════════════ */}
+      {/* ══════════════════════════════════════════════════════════════════════ */}
 
       {/* ── DESKTOP ONLY: full header panel ──────────────────────────────── */}
-      <div className="panel-shadow hidden rounded-xl border border-[var(--line)] bg-[var(--panel)] sm:block">
+      <div className="panel-shadow hidden rounded-xl border border-[var(--line)] bg-[var(--panel)] lg:block">
         {/* Desktop title + actions */}
         <div className="flex items-center justify-between gap-2 border-b border-[var(--line)] px-4 py-2.5">
           <div>
@@ -858,9 +962,9 @@ export default async function InvoicesPage({
         </details>
       )}
 
-      {/* ── COLLECT REVENUE ──────────────────────────────────────────────── */}
+      {/* ── COLLECT REVENUE (desktop only — mobile has dynamic version in header) ── */}
       {readyJobs.length > 0 && (
-        <div className="overflow-hidden rounded-xl border border-emerald-500/20 bg-[var(--panel)]">
+        <div className="hidden lg:block overflow-hidden rounded-xl border border-emerald-500/20 bg-[var(--panel)]">
 
           {/* Header row */}
           <div className="flex items-center justify-between gap-3 border-b border-emerald-500/15 bg-emerald-500/8 px-4 py-3">
