@@ -140,7 +140,7 @@ export default async function JobCardsPage({
       </div>
 
       {/* Header bar */}
-      <div className="panel-shadow flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-2.5">
+      <div className="panel-shadow hidden sm:flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-2.5">
         <div>
           <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Documents</p>
           <p className="text-[13px] font-bold text-[var(--ink)]">
@@ -154,7 +154,7 @@ export default async function JobCardsPage({
       </div>
 
       {/* Search + filter */}
-      <form method="GET" className="flex flex-wrap gap-2">
+      <form method="GET" className="hidden sm:flex flex-wrap gap-2">
         <input
           name="q"
           defaultValue={q ?? ""}

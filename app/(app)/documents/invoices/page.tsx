@@ -504,18 +504,46 @@ export default async function InvoicesPage({
 
   return (
     <section className="space-y-4">
-      {/* ── Mobile native header (Invoices is now a primary nav tab) ────────── */}
-      <div className="sm:hidden -mx-4 px-4 pb-1">
-        <div className="flex items-center justify-between gap-3">
+      {/* ── Mobile native header ──────────────────────────────────────────── */}
+      <div className="sm:hidden -mx-4 px-4 pb-2">
+        <div className="flex items-center justify-between gap-3 mb-3">
           <div>
             <h2 className="text-[18px] font-black tracking-tight text-[var(--ink)]">Invoices</h2>
             <p className="text-[11px] text-[var(--ink-muted)]">Sales · Repairs · Corporate</p>
           </div>
-          <div className="flex gap-1.5">
-            <Link href="/jobs/new" className="inline-flex items-center rounded-xl border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-[12px] font-semibold text-[var(--ink)]">
-              + New Job
-            </Link>
-          </div>
+          {/* Mobile: one focused action — add standalone invoice */}
+          <a href="#create-invoice"
+            className="inline-flex items-center gap-1 rounded-xl bg-[var(--accent)] px-3 py-2 text-[12px] font-bold text-black">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Invoice
+          </a>
+        </div>
+        {/* Mobile status filter chips */}
+        <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none]">
+          {[
+            { label: "All", value: "all" },
+            { label: "Unpaid", value: "ISSUED" },
+            { label: "Paid", value: "PAID" },
+            { label: "Overdue", value: "overdue" },
+            { label: "Draft", value: "DRAFT" },
+          ].map((chip) => {
+            const isActive = chip.value === "overdue"
+              ? agingFilter !== "all"
+              : chip.value === "all"
+                ? statusFilter === "all" && agingFilter === "all"
+                : statusFilter === chip.value;
+            const href = chip.value === "overdue"
+              ? `/documents/invoices?aging=${agingFilter !== "all" ? "all" : "1-30"}`
+              : `/documents/invoices?status=${chip.value === "all" ? "" : chip.value}`.replace("?status=", chip.value === "all" ? "" : "?status=");
+            return (
+              <Link key={chip.value} href={chip.value === "all" ? "/documents/invoices" : `/documents/invoices?${chip.value === "overdue" ? "aging=1-30" : `status=${chip.value}`}`}
+                className={`shrink-0 rounded-full px-4 py-1.5 text-[12px] font-bold transition ${
+                  isActive ? "bg-[var(--accent)] text-black" : "border border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]"
+                }`}>
+                {chip.label}
+              </Link>
+            );
+          })}
         </div>
       </div>
 
@@ -621,8 +649,8 @@ export default async function InvoicesPage({
         )}
       </div>
 
-      {/* ── AGING ANALYSIS ─────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      {/* ── AGING ANALYSIS (desktop only — mobile uses status chips above) ── */}
+      <div className="hidden sm:grid grid-cols-2 gap-3 sm:grid-cols-4">
         {agingBands.map((band) => {
           const bandTotal = band.items.reduce((s, i) => s + i.balance, 0);
           const isActive = agingFilter === band.key;
@@ -696,8 +724,8 @@ export default async function InvoicesPage({
         </div>
       )}
 
-      {/* ── FILTERS ────────────────────────────────────────────────────────── */}
-      <form method="GET" className="flex flex-wrap gap-2">
+      {/* ── FILTERS (desktop only — mobile uses chips in native header) ── */}
+      <form method="GET" className="hidden sm:flex flex-wrap gap-2">
         <input
           name="q"
           defaultValue={q}

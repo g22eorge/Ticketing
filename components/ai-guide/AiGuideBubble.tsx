@@ -267,6 +267,7 @@ export function AiGuideBubble() {
         onPointerDown={onPtrDown}
         onPointerMove={onPtrMove}
         onPointerUp={onPtrUp}
+        onClick={open ? () => setOpen(false) : undefined}
         aria-label={open ? "Close AI Guide" : "Open AI Guide"}
         aria-expanded={open}
         className="touch-none select-none fixed z-[60] flex h-[52px] w-[52px] items-center justify-center rounded-full shadow-[0_0_0_6px_rgba(212,175,55,0.12),0_12px_32px_rgba(0,0,0,0.4)] transition-transform duration-150 active:scale-95"
