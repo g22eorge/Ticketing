@@ -158,6 +158,22 @@ export default async function QuotationsPage({
 
   return (
     <section className="space-y-4">
+
+      {/* ── Mobile quick-gen explainer ── */}
+      <div className="sm:hidden rounded-2xl border border-[var(--accent)]/20 bg-[var(--accent)]/6 px-4 py-3">
+        <p className="text-[12px] font-semibold text-[var(--accent)] mb-1">How to create a quote</p>
+        <p className="text-[11px] text-[var(--ink-muted)] leading-relaxed">
+          Quotes are generated from repair jobs. Open a job that is in <strong className="text-[var(--ink)]">Diagnosing</strong> or <strong className="text-[var(--ink)]">In Repair</strong> status, then tap <strong className="text-[var(--ink)]">Generate Quote</strong> from the action bar.
+        </p>
+        <Link
+          href="/jobs?status=DIAGNOSING,AWAITING_APPROVAL,IN_REPAIR"
+          className="mt-2 inline-flex items-center gap-1.5 rounded-xl border border-[var(--accent)]/40 bg-[var(--accent)]/10 px-3 py-1.5 text-[12px] font-bold text-[var(--accent)]"
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+          Go to eligible jobs
+        </Link>
+      </div>
+
       {/* Header */}
       <div className="panel-shadow flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-2.5">
         <div className="flex items-center gap-3">
@@ -176,8 +192,9 @@ export default async function QuotationsPage({
             </span>
           )}
         </div>
-        <Link href="/documents/quotations" className="btn-premium rounded-lg px-3 py-1.5 text-[12px]">
-          Create Quotation
+        {/* Quotations are generated from jobs — link to the job queue to find the job */}
+        <Link href="/jobs?status=DIAGNOSING,AWAITING_APPROVAL,IN_REPAIR" className="btn-premium rounded-lg px-3 py-1.5 text-[12px]">
+          + New Quote
         </Link>
       </div>
 

@@ -108,9 +108,12 @@ function getDefaultPos() {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) return JSON.parse(saved) as { x: number; y: number };
   } catch { /**/ }
+  // Default: right side, stacked ABOVE the gold FAB (+) button.
+  // FAB sits at bottom-[64+12=76px]; AI bubble sits 64px above that.
+  // Stack from bottom: [bottom-nav 64] [12 gap] [FAB 52] [12 gap] [AI 52]
   return {
-    x: window.innerWidth  - BUBBLE_SIZE - MARGIN,
-    y: window.innerHeight - BUBBLE_SIZE - 88,
+    x: window.innerWidth - BUBBLE_SIZE - MARGIN,
+    y: window.innerHeight - 64 - 12 - BUBBLE_SIZE - 12 - BUBBLE_SIZE,
   };
 }
 

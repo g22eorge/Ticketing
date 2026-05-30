@@ -540,7 +540,8 @@ export default async function InvoicesPage({
             >
               ↓ Export CSV
             </Link>
-            <Link href="/documents/invoices" className="btn-premium rounded-lg px-3 py-1.5 text-[12px]">Create Invoice</Link>
+            {/* Standalone invoice (non-job) OR scroll to the create form below */}
+            <a href="#create-invoice" className="btn-premium rounded-lg px-3 py-1.5 text-[12px]">+ New Invoice</a>
           </div>
         </div>
 
@@ -737,9 +738,9 @@ export default async function InvoicesPage({
 
       {/* ── STANDALONE INVOICE CREATION ─────────────────────────────────────── */}
       {["ADMIN", "OPS"].includes(user.role) && clients.length > 0 && (
-        <details className="group rounded-xl border border-[var(--line)] bg-[var(--panel)]">
+        <details id="create-invoice" className="group rounded-xl border border-[var(--line)] bg-[var(--panel)]">
           <summary className="cursor-pointer select-none px-4 py-2.5 text-[12px] font-semibold text-[var(--ink)] group-open:border-b group-open:border-[var(--line)]">
-            Create Invoice (Service / Contract / Merchandise)
+            + Create Invoice (Service / Contract / Merchandise)
           </summary>
           <form
             action={createStandaloneInvoiceAction}
