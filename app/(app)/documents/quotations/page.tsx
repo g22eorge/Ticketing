@@ -199,7 +199,7 @@ export default async function QuotationsPage({
       </div>
 
       {/* Search + filter */}
-      <form method="GET" className="hidden sm:flex flex-wrap gap-2">
+      <form method="GET" className="hidden lg:flex flex-wrap gap-2">
         <input
           name="q"
           defaultValue={q ?? ""}

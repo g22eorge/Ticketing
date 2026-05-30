@@ -194,7 +194,7 @@ export default async function RefundsPage({
       </div>
 
       {/* Filters */}
-      <form method="GET" className="flex flex-wrap gap-2">
+      <form method="GET" className="hidden lg:flex flex-wrap gap-2">
         <input
           name="q"
           defaultValue={q}

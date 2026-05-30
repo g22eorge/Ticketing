@@ -333,7 +333,7 @@ export default async function JournalPage({
       )}
 
       {/* ── FILTERS ────────────────────────────────────────────────────────── */}
-      <form method="GET" className="flex flex-wrap items-center gap-2">
+      <form method="GET" className="hidden lg:flex flex-wrap items-center gap-2">
         <select
           name="month"
           defaultValue={month}

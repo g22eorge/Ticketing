@@ -49,6 +49,7 @@ export default async function InvoicesPage({
   const orgCurrency = normalizeCurrency(orgRow?.baseCurrency, "UGX");
 
   const params = await searchParams;
+  const createMode = params.create === "1"; // mobile "New Invoice" → show creation form
   const typeFilter = params.type ?? "all";
   const statusFilter = params.status ?? "all";
   const agingFilter = params.aging ?? "all";
@@ -505,13 +506,19 @@ export default async function InvoicesPage({
   return (
     <section className="space-y-4">
       {/* ══ MOBILE ONLY — clean, focused header ══════════════════════════════ */}
-      <div className="sm:hidden -mx-4 px-4">
+      <div className="lg:hidden -mx-4 px-4">
 
         {/* Title row */}
-        <div className="flex items-center justify-between gap-3 mb-3">
-          <h2 className="text-[18px] font-black tracking-tight text-[var(--ink)]">Invoices</h2>
+        <div className="flex items-center gap-2 mb-3">
+          <h2 className="text-[18px] font-black tracking-tight text-[var(--ink)] flex-1">Invoices</h2>
+          {/* New Invoice — passes ?create=1 to auto-open the form below */}
+          <Link href="/documents/invoices?create=1#create-invoice"
+            className="inline-flex items-center gap-1 rounded-xl bg-[var(--accent)] px-3 py-2 text-[12px] font-bold text-black shrink-0">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            New Invoice
+          </Link>
           {/* Minimal search */}
-          <form method="GET" className="flex-1 max-w-[180px]">
+          <form method="GET" className="shrink-0 w-[120px]">
             <input
               name="q"
               defaultValue={q}
@@ -635,7 +642,7 @@ export default async function InvoicesPage({
       </div>
 
       {/* ── AGING ANALYSIS (desktop only — mobile uses status chips above) ── */}
-      <div className="hidden sm:grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="hidden lg:grid grid-cols-2 gap-3 sm:grid-cols-4">
         {agingBands.map((band) => {
           const bandTotal = band.items.reduce((s, i) => s + i.balance, 0);
           const isActive = agingFilter === band.key;
@@ -661,7 +668,7 @@ export default async function InvoicesPage({
 
       {/* ── CRITICAL OVERDUE ALERTS (desktop only — mobile sees Collect Revenue) ── */}
       {criticalOverdue.length > 0 && (
-        <div className="hidden sm:block rounded-xl border border-red-300/40 bg-red-500/5 p-4">
+        <div className="hidden lg:block rounded-xl border border-red-300/40 bg-red-500/5 p-4">
           <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.14em] text-red-700">
             Overdue — Needs Attention
           </p>
@@ -710,7 +717,7 @@ export default async function InvoicesPage({
       )}
 
       {/* ── FILTERS (desktop only — mobile uses chips in native header) ── */}
-      <form method="GET" className="hidden sm:flex flex-wrap gap-2">
+      <form method="GET" className="hidden lg:flex flex-wrap gap-2">
         <input
           name="q"
           defaultValue={q}
@@ -749,9 +756,11 @@ export default async function InvoicesPage({
         </button>
       </form>
 
-      {/* ── STANDALONE INVOICE CREATION (desktop only) ───────────────────────── */}
+      {/* ── STANDALONE INVOICE CREATION ─────────────────────────────────────── */}
+      {/* Desktop: always available. Mobile: only when ?create=1 (from "New Invoice" button) */}
       {["ADMIN", "OPS"].includes(user.role) && clients.length > 0 && (
-        <details id="create-invoice" className="group hidden rounded-xl border border-[var(--line)] bg-[var(--panel)] sm:block">
+        <details id="create-invoice" open={createMode}
+          className={`group rounded-xl border border-[var(--line)] bg-[var(--panel)] ${createMode ? "" : "hidden lg:block"}`}>
           <summary className="cursor-pointer select-none px-4 py-2.5 text-[12px] font-semibold text-[var(--ink)] group-open:border-b group-open:border-[var(--line)]">
             + Create Invoice (Service / Contract / Merchandise)
           </summary>
