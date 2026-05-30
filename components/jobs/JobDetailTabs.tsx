@@ -2433,10 +2433,33 @@ function StatusShareButton({ jobNumber, compact = false }: { jobNumber: string; 
   }
 
   function handleCopy() {
-    navigator.clipboard.writeText(getUrl()).then(() => {
+    const url = getUrl();
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(url).then(
+        () => { setCopied(true); setTimeout(() => setCopied(false), 2000); },
+        () => fallbackCopy(url),
+      );
+    } else {
+      fallbackCopy(url);
+    }
+  }
+
+  function fallbackCopy(url: string) {
+    try {
+      const el = document.createElement("textarea");
+      el.value = url;
+      el.style.position = "fixed";
+      el.style.opacity = "0";
+      document.body.appendChild(el);
+      el.focus();
+      el.select();
+      document.execCommand("copy");
+      document.body.removeChild(el);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    });
+    } catch {
+      // last resort: nothing we can do without clipboard permission
+    }
   }
 
   function handleWhatsApp() {
