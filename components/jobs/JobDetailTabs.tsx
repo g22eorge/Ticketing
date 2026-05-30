@@ -1325,21 +1325,65 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
       ) : null}
 
       {active === "client" && role !== "TECHNICIAN_EXTERNAL" ? (
-        <div className={panelShellClass}>
-          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Client Snapshot</p>
-          <div className="mt-3 grid gap-2 sm:grid-cols-3">
-            <div className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2">
-              <p className="text-[11px] uppercase tracking-[0.08em] text-[var(--ink-muted)]">Name</p>
-              <p className="mt-1 text-sm font-medium text-[var(--ink)]">{job.client?.fullName ?? "-"}</p>
+        <div className={`${panelShellClass} space-y-4`}>
+          {/* Contact card */}
+          <div className="flex items-center gap-4">
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[var(--accent)]/15 text-2xl font-black text-[var(--accent)]">
+              {(job.client?.fullName ?? "?")[0].toUpperCase()}
             </div>
-            <div className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2">
-              <p className="text-[11px] uppercase tracking-[0.08em] text-[var(--ink-muted)]">Phone</p>
-              <p className="mt-1 text-sm font-medium text-[var(--ink)]">{job.client?.phone ?? "-"}</p>
+            <div className="min-w-0 flex-1">
+              <p className="text-lg font-black text-[var(--ink)]">{job.client?.fullName ?? "No client"}</p>
+              {job.client?.phone ? (
+                <a href={`tel:${job.client.phone}`} className="text-sm text-[var(--accent)]">{job.client.phone}</a>
+              ) : <p className="text-sm text-[var(--ink-muted)]">No phone</p>}
             </div>
-            <div className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2">
-              <p className="text-[11px] uppercase tracking-[0.08em] text-[var(--ink-muted)]">Email</p>
-              <p className="mt-1 text-sm font-medium text-[var(--ink)]">{job.client?.email ?? "-"}</p>
-            </div>
+          </div>
+
+          {/* Action buttons */}
+          <div className="flex gap-2">
+            {job.client?.phone ? (
+              <a href={`tel:${job.client.phone}`}
+                className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-[var(--line)] bg-[var(--panel-strong)] py-2.5 text-sm font-semibold text-[var(--ink)] active:opacity-70">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.09 9.5a19.79 19.79 0 01-3-8.72A2 2 0 012.11 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14.92z"/></svg>
+                Call
+              </a>
+            ) : null}
+            {job.client?.phone ? (
+              <a href={`https://wa.me/${job.client.phone.replace(/\D/g,"")}`} target="_blank" rel="noreferrer"
+                className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 py-2.5 text-sm font-semibold text-emerald-600 active:opacity-70">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                WhatsApp
+              </a>
+            ) : null}
+            {job.client?.email ? (
+              <a href={`mailto:${job.client.email}`}
+                className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-[var(--line)] bg-[var(--panel-strong)] py-2.5 text-sm font-semibold text-[var(--ink)] active:opacity-70">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                Email
+              </a>
+            ) : null}
+          </div>
+
+          {/* Details */}
+          <div className="space-y-0 divide-y divide-[var(--line)] rounded-xl border border-[var(--line)] overflow-hidden">
+            {job.client?.email ? (
+              <div className="flex items-center justify-between px-4 py-3">
+                <p className="text-xs text-[var(--ink-muted)]">Email</p>
+                <p className="text-sm font-medium text-[var(--ink)] truncate max-w-[200px]">{job.client.email}</p>
+              </div>
+            ) : null}
+            {job.client?.phone ? (
+              <div className="flex items-center justify-between px-4 py-3">
+                <p className="text-xs text-[var(--ink-muted)]">Phone</p>
+                <p className="text-sm font-medium text-[var(--ink)]">{job.client.phone}</p>
+              </div>
+            ) : null}
+            {job.client ? (
+              <div className="flex items-center justify-between px-4 py-3">
+                <p className="text-xs text-[var(--ink-muted)]">Profile</p>
+                <a href={`/clients`} className="text-sm font-medium text-[var(--accent)]">View all clients →</a>
+              </div>
+            ) : null}
           </div>
         </div>
       ) : null}
@@ -1365,12 +1409,7 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
           >
             {canAssignJobs && technicians.length > 0 ? (
               <div className={softSectionClass}>
-                <div className="flex flex-wrap items-start justify-between gap-2">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-[var(--ink-muted)]">Assignment</p>
-                    <p className="mt-1 text-xs text-[var(--ink-muted)]">Choose the technician responsible for this job.</p>
-                  </div>
-                </div>
+                <p className="text-xs font-semibold text-[var(--ink-muted)]">Assign technician</p>
                 {showOneTimeForm || oneTimeExternal ? (
                   <div className="grid gap-2 sm:grid-cols-2">
                     <div className="min-w-0 sm:col-span-2">
@@ -1520,13 +1559,8 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
               }}
               className={`${panelShellClass} space-y-3 [&_*]:min-w-0`}
             >
-              <div className="flex flex-wrap items-start justify-between gap-2">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-[var(--ink-muted)]">One-Time External Technician</p>
-                  <p className="mt-1 text-xs text-[var(--ink-muted)]">
-                    Use this when outsourcing a specific job without creating a technician login. Updates are captured internally.
-                  </p>
-                </div>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-xs font-semibold text-[var(--ink-muted)]">One-time external tech</p>
                 <div className="shrink-0">
                   <select
                     name="outsourcingStatus"
@@ -1641,12 +1675,23 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
           }}
           className={`${panelShellClass} space-y-3 [&_*]:min-w-0`}
         >
-          <textarea name="workDone" readOnly={isTerminal} defaultValue={job.workDone ?? ""} placeholder="Work done" className={areaClass} />
-          <textarea name="partsReplaced" readOnly={isTerminal} defaultValue={job.partsReplaced ?? ""} placeholder="Parts replaced" className={areaClass} />
-          <div className="flex flex-wrap items-center gap-2">
-            <button disabled={isTerminal || isRepairPending} className="btn-premium w-full rounded-lg px-3 py-1.5 text-[13px] sm:w-auto sm:py-2 sm:text-sm">Save</button>
-            <button type="button" onClick={() => setActive("overview")} disabled={isRepairPending} className="btn-premium-secondary w-full rounded-lg px-3 py-1.5 text-[13px] sm:w-auto sm:py-2 sm:text-sm">Cancel</button>
-            {savedSection === "repair" ? <p className="text-xs text-[var(--accent)]">Saved</p> : null}
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold text-[var(--ink-muted)]">Work done</label>
+            <textarea name="workDone" readOnly={isTerminal} defaultValue={job.workDone ?? ""} placeholder="Describe the work carried out…" className={areaClass} />
+          </div>
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold text-[var(--ink-muted)]">Parts replaced</label>
+            <textarea name="partsReplaced" readOnly={isTerminal} defaultValue={job.partsReplaced ?? ""} placeholder="List parts replaced (if any)…" className={areaClass} />
+          </div>
+          <div className="space-y-2 pt-1">
+            <button disabled={isTerminal || isRepairPending} className="btn-premium w-full rounded-xl py-3 text-sm font-bold disabled:opacity-60">
+              {isRepairPending ? "Saving…" : "Save Repair Log"}
+            </button>
+            <button type="button" onClick={() => setActive("overview")} disabled={isRepairPending}
+              className="w-full rounded-xl py-2.5 text-sm font-medium text-[var(--ink-muted)] transition active:opacity-60">
+              Cancel
+            </button>
+            {savedSection === "repair" ? <p className="text-center text-xs text-[var(--accent)]">✓ Saved</p> : null}
           </div>
         </form>
       ) : null}
@@ -1781,23 +1826,23 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
               {!canManageFinancials ? (
                 <p className="text-xs text-[var(--ink-muted)]">Client billing and payout controls are admin-only.</p>
               ) : null}
-              <div className="flex flex-wrap items-center gap-2 pt-1">
+              <div className="space-y-2 pt-1">
                 <button
                   type="submit"
                   disabled={isFinancialPending || (isTerminal && !canManageFinancials)}
-                  className="btn-premium rounded-lg px-4 py-2 text-sm disabled:opacity-60"
+                  className="btn-premium w-full rounded-xl py-3 text-sm font-bold disabled:opacity-60"
                 >
-                  Save Billing
+                  {isFinancialPending ? "Saving…" : "Save Billing"}
                 </button>
                 <button
                   type="button"
                   onClick={() => setActive("overview")}
                   disabled={isFinancialPending}
-                  className="btn-premium-secondary rounded-lg px-4 py-2 text-sm"
+                  className="w-full rounded-xl py-2.5 text-sm font-medium text-[var(--ink-muted)]"
                 >
                   Cancel
                 </button>
-                {savedSection === "financials" ? <span className="text-xs text-[var(--accent)]">Saved</span> : null}
+                {savedSection === "financials" ? <p className="text-center text-xs text-[var(--accent)]">✓ Saved</p> : null}
               </div>
             </div>
           </div>
@@ -1827,10 +1872,10 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
               <div className="space-y-3 p-4">
                 {showAddPaymentForm ? (
                   <div className="rounded-lg border border-[var(--line)] bg-[var(--panel)] p-3 space-y-3">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Record Payment</p>
+                    <p className="text-sm font-semibold text-[var(--ink)]">Record payment</p>
                     {/* Use div + manual FormData to avoid nested <form> inside the outer financials form */}
                     <div className="space-y-2" ref={(el) => { if (el) (el as HTMLElement & { _payFormEl?: HTMLElement })._payFormEl = el; }}>
-                      <div className="grid gap-2 sm:grid-cols-3">
+                      <div className="grid gap-2 grid-cols-1 lg:grid-cols-3">
                         <div>
                           <label className="mb-1 block text-[10px] font-medium uppercase tracking-wide text-[var(--ink-muted)]">Amount</label>
                           <input name="amount" inputMode="decimal" placeholder="0.00" className={fieldClass} required />
@@ -1873,11 +1918,11 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
                       <label className="flex items-center gap-2 text-xs text-[var(--ink-muted)]">
                         <input type="checkbox" name="confirmOverpayment" value="true" /> Confirm overpayment / refund / adjustment is intentional
                       </label>
-                      <div className="flex flex-wrap gap-2">
+                      <div className="space-y-2">
                         <button
                           type="button"
                           disabled={isFinancialPending}
-                          className="btn-premium rounded-lg px-4 py-2 text-sm disabled:opacity-60"
+                          className="btn-premium w-full rounded-xl py-3 text-sm font-bold disabled:opacity-60"
                           onClick={(e) => {
                             const container = (e.currentTarget as HTMLElement).closest('.space-y-2');
                             if (!container) return;
@@ -1901,12 +1946,48 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
                             });
                           }}
                         >Record Payment</button>
-                        <button type="button" onClick={() => setShowAddPaymentForm(false)} disabled={isFinancialPending} className="btn-premium-secondary rounded-lg px-4 py-2 text-sm">Cancel</button>
+                        <button type="button" onClick={() => setShowAddPaymentForm(false)} disabled={isFinancialPending}
+                          className="w-full rounded-xl py-2.5 text-sm font-medium text-[var(--ink-muted)]">Cancel</button>
                       </div>
                     </div>
                   </div>
                 ) : null}
-                <div className="overflow-x-auto rounded-lg border border-[var(--line)]">
+                {/* Mobile: payment cards */}
+                <div className="space-y-2 lg:hidden">
+                  {(() => {
+                    if (clientPayments.length === 0) {
+                      return <p className="py-4 text-center text-sm text-[var(--ink-muted)]">No payments recorded yet.</p>;
+                    }
+                    const billAmount = typeof job.clientBill === "number" ? job.clientBill : 0;
+                    const sorted = [...clientPayments].sort((a, b) => new Date(a.receivedAt).getTime() - new Date(b.receivedAt).getTime());
+                    let runningPaid = 0;
+                    return sorted.map((payment) => {
+                      runningPaid += payment.kind === "REFUND" ? -payment.amount : payment.amount;
+                      const balance = billAmount - runningPaid;
+                      return (
+                        <div key={payment.id} className="rounded-xl border border-[var(--line)] bg-[var(--panel-strong)] p-3 space-y-1.5">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-semibold text-[var(--ink)]">{prettyEnum(payment.kind)} · {prettyEnum(payment.method)}</span>
+                            <span className={`text-sm font-black tabular-nums ${payment.kind === "REFUND" ? "text-amber-600" : "text-emerald-600"}`}>
+                              {payment.kind === "REFUND" ? "-" : "+"}UGX {formatBillAmount(payment.amount)}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between text-[11px] text-[var(--ink-muted)]">
+                            <span>{formatUtcDateTime(payment.receivedAt)}</span>
+                            <span className={balance === 0 ? "text-emerald-600 font-semibold" : balance < 0 ? "text-blue-600 font-semibold" : "text-amber-600 font-semibold"}>
+                              {balance === 0 ? "Fully paid ✓" : balance < 0 ? `${formatBillAmount(Math.abs(balance))} overpaid` : `${formatBillAmount(balance)} remaining`}
+                            </span>
+                          </div>
+                          {(payment.reference || payment.note) ? (
+                            <p className="text-[11px] text-[var(--ink-muted)]">{[payment.reference, payment.note].filter(Boolean).join(" · ")}</p>
+                          ) : null}
+                        </div>
+                      );
+                    });
+                  })()}
+                </div>
+                {/* Desktop: payment table */}
+                <div className="hidden lg:block overflow-x-auto rounded-lg border border-[var(--line)]">
                   <table className="min-w-full text-left text-xs">
                     <thead className="bg-[var(--panel-strong)] text-[var(--ink-muted)]">
                       <tr><th className="px-3 py-2">Date</th><th className="px-3 py-2">Type</th><th className="px-3 py-2">Method</th><th className="px-3 py-2">Amount</th><th className="px-3 py-2">Balance</th><th className="px-3 py-2">Reference</th><th className="px-3 py-2">Notes</th><th className="px-3 py-2">Recorded by</th></tr>
@@ -1943,6 +2024,7 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
                     </tbody>
                   </table>
                 </div>
+                {/* end desktop table */}
               </div>
             </div>
           ) : null}
@@ -1993,7 +2075,7 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
                 ) : null}
                 {showPayoutForm ? (
                   <div className="rounded-lg border border-[var(--line)] bg-[var(--panel)] p-3 space-y-3">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Record Technician Payout</p>
+                    <p className="text-sm font-semibold text-[var(--ink)]">Record payout</p>
                     <form
                       action={(fd) => {
                         fd.set("jobId", job.id);
@@ -2007,7 +2089,7 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
                       }}
                       className="space-y-2"
                     >
-                      <div className="grid gap-2 sm:grid-cols-3">
+                      <div className="grid gap-2 grid-cols-1 lg:grid-cols-3">
                         <div>
                           <label className="mb-1 block text-[10px] font-medium uppercase tracking-wide text-[var(--ink-muted)]">Amount</label>
                           <input name="amount" inputMode="decimal" placeholder="0.00" className={fieldClass} required />
@@ -2111,9 +2193,7 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
       ) : null}
 
       {active === "timeline" && ["ADMIN", "OPS", "FRONT_DESK"].includes(role) ? (
-        <div className={panelShellClass}>
-          <p className="mb-3 text-xs font-semibold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Timeline Activity</p>
-
+        <div className={`${panelShellClass} space-y-4`}>
           {canUpdateClientCommunication ? (
             <form
               action={(formData) => {
@@ -2121,55 +2201,52 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
                 formData.set("expectedUpdatedAt", expectedUpdatedAt);
                 startCommunicationTransition(async () => {
                   const res = await updateJobAction(formData);
-                  if (res.error) {
-                    toast.error(res.error);
-                    return;
-                  }
+                  if (res.error) { toast.error(res.error); return; }
                   toast.success("Workflow updated");
                   setSavedSection("workflow");
                   router.refresh();
                 });
               }}
-              className={`mb-4 space-y-2 ${softSectionClass} [&_*]:min-w-0`}
+              className={`space-y-3 ${softSectionClass} [&_*]:min-w-0`}
             >
-              <p className="text-xs font-semibold uppercase tracking-wide text-[var(--ink-muted)]">Approval & Next Steps</p>
-              <div className="grid gap-2 sm:grid-cols-2">
-                <div>
-                  <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-[var(--ink-muted)]">Client decision</label>
-                  <select name="communicationStatus" defaultValue={job.communicationStatus ?? "NONE"} className={fieldClass}>
-                    <option value="NONE">No update yet</option>
-                    <option value="AWAITING_RESPONSE">Awaiting response</option>
-                    <option value="APPROVED">Approved</option>
-                    <option value="DECLINED">Declined</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-[var(--ink-muted)]">Recommendation</label>
-                  <select name="recommendationOption" defaultValue={job.recommendationOption ?? ""} className={fieldClass}>
-                    <option value="">Not set</option>
-                    <option value="PROCEED_REPAIR">Proceed with repair</option>
-                    <option value="REPLACE_DEVICE">Replace device</option>
-                    <option value="RETURN_UNREPAIRED">Return unrepaired</option>
-                  </select>
-                </div>
+              <p className="text-xs font-semibold text-[var(--ink-muted)]">Approval & workflow</p>
+
+              <div>
+                <label className="mb-1.5 block text-xs font-medium text-[var(--ink-muted)]">Client decision</label>
+                <select name="communicationStatus" defaultValue={job.communicationStatus ?? "NONE"} className={fieldClass}>
+                  <option value="NONE">No update yet</option>
+                  <option value="AWAITING_RESPONSE">Awaiting response</option>
+                  <option value="APPROVED">Approved</option>
+                  <option value="DECLINED">Declined</option>
+                </select>
               </div>
 
-              <textarea
-                name="clientConversationNote"
-                defaultValue={job.clientConversationNote ?? ""}
-                placeholder="Client communication note"
-                className="min-h-20 w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-sm outline-none transition focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14"
-              />
+              <div>
+                <label className="mb-1.5 block text-xs font-medium text-[var(--ink-muted)]">Recommendation</label>
+                <select name="recommendationOption" defaultValue={job.recommendationOption ?? ""} className={fieldClass}>
+                  <option value="">Not set</option>
+                  <option value="PROCEED_REPAIR">Proceed with repair</option>
+                  <option value="REPLACE_DEVICE">Replace device</option>
+                  <option value="RETURN_UNREPAIRED">Return unrepaired</option>
+                </select>
+              </div>
 
-              {job.lastClientContactAt ? (
-                <p className="text-xs text-[var(--ink-muted)]">Last client contact: {formatUtcDateTime(job.lastClientContactAt)}</p>
-              ) : (
-                <p className="text-xs text-[var(--ink-muted)]">Last client contact: Not recorded</p>
-              )}
+              <div>
+                <label className="mb-1.5 block text-xs font-medium text-[var(--ink-muted)]">
+                  Client communication note
+                  {job.lastClientContactAt ? <span className="ml-2 text-[10px] text-[var(--accent)]">Last: {formatUtcDateTime(job.lastClientContactAt)}</span> : null}
+                </label>
+                <textarea
+                  name="clientConversationNote"
+                  defaultValue={job.clientConversationNote ?? ""}
+                  placeholder="What did the client say?"
+                  className={areaClass}
+                />
+              </div>
 
-              <div className="grid gap-2 sm:grid-cols-2">
+              <div className="grid gap-3 lg:grid-cols-2">
                 <div>
-                  <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-[var(--ink-muted)]">Workflow reason</label>
+                  <label className="mb-1.5 block text-xs font-medium text-[var(--ink-muted)]">Workflow reason</label>
                   <select name="workflowReason" defaultValue={job.workflowReason ?? "NONE"} className={fieldClass}>
                     <option value="NONE">No specific reason</option>
                     <option value="PARTS_PENDING">Parts pending</option>
@@ -2181,46 +2258,50 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
                   </select>
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-[var(--ink-muted)]">ETA</label>
+                  <label className="mb-1.5 block text-xs font-medium text-[var(--ink-muted)]">ETA</label>
                   <input name="repairTimeline" defaultValue={job.repairTimeline ?? ""} placeholder="e.g. 2-3 days" className={fieldClass} />
                 </div>
               </div>
 
-              <textarea
-                name="statusNote"
-                defaultValue={job.statusNote ?? ""}
-                placeholder="Workflow note (optional)"
-                className="min-h-20 w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-sm outline-none transition focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14"
-              />
+              <div>
+                <label className="mb-1.5 block text-xs font-medium text-[var(--ink-muted)]">Workflow note <span className="text-[var(--ink-muted)]/60">(optional)</span></label>
+                <textarea
+                  name="statusNote"
+                  defaultValue={job.statusNote ?? ""}
+                  placeholder="Internal note…"
+                  className={areaClass}
+                />
+              </div>
 
-              <div className="flex flex-wrap items-center gap-2">
-                <button
-                  type="submit"
-                  disabled={isCommunicationPending}
-                  className="btn-premium w-full rounded-lg px-3 py-1.5 text-[13px] disabled:opacity-60 sm:w-auto sm:py-2 sm:text-sm"
-                >
-                  Save Workflow
+              <div className="space-y-2">
+                <button type="submit" disabled={isCommunicationPending}
+                  className="btn-premium w-full rounded-xl py-3 text-sm font-bold disabled:opacity-60">
+                  {isCommunicationPending ? "Saving…" : "Save Workflow"}
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setActive("overview")}
-                  disabled={isCommunicationPending}
-                  className="btn-premium-secondary w-full rounded-lg px-3 py-1.5 text-[13px] disabled:opacity-60 sm:w-auto sm:py-2 sm:text-sm"
-                >
+                <button type="button" onClick={() => setActive("overview")} disabled={isCommunicationPending}
+                  className="w-full rounded-xl py-2.5 text-sm font-medium text-[var(--ink-muted)]">
                   Cancel
                 </button>
-                {savedSection === "workflow" ? <p className="text-xs text-[var(--accent)]">Saved</p> : null}
+                {savedSection === "workflow" ? <p className="text-center text-xs text-[var(--accent)]">✓ Saved</p> : null}
               </div>
             </form>
           ) : null}
 
-          <AuditTimeline items={job.auditLogs} />
+          <div>
+            <p className="mb-3 text-xs font-semibold text-[var(--ink-muted)]">Activity log</p>
+            <AuditTimeline items={job.auditLogs} />
+          </div>
         </div>
       ) : null}
 
       {active === "photos" ? (
         <div className={panelShellClass}>
-          <p className="mb-3 text-xs font-semibold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Photo Evidence</p>
+          <div className="mb-3 flex items-center justify-between">
+            <p className="text-sm font-semibold text-[var(--ink)]">Photos</p>
+            {job.photos.length > 0 ? (
+              <span className="rounded-full bg-[var(--panel-strong)] px-2.5 py-0.5 text-xs font-semibold text-[var(--ink-muted)]">{job.photos.length}</span>
+            ) : null}
+          </div>
           <PhotoUploader jobId={job.id} photos={job.photos} canDelete={role === "ADMIN"} />
         </div>
       ) : null}
