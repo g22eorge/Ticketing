@@ -1660,19 +1660,8 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
                 {showAddPaymentForm ? (
                   <div className="rounded-lg border border-[var(--line)] bg-[var(--panel)] p-3 space-y-3">
                     <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Record Payment</p>
-                    <form
-                      action={(fd) => {
-                        fd.set("jobId", job.id);
-                        startFinancialTransition(async () => {
-                          const res = await recordClientPaymentAction(fd);
-                          if (res.error) { toast.error(res.error); return; }
-                          toast.success("Payment recorded");
-                          setShowAddPaymentForm(false);
-                          router.refresh();
-                        });
-                      }}
-                      className="space-y-2"
-                    >
+                    {/* Use div + manual FormData to avoid nested <form> inside the outer financials form */}
+                    <div className="space-y-2" ref={(el) => { if (el) (el as HTMLElement & { _payFormEl?: HTMLElement })._payFormEl = el; }}>
                       <div className="grid gap-2 sm:grid-cols-3">
                         <div>
                           <label className="mb-1 block text-[10px] font-medium uppercase tracking-wide text-[var(--ink-muted)]">Amount</label>
@@ -1701,29 +1690,9 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
                         </div>
                       </div>
                       <div className="grid gap-2 sm:grid-cols-2">
-                        <div>
-                          <label className="mb-1 block text-[10px] font-medium uppercase tracking-wide text-[var(--ink-muted)]">Currency</label>
-                          <div className="grid gap-2 grid-cols-2">
-                            <select
-                              name="currency"
-                              value={clientPaymentCurrency}
-                              onChange={(e) => setClientPaymentCurrency(e.target.value)}
-                              className={fieldClass}
-                            >
-                              {supportedCurrencies.map((c) => (
-                                <option key={c} value={c}>{c}</option>
-                              ))}
-                            </select>
-                            <input
-                              name="exchangeRateToBase"
-                              inputMode="decimal"
-                              placeholder={`1 ${clientPaymentCurrency} = ? ${orgBaseCurrency}`}
-                              className={fieldClass}
-                              required={clientPaymentCurrency !== orgBaseCurrency}
-                              disabled={clientPaymentCurrency === orgBaseCurrency}
-                            />
-                          </div>
-                        </div>
+                        {/* Currency locked to UGX — hidden field */}
+                        <input type="hidden" name="currency" value="UGX" />
+                        <input type="hidden" name="exchangeRateToBase" value="1" />
                         <div>
                           <label className="mb-1 block text-[10px] font-medium uppercase tracking-wide text-[var(--ink-muted)]">Reference / receipt #</label>
                           <input name="reference" placeholder="Optional" className={fieldClass} />
@@ -1737,10 +1706,36 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
                         <input type="checkbox" name="confirmOverpayment" value="true" /> Confirm overpayment / refund / adjustment is intentional
                       </label>
                       <div className="flex flex-wrap gap-2">
-                        <button type="submit" disabled={isFinancialPending} className="btn-premium rounded-lg px-4 py-2 text-sm disabled:opacity-60">Record Payment</button>
+                        <button
+                          type="button"
+                          disabled={isFinancialPending}
+                          className="btn-premium rounded-lg px-4 py-2 text-sm disabled:opacity-60"
+                          onClick={(e) => {
+                            const container = (e.currentTarget as HTMLElement).closest('.space-y-2');
+                            if (!container) return;
+                            const fd = new FormData();
+                            fd.set("jobId", job.id);
+                            container.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>("input,select,textarea").forEach((el) => {
+                              if (el.name) {
+                                if (el instanceof HTMLInputElement && el.type === "checkbox") {
+                                  if (el.checked) fd.set(el.name, el.value);
+                                } else {
+                                  fd.set(el.name, el.value);
+                                }
+                              }
+                            });
+                            startFinancialTransition(async () => {
+                              const res = await recordClientPaymentAction(fd);
+                              if (res.error) { toast.error(res.error); return; }
+                              toast.success("Payment recorded");
+                              setShowAddPaymentForm(false);
+                              router.refresh();
+                            });
+                          }}
+                        >Record Payment</button>
                         <button type="button" onClick={() => setShowAddPaymentForm(false)} disabled={isFinancialPending} className="btn-premium-secondary rounded-lg px-4 py-2 text-sm">Cancel</button>
                       </div>
-                    </form>
+                    </div>
                   </div>
                 ) : null}
                 <div className="overflow-x-auto rounded-lg border border-[var(--line)]">
