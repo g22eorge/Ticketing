@@ -40,7 +40,7 @@ export default async function SupplierBillsPage() {
     <div className="space-y-4">
       <div className="panel-shadow flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-2.5">
         <div>
-          <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Inventory</p>
+          <p className="text-[12px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Inventory</p>
           <p className="text-[13px] font-bold text-[var(--ink)]">Supplier Bills <span className="font-normal text-[var(--ink-muted)]">· {bills.length} · outstanding {totalOutstanding.toLocaleString()}</span></p>
         </div>
         <Link href="/inventory/supplier-bills/new" className="btn-premium rounded-lg px-3 py-1.5 text-[12px]">New Bill</Link>
@@ -49,7 +49,7 @@ export default async function SupplierBillsPage() {
       <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-[var(--panel-strong)] text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
+            <thead className="bg-[var(--panel-strong)] text-[12px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
               <tr>
                 <th className="px-4 py-2.5 text-left">Bill</th>
                 <th className="px-4 py-2.5 text-left">Supplier</th>
@@ -66,7 +66,7 @@ export default async function SupplierBillsPage() {
                 <tr key={bill.id} className="border-t border-[var(--line)] align-middle hover:bg-[var(--panel-strong)]/40">
                   <td className="px-4 py-3"><p className="mono text-sm font-bold text-[var(--ink)]">{bill.billNumber}</p><p className="text-xs text-[var(--ink-muted)]">{fmt(bill.issuedAt)}</p></td>
                   <td className="px-4 py-3 font-medium text-[var(--ink)]">{bill.supplier.name}</td>
-                  <td className="px-4 py-3"><span className={`rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${STATUS_COLORS[bill.status] ?? STATUS_COLORS.POSTED}`}>{bill.status}</span></td>
+                  <td className="px-4 py-3"><span className={`rounded-full border px-2.5 py-0.5 text-[13px] font-semibold ${STATUS_COLORS[bill.status] ?? STATUS_COLORS.POSTED}`}>{bill.status}</span></td>
                   <td className="hidden px-4 py-3 text-xs text-[var(--ink-muted)] md:table-cell">{bill.grn ? bill.grn.grnNumber : bill.po ? bill.po.reference ?? `PO-${bill.po.id.slice(-6).toUpperCase()}` : "-"}</td>
                   <td className="px-4 py-3 text-right font-semibold tabular-nums text-[var(--ink)]">{bill.currency} {bill.totalAmount.toLocaleString()}</td>
                   <td className="hidden px-4 py-3 text-right tabular-nums text-[var(--ink-muted)] sm:table-cell">{(bill.totalAmount - bill.paidAmount).toLocaleString()}</td>

@@ -72,7 +72,7 @@ export function ExternalTechJobView({
     <div className="min-w-0 space-y-4">
       <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
         <div className="mb-3 rounded-lg border border-[var(--accent)]/30 bg-[var(--accent)]/10 px-3 py-2">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--accent)]">External Work Brief</p>
+          <p className="text-[13px] font-semibold uppercase tracking-[0.12em] text-[var(--accent)]">External Work Brief</p>
           <p className="mt-1 text-sm text-[var(--ink)]">Update diagnosis, required parts, and ETA only. Client identity remains hidden in this workspace.</p>
         </div>
         <h2 className="text-lg font-semibold">{job.jobNumber}</h2>

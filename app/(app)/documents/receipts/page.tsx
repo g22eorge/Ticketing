@@ -301,27 +301,27 @@ export default async function ReceiptsPage({
       <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
         <div className="flex items-center justify-between gap-2 border-b border-[var(--line)] px-4 py-2.5">
           <div>
-            <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Documents</p>
+            <p className="text-[12px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Documents</p>
             <p className="text-[13px] font-bold text-[var(--ink)]">Receipts</p>
           </div>
           <Link href="/documents/invoices" className="btn-premium rounded-lg px-3 py-1.5 text-[12px]">Create Receipt</Link>
         </div>
         <div className="grid grid-cols-2 divide-x divide-y divide-[var(--line)] sm:grid-cols-4 sm:divide-y-0">
           <div className="px-4 py-2">
-            <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">Total</p>
+            <p className="text-[13px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">Total</p>
             <p className="text-[15px] font-black tabular-nums leading-tight text-[var(--ink)]">{receiptsTotal}</p>
-            <p className="text-[10px] text-[var(--ink-muted)]">this month: {thisMonth.length}</p>
+            <p className="text-[12px] text-[var(--ink-muted)]">this month: {thisMonth.length}</p>
           </div>
           <div className="px-4 py-2">
-            <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">Total Amount</p>
+            <p className="text-[13px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">Total Amount</p>
             <p className="text-[15px] font-black tabular-nums leading-tight text-[var(--ink)]">{formatMoney(totalAmountBase, "UGX")}</p>
           </div>
           <div className="px-4 py-2">
-            <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">This Month</p>
+            <p className="text-[13px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">This Month</p>
             <p className="text-[15px] font-black tabular-nums leading-tight text-[var(--accent)]">{formatMoney(thisMonthAmountBase, "UGX")}</p>
           </div>
           <div className="px-4 py-2">
-            <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">Cash</p>
+            <p className="text-[13px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">Cash</p>
             <p className="text-[15px] font-black tabular-nums leading-tight text-[var(--ink)]">{cashPaymentsCount}</p>
           </div>
         </div>
@@ -380,7 +380,7 @@ export default async function ReceiptsPage({
       {methodBreakdown.length > 0 && (
         <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
           <div className="border-b border-[var(--line)] bg-[var(--panel-strong)]/60 px-4 py-2">
-            <p className="text-[11px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">
+            <p className="text-[13px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">
               Payment Method Breakdown
               <span className="ml-2 font-normal text-[var(--ink-muted)]/60">{PERIOD_LABELS[period] ?? period}</span>
             </p>
@@ -388,7 +388,7 @@ export default async function ReceiptsPage({
           <div className="divide-y divide-[var(--line)]">
             {methodBreakdown.map((m) => (
               <div key={m.method} className="flex items-center gap-3 px-4 py-2">
-                <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${methodBadge(m.method)}`}>
+                <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[13px] font-semibold ${methodBadge(m.method)}`}>
                   {m.method.replaceAll("_", " ")}
                 </span>
                 <div className="flex-1 min-w-0">
@@ -399,8 +399,8 @@ export default async function ReceiptsPage({
                     />
                   </div>
                 </div>
-                <span className="shrink-0 text-[11px] tabular-nums text-[var(--ink-muted)]">{m.pct}% · {m.count}</span>
-                <span className="shrink-0 text-[11px] font-semibold tabular-nums text-[var(--ink)]">{formatMoney(m.amount, "UGX")}</span>
+                <span className="shrink-0 text-[13px] tabular-nums text-[var(--ink-muted)]">{m.pct}% · {m.count}</span>
+                <span className="shrink-0 text-[13px] font-semibold tabular-nums text-[var(--ink)]">{formatMoney(m.amount, "UGX")}</span>
               </div>
             ))}
           </div>
@@ -409,7 +409,7 @@ export default async function ReceiptsPage({
 
       <div className="doc-list overflow-x-auto rounded-xl border border-[var(--line)]">
         <table className="w-full text-left text-sm">
-          <thead className="bg-[var(--panel-strong)] text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
+          <thead className="bg-[var(--panel-strong)] text-[12px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
             <tr>
               <th className="px-3 py-2.5">Date</th>
               <th className="px-3 py-2.5">Amount</th>
@@ -438,10 +438,10 @@ export default async function ReceiptsPage({
 
               return (
                 <tr key={p.id} className="border-t border-[var(--line)] align-middle hover:bg-[var(--panel-strong)]/40">
-                  <td className="px-3 py-2.5 text-[var(--ink-muted)]">{p.receivedAt.toLocaleDateString()}<br /><span className="text-[10px]">{p.receivedAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span></td>
+                  <td className="px-3 py-2.5 text-[var(--ink-muted)]">{p.receivedAt.toLocaleDateString()}<br /><span className="text-[12px]">{p.receivedAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span></td>
                   <td className="px-3 py-2.5 mono font-bold text-[var(--ink)]">{formatMoney(p.amount, currency)}</td>
                   <td className="hidden px-3 py-2.5 md:table-cell">
-                    <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${methodBadge(p.method)}`}>
+                    <span className={`rounded-full border px-2 py-0.5 text-[13px] font-semibold ${methodBadge(p.method)}`}>
                       {p.method.replaceAll("_", " ")}
                     </span>
                   </td>

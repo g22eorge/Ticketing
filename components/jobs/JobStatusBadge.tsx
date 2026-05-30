@@ -74,7 +74,7 @@ export function JobStatusBadge({ status }: { status: JobStatus }) {
     <span
       title={cfg.help}
       aria-label={`${key.replaceAll("_", " ")}. ${cfg.help}`}
-      className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-[11px] font-semibold ${cfg.badge}`}
+      className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-[13px] font-semibold ${cfg.badge}`}
     >
       <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${cfg.dot}`} aria-hidden="true" />
       {cfg.label}

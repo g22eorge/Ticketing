@@ -206,7 +206,7 @@ export default async function InventoryPage({
       <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
       <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
         <div>
-          <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Warehouse</p>
+          <p className="text-[12px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Warehouse</p>
           <p className="text-[13px] font-bold text-[var(--ink)]">Inventory <span className="font-normal text-[var(--ink-muted)]">· {parts.length} parts</span></p>
         </div>
         {canManage && (
@@ -232,27 +232,27 @@ export default async function InventoryPage({
       <div className="panel-shadow grid grid-cols-2 overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)] divide-x divide-y divide-[var(--line)] sm:grid-cols-4 sm:divide-y-0">
         <div className="flex items-center gap-3 px-4 py-2">
           <div>
-            <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">Active Parts</p>
+            <p className="text-[13px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">Active Parts</p>
             <p className="text-[15px] font-black tabular-nums leading-tight text-[var(--ink)]">{parts.length}</p>
           </div>
         </div>
         <div className="flex items-center gap-3 px-4 py-2">
           <div>
-            <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">Low Stock</p>
+            <p className="text-[13px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">Low Stock</p>
             <p className="text-[15px] font-black tabular-nums leading-tight text-amber-500">{lowStock.length}</p>
-            <p className="text-[10px] text-[var(--ink-muted)]">at or below reorder</p>
+            <p className="text-[12px] text-[var(--ink-muted)]">at or below reorder</p>
           </div>
         </div>
         <div className="flex items-center gap-3 px-4 py-2">
           <div>
-            <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">Reserved</p>
+            <p className="text-[13px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">Reserved</p>
             <p className="text-[15px] font-black tabular-nums leading-tight text-[var(--ink)]">{reservedCount}</p>
-            <p className="text-[10px] text-[var(--ink-muted)]">units held for jobs</p>
+            <p className="text-[12px] text-[var(--ink-muted)]">units held for jobs</p>
           </div>
         </div>
         <div className="flex items-center gap-3 px-4 py-2">
           <div>
-            <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">Stock Value</p>
+            <p className="text-[13px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">Stock Value</p>
             <p className="text-[15px] font-black tabular-nums leading-tight text-[var(--ink)]">{formatMoney(totalValue)}</p>
           </div>
         </div>
@@ -268,7 +268,7 @@ export default async function InventoryPage({
       {/* Add Part — shown only when ?add=1 */}
       {canManage && showAdd ? (
         <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
-          <p className="mb-2.5 text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Add Part</p>
+          <p className="mb-2.5 text-[12px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Add Part</p>
           <form action={createPartAction}>
             <div className="grid gap-2 md:grid-cols-[0.8fr_1.4fr_1fr_0.7fr_0.7fr_auto]">
               <input name="sku" placeholder="SKU *" required className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/60 focus:ring-2 focus:ring-[var(--accent)]/14" />
@@ -285,7 +285,7 @@ export default async function InventoryPage({
       {/* Stock table */}
       <div className="rounded-xl border border-[var(--line)]">
         <div className="flex items-center justify-between gap-2 border-b border-[var(--line)] bg-[var(--panel)] px-4 py-3 rounded-t-xl">
-          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Stock Monitor</p>
+          <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Stock Monitor</p>
           {canManage ? (
             <Link
               href={showAdd ? "/inventory" : "/inventory?add=1"}
@@ -307,7 +307,7 @@ export default async function InventoryPage({
         ) : (
           <div className="doc-list overflow-x-auto">
             <table className="min-w-full text-sm">
-              <thead className="bg-[var(--panel-strong)] text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
+              <thead className="bg-[var(--panel-strong)] text-[12px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
                 <tr>
                   <th className="px-4 py-2.5 text-left">Part</th>
                   <th className="hidden px-4 py-2.5 text-left sm:table-cell">SKU</th>
@@ -332,8 +332,8 @@ export default async function InventoryPage({
                     <tr key={part.id} className={"border-t border-[var(--line)] " + (isLow ? "bg-amber-500/8" : "hover:bg-[var(--panel-strong)]/40")}>
                       <td className="px-4 py-3">
                         <p className="font-semibold text-[var(--ink)]">{part.name}</p>
-                        {isLow ? <p className="mt-0.5 text-[10px] font-semibold text-amber-600">Low stock</p> : null}
-                        <p className="mt-0.5 text-[10px] text-[var(--ink-muted)] sm:hidden">{part.sku}{part.manufacturer ? ` · ${part.manufacturer}` : ""}</p>
+                        {isLow ? <p className="mt-0.5 text-[12px] font-semibold text-amber-600">Low stock</p> : null}
+                        <p className="mt-0.5 text-[12px] text-[var(--ink-muted)] sm:hidden">{part.sku}{part.manufacturer ? ` · ${part.manufacturer}` : ""}</p>
                       </td>
                       <td className="hidden px-4 py-3 text-[var(--ink-muted)] sm:table-cell">{part.sku}</td>
                       <td className="hidden px-4 py-3 text-[var(--ink-muted)] lg:table-cell">{part.manufacturer ?? "—"}</td>

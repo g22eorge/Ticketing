@@ -92,7 +92,7 @@ export default async function FieldVisitDetailPage({
     <div className="mx-auto max-w-2xl space-y-6 p-6">
       <div className="flex items-start justify-between">
         <div>
-          <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Field · Visit</p>
+          <p className="text-[12px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Field · Visit</p>
           <p className="mt-0.5 text-[13px] font-bold text-[var(--ink)]">
             {TYPE_LABELS[visit.type] ?? visit.type} Visit
           </p>

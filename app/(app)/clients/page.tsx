@@ -226,24 +226,24 @@ export default async function ClientsPage({
       {/* ── KPI tiles ── */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
-          <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Total Clients</p>
+          <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Total Clients</p>
           <p className="mt-1 text-xl font-bold tabular-nums text-[var(--ink)]">{kpiTotal}</p>
-          <p className="mt-0.5 text-[11px] text-[var(--ink-muted)]">all time</p>
+          <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">all time</p>
         </div>
         <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
-          <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">New This Month</p>
+          <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">New This Month</p>
           <p className="mt-1 text-xl font-bold tabular-nums text-[var(--ink)]">{kpiNewThisMonth}</p>
-          <p className="mt-0.5 text-[11px] text-[var(--ink-muted)]">+{kpiNewThisMonth} this month</p>
+          <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">+{kpiNewThisMonth} this month</p>
         </div>
         <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
-          <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">With Active Jobs</p>
+          <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">With Active Jobs</p>
           <p className="mt-1 text-xl font-bold tabular-nums text-[var(--ink)]">{kpiWithActiveJobs}</p>
-          <p className="mt-0.5 text-[11px] text-[var(--ink-muted)]">open repairs</p>
+          <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">open repairs</p>
         </div>
         <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
-          <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Organisations</p>
+          <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Organisations</p>
           <p className="mt-1 text-xl font-bold tabular-nums text-[var(--ink)]">{kpiWithOrg}</p>
-          <p className="mt-0.5 text-[11px] text-[var(--ink-muted)]">with org name</p>
+          <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">with org name</p>
         </div>
       </div>
 
@@ -252,7 +252,7 @@ export default async function ClientsPage({
         <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
           <Link
             href={segmentHref("all")}
-            className={`rounded-full border px-3 py-1 text-[11px] font-semibold transition-colors ${
+            className={`rounded-full border px-3 py-1 text-[13px] font-semibold transition-colors ${
               segment === "all"
                 ? "border-[var(--accent)] bg-[var(--accent)] text-black"
                 : "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)] hover:border-[var(--accent)]/40 hover:text-[var(--ink)]"
@@ -262,7 +262,7 @@ export default async function ClientsPage({
           </Link>
           <Link
             href={segmentHref("active")}
-            className={`rounded-full border px-3 py-1 text-[11px] font-semibold transition-colors ${
+            className={`rounded-full border px-3 py-1 text-[13px] font-semibold transition-colors ${
               segment === "active"
                 ? "border-[var(--accent)] bg-[var(--accent)] text-black"
                 : "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)] hover:border-[var(--accent)]/40 hover:text-[var(--ink)]"
@@ -272,7 +272,7 @@ export default async function ClientsPage({
           </Link>
           <Link
             href={segmentHref("new")}
-            className={`rounded-full border px-3 py-1 text-[11px] font-semibold transition-colors ${
+            className={`rounded-full border px-3 py-1 text-[13px] font-semibold transition-colors ${
               segment === "new"
                 ? "border-[var(--accent)] bg-[var(--accent)] text-black"
                 : "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)] hover:border-[var(--accent)]/40 hover:text-[var(--ink)]"
@@ -282,7 +282,7 @@ export default async function ClientsPage({
           </Link>
           <Link
             href={segmentHref("high")}
-            className={`rounded-full border px-3 py-1 text-[11px] font-semibold transition-colors ${
+            className={`rounded-full border px-3 py-1 text-[13px] font-semibold transition-colors ${
               segment === "high"
                 ? "border-[var(--accent)] bg-[var(--accent)] text-black"
                 : "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)] hover:border-[var(--accent)]/40 hover:text-[var(--ink)]"
@@ -333,9 +333,9 @@ export default async function ClientsPage({
         {/* Quick create form for OPS/ADMIN — collapsed by default */}
         {(user.role === "ADMIN" || user.role === "OPS") ? (
           <details open={showCreate} className="border-t border-[var(--line)]">
-            <summary className="flex cursor-pointer list-none items-center justify-between px-3 py-2.5 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)] hover:bg-[var(--panel-strong)]/30 [&::-webkit-details-marker]:hidden">
+            <summary className="flex cursor-pointer list-none items-center justify-between px-3 py-2.5 text-[12px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)] hover:bg-[var(--panel-strong)]/30 [&::-webkit-details-marker]:hidden">
               Quick create client
-              <span className="text-[11px] font-semibold text-[var(--accent)]">{showCreate ? "Hide" : "Show"}</span>
+              <span className="text-[13px] font-semibold text-[var(--accent)]">{showCreate ? "Hide" : "Show"}</span>
             </summary>
             <form action={createClientAction} noValidate className="px-3 pb-3">
               {filters.createError ? (
@@ -409,11 +409,11 @@ export default async function ClientsPage({
                     <div className="min-w-0 flex-1">
                       <div className="flex items-baseline justify-between gap-2">
                         <p className="truncate text-[14px] font-bold text-[var(--ink)]">{client.fullName}</p>
-                        <span className="shrink-0 text-[11px] text-[var(--ink-muted)]">
+                        <span className="shrink-0 text-[13px] text-[var(--ink-muted)]">
                           {client._count.jobs} {client._count.jobs === 1 ? "job" : "jobs"}
                         </span>
                       </div>
-                      <p className="mt-0.5 truncate text-[11px] text-[var(--ink-muted)]">
+                      <p className="mt-0.5 truncate text-[13px] text-[var(--ink-muted)]">
                         {[client.phone, client.organization].filter(Boolean).join(" · ")}
                       </p>
                     </div>
@@ -421,19 +421,19 @@ export default async function ClientsPage({
                   {/* Action strip: tap-to-call + WhatsApp */}
                   <div className="flex items-center gap-2 border-t border-[var(--line)]/50 px-4 pb-2.5 pt-2">
                     <a href={`tel:${client.phone}`}
-                      className="flex items-center gap-1.5 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[11px] font-medium text-[var(--ink)]">
+                      className="flex items-center gap-1.5 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] font-medium text-[var(--ink)]">
                       <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.09 9.5a19.79 19.79 0 01-3-8.72A2 2 0 012.11 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14.92z"/></svg>
                       Call
                     </a>
                     <a href={`https://wa.me/${client.phone.replace(/\D/g,"")}`} target="_blank" rel="noreferrer"
-                      className="flex items-center gap-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/8 px-3 py-1.5 text-[11px] font-medium text-emerald-700">
+                      className="flex items-center gap-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/8 px-3 py-1.5 text-[13px] font-medium text-emerald-700">
                       <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
                       WhatsApp
                     </a>
                     {user.role === "ADMIN" && client._count.jobs === 0 ? (
                       <form action={deleteClientAction} className="ml-auto">
                         <input type="hidden" name="id" value={client.id} />
-                        <button type="submit" className="text-[11px] font-medium text-[var(--ink-muted)]/60 transition hover:text-red-500">Delete</button>
+                        <button type="submit" className="text-[13px] font-medium text-[var(--ink-muted)]/60 transition hover:text-red-500">Delete</button>
                       </form>
                     ) : null}
                   </div>
@@ -453,7 +453,7 @@ export default async function ClientsPage({
           {/* ── Desktop table ── */}
           <div className="hidden overflow-x-auto lg:block">
             <table className="w-full min-w-[860px] border-collapse text-[13px]">
-              <thead className="bg-[var(--panel-strong)]/50 text-left text-[10px] font-bold uppercase tracking-[0.15em] text-[var(--ink-muted)]">
+              <thead className="bg-[var(--panel-strong)]/50 text-left text-[12px] font-bold uppercase tracking-[0.15em] text-[var(--ink-muted)]">
                 <tr className="border-b border-[var(--line)]">
                   <th className="w-[3px] p-0" aria-hidden="true" />
                   <th className="px-4 py-2.5">Client</th>
@@ -490,7 +490,7 @@ export default async function ClientsPage({
                     <td className="hidden px-4 py-3 align-middle text-[var(--ink-muted)] 2xl:table-cell">{client.email ?? <span className="opacity-40">—</span>}</td>
                     <td className="hidden px-4 py-3 align-middle text-[var(--ink-muted)] 2xl:table-cell">{client.organization ?? <span className="opacity-40">—</span>}</td>
                     <td className="px-4 py-3 align-middle">
-                      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[12px] font-semibold ${
                         client._count.jobs >= 3
                           ? "border border-[var(--accent)]/30 bg-[var(--accent)]/10 text-[#9A7A00]"
                           : client._count.jobs > 0
@@ -507,7 +507,7 @@ export default async function ClientsPage({
                       <div className="flex items-center justify-end gap-2">
                         <Link
                           href={`/clients/${client.id}`}
-                          className="btn-premium-secondary whitespace-nowrap rounded-lg px-2.5 py-1 text-[11px] font-semibold"
+                          className="btn-premium-secondary whitespace-nowrap rounded-lg px-2.5 py-1 text-[13px] font-semibold"
                         >
                           Open
                         </Link>
@@ -517,7 +517,7 @@ export default async function ClientsPage({
                             <button
                               type="submit"
                               disabled={client._count.jobs > 0}
-                              className="whitespace-nowrap rounded-lg border border-red-400/30 bg-red-500/5 px-2.5 py-1 text-[11px] font-medium text-red-600 transition-colors hover:bg-red-500/10 dark:text-red-400 disabled:cursor-not-allowed disabled:opacity-40"
+                              className="whitespace-nowrap rounded-lg border border-red-400/30 bg-red-500/5 px-2.5 py-1 text-[13px] font-medium text-red-600 transition-colors hover:bg-red-500/10 dark:text-red-400 disabled:cursor-not-allowed disabled:opacity-40"
                             >
                               Delete
                             </button>

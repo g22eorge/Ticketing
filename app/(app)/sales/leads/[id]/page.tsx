@@ -124,7 +124,7 @@ export default async function LeadDetailPage({
       <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Sales · Lead</p>
+            <p className="text-[12px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Sales · Lead</p>
             <p className="text-[13px] font-bold text-[var(--ink)]">{lead.fullName}</p>
             <div className="mt-1 flex flex-wrap items-center gap-2 text-[12px] text-[var(--ink-muted)]">
               <span>{lead.phone}</span>
@@ -135,7 +135,7 @@ export default async function LeadDetailPage({
               {lead.assignedTo ? <><span className="opacity-40">·</span><span>Assigned to {lead.assignedTo.name}</span></> : null}
             </div>
           </div>
-          <span className={`inline-flex items-center rounded-full border px-3 py-1 text-[11px] font-semibold ${LEAD_STATUS_COLORS[lead.status]}`}>
+          <span className={`inline-flex items-center rounded-full border px-3 py-1 text-[13px] font-semibold ${LEAD_STATUS_COLORS[lead.status]}`}>
             {LEAD_STATUS_LABELS[lead.status]}
           </span>
         </div>
@@ -161,7 +161,7 @@ export default async function LeadDetailPage({
         <div className="space-y-4 lg:col-span-2">
           {canEdit ? (
             <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-              <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Update Status</p>
+              <p className="mb-3 text-[13px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Update Status</p>
               {filters.statusError ? (
                 <p className="mb-2 rounded-lg border border-red-400/30 bg-red-500/10 px-3 py-2 text-xs text-red-700 dark:text-red-400">{filters.statusError}</p>
               ) : null}
@@ -183,7 +183,7 @@ export default async function LeadDetailPage({
 
           <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)]">
             <div className="flex items-center justify-between border-b border-[var(--line)] px-4 py-3">
-              <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Activity Timeline</p>
+              <p className="text-[13px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Activity Timeline</p>
             </div>
 
             {canEdit ? (
@@ -214,14 +214,14 @@ export default async function LeadDetailPage({
               <div className="divide-y divide-[var(--line)]">
                 {lead.activities.map((activity) => (
                   <div key={activity.id} className="flex gap-3 px-4 py-3">
-                    <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--panel-strong)] text-[10px] font-bold text-[var(--ink-muted)]">
+                    <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--panel-strong)] text-[12px] font-bold text-[var(--ink-muted)]">
                       {activity.type.charAt(0)}
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <span className="text-[11px] font-semibold text-[var(--ink)]">{ACTIVITY_TYPE_LABELS[activity.type] ?? activity.type}</span>
-                        <span className="text-[11px] text-[var(--ink-muted)]">by {activity.user.name}</span>
-                        <span className="ml-auto text-[10px] text-[var(--ink-muted)]">{formatEATDateTime(activity.createdAt)}</span>
+                        <span className="text-[13px] font-semibold text-[var(--ink)]">{ACTIVITY_TYPE_LABELS[activity.type] ?? activity.type}</span>
+                        <span className="text-[13px] text-[var(--ink-muted)]">by {activity.user.name}</span>
+                        <span className="ml-auto text-[12px] text-[var(--ink-muted)]">{formatEATDateTime(activity.createdAt)}</span>
                       </div>
                       {activity.note ? <p className="mt-0.5 text-[12px] text-[var(--ink-muted)]">{activity.note}</p> : null}
                     </div>
@@ -235,11 +235,11 @@ export default async function LeadDetailPage({
         <div className="space-y-4">
           <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)]">
             <div className="flex items-center justify-between border-b border-[var(--line)] px-4 py-3">
-              <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Quotations</p>
+              <p className="text-[13px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Quotations</p>
               {can.createQuotations(user) ? (
                 <Link
                   href={`/sales/quotations/new?leadId=${lead.id}`}
-                  className="text-[11px] font-semibold text-[var(--accent)] hover:underline"
+                  className="text-[13px] font-semibold text-[var(--accent)] hover:underline"
                 >
                   + Create
                 </Link>
@@ -255,9 +255,9 @@ export default async function LeadDetailPage({
                       <Link href={`/sales/quotations/${q.id}`} className="text-[12px] font-semibold text-[var(--ink)] hover:text-[var(--accent)] hover:underline">
                         {q.quoteNumber}
                       </Link>
-                      <p className="text-[11px] text-[var(--ink-muted)]">{formatMoney(q.totalAmount, q.currency)}</p>
+                      <p className="text-[13px] text-[var(--ink-muted)]">{formatMoney(q.totalAmount, q.currency)}</p>
                     </div>
-                    <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold ${QUOTATION_STATUS_COLORS[q.status] ?? ""}`}>
+                    <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[12px] font-semibold ${QUOTATION_STATUS_COLORS[q.status] ?? ""}`}>
                       {q.status}
                     </span>
                   </div>
@@ -267,7 +267,7 @@ export default async function LeadDetailPage({
           </div>
 
           <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
-            <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Details</p>
+            <p className="mb-2 text-[13px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Details</p>
             <dl className="space-y-1 text-[12px]">
               <div className="flex justify-between gap-2">
                 <dt className="text-[var(--ink-muted)]">Created</dt>

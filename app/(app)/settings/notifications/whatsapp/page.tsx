@@ -37,7 +37,7 @@ export default async function WhatsAppSettingsPage() {
       <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-5">
         <div className="mb-4 flex items-start justify-between gap-3">
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]">
+            <p className="text-[12px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]">
               WhatsApp Business Account
             </p>
             <p className="mt-0.5 text-xs text-[var(--ink-muted)]">
@@ -45,17 +45,17 @@ export default async function WhatsAppSettingsPage() {
             </p>
           </div>
           {health?.ok ? (
-            <span className="flex shrink-0 items-center gap-1.5 rounded-full border border-emerald-400/30 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 dark:text-emerald-400">
+            <span className="flex shrink-0 items-center gap-1.5 rounded-full border border-emerald-400/30 bg-emerald-500/10 px-2.5 py-1 text-[13px] font-semibold text-emerald-700 dark:text-emerald-400">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
               Connected
             </span>
           ) : summary.configured ? (
-            <span className="flex shrink-0 items-center gap-1.5 rounded-full border border-red-400/30 bg-red-500/10 px-2.5 py-1 text-[11px] font-semibold text-red-700 dark:text-red-400">
+            <span className="flex shrink-0 items-center gap-1.5 rounded-full border border-red-400/30 bg-red-500/10 px-2.5 py-1 text-[13px] font-semibold text-red-700 dark:text-red-400">
               <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
               Error
             </span>
           ) : (
-            <span className="flex shrink-0 items-center gap-1.5 rounded-full border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1 text-[11px] font-semibold text-[var(--ink-muted)]">
+            <span className="flex shrink-0 items-center gap-1.5 rounded-full border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1 text-[13px] font-semibold text-[var(--ink-muted)]">
               Not configured
             </span>
           )}
@@ -64,7 +64,7 @@ export default async function WhatsAppSettingsPage() {
         {summary.configured ? (
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <div className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-4 py-3">
-              <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.13em] text-[var(--ink-muted)]">Business Number</p>
+              <p className="mb-1 text-[12px] font-bold uppercase tracking-[0.13em] text-[var(--ink-muted)]">Business Number</p>
               <div className="flex items-center gap-2">
                 <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#25D366]/15">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="#25D366">
@@ -78,21 +78,21 @@ export default async function WhatsAppSettingsPage() {
             </div>
 
             <div className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-4 py-3">
-              <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.13em] text-[var(--ink-muted)]">Verified Name</p>
+              <p className="mb-1 text-[12px] font-bold uppercase tracking-[0.13em] text-[var(--ink-muted)]">Verified Name</p>
               <p className="text-sm font-semibold text-[var(--ink)]">
                 {healthData?.verified_name ?? "—"}
               </p>
             </div>
 
             <div className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-4 py-3">
-              <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.13em] text-[var(--ink-muted)]">Verification</p>
+              <p className="mb-1 text-[12px] font-bold uppercase tracking-[0.13em] text-[var(--ink-muted)]">Verification</p>
               <p className="text-sm font-semibold text-[var(--ink)]">
                 {healthData?.code_verification_status ?? "—"}
               </p>
             </div>
 
             <div className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-4 py-3">
-              <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.13em] text-[var(--ink-muted)]">Quality Rating</p>
+              <p className="mb-1 text-[12px] font-bold uppercase tracking-[0.13em] text-[var(--ink-muted)]">Quality Rating</p>
               <p className="text-sm font-semibold text-[var(--ink)]">
                 {healthData?.quality_rating ?? "—"}
               </p>

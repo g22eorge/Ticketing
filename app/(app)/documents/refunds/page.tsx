@@ -167,27 +167,27 @@ export default async function RefundsPage({
       <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--line)] px-4 py-2.5">
           <div>
-            <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Documents</p>
+            <p className="text-[12px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Documents</p>
             <p className="text-[13px] font-bold text-[var(--ink)]">Refunds</p>
-            <p className="text-[11px] text-[var(--ink-muted)]">All cash refunds issued against invoices and sales</p>
+            <p className="text-[13px] text-[var(--ink-muted)]">All cash refunds issued against invoices and sales</p>
           </div>
         </div>
         <div className="grid grid-cols-2 divide-x divide-y divide-[var(--line)] sm:grid-cols-4 sm:divide-y-0">
           <div className="px-4 py-2.5">
-            <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">Total Refunds</p>
+            <p className="text-[13px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">Total Refunds</p>
             <p className="text-[15px] font-black tabular-nums leading-tight text-[var(--ink)]">{totalRefunds}</p>
-            <p className="text-[10px] text-[var(--ink-muted)]">all time</p>
+            <p className="text-[12px] text-[var(--ink-muted)]">all time</p>
           </div>
           <div className="px-4 py-2.5">
-            <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">Total Refunded</p>
+            <p className="text-[13px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">Total Refunded</p>
             <p className="text-[15px] font-black tabular-nums leading-tight text-[var(--ink)]">{formatMoney(totalAmount, currency)}</p>
           </div>
           <div className="px-4 py-2.5">
-            <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">Invoice Refunds</p>
+            <p className="text-[13px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">Invoice Refunds</p>
             <p className="text-[15px] font-black tabular-nums leading-tight text-[var(--ink)]">{formatMoney(invoiceAmount, currency)}</p>
           </div>
           <div className="px-4 py-2.5">
-            <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">Sale Refunds</p>
+            <p className="text-[13px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">Sale Refunds</p>
             <p className="text-[15px] font-black tabular-nums leading-tight text-[var(--accent)]">{formatMoney(saleAmount, currency)}</p>
           </div>
         </div>
@@ -255,29 +255,29 @@ export default async function RefundsPage({
                         ) : (
                           <span className="font-mono text-xs font-semibold text-[var(--ink)]">{sourceLabelM}</span>
                         )}
-                        <span className={`rounded px-1 py-0.5 text-[10px] font-semibold ${r.invoiceId ? "border border-blue-400/30 bg-blue-500/10 text-blue-700 dark:text-blue-400" : "border border-violet-400/30 bg-violet-500/10 text-violet-700 dark:text-violet-400"}`}>
+                        <span className={`rounded px-1 py-0.5 text-[12px] font-semibold ${r.invoiceId ? "border border-blue-400/30 bg-blue-500/10 text-blue-700 dark:text-blue-400" : "border border-violet-400/30 bg-violet-500/10 text-violet-700 dark:text-violet-400"}`}>
                           {r.invoiceId ? "Invoice" : "Sale"}
                         </span>
                       </div>
-                      <span className="shrink-0 rounded border border-[var(--line)] bg-[var(--panel-strong)] px-1.5 py-0.5 text-[11px] font-semibold text-[var(--ink-muted)]">{r.method.replace(/_/g, " ")}</span>
+                      <span className="shrink-0 rounded border border-[var(--line)] bg-[var(--panel-strong)] px-1.5 py-0.5 text-[13px] font-semibold text-[var(--ink-muted)]">{r.method.replace(/_/g, " ")}</span>
                     </div>
-                    <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px]">
+                    <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[13px]">
                       <span className="font-medium text-[var(--ink)]">{clientNameM}</span>
                       <span className="font-bold tabular-nums text-[var(--ink)]">{formatMoney(r.amount, refundCurrencyM)}</span>
                       <span className="text-[var(--ink-muted)]">{r.refundedAt.toLocaleDateString()}</span>
                     </div>
                     {(r.reference || r.note) && (
-                      <div className="mt-0.5 flex flex-wrap gap-x-3 text-[11px] text-[var(--ink-muted)]">
+                      <div className="mt-0.5 flex flex-wrap gap-x-3 text-[13px] text-[var(--ink-muted)]">
                         {r.reference && <span>Ref: <span className="font-mono">{r.reference}</span></span>}
                         {r.note && <span className="line-clamp-1">{r.note}</span>}
                       </div>
                     )}
-                    <div className="mt-1 flex items-center justify-between text-[11px] text-[var(--ink-muted)]">
+                    <div className="mt-1 flex items-center justify-between text-[13px] text-[var(--ink-muted)]">
                       <span>By: {r.createdBy?.name ?? "—"}</span>
                       {user.role === "ADMIN" && (
                         <form action={deleteRefundAction}>
                           <input type="hidden" name="refundId" value={r.id} />
-                          <ConfirmSubmitButton message="Delete this refund? This cannot be undone." confirmLabel="Delete" className="rounded border border-red-400/30 px-2 py-0.5 text-[11px] font-semibold text-red-600 hover:bg-red-500/10 dark:text-red-400">Delete</ConfirmSubmitButton>
+                          <ConfirmSubmitButton message="Delete this refund? This cannot be undone." confirmLabel="Delete" className="rounded border border-red-400/30 px-2 py-0.5 text-[13px] font-semibold text-red-600 hover:bg-red-500/10 dark:text-red-400">Delete</ConfirmSubmitButton>
                         </form>
                       )}
                     </div>
@@ -289,7 +289,7 @@ export default async function RefundsPage({
             <div className="hidden overflow-x-auto lg:block">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-[var(--border)] text-[11px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
+                  <tr className="border-b border-[var(--border)] text-[13px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
                     <th className="px-4 py-3 text-left">Date</th>
                     <th className="px-4 py-3 text-left">Source</th>
                     <th className="px-4 py-3 text-left">Client</th>
@@ -334,18 +334,18 @@ export default async function RefundsPage({
                             <span className="font-mono text-xs font-semibold">{sourceLabel}</span>
                           )}
                           {r.creditNote && (
-                            <span className="text-[10px] text-[var(--ink-muted)]">
+                            <span className="text-[12px] text-[var(--ink-muted)]">
                               CN: {r.creditNote.creditNoteNumber}
                             </span>
                           )}
-                          <span className={`inline-flex w-fit rounded px-1 py-0.5 text-[10px] font-semibold ${r.invoiceId ? "border border-blue-400/30 bg-blue-500/10 text-blue-700 dark:text-blue-400" : "border border-violet-400/30 bg-violet-500/10 text-violet-700 dark:text-violet-400"}`}>
+                          <span className={`inline-flex w-fit rounded px-1 py-0.5 text-[12px] font-semibold ${r.invoiceId ? "border border-blue-400/30 bg-blue-500/10 text-blue-700 dark:text-blue-400" : "border border-violet-400/30 bg-violet-500/10 text-violet-700 dark:text-violet-400"}`}>
                             {r.invoiceId ? "Invoice" : "Sale"}
                           </span>
                         </div>
                       </td>
                       <td className="px-4 py-3 font-medium text-[var(--ink)]">{clientName}</td>
                       <td className="px-4 py-3">
-                        <span className="rounded border border-[var(--line)] bg-[var(--panel-strong)] px-1.5 py-0.5 text-[11px] font-semibold text-[var(--ink-muted)]">
+                        <span className="rounded border border-[var(--line)] bg-[var(--panel-strong)] px-1.5 py-0.5 text-[13px] font-semibold text-[var(--ink-muted)]">
                           {r.method.replace(/_/g, " ")}
                         </span>
                       </td>
@@ -368,7 +368,7 @@ export default async function RefundsPage({
                             <ConfirmSubmitButton
                               message="Delete this refund? This cannot be undone."
                               confirmLabel="Delete"
-                              className="rounded border border-red-400/30 px-2 py-0.5 text-[11px] font-semibold text-red-600 hover:bg-red-500/10 dark:text-red-400"
+                              className="rounded border border-red-400/30 px-2 py-0.5 text-[13px] font-semibold text-red-600 hover:bg-red-500/10 dark:text-red-400"
                             >Delete</ConfirmSubmitButton>
                           </form>
                         </td>
@@ -389,7 +389,7 @@ export default async function RefundsPage({
           <h2 className="mb-3 text-sm font-bold text-[var(--ink)]">Issue New Refund</h2>
           <form action={createRefundAction} className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             <div className="space-y-1">
-              <label className="text-[11px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
+              <label className="text-[13px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
                 Invoice ID
               </label>
               <input
@@ -399,7 +399,7 @@ export default async function RefundsPage({
               />
             </div>
             <div className="space-y-1">
-              <label className="text-[11px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
+              <label className="text-[13px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
                 Sale ID (if not invoice)
               </label>
               <input
@@ -409,7 +409,7 @@ export default async function RefundsPage({
               />
             </div>
             <div className="space-y-1">
-              <label className="text-[11px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
+              <label className="text-[13px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
                 Amount ({currency})
               </label>
               <input
@@ -423,7 +423,7 @@ export default async function RefundsPage({
               />
             </div>
             <div className="space-y-1">
-              <label className="text-[11px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
+              <label className="text-[13px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
                 Method
               </label>
               <select
@@ -436,7 +436,7 @@ export default async function RefundsPage({
               </select>
             </div>
             <div className="space-y-1">
-              <label className="text-[11px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
+              <label className="text-[13px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
                 Reference (optional)
               </label>
               <input
@@ -446,7 +446,7 @@ export default async function RefundsPage({
               />
             </div>
             <div className="space-y-1">
-              <label className="text-[11px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
+              <label className="text-[13px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
                 Note (optional)
               </label>
               <input

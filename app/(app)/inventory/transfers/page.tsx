@@ -68,7 +68,7 @@ export default async function StockTransfersPage({
       {error ? <div className="rounded-xl border border-red-500/25 bg-red-500/10 px-4 py-3 text-sm text-red-500">{error}</div> : null}
 
       <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
-        <p className="mb-2.5 text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Request Transfer</p>
+        <p className="mb-2.5 text-[12px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Request Transfer</p>
         <form action={createStockTransferAction} className="grid gap-2 lg:grid-cols-[1fr_1fr_1.4fr_0.55fr_1fr_auto]">
           <select name="fromLocationId" required className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/60">
             <option value="">From location</option>
@@ -94,7 +94,7 @@ export default async function StockTransfersPage({
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-[var(--panel-strong)] text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
+              <thead className="bg-[var(--panel-strong)] text-[12px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
                 <tr>
                   <th className="px-4 py-2.5 text-left">Transfer</th>
                   <th className="px-4 py-2.5 text-left">Route</th>
@@ -113,7 +113,7 @@ export default async function StockTransfersPage({
                       <td className="px-4 py-3 font-mono font-semibold text-[var(--ink)]">{transfer.transferNumber}</td>
                       <td className="px-4 py-3 text-[var(--ink-muted)]">{locationName.get(transfer.fromLocationId) ?? "From"} → {locationName.get(transfer.toLocationId) ?? "To"}</td>
                       <td className="px-4 py-3 text-[var(--ink)]">{itemLabel}</td>
-                      <td className="px-4 py-3"><span className={`rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${STATUS_STYLE[transfer.status] ?? STATUS_STYLE.REQUESTED}`}>{transfer.status.replaceAll("_", " ")}</span></td>
+                      <td className="px-4 py-3"><span className={`rounded-full border px-2.5 py-0.5 text-[13px] font-semibold ${STATUS_STYLE[transfer.status] ?? STATUS_STYLE.REQUESTED}`}>{transfer.status.replaceAll("_", " ")}</span></td>
                       <td className="hidden px-4 py-3 text-[var(--ink-muted)] md:table-cell">{fmt(transfer.createdAt)}</td>
                       <td className="px-4 py-3 text-right">
                         <div className="flex flex-wrap justify-end gap-1.5">

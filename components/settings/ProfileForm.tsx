@@ -47,7 +47,7 @@ export function ProfileForm({
   return (
     <form action={formAction} className="panel-shadow space-y-4 rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
       <div className="rounded-lg border border-[var(--accent)]/30 bg-[var(--accent)]/10 px-3 py-2">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--accent)]">Profile Summary</p>
+        <p className="text-[13px] font-semibold uppercase tracking-[0.12em] text-[var(--accent)]">Profile Summary</p>
         <p className="mt-1 text-sm text-[var(--ink)]">Keep your contact details current so internal handoffs and approvals remain accurate.</p>
       </div>
 
@@ -82,11 +82,11 @@ export function ProfileForm({
 
       <div className="grid gap-2 sm:grid-cols-2">
         <div className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2">
-          <p className="text-[11px] uppercase tracking-[0.08em] text-[var(--ink-muted)]">Email</p>
+          <p className="text-[13px] uppercase tracking-[0.08em] text-[var(--ink-muted)]">Email</p>
           <p className="mt-1 text-sm font-medium text-[var(--ink)]">{email}</p>
         </div>
         <div className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2">
-          <p className="text-[11px] uppercase tracking-[0.08em] text-[var(--ink-muted)]">Role</p>
+          <p className="text-[13px] uppercase tracking-[0.08em] text-[var(--ink-muted)]">Role</p>
           <p className="mt-1 text-sm font-medium text-[var(--ink)]">{role}</p>
         </div>
       </div>

@@ -290,7 +290,7 @@ export default async function PayoutFollowupsPage({
   const prevPage = Math.max(1, page - 1);
   const nextPage = Math.min(totalPages, page + 1);
 
-  const thClass = "px-4 py-2.5 text-left text-[10px] font-bold uppercase tracking-[0.15em] text-[var(--ink-muted)]";
+  const thClass = "px-4 py-2.5 text-left text-[12px] font-bold uppercase tracking-[0.15em] text-[var(--ink-muted)]";
   const tdClass = "px-4 py-2.5";
 
   return (
@@ -299,7 +299,7 @@ export default async function PayoutFollowupsPage({
       <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Finance</p>
+            <p className="text-[12px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Finance</p>
             <p className="text-base font-semibold text-[var(--ink)]">Business Finance Hub</p>
             <p className="mt-0.5 text-xs text-[var(--ink-muted)]">
               Receivables, payables, and tech payouts across all revenue streams.
@@ -380,7 +380,7 @@ export default async function PayoutFollowupsPage({
           <div className="flex items-center gap-2">
             <span className="inline-block h-2.5 w-2.5 rounded-full bg-violet-400" />
             <p className="text-sm font-semibold text-[var(--ink)]">Invoice Receivables — Outstanding</p>
-            <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-semibold text-violet-700 dark:bg-violet-950/40 dark:text-violet-400">
+            <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[12px] font-semibold text-violet-700 dark:bg-violet-950/40 dark:text-violet-400">
               {invoiceTotal}
             </span>
           </div>
@@ -399,9 +399,9 @@ export default async function PayoutFollowupsPage({
                     <div key={`m-${inv.id}`} className="px-4 py-3">
                       <div className="mb-1 flex items-center justify-between gap-2">
                         <Link href={`/documents/invoices/${inv.id}`} className="font-mono text-[13px] font-bold text-[var(--ink)] hover:text-[var(--accent)]">{inv.invoiceNumber}</Link>
-                        {overdueDays != null ? <span className="shrink-0 rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-semibold text-rose-700 dark:bg-rose-950/40 dark:text-rose-400">{overdueDays}d overdue</span> : <span className="text-[11px] text-emerald-600">On time</span>}
+                        {overdueDays != null ? <span className="shrink-0 rounded-full bg-rose-100 px-2 py-0.5 text-[12px] font-semibold text-rose-700 dark:bg-rose-950/40 dark:text-rose-400">{overdueDays}d overdue</span> : <span className="text-[13px] text-emerald-600">On time</span>}
                       </div>
-                      <p className="text-[13px] font-medium text-[var(--ink)]">{inv.client?.fullName ?? "—"} <span className="text-[11px] font-normal text-[var(--ink-muted)]">{inv.client?.phone}</span></p>
+                      <p className="text-[13px] font-medium text-[var(--ink)]">{inv.client?.fullName ?? "—"} <span className="text-[13px] font-normal text-[var(--ink-muted)]">{inv.client?.phone}</span></p>
                       <div className="mt-1 flex items-center gap-3 text-[12px]">
                         <span className="font-semibold text-violet-700 dark:text-violet-400">{formatMoneyCompact(balance, currency)} due</span>
                         <span className="text-[var(--ink-muted)]">{inv.dueDate ? new Date(inv.dueDate).toLocaleDateString() : "No due date"}</span>
@@ -424,13 +424,13 @@ export default async function PayoutFollowupsPage({
                         <tr key={`d-${inv.id}`} className="border-t border-[var(--line)] transition-colors hover:bg-[var(--panel-strong)]/30">
                           <td className={`${tdClass} font-semibold`}><Link href={`/documents/invoices/${inv.id}`} className="hover:text-[var(--accent)] transition-colors">{inv.invoiceNumber}</Link></td>
                           <td className={tdClass}><p className="font-medium">{inv.client?.fullName ?? "—"}</p><p className="text-xs text-[var(--ink-muted)]">{inv.client?.phone ?? ""}</p></td>
-                          <td className={tdClass}><span className="inline-block rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-semibold capitalize text-violet-700 dark:bg-violet-950/40 dark:text-violet-400">{inv.invoiceType.toLowerCase()}</span></td>
+                          <td className={tdClass}><span className="inline-block rounded-full bg-violet-100 px-2 py-0.5 text-[12px] font-semibold capitalize text-violet-700 dark:bg-violet-950/40 dark:text-violet-400">{inv.invoiceType.toLowerCase()}</span></td>
                           <td className={`${tdClass} max-w-[180px] truncate text-[var(--ink-muted)]`}>{inv.subject ?? "—"}</td>
                           <td className={tdClass}>{formatMoneyCompact(inv.totalAmount, currency)}</td>
                           <td className={tdClass}>{inv.paidAmount > 0 ? <span className="text-emerald-700 dark:text-emerald-400">{formatMoneyCompact(inv.paidAmount, currency)}</span> : <span className="text-[var(--ink-muted)]">—</span>}</td>
                           <td className={`${tdClass} font-semibold text-violet-700 dark:text-violet-400`}>{formatMoneyCompact(balance, currency)}</td>
                           <td className={`${tdClass} text-xs text-[var(--ink-muted)]`}>{inv.dueDate ? new Date(inv.dueDate).toLocaleDateString() : "—"}</td>
-                          <td className={tdClass}>{overdueDays != null ? <span className="inline-block rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-semibold text-rose-700 dark:bg-rose-950/40 dark:text-rose-400">{overdueDays}d overdue</span> : <span className="text-[var(--ink-muted)] text-xs">On time</span>}</td>
+                          <td className={tdClass}>{overdueDays != null ? <span className="inline-block rounded-full bg-rose-100 px-2 py-0.5 text-[12px] font-semibold text-rose-700 dark:bg-rose-950/40 dark:text-rose-400">{overdueDays}d overdue</span> : <span className="text-[var(--ink-muted)] text-xs">On time</span>}</td>
                           <td className={tdClass}><Link href={`/documents/invoices/${inv.id}`} className="btn-premium-secondary rounded-lg px-3 py-1.5 text-sm">Open</Link></td>
                         </tr>
                       );
@@ -450,7 +450,7 @@ export default async function PayoutFollowupsPage({
           <div className="flex items-center gap-2">
             <span className="inline-block h-2.5 w-2.5 rounded-full bg-amber-400" />
             <p className="text-sm font-semibold text-[var(--ink)]">Repair Client Payments — Outstanding</p>
-            <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:bg-amber-950/40 dark:text-amber-400">
+            <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[12px] font-semibold text-amber-700 dark:bg-amber-950/40 dark:text-amber-400">
               {clientTotal}
             </span>
           </div>
@@ -470,8 +470,8 @@ export default async function PayoutFollowupsPage({
                         <Link href={`/jobs/${job.id}?tab=financials&returnTo=/payout-followups&returnLabel=Finance+Hub`} className="font-mono text-[13px] font-bold text-[var(--accent)]">{job.jobNumber}</Link>
                         <span className="text-[12px] font-semibold text-amber-700 dark:text-amber-400">{formatMoneyCompact(job.clientBill ?? 0, currency)}</span>
                       </div>
-                      <p className="text-[13px] font-medium text-[var(--ink)]">{job.client?.fullName ?? "—"} <span className="text-[11px] font-normal text-[var(--ink-muted)]">{job.client?.phone}</span></p>
-                      <p className="mt-0.5 text-[11px] text-[var(--ink-muted)]">{job.assignedTo?.name ?? "Unassigned"}{doneAt ? ` · ${new Date(doneAt).toLocaleDateString()}` : ""}</p>
+                      <p className="text-[13px] font-medium text-[var(--ink)]">{job.client?.fullName ?? "—"} <span className="text-[13px] font-normal text-[var(--ink-muted)]">{job.client?.phone}</span></p>
+                      <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">{job.assignedTo?.name ?? "Unassigned"}{doneAt ? ` · ${new Date(doneAt).toLocaleDateString()}` : ""}</p>
                     </div>
                   );
                 })}
@@ -491,7 +491,7 @@ export default async function PayoutFollowupsPage({
                           <td className={`${tdClass} font-semibold`}><Link href={`/jobs/${job.id}?tab=financials&returnTo=/payout-followups&returnLabel=Finance+Hub`} className="hover:text-[var(--accent)] transition-colors">{job.jobNumber}</Link></td>
                           <td className={tdClass}><p className="font-medium">{job.client?.fullName ?? "—"}</p><p className="text-xs text-[var(--ink-muted)]">{job.client?.phone ?? "—"}</p></td>
                           <td className={tdClass}>{job.assignedTo?.name ?? "Unassigned"}</td>
-                          <td className={tdClass}><span className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold ${job.repairPath === "EXTERNAL" ? "border border-blue-400/30 bg-blue-500/10 text-blue-700 dark:text-blue-400" : "bg-[var(--accent)]/10 text-[var(--accent)]"}`}>{job.repairPath === "EXTERNAL" ? "External" : "In-house"}</span></td>
+                          <td className={tdClass}><span className={`inline-block rounded-full px-2 py-0.5 text-[12px] font-semibold ${job.repairPath === "EXTERNAL" ? "border border-blue-400/30 bg-blue-500/10 text-blue-700 dark:text-blue-400" : "bg-[var(--accent)]/10 text-[var(--accent)]"}`}>{job.repairPath === "EXTERNAL" ? "External" : "In-house"}</span></td>
                           <td className={tdClass}>{repairCost > 0 ? formatMoneyCompact(repairCost, currency) : <span className="text-[var(--ink-muted)]">—</span>}</td>
                           <td className={`${tdClass} font-semibold text-amber-700 dark:text-amber-400`}>{formatMoneyCompact(job.clientBill ?? 0, currency)}</td>
                           <td className={`${tdClass} text-xs text-[var(--ink-muted)]`}>{doneAt ? new Date(doneAt).toLocaleDateString() : "—"}</td>
@@ -514,7 +514,7 @@ export default async function PayoutFollowupsPage({
           <div className="flex items-center gap-2">
             <span className="inline-block h-2.5 w-2.5 rounded-full bg-rose-400" />
             <p className="text-sm font-semibold text-[var(--ink)]">Supplier Bills — Payable</p>
-            <span className="rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-semibold text-rose-700 dark:bg-rose-950/40 dark:text-rose-400">
+            <span className="rounded-full bg-rose-100 px-2 py-0.5 text-[12px] font-semibold text-rose-700 dark:bg-rose-950/40 dark:text-rose-400">
               {billTotal}
             </span>
           </div>
@@ -533,7 +533,7 @@ export default async function PayoutFollowupsPage({
                     <div key={`m-${bill.id}`} className="px-4 py-3">
                       <div className="mb-0.5 flex items-center justify-between gap-2">
                         <Link href={`/inventory/supplier-bills/${bill.id}`} className="font-mono text-[13px] font-bold text-[var(--ink)] hover:text-[var(--accent)]">{bill.billNumber}</Link>
-                        {overdueDays != null ? <span className="shrink-0 rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-semibold text-rose-700 dark:bg-rose-950/40 dark:text-rose-400">{overdueDays}d overdue</span> : <span className="text-[11px] text-emerald-600">On time</span>}
+                        {overdueDays != null ? <span className="shrink-0 rounded-full bg-rose-100 px-2 py-0.5 text-[12px] font-semibold text-rose-700 dark:bg-rose-950/40 dark:text-rose-400">{overdueDays}d overdue</span> : <span className="text-[13px] text-emerald-600">On time</span>}
                       </div>
                       <p className="text-[13px] font-medium text-[var(--ink)]">{bill.supplier.name}</p>
                       <div className="mt-0.5 flex items-center gap-3 text-[12px]">
@@ -563,7 +563,7 @@ export default async function PayoutFollowupsPage({
                           </td>
                           <td className={tdClass}>{bill.supplier.name}</td>
                           <td className={tdClass}>
-                            <span className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                            <span className={`inline-block rounded-full px-2 py-0.5 text-[12px] font-semibold ${
                               bill.status === "PART_PAID"
                                 ? "border border-amber-400/30 bg-amber-500/10 text-amber-700 dark:text-amber-400"
                                 : "bg-[var(--panel-strong)] text-[var(--ink-muted)]"
@@ -585,7 +585,7 @@ export default async function PayoutFollowupsPage({
                           </td>
                           <td className={tdClass}>
                             {overdueDays != null ? (
-                              <span className="inline-block rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-semibold text-rose-700 dark:bg-rose-950/40 dark:text-rose-400">
+                              <span className="inline-block rounded-full bg-rose-100 px-2 py-0.5 text-[12px] font-semibold text-rose-700 dark:bg-rose-950/40 dark:text-rose-400">
                                 {overdueDays}d overdue
                               </span>
                             ) : (
@@ -615,7 +615,7 @@ export default async function PayoutFollowupsPage({
           <div className="flex items-center gap-2">
             <span className="inline-block h-2.5 w-2.5 rounded-full bg-blue-400" />
             <p className="text-sm font-semibold text-[var(--ink)]">External Tech Payouts — Pending</p>
-            <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-semibold text-blue-700 dark:bg-blue-950/40 dark:text-blue-400">
+            <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[12px] font-semibold text-blue-700 dark:bg-blue-950/40 dark:text-blue-400">
               {techTotal}
             </span>
           </div>
@@ -636,13 +636,13 @@ export default async function PayoutFollowupsPage({
                         <Link href={`/jobs/${job.id}?tab=financials&returnTo=/payout-followups&returnLabel=Finance+Hub`} className="font-mono text-[13px] font-bold text-[var(--accent)]">{job.jobNumber}</Link>
                         <span className="text-[12px] font-semibold text-blue-700 dark:text-blue-400">{formatMoneyCompact(payoutDue, currency)} payout</span>
                       </div>
-                      <p className="text-[13px] font-medium text-[var(--ink)]">{job.client?.fullName ?? "—"} <span className="text-[11px] font-normal text-[var(--ink-muted)]">{job.client?.phone}</span></p>
-                      <p className="mt-0.5 text-[11px] text-[var(--ink-muted)]">{job.assignedTo?.name ?? "Unassigned"}{doneAt ? ` · ${new Date(doneAt).toLocaleDateString()}` : ""}</p>
+                      <p className="text-[13px] font-medium text-[var(--ink)]">{job.client?.fullName ?? "—"} <span className="text-[13px] font-normal text-[var(--ink-muted)]">{job.client?.phone}</span></p>
+                      <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">{job.assignedTo?.name ?? "Unassigned"}{doneAt ? ` · ${new Date(doneAt).toLocaleDateString()}` : ""}</p>
                       {/* Mark Paid action */}
                       <form action={markExternalTechPaid} className="mt-2">
                         <input type="hidden" name="jobId" value={job.id} />
                         <button type="submit"
-                          className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 py-1.5 text-[11px] font-bold text-emerald-700 transition hover:bg-emerald-500/20 dark:text-emerald-400">
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 py-1.5 text-[13px] font-bold text-emerald-700 transition hover:bg-emerald-500/20 dark:text-emerald-400">
                           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden><polyline points="20 6 9 17 4 12"/></svg>
                           Mark Paid — {formatMoneyCompact(payoutDue, currency)}
                         </button>

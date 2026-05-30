@@ -91,7 +91,7 @@ export default async function QuotationDetailPage({
       <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Sales · Quotation</p>
+            <p className="text-[12px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Sales · Quotation</p>
             <p className="font-mono text-[13px] font-bold text-[var(--ink)]">{quotation.quoteNumber}</p>
             <div className="mt-1 flex flex-wrap items-center gap-2 text-[12px] text-[var(--ink-muted)]">
               {recipientName ? <span>For: {recipientName}</span> : null}
@@ -105,7 +105,7 @@ export default async function QuotationDetailPage({
               <span>By {quotation.createdBy?.name ?? "Unknown"}</span>
             </div>
           </div>
-          <span className={`inline-flex items-center rounded-full border px-3 py-1 text-[11px] font-semibold ${QUOTATION_STATUS_COLORS[quotation.status]}`}>
+          <span className={`inline-flex items-center rounded-full border px-3 py-1 text-[13px] font-semibold ${QUOTATION_STATUS_COLORS[quotation.status]}`}>
             {quotation.status}
           </span>
         </div>
@@ -113,7 +113,7 @@ export default async function QuotationDetailPage({
 
       {canSend || canAccept || canReject ? (
         <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
-          <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Actions</p>
+          <p className="mb-3 text-[13px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Actions</p>
           <div className="flex flex-wrap gap-2">
             {canSend ? (
               <form action={sendAction}>
@@ -151,11 +151,11 @@ export default async function QuotationDetailPage({
 
       <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
         <div className="border-b border-[var(--line)] px-4 py-3">
-          <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Line Items</p>
+          <p className="text-[13px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Line Items</p>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full border-collapse text-[13px]">
-            <thead className="bg-[var(--panel-strong)]/50 text-left text-[10px] font-bold uppercase tracking-[0.15em] text-[var(--ink-muted)]">
+            <thead className="bg-[var(--panel-strong)]/50 text-left text-[12px] font-bold uppercase tracking-[0.15em] text-[var(--ink-muted)]">
               <tr className="border-b border-[var(--line)]">
                 <th className="px-4 py-2.5">Description</th>
                 <th className="w-16 px-4 py-2.5 text-right">Qty</th>
@@ -205,7 +205,7 @@ export default async function QuotationDetailPage({
       </div>
 
       <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-4">
-        <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Details</p>
+        <p className="mb-3 text-[13px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Details</p>
         <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-[12px] sm:grid-cols-3">
           <div>
             <dt className="text-[var(--ink-muted)]">Created</dt>
@@ -258,7 +258,7 @@ export default async function QuotationDetailPage({
         </dl>
         {quotation.notes ? (
           <div className="mt-3 border-t border-[var(--line)] pt-3">
-            <p className="mb-1 text-[11px] font-semibold text-[var(--ink-muted)]">Notes</p>
+            <p className="mb-1 text-[13px] font-semibold text-[var(--ink-muted)]">Notes</p>
             <p className="whitespace-pre-wrap text-[12px] text-[var(--ink)]">{quotation.notes}</p>
           </div>
         ) : null}

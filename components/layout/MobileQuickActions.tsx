@@ -80,7 +80,7 @@ export function MobileQuickActions({ role, permissions = [] }: { role: Role; per
           <Link
             key={action.href}
             href={action.href}
-            className={`min-w-0 rounded-lg border px-2 py-2 text-center text-[11px] font-semibold tracking-[0.08em] transition-colors ${
+            className={`min-w-0 rounded-lg border px-2 py-2 text-center text-[13px] font-semibold tracking-[0.08em] transition-colors ${
               active
                 ? "border-[var(--accent)]/30 bg-[var(--accent)]/10 text-[#9A7A00]"
                 : "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)] hover:border-[var(--accent)]/20 hover:text-[var(--ink)]"

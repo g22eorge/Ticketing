@@ -138,7 +138,7 @@ export default async function CashierShiftsPage({
         <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
           <div>
             <p className="text-[13px] font-bold text-[var(--ink)]">Cashier Shifts</p>
-            <p className="text-[11px] text-[var(--ink-muted)]">Open and close shifts, reconcile cash at end of day</p>
+            <p className="text-[13px] text-[var(--ink-muted)]">Open and close shifts, reconcile cash at end of day</p>
           </div>
         </div>
       </div>
@@ -146,24 +146,24 @@ export default async function CashierShiftsPage({
       {/* ── KPI tiles ── */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
-          <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Total Shifts</p>
+          <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Total Shifts</p>
           <p className="mt-1 text-xl font-bold tabular-nums text-[var(--ink)]">{totalShifts}</p>
-          <p className="mt-0.5 text-[11px] text-[var(--ink-muted)]">all time</p>
+          <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">all time</p>
         </div>
         <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
-          <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Open Shifts</p>
+          <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Open Shifts</p>
           <p className="mt-1 text-xl font-bold tabular-nums text-[var(--ink)]">{openCount}</p>
-          <p className="mt-0.5 text-[11px] text-[var(--ink-muted)]">currently open</p>
+          <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">currently open</p>
         </div>
         <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
-          <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Closed This Month</p>
+          <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Closed This Month</p>
           <p className="mt-1 text-xl font-bold tabular-nums text-[var(--ink)]">{closedThisMonth}</p>
-          <p className="mt-0.5 text-[11px] text-[var(--ink-muted)]">this month</p>
+          <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">this month</p>
         </div>
         <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
-          <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Cash Collected This Month</p>
+          <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Cash Collected This Month</p>
           <p className="mt-1 text-xl font-bold tabular-nums text-[var(--ink)]">{formatMoney(cashCollectedThisMonth, currency)}</p>
-          <p className="mt-0.5 text-[11px] text-[var(--ink-muted)]">closing cash, this month</p>
+          <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">closing cash, this month</p>
         </div>
       </div>
 
@@ -173,7 +173,7 @@ export default async function CashierShiftsPage({
           <h2 className="mb-3 text-sm font-bold text-[var(--ink)]">Open Your Shift</h2>
           <form action={openShiftAction} className="flex flex-wrap items-end gap-3">
             <div className="space-y-1">
-              <label className="text-[11px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
+              <label className="text-[13px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
                 Opening Cash ({currency})
               </label>
               <input
@@ -186,7 +186,7 @@ export default async function CashierShiftsPage({
               />
             </div>
             <div className="space-y-1">
-              <label className="text-[11px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
+              <label className="text-[13px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
                 Notes (optional)
               </label>
               <input
@@ -219,7 +219,7 @@ export default async function CashierShiftsPage({
           <form action={closeShiftAction} className="mt-3 flex flex-wrap items-end gap-3">
             <input type="hidden" name="shiftId" value={myOpenShift.id} />
             <div className="space-y-1">
-              <label className="text-[11px] font-semibold uppercase tracking-wide text-emerald-700">
+              <label className="text-[13px] font-semibold uppercase tracking-wide text-emerald-700">
                 Closing Cash ({currency})
               </label>
               <input
@@ -233,7 +233,7 @@ export default async function CashierShiftsPage({
               />
             </div>
             <div className="space-y-1">
-              <label className="text-[11px] font-semibold uppercase tracking-wide text-emerald-700">
+              <label className="text-[13px] font-semibold uppercase tracking-wide text-emerald-700">
                 Closing Notes
               </label>
               <input
@@ -285,11 +285,11 @@ export default async function CashierShiftsPage({
                   <div className="mb-1 flex items-center justify-between gap-2">
                     <span className="font-medium text-[var(--ink)]">
                       {cashierMap[shift.cashierId] ?? shift.cashierId.slice(0, 8)}
-                      {shift.cashierId === user.id && <span className="ml-1.5 rounded border border-blue-400/30 bg-blue-500/10 px-1 py-0.5 text-[10px] font-semibold text-blue-700 dark:text-blue-400">you</span>}
+                      {shift.cashierId === user.id && <span className="ml-1.5 rounded border border-blue-400/30 bg-blue-500/10 px-1 py-0.5 text-[12px] font-semibold text-blue-700 dark:text-blue-400">you</span>}
                     </span>
-                    <span className={`rounded px-1.5 py-0.5 text-[11px] font-semibold ${isOpen ? "border border-emerald-400/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" : "border border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]"}`}>{shift.status}</span>
+                    <span className={`rounded px-1.5 py-0.5 text-[13px] font-semibold ${isOpen ? "border border-emerald-400/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" : "border border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]"}`}>{shift.status}</span>
                   </div>
-                  <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-[11px] text-[var(--ink-muted)]">
+                  <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-[13px] text-[var(--ink-muted)]">
                     <span>Open: {shift.openedAt.toLocaleString()}</span>
                     {shift.closedAt && <span>Close: {shift.closedAt.toLocaleString()}</span>}
                   </div>
@@ -304,13 +304,13 @@ export default async function CashierShiftsPage({
                         <form action={closeShiftAction}>
                           <input type="hidden" name="shiftId" value={shift.id} />
                           <input type="hidden" name="closingCash" value="0" />
-                          <ConfirmSubmitButton message="Force close this shift? Closing cash will be set to 0." confirmLabel="Force Close" className="rounded border border-orange-400/30 px-2 py-0.5 text-[11px] font-semibold text-orange-600 hover:bg-orange-500/10 dark:text-orange-400">Force close</ConfirmSubmitButton>
+                          <ConfirmSubmitButton message="Force close this shift? Closing cash will be set to 0." confirmLabel="Force Close" className="rounded border border-orange-400/30 px-2 py-0.5 text-[13px] font-semibold text-orange-600 hover:bg-orange-500/10 dark:text-orange-400">Force close</ConfirmSubmitButton>
                         </form>
                       )}
                       {user.role === "ADMIN" && !isOpen && (
                         <form action={deleteShiftAction}>
                           <input type="hidden" name="shiftId" value={shift.id} />
-                          <ConfirmSubmitButton message="Delete this shift record? This cannot be undone." confirmLabel="Delete" className="rounded border border-red-400/30 px-2 py-0.5 text-[11px] font-semibold text-red-600 hover:bg-red-500/10 dark:text-red-400">Delete</ConfirmSubmitButton>
+                          <ConfirmSubmitButton message="Delete this shift record? This cannot be undone." confirmLabel="Delete" className="rounded border border-red-400/30 px-2 py-0.5 text-[13px] font-semibold text-red-600 hover:bg-red-500/10 dark:text-red-400">Delete</ConfirmSubmitButton>
                         </form>
                       )}
                     </div>
@@ -323,7 +323,7 @@ export default async function CashierShiftsPage({
           <div className="hidden overflow-x-auto lg:block">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-[var(--border)] text-[11px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
+                <tr className="border-b border-[var(--border)] text-[13px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
                   <th className="px-4 py-3 text-left">Cashier</th>
                   <th className="px-4 py-3 text-left">Status</th>
                   <th className="px-4 py-3 text-left">Opened</th>
@@ -343,9 +343,9 @@ export default async function CashierShiftsPage({
                     <tr key={`d-${shift.id}`} className="border-b border-[var(--border)] last:border-0 hover:bg-[var(--surface-raised)]">
                       <td className="px-4 py-3 font-medium text-[var(--ink)]">
                         {cashierMap[shift.cashierId] ?? shift.cashierId.slice(0, 8)}
-                        {shift.cashierId === user.id && <span className="ml-1.5 rounded border border-blue-400/30 bg-blue-500/10 px-1 py-0.5 text-[10px] font-semibold text-blue-700 dark:text-blue-400">you</span>}
+                        {shift.cashierId === user.id && <span className="ml-1.5 rounded border border-blue-400/30 bg-blue-500/10 px-1 py-0.5 text-[12px] font-semibold text-blue-700 dark:text-blue-400">you</span>}
                       </td>
-                      <td className="px-4 py-3"><span className={`rounded px-1.5 py-0.5 text-[11px] font-semibold ${isOpen ? "border border-emerald-400/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" : "border border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]"}`}>{shift.status}</span></td>
+                      <td className="px-4 py-3"><span className={`rounded px-1.5 py-0.5 text-[13px] font-semibold ${isOpen ? "border border-emerald-400/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" : "border border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]"}`}>{shift.status}</span></td>
                       <td className="whitespace-nowrap px-4 py-3 text-[var(--ink-muted)]">{shift.openedAt.toLocaleString()}</td>
                       <td className="whitespace-nowrap px-4 py-3 text-[var(--ink-muted)]">{shift.closedAt ? shift.closedAt.toLocaleString() : "—"}</td>
                       <td className="whitespace-nowrap px-4 py-3 text-right tabular-nums text-[var(--ink)]">{formatMoney(shift.openingCash, currency)}</td>
@@ -356,10 +356,10 @@ export default async function CashierShiftsPage({
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
                             {isOpen && shift.cashierId !== user.id && (
-                              <form action={closeShiftAction}><input type="hidden" name="shiftId" value={shift.id} /><input type="hidden" name="closingCash" value="0" /><ConfirmSubmitButton message="Force close this shift? Closing cash will be set to 0." confirmLabel="Force Close" className="rounded border border-orange-400/30 px-2 py-0.5 text-[11px] font-semibold text-orange-600 hover:bg-orange-500/10 dark:text-orange-400">Force close</ConfirmSubmitButton></form>
+                              <form action={closeShiftAction}><input type="hidden" name="shiftId" value={shift.id} /><input type="hidden" name="closingCash" value="0" /><ConfirmSubmitButton message="Force close this shift? Closing cash will be set to 0." confirmLabel="Force Close" className="rounded border border-orange-400/30 px-2 py-0.5 text-[13px] font-semibold text-orange-600 hover:bg-orange-500/10 dark:text-orange-400">Force close</ConfirmSubmitButton></form>
                             )}
                             {user.role === "ADMIN" && !isOpen && (
-                              <form action={deleteShiftAction}><input type="hidden" name="shiftId" value={shift.id} /><ConfirmSubmitButton message="Delete this shift record? This cannot be undone." confirmLabel="Delete" className="rounded border border-red-400/30 px-2 py-0.5 text-[11px] font-semibold text-red-600 hover:bg-red-500/10 dark:text-red-400">Delete</ConfirmSubmitButton></form>
+                              <form action={deleteShiftAction}><input type="hidden" name="shiftId" value={shift.id} /><ConfirmSubmitButton message="Delete this shift record? This cannot be undone." confirmLabel="Delete" className="rounded border border-red-400/30 px-2 py-0.5 text-[13px] font-semibold text-red-600 hover:bg-red-500/10 dark:text-red-400">Delete</ConfirmSubmitButton></form>
                             )}
                           </div>
                         </td>

@@ -51,7 +51,7 @@ export default async function PurchaseOrdersPage() {
       {/* Header */}
       <div className="panel-shadow flex items-center justify-between gap-2 rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-2.5">
         <div>
-          <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Inventory</p>
+          <p className="text-[12px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Inventory</p>
           <p className="text-[13px] font-bold text-[var(--ink)]">
             Purchase Orders <span className="font-normal text-[var(--ink-muted)]">· {orders.length}</span>
           </p>
@@ -69,24 +69,24 @@ export default async function PurchaseOrdersPage() {
       {/* KPI tiles */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
-          <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Total Orders</p>
+          <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Total Orders</p>
           <p className="mt-1 text-xl font-bold tabular-nums text-[var(--ink)]">{orders.length}</p>
-          <p className="mt-0.5 text-[11px] text-[var(--ink-muted)]">all time</p>
+          <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">all time</p>
         </div>
         <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
-          <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Pending</p>
+          <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Pending</p>
           <p className="mt-1 text-xl font-bold tabular-nums text-amber-600">{pendingCount}</p>
-          <p className="mt-0.5 text-[11px] text-[var(--ink-muted)]">draft, ordered, partial</p>
+          <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">draft, ordered, partial</p>
         </div>
         <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
-          <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">This Month</p>
+          <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">This Month</p>
           <p className="mt-1 text-xl font-bold tabular-nums text-[var(--ink)]">{thisMonthCount}</p>
-          <p className="mt-0.5 text-[11px] text-[var(--ink-muted)]">raised this month</p>
+          <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">raised this month</p>
         </div>
         <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
-          <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Total Value Pending</p>
+          <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Total Value Pending</p>
           <p className="mt-1 text-xl font-bold tabular-nums text-[var(--ink)]">{formatMoney(pendingValue)}</p>
-          <p className="mt-0.5 text-[11px] text-[var(--ink-muted)]">open order value</p>
+          <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">open order value</p>
         </div>
       </div>
 
@@ -97,7 +97,7 @@ export default async function PurchaseOrdersPage() {
           </div>
         ) : (
           <table className="w-full text-sm">
-            <thead className="bg-[var(--panel-strong)] text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
+            <thead className="bg-[var(--panel-strong)] text-[12px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
               <tr>
                 <th className="px-4 py-2.5 text-left">Reference</th>
                 <th className="px-4 py-2.5 text-left">Supplier</th>
@@ -116,7 +116,7 @@ export default async function PurchaseOrdersPage() {
                   </td>
                   <td className="px-4 py-3 font-medium text-[var(--ink)]">{po.supplier.name}</td>
                   <td className="px-4 py-3">
-                    <span className={`rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${STATUS_COLORS[po.status] ?? "border-[var(--line)] text-[var(--ink-muted)]"}`}>
+                    <span className={`rounded-full border px-2.5 py-0.5 text-[13px] font-semibold ${STATUS_COLORS[po.status] ?? "border-[var(--line)] text-[var(--ink-muted)]"}`}>
                       {po.status}
                     </span>
                   </td>

@@ -611,24 +611,24 @@ export default async function NotificationTemplatesPage({
                 <details key={t.id} className="group/details rounded-xl border border-[var(--line)] bg-[var(--panel-strong)] p-3" open={false}>
                   <summary className="cursor-pointer list-none">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${t.isActive ? "border-emerald-400/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" : "border-[var(--line)] bg-[var(--panel)] text-[var(--ink-muted)]"}`}>
+                      <span className={`rounded-full border px-2 py-0.5 text-[13px] font-semibold ${t.isActive ? "border-emerald-400/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" : "border-[var(--line)] bg-[var(--panel)] text-[var(--ink-muted)]"}`}>
                         {t.isActive ? "Active" : "Inactive"}
                       </span>
-                      <span className="font-mono text-[11px] text-[var(--ink)]">{t.key}</span>
-                      <span className="rounded-full border border-[var(--line)] bg-[var(--panel)] px-2 py-0.5 text-[11px] text-[var(--ink-muted)]">
+                      <span className="font-mono text-[13px] text-[var(--ink)]">{t.key}</span>
+                      <span className="rounded-full border border-[var(--line)] bg-[var(--panel)] px-2 py-0.5 text-[13px] text-[var(--ink-muted)]">
                         {t.channel === "WHATSAPP" ? "WhatsApp" : "Email"}
                       </span>
                       <span className="text-sm font-semibold text-[var(--ink)]">{t.label}</span>
                       {t.metaTemplateName ? (
-                        <span className="rounded-full border border-emerald-400/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-mono text-emerald-700 dark:text-emerald-400">
+                        <span className="rounded-full border border-emerald-400/30 bg-emerald-500/10 px-2 py-0.5 text-[12px] font-mono text-emerald-700 dark:text-emerald-400">
                           meta: {t.metaTemplateName}
                         </span>
                       ) : (
-                        <span className="rounded-full border border-amber-400/30 bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:text-amber-400">
+                        <span className="rounded-full border border-amber-400/30 bg-amber-500/10 px-2 py-0.5 text-[12px] font-semibold text-amber-700 dark:text-amber-400">
                           no meta name
                         </span>
                       )}
-                      <span className="ml-auto flex items-center gap-2 text-[11px] text-[var(--ink-muted)]">
+                      <span className="ml-auto flex items-center gap-2 text-[13px] text-[var(--ink-muted)]">
                         <span>Updated {t.updatedAt.toLocaleString()}</span>
                         <svg className="h-4 w-4 transition-transform group-open/details:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
                       </span>
@@ -637,9 +637,9 @@ export default async function NotificationTemplatesPage({
 
                   {vars.length > 0 ? (
                     <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                      <span className="text-[10px] font-bold uppercase tracking-[0.13em] text-[var(--ink-muted)]">Variables:</span>
+                      <span className="text-[12px] font-bold uppercase tracking-[0.13em] text-[var(--ink-muted)]">Variables:</span>
                       {vars.map((v, i) => (
-                        <span key={v} className="flex items-center gap-1 rounded-full border border-[var(--line)] bg-[var(--panel)] px-2 py-0.5 text-[11px] font-mono">
+                        <span key={v} className="flex items-center gap-1 rounded-full border border-[var(--line)] bg-[var(--panel)] px-2 py-0.5 text-[13px] font-mono">
                           <span className="text-[var(--accent)] font-bold">{`{{${i + 1}}}`}</span>
                           <span className="text-[var(--ink-muted)]">=</span>
                           <span className="text-[var(--ink)]">{v}</span>
@@ -647,7 +647,7 @@ export default async function NotificationTemplatesPage({
                       ))}
                     </div>
                   ) : (
-                    <p className="mt-2 text-[11px] text-[var(--ink-muted)]">No variables detected.</p>
+                    <p className="mt-2 text-[13px] text-[var(--ink-muted)]">No variables detected.</p>
                   )}
 
                   <form action={updateTemplate} className="mt-3 grid gap-2 md:grid-cols-2 xl:grid-cols-6">
@@ -688,10 +688,10 @@ export default async function NotificationTemplatesPage({
                     />
                     {t.channel === "WHATSAPP" ? (
                       <div className="rounded-lg border border-[var(--accent)]/20 bg-[var(--accent)]/5 p-3 md:col-span-2 xl:col-span-6">
-                        <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--accent)]/80">
+                        <p className="mb-2 text-[12px] font-bold uppercase tracking-[0.14em] text-[var(--accent)]/80">
                           Meta Approved Template (optional)
                         </p>
-                        <p className="mb-2 text-[11px] text-[var(--ink-muted)]">
+                        <p className="mb-2 text-[13px] text-[var(--ink-muted)]">
                           Once your template is approved in Meta Business Manager, enter its name here.
                           Variables in the <code className="font-mono">variables</code> array above map positionally to{" "}
                           <code className="font-mono">{"{{1}}"}</code>,{" "}
@@ -712,12 +712,12 @@ export default async function NotificationTemplatesPage({
                           />
                         </div>
                         {t.metaTemplateName ? (
-                          <p className="mt-1.5 flex items-center gap-1.5 text-[11px] font-semibold text-emerald-600">
+                          <p className="mt-1.5 flex items-center gap-1.5 text-[13px] font-semibold text-emerald-600">
                             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
                             Using template: <span className="font-mono">{t.metaTemplateName}</span> · lang: {t.metaLanguageCode ?? "en"}
                           </p>
                         ) : (
-                          <p className="mt-1.5 text-[11px] text-[var(--ink-muted)]">
+                          <p className="mt-1.5 text-[13px] text-[var(--ink-muted)]">
                             Not set — messages will send as free-form text (only delivers within 24-hour customer window).
                           </p>
                         )}
@@ -764,7 +764,7 @@ export default async function NotificationTemplatesPage({
                 <input type="hidden" name="status" value={status} />
                 <div>
                   <p className="text-sm font-semibold text-[var(--ink)]">{status.replaceAll("_", " ")}</p>
-                  <p className="text-[11px] text-[var(--ink-muted)]">Template key applies to both channels.</p>
+                  <p className="text-[13px] text-[var(--ink-muted)]">Template key applies to both channels.</p>
                 </div>
                 <label className="flex items-center gap-2 text-sm text-[var(--ink-muted)]">
                   <input type="checkbox" name="dashboardEnabled" defaultChecked={p.dashboardEnabled} className="h-4 w-4 rounded border border-[var(--line)]" />

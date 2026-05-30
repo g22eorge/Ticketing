@@ -228,9 +228,9 @@ export default async function JournalPage({
       <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
         <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
           <div>
-            <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Finance</p>
+            <p className="text-[12px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Finance</p>
             <p className="text-[13px] font-bold text-[var(--ink)]">Journal Entries</p>
-            <p className="text-[11px] text-[var(--ink-muted)]">Double-entry ledger — every entry&apos;s debits must equal its credits</p>
+            <p className="text-[13px] text-[var(--ink-muted)]">Double-entry ledger — every entry&apos;s debits must equal its credits</p>
           </div>
           <div className="flex gap-2">
             <Link
@@ -254,13 +254,13 @@ export default async function JournalPage({
 
         {/* Posted this month */}
         <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-          <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">
+          <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">
             Posted This Month
           </p>
           <p className="mt-1.5 text-2xl font-bold tabular-nums text-[var(--ink)]">
             {formatMoneyCompact(thisMonthAmt, currency)}
           </p>
-          <p className="mt-1 text-[11px] text-[var(--ink-muted)]">
+          <p className="mt-1 text-[13px] text-[var(--ink-muted)]">
             {thisMonthStats._count} entr{thisMonthStats._count === 1 ? "y" : "ies"}
             {momChange !== null && (
               <span className={`ml-1.5 font-semibold ${momChange >= 0 ? "text-emerald-600" : "text-red-500"}`}>
@@ -272,20 +272,20 @@ export default async function JournalPage({
 
         {/* YTD posted */}
         <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-          <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">
+          <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">
             YTD Posted
           </p>
           <p className="mt-1.5 text-2xl font-bold tabular-nums text-[var(--ink)]">
             {formatMoneyCompact(ytdAmt, currency)}
           </p>
-          <p className="mt-1 text-[11px] text-[var(--ink-muted)]">
+          <p className="mt-1 text-[13px] text-[var(--ink-muted)]">
             {ytdCount} posted entr{ytdCount === 1 ? "y" : "ies"} in {now.getFullYear()}
           </p>
         </div>
 
         {/* Drafts pending */}
         <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-          <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">
+          <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">
             Drafts Pending
           </p>
           <p
@@ -295,20 +295,20 @@ export default async function JournalPage({
           >
             {draftCount}
           </p>
-          <p className="mt-1 text-[11px] text-[var(--ink-muted)]">
+          <p className="mt-1 text-[13px] text-[var(--ink-muted)]">
             {draftCount > 0 ? "Need review & posting" : "All entries posted"}
           </p>
         </div>
 
         {/* Average entry */}
         <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-          <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">
+          <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">
             Avg Entry (YTD)
           </p>
           <p className="mt-1.5 text-2xl font-bold tabular-nums text-[var(--ink)]">
             {formatMoneyCompact(avgEntryAmt, currency)}
           </p>
-          <p className="mt-1 text-[11px] text-[var(--ink-muted)]">
+          <p className="mt-1 text-[13px] text-[var(--ink-muted)]">
             {voidCount} voided entr{voidCount === 1 ? "y" : "ies"} this year
           </p>
         </div>
@@ -438,12 +438,12 @@ export default async function JournalPage({
                       {entry.entryNumber}
                     </span>
                     <span
-                      className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${STATUS_STYLE[entry.status]}`}
+                      className={`rounded-full px-2 py-0.5 text-[12px] font-bold uppercase tracking-wide ${STATUS_STYLE[entry.status]}`}
                     >
                       {entry.status}
                     </span>
                     {!balanced && (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-red-500/10 px-2 py-0.5 text-[10px] font-bold text-red-600">
+                      <span className="inline-flex items-center gap-1 rounded-full bg-red-500/10 px-2 py-0.5 text-[12px] font-bold text-red-600">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="h-2.5 w-2.5 shrink-0" aria-hidden><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
                         UNBALANCED
                       </span>
@@ -506,7 +506,7 @@ export default async function JournalPage({
                 <div className="flex items-baseline gap-3 px-4 py-2.5">
                   <p className="text-sm font-medium text-[var(--ink)]">{entry.description}</p>
                   {entry.reference && (
-                    <span className="rounded bg-[var(--panel-strong)] px-1.5 py-0.5 font-mono text-[11px] text-[var(--ink-muted)]">
+                    <span className="rounded bg-[var(--panel-strong)] px-1.5 py-0.5 font-mono text-[13px] text-[var(--ink-muted)]">
                       {entry.reference}
                     </span>
                   )}
@@ -517,16 +517,16 @@ export default async function JournalPage({
                   <table className="w-full text-xs">
                     <thead>
                       <tr>
-                        <th className="pb-1 text-left text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">
+                        <th className="pb-1 text-left text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">
                           Account
                         </th>
-                        <th className="pb-1 pl-2 text-left text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">
+                        <th className="pb-1 pl-2 text-left text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">
                           Memo
                         </th>
-                        <th className="pb-1 text-right text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">
+                        <th className="pb-1 text-right text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">
                           Debit
                         </th>
-                        <th className="pb-1 pl-4 text-right text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">
+                        <th className="pb-1 pl-4 text-right text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">
                           Credit
                         </th>
                       </tr>
@@ -554,7 +554,7 @@ export default async function JournalPage({
                       <tr>
                         <td
                           colSpan={2}
-                          className="pt-1.5 text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]"
+                          className="pt-1.5 text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]"
                         >
                           Totals
                         </td>
@@ -567,7 +567,7 @@ export default async function JournalPage({
                       </tr>
                       {!balanced && (
                         <tr>
-                          <td colSpan={4} className="pt-0.5 text-right text-[10px] font-semibold text-red-500">
+                          <td colSpan={4} className="pt-0.5 text-right text-[12px] font-semibold text-red-500">
                             Imbalance: {formatMoney(Math.abs(lineDebit - lineCredit), currency)}
                           </td>
                         </tr>

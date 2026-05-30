@@ -120,7 +120,7 @@ export function OrgTable({ orgs }: { orgs: OrgRow[] }) {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-[var(--line)] text-left text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">
+              <tr className="border-b border-[var(--line)] text-left text-[12px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">
                 <th className="px-4 py-3">Organisation</th>
                 <th className="px-4 py-3">Plan</th>
                 <th className="px-4 py-3">Status</th>
@@ -140,18 +140,18 @@ export function OrgTable({ orgs }: { orgs: OrgRow[] }) {
                   <td className="px-4 py-3">
                     <Link href={`/platform/orgs/${org.id}`} className="group block">
                       <p className="font-semibold text-[var(--ink)] group-hover:underline">{org.name}</p>
-                      <p className="text-[11px] text-[var(--ink-muted)]">/{org.slug}</p>
+                      <p className="text-[13px] text-[var(--ink-muted)]">/{org.slug}</p>
                     </Link>
                   </td>
 
                   <td className="px-4 py-3">
-                    <span className={`inline-flex rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${PLAN_CHIP[org.plan] ?? ""}`}>
+                    <span className={`inline-flex rounded-full border px-2.5 py-0.5 text-[13px] font-semibold ${PLAN_CHIP[org.plan] ?? ""}`}>
                       {org.plan}
                     </span>
                   </td>
 
                   <td className="px-4 py-3">
-                    <span className={`inline-flex rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${STATUS_CHIP[org.billingStatus] ?? ""}`}>
+                    <span className={`inline-flex rounded-full border px-2.5 py-0.5 text-[13px] font-semibold ${STATUS_CHIP[org.billingStatus] ?? ""}`}>
                       {org.billingStatus}
                     </span>
                   </td>
@@ -177,7 +177,7 @@ export function OrgTable({ orgs }: { orgs: OrgRow[] }) {
                         <select
                           name="plan"
                           defaultValue={org.plan}
-                          className="rounded border border-[var(--line)] bg-[var(--bg)] px-1.5 py-0.5 text-[11px] text-[var(--ink)] focus:outline-none focus:ring-1 focus:ring-[var(--gold)]"
+                          className="rounded border border-[var(--line)] bg-[var(--bg)] px-1.5 py-0.5 text-[13px] text-[var(--ink)] focus:outline-none focus:ring-1 focus:ring-[var(--gold)]"
                         >
                           <option value="STARTER">Starter</option>
                           <option value="STANDARD">Standard</option>
@@ -185,7 +185,7 @@ export function OrgTable({ orgs }: { orgs: OrgRow[] }) {
                           <option value="PREMIUM">Premium</option>
                           <option value="ENTERPRISE">Enterprise</option>
                         </select>
-                        <button type="submit" className="rounded border border-[var(--line)] bg-[var(--panel-strong)] px-1.5 py-0.5 text-[11px] font-semibold text-[var(--ink-muted)] hover:border-[var(--gold)]/60 hover:text-[var(--gold)]">
+                        <button type="submit" className="rounded border border-[var(--line)] bg-[var(--panel-strong)] px-1.5 py-0.5 text-[13px] font-semibold text-[var(--ink-muted)] hover:border-[var(--gold)]/60 hover:text-[var(--gold)]">
                           Plan
                         </button>
                       </form>
@@ -196,21 +196,21 @@ export function OrgTable({ orgs }: { orgs: OrgRow[] }) {
                         <select
                           name="status"
                           defaultValue={org.billingStatus}
-                          className="rounded border border-[var(--line)] bg-[var(--bg)] px-1.5 py-0.5 text-[11px] text-[var(--ink)] focus:outline-none focus:ring-1 focus:ring-[var(--gold)]"
+                          className="rounded border border-[var(--line)] bg-[var(--bg)] px-1.5 py-0.5 text-[13px] text-[var(--ink)] focus:outline-none focus:ring-1 focus:ring-[var(--gold)]"
                         >
                           <option value="TRIALING">Trialing</option>
                           <option value="ACTIVE">Active</option>
                           <option value="PAST_DUE">Past Due</option>
                           <option value="CANCELLED">Cancelled</option>
                         </select>
-                        <button type="submit" className="rounded border border-[var(--line)] bg-[var(--panel-strong)] px-1.5 py-0.5 text-[11px] font-semibold text-[var(--ink-muted)] hover:border-sky-400/60 hover:text-sky-600">
+                        <button type="submit" className="rounded border border-[var(--line)] bg-[var(--panel-strong)] px-1.5 py-0.5 text-[13px] font-semibold text-[var(--ink-muted)] hover:border-sky-400/60 hover:text-sky-600">
                           Status
                         </button>
                       </form>
 
                       <Link
                         href={`/platform/orgs/${org.id}`}
-                        className="rounded border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-0.5 text-[11px] font-semibold text-[var(--ink-muted)] transition-colors hover:border-[var(--accent)]/50 hover:text-[var(--ink)]"
+                        className="rounded border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-0.5 text-[13px] font-semibold text-[var(--ink-muted)] transition-colors hover:border-[var(--accent)]/50 hover:text-[var(--ink)]"
                       >
                         →
                       </Link>

@@ -45,9 +45,8 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
+  // Allow user scaling — required by WCAG 2.1 SC 1.4.4 and iOS accessibility
   viewportFit: "cover",
-  userScalable: false,
 };
 
 export default async function RootLayout({

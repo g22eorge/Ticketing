@@ -207,7 +207,7 @@ export function NotificationBell() {
           <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>
         </svg>
         {unreadCount > 0 && (
-          <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-[var(--accent)] text-[9px] font-black text-black">
+          <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-[var(--accent)] text-[13px] font-black text-black">
             {unreadCount > 9 ? "9+" : unreadCount}
           </span>
         )}
@@ -234,7 +234,7 @@ export function NotificationBell() {
             <div className="flex items-center gap-2">
               <p className="text-[13px] font-semibold text-[var(--ink)]">Notifications</p>
               {unreadCount > 0 && (
-                <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-[var(--accent)] px-1.5 text-[10px] font-black text-black">
+                <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-[var(--accent)] px-1.5 text-[12px] font-black text-black">
                   {unreadCount}
                 </span>
               )}
@@ -242,7 +242,7 @@ export function NotificationBell() {
             {notifications.length > 0 && (
               <button
                 onClick={markAllRead}
-                className="text-[11px] font-medium text-[var(--accent)] transition hover:underline"
+                className="text-[13px] font-medium text-[var(--accent)] transition hover:underline"
               >
                 Clear all
               </button>
@@ -295,17 +295,17 @@ export function NotificationBell() {
                         {/* Unread dot */}
                         <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-[var(--accent)]" />
                       </div>
-                      <p className="mt-0.5 line-clamp-2 text-[11px] leading-relaxed text-[var(--ink-muted)]">
+                      <p className="mt-0.5 line-clamp-2 text-[13px] leading-relaxed text-[var(--ink-muted)]">
                         {n.message}
                       </p>
                       <div className="mt-1.5 flex items-center gap-2">
-                        <p className="text-[10px] text-[var(--ink-muted)]/60">
+                        <p className="text-[12px] text-[var(--ink-muted)]/60">
                           {formatDistanceToNow(new Date(n.createdAt), { addSuffix: true })}
                         </p>
                         {n.job?.jobNumber && (
                           <>
                             <span className="text-[var(--ink-muted)]/30">·</span>
-                            <span className="text-[10px] font-medium text-[var(--accent)]/70 group-hover:text-[var(--accent)]">
+                            <span className="text-[12px] font-medium text-[var(--accent)]/70 group-hover:text-[var(--accent)]">
                               {n.job.jobNumber}
                             </span>
                           </>
@@ -322,7 +322,7 @@ export function NotificationBell() {
           <div className="border-t border-[var(--line)] px-4 py-2.5">
             <button
               onClick={() => { router.push("/settings/notifications"); setIsOpen(false); }}
-              className="w-full text-center text-[11px] font-medium text-[var(--ink-muted)] transition hover:text-[var(--accent)]"
+              className="w-full text-center text-[13px] font-medium text-[var(--ink-muted)] transition hover:text-[var(--accent)]"
             >
               Notification settings →
             </button>

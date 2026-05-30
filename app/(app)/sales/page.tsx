@@ -330,9 +330,9 @@ export default async function SalesPage({
       {/* ── HEADER ─────────────────────────────────────────────────────────── */}
       <div className="panel-shadow flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
         <div>
-          <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">CRM</p>
+          <p className="text-[12px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">CRM</p>
           <p className="text-[13px] font-bold text-[var(--ink)]">Sales</p>
-          <p className="text-[11px] text-[var(--ink-muted)]">Leads pipeline and quotations</p>
+          <p className="text-[13px] text-[var(--ink-muted)]">Leads pipeline and quotations</p>
         </div>
         <div className="flex items-center gap-2">
           {activeTab === "leads" && can.createLeads(user) ? (
@@ -359,26 +359,26 @@ export default async function SalesPage({
 
         {/* Active pipeline */}
         <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-          <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">
+          <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">
             Active Pipeline
           </p>
           <p className="mt-1.5 text-2xl font-bold tabular-nums text-[var(--ink)]">
             {formatMoneyCompact(pipelineValue, currency)}
           </p>
-          <p className="mt-1 text-[11px] text-[var(--ink-muted)]">
+          <p className="mt-1 text-[13px] text-[var(--ink-muted)]">
             {activePipeline} open lead{activePipeline !== 1 ? "s" : ""} with value
           </p>
         </div>
 
         {/* Won this month */}
         <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-          <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">
+          <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">
             Won This Month
           </p>
           <p className="mt-1.5 text-2xl font-bold tabular-nums text-emerald-600">
             {wonThisMonth}
           </p>
-          <p className="mt-1 text-[11px] text-[var(--ink-muted)]">
+          <p className="mt-1 text-[13px] text-[var(--ink-muted)]">
             {conversionRate}% all-time conversion
             {wonMomChange !== null && (
               <span className={`ml-1.5 font-semibold ${wonMomChange >= 0 ? "text-emerald-600" : "text-red-500"}`}>
@@ -390,13 +390,13 @@ export default async function SalesPage({
 
         {/* Quotations */}
         <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-          <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">
+          <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">
             Quotations (Total)
           </p>
           <p className="mt-1.5 text-2xl font-bold tabular-nums text-[var(--ink)]">
             {formatMoneyCompact(quoteTotal, currency)}
           </p>
-          <p className="mt-1 text-[11px] text-[var(--ink-muted)]">
+          <p className="mt-1 text-[13px] text-[var(--ink-muted)]">
             {acceptanceRate}% acceptance ·{" "}
             <span className="text-emerald-600 font-semibold">
               {formatMoneyCompact(acceptedTotal, currency)}
@@ -407,7 +407,7 @@ export default async function SalesPage({
 
         {/* Follow-ups due */}
         <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-          <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">
+          <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">
             Follow-ups Due
           </p>
           <p
@@ -417,7 +417,7 @@ export default async function SalesPage({
           >
             {followupsDue}
           </p>
-          <p className="mt-1 text-[11px] text-[var(--ink-muted)]">
+          <p className="mt-1 text-[13px] text-[var(--ink-muted)]">
             {followupsDue > 0 ? "overdue or due today" : "all follow-ups clear"}
           </p>
         </div>
@@ -428,8 +428,8 @@ export default async function SalesPage({
       ══════════════════════════════════════════════════════════════════════ */}
       <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
         <div className="flex items-center justify-between border-b border-[var(--line)] px-4 py-2.5">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Sales Funnel</p>
-          <p className="text-[11px] font-semibold text-[var(--ink-muted)]">
+          <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Sales Funnel</p>
+          <p className="text-[13px] font-semibold text-[var(--ink-muted)]">
             Forecast: <span className="text-[var(--accent)]">{formatMoneyCompact(forecastedRevenue, currency)}</span>
           </p>
         </div>
@@ -460,16 +460,16 @@ export default async function SalesPage({
                     <div className="flex items-baseline justify-between gap-1">
                       <p className="text-lg font-black text-[var(--ink)]">{data.count}</p>
                       {dropOff !== null && dropOff > 0 && (
-                        <span className="text-[9px] font-bold text-red-500">-{dropOff}%</span>
+                        <span className="text-[13px] font-bold text-red-500">-{dropOff}%</span>
                       )}
                     </div>
                     {/* Bar */}
                     <div className="h-1.5 w-full rounded-full bg-[var(--panel-strong)]">
                       <div className={`h-full rounded-full ${stageColors[s]} transition-all`} style={{ width: `${barWidth}%` }} />
                     </div>
-                    <p className="text-[10px] font-medium text-[var(--ink-muted)]">{stageLabels[s]}</p>
+                    <p className="text-[12px] font-medium text-[var(--ink-muted)]">{stageLabels[s]}</p>
                     {data.value > 0 && (
-                      <p className="text-[9px] font-semibold text-[var(--accent)]">{formatMoneyCompact(data.value, currency)}</p>
+                      <p className="text-[13px] font-semibold text-[var(--accent)]">{formatMoneyCompact(data.value, currency)}</p>
                     )}
                   </Link>
                 );
@@ -487,7 +487,7 @@ export default async function SalesPage({
               <Link key={s} href={`/sales?tab=leads&status=${s}`}
                 className="flex flex-1 items-center justify-center gap-2 py-2 text-center transition hover:bg-[var(--panel-strong)]">
                 <p className={`text-sm font-black ${color}`}>{data.count}</p>
-                <p className="text-[10px] text-[var(--ink-muted)]">{label}</p>
+                <p className="text-[12px] text-[var(--ink-muted)]">{label}</p>
               </Link>
             );
           })}
@@ -502,11 +502,11 @@ export default async function SalesPage({
           <div className="flex items-center justify-between border-b border-amber-500/20 px-4 py-2.5">
             <div className="flex items-center gap-2">
               <span className="h-2 w-2 rounded-full bg-amber-500" />
-              <p className="text-[11px] font-semibold text-amber-700 dark:text-amber-400">
+              <p className="text-[13px] font-semibold text-amber-700 dark:text-amber-400">
                 {followupsDue} Follow-up{followupsDue !== 1 ? "s" : ""} Overdue
               </p>
             </div>
-            <Link href="/sales?tab=leads&overdue=1" className="text-[11px] font-semibold text-[var(--accent)]">See all →</Link>
+            <Link href="/sales?tab=leads&overdue=1" className="text-[13px] font-semibold text-[var(--accent)]">See all →</Link>
           </div>
           <div className="divide-y divide-amber-500/10">
             {(overdueLeads as Array<{ id: string; fullName: string; phone: string; status: string; estimatedValue: number | null; followUpAt: Date | null; assignedTo: { name: string } | null }>).map(lead => (
@@ -514,14 +514,14 @@ export default async function SalesPage({
                 className="flex items-center justify-between px-4 py-2.5 transition hover:bg-amber-500/8">
                 <div className="min-w-0">
                   <p className="truncate text-[13px] font-semibold text-[var(--ink)]">{lead.fullName}</p>
-                  <p className="text-[10px] text-amber-600">
+                  <p className="text-[12px] text-amber-600">
                     {lead.followUpAt ? `${Math.floor((Date.now() - new Date(lead.followUpAt).getTime()) / 86400000)}d overdue` : "Overdue"}
                     {lead.assignedTo ? ` · ${lead.assignedTo.name}` : ""}
                   </p>
                 </div>
                 <div className="shrink-0 text-right">
                   {lead.estimatedValue ? <p className="text-[12px] font-bold text-[var(--ink)]">{formatMoneyCompact(lead.estimatedValue, currency)}</p> : null}
-                  <p className="text-[10px] font-medium capitalize text-[var(--ink-muted)]">{lead.status.toLowerCase().replace("_", " ")}</p>
+                  <p className="text-[12px] font-medium capitalize text-[var(--ink-muted)]">{lead.status.toLowerCase().replace("_", " ")}</p>
                 </div>
               </Link>
             ))}
@@ -537,7 +537,7 @@ export default async function SalesPage({
           {/* Source win rates */}
           <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
             <div className="border-b border-[var(--line)] px-4 py-2.5">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Win Rate by Source</p>
+              <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Win Rate by Source</p>
             </div>
             <div className="divide-y divide-[var(--line)]">
               {sourceWinRates.map(({ source, total, won, rate }) => (
@@ -545,12 +545,12 @@ export default async function SalesPage({
                   <div className="min-w-0 flex-1">
                     <div className="flex items-baseline justify-between gap-2">
                       <p className="text-[12px] font-semibold text-[var(--ink)] capitalize">{source.toLowerCase().replace("_", " ")}</p>
-                      <span className={`text-[11px] font-black ${rate >= 50 ? "text-emerald-600" : rate >= 25 ? "text-amber-600" : "text-[var(--ink-muted)]"}`}>{rate}%</span>
+                      <span className={`text-[13px] font-black ${rate >= 50 ? "text-emerald-600" : rate >= 25 ? "text-amber-600" : "text-[var(--ink-muted)]"}`}>{rate}%</span>
                     </div>
                     <div className="mt-1 h-1 w-full rounded-full bg-[var(--panel-strong)]">
                       <div className={`h-full rounded-full ${rate >= 50 ? "bg-emerald-500" : rate >= 25 ? "bg-amber-500" : "bg-[var(--line)]"}`} style={{ width: `${rate}%` }} />
                     </div>
-                    <p className="mt-0.5 text-[9px] text-[var(--ink-muted)]">{won} won / {total} total</p>
+                    <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">{won} won / {total} total</p>
                   </div>
                 </div>
               ))}
@@ -561,7 +561,7 @@ export default async function SalesPage({
           {(lostReasonGroups as Array<{ lostReason: string | null; _count: { lostReason: number } }>).length > 0 && (
             <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
               <div className="border-b border-[var(--line)] px-4 py-2.5">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Why Leads Are Lost</p>
+                <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Why Leads Are Lost</p>
               </div>
               <div className="divide-y divide-[var(--line)]">
                 {(lostReasonGroups as Array<{ lostReason: string | null; _count: { lostReason: number } }>).map(({ lostReason, _count }) => (
@@ -595,7 +595,7 @@ export default async function SalesPage({
                 }`}
               >
                 Leads
-                <span className="ml-1.5 rounded-full bg-[var(--panel-strong)] px-1.5 py-0.5 text-[10px] font-bold text-[var(--ink-muted)]">
+                <span className="ml-1.5 rounded-full bg-[var(--panel-strong)] px-1.5 py-0.5 text-[12px] font-bold text-[var(--ink-muted)]">
                   {totalLeads}
                 </span>
               </Link>
@@ -624,7 +624,7 @@ export default async function SalesPage({
               {searchQ && (
                 <Link
                   href={`/sales?tab=${activeTab}`}
-                  className="text-[11px] text-[var(--ink-muted)] hover:text-[var(--ink)]"
+                  className="text-[13px] text-[var(--ink-muted)] hover:text-[var(--ink)]"
                 >
                   ✕
                 </Link>
@@ -644,7 +644,7 @@ export default async function SalesPage({
               {searchQ && (
                 <Link
                   href={`/sales?tab=${activeTab}`}
-                  className="text-[11px] text-[var(--ink-muted)] hover:text-[var(--ink)]"
+                  className="text-[13px] text-[var(--ink-muted)] hover:text-[var(--ink)]"
                 >
                   ✕
                 </Link>
@@ -660,7 +660,7 @@ export default async function SalesPage({
             <div className="flex flex-wrap items-center gap-2 border-b border-[var(--line)] px-4 py-2.5">
               <Link
                 href={`/sales?tab=leads${searchQ ? `&q=${encodeURIComponent(searchQ)}` : ""}`}
-                className={`rounded-full border px-3 py-1 text-[11px] font-semibold transition-colors ${
+                className={`rounded-full border px-3 py-1 text-[13px] font-semibold transition-colors ${
                   !statusFilter
                     ? "border-[var(--accent)] bg-[var(--accent)] text-white"
                     : "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)] hover:border-[var(--accent)]/40"
@@ -675,7 +675,7 @@ export default async function SalesPage({
                 <Link
                   key={s}
                   href={`/sales?tab=leads&status=${s}${searchQ ? `&q=${encodeURIComponent(searchQ)}` : ""}`}
-                  className={`rounded-full border px-3 py-1 text-[11px] font-semibold transition-colors ${
+                  className={`rounded-full border px-3 py-1 text-[13px] font-semibold transition-colors ${
                     statusFilter === s
                       ? "border-[var(--accent)] bg-[var(--accent)] text-white"
                       : "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)] hover:border-[var(--accent)]/40"
@@ -698,7 +698,7 @@ export default async function SalesPage({
                   </p>
                 ) : null}
                 <form action={createLeadAction} noValidate className="space-y-2">
-                  <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">
+                  <p className="text-[13px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">
                     New Lead
                   </p>
                   <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
@@ -793,16 +793,16 @@ export default async function SalesPage({
                         <Link href={`/sales/leads/${lead.id}`} className="block px-4 py-3 transition-colors active:bg-[var(--panel-strong)]/40">
                           <div className="mb-1 flex items-center justify-between gap-2">
                             <span className="text-[14px] font-semibold text-[var(--ink)]">{lead.fullName}</span>
-                            <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold ${LEAD_STATUS_COLORS[lead.status]}`}>
+                            <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[12px] font-semibold ${LEAD_STATUS_COLORS[lead.status]}`}>
                               {LEAD_STATUS_LABELS[lead.status]}
                             </span>
                           </div>
-                          <div className="flex items-center gap-2 text-[11px] text-[var(--ink-muted)]">
+                          <div className="flex items-center gap-2 text-[13px] text-[var(--ink-muted)]">
                             <span>{lead.phone}</span>
                             {lead.organization ? <><span className="opacity-40">·</span><span className="truncate">{lead.organization}</span></> : null}
                           </div>
                           {(lead.estimatedValue != null || lead.followUpAt) && (
-                            <div className="mt-1.5 flex items-center gap-3 text-[11px]">
+                            <div className="mt-1.5 flex items-center gap-3 text-[13px]">
                               {lead.estimatedValue != null && <span className="font-semibold text-[var(--ink)]">{formatMoney(lead.estimatedValue, currency)}</span>}
                               {lead.followUpAt && (
                                 <span className={`flex items-center gap-0.5 ${isOverdue ? "font-semibold text-red-600" : "text-[var(--ink-muted)]"}`}>
@@ -820,20 +820,20 @@ export default async function SalesPage({
                               <form action={advanceLeadStageAction} className="flex-1">
                                 <input type="hidden" name="leadId" value={lead.id} />
                                 <input type="hidden" name="newStatus" value={nextStage} />
-                                <button type="submit" className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1 text-[11px] font-semibold text-[var(--ink)] transition active:opacity-70">
+                                <button type="submit" className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1 text-[13px] font-semibold text-[var(--ink)] transition active:opacity-70">
                                   → {LEAD_STATUS_LABELS[nextStage]}
                                 </button>
                               </form>
                             )}
                             <details className="shrink-0">
-                              <summary className="cursor-pointer list-none rounded-lg border border-red-500/30 bg-red-500/8 px-2.5 py-1 text-[11px] font-semibold text-red-600 [&::-webkit-details-marker]:hidden">
+                              <summary className="cursor-pointer list-none rounded-lg border border-red-500/30 bg-red-500/8 px-2.5 py-1 text-[13px] font-semibold text-red-600 [&::-webkit-details-marker]:hidden">
                                 Mark Lost
                               </summary>
                               <div className="absolute z-20 mt-1 w-56 rounded-xl border border-[var(--line)] bg-[var(--panel)] shadow-lg">
                                 <form action={advanceLeadStageAction} className="p-2 space-y-1.5">
                                   <input type="hidden" name="leadId" value={lead.id} />
                                   <input type="hidden" name="newStatus" value="LOST" />
-                                  <p className="px-1 text-[10px] font-semibold text-[var(--ink-muted)]">Why was this lead lost?</p>
+                                  <p className="px-1 text-[12px] font-semibold text-[var(--ink-muted)]">Why was this lead lost?</p>
                                   <select name="lostReason" className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-1.5 text-[12px] outline-none">
                                     <option value="">Select reason</option>
                                     {LOST_REASONS.map(r => <option key={r} value={r}>{r}</option>)}
@@ -851,7 +851,7 @@ export default async function SalesPage({
                 {/* ── Desktop leads table ── */}
                 <div className="hidden overflow-x-auto lg:block">
                   <table className="w-full min-w-[720px] border-collapse text-[13px]">
-                    <thead className="bg-[var(--panel-strong)]/50 text-left text-[10px] font-bold uppercase tracking-[0.15em] text-[var(--ink-muted)]">
+                    <thead className="bg-[var(--panel-strong)]/50 text-left text-[12px] font-bold uppercase tracking-[0.15em] text-[var(--ink-muted)]">
                       <tr className="border-b border-[var(--line)]">
                         <th className="px-4 py-2.5">Name</th>
                         <th className="px-4 py-2.5">Phone</th>
@@ -870,12 +870,12 @@ export default async function SalesPage({
                           <tr key={`d-${lead.id}`} className="transition-colors hover:bg-[var(--panel-strong)]/40">
                             <td className="px-4 py-3 font-medium text-[var(--ink)]">
                               <Link href={`/sales/leads/${lead.id}`} className="hover:text-[var(--accent)] hover:underline">{lead.fullName}</Link>
-                              {lead.organization ? <span className="ml-1.5 text-[11px] text-[var(--ink-muted)]">{lead.organization}</span> : null}
+                              {lead.organization ? <span className="ml-1.5 text-[13px] text-[var(--ink-muted)]">{lead.organization}</span> : null}
                             </td>
                             <td className="px-4 py-3 text-[var(--ink-muted)]">{lead.phone}</td>
                             <td className="px-4 py-3 text-[var(--ink-muted)]">{lead.source.replace(/_/g, " ")}</td>
                             <td className="px-4 py-3">
-                              <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold ${LEAD_STATUS_COLORS[lead.status]}`}>
+                              <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[12px] font-semibold ${LEAD_STATUS_COLORS[lead.status]}`}>
                                 {LEAD_STATUS_LABELS[lead.status]}
                               </span>
                             </td>
@@ -897,12 +897,12 @@ export default async function SalesPage({
                                   <form action={advanceLeadStageAction}>
                                     <input type="hidden" name="leadId" value={lead.id} />
                                     <input type="hidden" name="newStatus" value={NEXT_STAGE[lead.status as LeadStatus]!} />
-                                    <button type="submit" className="whitespace-nowrap rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1 text-[11px] font-semibold text-[var(--ink)] transition hover:border-[var(--accent)]/40 hover:text-[var(--accent)]">
+                                    <button type="submit" className="whitespace-nowrap rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1 text-[13px] font-semibold text-[var(--ink)] transition hover:border-[var(--accent)]/40 hover:text-[var(--accent)]">
                                       → {LEAD_STATUS_LABELS[NEXT_STAGE[lead.status as LeadStatus]!]}
                                     </button>
                                   </form>
                                 )}
-                                <Link href={`/sales/leads/${lead.id}`} className="btn-premium-secondary whitespace-nowrap rounded-lg px-2.5 py-1 text-[11px] font-semibold">Open</Link>
+                                <Link href={`/sales/leads/${lead.id}`} className="btn-premium-secondary whitespace-nowrap rounded-lg px-2.5 py-1 text-[13px] font-semibold">Open</Link>
                               </div>
                             </td>
                           </tr>
@@ -914,10 +914,10 @@ export default async function SalesPage({
                 {/* Pipeline total footer */}
                 {leads.some((l) => l.estimatedValue != null) && (
                   <div className="flex items-center justify-between border-t border-[var(--line)] px-4 py-2.5">
-                    <span className="text-[11px] text-[var(--ink-muted)]">
+                    <span className="text-[13px] text-[var(--ink-muted)]">
                       {leads.length} lead{leads.length !== 1 ? "s" : ""} shown
                     </span>
-                    <span className="text-[11px] font-semibold text-[var(--ink)]">
+                    <span className="text-[13px] font-semibold text-[var(--ink)]">
                       Pipeline:{" "}
                       <span className="text-[var(--accent)]">
                         {formatMoney(
@@ -937,7 +937,7 @@ export default async function SalesPage({
             {/* Quotation summary bar */}
             {(quotationStats as { _count: number })._count > 0 && (
               <div className="flex flex-wrap items-center gap-4 border-b border-[var(--line)] px-4 py-2.5">
-                <span className="text-[11px] text-[var(--ink-muted)]">
+                <span className="text-[13px] text-[var(--ink-muted)]">
                   <span className="font-semibold text-[var(--ink)]">
                     {(quotationStats as { _count: number })._count}
                   </span>{" "}
@@ -947,7 +947,7 @@ export default async function SalesPage({
                   </span>{" "}
                   total
                 </span>
-                <span className="text-[11px] text-[var(--ink-muted)]">
+                <span className="text-[13px] text-[var(--ink-muted)]">
                   Accepted:{" "}
                   <span className="font-semibold text-emerald-600">
                     {formatMoneyCompact(acceptedTotal, currency)}
@@ -980,10 +980,10 @@ export default async function SalesPage({
                       <Link key={`m-${q.id}`} href={`/sales/quotations/${q.id}`} className="block px-4 py-3 transition-colors hover:bg-[var(--panel-strong)]/40">
                         <div className="mb-1 flex items-center justify-between gap-2">
                           <span className="font-mono text-[13px] font-bold text-[var(--ink)]">{q.quoteNumber}</span>
-                          <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold ${QUOTATION_STATUS_COLORS[q.status] ?? ""}`}>{q.status}</span>
+                          <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[12px] font-semibold ${QUOTATION_STATUS_COLORS[q.status] ?? ""}`}>{q.status}</span>
                         </div>
                         {recipientName && <p className="text-[12px] text-[var(--ink-muted)]">{recipientName}</p>}
-                        <div className="mt-1 flex items-center gap-3 text-[11px]">
+                        <div className="mt-1 flex items-center gap-3 text-[13px]">
                           <span className="font-semibold text-[var(--ink)]">{formatMoney(q.totalAmount, q.currency)}</span>
                           {q.validUntil && (
                             <span className={`flex items-center gap-0.5 ${isExpired ? "font-semibold text-red-600" : "text-[var(--ink-muted)]"}`}>
@@ -999,7 +999,7 @@ export default async function SalesPage({
                 {/* ── Desktop quotations table ── */}
                 <div className="hidden overflow-x-auto lg:block">
                   <table className="w-full min-w-[700px] border-collapse text-[13px]">
-                    <thead className="bg-[var(--panel-strong)]/50 text-left text-[10px] font-bold uppercase tracking-[0.15em] text-[var(--ink-muted)]">
+                    <thead className="bg-[var(--panel-strong)]/50 text-left text-[12px] font-bold uppercase tracking-[0.15em] text-[var(--ink-muted)]">
                       <tr className="border-b border-[var(--line)]">
                         <th className="px-4 py-2.5">Quote #</th>
                         <th className="px-4 py-2.5">Client / Lead</th>
@@ -1021,7 +1021,7 @@ export default async function SalesPage({
                             </td>
                             <td className="px-4 py-3 text-[var(--ink-muted)]">{recipientName ?? <span className="opacity-40">—</span>}</td>
                             <td className="px-4 py-3">
-                              <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold ${QUOTATION_STATUS_COLORS[q.status] ?? ""}`}>{q.status}</span>
+                              <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[12px] font-semibold ${QUOTATION_STATUS_COLORS[q.status] ?? ""}`}>{q.status}</span>
                             </td>
                             <td className="px-4 py-3 font-medium text-[var(--ink)]">{formatMoney(q.totalAmount, q.currency)}</td>
                             <td className="px-4 py-3 text-[var(--ink-muted)]">{formatEATDate(q.createdAt)}</td>
@@ -1034,7 +1034,7 @@ export default async function SalesPage({
                               ) : <span className="opacity-40 text-[var(--ink-muted)]">—</span>}
                             </td>
                             <td className="px-4 py-3 text-right">
-                              <Link href={`/sales/quotations/${q.id}`} className="btn-premium-secondary whitespace-nowrap rounded-lg px-2.5 py-1 text-[11px] font-semibold">Open</Link>
+                              <Link href={`/sales/quotations/${q.id}`} className="btn-premium-secondary whitespace-nowrap rounded-lg px-2.5 py-1 text-[13px] font-semibold">Open</Link>
                             </td>
                           </tr>
                         );

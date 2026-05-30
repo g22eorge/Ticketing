@@ -38,7 +38,7 @@ export default async function StockCountDetailPage({ params }: { params: Promise
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Inventory · Stock Count</p>
+          <p className="text-[12px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Inventory · Stock Count</p>
           <p className="mt-0.5 font-mono text-[13px] font-bold text-[var(--ink)]">{count.countNumber}</p>
           <p className="mt-0.5 text-sm text-[var(--ink-muted)]">
             {count.location.name}{count.location.code ? ` (${count.location.code})` : ""}
@@ -52,19 +52,19 @@ export default async function StockCountDetailPage({ params }: { params: Promise
       {/* KPI tiles */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <div className="rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 py-2">
-          <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Counted</p>
+          <p className="text-[12px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Counted</p>
           <p className="mt-0.5 text-sm font-semibold text-[var(--ink)]">{fmt(count.countedAt)}</p>
         </div>
         <div className="rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 py-2">
-          <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Items</p>
+          <p className="text-[12px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Items</p>
           <p className="mt-0.5 text-sm font-semibold text-[var(--ink)]">{count.items.length}</p>
         </div>
         <div className="rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 py-2">
-          <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Variances</p>
+          <p className="text-[12px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Variances</p>
           <p className="mt-0.5 text-sm font-semibold text-[var(--ink)]">{varianceLines}</p>
         </div>
         <div className="rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 py-2">
-          <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Approved</p>
+          <p className="text-[12px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Approved</p>
           <p className="mt-0.5 text-sm font-semibold text-[var(--ink)]">{fmt(count.approvedAt)}</p>
         </div>
       </div>

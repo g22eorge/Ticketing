@@ -163,9 +163,9 @@ export default async function PLPage({
       <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
         <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
           <div>
-            <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Finance</p>
+            <p className="text-[12px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Finance</p>
             <p className="text-[13px] font-bold text-[var(--ink)]">Profit &amp; Loss</p>
-            <p className="text-[11px] text-[var(--ink-muted)]">{periodLabel}</p>
+            <p className="text-[13px] text-[var(--ink-muted)]">{periodLabel}</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <Link
@@ -244,13 +244,13 @@ export default async function PLPage({
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {/* Revenue */}
           <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-            <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Revenue</p>
+            <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Revenue</p>
             <p className="mt-1.5 text-2xl font-bold text-emerald-600 tabular-nums">
               {formatMoneyCompact(totalRevenue, currency)}
             </p>
             {priorRevenue > 0 && (
               <p
-                className={`mt-1 text-[11px] font-semibold ${
+                className={`mt-1 text-[13px] font-semibold ${
                   totalRevenue >= priorRevenue ? "text-emerald-500" : "text-red-500"
                 }`}
               >
@@ -261,13 +261,13 @@ export default async function PLPage({
 
           {/* Expenses */}
           <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-            <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Expenses</p>
+            <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Expenses</p>
             <p className="mt-1.5 text-2xl font-bold text-red-500 tabular-nums">
               {formatMoneyCompact(totalExpense, currency)}
             </p>
             {priorExpense > 0 && (
               <p
-                className={`mt-1 text-[11px] font-semibold ${
+                className={`mt-1 text-[13px] font-semibold ${
                   totalExpense <= priorExpense ? "text-emerald-500" : "text-red-500"
                 }`}
               >
@@ -278,7 +278,7 @@ export default async function PLPage({
 
           {/* Net Income */}
           <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-            <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">
+            <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">
               Net {netIncome >= 0 ? "Income" : "Loss"}
             </p>
             <p
@@ -290,7 +290,7 @@ export default async function PLPage({
             </p>
             {priorNetIncome !== 0 && (
               <p
-                className={`mt-1 text-[11px] font-semibold ${
+                className={`mt-1 text-[13px] font-semibold ${
                   netIncome >= priorNetIncome ? "text-emerald-500" : "text-red-500"
                 }`}
               >
@@ -301,7 +301,7 @@ export default async function PLPage({
 
           {/* Net Margin */}
           <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-            <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Net Margin</p>
+            <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Net Margin</p>
             <p
               className={`mt-1.5 text-2xl font-bold tabular-nums ${
                 netMargin >= 0 ? "text-emerald-600" : "text-red-500"
@@ -309,7 +309,7 @@ export default async function PLPage({
             >
               {netMargin.toFixed(1)}%
             </p>
-            <p className="mt-1 text-[11px] text-[var(--ink-muted)]">
+            <p className="mt-1 text-[13px] text-[var(--ink-muted)]">
               Prior: {priorRevenue > 0 ? priorNetMargin.toFixed(1) + "%" : "—"}
             </p>
           </div>
@@ -329,14 +329,14 @@ export default async function PLPage({
           <div className="overflow-hidden rounded-xl border border-[var(--line)]">
             {/* Column headers */}
             <div className="grid grid-cols-[1fr_auto_auto_auto] gap-0 border-b border-[var(--line)] bg-[var(--panel-strong)] px-5 py-2.5">
-              <span className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Account</span>
-              <span className="w-28 text-right text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">
+              <span className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Account</span>
+              <span className="w-28 text-right text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">
                 {periodLabel}
               </span>
-              <span className="w-28 text-right text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">
+              <span className="w-28 text-right text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">
                 {priorLabel}
               </span>
-              <span className="w-16 text-right text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">
+              <span className="w-16 text-right text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">
                 Change
               </span>
             </div>
@@ -365,7 +365,7 @@ export default async function PLPage({
                       {formatMoney(r.priorAmount, currency)}
                     </span>
                     <span
-                      className={`w-16 text-right text-[11px] font-semibold tabular-nums ${
+                      className={`w-16 text-right text-[13px] font-semibold tabular-nums ${
                         r.amount >= r.priorAmount ? "text-emerald-600" : "text-red-500"
                       }`}
                     >
@@ -383,7 +383,7 @@ export default async function PLPage({
                   {formatMoney(priorRevenue, currency)}
                 </span>
                 <span
-                  className={`w-16 text-right text-[11px] font-semibold tabular-nums ${
+                  className={`w-16 text-right text-[13px] font-semibold tabular-nums ${
                     totalRevenue >= priorRevenue ? "text-emerald-600" : "text-red-500"
                   }`}
                 >
@@ -411,7 +411,7 @@ export default async function PLPage({
                         <span className="font-mono text-xs text-[var(--accent)]">{e.code}</span>
                         <span className="text-sm text-[var(--ink)]">{e.name}</span>
                         {pct !== null && (
-                          <span className="rounded-full bg-[var(--panel-strong)] px-1.5 py-0.5 text-[10px] font-semibold text-[var(--ink-muted)]">
+                          <span className="rounded-full bg-[var(--panel-strong)] px-1.5 py-0.5 text-[12px] font-semibold text-[var(--ink-muted)]">
                             {pct}%
                           </span>
                         )}
@@ -423,7 +423,7 @@ export default async function PLPage({
                         {formatMoney(e.priorAmount, currency)}
                       </span>
                       <span
-                        className={`w-16 text-right text-[11px] font-semibold tabular-nums ${
+                        className={`w-16 text-right text-[13px] font-semibold tabular-nums ${
                           e.amount <= e.priorAmount ? "text-emerald-600" : "text-red-500"
                         }`}
                       >
@@ -442,7 +442,7 @@ export default async function PLPage({
                   {formatMoney(priorExpense, currency)}
                 </span>
                 <span
-                  className={`w-16 text-right text-[11px] font-semibold tabular-nums ${
+                  className={`w-16 text-right text-[13px] font-semibold tabular-nums ${
                     totalExpense <= priorExpense ? "text-emerald-600" : "text-red-500"
                   }`}
                 >
@@ -463,7 +463,7 @@ export default async function PLPage({
                 </span>
                 {totalRevenue > 0 && (
                   <span
-                    className={`ml-2 text-[11px] font-semibold ${
+                    className={`ml-2 text-[13px] font-semibold ${
                       netMargin >= 0 ? "text-emerald-600" : "text-red-500"
                     }`}
                   >
@@ -486,7 +486,7 @@ export default async function PLPage({
                 {formatMoney(Math.abs(priorNetIncome), currency)}
               </span>
               <span
-                className={`w-16 text-right text-[11px] font-semibold tabular-nums ${
+                className={`w-16 text-right text-[13px] font-semibold tabular-nums ${
                   netIncome >= priorNetIncome ? "text-emerald-600" : "text-red-500"
                 }`}
               >
@@ -499,21 +499,21 @@ export default async function PLPage({
           {hasTrend && (
             <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
               <div className="mb-3 flex items-center justify-between">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">
+                <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">
                   6-Month Trend
                 </p>
-                <p className="text-[11px] text-[var(--ink-muted)]">Revenue · Expenses · Net</p>
+                <p className="text-[13px] text-[var(--ink-muted)]">Revenue · Expenses · Net</p>
               </div>
               <PLTrendChart data={trendData} currency={currency} />
               <div className="mt-4 doc-list overflow-x-auto">
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-[var(--line)]">
-                      <th className="px-3 py-2 text-left text-[11px] font-semibold text-[var(--ink-muted)]">Month</th>
-                      <th className="px-3 py-2 text-right text-[11px] font-semibold text-[var(--ink-muted)]">Revenue</th>
-                      <th className="px-3 py-2 text-right text-[11px] font-semibold text-[var(--ink-muted)]">Expenses</th>
-                      <th className="px-3 py-2 text-right text-[11px] font-semibold text-[var(--ink-muted)]">Net</th>
-                      <th className="px-3 py-2 text-right text-[11px] font-semibold text-[var(--ink-muted)]">Margin</th>
+                      <th className="px-3 py-2 text-left text-[13px] font-semibold text-[var(--ink-muted)]">Month</th>
+                      <th className="px-3 py-2 text-right text-[13px] font-semibold text-[var(--ink-muted)]">Revenue</th>
+                      <th className="px-3 py-2 text-right text-[13px] font-semibold text-[var(--ink-muted)]">Expenses</th>
+                      <th className="px-3 py-2 text-right text-[13px] font-semibold text-[var(--ink-muted)]">Net</th>
+                      <th className="px-3 py-2 text-right text-[13px] font-semibold text-[var(--ink-muted)]">Margin</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -535,7 +535,7 @@ export default async function PLPage({
                           {formatMoneyCompact(Math.abs(row.net), currency)}
                         </td>
                         <td
-                          className={`px-3 py-2.5 text-right text-[11px] tabular-nums ${
+                          className={`px-3 py-2.5 text-right text-[13px] tabular-nums ${
                             row.revenue > 0 && row.net / row.revenue >= 0
                               ? "text-emerald-600"
                               : "text-red-500"

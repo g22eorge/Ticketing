@@ -22,7 +22,7 @@ export function StickyKpiRow({ items, className = "" }: { items: StickyKpiItem[]
 
         const content = (
           <>
-            <p className="text-[10px] uppercase tracking-[0.12em] text-[var(--ink-muted)]">{item.label}</p>
+            <p className="text-[12px] uppercase tracking-[0.12em] text-[var(--ink-muted)]">{item.label}</p>
             <p className={`mt-0.5 text-sm font-semibold ${toneClass}`}>{item.value}</p>
           </>
         );

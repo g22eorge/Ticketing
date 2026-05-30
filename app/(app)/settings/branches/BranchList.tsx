@@ -21,7 +21,7 @@ export function BranchList({ branches }: { branches: Branch[] }) {
     <div className="space-y-4">
       <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] overflow-hidden">
         <div className="flex items-center justify-between px-5 py-3 border-b border-[var(--line)]">
-          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]">
+          <p className="text-[12px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]">
             Locations ({branches.length})
           </p>
           <button
@@ -50,15 +50,15 @@ export function BranchList({ branches }: { branches: Branch[] }) {
                     <div className="flex items-center gap-2">
                       <span className="font-semibold text-[var(--ink)] text-sm">{b.name}</span>
                       {b.isDefault && (
-                        <span className="rounded-full bg-[var(--gold)]/15 px-2 py-0.5 text-[10px] font-bold text-[var(--gold)]">DEFAULT</span>
+                        <span className="rounded-full bg-[var(--gold)]/15 px-2 py-0.5 text-[12px] font-bold text-[var(--gold)]">DEFAULT</span>
                       )}
                       {!b.isActive && (
-                        <span className="rounded-full border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-0.5 text-[10px] font-semibold text-[var(--ink-muted)]">INACTIVE</span>
+                        <span className="rounded-full border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-0.5 text-[12px] font-semibold text-[var(--ink-muted)]">INACTIVE</span>
                       )}
                     </div>
                     {b.address && <p className="mt-0.5 text-xs text-[var(--ink-muted)] truncate">{b.address}</p>}
                     {b.phone && <p className="mt-0.5 text-xs text-[var(--ink-muted)]">{b.phone}</p>}
-                    <p className="mt-1 text-[10px] text-[var(--ink-muted)]">
+                    <p className="mt-1 text-[12px] text-[var(--ink-muted)]">
                       {b._count.users} user{b._count.users !== 1 ? "s" : ""} · {b._count.jobs} job{b._count.jobs !== 1 ? "s" : ""}
                     </p>
                   </div>

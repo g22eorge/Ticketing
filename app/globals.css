@@ -223,6 +223,22 @@
 @theme inline {
   --color-background: var(--page-bg);
   --color-foreground: var(--ink);
+  /* Raise text-xs from 12px → 13px globally so badges/labels stay readable
+     on high-DPI screens (iPhone 16 Pro 460 PPI / 3× device pixel ratio).
+     Apple HIG minimum is 11pt; 13px gives comfortable legibility margin. */
+  --font-size-xs: 0.8125rem; /* 13px */
+  --font-size-sm: 0.9375rem; /* 15px */
+}
+
+/* ── Responsive base font size ───────────────────────────────────────────────
+   iPhone 16 Pro has a 3× device pixel ratio. At 16px base, rem-derived sizes
+   (text-xs = 12px, text-sm = 14px) render proportionally smaller than they
+   feel on lower-DPI screens. Bumping to 17px on mobile makes every rem unit
+   ~6% larger — matching Apple's own minimum recommended body size (17pt).
+   All spacing that uses rem also grows proportionally, which is intentional.
+   ─────────────────────────────────────────────────────────────────────────── */
+@media (max-width: 639px) {
+  html { font-size: 17px; }
 }
 
 body {

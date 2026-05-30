@@ -28,9 +28,9 @@ export default async function NewSupplierBillPage({
     <div className="max-w-3xl space-y-4">
       <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
         <div className="px-4 py-3">
-          <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Inventory</p>
+          <p className="text-[12px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Inventory</p>
           <p className="text-[13px] font-bold text-[var(--ink)]">New Supplier Bill</p>
-          <p className="text-[11px] text-[var(--ink-muted)]">Record a supplier invoice for procurement costs.</p>
+          <p className="text-[13px] text-[var(--ink-muted)]">Record a supplier invoice for procurement costs.</p>
         </div>
       </div>
       <NewSupplierBillForm

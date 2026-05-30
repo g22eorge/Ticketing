@@ -111,12 +111,12 @@ export default async function TaxRatesPage() {
       {/* Header */}
       <div className="panel-shadow flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-2.5">
         <div>
-          <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Finance</p>
+          <p className="text-[12px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Finance</p>
           <p className="text-[13px] font-bold text-[var(--ink)]">
             Tax Rates{" "}
             <span className="font-normal text-[var(--ink-muted)]">· {taxRates.length} configured</span>
           </p>
-          <p className="text-[11px] text-[var(--ink-muted)]">
+          <p className="text-[13px] text-[var(--ink-muted)]">
             VAT, WHT, and other tax codes applied to invoices and purchases.
           </p>
         </div>
@@ -128,16 +128,16 @@ export default async function TaxRatesPage() {
             <p className="mb-3 text-[12px] font-bold text-[var(--ink)]">New Tax Rate</p>
             <form action={createTaxRateAction} className="space-y-3">
               <div>
-                <label className="mb-1 block text-[11px] font-semibold text-[var(--ink-muted)]">Name *</label>
+                <label className="mb-1 block text-[13px] font-semibold text-[var(--ink-muted)]">Name *</label>
                 <input name="name" required placeholder="e.g. Value Added Tax" className="input-base w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-[12px]" />
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="mb-1 block text-[11px] font-semibold text-[var(--ink-muted)]">Code *</label>
+                  <label className="mb-1 block text-[13px] font-semibold text-[var(--ink-muted)]">Code *</label>
                   <input name="code" required placeholder="VAT" className="input-base w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-[12px] uppercase" />
                 </div>
                 <div>
-                  <label className="mb-1 block text-[11px] font-semibold text-[var(--ink-muted)]">Rate % *</label>
+                  <label className="mb-1 block text-[13px] font-semibold text-[var(--ink-muted)]">Rate % *</label>
                   <input name="rate" type="number" min="0" max="100" step="0.01" required placeholder="18" className="input-base w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-[12px]" />
                 </div>
               </div>
@@ -167,7 +167,7 @@ export default async function TaxRatesPage() {
       <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
         <div className="doc-list overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-[var(--panel-strong)] text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
+            <thead className="bg-[var(--panel-strong)] text-[12px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
               <tr>
                 <th className="px-4 py-2.5 text-left">Code</th>
                 <th className="px-4 py-2.5 text-left">Name</th>
@@ -186,7 +186,7 @@ export default async function TaxRatesPage() {
                       {rate.code}
                     </span>
                     {rate.isDefault && (
-                      <span className="ml-2 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
+                      <span className="ml-2 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2 py-0.5 text-[12px] font-semibold text-emerald-700">
                         Default
                       </span>
                     )}
@@ -211,7 +211,7 @@ export default async function TaxRatesPage() {
                   </td>
                   <td className="px-4 py-3 text-center">
                     <span
-                      className={`rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${
+                      className={`rounded-full border px-2.5 py-0.5 text-[13px] font-semibold ${
                         rate.isActive
                           ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-700"
                           : "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]"

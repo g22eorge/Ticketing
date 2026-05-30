@@ -163,7 +163,7 @@ export default async function DocumentTemplatesPage() {
         return (
           <section key={kind} className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
             <div className="border-b border-[var(--line)] px-4 py-3">
-              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">
+              <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">
                 {KIND_LABELS[kind]}
               </p>
             </div>
@@ -193,17 +193,17 @@ export default async function DocumentTemplatesPage() {
                       <div className="flex flex-1 flex-col gap-1.5 p-3">
                         {/* Top row: number badge + status badges */}
                         <div className="flex items-center justify-between gap-1">
-                          <span className="rounded bg-[var(--panel-strong)] px-1.5 py-0.5 text-[10px] font-bold tabular-nums text-[var(--ink-muted)]">
+                          <span className="rounded bg-[var(--panel-strong)] px-1.5 py-0.5 text-[12px] font-bold tabular-nums text-[var(--ink-muted)]">
                             T-{String(t.templateNumber).padStart(2, "0")}
                           </span>
                           <div className="flex items-center gap-1">
                             {t.templateNumber === 1 && !isCurrent && (
-                              <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-1.5 py-0.5 text-[9px] font-bold text-emerald-600">
+                              <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-1.5 py-0.5 text-[13px] font-bold text-emerald-600">
                                 ★ Recommended
                               </span>
                             )}
                             {isCurrent ? (
-                              <span className="rounded-full bg-[var(--accent)]/15 px-1.5 py-0.5 text-[10px] font-bold text-[var(--accent)]">
+                              <span className="rounded-full bg-[var(--accent)]/15 px-1.5 py-0.5 text-[12px] font-bold text-[var(--accent)]">
                                 Current
                               </span>
                             ) : null}
@@ -216,12 +216,12 @@ export default async function DocumentTemplatesPage() {
                         </p>
 
                         {/* Description */}
-                        <p className="text-[11px] leading-snug text-[var(--ink-muted)]">
+                        <p className="text-[13px] leading-snug text-[var(--ink-muted)]">
                           {t.description}
                         </p>
 
                         {/* Plan badge */}
-                        <span className={`mt-0.5 inline-flex w-fit items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${planBadgeClass(t.minPlan)}`}>
+                        <span className={`mt-0.5 inline-flex w-fit items-center rounded-full px-1.5 py-0.5 text-[12px] font-semibold ${planBadgeClass(t.minPlan)}`}>
                           {planLabel(t.minPlan)}
                         </span>
                       </div>
@@ -233,7 +233,7 @@ export default async function DocumentTemplatesPage() {
                           href={`/api/templates/preview?key=${t.key}&kind=${kind}`}
                           target="_blank"
                           rel="noreferrer"
-                          className="flex w-full items-center justify-center gap-1 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-1 text-[11px] font-medium text-[var(--ink-muted)] transition hover:border-[var(--accent)]/40 hover:text-[var(--ink)]"
+                          className="flex w-full items-center justify-center gap-1 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-1 text-[13px] font-medium text-[var(--ink-muted)] transition hover:border-[var(--accent)]/40 hover:text-[var(--ink)]"
                         >
                           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
                           Preview PDF
@@ -242,21 +242,21 @@ export default async function DocumentTemplatesPage() {
                         {/* Set as default / locked / active */}
                         {isAllowed ? (
                           isCurrent ? (
-                            <span className="block text-center text-[11px] text-[var(--ink-muted)]">✓ Active</span>
+                            <span className="block text-center text-[13px] text-[var(--ink-muted)]">✓ Active</span>
                           ) : (
                             <form action={setTemplateAction}>
                               <input type="hidden" name="key"  value={t.key} />
                               <input type="hidden" name="kind" value={kind}  />
                               <button
                                 type="submit"
-                                className="btn-premium w-full rounded-lg px-2 py-1 text-[11px]"
+                                className="btn-premium w-full rounded-lg px-2 py-1 text-[13px]"
                               >
                                 Set as default
                               </button>
                             </form>
                           )
                         ) : (
-                          <p className="text-center text-[11px] text-[var(--ink-muted)]">
+                          <p className="text-center text-[13px] text-[var(--ink-muted)]">
                             Requires {planLabel(t.minPlan)}
                           </p>
                         )}

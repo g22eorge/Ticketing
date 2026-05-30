@@ -63,7 +63,7 @@ export default async function RegisterPage() {
             </div>
           </div>
 
-          <p className="relative text-[11px] text-white/25">© {new Date().getFullYear()} Nexus</p>
+          <p className="relative text-[13px] text-white/25">© {new Date().getFullYear()} Nexus</p>
         </section>
 
         {/* ── Right: register form ── */}

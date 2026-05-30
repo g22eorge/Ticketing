@@ -65,7 +65,7 @@ function DRow({ label, value }: { label: string; value?: string | null }) {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="mb-6">
-      <p className="text-[10px] font-bold tracking-widest uppercase text-[var(--ink-muted)] mb-2">{title}</p>
+      <p className="text-[12px] font-bold tracking-widest uppercase text-[var(--ink-muted)] mb-2">{title}</p>
       <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-1">{children}</div>
     </div>
   );
@@ -188,7 +188,7 @@ function RequestDrawer({
         {/* header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--line)] bg-[var(--panel)]">
           <div>
-            <p className="text-[11px] font-bold tracking-widest uppercase text-[var(--ink-muted)]">Repair Request</p>
+            <p className="text-[13px] font-bold tracking-widest uppercase text-[var(--ink-muted)]">Repair Request</p>
             <h2 className="text-lg font-bold text-[var(--ink)]">{req.requestNumber}</h2>
           </div>
           <div className="flex items-center gap-3">
@@ -274,7 +274,7 @@ function RequestDrawer({
         <div className="flex-1 overflow-y-auto px-6 py-5">
           {editMode && canManageIntake ? (
             <form action={saveEdits} className="mb-6 rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 panel-shadow">
-              <p className="text-[10px] font-bold tracking-widest uppercase text-[var(--ink-muted)] mb-3">Edit Request</p>
+              <p className="text-[12px] font-bold tracking-widest uppercase text-[var(--ink-muted)] mb-3">Edit Request</p>
               <div className="grid grid-cols-1 gap-3">
                 <input
                   name="customerName"
@@ -540,11 +540,11 @@ function MobileCard({
       <span className={`absolute inset-y-0 left-0 w-[5px] ${requestStripClass(req.requestStatus)}`} aria-hidden="true" />
       <div className="px-4 py-3 pl-6">
         <div className="mb-1 flex items-center justify-between gap-2">
-          <span className="mono text-[10px] font-medium tracking-wide text-[var(--ink-muted)]/50">{req.requestNumber}</span>
+          <span className="mono text-[12px] font-medium tracking-wide text-[var(--ink-muted)]/50">{req.requestNumber}</span>
           <StatusBadge status={req.requestStatus} />
         </div>
         <p className="truncate text-[15px] font-bold leading-snug tracking-tight text-[var(--ink)]">{req.customerName}</p>
-        <div className="mt-1 flex items-center gap-1 text-[11px] text-[var(--ink-muted)]">
+        <div className="mt-1 flex items-center gap-1 text-[13px] text-[var(--ink-muted)]">
           <span className="truncate font-medium">{device}</span>
           <span className="shrink-0 opacity-40">·</span>
           <span className="shrink-0">{HANDOVER_LABEL[req.handoverMethod] ?? req.handoverMethod}</span>
@@ -668,7 +668,7 @@ export function IntakeClient({
         <summary className="list-none">
           <div className="flex items-center justify-between gap-2">
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Intake Brief</p>
-            <span className="text-[11px] text-[var(--ink-muted)]">Expand</span>
+            <span className="text-[13px] text-[var(--ink-muted)]">Expand</span>
           </div>
         </summary>
         <p className="mt-2 border-t border-[var(--line)] pt-2 text-xs text-[var(--ink-muted)] [overflow-wrap:anywhere]">{brief}</p>
@@ -693,7 +693,7 @@ export function IntakeClient({
             >
               {tab.label}
               {count > 0 && (
-                <span className={`rounded-full px-1.5 py-0.5 text-[9px] font-bold ${active ? "bg-white/20" : "bg-[var(--panel-strong)] text-[var(--ink-muted)]"}`}>
+                <span className={`rounded-full px-1.5 py-0.5 text-[13px] font-bold ${active ? "bg-white/20" : "bg-[var(--panel-strong)] text-[var(--ink-muted)]"}`}>
                   {count}
                 </span>
               )}
@@ -747,7 +747,7 @@ export function IntakeClient({
           {/* ── DESKTOP TABLE VIEW ── */}
           <div className="hidden rounded-xl border border-[var(--line)] bg-[var(--panel)] overflow-hidden panel-shadow lg:block">
             <table className="min-w-full text-[13px]">
-              <thead className="bg-[var(--panel-strong)]/50 text-left text-[10px] font-bold uppercase tracking-[0.15em] text-[var(--ink-muted)]">
+              <thead className="bg-[var(--panel-strong)]/50 text-left text-[12px] font-bold uppercase tracking-[0.15em] text-[var(--ink-muted)]">
                 <tr>
                   <th className="px-4 py-2.5">Request #</th>
                   <th className="px-4 py-2.5">Customer</th>

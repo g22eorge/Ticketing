@@ -606,14 +606,14 @@ export default async function ReportsPage({
 
   const ExportGrid = ({ items }: { items: { title: string; caption: string; href: string }[] }) => (
     <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Downloads</p>
+      <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Downloads</p>
       <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
         {items.map((item) => (
           <a key={item.href} href={item.href}
             className="flex flex-col rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-3 transition hover:border-[var(--accent)]/40 hover:bg-[var(--panel)]">
             <p className="text-sm font-semibold text-[var(--ink)]">{item.title}</p>
             <p className="mt-0.5 text-xs text-[var(--ink-muted)]">{item.caption}</p>
-            <p className="mt-2 text-[10px] font-semibold text-[var(--accent)]">↓ Download CSV</p>
+            <p className="mt-2 text-[12px] font-semibold text-[var(--accent)]">↓ Download CSV</p>
           </a>
         ))}
       </div>
@@ -640,7 +640,7 @@ export default async function ReportsPage({
             { label: "Expenses",  value: formatMoneyCompact(expensesTotal, currency),        tone: expensesTotal > 0 ? "text-amber-600" : "text-[var(--ink-muted)]", bg: "bg-amber-500/10" },
           ] as { label: string; value: string; tone: string; bg: string }[]).map(({ label, value, tone, bg }) => (
             <div key={label} className={`rounded-2xl border border-[var(--line)] ${bg} px-4 py-3`}>
-              <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--ink-muted)]">{label}</p>
+              <p className="text-[12px] font-bold uppercase tracking-wider text-[var(--ink-muted)]">{label}</p>
               <p className={`mt-1 text-xl font-black tabular-nums ${tone}`}>{value}</p>
             </div>
           ))}
@@ -648,7 +648,7 @@ export default async function ReportsPage({
         {/* Top device types */}
         {deviceRows.length > 0 && (
           <div className="rounded-2xl border border-[var(--line)] bg-[var(--panel)] divide-y divide-[var(--line)] overflow-hidden">
-            <p className="px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-[var(--ink-muted)]">Top device types</p>
+            <p className="px-4 py-2 text-[12px] font-bold uppercase tracking-wider text-[var(--ink-muted)]">Top device types</p>
             {deviceRows.slice(0, 4).map((d) => (
               <div key={d.device} className="flex items-center justify-between px-4 py-2.5">
                 <p className="text-sm font-medium text-[var(--ink)]">{deviceLabel[d.device] ?? d.device}</p>
@@ -670,9 +670,9 @@ export default async function ReportsPage({
       <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
         <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
           <div>
-            <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Analytics</p>
+            <p className="text-[12px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Analytics</p>
             <p className="text-[13px] font-bold text-[var(--ink)]">Reports</p>
-            <p className="text-[11px] text-[var(--ink-muted)]">
+            <p className="text-[13px] text-[var(--ink-muted)]">
               {period === "year" ? `${selectedYear} Annual` : selectedMonthString}
             </p>
           </div>
@@ -717,7 +717,7 @@ export default async function ReportsPage({
           <Link
             key={t.key}
             href={tabHref(t.key)}
-            className={`flex-1 rounded-lg px-3 py-2 text-center text-[11px] font-semibold transition ${tab === t.key ? "bg-[var(--panel)] text-[var(--ink)] shadow-sm" : "text-[var(--ink-muted)] hover:text-[var(--ink)]"}`}
+            className={`flex-1 rounded-lg px-3 py-2 text-center text-[13px] font-semibold transition ${tab === t.key ? "bg-[var(--panel)] text-[var(--ink)] shadow-sm" : "text-[var(--ink-muted)] hover:text-[var(--ink)]"}`}
           >
             {t.label}
           </Link>
@@ -737,7 +737,7 @@ export default async function ReportsPage({
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
             {/* Completed */}
             <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-              <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Completed</p>
+              <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Completed</p>
               <p className="mt-1.5 text-2xl font-bold text-[var(--ink)]">{completedSelected.length}</p>
               {completedPrev.length > 0 && (
                 <p className="mt-1 text-xs text-[var(--ink-muted)]">
@@ -748,7 +748,7 @@ export default async function ReportsPage({
 
             {/* Revenue */}
             <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-              <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Revenue</p>
+              <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Revenue</p>
               <p className="mt-1.5 text-2xl font-bold text-[var(--ink)]">
                 {formatMoneyCompact(revenueSelected, currency)}
               </p>
@@ -764,7 +764,7 @@ export default async function ReportsPage({
 
             {/* Avg Turnaround */}
             <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-              <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Avg Turnaround</p>
+              <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Avg Turnaround</p>
               <p className="mt-1.5 text-2xl font-bold text-[var(--ink)]">
                 {avgTurnaround > 0 ? turnaroundLabel(avgTurnaround) : "—"}
               </p>
@@ -773,14 +773,14 @@ export default async function ReportsPage({
 
             {/* Open Pipeline */}
             <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-              <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Open Pipeline</p>
+              <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Open Pipeline</p>
               <p className="mt-1.5 text-2xl font-bold text-[var(--ink)]">{openJobs.length}</p>
               <p className="mt-1 text-xs text-[var(--ink-muted)]">active jobs</p>
             </div>
 
             {/* In-house / External */}
             <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-              <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Repair Path</p>
+              <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Repair Path</p>
               <p className="mt-1.5 text-2xl font-bold text-[var(--ink)]">{externalCount}</p>
               <p className="mt-1 text-xs text-[var(--ink-muted)]">
                 ext &nbsp;·&nbsp; {inHouseCount} in-house
@@ -791,7 +791,7 @@ export default async function ReportsPage({
           {/* Status pipeline */}
           <section className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
             <div className="border-b border-[var(--line)] px-4 py-3">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">
+              <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">
                 Job Pipeline
               </p>
             </div>
@@ -803,7 +803,7 @@ export default async function ReportsPage({
                   className="flex min-w-[88px] shrink-0 flex-col items-center border-r border-[var(--line)] px-3 py-3.5 text-center transition hover:bg-[var(--panel-strong)] last:border-r-0"
                 >
                   <span className="text-xl font-bold text-[var(--ink)]">{s.value}</span>
-                  <span className="mt-1 text-[10px] leading-tight text-[var(--ink-muted)]">{s.name}</span>
+                  <span className="mt-1 text-[12px] leading-tight text-[var(--ink-muted)]">{s.name}</span>
                 </Link>
               ))}
             </div>
@@ -813,7 +813,7 @@ export default async function ReportsPage({
           <div className="grid gap-3 lg:grid-cols-2">
             {/* Device breakdown */}
             <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">
+              <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">
                 Device Breakdown
               </p>
               {deviceRows.length === 0 ? (
@@ -850,10 +850,10 @@ export default async function ReportsPage({
 
             {/* Fault Keywords */}
             <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">
+              <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">
                 Common Fault Keywords
               </p>
-              <p className="mt-0.5 text-[10px] text-[var(--ink-muted)]">
+              <p className="mt-0.5 text-[12px] text-[var(--ink-muted)]">
                 Extracted from all completed diagnosis notes
               </p>
               {commonFaults.length === 0 ? (
@@ -877,7 +877,7 @@ export default async function ReportsPage({
           {delayedJobs.length > 0 && (
             <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
               <div className="flex items-center justify-between">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">
+                <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">
                   Aging Jobs (3+ days open)
                 </p>
                 <Link href="/jobs" className="text-xs text-[var(--ink-muted)] hover:text-[var(--ink)]">
@@ -908,7 +908,7 @@ export default async function ReportsPage({
                       </td>
                       <td className="px-3 py-2.5 text-right">
                         <span
-                          className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold ${job.ageDays >= 8 ? "bg-red-500/15 text-red-600" : "bg-amber-500/15 text-amber-600"}`}
+                          className={`inline-flex items-center rounded-full px-2 py-0.5 text-[12px] font-bold ${job.ageDays >= 8 ? "bg-red-500/15 text-red-600" : "bg-amber-500/15 text-amber-600"}`}
                         >
                           {job.ageDays}d
                         </span>
@@ -933,28 +933,28 @@ export default async function ReportsPage({
           {/* Revenue streams */}
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-              <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Repairs</p>
+              <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Repairs</p>
               <p className="mt-1.5 text-2xl font-bold text-[var(--ink)]">
                 {formatMoneyCompact(revenueSelected, currency)}
               </p>
               <p className="mt-1 text-xs text-[var(--ink-muted)]">{completedSelected.length} jobs</p>
             </div>
             <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-              <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">POS / Products</p>
+              <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">POS / Products</p>
               <p className="mt-1.5 text-2xl font-bold text-[var(--ink)]">
                 {formatMoneyCompact(posSalesTotal, currency)}
               </p>
               <p className="mt-1 text-xs text-[var(--ink-muted)]">{salesByPeriod.length} sales</p>
             </div>
             <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-              <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Invoices</p>
+              <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Invoices</p>
               <p className="mt-1.5 text-2xl font-bold text-[var(--ink)]">
                 {formatMoneyCompact(invoicesPaidTotal, currency)}
               </p>
               <p className="mt-1 text-xs text-[var(--ink-muted)]">paid this period</p>
             </div>
             <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-              <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Total</p>
+              <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Total</p>
               <p className="mt-1.5 text-2xl font-bold text-[var(--ink)]">
                 {formatMoneyCompact(totalAllChannels, currency)}
               </p>
@@ -971,21 +971,21 @@ export default async function ReportsPage({
           {/* Cash flow row */}
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
             <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-              <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Cash In</p>
+              <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Cash In</p>
               <p className="mt-1.5 text-2xl font-bold text-emerald-500">
                 {formatMoneyCompact(cashIn, currency)}
               </p>
               <p className="mt-1 text-xs text-[var(--ink-muted)]">payments received</p>
             </div>
             <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-              <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Cash Out</p>
+              <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Cash Out</p>
               <p className="mt-1.5 text-2xl font-bold text-red-500">
                 {formatMoneyCompact(cashOutExternal + cashOutRefunds, currency)}
               </p>
               <p className="mt-1 text-xs text-[var(--ink-muted)]">ext payouts + refunds</p>
             </div>
             <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-              <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Net Cash</p>
+              <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Net Cash</p>
               <p
                 className={`mt-1.5 text-2xl font-bold ${cashNet >= 0 ? "text-[var(--ink)]" : "text-red-500"}`}
               >
@@ -994,14 +994,14 @@ export default async function ReportsPage({
               <p className="mt-1 text-xs text-[var(--ink-muted)]">in − out</p>
             </div>
             <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-              <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Expenses</p>
+              <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Expenses</p>
               <p className="mt-1.5 text-2xl font-bold text-[var(--ink)]">
                 {formatMoneyCompact(expensesTotal, currency)}
               </p>
               <p className="mt-1 text-xs text-[var(--ink-muted)]">this period</p>
             </div>
             <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-              <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Gross Margin</p>
+              <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Gross Margin</p>
               <p className="mt-1.5 text-2xl font-bold text-[var(--ink)]">
                 {formatMoneyCompact(marginSelected, currency)}
               </p>
@@ -1047,7 +1047,7 @@ export default async function ReportsPage({
           {staffRevRows.length > 0 && (
             <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
               <div className="flex items-center justify-between">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">
+                <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">
                   Staff Performance
                 </p>
                 {teamTargetRevenue > 0 && (
@@ -1092,7 +1092,7 @@ export default async function ReportsPage({
                         <td className="px-3 py-2.5 text-right">
                           {pct !== null ? (
                             <span
-                              className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold ${pct >= 100 ? "bg-emerald-500/15 text-emerald-600" : "bg-amber-500/15 text-amber-600"}`}
+                              className={`inline-flex items-center rounded-full px-2 py-0.5 text-[12px] font-bold ${pct >= 100 ? "bg-emerald-500/15 text-emerald-600" : "bg-amber-500/15 text-amber-600"}`}
                             >
                               {pct}%
                             </span>
@@ -1123,14 +1123,14 @@ export default async function ReportsPage({
           {/* KPI strip */}
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-              <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">
+              <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">
                 Active Parts
               </p>
               <p className="mt-1.5 text-2xl font-bold text-[var(--ink)]">{lowStockParts.length}</p>
               <p className="mt-1 text-xs text-[var(--ink-muted)]">with reorder level set</p>
             </div>
             <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-              <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">
+              <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">
                 Low Stock
               </p>
               <p
@@ -1141,7 +1141,7 @@ export default async function ReportsPage({
               <p className="mt-1 text-xs text-[var(--ink-muted)]">at or below reorder</p>
             </div>
             <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-              <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">
+              <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">
                 Stock Value
               </p>
               <p className="mt-1.5 text-2xl font-bold text-[var(--ink)]">
@@ -1150,7 +1150,7 @@ export default async function ReportsPage({
               <p className="mt-1 text-xs text-[var(--ink-muted)]">tracked parts only</p>
             </div>
             <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-              <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">
+              <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">
                 Payables
               </p>
               <p
@@ -1166,7 +1166,7 @@ export default async function ReportsPage({
           {lowStockItems.length > 0 && (
             <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
               <div className="flex items-center justify-between">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">
+                <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">
                   Low Stock Items
                 </p>
                 <Link
@@ -1197,7 +1197,7 @@ export default async function ReportsPage({
                       </td>
                       <td className="px-3 py-2.5 text-right">
                         <span
-                          className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold ${part.qtyOnHand === 0 ? "bg-red-500/15 text-red-600" : "bg-amber-500/15 text-amber-600"}`}
+                          className={`inline-flex items-center rounded-full px-2 py-0.5 text-[12px] font-bold ${part.qtyOnHand === 0 ? "bg-red-500/15 text-red-600" : "bg-amber-500/15 text-amber-600"}`}
                         >
                           {part.qtyOnHand === 0 ? "Out of stock" : "Low"}
                         </span>
@@ -1262,10 +1262,10 @@ export default async function ReportsPage({
         <>
           {/* Technician Performance */}
           <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">
+            <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">
               Technician Performance
             </p>
-            <p className="mt-0.5 text-[10px] text-[var(--ink-muted)]">Jobs assigned in selected period</p>
+            <p className="mt-0.5 text-[12px] text-[var(--ink-muted)]">Jobs assigned in selected period</p>
 
             {techPerf.length === 0 ? (
               <p className="mt-4 text-center text-xs text-[var(--ink-muted)]">
@@ -1301,7 +1301,7 @@ export default async function ReportsPage({
                         <td className="px-3 py-2.5 text-right text-sm text-[var(--ink)]">{t.completed}</td>
                         <td className="px-3 py-2.5 text-right">
                           <span
-                            className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold ${t.completionRate >= 80 ? "bg-emerald-500/15 text-emerald-600" : t.completionRate >= 50 ? "bg-amber-500/15 text-amber-600" : "bg-red-500/15 text-red-600"}`}
+                            className={`inline-flex items-center rounded-full px-2 py-0.5 text-[12px] font-bold ${t.completionRate >= 80 ? "bg-emerald-500/15 text-emerald-600" : t.completionRate >= 50 ? "bg-amber-500/15 text-amber-600" : "bg-red-500/15 text-red-600"}`}
                           >
                             {Math.round(t.completionRate)}%
                           </span>
@@ -1324,7 +1324,7 @@ export default async function ReportsPage({
           {approvalDelays.length > 0 && (
             <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
               <div className="flex items-center justify-between">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">
+                <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">
                   Awaiting Client Approval
                 </p>
                 <Link
@@ -1358,7 +1358,7 @@ export default async function ReportsPage({
                       </td>
                       <td className="px-3 py-2.5 text-right">
                         <span
-                          className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold ${job.daysPending >= 3 ? "bg-red-500/15 text-red-600" : "bg-amber-500/15 text-amber-600"}`}
+                          className={`inline-flex items-center rounded-full px-2 py-0.5 text-[12px] font-bold ${job.daysPending >= 3 ? "bg-red-500/15 text-red-600" : "bg-amber-500/15 text-amber-600"}`}
                         >
                           {job.daysPending}d
                         </span>
@@ -1372,7 +1372,7 @@ export default async function ReportsPage({
 
           {/* Lead Funnel */}
           <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">
+            <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">
               Lead Funnel
             </p>
 
@@ -1380,19 +1380,19 @@ export default async function ReportsPage({
             <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
               <div className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] p-3 text-center">
                 <p className="text-xl font-bold text-[var(--ink)]">{totalLeads}</p>
-                <p className="mt-0.5 text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">
+                <p className="mt-0.5 text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">
                   Total Leads
                 </p>
               </div>
               <div className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] p-3 text-center">
                 <p className="text-xl font-bold text-emerald-500">{wonLeads}</p>
-                <p className="mt-0.5 text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">
+                <p className="mt-0.5 text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">
                   Won
                 </p>
               </div>
               <div className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] p-3 text-center">
                 <p className="text-xl font-bold text-[var(--ink)]">{leadConversion}%</p>
-                <p className="mt-0.5 text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">
+                <p className="mt-0.5 text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">
                   Conversion
                 </p>
               </div>
@@ -1420,7 +1420,7 @@ export default async function ReportsPage({
                         className="flex min-w-[88px] shrink-0 flex-col items-center border-r border-[var(--line)] px-3 py-3.5 text-center transition hover:bg-[var(--panel-strong)] last:border-r-0"
                       >
                         <span className="text-xl font-bold text-[var(--ink)]">{count}</span>
-                        <span className="mt-1 text-[10px] leading-tight text-[var(--ink-muted)]">
+                        <span className="mt-1 text-[12px] leading-tight text-[var(--ink-muted)]">
                           {stage.label}
                         </span>
                       </Link>

@@ -76,9 +76,9 @@ export default async function FinanceReportsPage() {
     <div className="space-y-5 p-4 md:p-5">
       <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
         <div className="px-4 py-3">
-          <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Finance</p>
+          <p className="text-[12px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Finance</p>
           <p className="text-[13px] font-bold text-[var(--ink)]">Financial Reports</p>
-          <p className="text-[11px] text-[var(--ink-muted)]">Statements, analysis and export tools</p>
+          <p className="text-[13px] text-[var(--ink-muted)]">Statements, analysis and export tools</p>
         </div>
       </div>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -91,7 +91,7 @@ export default async function FinanceReportsPage() {
             <span className="text-[var(--accent)]">{r.icon}</span>
             <p className="font-semibold text-[var(--ink)]">{r.title}</p>
             <p className="text-xs text-[var(--ink-muted)]">{r.desc}</p>
-            <p className="mt-auto text-[11px] font-semibold text-[var(--accent)]">Open Report →</p>
+            <p className="mt-auto text-[13px] font-semibold text-[var(--accent)]">Open Report →</p>
           </Link>
         ))}
       </div>

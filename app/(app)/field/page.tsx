@@ -175,9 +175,9 @@ export default async function FieldPage({
       <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
         <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
           <div>
-            <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Service</p>
+            <p className="text-[12px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Service</p>
             <p className="text-[13px] font-bold text-[var(--ink)]">Field Visits</p>
-            <p className="text-[11px] text-[var(--ink-muted)]">
+            <p className="text-[13px] text-[var(--ink-muted)]">
               {isManager ? "All scheduled field visits" : "Your assigned field visits"}
             </p>
           </div>
@@ -198,33 +198,33 @@ export default async function FieldPage({
       {/* ── KPI tiles ── */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
         <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
-          <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Today&apos;s Visits</p>
+          <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Today&apos;s Visits</p>
           <p className="mt-1 text-xl font-bold tabular-nums text-[var(--ink)]">{kpiToday}</p>
-          <p className="mt-0.5 text-[11px] text-[var(--ink-muted)]">scheduled today</p>
+          <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">scheduled today</p>
         </div>
         <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
-          <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Pending</p>
+          <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Pending</p>
           <p className="mt-1 text-xl font-bold tabular-nums text-[var(--ink)]">{kpiPending}</p>
-          <p className="mt-0.5 text-[11px] text-[var(--ink-muted)]">scheduled · en route · arrived</p>
+          <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">scheduled · en route · arrived</p>
         </div>
         <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
-          <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Completed This Month</p>
+          <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Completed This Month</p>
           <p className="mt-1 text-xl font-bold tabular-nums text-emerald-700">{kpiCompletedMonth}</p>
-          <p className="mt-0.5 text-[11px] text-[var(--ink-muted)]">
+          <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">
             {completionRate !== null ? `${completionRate}% success rate` : "this month"}
           </p>
         </div>
         <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
-          <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Failed This Month</p>
+          <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Failed This Month</p>
           <p className={`mt-1 text-xl font-bold tabular-nums ${kpiFailedMonth > 0 ? "text-red-600" : "text-[var(--ink)]"}`}>{kpiFailedMonth}</p>
-          <p className="mt-0.5 text-[11px] text-[var(--ink-muted)]">
+          <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">
             {terminalMonth > 0 ? `${100 - (completionRate ?? 100)}% failure rate` : "this month"}
           </p>
         </div>
         <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
-          <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Total Visits</p>
+          <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Total Visits</p>
           <p className="mt-1 text-xl font-bold tabular-nums text-[var(--ink)]">{kpiTotal}</p>
-          <p className="mt-0.5 text-[11px] text-[var(--ink-muted)]">all time</p>
+          <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">all time</p>
         </div>
       </div>
 
@@ -234,7 +234,7 @@ export default async function FieldPage({
 
           {/* Visit type breakdown */}
           <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Visit Types — This Month</p>
+            <p className="text-[12px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Visit Types — This Month</p>
             {typeBreakdown.length === 0 ? (
               <p className="mt-3 text-sm text-[var(--ink-muted)]">No visits this month.</p>
             ) : (
@@ -244,7 +244,7 @@ export default async function FieldPage({
                   return (
                     <div key={type}>
                       <div className="flex items-center justify-between mb-0.5">
-                        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ${color}`}>{label}</span>
+                        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[13px] font-semibold ${color}`}>{label}</span>
                         <span className="text-xs font-semibold tabular-nums text-[var(--ink)]">{count} <span className="text-[var(--ink-muted)] font-normal">({pct}%)</span></span>
                       </div>
                       <div className="h-1.5 w-full overflow-hidden rounded-full bg-[var(--panel-strong)]">
@@ -260,7 +260,7 @@ export default async function FieldPage({
           {/* Staff breakdown */}
           <div className="lg:col-span-2 panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
             <div className="border-b border-[var(--line)] bg-[var(--panel-strong)]/50 px-4 py-2.5">
-              <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Staff Performance — This Month</p>
+              <p className="text-[12px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Staff Performance — This Month</p>
             </div>
             {staffRows.length === 0 ? (
               <p className="px-4 py-6 text-sm text-[var(--ink-muted)]">No visits assigned this month.</p>
@@ -273,13 +273,13 @@ export default async function FieldPage({
                       <div className="flex items-center justify-between gap-2">
                         <div>
                           <p className="font-medium text-[var(--ink)]">{row.name}</p>
-                          <p className="text-[11px] text-[var(--ink-muted)] capitalize">{row.role.replace(/_/g, " ").toLowerCase()}</p>
+                          <p className="text-[13px] text-[var(--ink-muted)] capitalize">{row.role.replace(/_/g, " ").toLowerCase()}</p>
                         </div>
                         <span className={`text-sm font-bold tabular-nums ${row.rate >= 80 ? "text-emerald-700" : row.rate >= 60 ? "text-amber-700" : row.completed + row.failed > 0 ? "text-red-600" : "text-[var(--ink-muted)]"}`}>
                           {row.completed + row.failed > 0 ? `${row.rate}%` : "—"}
                         </span>
                       </div>
-                      <div className="mt-1 flex flex-wrap gap-x-4 gap-y-0.5 text-[11px] text-[var(--ink-muted)]">
+                      <div className="mt-1 flex flex-wrap gap-x-4 gap-y-0.5 text-[13px] text-[var(--ink-muted)]">
                         <span>Total: <strong className="text-[var(--ink)]">{row.total}</strong></span>
                         <span>Pending: {row.pending}</span>
                         <span className="text-emerald-700">Done: <strong>{row.completed}</strong></span>
@@ -294,7 +294,7 @@ export default async function FieldPage({
                     <thead>
                       <tr className="border-b border-[var(--line)]">
                         {["Staff Member", "Total", "Pending", "Completed", "Failed", "Success Rate"].map((h) => (
-                          <th key={h} className={`px-4 py-2 text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)] ${h === "Staff Member" ? "text-left" : "text-right"}`}>{h}</th>
+                          <th key={h} className={`px-4 py-2 text-[12px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)] ${h === "Staff Member" ? "text-left" : "text-right"}`}>{h}</th>
                         ))}
                       </tr>
                     </thead>
@@ -303,7 +303,7 @@ export default async function FieldPage({
                         <tr key={row.id} className="hover:bg-[var(--panel-strong)]/30">
                           <td className="px-4 py-2.5">
                             <p className="font-medium text-[var(--ink)]">{row.name}</p>
-                            <p className="text-[11px] text-[var(--ink-muted)] capitalize">{row.role.replace(/_/g, " ").toLowerCase()}</p>
+                            <p className="text-[13px] text-[var(--ink-muted)] capitalize">{row.role.replace(/_/g, " ").toLowerCase()}</p>
                           </td>
                           <td className="px-4 py-2.5 text-right font-semibold tabular-nums text-[var(--ink)]">{row.total}</td>
                           <td className="px-4 py-2.5 text-right tabular-nums text-[var(--ink-muted)]">{row.pending}</td>
@@ -357,14 +357,14 @@ export default async function FieldPage({
               <div key={`m-${visit.id}`} className="px-4 py-3">
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex flex-wrap items-center gap-1.5">
-                    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ${TYPE_COLORS[visit.type] ?? "border border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]"}`}>{TYPE_LABELS[visit.type] ?? visit.type}</span>
-                    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ${STATUS_COLORS[visit.status]}`}>{STATUS_LABELS[visit.status]}</span>
+                    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[13px] font-semibold ${TYPE_COLORS[visit.type] ?? "border border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]"}`}>{TYPE_LABELS[visit.type] ?? visit.type}</span>
+                    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[13px] font-semibold ${STATUS_COLORS[visit.status]}`}>{STATUS_LABELS[visit.status]}</span>
                   </div>
                   <Link href={`/field/${visit.id}`} className="shrink-0 text-xs font-semibold text-[var(--accent)] hover:underline">View →</Link>
                 </div>
                 <p className="mt-1 text-xs text-[var(--ink)]">{formatEATDateTime(visit.scheduledAt)}</p>
-                <p className="mt-0.5 line-clamp-1 text-[11px] text-[var(--ink-muted)]">{visit.address}</p>
-                <div className="mt-0.5 flex flex-wrap gap-x-3 text-[11px] text-[var(--ink-muted)]">
+                <p className="mt-0.5 line-clamp-1 text-[13px] text-[var(--ink-muted)]">{visit.address}</p>
+                <div className="mt-0.5 flex flex-wrap gap-x-3 text-[13px] text-[var(--ink-muted)]">
                   {visit.contactName && <span>Contact: {visit.contactName}{visit.contactPhone ? ` (${visit.contactPhone})` : ""}</span>}
                   {isManager && <span>Assigned: <span className="text-[var(--ink)]">{visit.assignedTo.name}</span></span>}
                   {visit.job && (
@@ -379,16 +379,16 @@ export default async function FieldPage({
             <table className="min-w-full divide-y divide-[var(--line)] text-sm">
               <thead>
                 <tr className="bg-[var(--panel-strong)]/60">
-                  <th className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Date / Time</th>
-                  <th className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Type</th>
-                  <th className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Address</th>
+                  <th className="px-4 py-3 text-left text-[12px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Date / Time</th>
+                  <th className="px-4 py-3 text-left text-[12px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Type</th>
+                  <th className="px-4 py-3 text-left text-[12px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Address</th>
                   {isManager && (
-                    <th className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Assigned To</th>
+                    <th className="px-4 py-3 text-left text-[12px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Assigned To</th>
                   )}
-                  <th className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Contact</th>
-                  <th className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Job</th>
-                  <th className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Status</th>
-                  <th className="px-4 py-3 text-right text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Actions</th>
+                  <th className="px-4 py-3 text-left text-[12px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Contact</th>
+                  <th className="px-4 py-3 text-left text-[12px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Job</th>
+                  <th className="px-4 py-3 text-left text-[12px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Status</th>
+                  <th className="px-4 py-3 text-right text-[12px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--line)]">
@@ -398,7 +398,7 @@ export default async function FieldPage({
                       {formatEATDateTime(visit.scheduledAt)}
                     </td>
                     <td className="px-4 py-2.5 whitespace-nowrap">
-                      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ${TYPE_COLORS[visit.type] ?? "border border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]"}`}>
+                      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[13px] font-semibold ${TYPE_COLORS[visit.type] ?? "border border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]"}`}>
                         {TYPE_LABELS[visit.type] ?? visit.type}
                       </span>
                     </td>
@@ -426,7 +426,7 @@ export default async function FieldPage({
                       )}
                     </td>
                     <td className="px-4 py-2.5 whitespace-nowrap">
-                      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ${STATUS_COLORS[visit.status]}`}>
+                      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[13px] font-semibold ${STATUS_COLORS[visit.status]}`}>
                         {STATUS_LABELS[visit.status]}
                       </span>
                     </td>

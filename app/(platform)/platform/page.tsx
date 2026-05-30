@@ -125,7 +125,7 @@ export default async function PlatformPage() {
           { label: "Total Users",value: totalUsers,  color: "text-[var(--ink)]" },
         ].map((m) => (
           <div key={m.label} className="rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
-            <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-[var(--ink-muted)]">{m.label}</p>
+            <p className="text-[12px] font-bold uppercase tracking-[0.15em] text-[var(--ink-muted)]">{m.label}</p>
             <p className={`mt-1 text-2xl font-bold tabular-nums ${m.color}`}>{m.value}</p>
           </div>
         ))}
@@ -134,16 +134,16 @@ export default async function PlatformPage() {
       {/* ── Revenue + plan breakdown ── */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
         <div className="col-span-2 rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
-          <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-[var(--ink-muted)]">This Month</p>
+          <p className="text-[12px] font-bold uppercase tracking-[0.15em] text-[var(--ink-muted)]">This Month</p>
           <p className="mt-1 text-xl font-bold text-[var(--ink)]">{fmtMoney(monthRevenue)}</p>
         </div>
         <div className="col-span-2 rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
-          <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-[var(--ink-muted)]">All-Time Revenue</p>
+          <p className="text-[12px] font-bold uppercase tracking-[0.15em] text-[var(--ink-muted)]">All-Time Revenue</p>
           <p className="mt-1 text-xl font-bold text-[var(--ink)]">{fmtMoney(totalRevenue)}</p>
         </div>
         {(["STARTER","STANDARD","GROWTH","PREMIUM","ENTERPRISE"] as const).map((plan) => (
           <div key={plan} className={`rounded-xl border px-4 py-3 ${PLAN_CHIP[plan]}`}>
-            <p className="text-[10px] font-bold uppercase tracking-[0.15em] opacity-70">{plan}</p>
+            <p className="text-[12px] font-bold uppercase tracking-[0.15em] opacity-70">{plan}</p>
             <p className="mt-1 text-2xl font-bold tabular-nums">{planCounts[plan] ?? 0}</p>
           </div>
         ))}
@@ -153,7 +153,7 @@ export default async function PlatformPage() {
       <OrgTable orgs={orgs} />
 
       {/* ── Quick stats footer ── */}
-      <p className="text-right text-[11px] text-[var(--ink-muted)]/60">
+      <p className="text-right text-[13px] text-[var(--ink-muted)]/60">
         {totalJobs.toLocaleString()} total jobs across all orgs
       </p>
 

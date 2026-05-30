@@ -168,7 +168,7 @@ export function Header({
               title="Account menu"
             >
               {/* Avatar — 34px on mobile, 28px on desktop */}
-              <div className="flex h-[34px] w-[34px] sm:h-7 sm:w-7 shrink-0 items-center justify-center rounded-lg bg-[var(--accent)] text-[12px] sm:text-[11px] font-black text-black select-none">
+              <div className="flex h-[34px] w-[34px] sm:h-7 sm:w-7 shrink-0 items-center justify-center rounded-lg bg-[var(--accent)] text-[12px] sm:text-[13px] font-black text-black select-none">
                 {initials(userName)}
               </div>
               {/* Name + role (desktop only) */}
@@ -176,7 +176,7 @@ export function Header({
                 <span className="text-[12px] font-semibold text-[var(--ink)] leading-none truncate max-w-[100px]">
                   {userName.split(" ")[0]}
                 </span>
-                <span className={`rounded-full px-1.5 py-0.5 text-[9px] font-bold leading-none ${roleAccent(role)}`}>
+                <span className={`rounded-full px-1.5 py-0.5 text-[13px] font-bold leading-none ${roleAccent(role)}`}>
                   {roleDisplay(role)}
                 </span>
               </div>
@@ -203,11 +203,11 @@ export function Header({
                       </div>
                       <div className="min-w-0">
                         <p className="truncate text-[13px] font-bold text-[var(--ink)]">{userName}</p>
-                        <p className="truncate text-[10px] text-[var(--ink-muted)]">{userEmail}</p>
+                        <p className="truncate text-[12px] text-[var(--ink-muted)]">{userEmail}</p>
                       </div>
                     </div>
                     {orgName && (
-                      <p className="mt-2 truncate text-[11px] font-medium text-[var(--ink-muted)]">
+                      <p className="mt-2 truncate text-[13px] font-medium text-[var(--ink-muted)]">
                         <span className="text-[var(--ink-muted)]/60">Org:</span> {orgName}
                       </p>
                     )}

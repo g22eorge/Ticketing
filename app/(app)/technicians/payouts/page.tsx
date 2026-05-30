@@ -111,18 +111,18 @@ export default async function TechnicianPayoutsPage({
     <div className="space-y-3 sm:space-y-4">
       <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
         <div className="border-b border-[var(--accent)]/30 bg-[var(--accent)]/10 px-3 py-2.5 sm:px-4 sm:py-3">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--accent)] sm:text-[11px]">Payout Brief</p>
+          <p className="text-[12px] font-semibold uppercase tracking-[0.14em] text-[var(--accent)] sm:text-[13px]">Payout Brief</p>
           <p className="mt-0.5 text-xs text-[var(--ink)] sm:text-sm">{payoutBrief}</p>
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-2 lg:hidden">
         <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-3 text-center">
-          <p className="text-[10px] uppercase tracking-[0.12em] text-[var(--ink-muted)]">Total</p>
+          <p className="text-[12px] uppercase tracking-[0.12em] text-[var(--ink-muted)]">Total</p>
           <p className="mt-1 text-2xl font-semibold">{formatMoney(total, currency)}</p>
         </div>
         <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-3 text-center">
-          <p className="text-[10px] uppercase tracking-[0.12em] text-[var(--ink-muted)]">Outstanding</p>
+          <p className="text-[12px] uppercase tracking-[0.12em] text-[var(--ink-muted)]">Outstanding</p>
           <p className="mt-1 text-2xl font-semibold text-[var(--accent)]">{formatMoney(unpaid, currency)}</p>
         </div>
       </div>
@@ -207,14 +207,14 @@ export default async function TechnicianPayoutsPage({
                 <Link href={`/jobs/${job.id}?returnTo=/technicians/payouts&returnLabel=Payouts`} className="absolute inset-0 z-0" aria-label={`Open ${job.jobNumber}`} />
                 <div className="pointer-events-none relative z-10 px-4 py-3 pl-6">
                   <div className="mb-1 flex items-center justify-between gap-2">
-                    <span className="mono text-[10px] font-medium tracking-wide text-[var(--ink-muted)]/50">{job.jobNumber}</span>
-                    <span className={`text-[11px] font-semibold ${isPaid ? "text-emerald-600" : "text-amber-600"}`}>
+                    <span className="mono text-[12px] font-medium tracking-wide text-[var(--ink-muted)]/50">{job.jobNumber}</span>
+                    <span className={`text-[13px] font-semibold ${isPaid ? "text-emerald-600" : "text-amber-600"}`}>
                       {isPaid ? "Paid" : "Unpaid"}
                     </span>
                   </div>
                   <p className="text-[15px] font-bold leading-snug tracking-tight text-[var(--ink)]">{device}</p>
                   <div className="mt-1 flex items-center justify-between gap-2">
-                    <span className="text-[11px] text-[var(--ink-muted)]">
+                    <span className="text-[13px] text-[var(--ink-muted)]">
                       {(statusOptionLabel as Record<string, string>)[job.status] ?? job.status}
                       {job.completedAt ? ` · ${formatEATDate(job.completedAt)}` : ""}
                       {payout?.externalPaymentRef ? ` · Ref: ${payout.externalPaymentRef}` : ""}

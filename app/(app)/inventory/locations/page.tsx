@@ -62,7 +62,7 @@ export default async function StockLocationsPage({
       {error ? <div className="rounded-xl border border-red-500/25 bg-red-500/10 px-4 py-3 text-sm text-red-500">{error}</div> : null}
 
       <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
-        <p className="mb-2.5 text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Add Location</p>
+        <p className="mb-2.5 text-[12px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Add Location</p>
         <form action={createStockLocationAction} className="grid gap-2 md:grid-cols-[1.4fr_0.7fr_1fr_auto]">
           <input name="name" placeholder="Location name *" required className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/60" />
           <input name="code" placeholder="Code" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] uppercase outline-none focus:border-[var(--accent)]/60" />
@@ -80,7 +80,7 @@ export default async function StockLocationsPage({
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full text-sm">
-              <thead className="bg-[var(--panel-strong)] text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
+              <thead className="bg-[var(--panel-strong)] text-[12px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
                 <tr>
                   <th className="px-4 py-2.5 text-left">Location</th>
                   <th className="px-4 py-2.5 text-left">Code</th>
@@ -104,7 +104,7 @@ export default async function StockLocationsPage({
                       <td className="px-4 py-3 text-right tabular-nums font-semibold text-[var(--ink)]">{row?._sum.qtyOnHand ?? 0}</td>
                       <td className="hidden px-4 py-3 text-right tabular-nums text-[var(--ink-muted)] md:table-cell">{row?._sum.qtyReserved ?? 0}</td>
                       <td className="px-4 py-3">
-                        <span className={`rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${location.isActive ? "border-emerald-500/30 bg-emerald-500/15 text-emerald-700" : "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]"}`}>
+                        <span className={`rounded-full border px-2.5 py-0.5 text-[13px] font-semibold ${location.isActive ? "border-emerald-500/30 bg-emerald-500/15 text-emerald-700" : "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]"}`}>
                           {location.isActive ? "Active" : "Inactive"}
                         </span>
                       </td>

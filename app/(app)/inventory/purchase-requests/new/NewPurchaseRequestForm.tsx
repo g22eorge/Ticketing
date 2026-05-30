@@ -50,7 +50,7 @@ export function NewPurchaseRequestForm({ suppliers, parts }: { suppliers: Suppli
   return (
     <form onSubmit={submit} className="space-y-5">
       <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] p-5 space-y-4">
-        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Request Details</p>
+        <p className="text-[12px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Request Details</p>
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="block text-xs font-semibold text-[var(--ink-muted)]">Preferred supplier
             <select name="supplierId" className="mt-1 w-full rounded-lg border border-[var(--line)] bg-[var(--bg)] px-3 py-2 text-sm text-[var(--ink)]">
@@ -78,7 +78,7 @@ export function NewPurchaseRequestForm({ suppliers, parts }: { suppliers: Suppli
 
       <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] overflow-hidden">
         <div className="flex items-center justify-between px-5 py-3 border-b border-[var(--line)]">
-          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Requested Items</p>
+          <p className="text-[12px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Requested Items</p>
           <button type="button" onClick={() => setLines((prev) => [...prev, { key: nextKey(), partId: "", description: "", quantity: 1, estimatedUnitCost: 0 }])} className="rounded-md bg-[var(--gold)]/15 px-3 py-1 text-xs font-semibold text-[var(--gold)] hover:bg-[var(--gold)]/25">+ Add Line</button>
         </div>
         <div className="overflow-x-auto">

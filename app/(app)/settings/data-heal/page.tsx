@@ -57,10 +57,10 @@ export default async function DataHealPage({
             <p className="text-[13px] font-bold text-[var(--ink)]">Data Heal</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <span className={`rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${unresolved > 0 ? "border-amber-400/30 bg-amber-500/10 text-amber-700 dark:text-amber-400" : "border-emerald-400/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"}`}>
+            <span className={`rounded-full border px-2.5 py-0.5 text-[13px] font-semibold ${unresolved > 0 ? "border-amber-400/30 bg-amber-500/10 text-amber-700 dark:text-amber-400" : "border-emerald-400/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"}`}>
               {unresolved} unresolved
             </span>
-            <span className="rounded-full border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-0.5 text-[11px] text-[var(--ink-muted)]">
+            <span className="rounded-full border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-0.5 text-[13px] text-[var(--ink-muted)]">
               Last: {lastHealedAt ? new Date(lastHealedAt.createdAt).toLocaleString() : "Never"}
             </span>
           </div>

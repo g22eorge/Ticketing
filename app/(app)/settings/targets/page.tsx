@@ -167,7 +167,7 @@ export default async function SalesTargetsPage({
       {/* Header */}
       <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
         <p className="text-[13px] font-bold text-[var(--ink)]">Sales Targets</p>
-        <p className="mt-0.5 text-[11px] text-[var(--ink-muted)]">
+        <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">
           Set monthly revenue targets per staff member or for the team.
         </p>
       </div>
@@ -187,7 +187,7 @@ export default async function SalesTargetsPage({
             >
               {formatPeriodLabel(p)}
               {p === currentPeriod() && p !== activePeriod && (
-                <span className="ml-1 text-[10px] opacity-60">now</span>
+                <span className="ml-1 text-[12px] opacity-60">now</span>
               )}
             </button>
           </form>
@@ -197,7 +197,7 @@ export default async function SalesTargetsPage({
       {/* Team target card */}
       <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)]">
         <div className="border-b border-[var(--line)] px-4 py-2.5">
-          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/70">
+          <p className="text-[12px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/70">
             Team Target — {formatPeriodLabel(activePeriod)}
           </p>
         </div>
@@ -227,7 +227,7 @@ export default async function SalesTargetsPage({
               <input type="hidden" name="userId" value="" />
             </form>
             <div className="flex-1 min-w-[140px]">
-              <label className="mb-1 block text-[11px] font-medium text-[var(--ink-muted)]">
+              <label className="mb-1 block text-[13px] font-medium text-[var(--ink-muted)]">
                 Target Revenue
               </label>
               <input
@@ -242,7 +242,7 @@ export default async function SalesTargetsPage({
               />
             </div>
             <div className="flex-1 min-w-[120px]">
-              <label className="mb-1 block text-[11px] font-medium text-[var(--ink-muted)]">
+              <label className="mb-1 block text-[13px] font-medium text-[var(--ink-muted)]">
                 Target Jobs <span className="opacity-50">(optional)</span>
               </label>
               <input
@@ -281,7 +281,7 @@ export default async function SalesTargetsPage({
       {/* Individual targets table */}
       <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)]">
         <div className="border-b border-[var(--line)] px-4 py-2.5">
-          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/70">
+          <p className="text-[12px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/70">
             Individual Targets — {formatPeriodLabel(activePeriod)}
           </p>
         </div>
@@ -294,11 +294,11 @@ export default async function SalesTargetsPage({
           <div className="divide-y divide-[var(--line)]">
             {/* Column headers */}
             <div className="grid grid-cols-[1fr_auto_160px_120px_auto] items-center gap-3 px-4 py-2">
-              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]/60">Name</p>
-              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]/60 w-24">Role</p>
-              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]/60">Revenue Target</p>
-              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]/60">Jobs Target</p>
-              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]/60 w-24">Actions</p>
+              <p className="text-[12px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]/60">Name</p>
+              <p className="text-[12px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]/60 w-24">Role</p>
+              <p className="text-[12px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]/60">Revenue Target</p>
+              <p className="text-[12px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]/60">Jobs Target</p>
+              <p className="text-[12px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]/60 w-24">Actions</p>
             </div>
 
             {staffUsers.map((member) => {
@@ -309,13 +309,13 @@ export default async function SalesTargetsPage({
                   {/* Name */}
                   <div className="min-w-0">
                     <p className="truncate text-[13px] font-medium text-[var(--ink)]">{member.name}</p>
-                    <p className="truncate text-[11px] text-[var(--ink-muted)]">{member.email}</p>
+                    <p className="truncate text-[13px] text-[var(--ink-muted)]">{member.email}</p>
                   </div>
 
                   {/* Role badge */}
                   <div className="w-24">
                     <span
-                      className={`inline-block rounded-full border px-2 py-0.5 text-[10px] font-semibold ${roleBadgeColor(member.role)}`}
+                      className={`inline-block rounded-full border px-2 py-0.5 text-[12px] font-semibold ${roleBadgeColor(member.role)}`}
                     >
                       {roleLabel(member.role)}
                     </span>

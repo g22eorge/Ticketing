@@ -65,7 +65,7 @@ function KpiCard({ title, value, caption, tone = "neutral" }: { title: string; v
   const toneClass = tone === "good" ? "text-emerald-600" : tone === "risk" ? "text-amber-600" : "text-[var(--accent-text)]";
   return (
     <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">{title}</p>
+      <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">{title}</p>
       <p className={`mt-2 text-2xl font-bold tracking-tight ${toneClass}`}>{value}</p>
       <p className="mt-1 text-xs text-[var(--ink-muted)]">{caption}</p>
     </section>
@@ -75,7 +75,7 @@ function KpiCard({ title, value, caption, tone = "neutral" }: { title: string; v
 function InsightCard({ title, items, empty }: { title: string; items: string[]; empty: string }) {
   return (
     <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">{title}</p>
+      <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">{title}</p>
       {items.length ? (
         <div className="mt-3 space-y-2">
           {items.map((item) => (
@@ -224,7 +224,7 @@ export default async function AiInsightsPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">AI · Analytics</p>
+          <p className="text-[12px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">AI · Analytics</p>
           <p className="mt-0.5 text-[13px] font-bold text-[var(--ink)]">Business Insights</p>
         </div>
         <div className="flex flex-wrap gap-2 text-xs font-semibold">
@@ -249,9 +249,9 @@ export default async function AiInsightsPage() {
 
       <section className="grid gap-4 xl:grid-cols-4">
         <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Repairs</p>
+          <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Repairs</p>
           <dl className="mt-3 space-y-2 text-sm">
-            <div className="flex justify-between gap-3"><dt className="text-[var(--ink-muted)]">New jobs</dt><dd className="font-semibold text-[var(--ink)]">{jobsThisMonth} <span className="text-[10px] font-medium text-[var(--ink-muted)]">({trendLabel(jobsThisMonth, jobsPrevMonth)})</span></dd></div>
+            <div className="flex justify-between gap-3"><dt className="text-[var(--ink-muted)]">New jobs</dt><dd className="font-semibold text-[var(--ink)]">{jobsThisMonth} <span className="text-[12px] font-medium text-[var(--ink-muted)]">({trendLabel(jobsThisMonth, jobsPrevMonth)})</span></dd></div>
             <div className="flex justify-between gap-3"><dt className="text-[var(--ink-muted)]">Completed</dt><dd className="font-semibold text-[var(--ink)]">{completedThisMonth.length}</dd></div>
             <div className="flex justify-between gap-3"><dt className="text-[var(--ink-muted)]">Avg turnaround</dt><dd className="font-semibold text-[var(--ink)]">{averageRepairDays.toFixed(1)} days</dd></div>
             <div className="flex justify-between gap-3"><dt className="text-[var(--ink-muted)]">Repair revenue</dt><dd className="font-semibold text-[var(--ink)]">{formatMoneyCompact(repairRevenue, currency)}</dd></div>
@@ -259,7 +259,7 @@ export default async function AiInsightsPage() {
         </div>
 
         <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Sales</p>
+          <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Sales</p>
           <dl className="mt-3 space-y-2 text-sm">
             <div className="flex justify-between gap-3"><dt className="text-[var(--ink-muted)]">POS sales</dt><dd className="font-semibold text-[var(--ink)]">{formatMoneyCompact(salesRevenue, currency)}</dd></div>
             <div className="flex justify-between gap-3"><dt className="text-[var(--ink-muted)]">Paid invoices</dt><dd className="font-semibold text-[var(--ink)]">{formatMoneyCompact(invoiceRevenue, currency)}</dd></div>
@@ -270,7 +270,7 @@ export default async function AiInsightsPage() {
         </div>
 
         <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Finance</p>
+          <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Finance</p>
           <dl className="mt-3 space-y-2 text-sm">
             <div className="flex justify-between gap-3"><dt className="text-[var(--ink-muted)]">Expenses</dt><dd className="font-semibold text-[var(--ink)]">{formatMoneyCompact(expenses, currency)}</dd></div>
             <div className="flex justify-between gap-3"><dt className="text-[var(--ink-muted)]">Receivables</dt><dd className="font-semibold text-[var(--ink)]">{formatMoneyCompact(receivables, currency)}</dd></div>
@@ -280,7 +280,7 @@ export default async function AiInsightsPage() {
         </div>
 
         <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Inventory</p>
+          <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Inventory</p>
           <dl className="mt-3 space-y-2 text-sm">
             <div className="flex justify-between gap-3"><dt className="text-[var(--ink-muted)]">Active parts</dt><dd className="font-semibold text-[var(--ink)]">{parts.length}</dd></div>
             <div className="flex justify-between gap-3"><dt className="text-[var(--ink-muted)]">Low stock</dt><dd className="font-semibold text-[var(--ink)]">{lowStockParts.length}</dd></div>
@@ -292,7 +292,7 @@ export default async function AiInsightsPage() {
 
       <section className="grid gap-4 lg:grid-cols-2">
         <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Job Status Distribution</p>
+          <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Job Status Distribution</p>
           <div className="mt-3 space-y-2">
             {jobsByStatus.map((item) => (
               <div key={item.status} className="flex items-center justify-between rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm">
@@ -304,7 +304,7 @@ export default async function AiInsightsPage() {
         </div>
 
         <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Top Low-Stock Parts</p>
+          <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Top Low-Stock Parts</p>
           <div className="mt-3 space-y-2">
             {lowStockParts.slice(0, 8).map((part) => (
               <div key={part.sku} className="flex items-center justify-between gap-3 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm">

@@ -5,7 +5,7 @@ export default function PosError({ error, reset }: { error: Error; reset: () => 
 
   return (
     <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-5">
-      <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Point of Sale Error</p>
+      <p className="text-[12px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Point of Sale Error</p>
       <h2 className="mt-1 text-lg font-semibold text-[var(--ink)]">Could not load the POS page</h2>
       <p className="mt-1 text-sm text-[var(--ink-muted)]">
         Please retry. If this keeps happening, refresh the page or contact support

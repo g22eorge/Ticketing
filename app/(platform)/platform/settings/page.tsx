@@ -58,11 +58,11 @@ export default async function PlatformSettingsPage() {
 
       {/* Pricing reference */}
       <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] p-5">
-        <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Subscription Pricing (UGX)</p>
+        <p className="mb-3 text-[12px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Subscription Pricing (UGX)</p>
         <div className="grid gap-3 sm:grid-cols-2">
           {(["GROWTH", "ENTERPRISE"] as const).map((plan) => (
             <div key={plan} className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-4 py-3">
-              <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">{plan}</p>
+              <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">{plan}</p>
               <p className="mt-0.5 font-mono text-sm font-semibold text-[var(--ink)]">UGX {formatMoney(PLAN_PRICES[plan])} / month</p>
             </div>
           ))}
@@ -74,7 +74,7 @@ export default async function PlatformSettingsPage() {
 
       {/* Environment */}
       <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] p-5">
-        <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Environment</p>
+        <p className="mb-2 text-[12px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Environment</p>
         <div className="flex items-center gap-2">
           <span className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${
             process.env.PESAPAL_ENV === "production"

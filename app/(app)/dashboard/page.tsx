@@ -163,7 +163,7 @@ function RevenueMarginTrendSection({
     <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <div>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">{label}</p>
+          <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">{label}</p>
           <p className="mt-0.5 text-sm font-semibold text-[var(--ink)]">
             {trendMonths[0]?.key} – {trendMonths[trendMonths.length - 1]?.key}
           </p>
@@ -202,9 +202,9 @@ function RevenueMarginTrendSection({
                 href={href}
                 className="w-[92px] rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] p-2 text-center transition hover:border-[var(--accent)]/40 hover:bg-[var(--accent)]/5"
               >
-                <p className="text-[9px] uppercase tracking-[0.1em] text-[var(--ink-muted)]">{m.key.slice(5)}</p>
+                <p className="text-[13px] uppercase tracking-[0.1em] text-[var(--ink-muted)]">{m.key.slice(5)}</p>
                 <p className="mt-0.5 text-xs font-semibold text-[var(--accent)]">{formatMoneyCompact(m.revenue, currency)}</p>
-                <p className={`text-[10px] ${m.margin >= 0 ? "text-emerald-600" : "text-[var(--ink)]"}`}>{formatMoneyCompact(m.margin, currency)}</p>
+                <p className={`text-[12px] ${m.margin >= 0 ? "text-emerald-600" : "text-[var(--ink)]"}`}>{formatMoneyCompact(m.margin, currency)}</p>
               </Link>
             );
           })}
@@ -264,7 +264,7 @@ function RepairStatusReference({
   return (
     <section className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[linear-gradient(135deg,rgba(212,175,55,0.06),rgba(212,175,55,0.02))]">
       <div className="border-b border-[var(--line)] px-4 py-3">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Repair Status Guide</p>
+        <p className="text-[13px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Repair Status Guide</p>
         <p className="mt-1 text-sm font-semibold text-[var(--ink)]">{title}</p>
         <p className="mt-1 text-xs text-[var(--ink-muted)]">{guidance}</p>
       </div>
@@ -274,7 +274,7 @@ function RepairStatusReference({
             <Link href={step.href} className={`rounded-full border px-3 py-1.5 text-xs font-medium transition hover:-translate-y-[1px] ${step.tone}`}>
               {step.label}
             </Link>
-            {index < repairFlowReference.length - 1 ? <span className="text-[10px] text-[var(--ink-muted)]">→</span> : null}
+            {index < repairFlowReference.length - 1 ? <span className="text-[12px] text-[var(--ink-muted)]">→</span> : null}
           </div>
         ))}
       </div>
@@ -307,7 +307,7 @@ function DashboardPeriodBar({
       <div className="flex items-center gap-0.5 rounded-xl border border-[var(--line)] bg-[var(--panel-strong)] p-1">
         <Link
           href={monthHref}
-          className={`rounded-lg px-3 py-1.5 text-[11px] font-semibold transition-all ${
+          className={`rounded-lg px-3 py-1.5 text-[13px] font-semibold transition-all ${
             period === "month"
               ? "bg-[var(--accent)] text-white shadow-sm"
               : "text-[var(--ink-muted)] hover:text-[var(--ink)]"
@@ -317,7 +317,7 @@ function DashboardPeriodBar({
         </Link>
         <Link
           href={yearHref}
-          className={`rounded-lg px-3 py-1.5 text-[11px] font-semibold transition-all ${
+          className={`rounded-lg px-3 py-1.5 text-[13px] font-semibold transition-all ${
             period === "year"
               ? "bg-[var(--accent)] text-white shadow-sm"
               : "text-[var(--ink-muted)] hover:text-[var(--ink)]"
@@ -337,7 +337,7 @@ function DashboardPeriodBar({
       {actionHref && actionLabel ? (
         <Link
           href={actionHref}
-          className="ml-auto rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[11px] font-semibold text-[var(--ink-muted)] transition-colors hover:border-[var(--accent)]/30 hover:text-[var(--accent)]"
+          className="ml-auto rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] font-semibold text-[var(--ink-muted)] transition-colors hover:border-[var(--accent)]/30 hover:text-[var(--accent)]"
         >
           {actionLabel}
         </Link>
@@ -473,22 +473,22 @@ export default async function DashboardPage({
 
         <div className="hidden gap-3 2xl:grid 2xl:grid-cols-4">
           <Link href="/technicians" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px] sm:p-5">
-            <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Assigned Jobs ({selectedPeriodLabel})</p>
+            <p className="text-[12px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Assigned Jobs ({selectedPeriodLabel})</p>
             <p className="mt-2 text-3xl font-semibold sm:text-4xl">{jobs.length}</p>
             <p className="mt-3 text-xs font-medium text-[var(--accent)]">Open queue →</p>
           </Link>
           <Link href="/technicians?ready=1" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px] sm:p-5">
-            <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Open Jobs ({selectedPeriodLabel})</p>
+            <p className="text-[12px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Open Jobs ({selectedPeriodLabel})</p>
             <p className="mt-2 text-3xl font-semibold text-[var(--accent)] sm:text-4xl">{openCount}</p>
             <p className="mt-3 text-xs font-medium text-[var(--accent)]">Jobs needing action →</p>
           </Link>
           <Link href="/jobs?status=COMPLETED" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px] sm:p-5">
-            <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Completed ({selectedPeriodLabel})</p>
+            <p className="text-[12px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Completed ({selectedPeriodLabel})</p>
             <p className="mt-2 text-3xl font-semibold text-[var(--accent)] sm:text-4xl">{completedCount}</p>
             <p className="mt-3 text-xs font-medium text-[var(--accent)]">Completed jobs →</p>
           </Link>
           <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 sm:p-5">
-            <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Payout Outstanding</p>
+            <p className="text-[12px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Payout Outstanding</p>
             <p className="mt-2 text-3xl font-semibold text-[var(--accent)]">{formatMoneyCompact(outstandingTotal, currency)}</p>
             <p className="mt-2 text-xs text-[var(--ink-muted)]">Paid to date: {formatMoneyCompact(paidTotal, currency)}</p>
             <p className="mt-3 text-xs font-medium text-[var(--accent)]">
@@ -637,20 +637,20 @@ export default async function DashboardPage({
         {canUpdatePricing ? (
           <section className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
             <div className="border-b border-[var(--accent)]/30 bg-[var(--accent)]/10 px-3 py-2.5">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--accent)] sm:text-[11px]">Pricing Controls</p>
+              <p className="text-[12px] font-semibold uppercase tracking-[0.14em] text-[var(--accent)] sm:text-[13px]">Pricing Controls</p>
               <p className="mt-0.5 text-xs text-[var(--ink)] sm:text-sm">You can update client pricing directly from job Financials.</p>
             </div>
             <div className="grid gap-2 p-3 grid-cols-2 sm:grid-cols-3">
               <Link href="/jobs?status=AWAITING_APPROVAL,IN_REPAIR,READY_FOR_PICKUP" className="rounded-lg border border-[var(--accent)]/30 bg-[var(--accent)]/10 px-3 py-2 text-center">
-                <p className="text-[10px] uppercase tracking-[0.08em] text-[var(--accent)]">Needs Pricing</p>
+                <p className="text-[12px] uppercase tracking-[0.08em] text-[var(--accent)]">Needs Pricing</p>
                 <p className="mt-1 text-lg font-semibold text-[var(--accent)]">{pricingPendingCount}</p>
               </Link>
               <Link href="/jobs?status=AWAITING_APPROVAL,IN_REPAIR,READY_FOR_PICKUP,COMPLETED" className="rounded-lg border border-[var(--accent)]/30 bg-[var(--accent)]/10 px-3 py-2 text-center">
-                <p className="text-[10px] uppercase tracking-[0.08em] text-[var(--accent)]">Priced Jobs</p>
+                <p className="text-[12px] uppercase tracking-[0.08em] text-[var(--accent)]">Priced Jobs</p>
                 <p className="mt-1 text-lg font-semibold text-[var(--accent)]">{pricedCount}</p>
               </Link>
               <Link href="/jobs?pricing=priced" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-center col-span-2 sm:col-span-1">
-                <p className="text-[10px] uppercase tracking-[0.08em] text-[var(--ink-muted)]">Margin</p>
+                <p className="text-[12px] uppercase tracking-[0.08em] text-[var(--ink-muted)]">Margin</p>
                 <p className={`mt-1 text-sm font-semibold ${marginTotal >= 0 ? "text-[var(--accent)]" : "text-red-500"}`}>
                   {marginTotal >= 0 ? "+" : ""}{formatMoneyCompact(marginTotal, getAppCurrency())}
                 </p>
@@ -673,7 +673,7 @@ export default async function DashboardPage({
                 <li key={job.id} className="border-b border-[var(--line)] pb-1.5 last:border-0 last:pb-0">
                   <Link href={`/jobs/${job.id}`} className="flex items-center justify-between gap-2 group">
                     <p className="truncate text-xs font-medium text-[var(--ink)] group-hover:text-[var(--accent)] transition-colors">{job.jobNumber}</p>
-                    <span className="shrink-0 text-[10px] text-[var(--ink-muted)]">
+                    <span className="shrink-0 text-[12px] text-[var(--ink-muted)]">
                       {statusLabel[job.status as keyof typeof statusLabel] ?? job.status}
                     </span>
                   </Link>
@@ -685,22 +685,22 @@ export default async function DashboardPage({
 
         <div className="hidden gap-3 2xl:grid 2xl:grid-cols-4">
           <Link href="/jobs" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px] sm:p-5">
-            <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Assigned ({selectedPeriodLabel})</p>
+            <p className="text-[12px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Assigned ({selectedPeriodLabel})</p>
             <p className="mt-2 text-3xl font-semibold sm:text-4xl">{assignedJobs.length}</p>
             <p className="mt-3 text-xs font-medium text-[var(--accent)]">View my jobs →</p>
           </Link>
           <Link href="/jobs?status=DIAGNOSING" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px] sm:p-5">
-            <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Diagnosing ({selectedPeriodLabel})</p>
+            <p className="text-[12px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Diagnosing ({selectedPeriodLabel})</p>
             <p className="mt-2 text-3xl font-semibold text-[var(--accent)] sm:text-4xl">{diagnosing}</p>
             <p className="mt-3 text-xs font-medium text-[var(--accent)]">Needs diagnosis work →</p>
           </Link>
           <Link href="/jobs?status=IN_REPAIR" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px] sm:p-5">
-            <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">In Repair ({selectedPeriodLabel})</p>
+            <p className="text-[12px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">In Repair ({selectedPeriodLabel})</p>
             <p className="mt-2 text-3xl font-semibold text-[var(--accent)] sm:text-4xl">{inRepair}</p>
             <p className="mt-3 text-xs font-medium text-[var(--accent)]">Active repairs →</p>
           </Link>
           <Link href="/jobs?status=COMPLETED" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px] sm:p-5">
-            <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Completed ({selectedPeriodLabel})</p>
+            <p className="text-[12px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Completed ({selectedPeriodLabel})</p>
             <p className="mt-2 text-3xl font-semibold text-[var(--accent)] sm:text-4xl">{completed}</p>
             <p className="mt-3 text-xs font-medium text-[var(--accent)]">Completed repairs →</p>
           </Link>
@@ -845,9 +845,9 @@ export default async function DashboardPage({
             { label: "Parts Used MTD", val: String(partsConsumed), sub: "units consumed", href: "/inventory", color: "text-[var(--ink)]" },
           ].map(t => (
             <Link key={t.label} href={t.href} className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px]">
-              <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">{t.label}</p>
+              <p className="text-[12px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">{t.label}</p>
               <p className={`mt-1 text-[15px] font-black leading-tight ${t.color}`}>{t.val}</p>
-              <p className="mt-1 text-[10px] text-[var(--ink-muted)]">{t.sub}</p>
+              <p className="mt-1 text-[12px] text-[var(--ink-muted)]">{t.sub}</p>
             </Link>
           ))}
         </div>
@@ -856,9 +856,9 @@ export default async function DashboardPage({
         {(overdueWithDays.length > 0 || unassignedCount > 0) && (
           <section className="panel-shadow rounded-xl border border-[var(--accent)]/25 bg-[var(--panel)] px-4 py-3">
             <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
-              <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--accent)]">Attention Required</span>
-              {unassignedCount > 0 && <Link href="/jobs?assignedToId=unassigned" className="rounded-full border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1 text-[11px] font-medium text-[var(--ink)]">{unassignedCount} unassigned</Link>}
-              {overdueWithDays.length > 0 && <span className="rounded-full border border-white/10 bg-[#0b0b0b] px-2.5 py-1 text-[11px] font-medium text-white/90">{overdueWithDays.length} overdue 3+ days</span>}
+              <span className="text-[13px] font-bold uppercase tracking-[0.12em] text-[var(--accent)]">Attention Required</span>
+              {unassignedCount > 0 && <Link href="/jobs?assignedToId=unassigned" className="rounded-full border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1 text-[13px] font-medium text-[var(--ink)]">{unassignedCount} unassigned</Link>}
+              {overdueWithDays.length > 0 && <span className="rounded-full border border-white/10 bg-[#0b0b0b] px-2.5 py-1 text-[13px] font-medium text-white/90">{overdueWithDays.length} overdue 3+ days</span>}
             </div>
           </section>
         )}
@@ -874,12 +874,12 @@ export default async function DashboardPage({
                 {topTechs.map((t, i) => (
                   <div key={t.name} className="flex items-center justify-between rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2">
                     <div className="flex items-center gap-2 min-w-0">
-                      <span className="text-[10px] font-bold text-[var(--ink-muted)] w-4">{i + 1}</span>
+                      <span className="text-[12px] font-bold text-[var(--ink-muted)] w-4">{i + 1}</span>
                       <p className="truncate text-xs font-semibold text-[var(--ink)]">{t.name}</p>
                     </div>
                     <div className="flex items-center gap-3 shrink-0">
-                      <span className="text-[10px] text-[var(--ink-muted)]">{t.avgDays.toFixed(1)}d avg</span>
-                      <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold text-emerald-600">{t.count} done</span>
+                      <span className="text-[12px] text-[var(--ink-muted)]">{t.avgDays.toFixed(1)}d avg</span>
+                      <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[12px] font-bold text-emerald-600">{t.count} done</span>
                     </div>
                   </div>
                 ))}
@@ -891,7 +891,7 @@ export default async function DashboardPage({
           <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4" id="tech-workload">
             <div className="mb-3 flex items-center justify-between">
               <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Active Workload</p>
-              {unassignedCount > 0 && <Link href="/jobs?assignedToId=unassigned" className="rounded-full border border-amber-500/30 bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold text-amber-600">{unassignedCount} unassigned</Link>}
+              {unassignedCount > 0 && <Link href="/jobs?assignedToId=unassigned" className="rounded-full border border-amber-500/30 bg-amber-500/15 px-2 py-0.5 text-[12px] font-bold text-amber-600">{unassignedCount} unassigned</Link>}
             </div>
             {techRows.length === 0 ? (
               <p className="text-sm text-[var(--ink-muted)]">No active assignments.</p>
@@ -901,18 +901,18 @@ export default async function DashboardPage({
                   <Link key={t.id} href={`/jobs?assignedToId=${t.id}`} className="group flex items-center justify-between rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 transition hover:border-[var(--accent)]/35">
                     <div className="min-w-0">
                       <p className="truncate text-xs font-semibold group-hover:text-[var(--accent)] transition-colors">{t.name}</p>
-                      <p className="text-[10px] text-[var(--ink-muted)]">{t.role === "TECHNICIAN_EXTERNAL" ? "External" : "Internal"}</p>
+                      <p className="text-[12px] text-[var(--ink-muted)]">{t.role === "TECHNICIAN_EXTERNAL" ? "External" : "Internal"}</p>
                     </div>
-                    <span className={`ml-2 shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${t.role === "TECHNICIAN_EXTERNAL" ? "bg-violet-500/15 text-violet-400" : "bg-sky-500/15 text-sky-500"}`}>{t.count} active</span>
+                    <span className={`ml-2 shrink-0 rounded-full px-2 py-0.5 text-[12px] font-bold ${t.role === "TECHNICIAN_EXTERNAL" ? "bg-violet-500/15 text-violet-400" : "bg-sky-500/15 text-sky-500"}`}>{t.count} active</span>
                   </Link>
                 ))}
                 {overdueWithDays.length > 0 && (
                   <div className="mt-2 border-t border-[var(--line)] pt-2">
-                    <p className="mb-1.5 text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Overdue Jobs</p>
+                    <p className="mb-1.5 text-[12px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Overdue Jobs</p>
                     {overdueWithDays.slice(0, 4).map(j => (
                       <Link key={j.id} href={`/jobs/${j.id}`} className="mb-1 flex items-center justify-between rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 transition hover:border-amber-500/30">
                         <p className="mono truncate text-xs font-bold text-[var(--accent)]">{j.jobNumber}</p>
-                        <span className={`ml-2 shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${j.ageDays >= 8 ? "bg-red-500/15 text-red-400" : "bg-amber-500/15 text-amber-600"}`}>{j.ageDays}d</span>
+                        <span className={`ml-2 shrink-0 rounded-full px-2 py-0.5 text-[12px] font-bold ${j.ageDays >= 8 ? "bg-red-500/15 text-red-400" : "bg-amber-500/15 text-amber-600"}`}>{j.ageDays}d</span>
                       </Link>
                     ))}
                   </div>
@@ -1226,7 +1226,7 @@ export default async function DashboardPage({
 
         {/* ── Today at a Glance (desktop only — mobile sees MobileHomeDashboard above) ── */}
         <section className="hidden lg:block">
-          <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Today at a Glance</p>
+          <p className="mb-2 text-[12px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Today at a Glance</p>
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
             {([
               { label: "Jobs Received",      value: String(receivedToday),                   sub: `Yesterday: ${receivedYesterday}`,                                          href: "/jobs?status=RECEIVED",               tone: "text-[var(--ink)]",                                           iconBg: "bg-sky-500/15",     iconColor: "text-sky-600",    icon: "↙" },
@@ -1239,9 +1239,9 @@ export default async function DashboardPage({
                 className="panel-shadow flex items-start gap-3 rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px]">
                 <div className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-base font-bold ${item.iconBg} ${item.iconColor}`}>{item.icon}</div>
                 <div className="min-w-0">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-[var(--ink-muted)]">{item.label}</p>
+                  <p className="text-[12px] font-bold uppercase tracking-[0.1em] text-[var(--ink-muted)]">{item.label}</p>
                   <p className={`mt-1 text-2xl font-black leading-none ${item.tone}`}>{item.value}</p>
-                  <p className="mt-1 text-[10px] text-[var(--ink-muted)]">{item.sub}</p>
+                  <p className="mt-1 text-[12px] text-[var(--ink-muted)]">{item.sub}</p>
                 </div>
               </Link>
             ))}
@@ -1256,7 +1256,7 @@ export default async function DashboardPage({
             <div className="mb-3 flex items-center gap-2">
               <p className="text-sm font-bold text-[var(--ink)]">Attention Needed</p>
               {attentionItems.filter((i) => i.count > 0).length > 0 && (
-                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
+                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[12px] font-bold text-white">
                   {attentionItems.filter((i) => i.count > 0).length}
                 </span>
               )}
@@ -1268,17 +1268,17 @@ export default async function DashboardPage({
                   <p className={`text-xl font-black leading-none ${item.count > 0 ? item.tone : "text-[var(--ink-muted)]"}`}>{item.count}</p>
                   <div className="min-w-0">
                     <p className="text-xs font-semibold text-[var(--ink)]">{item.label}</p>
-                    <p className="text-[10px] text-[var(--ink-muted)]">{item.description}</p>
+                    <p className="text-[12px] text-[var(--ink-muted)]">{item.description}</p>
                   </div>
                 </Link>
               ))}
             </div>
-            <Link href="/jobs" className="mt-3 block text-[11px] font-semibold text-amber-600 hover:underline">View All Alerts →</Link>
+            <Link href="/jobs" className="mt-3 block text-[13px] font-semibold text-amber-600 hover:underline">View All Alerts →</Link>
           </section>
 
           {/* Quick Actions */}
           <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-            <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Quick Actions</p>
+            <p className="mb-3 text-[12px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Quick Actions</p>
             <div className="grid grid-cols-2 gap-2">
               {([
                 { href: "/jobs/new",                        label: "New Repair Job",        icon: "🔧", bg: "bg-sky-500/10",    color: "text-sky-600" },
@@ -1291,7 +1291,7 @@ export default async function DashboardPage({
                 <Link key={action.href} href={action.href}
                   className="flex flex-col items-center gap-2 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-3.5 text-center transition hover:border-[var(--accent)]/40 hover:bg-[var(--accent)]/5">
                   <span className={`flex h-9 w-9 items-center justify-center rounded-lg text-lg ${action.bg} ${action.color}`}>{action.icon}</span>
-                  <p className="text-[10px] font-semibold leading-tight text-[var(--ink)]">{action.label}</p>
+                  <p className="text-[12px] font-semibold leading-tight text-[var(--ink)]">{action.label}</p>
                 </Link>
               ))}
             </div>
@@ -1302,10 +1302,10 @@ export default async function DashboardPage({
         {/* ── Revenue Summary ── */}
         <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
           <div className="mb-3 flex items-center justify-between">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">
+            <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">
               Revenue Summary — {monthLabel(today.getFullYear(), today.getMonth() + 1)}
             </p>
-            <Link href="/reports" className="text-[11px] font-semibold text-[var(--ink-muted)] hover:text-[var(--ink)] hover:underline">Full reports →</Link>
+            <Link href="/reports" className="text-[13px] font-semibold text-[var(--ink-muted)] hover:text-[var(--ink)] hover:underline">Full reports →</Link>
           </div>
 
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -1316,12 +1316,12 @@ export default async function DashboardPage({
               { label: "Total Revenue (MTD)", value: totalMtd, pct: null, color: "text-[var(--ink)]", pctColor: "text-[var(--ink-muted)]", ring: "border-[var(--accent)]/25 bg-[var(--accent)]/8", href: "/reports" },
             ] as const).map((s) => (
               <Link key={s.label} href={s.href} className={`rounded-xl border ${s.ring} p-4 transition hover:-translate-y-[2px]`}>
-                <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">{s.label}</p>
+                <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">{s.label}</p>
                 <p className={`mt-1.5 text-2xl font-bold ${s.color}`}>{formatMoneyCompact(s.value, currency)}</p>
                 {s.pct !== null ? (
-                  <p className={`mt-0.5 text-[10px] font-semibold ${s.pctColor}`}>{s.pct}%</p>
+                  <p className={`mt-0.5 text-[12px] font-semibold ${s.pctColor}`}>{s.pct}%</p>
                 ) : (
-                  <p className="mt-0.5 text-[10px] text-[var(--ink-muted)]">{formatMoney(s.value, currency)}</p>
+                  <p className="mt-0.5 text-[12px] text-[var(--ink-muted)]">{formatMoney(s.value, currency)}</p>
                 )}
               </Link>
             ))}
@@ -1329,7 +1329,7 @@ export default async function DashboardPage({
 
           <div className="-mx-1 mt-4 overflow-x-auto px-1 pb-1 [scrollbar-width:none]">
             <div className="min-w-max">
-              <div className="mb-2 flex items-center gap-3 px-1 text-[10px] text-[var(--ink-muted)]">
+              <div className="mb-2 flex items-center gap-3 px-1 text-[12px] text-[var(--ink-muted)]">
                 <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-sky-500/70" />Repairs</span>
                 <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-violet-500/70" />Products</span>
                 <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-emerald-500/70" />Corporate</span>
@@ -1347,8 +1347,8 @@ export default async function DashboardPage({
                         <div className="w-3 rounded-t bg-violet-500/60"  style={{ height: `${pH}px` }} />
                         <div className="w-3 rounded-t bg-emerald-500/60" style={{ height: `${cH}px` }} />
                       </div>
-                      <p className="mt-1 text-[9px] font-medium text-[var(--ink-muted)]">{m.key.slice(5)}</p>
-                      <p className="text-[10px] font-semibold text-[var(--ink)]">{formatMoneyCompact(m.total, currency)}</p>
+                      <p className="mt-1 text-[13px] font-medium text-[var(--ink-muted)]">{m.key.slice(5)}</p>
+                      <p className="text-[12px] font-semibold text-[var(--ink)]">{formatMoneyCompact(m.total, currency)}</p>
                     </div>
                   );
                 })}
@@ -1360,7 +1360,7 @@ export default async function DashboardPage({
         {/* ── Financial Position (list) ── */}
         <section className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
           <div className="border-b border-[var(--line)] px-4 py-2.5">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Financial Position</p>
+            <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Financial Position</p>
           </div>
           <div className="divide-y divide-[var(--line)]">
             {([
@@ -1376,7 +1376,7 @@ export default async function DashboardPage({
                 <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-base ${item.bg}`}>{item.icon}</span>
                 <div className="min-w-0 flex-1">
                   <p className="text-xs font-semibold text-[var(--ink)]">{item.label}</p>
-                  <p className="text-[10px] text-[var(--ink-muted)]">{item.sub}</p>
+                  <p className="text-[12px] text-[var(--ink-muted)]">{item.sub}</p>
                 </div>
                 <p className={`shrink-0 text-sm font-bold ${item.tone}`}>{formatMoneyCompact(item.value, currency)}</p>
                 <span className="shrink-0 text-[var(--ink-muted)]">›</span>
@@ -1388,12 +1388,12 @@ export default async function DashboardPage({
         {/* ── Low stock alert ── */}
         {lowStockItems.length > 0 && (
           <div className="flex items-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/8 px-4 py-2.5">
-            <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-amber-600">Low Stock —</span>
+            <span className="text-[13px] font-bold uppercase tracking-[0.12em] text-amber-600">Low Stock —</span>
             <span className="text-[12px] text-[var(--ink)]">
               {lowStockItems.slice(0, 3).map((p) => p.name).join(", ")}
               {lowStockItems.length > 3 && ` +${lowStockItems.length - 3} more`}
             </span>
-            <Link href="/inventory" className="ml-auto text-[11px] font-semibold text-amber-600 hover:underline">View parts →</Link>
+            <Link href="/inventory" className="ml-auto text-[13px] font-semibold text-amber-600 hover:underline">View parts →</Link>
           </div>
         )}
 
@@ -1401,11 +1401,11 @@ export default async function DashboardPage({
         <section className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
           <div className="border-b border-[var(--line)] px-4 py-2.5 flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-3">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Repair Pipeline</p>
-              {conversionRate > 0 && <span className="text-[10px] text-[var(--ink-muted)]">{conversionRate}% conversion</span>}
-              {avgJobValue > 0 && <span className="text-[10px] text-[var(--ink-muted)]">· avg {formatMoneyCompact(avgJobValue, currency)}/job</span>}
+              <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Repair Pipeline</p>
+              {conversionRate > 0 && <span className="text-[12px] text-[var(--ink-muted)]">{conversionRate}% conversion</span>}
+              {avgJobValue > 0 && <span className="text-[12px] text-[var(--ink-muted)]">· avg {formatMoneyCompact(avgJobValue, currency)}/job</span>}
             </div>
-            <Link href="/jobs" className="text-[11px] font-semibold text-[var(--accent)] hover:underline">All jobs →</Link>
+            <Link href="/jobs" className="text-[13px] font-semibold text-[var(--accent)] hover:underline">All jobs →</Link>
           </div>
           <div className="overflow-x-auto [scrollbar-width:thin]">
             <div className="flex min-w-max items-center gap-1 px-4 py-4">
@@ -1429,7 +1429,7 @@ export default async function DashboardPage({
                           "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]"
                         }`}>{PIPE_ICONS[s.key] ?? "●"}</div>
                         <p className={`text-xl font-bold leading-none ${s.value === 0 ? "text-[var(--ink-muted)]" : isUrgent ? "text-[var(--accent)]" : isPositive ? "text-emerald-600" : "text-[var(--ink)]"}`}>{s.value}</p>
-                        <p className="text-center text-[9px] leading-tight text-[var(--ink-muted)]">{s.name}</p>
+                        <p className="text-center text-[13px] leading-tight text-[var(--ink-muted)]">{s.name}</p>
                       </Link>
                       {i < visibleStages.length - 1 && (
                         <span className="shrink-0 text-sm text-[var(--ink-muted)]">→</span>
@@ -1441,11 +1441,11 @@ export default async function DashboardPage({
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-4 border-t border-[var(--line)] px-4 py-2">
-            <span className="flex items-center gap-1.5 text-[10px] text-[var(--ink-muted)]"><span className="h-2 w-2 rounded-full bg-emerald-500" />On Track</span>
-            <span className="flex items-center gap-1.5 text-[10px] text-[var(--ink-muted)]"><span className="h-2 w-2 rounded-full bg-amber-500" />Needs Attention</span>
-            <span className="flex items-center gap-1.5 text-[10px] text-[var(--ink-muted)]"><span className="h-2 w-2 rounded-full bg-red-500" />Delayed</span>
+            <span className="flex items-center gap-1.5 text-[12px] text-[var(--ink-muted)]"><span className="h-2 w-2 rounded-full bg-emerald-500" />On Track</span>
+            <span className="flex items-center gap-1.5 text-[12px] text-[var(--ink-muted)]"><span className="h-2 w-2 rounded-full bg-amber-500" />Needs Attention</span>
+            <span className="flex items-center gap-1.5 text-[12px] text-[var(--ink-muted)]"><span className="h-2 w-2 rounded-full bg-red-500" />Delayed</span>
             {awaitingApprovalCount > 0 && (
-              <Link href="/jobs?status=AWAITING_APPROVAL" className="ml-auto rounded border border-[var(--accent)]/35 bg-[var(--accent)]/10 px-2 py-1 text-[11px] font-semibold text-[var(--accent)]">
+              <Link href="/jobs?status=AWAITING_APPROVAL" className="ml-auto rounded border border-[var(--accent)]/35 bg-[var(--accent)]/10 px-2 py-1 text-[13px] font-semibold text-[var(--accent)]">
                 {awaitingApprovalCount} awaiting approval
               </Link>
             )}
@@ -1455,8 +1455,8 @@ export default async function DashboardPage({
         {/* ── Sales Funnel ── */}
         <section className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
           <div className="border-b border-[var(--line)] px-3 py-2.5 flex items-center justify-between gap-2">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Sales Funnel</p>
-            <Link href="/sales/leads" className="text-[11px] font-semibold text-[var(--accent)] hover:underline">All leads →</Link>
+            <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Sales Funnel</p>
+            <Link href="/sales/leads" className="text-[13px] font-semibold text-[var(--accent)] hover:underline">All leads →</Link>
           </div>
           {/* Active stages with bars + drop-off */}
           {(() => {
@@ -1487,13 +1487,13 @@ export default async function DashboardPage({
                       <Link key={s} href={stage.href} className="flex flex-col gap-1 p-2.5 transition hover:bg-[var(--panel-strong)]">
                         <div className="flex items-baseline justify-between gap-1">
                           <p className={`text-[18px] font-black leading-none ${count === 0 ? "text-[var(--ink-muted)]" : stage.color}`}>{count}</p>
-                          {dropOff !== null && dropOff > 0 && <span className="text-[9px] font-bold text-red-500">-{dropOff}%</span>}
+                          {dropOff !== null && dropOff > 0 && <span className="text-[13px] font-bold text-red-500">-{dropOff}%</span>}
                         </div>
                         <div className="h-1 w-full rounded-full bg-[var(--panel-strong)]">
                           <div className={`h-full rounded-full ${stageBarColor[s]}`} style={{ width: `${barW}%` }} />
                         </div>
-                        <p className="text-[9px] leading-tight text-[var(--ink-muted)]">{stage.name}</p>
-                        {val > 0 && <p className="text-[9px] font-semibold text-[var(--accent)]">{formatMoneyCompact(val, currency)}</p>}
+                        <p className="text-[13px] leading-tight text-[var(--ink-muted)]">{stage.name}</p>
+                        {val > 0 && <p className="text-[13px] font-semibold text-[var(--accent)]">{formatMoneyCompact(val, currency)}</p>}
                       </Link>
                     );
                   })}
@@ -1507,14 +1507,14 @@ export default async function DashboardPage({
                     return (
                       <Link key={s} href={stage.href} className="flex flex-1 items-center justify-center gap-1.5 py-2 transition hover:bg-[var(--panel-strong)]">
                         <p className={`text-sm font-black ${count === 0 ? "text-[var(--ink-muted)]" : color}`}>{count}</p>
-                        <p className="text-[10px] text-[var(--ink-muted)]">{stage.name}</p>
+                        <p className="text-[12px] text-[var(--ink-muted)]">{stage.name}</p>
                       </Link>
                     );
                   })}
                   {totalValue > 0 && (
                     <div className="flex flex-1 items-center justify-center gap-1 py-2">
-                      <p className="text-[10px] text-[var(--ink-muted)]">Pipeline</p>
-                      <p className="text-[11px] font-black text-[var(--accent)]">{formatMoneyCompact(totalValue, currency)}</p>
+                      <p className="text-[12px] text-[var(--ink-muted)]">Pipeline</p>
+                      <p className="text-[13px] font-black text-[var(--accent)]">{formatMoneyCompact(totalValue, currency)}</p>
                     </div>
                   )}
                 </div>
@@ -1529,8 +1529,8 @@ export default async function DashboardPage({
           {/* Recent Activity */}
           <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)]">
             <div className="border-b border-[var(--line)] px-4 py-2.5 flex items-center justify-between">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Recent Activity</p>
-              <Link href="/jobs" className="text-[11px] font-semibold text-[var(--accent)] hover:underline">All activity →</Link>
+              <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Recent Activity</p>
+              <Link href="/jobs" className="text-[13px] font-semibold text-[var(--accent)] hover:underline">All activity →</Link>
             </div>
             {recentJobs.length === 0 ? (
               <p className="px-4 py-6 text-sm text-[var(--ink-muted)]">No jobs yet.</p>
@@ -1545,13 +1545,13 @@ export default async function DashboardPage({
                       className="flex items-center justify-between px-4 py-2.5 transition hover:bg-[var(--panel-strong)]">
                       <div className="min-w-0">
                         <p className="mono text-xs font-bold text-[var(--accent)]">{j.jobNumber}</p>
-                        <p className="truncate text-[10px] text-[var(--ink-muted)]">{deviceLabel}</p>
+                        <p className="truncate text-[12px] text-[var(--ink-muted)]">{deviceLabel}</p>
                       </div>
                       <div className="ml-3 shrink-0 text-right">
-                        <p className={`text-[10px] font-semibold ${isCompleted ? "text-emerald-600" : isNew ? "text-sky-500" : "text-[var(--ink-muted)]"}`}>
+                        <p className={`text-[12px] font-semibold ${isCompleted ? "text-emerald-600" : isNew ? "text-sky-500" : "text-[var(--ink-muted)]"}`}>
                           {statusLabel[j.status as keyof typeof statusLabel] ?? j.status}
                         </p>
-                        <p className="text-[10px] text-[var(--ink-muted)]">
+                        <p className="text-[12px] text-[var(--ink-muted)]">
                           {new Date(j.updatedAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
                         </p>
                       </div>
@@ -1565,10 +1565,10 @@ export default async function DashboardPage({
           {/* Technician Leaderboard */}
           <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)]">
             <div className="border-b border-[var(--line)] px-4 py-2.5 flex items-center justify-between">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">
+              <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">
                 Technician Leaderboard — {monthLabel(today.getFullYear(), today.getMonth() + 1)}
               </p>
-              <Link href="/technicians" className="text-[11px] font-semibold text-[var(--accent)] hover:underline">Full leaderboard →</Link>
+              <Link href="/technicians" className="text-[13px] font-semibold text-[var(--accent)] hover:underline">Full leaderboard →</Link>
             </div>
             {techLeaderboard.length === 0 ? (
               <p className="px-4 py-6 text-sm text-[var(--ink-muted)]">No completed jobs this month.</p>
@@ -1587,10 +1587,10 @@ export default async function DashboardPage({
                             {tech.name.charAt(0).toUpperCase()}
                           </div>
                           {medal && (
-                            <span className="absolute -right-1 -top-1 text-[10px] leading-none">{medal}</span>
+                            <span className="absolute -right-1 -top-1 text-[12px] leading-none">{medal}</span>
                           )}
                           {!medal && (
-                            <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-[var(--panel-strong)] text-[8px] font-bold text-[var(--ink-muted)]">
+                            <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-[var(--panel-strong)] text-[13px] font-bold text-[var(--ink-muted)]">
                               {i + 1}
                             </span>
                           )}
@@ -1598,7 +1598,7 @@ export default async function DashboardPage({
                         {/* Name + stats */}
                         <div className="min-w-0 flex-1">
                           <p className="truncate text-[13px] font-semibold text-[var(--ink)]">{tech.name}</p>
-                          <p className="mt-0.5 text-[11px] text-[var(--ink-muted)]">
+                          <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">
                             <span className="text-emerald-500 font-bold">{tech.count}</span> done
                             {tech.pending > 0 && <> · <span className="text-amber-500 font-bold">{tech.pending}</span> active</>}
                             {avgDays && <> · {avgDays}d avg</>}
@@ -1608,7 +1608,7 @@ export default async function DashboardPage({
                         <div className="shrink-0 text-right">
                           <p className="text-[12px] font-bold text-[var(--ink)]">{formatMoneyCompact(tech.revenue, currency)}</p>
                           {tech.payoutDue > 0 && (
-                            <p className="text-[10px] font-semibold text-red-500">{formatMoneyCompact(tech.payoutDue, currency)} due</p>
+                            <p className="text-[12px] font-semibold text-red-500">{formatMoneyCompact(tech.payoutDue, currency)} due</p>
                           )}
                         </div>
                       </div>
@@ -1621,13 +1621,13 @@ export default async function DashboardPage({
                   <table className="w-full text-left">
                     <thead>
                       <tr className="border-b border-[var(--line)]">
-                        <th className="px-3 py-2 text-[9px] font-bold uppercase tracking-wider text-[var(--ink-muted)]">#</th>
-                        <th className="px-2 py-2 text-[9px] font-bold uppercase tracking-wider text-[var(--ink-muted)]">Technician</th>
-                        <th className="px-2 py-2 text-center text-[9px] font-bold uppercase tracking-wider text-[var(--ink-muted)]">Done</th>
-                        <th className="px-2 py-2 text-center text-[9px] font-bold uppercase tracking-wider text-[var(--ink-muted)]">Active</th>
-                        <th className="px-2 py-2 text-center text-[9px] font-bold uppercase tracking-wider text-[var(--ink-muted)]">Avg TAT</th>
-                        <th className="px-2 py-2 text-right text-[9px] font-bold uppercase tracking-wider text-[var(--ink-muted)]">Revenue</th>
-                        <th className="px-3 py-2 text-right text-[9px] font-bold uppercase tracking-wider text-[var(--ink-muted)]">Payout Due</th>
+                        <th className="px-3 py-2 text-[13px] font-bold uppercase tracking-wider text-[var(--ink-muted)]">#</th>
+                        <th className="px-2 py-2 text-[13px] font-bold uppercase tracking-wider text-[var(--ink-muted)]">Technician</th>
+                        <th className="px-2 py-2 text-center text-[13px] font-bold uppercase tracking-wider text-[var(--ink-muted)]">Done</th>
+                        <th className="px-2 py-2 text-center text-[13px] font-bold uppercase tracking-wider text-[var(--ink-muted)]">Active</th>
+                        <th className="px-2 py-2 text-center text-[13px] font-bold uppercase tracking-wider text-[var(--ink-muted)]">Avg TAT</th>
+                        <th className="px-2 py-2 text-right text-[13px] font-bold uppercase tracking-wider text-[var(--ink-muted)]">Revenue</th>
+                        <th className="px-3 py-2 text-right text-[13px] font-bold uppercase tracking-wider text-[var(--ink-muted)]">Payout Due</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-[var(--line)]">
@@ -1635,12 +1635,12 @@ export default async function DashboardPage({
                         const avgDays = tech.count > 0 ? (tech.totalDays / tech.count).toFixed(1) : null;
                         return (
                           <tr key={tech.name} className="transition hover:bg-[var(--panel-strong)]">
-                            <td className="px-3 py-3 text-[11px] font-bold text-[var(--ink-muted)]">
+                            <td className="px-3 py-3 text-[13px] font-bold text-[var(--ink-muted)]">
                               {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `#${i + 1}`}
                             </td>
                             <td className="px-2 py-3">
                               <div className="flex items-center gap-2">
-                                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--accent)]/15 text-[11px] font-bold text-[var(--accent)]">
+                                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--accent)]/15 text-[13px] font-bold text-[var(--accent)]">
                                   {tech.name.charAt(0).toUpperCase()}
                                 </div>
                                 <span className="text-xs font-semibold text-[var(--ink)]">{tech.name}</span>
@@ -1831,7 +1831,7 @@ export default async function DashboardPage({
           ].map((item) => (
             <Link key={item.label} href={item.href} className="flex flex-col items-center justify-center gap-0.5 py-3 transition hover:bg-[var(--panel-strong)]">
               <p className={`text-lg font-bold ${item.color}`}>{item.value}</p>
-              <p className="text-[9px] uppercase tracking-[0.12em] text-[var(--ink-muted)]">{item.label}</p>
+              <p className="text-[13px] uppercase tracking-[0.12em] text-[var(--ink-muted)]">{item.label}</p>
             </Link>
           ))}
         </div>
@@ -1846,7 +1846,7 @@ export default async function DashboardPage({
           ].map((item) => (
             <Link key={item.label} href={item.href} className="flex flex-col items-center justify-center gap-0.5 py-3 transition hover:bg-[var(--panel-strong)]">
               <p className={`text-lg font-bold ${item.color}`}>{item.value}</p>
-              <p className="text-[9px] uppercase tracking-[0.12em] text-[var(--ink-muted)]">{item.label}</p>
+              <p className="text-[13px] uppercase tracking-[0.12em] text-[var(--ink-muted)]">{item.label}</p>
             </Link>
           ))}
         </div>
@@ -1936,10 +1936,10 @@ export default async function DashboardPage({
         {(overdueWithDays.length > 0 || awaitingApprovalCount > 0 || unassignedCount > 0) && (
           <section className="panel-shadow rounded-xl border border-[var(--accent)]/25 bg-[var(--panel)] px-4 py-3">
             <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
-              <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--accent)]">Attention Required</span>
-              {awaitingApprovalCount > 0 && <Link href="/jobs?status=AWAITING_APPROVAL" className="rounded-full border border-[var(--accent)]/30 bg-[var(--accent)]/10 px-2.5 py-1 text-[11px] font-medium text-[var(--accent)]">{awaitingApprovalCount} awaiting approval</Link>}
-              {overdueWithDays.length > 0 && <span className="rounded-full border border-white/10 bg-[#0b0b0b] px-2.5 py-1 text-[11px] font-medium text-white/90">{overdueWithDays.length} overdue 3+ days</span>}
-              {unassignedCount > 0 && <Link href="/jobs?assignedToId=unassigned" className="rounded-full border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1 text-[11px] font-medium text-[var(--ink)]">{unassignedCount} unassigned</Link>}
+              <span className="text-[13px] font-bold uppercase tracking-[0.12em] text-[var(--accent)]">Attention Required</span>
+              {awaitingApprovalCount > 0 && <Link href="/jobs?status=AWAITING_APPROVAL" className="rounded-full border border-[var(--accent)]/30 bg-[var(--accent)]/10 px-2.5 py-1 text-[13px] font-medium text-[var(--accent)]">{awaitingApprovalCount} awaiting approval</Link>}
+              {overdueWithDays.length > 0 && <span className="rounded-full border border-white/10 bg-[#0b0b0b] px-2.5 py-1 text-[13px] font-medium text-white/90">{overdueWithDays.length} overdue 3+ days</span>}
+              {unassignedCount > 0 && <Link href="/jobs?assignedToId=unassigned" className="rounded-full border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1 text-[13px] font-medium text-[var(--ink)]">{unassignedCount} unassigned</Link>}
             </div>
           </section>
         )}
@@ -1952,7 +1952,7 @@ export default async function DashboardPage({
             { label: "Ready Pickup", val: String(statusCount.get("READY_FOR_PICKUP") ?? 0), href: "/jobs?status=READY_FOR_PICKUP", color: "text-[var(--accent)]" },
           ].map(t => (
             <Link key={t.label} href={t.href} className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px]">
-              <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">{t.label}</p>
+              <p className="text-[12px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">{t.label}</p>
               <p className={`mt-1 text-[15px] font-black leading-tight ${t.color}`}>{t.val}</p>
             </Link>
           ))}
@@ -1978,7 +1978,7 @@ export default async function DashboardPage({
           <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
             <div className="mb-3 flex items-center justify-between">
               <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Staff Workload</p>
-              {unassignedCount > 0 && <Link href="/jobs?assignedToId=unassigned" className="rounded-full border border-amber-500/30 bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold text-amber-600">{unassignedCount} unassigned</Link>}
+              {unassignedCount > 0 && <Link href="/jobs?assignedToId=unassigned" className="rounded-full border border-amber-500/30 bg-amber-500/15 px-2 py-0.5 text-[12px] font-bold text-amber-600">{unassignedCount} unassigned</Link>}
             </div>
             {techRows.length === 0 ? (
               <p className="text-sm text-[var(--ink-muted)]">No active assignments.</p>
@@ -1988,21 +1988,21 @@ export default async function DashboardPage({
                   <Link key={t.id} href={`/jobs?assignedToId=${t.id}`} className="group flex items-center justify-between rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 transition hover:border-[var(--accent)]/35">
                     <div className="min-w-0">
                       <p className="truncate text-xs font-semibold group-hover:text-[var(--accent)] transition-colors">{t.name}</p>
-                      <p className="text-[10px] text-[var(--ink-muted)]">{t.role === "TECHNICIAN_EXTERNAL" ? "External" : t.role === "TECHNICIAN_INTERNAL" ? "Internal" : t.role}</p>
+                      <p className="text-[12px] text-[var(--ink-muted)]">{t.role === "TECHNICIAN_EXTERNAL" ? "External" : t.role === "TECHNICIAN_INTERNAL" ? "Internal" : t.role}</p>
                     </div>
-                    <span className={`ml-2 shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${t.role === "TECHNICIAN_EXTERNAL" ? "bg-violet-500/15 text-violet-400" : "bg-sky-500/15 text-sky-500"}`}>{t.count} active</span>
+                    <span className={`ml-2 shrink-0 rounded-full px-2 py-0.5 text-[12px] font-bold ${t.role === "TECHNICIAN_EXTERNAL" ? "bg-violet-500/15 text-violet-400" : "bg-sky-500/15 text-sky-500"}`}>{t.count} active</span>
                   </Link>
                 ))}
                 {overdueWithDays.length > 0 && (
                   <div className="mt-2 border-t border-[var(--line)] pt-2">
-                    <p className="mb-1.5 text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Overdue Jobs</p>
+                    <p className="mb-1.5 text-[12px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Overdue Jobs</p>
                     {overdueWithDays.slice(0, 4).map(j => (
                       <Link key={j.id} href={`/jobs/${j.id}`} className="flex items-center justify-between rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 transition hover:border-amber-500/30 mb-1">
                         <div className="min-w-0">
                           <p className="mono truncate text-xs font-bold text-[var(--accent)]">{j.jobNumber}</p>
-                          <p className="truncate text-[10px] text-[var(--ink-muted)]">{statusLabel[j.status as keyof typeof statusLabel] ?? j.status}</p>
+                          <p className="truncate text-[12px] text-[var(--ink-muted)]">{statusLabel[j.status as keyof typeof statusLabel] ?? j.status}</p>
                         </div>
-                        <span className={`ml-2 shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${j.ageDays >= 8 ? "bg-red-500/15 text-red-400" : "bg-amber-500/15 text-amber-600"}`}>{j.ageDays}d</span>
+                        <span className={`ml-2 shrink-0 rounded-full px-2 py-0.5 text-[12px] font-bold ${j.ageDays >= 8 ? "bg-red-500/15 text-red-400" : "bg-amber-500/15 text-amber-600"}`}>{j.ageDays}d</span>
                       </Link>
                     ))}
                   </div>
@@ -2075,7 +2075,7 @@ export default async function DashboardPage({
             { label: "Overdue (30d+)", val: String(overdueCount), href: "/documents/invoices", color: overdueCount > 0 ? "text-red-400" : "text-[var(--ink-muted)]" },
           ].map(t => (
             <Link key={t.label} href={t.href} className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px]">
-              <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">{t.label}</p>
+              <p className="text-[12px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">{t.label}</p>
               <p className={`mt-1 text-[15px] font-black leading-tight ${t.color}`}>{t.val}</p>
             </Link>
           ))}
@@ -2130,11 +2130,11 @@ export default async function DashboardPage({
         <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
           <div className="mb-3 flex items-center justify-between">
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Unpaid Invoices</p>
-            <Link href="/documents/invoices" className="text-[11px] font-semibold text-[var(--accent)] hover:underline">View all →</Link>
+            <Link href="/documents/invoices" className="text-[13px] font-semibold text-[var(--accent)] hover:underline">View all →</Link>
           </div>
           {unpaidInvoices.length === 0 ? (
             <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2.5">
-              <p className="text-[11px] font-medium text-emerald-600">All invoices paid — nothing outstanding.</p>
+              <p className="text-[13px] font-medium text-emerald-600">All invoices paid — nothing outstanding.</p>
             </div>
           ) : (
             <div className="space-y-1.5">
@@ -2145,11 +2145,11 @@ export default async function DashboardPage({
                   <div key={inv.id} className="flex items-center justify-between rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2">
                     <div className="min-w-0">
                       <p className="mono truncate text-xs font-bold text-[var(--ink)]">{inv.invoiceNumber}</p>
-                      <p className="truncate text-[10px] text-[var(--ink-muted)]">{inv.job?.client?.fullName ?? "—"} · {inv.job?.jobNumber ?? "—"}</p>
+                      <p className="truncate text-[12px] text-[var(--ink-muted)]">{inv.job?.client?.fullName ?? "—"} · {inv.job?.jobNumber ?? "—"}</p>
                     </div>
                     <div className="ml-3 shrink-0 text-right">
                       <p className="text-xs font-semibold text-[var(--accent)]">{formatMoneyCompact(balance, currency)}</p>
-                      <span className={`text-[10px] font-medium ${ageDays > 60 ? "text-red-400" : ageDays > 30 ? "text-amber-600" : "text-[var(--ink-muted)]"}`}>{ageDays}d</span>
+                      <span className={`text-[12px] font-medium ${ageDays > 60 ? "text-red-400" : ageDays > 30 ? "text-amber-600" : "text-[var(--ink-muted)]"}`}>{ageDays}d</span>
                     </div>
                   </div>
                 );
@@ -2309,7 +2309,7 @@ export default async function DashboardPage({
                 style={{ width: `${Math.min(100, targetPct ?? 0)}%` }}
               />
             </div>
-            <div className="mt-1.5 flex justify-between text-[10px] text-[var(--ink-muted)]">
+            <div className="mt-1.5 flex justify-between text-[12px] text-[var(--ink-muted)]">
               <span>{formatMoneyCompact(totalRevenueMtd, currency)} achieved</span>
               <span>target {formatMoneyCompact(teamTargetRevenue, currency)}</span>
             </div>
@@ -2325,9 +2325,9 @@ export default async function DashboardPage({
             { label: "Conversion Rate",    val: `${conversionRate}%`,                            sub: `${wonMtd} won vs ${prevMonthJobCount} last month`,                                                                             href: "/jobs?status=COMPLETED,READY_FOR_PICKUP",       color: conversionRate >= 50 ? "text-emerald-600" : "text-amber-600" },
           ].map(t => (
             <Link key={t.label} href={t.href} className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px]">
-              <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">{t.label}</p>
+              <p className="text-[12px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">{t.label}</p>
               <p className={`mt-1 text-[15px] font-black leading-tight ${t.color}`}>{t.val}</p>
-              <p className="mt-1 text-[10px] text-[var(--ink-muted)]">{t.sub}</p>
+              <p className="mt-1 text-[12px] text-[var(--ink-muted)]">{t.sub}</p>
             </Link>
           ))}
         </div>
@@ -2337,7 +2337,7 @@ export default async function DashboardPage({
           <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
             <div className="mb-3 flex items-center justify-between">
               <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Staff Performance — {period}</p>
-              <Link href="/reports" className="text-[11px] font-semibold text-[var(--accent)] hover:underline">Full report →</Link>
+              <Link href="/reports" className="text-[13px] font-semibold text-[var(--accent)] hover:underline">Full report →</Link>
             </div>
             {staffRows.length === 0 ? (
               <p className="text-sm text-[var(--ink-muted)]">No sales activity this month yet.</p>
@@ -2349,17 +2349,17 @@ export default async function DashboardPage({
                     <div key={s.name} className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2 min-w-0">
-                          <span className="shrink-0 text-[10px] font-bold text-[var(--ink-muted)] w-4">{i + 1}</span>
+                          <span className="shrink-0 text-[12px] font-bold text-[var(--ink-muted)] w-4">{i + 1}</span>
                           <p className="truncate text-xs font-semibold text-[var(--ink)]">{s.name}</p>
                         </div>
                         <div className="ml-3 shrink-0 flex items-center gap-2">
                           {pct !== null && (
-                            <span className={`text-[10px] font-bold ${pct >= 100 ? "text-emerald-600" : pct >= 60 ? "text-[var(--accent)]" : "text-amber-600"}`}>{pct}%</span>
+                            <span className={`text-[12px] font-bold ${pct >= 100 ? "text-emerald-600" : pct >= 60 ? "text-[var(--accent)]" : "text-amber-600"}`}>{pct}%</span>
                           )}
                           <span className="text-xs font-bold text-[var(--ink)]">{formatMoneyCompact(s.totalRev, currency)}</span>
                         </div>
                       </div>
-                      <div className="mt-1.5 flex items-center gap-3 text-[10px] text-[var(--ink-muted)]">
+                      <div className="mt-1.5 flex items-center gap-3 text-[12px] text-[var(--ink-muted)]">
                         <span className="text-sky-600">{formatMoneyCompact(s.repairRev, currency)} repair</span>
                         <span className="text-violet-600">{formatMoneyCompact(s.posRev, currency)} POS</span>
                         {s.target > 0 && (
@@ -2382,7 +2382,7 @@ export default async function DashboardPage({
             {/* My own target summary if viewer has a personal target */}
             {myTargetRevenue > 0 && (
               <div className="mt-3 rounded-lg border border-[var(--accent)]/30 bg-[var(--accent)]/5 px-3 py-2">
-                <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">My Target</p>
+                <p className="text-[12px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">My Target</p>
                 <p className="mt-0.5 text-xs text-[var(--ink)]">{formatMoneyCompact(myTargetRevenue, currency)} this month</p>
               </div>
             )}
@@ -2409,7 +2409,7 @@ export default async function DashboardPage({
                       <div className="flex-1 h-1.5 overflow-hidden rounded-full bg-[var(--line)]">
                         <div className={`h-full rounded-full ${ch.color}`} style={{ width: `${pct}%` }} />
                       </div>
-                      <span className="shrink-0 text-[10px] text-[var(--ink-muted)]">{ch.count}</span>
+                      <span className="shrink-0 text-[12px] text-[var(--ink-muted)]">{ch.count}</span>
                     </div>
                   </div>
                 );
@@ -2420,7 +2420,7 @@ export default async function DashboardPage({
             <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
               <div className="mb-2 flex items-center justify-between">
                 <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Pending Approvals</p>
-                <Link href="/jobs?status=AWAITING_APPROVAL" className="text-[11px] font-semibold text-[var(--accent)] hover:underline">All →</Link>
+                <Link href="/jobs?status=AWAITING_APPROVAL" className="text-[13px] font-semibold text-[var(--accent)] hover:underline">All →</Link>
               </div>
               {quotedJobs.length === 0 ? (
                 <p className="text-sm text-[var(--ink-muted)]">No quotes pending.</p>
@@ -2432,11 +2432,11 @@ export default async function DashboardPage({
                       <Link key={j.id} href={`/jobs/${j.id}`} className="flex items-center justify-between rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 transition hover:border-[var(--accent)]/35">
                         <div className="min-w-0">
                           <p className="mono truncate text-xs font-bold text-[var(--accent)]">{j.jobNumber}</p>
-                          <p className="truncate text-[10px] text-[var(--ink-muted)]">{j.client?.fullName ?? "—"}</p>
+                          <p className="truncate text-[12px] text-[var(--ink-muted)]">{j.client?.fullName ?? "—"}</p>
                         </div>
                         <div className="ml-3 shrink-0 text-right">
                           {j.clientBill && <p className="text-xs font-semibold text-[var(--ink)]">{formatMoneyCompact(j.clientBill, currency)}</p>}
-                          <span className={`text-[10px] font-medium ${waitDays > 3 ? "text-amber-600" : "text-[var(--ink-muted)]"}`}>{waitDays}d wait</span>
+                          <span className={`text-[12px] font-medium ${waitDays > 3 ? "text-amber-600" : "text-[var(--ink-muted)]"}`}>{waitDays}d wait</span>
                         </div>
                       </Link>
                     );
@@ -2444,7 +2444,7 @@ export default async function DashboardPage({
                   {readyPickup > 0 && (
                     <Link href="/jobs?status=READY_FOR_PICKUP" className="flex items-center justify-between rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 transition hover:border-emerald-500/50">
                       <p className="text-xs font-semibold text-emerald-600">{readyPickup} jobs ready for pickup</p>
-                      <span className="text-[11px] font-bold text-emerald-600">→</span>
+                      <span className="text-[13px] font-bold text-emerald-600">→</span>
                     </Link>
                   )}
                 </div>
@@ -2504,22 +2504,22 @@ export default async function DashboardPage({
 
         <div className="grid gap-3 lg:grid-cols-2">
           <Link href="/sales" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px] sm:p-5">
-            <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Open Leads</p>
+            <p className="text-[12px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Open Leads</p>
             <p className="mt-2 text-3xl font-semibold text-[var(--accent)]">{leadsOpen}</p>
             <p className="mt-2 text-xs font-medium text-[var(--accent)]">View pipeline →</p>
           </Link>
           <Link href="/sales?tab=leads&status=WON" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px] sm:p-5">
-            <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Won Leads</p>
+            <p className="text-[12px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Won Leads</p>
             <p className="mt-2 text-3xl font-semibold text-[var(--accent)]">{leadsWon}</p>
             <p className="mt-2 text-xs font-medium text-[var(--accent)]">View won leads →</p>
           </Link>
           <Link href="/sales?tab=quotations" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px] sm:p-5">
-            <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Quotations Pending</p>
+            <p className="text-[12px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Quotations Pending</p>
             <p className="mt-2 text-3xl font-semibold text-[var(--accent)]">{quotationsPending}</p>
             <p className="mt-2 text-xs font-medium text-[var(--accent)]">Review quotations →</p>
           </Link>
           <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 sm:p-5">
-            <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Revenue This Month</p>
+            <p className="text-[12px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Revenue This Month</p>
             <p className="mt-2 text-3xl font-semibold text-[var(--ink)]">{formatMoney(salesThisMonth, currency)}</p>
             <p className="mt-2 text-xs text-[var(--ink-muted)]">Paid sales</p>
           </div>
@@ -2565,17 +2565,17 @@ export default async function DashboardPage({
 
         <div className="grid gap-3 lg:grid-cols-3">
           <Link href="/sales?tab=quotations" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px] sm:p-5">
-            <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Draft Quotations</p>
+            <p className="text-[12px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Draft Quotations</p>
             <p className="mt-2 text-3xl font-semibold text-[var(--accent)]">{myQuotationsDraft}</p>
             <p className="mt-2 text-xs font-medium text-[var(--accent)]">Open drafts →</p>
           </Link>
           <Link href="/sales?tab=quotations" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px] sm:p-5">
-            <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Sent Quotations</p>
+            <p className="text-[12px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Sent Quotations</p>
             <p className="mt-2 text-3xl font-semibold text-[var(--accent)]">{myQuotationsSent}</p>
             <p className="mt-2 text-xs font-medium text-[var(--accent)]">Track sent →</p>
           </Link>
           <Link href="/sales" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px] sm:p-5">
-            <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Active Leads</p>
+            <p className="text-[12px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Active Leads</p>
             <p className="mt-2 text-3xl font-semibold text-[var(--accent)]">{myLeads}</p>
             <p className="mt-2 text-xs font-medium text-[var(--accent)]">View my leads →</p>
           </Link>
@@ -2624,17 +2624,17 @@ export default async function DashboardPage({
 
         <div className="grid gap-3 lg:grid-cols-3">
           <Link href="/sales" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px] sm:p-5">
-            <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">My Leads</p>
+            <p className="text-[12px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">My Leads</p>
             <p className="mt-2 text-3xl font-semibold text-[var(--accent)]">{myLeads}</p>
             <p className="mt-2 text-xs font-medium text-[var(--accent)]">View leads →</p>
           </Link>
           <Link href="/sales?tab=quotations" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px] sm:p-5">
-            <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">My Quotations</p>
+            <p className="text-[12px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">My Quotations</p>
             <p className="mt-2 text-3xl font-semibold text-[var(--accent)]">{myQuotations}</p>
             <p className="mt-2 text-xs font-medium text-[var(--accent)]">View quotations →</p>
           </Link>
           <Link href="/pos" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px] sm:p-5">
-            <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Active POS</p>
+            <p className="text-[12px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Active POS</p>
             <p className="mt-2 text-3xl font-semibold text-[var(--accent)]">{posOpen}</p>
             <p className="mt-2 text-xs font-medium text-[var(--accent)]">Open POS →</p>
           </Link>
@@ -2684,15 +2684,15 @@ export default async function DashboardPage({
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Active Session</p>
             <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
               <div>
-                <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Total Sales</p>
+                <p className="text-[12px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Total Sales</p>
                 <p className="mt-1 text-xl font-semibold text-[var(--accent)]">{formatMoney(openSession.totalSales, currency)}</p>
               </div>
               <div>
-                <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Sales Count</p>
+                <p className="text-[12px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Sales Count</p>
                 <p className="mt-1 text-xl font-semibold text-[var(--ink)]">{openSession.salesCount}</p>
               </div>
               <div>
-                <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Opened At</p>
+                <p className="text-[12px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Opened At</p>
                 <p className="mt-1 text-xl font-semibold text-[var(--ink)]">
                   {openSession.openedAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                 </p>
@@ -2702,7 +2702,7 @@ export default async function DashboardPage({
           </Link>
         ) : (
           <Link href="/pos" className="panel-shadow block rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px] sm:p-5">
-            <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">No Active Session</p>
+            <p className="text-[12px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">No Active Session</p>
             <p className="mt-2 text-sm text-[var(--ink-muted)]">Open a new POS session to start recording sales.</p>
             <p className="mt-3 text-xs font-medium text-[var(--accent)]">Open session →</p>
           </Link>
@@ -2750,12 +2750,12 @@ export default async function DashboardPage({
 
         <div className="grid gap-3 grid-cols-2">
           <Link href="/jobs" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px] sm:p-5">
-            <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Assigned Jobs</p>
+            <p className="text-[12px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Assigned Jobs</p>
             <p className="mt-2 text-3xl font-semibold text-[var(--accent)]">{assignedJobs}</p>
             <p className="mt-2 text-xs font-medium text-[var(--accent)]">View queue →</p>
           </Link>
           <Link href="/jobs?status=COMPLETED" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px] sm:p-5">
-            <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Completed Today</p>
+            <p className="text-[12px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Completed Today</p>
             <p className="mt-2 text-3xl font-semibold text-[var(--accent)]">{completedToday}</p>
             <p className="mt-2 text-xs font-medium text-[var(--accent)]">View completed →</p>
           </Link>
@@ -2796,7 +2796,7 @@ export default async function DashboardPage({
         ].map((item) => (
           <Link key={item.label} href={item.href} className="flex flex-col items-center justify-center gap-0.5 py-3 transition hover:bg-[var(--panel-strong)]">
             <p className={`text-lg font-bold ${item.color}`}>{item.value}</p>
-            <p className="text-[10px] uppercase tracking-[0.12em] text-[var(--ink-muted)]">{item.label}</p>
+            <p className="text-[12px] uppercase tracking-[0.12em] text-[var(--ink-muted)]">{item.label}</p>
           </Link>
         ))}
       </div>

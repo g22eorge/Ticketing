@@ -116,7 +116,7 @@ export function AuditTimeline({ items }: { items: AuditItem[] }) {
           <>
             <div className="flex flex-wrap items-center justify-between gap-2">
               <p className="flex items-center gap-2 text-sm font-semibold">
-                <span className={`inline-flex h-5 min-w-5 items-center justify-center rounded-full border px-1 text-[11px] font-bold ${actionMeta.chipClass}`}>
+                <span className={`inline-flex h-5 min-w-5 items-center justify-center rounded-full border px-1 text-[13px] font-bold ${actionMeta.chipClass}`}>
                   {actionMeta.icon}
                 </span>
                 {formatActionLabel(item.action)}
@@ -131,7 +131,7 @@ export function AuditTimeline({ items }: { items: AuditItem[] }) {
               <dl className="mt-2 grid gap-2 sm:grid-cols-2">
                 {detailEntries.map(([key, value]) => (
                   <div key={key} className="rounded-md border border-[var(--line)] bg-[var(--panel)] px-2 py-1.5">
-                    <dt className="text-[11px] uppercase tracking-[0.08em] text-[var(--ink-muted)]">{formatDetailKey(key)}</dt>
+                    <dt className="text-[13px] uppercase tracking-[0.08em] text-[var(--ink-muted)]">{formatDetailKey(key)}</dt>
                     <dd className="mt-0.5 break-words text-xs font-medium text-[var(--ink)]">{formatDetailValue(value)}</dd>
                   </div>
                 ))}
@@ -139,7 +139,7 @@ export function AuditTimeline({ items }: { items: AuditItem[] }) {
             ) : item.detail ? (
               <pre className="mt-2 overflow-x-auto text-xs text-[var(--ink)]">{item.detail}</pre>
             ) : null}
-            {item.jobId ? <p className="mt-2 text-[10px] font-semibold text-[var(--accent)]">View job →</p> : null}
+            {item.jobId ? <p className="mt-2 text-[12px] font-semibold text-[var(--accent)]">View job →</p> : null}
           </>
         );
 
@@ -153,7 +153,7 @@ export function AuditTimeline({ items }: { items: AuditItem[] }) {
           <div key={item.id} className={cardCls}>
             <div className="flex flex-wrap items-center justify-between gap-2">
               <p className="flex items-center gap-2 text-sm font-semibold">
-                <span className={`inline-flex h-5 min-w-5 items-center justify-center rounded-full border px-1 text-[11px] font-bold ${actionMeta.chipClass}`}>
+                <span className={`inline-flex h-5 min-w-5 items-center justify-center rounded-full border px-1 text-[13px] font-bold ${actionMeta.chipClass}`}>
                   {actionMeta.icon}
                 </span>
                 {formatActionLabel(item.action)}

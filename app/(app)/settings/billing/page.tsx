@@ -258,7 +258,7 @@ export default async function BillingPage({
                   <div className="flex items-center justify-between gap-2">
                     <p className="font-semibold text-[var(--ink)]">{PLAN_LABELS[key]}</p>
                     {highlight && (
-                      <span className="rounded-full bg-[var(--gold)]/20 px-2 py-0.5 text-[10px] font-semibold text-[var(--gold)] uppercase tracking-wide">
+                      <span className="rounded-full bg-[var(--gold)]/20 px-2 py-0.5 text-[12px] font-semibold text-[var(--gold)] uppercase tracking-wide">
                         Popular
                       </span>
                     )}
@@ -494,7 +494,7 @@ export default async function BillingPage({
       <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-5 space-y-3">
         <div className="flex items-center justify-between">
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Enabled modules</p>
-          <span className="rounded-full bg-[var(--panel-strong)] px-2 py-0.5 text-[10px] font-semibold text-[var(--ink-muted)]">
+          <span className="rounded-full bg-[var(--panel-strong)] px-2 py-0.5 text-[12px] font-semibold text-[var(--ink-muted)]">
             {enabledModuleList.length} / 10
           </span>
         </div>
@@ -506,7 +506,7 @@ export default async function BillingPage({
             </span>
           ))}
         </div>
-        <p className="text-[11px] text-[var(--ink-muted)]">
+        <p className="text-[13px] text-[var(--ink-muted)]">
           Modules are selected during onboarding and can be adjusted by a platform administrator.
         </p>
       </section>
@@ -531,7 +531,7 @@ export default async function BillingPage({
                 <div className="flex items-center justify-between">
                   <p className="font-semibold text-[var(--ink)]">{PLAN_LABELS[key]}</p>
                   {isCurrent && (
-                    <span className="rounded-full bg-[var(--gold)]/20 px-2 py-0.5 text-[10px] font-semibold text-[var(--gold)]">
+                    <span className="rounded-full bg-[var(--gold)]/20 px-2 py-0.5 text-[12px] font-semibold text-[var(--gold)]">
                       Current
                     </span>
                   )}

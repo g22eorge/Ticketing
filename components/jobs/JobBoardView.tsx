@@ -76,12 +76,12 @@ export function JobBoardView({
             <div className="mb-2 flex items-center gap-2 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2">
               <span className={`h-2 w-2 rounded-full ${col.dot}`} aria-hidden="true" />
               <span className={`flex-1 text-xs font-semibold ${col.text}`}>{col.label}</span>
-              <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${col.badge}`}>{colJobs.length}</span>
+              <span className={`rounded-full px-2 py-0.5 text-[12px] font-bold ${col.badge}`}>{colJobs.length}</span>
             </div>
 
             <div className="flex flex-col gap-2">
               {colJobs.length === 0 ? (
-                <div className="rounded-lg border border-dashed border-[var(--line)] py-8 text-center text-[11px] text-[var(--ink-muted)]/50">
+                <div className="rounded-lg border border-dashed border-[var(--line)] py-8 text-center text-[13px] text-[var(--ink-muted)]/50">
                   No jobs
                 </div>
               ) : (
@@ -97,10 +97,10 @@ export function JobBoardView({
                       <span className={`w-1 shrink-0 ${col.strip}`} aria-hidden="true" />
                       <div className="min-w-0 flex-1 space-y-1.5 p-2.5">
                         <div className="flex items-center justify-between gap-1">
-                          <span className="text-[11px] font-bold tracking-tight text-[var(--ink)]">{job.jobNumber}</span>
+                          <span className="text-[13px] font-bold tracking-tight text-[var(--ink)]">{job.jobNumber}</span>
                           {age > 0 ? (
                             <span
-                              className={`rounded-full px-1.5 py-0.5 text-[9px] font-semibold ${
+                              className={`rounded-full px-1.5 py-0.5 text-[13px] font-semibold ${
                                 age >= 7
                                   ? "bg-red-500/10 text-red-700 dark:text-red-400"
                                   : age >= 3
@@ -115,11 +115,11 @@ export function JobBoardView({
 
                         <div className="flex items-center gap-1.5 text-[var(--ink-muted)]">
                           <DeviceIcon type={job.deviceType} />
-                          <span className="truncate text-[11px] font-medium text-[var(--ink)]">{device}</span>
+                          <span className="truncate text-[13px] font-medium text-[var(--ink)]">{device}</span>
                         </div>
 
                         {(showClient && job.clientName) || job.assignedTo ? (
-                          <div className="flex items-center justify-between gap-1 text-[10px] text-[var(--ink-muted)]">
+                          <div className="flex items-center justify-between gap-1 text-[12px] text-[var(--ink-muted)]">
                             {showClient && job.clientName ? (
                               <span className="truncate">{job.clientName}</span>
                             ) : (

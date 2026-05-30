@@ -217,8 +217,8 @@ export function SignupForm() {
                   </svg>
                 )}
               </div>
-              <span className="text-[11px] font-medium text-[#D4AF37]/80">{p.price}</span>
-              <span className="text-[11px] text-white/40">{p.desc}</span>
+              <span className="text-[13px] font-medium text-[#D4AF37]/80">{p.price}</span>
+              <span className="text-[13px] text-white/40">{p.desc}</span>
             </button>
           ))}
         </div>

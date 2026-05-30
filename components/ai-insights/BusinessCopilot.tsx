@@ -81,13 +81,13 @@ export function BusinessCopilot() {
     <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Ask Your Business</p>
+          <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Ask Your Business</p>
           <h2 className="mt-1 text-lg font-bold text-[var(--ink)]">AI Business Copilot</h2>
           <p className="mt-1 max-w-2xl text-xs text-[var(--ink-muted)]">
             Answers are grounded in aggregate repair, sales, finance, inventory, target, receivable, and payable metrics. Client PII and private job notes are not sent to the model.
           </p>
         </div>
-        <span className="rounded-full border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--accent-text)]">
+        <span className="rounded-full border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1 text-[12px] font-semibold uppercase tracking-[0.14em] text-[var(--accent-text)]">
           Aggregate Data
         </span>
       </div>
@@ -106,8 +106,8 @@ export function BusinessCopilot() {
             </div>
             {message.role === "assistant" && message.question ? (
               <div className="mt-1 flex gap-1">
-                <button type="button" onClick={() => rate(index, message, "HELPFUL")} className={`rounded-full border px-2 py-0.5 text-[10px] ${message.feedback === "HELPFUL" ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-600" : "border-[var(--line)] text-[var(--ink-muted)]"}`}>Helpful</button>
-                <button type="button" onClick={() => rate(index, message, "NOT_HELPFUL")} className={`rounded-full border px-2 py-0.5 text-[10px] ${message.feedback === "NOT_HELPFUL" ? "border-amber-500/40 bg-amber-500/10 text-amber-600" : "border-[var(--line)] text-[var(--ink-muted)]"}`}>Not helpful</button>
+                <button type="button" onClick={() => rate(index, message, "HELPFUL")} className={`rounded-full border px-2 py-0.5 text-[12px] ${message.feedback === "HELPFUL" ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-600" : "border-[var(--line)] text-[var(--ink-muted)]"}`}>Helpful</button>
+                <button type="button" onClick={() => rate(index, message, "NOT_HELPFUL")} className={`rounded-full border px-2 py-0.5 text-[12px] ${message.feedback === "NOT_HELPFUL" ? "border-amber-500/40 bg-amber-500/10 text-amber-600" : "border-[var(--line)] text-[var(--ink-muted)]"}`}>Not helpful</button>
               </div>
             ) : null}
           </div>

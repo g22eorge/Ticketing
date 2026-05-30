@@ -3,7 +3,7 @@ import Link from "next/link";
 export default function AppNotFound() {
   return (
     <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-5 text-center sm:p-6">
-      <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Not Found</p>
+      <p className="text-[12px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Not Found</p>
       <h1 className="mt-1 text-xl font-semibold text-[var(--ink)]">We could not find that record</h1>
       <p className="mt-2 text-sm text-[var(--ink-muted)]">
         The item may have been removed, reassigned, or you may not have access to it.

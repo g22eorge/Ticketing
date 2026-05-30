@@ -160,7 +160,7 @@ export function PageThemeHeader({ role }: { role: Role }) {
         <div className="flex min-w-0 flex-1 items-baseline gap-2">
           <h1 className="text-[15px] font-bold tracking-tight text-[var(--ink)]">{meta.title}</h1>
           {subtitle ? (
-            <span className="rounded border border-[var(--line)] bg-[var(--panel-strong)] px-1.5 py-0.5 font-mono text-[10px] font-medium text-[var(--ink-muted)]">
+            <span className="rounded border border-[var(--line)] bg-[var(--panel-strong)] px-1.5 py-0.5 font-mono text-[12px] font-medium text-[var(--ink-muted)]">
               {subtitle}
             </span>
           ) : null}
@@ -174,15 +174,15 @@ export function PageThemeHeader({ role }: { role: Role }) {
           <div className="flex min-w-0 flex-wrap items-baseline gap-2">
             <h1 className="text-[13px] font-bold tracking-tight text-[var(--ink)]">{meta.title}</h1>
             {subtitle ? (
-              <span className="rounded border border-[var(--line)] bg-[var(--panel-strong)] px-1.5 py-0.5 text-[10px] font-mono font-medium text-[var(--ink-muted)]">
+              <span className="rounded border border-[var(--line)] bg-[var(--panel-strong)] px-1.5 py-0.5 text-[12px] font-mono font-medium text-[var(--ink-muted)]">
                 {subtitle}
               </span>
             ) : null}
             {meta.description ? (
-              <span className="text-[11px] text-[var(--ink-muted)]">{meta.description}</span>
+              <span className="text-[13px] text-[var(--ink-muted)]">{meta.description}</span>
             ) : null}
           </div>
-          <span className={`shrink-0 rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.1em] ${roleTagStyle(role)}`}>
+          <span className={`shrink-0 rounded-full px-2 py-0.5 text-[13px] font-bold uppercase tracking-[0.1em] ${roleTagStyle(role)}`}>
             {roleTag(role)}
           </span>
         </div>

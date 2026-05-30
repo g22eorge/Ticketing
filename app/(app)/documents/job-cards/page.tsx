@@ -134,7 +134,7 @@ export default async function JobCardsPage({
       {/* ── Mobile: tap any job → Job Card button at the bottom ── */}
       <div className="sm:hidden rounded-2xl border border-sky-500/20 bg-sky-500/6 px-4 py-3">
         <p className="text-[12px] font-semibold text-sky-500 mb-1">Print a job card</p>
-        <p className="text-[11px] text-[var(--ink-muted)] leading-relaxed">
+        <p className="text-[13px] text-[var(--ink-muted)] leading-relaxed">
           Tap any job below → the <strong className="text-[var(--ink)]">Generate Job Card</strong> button appears at the bottom of the screen — prints or downloads instantly.
         </p>
       </div>
@@ -142,7 +142,7 @@ export default async function JobCardsPage({
       {/* Header bar */}
       <div className="panel-shadow hidden sm:flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-2.5">
         <div>
-          <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Documents</p>
+          <p className="text-[12px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Documents</p>
           <p className="text-[13px] font-bold text-[var(--ink)]">
             Job Cards{" "}
             <span className="font-normal text-[var(--ink-muted)]">· {jobs.length}</span>
@@ -192,7 +192,7 @@ export default async function JobCardsPage({
       {/* Table */}
       <div className="doc-list overflow-x-auto rounded-xl border border-[var(--line)]">
         <table className="w-full text-left text-sm">
-          <thead className="bg-[var(--panel-strong)] text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
+          <thead className="bg-[var(--panel-strong)] text-[12px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
             <tr>
               <th className="px-3 py-2.5">Job</th>
               <th className="hidden px-3 py-2.5 sm:table-cell">Client</th>
@@ -242,7 +242,7 @@ export default async function JobCardsPage({
                       >
                         {job.jobNumber}
                       </Link>
-                      <p className="mt-0.5 text-[10px] text-[var(--ink-muted)] sm:hidden">
+                      <p className="mt-0.5 text-[12px] text-[var(--ink-muted)] sm:hidden">
                         {job.client.fullName}
                       </p>
                     </td>
@@ -252,7 +252,7 @@ export default async function JobCardsPage({
                       <p className="text-xs font-medium text-[var(--ink)]">
                         {job.client.fullName}
                       </p>
-                      <p className="text-[10px] text-[var(--ink-muted)]">
+                      <p className="text-[12px] text-[var(--ink-muted)]">
                         {job.client.phone}
                       </p>
                     </td>

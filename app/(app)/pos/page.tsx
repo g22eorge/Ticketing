@@ -177,9 +177,9 @@ export default async function PosPage() {
       <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
         <div className="flex items-center justify-between gap-2 px-4 py-3">
           <div>
-            <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Point of Sale</p>
+            <p className="text-[12px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Point of Sale</p>
             <p className="text-[13px] font-bold text-[var(--ink)]">Sales</p>
-            <p className="text-[11px] text-[var(--ink-muted)]">Walk-in and retail transactions</p>
+            <p className="text-[13px] text-[var(--ink-muted)]">Walk-in and retail transactions</p>
           </div>
           <Link href="/pos/shifts" className="btn-premium-secondary rounded-lg px-3 py-1.5 text-[12px]">Shifts →</Link>
         </div>
@@ -188,24 +188,24 @@ export default async function PosPage() {
       {/* ── KPI tiles ── */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
-          <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Today&apos;s Sales</p>
+          <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Today&apos;s Sales</p>
           <p className="mt-1 text-xl font-bold tabular-nums text-[var(--ink)]">{formatMoneyCompact(kpiTodayTotal, currency)}</p>
-          <p className="mt-0.5 text-[11px] text-[var(--ink-muted)]">today</p>
+          <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">today</p>
         </div>
         <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
-          <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">This Month</p>
+          <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">This Month</p>
           <p className="mt-1 text-xl font-bold tabular-nums text-[var(--ink)]">{formatMoneyCompact(kpiMonthTotal, currency)}</p>
-          <p className="mt-0.5 text-[11px] text-[var(--ink-muted)]">this month</p>
+          <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">this month</p>
         </div>
         <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
-          <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Transactions This Month</p>
+          <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Transactions This Month</p>
           <p className="mt-1 text-xl font-bold tabular-nums text-[var(--ink)]">{kpiMonthCount}</p>
-          <p className="mt-0.5 text-[11px] text-[var(--ink-muted)]">sales this month</p>
+          <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">sales this month</p>
         </div>
         <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
-          <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Avg Sale Value</p>
+          <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Avg Sale Value</p>
           <p className="mt-1 text-xl font-bold tabular-nums text-[var(--ink)]">{formatMoneyCompact(kpiAvgSale, currency)}</p>
-          <p className="mt-0.5 text-[11px] text-[var(--ink-muted)]">per transaction</p>
+          <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">per transaction</p>
         </div>
       </div>
 
@@ -247,11 +247,11 @@ export default async function PosPage() {
                   <div key={`m-${s.id}`} className="px-4 py-3">
                     <div className="mb-1.5 flex items-center justify-between gap-2">
                       <span className="mono text-[13px] font-bold text-[var(--ink)]">{s.saleNumber}</span>
-                      <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${statusCls}`}>{s.status}</span>
+                      <span className={`rounded-full border px-2 py-0.5 text-[13px] font-semibold ${statusCls}`}>{s.status}</span>
                     </div>
                     <div className="mb-2 flex items-baseline gap-3 text-sm">
                       <span className="font-semibold text-[var(--ink)]">{formatMoneyCompact(s.totalAmount, normalizeCurrency(s.currency, "UGX"))}</span>
-                      <span className="text-[11px] text-[var(--ink-muted)]">paid {formatMoneyCompact(s.paidAmount, normalizeCurrency(s.currency, "UGX"))}</span>
+                      <span className="text-[13px] text-[var(--ink-muted)]">paid {formatMoneyCompact(s.paidAmount, normalizeCurrency(s.currency, "UGX"))}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Link href={`/pos/${s.id}`} className="btn-premium-secondary rounded-md px-2.5 py-1.5 text-xs">Open/Edit</Link>
@@ -270,7 +270,7 @@ export default async function PosPage() {
             <div className="hidden overflow-x-auto lg:block">
               <table className="w-full min-w-[720px] text-left text-sm">
                 <thead className="border-b border-[var(--line)]">
-                  <tr className="text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
+                  <tr className="text-[12px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
                     <th className="px-4 py-2.5">Sale</th>
                     <th className="px-4 py-2.5">Branch</th>
                     <th className="px-4 py-2.5">Total</th>
@@ -289,7 +289,7 @@ export default async function PosPage() {
                         <td className="px-4 py-3">{formatMoneyCompact(s.totalAmount, normalizeCurrency(s.currency, "UGX"))}</td>
                         <td className="px-4 py-3">{formatMoneyCompact(s.paidAmount, normalizeCurrency(s.currency, "UGX"))}</td>
                         <td className="px-4 py-3">
-                          <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${
+                          <span className={`rounded-full border px-2 py-0.5 text-[13px] font-semibold ${
                             s.status === "PAID"
                               ? "border-emerald-500/30 bg-emerald-500/15 text-emerald-700"
                               : s.status === "VOID"

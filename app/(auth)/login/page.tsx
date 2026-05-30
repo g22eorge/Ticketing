@@ -89,8 +89,8 @@ export default async function LoginPage() {
                 >
                   <span className="mt-0.5 text-[#D4AF37]/50">{m.icon}</span>
                   <div className="min-w-0">
-                    <p className="text-[11px] font-semibold text-white/80 leading-tight">{m.label}</p>
-                    <p className="text-[10px] text-white/35 leading-tight mt-0.5">{m.desc}</p>
+                    <p className="text-[13px] font-semibold text-white/80 leading-tight">{m.label}</p>
+                    <p className="text-[12px] text-white/35 leading-tight mt-0.5">{m.desc}</p>
                   </div>
                 </div>
               ))}
@@ -98,10 +98,10 @@ export default async function LoginPage() {
 
             {/* Role strip */}
             <div>
-              <p className="text-[10px] uppercase tracking-widest text-white/30 mb-2">9 role-isolated access levels</p>
+              <p className="text-[12px] uppercase tracking-widest text-white/30 mb-2">9 role-isolated access levels</p>
               <div className="flex flex-wrap gap-1.5">
                 {["Admin", "Tech Manager", "Sales Manager", "Operations", "Technician", "Sales", "Front Desk", "Cashier", "External Tech"].map((r) => (
-                  <span key={r} className="rounded-full border border-[#D4AF37]/20 bg-[#D4AF37]/6 px-2.5 py-0.5 text-[10px] font-medium text-[#D4AF37]/70">
+                  <span key={r} className="rounded-full border border-[#D4AF37]/20 bg-[#D4AF37]/6 px-2.5 py-0.5 text-[12px] font-medium text-[#D4AF37]/70">
                     {r}
                   </span>
                 ))}
@@ -110,12 +110,12 @@ export default async function LoginPage() {
           </div>
 
           <div className="relative flex items-center justify-between">
-            <p className="text-[11px] text-white/25">© {new Date().getFullYear()} Duuka Pro Max</p>
+            <p className="text-[13px] text-white/25">© {new Date().getFullYear()} Duuka Pro Max</p>
             <a
               href="https://app.eagleinfosolutions.com"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-[11px] text-[#D4AF37]/50 hover:text-[#D4AF37] transition-colors"
+              className="text-[13px] text-[#D4AF37]/50 hover:text-[#D4AF37] transition-colors"
             >
               app.eagleinfosolutions.com →
             </a>

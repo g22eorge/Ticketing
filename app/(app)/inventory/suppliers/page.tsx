@@ -30,7 +30,7 @@ export default async function SuppliersPage() {
       {/* Header */}
       <div className="panel-shadow flex items-center justify-between gap-2 rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-2.5">
         <div>
-          <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Inventory</p>
+          <p className="text-[12px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Inventory</p>
           <p className="text-[13px] font-bold text-[var(--ink)]">
             Suppliers <span className="font-normal text-[var(--ink-muted)]">· {suppliers.length}</span>
           </p>
@@ -48,24 +48,24 @@ export default async function SuppliersPage() {
       {/* KPI tiles */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
-          <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Total Suppliers</p>
+          <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Total Suppliers</p>
           <p className="mt-1 text-xl font-bold tabular-nums text-[var(--ink)]">{suppliers.length}</p>
-          <p className="mt-0.5 text-[11px] text-[var(--ink-muted)]">registered</p>
+          <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">registered</p>
         </div>
         <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
-          <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Active</p>
+          <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Active</p>
           <p className="mt-1 text-xl font-bold tabular-nums text-green-600">{totalActive}</p>
-          <p className="mt-0.5 text-[11px] text-[var(--ink-muted)]">currently active</p>
+          <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">currently active</p>
         </div>
         <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
-          <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Outstanding Bills</p>
+          <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Outstanding Bills</p>
           <p className="mt-1 text-xl font-bold tabular-nums text-amber-600">{outstandingBills}</p>
-          <p className="mt-0.5 text-[11px] text-[var(--ink-muted)]">posted or part-paid</p>
+          <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">posted or part-paid</p>
         </div>
         <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
-          <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Overdue Bills</p>
+          <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Overdue Bills</p>
           <p className="mt-1 text-xl font-bold tabular-nums text-red-500">{overdueBills}</p>
-          <p className="mt-0.5 text-[11px] text-[var(--ink-muted)]">past due date</p>
+          <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">past due date</p>
         </div>
       </div>
 
@@ -76,7 +76,7 @@ export default async function SuppliersPage() {
           </div>
         ) : (
           <table className="w-full text-sm">
-            <thead className="bg-[var(--panel-strong)] text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
+            <thead className="bg-[var(--panel-strong)] text-[12px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
               <tr>
                 <th className="px-4 py-2.5 text-left">Name</th>
                 <th className="hidden px-4 py-2.5 text-left sm:table-cell">Contact</th>
@@ -94,7 +94,7 @@ export default async function SuppliersPage() {
                   <td className="hidden px-4 py-3 text-[var(--ink-muted)] md:table-cell">{s.phone ?? "—"}</td>
                   <td className="px-4 py-3 text-center text-[var(--ink-muted)]">{s._count.purchaseOrders}</td>
                   <td className="px-4 py-3">
-                    <span className={`rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${
+                    <span className={`rounded-full border px-2.5 py-0.5 text-[13px] font-semibold ${
                       s.isActive
                         ? "border-emerald-500/30 bg-emerald-500/15 text-emerald-700"
                         : "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]"

@@ -34,13 +34,13 @@ const PLAN_CHIP: Record<string, string> = {
 };
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
-  return <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]">{children}</p>;
+  return <p className="text-[12px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]">{children}</p>;
 }
 
 function Field({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div>
-      <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--ink-muted)]">{label}</p>
+      <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-[var(--ink-muted)]">{label}</p>
       <p className="mt-0.5 text-sm font-medium text-[var(--ink)]">{value}</p>
     </div>
   );
@@ -106,14 +106,14 @@ export default async function OrgDetailPage({ params }: { params: Promise<{ id: 
         <div>
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-bold text-[var(--ink)]">{org.name}</h1>
-            <span className={`rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${PLAN_CHIP[org.plan] ?? ""}`}>
+            <span className={`rounded-full border px-2.5 py-0.5 text-[13px] font-semibold ${PLAN_CHIP[org.plan] ?? ""}`}>
               {org.plan}
             </span>
-            <span className={`rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${STATUS_CHIP[org.billingStatus] ?? ""}`}>
+            <span className={`rounded-full border px-2.5 py-0.5 text-[13px] font-semibold ${STATUS_CHIP[org.billingStatus] ?? ""}`}>
               {org.billingStatus}
             </span>
             {!org.isActive && (
-              <span className="rounded-full border border-red-400/30 bg-red-500/10 px-2.5 py-0.5 text-[11px] font-semibold text-red-700 dark:text-red-400">
+              <span className="rounded-full border border-red-400/30 bg-red-500/10 px-2.5 py-0.5 text-[13px] font-semibold text-red-700 dark:text-red-400">
                 INACTIVE
               </span>
             )}
@@ -140,7 +140,7 @@ export default async function OrgDetailPage({ params }: { params: Promise<{ id: 
           { label: `SMS ${smsUsed}/${smsLimit}`, value: `${smsPct}%` },
         ].map((m) => (
           <div key={m.label} className="rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
-            <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-[var(--ink-muted)]">{m.label}</p>
+            <p className="text-[12px] font-bold uppercase tracking-[0.15em] text-[var(--ink-muted)]">{m.label}</p>
             <p className="mt-1 text-xl font-bold text-[var(--ink)]">{m.value}</p>
           </div>
         ))}
@@ -276,7 +276,7 @@ export default async function OrgDetailPage({ params }: { params: Promise<{ id: 
         </div>
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-[var(--line)] text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">
+            <tr className="border-b border-[var(--line)] text-[12px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">
               <th className="px-4 py-2.5 text-left">Name</th>
               <th className="px-4 py-2.5 text-left">Email</th>
               <th className="px-4 py-2.5 text-left">Role</th>
@@ -290,12 +290,12 @@ export default async function OrgDetailPage({ params }: { params: Promise<{ id: 
                 <td className="px-4 py-2.5 font-medium text-[var(--ink)]">{u.name}</td>
                 <td className="px-4 py-2.5 text-[var(--ink-muted)]">{u.email}</td>
                 <td className="px-4 py-2.5">
-                  <span className="rounded-full border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-0.5 text-[11px] font-semibold text-[var(--ink-muted)]">
+                  <span className="rounded-full border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-0.5 text-[13px] font-semibold text-[var(--ink-muted)]">
                     {u.role}
                   </span>
                 </td>
                 <td className="px-4 py-2.5">
-                  <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${u.isActive ? "border-emerald-400/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" : "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]"}`}>
+                  <span className={`rounded-full border px-2 py-0.5 text-[13px] font-semibold ${u.isActive ? "border-emerald-400/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" : "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]"}`}>
                     {u.isActive ? "Active" : "Inactive"}
                   </span>
                 </td>
@@ -317,7 +317,7 @@ export default async function OrgDetailPage({ params }: { params: Promise<{ id: 
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-[var(--line)] text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">
+              <tr className="border-b border-[var(--line)] text-[12px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">
                 <th className="px-4 py-2.5 text-left">Date</th>
                 <th className="px-4 py-2.5 text-left">Event</th>
                 <th className="px-4 py-2.5 text-left">Status</th>
@@ -331,7 +331,7 @@ export default async function OrgDetailPage({ params }: { params: Promise<{ id: 
                   <td className="px-4 py-2 text-[var(--ink-muted)]">{fmt(e.createdAt)}</td>
                   <td className="px-4 py-2 text-[var(--ink)]">{e.event}</td>
                   <td className="px-4 py-2">
-                    <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${e.status === "successful" ? "border-emerald-400/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" : "border-red-400/30 bg-red-500/10 text-red-700 dark:text-red-400"}`}>
+                    <span className={`rounded-full border px-2 py-0.5 text-[13px] font-semibold ${e.status === "successful" ? "border-emerald-400/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" : "border-red-400/30 bg-red-500/10 text-red-700 dark:text-red-400"}`}>
                       {e.status}
                     </span>
                   </td>
@@ -384,8 +384,8 @@ export default async function OrgDetailPage({ params }: { params: Promise<{ id: 
                     <span className="text-base">{MODULE_ICONS[mod]}</span>
                     <span className={`h-2 w-2 rounded-full ${isGranted ? "bg-emerald-500" : enabledModuleSet.size === 0 ? "bg-[var(--ink-muted)]/30" : "bg-red-400"}`} />
                   </div>
-                  <p className="mt-1.5 text-[11px] font-bold leading-tight">{MODULE_LABELS[mod]}</p>
-                  <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-wide opacity-60">
+                  <p className="mt-1.5 text-[13px] font-bold leading-tight">{MODULE_LABELS[mod]}</p>
+                  <p className="mt-0.5 text-[12px] font-semibold uppercase tracking-wide opacity-60">
                     {isGranted ? "ON — click to disable" : enabledModuleSet.size === 0 ? "default on" : "OFF — click to enable"}
                   </p>
                 </button>

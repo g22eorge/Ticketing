@@ -252,14 +252,14 @@ export default async function RecurringInvoicesPage() {
       {/* Header */}
       <div className="panel-shadow flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-2.5">
         <div>
-          <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Finance</p>
+          <p className="text-[12px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Finance</p>
           <p className="text-[13px] font-bold text-[var(--ink)]">
             Recurring Invoices{" "}
             <span className="font-normal text-[var(--ink-muted)]">
               · {activeCount} active{dueNow > 0 ? ` · ${dueNow} due` : ""}
             </span>
           </p>
-          <p className="text-[11px] text-[var(--ink-muted)]">
+          <p className="text-[13px] text-[var(--ink-muted)]">
             Templates that auto-generate or remind you to issue invoices on schedule.
           </p>
         </div>
@@ -271,7 +271,7 @@ export default async function RecurringInvoicesPage() {
             <p className="mb-3 text-[12px] font-bold text-[var(--ink)]">New Recurring Invoice</p>
             <form action={createRecurringAction} className="space-y-3">
               <div>
-                <label className="mb-1 block text-[11px] font-semibold text-[var(--ink-muted)]">Client *</label>
+                <label className="mb-1 block text-[13px] font-semibold text-[var(--ink-muted)]">Client *</label>
                 <select name="clientId" required className="input-base w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-[12px]">
                   <option value="">Select client…</option>
                   {clients.map((c) => (
@@ -280,12 +280,12 @@ export default async function RecurringInvoicesPage() {
                 </select>
               </div>
               <div>
-                <label className="mb-1 block text-[11px] font-semibold text-[var(--ink-muted)]">Subject *</label>
+                <label className="mb-1 block text-[13px] font-semibold text-[var(--ink-muted)]">Subject *</label>
                 <input name="subject" required placeholder="e.g. Monthly maintenance contract" className="input-base w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-[12px]" />
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="mb-1 block text-[11px] font-semibold text-[var(--ink-muted)]">Frequency</label>
+                  <label className="mb-1 block text-[13px] font-semibold text-[var(--ink-muted)]">Frequency</label>
                   <select name="frequency" className="input-base w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-[12px]">
                     {FREQUENCIES.map((f) => (
                       <option key={f} value={f}>{FREQ_LABELS[f]}</option>
@@ -293,7 +293,7 @@ export default async function RecurringInvoicesPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="mb-1 block text-[11px] font-semibold text-[var(--ink-muted)]">Invoice Type</label>
+                  <label className="mb-1 block text-[13px] font-semibold text-[var(--ink-muted)]">Invoice Type</label>
                   <select name="invoiceType" className="input-base w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-[12px]">
                     {INVOICE_TYPES.map((t) => (
                       <option key={t} value={t}>{TYPE_LABELS[t]}</option>
@@ -303,19 +303,19 @@ export default async function RecurringInvoicesPage() {
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="mb-1 block text-[11px] font-semibold text-[var(--ink-muted)]">Start / Next Due</label>
+                  <label className="mb-1 block text-[13px] font-semibold text-[var(--ink-muted)]">Start / Next Due</label>
                   <input name="startDate" type="date" className="input-base w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-[12px]" />
                 </div>
                 <div>
-                  <label className="mb-1 block text-[11px] font-semibold text-[var(--ink-muted)]">Currency</label>
+                  <label className="mb-1 block text-[13px] font-semibold text-[var(--ink-muted)]">Currency</label>
                   <input name="currency" defaultValue={currency} className="input-base w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-[12px]" />
                 </div>
               </div>
               {/* Line items */}
               <div>
-                <p className="mb-1.5 text-[11px] font-semibold text-[var(--ink-muted)]">Line Items *</p>
+                <p className="mb-1.5 text-[13px] font-semibold text-[var(--ink-muted)]">Line Items *</p>
                 <div className="space-y-1.5">
-                  <div className="grid grid-cols-[1fr_60px_80px] gap-1 text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">
+                  <div className="grid grid-cols-[1fr_60px_80px] gap-1 text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">
                     <span>Description</span><span className="text-right">Qty</span><span className="text-right">Price</span>
                   </div>
                   {([0, 1, 2] as const).map((i) => (
@@ -333,7 +333,7 @@ export default async function RecurringInvoicesPage() {
                 Auto-issue invoice when due (requires scheduled job)
               </label>
               <div>
-                <label className="mb-1 block text-[11px] font-semibold text-[var(--ink-muted)]">Notes</label>
+                <label className="mb-1 block text-[13px] font-semibold text-[var(--ink-muted)]">Notes</label>
                 <textarea name="notes" rows={2} className="input-base w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-[12px]" />
               </div>
               <button type="submit" className="btn-premium w-full rounded-lg py-2 text-[12px] font-semibold">
@@ -348,7 +348,7 @@ export default async function RecurringInvoicesPage() {
       <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
         <div className="doc-list overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-[var(--panel-strong)] text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
+            <thead className="bg-[var(--panel-strong)] text-[12px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
               <tr>
                 <th className="px-4 py-2.5 text-left">Subject</th>
                 <th className="px-4 py-2.5 text-left">Client</th>
@@ -368,8 +368,8 @@ export default async function RecurringInvoicesPage() {
                   <tr key={rec.id} className="border-t border-[var(--line)] align-middle hover:bg-[var(--panel-strong)]/40">
                     <td className="px-4 py-3">
                       <p className="font-medium text-[var(--ink)]">{rec.subject}</p>
-                      <p className="text-[11px] text-[var(--ink-muted)]">{rec.items.length} line{rec.items.length !== 1 ? "s" : ""}</p>
-                      <p className="mt-0.5 text-[10px] text-[var(--ink-muted)] md:hidden">
+                      <p className="text-[13px] text-[var(--ink-muted)]">{rec.items.length} line{rec.items.length !== 1 ? "s" : ""}</p>
+                      <p className="mt-0.5 text-[12px] text-[var(--ink-muted)] md:hidden">
                         {FREQ_LABELS[rec.frequency as Frequency] ?? rec.frequency} · {TYPE_LABELS[rec.invoiceType] ?? rec.invoiceType}
                       </p>
                     </td>
@@ -388,11 +388,11 @@ export default async function RecurringInvoicesPage() {
                         {fmt(rec.nextDueAt)}
                       </p>
                       {isDue && (
-                        <p className="text-[10px] font-bold uppercase text-amber-600">Due Now</p>
+                        <p className="text-[12px] font-bold uppercase text-amber-600">Due Now</p>
                       )}
                     </td>
                     <td className="hidden px-4 py-3 text-center sm:table-cell">
-                      <span className={`rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${rec.isActive ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-700" : "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]"}`}>
+                      <span className={`rounded-full border px-2.5 py-0.5 text-[13px] font-semibold ${rec.isActive ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-700" : "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]"}`}>
                         {rec.isActive ? "Active" : "Paused"}
                       </span>
                     </td>

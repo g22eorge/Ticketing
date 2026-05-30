@@ -893,7 +893,7 @@ export default async function UsersPage({
     <div className="space-y-3">
       <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
         <p className="text-[13px] font-bold text-[var(--ink)]">User Management</p>
-        <p className="text-[11px] text-[var(--ink-muted)]">Manage team access, roles and permissions</p>
+        <p className="text-[13px] text-[var(--ink-muted)]">Manage team access, roles and permissions</p>
       </div>
 
       <PlanBanner plan={planInfo.plan} limits={planInfo} usage={{ users: activeUserCount, jobsThisMonth, parts: partCount }} />
@@ -908,12 +908,12 @@ export default async function UsersPage({
       {showAdd && (
         <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-3">
           <div className="mb-3 flex items-center justify-between">
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Add User</p>
-            <Link href="/settings/users" className="text-[11px] text-[var(--ink-muted)] hover:text-[var(--ink)]">✕ Close</Link>
+            <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Add User</p>
+            <Link href="/settings/users" className="text-[13px] text-[var(--ink-muted)] hover:text-[var(--ink)]">✕ Close</Link>
           </div>
           <InvitePanel inviteAction={inviteUser} roleOptions={roleOptions} />
           <div className="mt-3 border-t border-[var(--line)] pt-3">
-            <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">Or create directly</p>
+            <p className="mb-2 text-[12px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">Or create directly</p>
             <form action={createUser} className="grid gap-2 sm:grid-cols-2 xl:grid-cols-6">
               <input required name="name" placeholder="Name" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
               <input required type="email" name="email" placeholder="Email" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
@@ -934,10 +934,10 @@ export default async function UsersPage({
         {/* Left: search + user list */}
         <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)]">
           <div className="flex items-center justify-between border-b border-[var(--line)] px-3 py-2">
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Users</p>
+            <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Users</p>
             <Link
               href={showAdd ? "/settings/users" : "/settings/users?add=1"}
-              className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1 text-[11px] font-semibold text-[var(--ink-muted)] transition hover:border-[var(--accent)]/50 hover:text-[var(--accent)]"
+              className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1 text-[13px] font-semibold text-[var(--ink-muted)] transition hover:border-[var(--accent)]/50 hover:text-[var(--accent)]"
             >
               {showAdd ? "Close" : "+ Add"}
             </Link>
@@ -963,10 +963,10 @@ export default async function UsersPage({
                 <span className={`h-5 w-0.5 shrink-0 rounded-full transition-all ${selectedUser?.id === item.id ? "bg-[var(--accent)]" : "bg-transparent"}`} />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-[13px] font-medium text-[var(--ink)]">{item.name}</p>
-                  <p className="truncate text-[11px] text-[var(--ink-muted)]">{roleLabel(item.role)}</p>
+                  <p className="truncate text-[13px] text-[var(--ink-muted)]">{roleLabel(item.role)}</p>
                 </div>
                 {!item.isActive && (
-                  <span className="shrink-0 rounded-full border border-[var(--line)] px-1.5 py-0.5 text-[10px] text-[var(--ink-muted)]">Off</span>
+                  <span className="shrink-0 rounded-full border border-[var(--line)] px-1.5 py-0.5 text-[12px] text-[var(--ink-muted)]">Off</span>
                 )}
               </Link>
             ))}
@@ -983,10 +983,10 @@ export default async function UsersPage({
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--line)] px-3 py-2.5">
               <div className="min-w-0">
                 <p className="truncate text-[13px] font-semibold text-[var(--ink)]">{selectedUser.name}</p>
-                <p className="truncate text-[11px] text-[var(--ink-muted)]">{selectedUser.email} · {roleLabel(selectedUser.role)}</p>
+                <p className="truncate text-[13px] text-[var(--ink-muted)]">{selectedUser.email} · {roleLabel(selectedUser.role)}</p>
               </div>
               <div className="flex shrink-0 items-center gap-1.5">
-                <span className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${selectedUser.isActive ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400" : "border-[var(--line)] text-[var(--ink-muted)]"}`}>
+                <span className={`rounded-full border px-2 py-0.5 text-[12px] font-semibold ${selectedUser.isActive ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400" : "border-[var(--line)] text-[var(--ink-muted)]"}`}>
                   {selectedUser.isActive ? "Active" : "Inactive"}
                 </span>
                 {user.role === "ADMIN" && selectedUser.id !== user.id && (
@@ -995,13 +995,13 @@ export default async function UsersPage({
                     <input type="hidden" name="q" value={q} />
                     <button
                       type="submit"
-                      className={`rounded border px-2 py-0.5 text-[10px] font-semibold transition-colors ${selectedUser.isActive ? "border-red-400/30 text-red-600 hover:bg-red-500/10 dark:text-red-400" : "border-emerald-400/30 text-emerald-600 hover:bg-emerald-500/10 dark:text-emerald-400"}`}
+                      className={`rounded border px-2 py-0.5 text-[12px] font-semibold transition-colors ${selectedUser.isActive ? "border-red-400/30 text-red-600 hover:bg-red-500/10 dark:text-red-400" : "border-emerald-400/30 text-emerald-600 hover:bg-emerald-500/10 dark:text-emerald-400"}`}
                     >
                       {selectedUser.isActive ? "Deactivate" : "Reactivate"}
                     </button>
                   </form>
                 )}
-                <span className="text-[11px] text-[var(--ink-muted)]">
+                <span className="text-[13px] text-[var(--ink-muted)]">
                   Last seen {formatDateTime(selectedUser.sessions[0]?.updatedAt ?? selectedUser.auditLogs[0]?.createdAt ?? selectedUser.updatedAt)}
                 </span>
               </div>
@@ -1067,8 +1067,8 @@ export default async function UsersPage({
                       return (
                         <div key={entry.id} className="py-2">
                           <p className="text-[13px] font-medium text-[var(--ink)]">{entry.action}</p>
-                          <p className="mt-0.5 text-[11px] text-[var(--ink-muted)]">{entry.actorUser.name} · {entry.createdAt.toLocaleString()}</p>
-                          {detail ? <p className="mt-0.5 text-[11px] text-[var(--ink-muted)]">{detail}</p> : null}
+                          <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">{entry.actorUser.name} · {entry.createdAt.toLocaleString()}</p>
+                          {detail ? <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">{detail}</p> : null}
                         </div>
                       );
                     })

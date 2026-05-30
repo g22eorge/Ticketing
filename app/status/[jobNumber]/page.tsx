@@ -120,7 +120,7 @@ export default async function PublicStatusPage({
             <p className="text-xs font-bold uppercase tracking-widest text-amber-600">
               {job.org?.name ?? "Repair Shop"}
             </p>
-            <p className="text-[11px] text-gray-400">Repair Status Tracker</p>
+            <p className="text-[13px] text-gray-400">Repair Status Tracker</p>
           </div>
           <span className={`rounded-full px-3 py-1 text-xs font-semibold ${STATUS_COLORS[job.status] ?? "border border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]"}`}>
             {STATUS_LABELS[job.status] ?? job.status}
@@ -131,13 +131,13 @@ export default async function PublicStatusPage({
         <div className="rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden">
           {/* Header */}
           <div className="bg-amber-50 border-b border-amber-100 px-5 py-4">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-amber-600">Job Number</p>
+            <p className="text-[12px] font-bold uppercase tracking-widest text-amber-600">Job Number</p>
             <p className="mt-0.5 text-2xl font-bold text-gray-900 tracking-tight">{job.jobNumber}</p>
           </div>
 
           {/* Device info */}
           <div className="px-5 py-4 space-y-1 border-b border-gray-100">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Device</p>
+            <p className="text-[12px] font-bold uppercase tracking-widest text-gray-400">Device</p>
             <p className="font-semibold text-gray-800">{job.brand} {job.model}</p>
             <p className="text-sm text-gray-500">{formatDeviceType(job.deviceType)}</p>
             {job.serialOrImei && (
@@ -148,25 +148,25 @@ export default async function PublicStatusPage({
           {/* Dates & timeline */}
           <div className="px-5 py-4 grid grid-cols-2 gap-4 border-b border-gray-100">
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Received</p>
+              <p className="text-[12px] font-bold uppercase tracking-widest text-gray-400">Received</p>
               <p className="mt-0.5 text-sm font-medium text-gray-700">{fmt(job.receivedAt)}</p>
-              <p className="text-[11px] text-gray-400">{ageLabel}</p>
+              <p className="text-[13px] text-gray-400">{ageLabel}</p>
             </div>
             {job.completedAt ? (
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Completed</p>
+                <p className="text-[12px] font-bold uppercase tracking-widest text-gray-400">Completed</p>
                 <p className="mt-0.5 text-sm font-medium text-gray-700">{fmt(job.completedAt)}</p>
               </div>
             ) : !isTerminal ? (
               <div>
                 {timelineLabel ? (
                   <>
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Est. Time</p>
+                    <p className="text-[12px] font-bold uppercase tracking-widest text-gray-400">Est. Time</p>
                     <p className="mt-0.5 text-sm font-medium text-gray-700">{timelineLabel}</p>
                   </>
                 ) : (
                   <>
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Wait Time</p>
+                    <p className="text-[12px] font-bold uppercase tracking-widest text-gray-400">Wait Time</p>
                     <p className={`mt-0.5 text-sm font-semibold ${ageDays > 7 ? "text-amber-600" : "text-gray-700"}`}>
                       {ageDays === 0 ? "Same day" : ageDays === 1 ? "1 day" : `${ageDays} days`}
                     </p>
@@ -179,7 +179,7 @@ export default async function PublicStatusPage({
           {/* Status note */}
           {job.statusNote && (
             <div className="px-5 py-4 border-b border-gray-100 bg-amber-50/50">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-amber-600">Update from our team</p>
+              <p className="text-[12px] font-bold uppercase tracking-widest text-amber-600">Update from our team</p>
               <p className="mt-1 text-sm text-gray-700 leading-relaxed">{job.statusNote}</p>
             </div>
           )}
@@ -187,7 +187,7 @@ export default async function PublicStatusPage({
           {/* Progress stepper */}
           {!isClosed && (
             <div className="px-5 py-5">
-              <p className="mb-4 text-[10px] font-bold uppercase tracking-widest text-gray-400">Progress</p>
+              <p className="mb-4 text-[12px] font-bold uppercase tracking-widest text-gray-400">Progress</p>
               <div className="space-y-0">
                 {STATUS_STEPS.map((step, i) => {
                   const done = i < stepIndex;

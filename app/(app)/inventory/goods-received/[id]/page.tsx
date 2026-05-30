@@ -32,7 +32,7 @@ export default async function GoodsReceivedDetailPage({ params }: { params: Prom
     <div className="max-w-3xl space-y-6">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Inventory · GRN</p>
+          <p className="text-[12px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Inventory · GRN</p>
           <p className="mt-0.5 font-mono text-[13px] font-bold text-[var(--ink)]">{grn.grnNumber}</p>
           <p className="mt-0.5 text-sm text-[var(--ink-muted)]">
             Supplier: <Link href={`/inventory/suppliers/${grn.supplier.id}`} className="text-[var(--gold)] hover:underline">{grn.supplier.name}</Link>
@@ -43,28 +43,28 @@ export default async function GoodsReceivedDetailPage({ params }: { params: Prom
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div className="rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 py-2">
-          <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Received</p>
+          <p className="text-[12px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Received</p>
           <p className="mt-0.5 text-sm font-semibold text-[var(--ink)]">{fmt(grn.receivedAt)}</p>
         </div>
         <div className="rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 py-2">
-          <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Location</p>
+          <p className="text-[12px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Location</p>
           <p className="mt-0.5 text-sm font-semibold text-[var(--ink)]">{grn.location.name}</p>
         </div>
         <div className="rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 py-2">
-          <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">PO</p>
+          <p className="text-[12px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">PO</p>
           <p className="mt-0.5 text-sm font-semibold text-[var(--ink)]">
             {grn.po ? <Link href={`/inventory/purchase-orders/${grn.po.id}`} className="hover:text-[var(--gold)]">{grn.po.reference ?? `PO-${grn.po.id.slice(-6).toUpperCase()}`}</Link> : "—"}
           </p>
         </div>
         <div className="rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 py-2">
-          <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Total Value</p>
+          <p className="text-[12px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Total Value</p>
           <p className="mt-0.5 text-sm font-semibold text-[var(--ink)] tabular-nums">{total.toLocaleString()}</p>
         </div>
       </div>
 
       <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] overflow-hidden">
         <div className="px-5 py-3 border-b border-[var(--line)]">
-          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Received Items</p>
+          <p className="text-[12px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Received Items</p>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">

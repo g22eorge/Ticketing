@@ -51,7 +51,7 @@ export function ATSmsPlatformSettingsForm({ configured }: Props) {
   return (
     <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] p-5 space-y-5">
       <div>
-        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Africa&apos;s Talking (SMS)</p>
+        <p className="text-[12px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Africa&apos;s Talking (SMS)</p>
         <p className="mt-1 text-xs text-[var(--ink-muted)]">
           Configure platform-wide SMS credentials. Values saved here override environment variables.
         </p>
@@ -65,7 +65,7 @@ export function ATSmsPlatformSettingsForm({ configured }: Props) {
             <div key={f.key}>
               <div className="mb-1 flex items-center justify-between gap-2">
                 <label className="text-xs font-semibold text-[var(--ink-muted)]">{f.label}</label>
-                <span className={`text-[10px] font-semibold ${isSet ? "text-emerald-600" : "text-[var(--ink-muted)]"}`}>
+                <span className={`text-[12px] font-semibold ${isSet ? "text-emerald-600" : "text-[var(--ink-muted)]"}`}>
                   {isSet ? (isInDb ? "✓ Configured (DB)" : "✓ Configured (env)") : "Not configured"}
                 </span>
               </div>
@@ -86,7 +86,7 @@ export function ATSmsPlatformSettingsForm({ configured }: Props) {
                   </form>
                 )}
               </div>
-              <p className="mt-1 text-[10px] text-[var(--ink-muted)]">{f.hint}</p>
+              <p className="mt-1 text-[12px] text-[var(--ink-muted)]">{f.hint}</p>
             </div>
           );
         })}

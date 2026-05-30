@@ -40,7 +40,7 @@ export function POMetaForm({ po }: { po: POData }) {
 
   return (
     <form onSubmit={handleSubmit} className="rounded-xl border border-[var(--line)] bg-[var(--panel)] p-5 space-y-4">
-      <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Edit Order</p>
+      <p className="text-[12px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Edit Order</p>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className="block text-xs font-semibold text-[var(--ink-muted)] mb-1">Reference / PO#</label>

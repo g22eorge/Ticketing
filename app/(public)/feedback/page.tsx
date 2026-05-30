@@ -145,7 +145,7 @@ export default async function FeedbackPage({
     <div className="min-h-screen bg-[var(--bg)] p-4">
       <div className="mx-auto max-w-lg space-y-4 py-8">
         <div className="text-center">
-          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]">
+          <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]">
             Eagle Info Repair
           </p>
           <h1 className="mt-1 text-xl font-black text-[var(--ink)]">Submit a Complaint</h1>
@@ -163,7 +163,7 @@ export default async function FeedbackPage({
         <form action={submitComplaintAction} className="space-y-4">
           {/* Job number lookup */}
           <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 space-y-3">
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]">
+            <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]">
               Your Job Reference
             </p>
             <input
@@ -184,7 +184,7 @@ export default async function FeedbackPage({
 
           {/* Contact info */}
           <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 space-y-3">
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]">
+            <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]">
               Your Details
             </p>
             <input
@@ -211,7 +211,7 @@ export default async function FeedbackPage({
 
           {/* Complaint details */}
           <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 space-y-3">
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]">
+            <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]">
               Complaint Details
             </p>
             <select
@@ -243,7 +243,7 @@ export default async function FeedbackPage({
           <button className="btn-premium w-full rounded-xl py-3 text-sm font-bold">
             Submit Complaint
           </button>
-          <p className="text-center text-[10px] text-[var(--ink-muted)]">
+          <p className="text-center text-[12px] text-[var(--ink-muted)]">
             You will receive a reference number. We handle complaints per ISO 10002:2018.
           </p>
         </form>

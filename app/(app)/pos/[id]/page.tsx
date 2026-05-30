@@ -739,7 +739,7 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
       <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 sm:p-5">
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div>
-            <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">POS · Sale</p>
+            <p className="text-[12px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">POS · Sale</p>
             <p className="mt-0.5 font-mono text-[13px] font-bold text-[var(--ink)]">{sale.saleNumber}</p>
             {sale.client ? <p className="mt-0.5 text-xs text-[var(--ink-muted)]">{sale.client.fullName}</p> : null}
           </div>
@@ -756,21 +756,21 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
 
         <div className="mt-4 grid gap-2 sm:grid-cols-4">
           <div className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] p-3">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Subtotal</p>
+            <p className="text-[12px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Subtotal</p>
             <p className="mt-1 text-base font-bold text-[var(--ink)]">{formatMoney(sale.subtotal, saleCurrency)}</p>
             {sale.discountAmount > 0 ? <p className="mt-0.5 text-xs text-red-500">−{formatMoney(sale.discountAmount, saleCurrency)} disc</p> : null}
             {sale.vatAmount > 0 ? <p className="mt-0.5 text-xs text-[var(--ink-muted)]">+{formatMoney(sale.vatAmount, saleCurrency)} VAT</p> : null}
           </div>
           <div className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] p-3">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Total</p>
+            <p className="text-[12px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Total</p>
             <p className="mt-1 text-base font-bold text-[var(--ink)]">{formatMoney(sale.totalAmount, saleCurrency)}</p>
           </div>
           <div className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] p-3">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Paid</p>
+            <p className="text-[12px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Paid</p>
             <p className="mt-1 text-base font-bold text-emerald-700">{formatMoney(sale.paidAmount, saleCurrency)}</p>
           </div>
           <div className={`rounded-lg border p-3 ${balance > 0 ? "border-amber-400/30 bg-amber-400/10" : "border-emerald-500/20 bg-emerald-500/10"}`}>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Balance</p>
+            <p className="text-[12px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Balance</p>
             <p className={`mt-1 text-base font-bold ${balance > 0 ? "text-amber-700" : "text-emerald-700"}`}>
               {balance > 0 ? formatMoney(balance, saleCurrency) : "Cleared"}
             </p>
@@ -886,7 +886,7 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
           >
             <input type="hidden" name="saleId" value={sale.id} />
             <div>
-              <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Discount</p>
+              <p className="mb-1 text-[12px] font-semibold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Discount</p>
               <input
                 name="discountAmount"
                 inputMode="decimal"
@@ -901,7 +901,7 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
 
         <div className="mt-3 overflow-x-auto rounded-lg border border-[var(--line)]">
           <table className="w-full text-left text-sm">
-            <thead className="bg-[var(--panel-strong)] text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
+            <thead className="bg-[var(--panel-strong)] text-[12px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
               <tr>
                 <th className="px-3 py-2">Item</th>
                 <th className="px-3 py-2">Qty</th>
@@ -990,7 +990,7 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
 
         <div className="mt-3 overflow-x-auto rounded-lg border border-[var(--line)]">
           <table className="w-full text-left text-sm">
-            <thead className="bg-[var(--panel-strong)] text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
+            <thead className="bg-[var(--panel-strong)] text-[12px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
               <tr>
                 <th className="px-3 py-2">Date</th>
                 <th className="px-3 py-2">Method</th>
@@ -1025,7 +1025,7 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
 
         <div className="mt-4 overflow-x-auto rounded-lg border border-[var(--line)]">
           <table className="w-full text-left text-sm">
-            <thead className="bg-[var(--panel-strong)] text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
+            <thead className="bg-[var(--panel-strong)] text-[12px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
               <tr>
                 <th className="px-3 py-2">Delivery Note</th>
                 <th className="hidden px-3 py-2 md:table-cell">Delivered</th>
@@ -1064,7 +1064,7 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
         {sale.status === "PAID" ? (
           <div className="mt-3 space-y-4">
             <div className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] p-3">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Issue Credit Note</p>
+              <p className="text-[13px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Issue Credit Note</p>
               <form action={createCreditNoteAction} className="mt-2 space-y-2">
                 <input type="hidden" name="saleId" value={sale.id} />
                 <input
@@ -1075,7 +1075,7 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
 
                 <div className="overflow-x-auto rounded-lg border border-[var(--line)] bg-[var(--panel)]">
                   <table className="w-full text-left text-sm">
-                    <thead className="bg-[var(--panel-strong)] text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
+                    <thead className="bg-[var(--panel-strong)] text-[12px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
                       <tr>
                         <th className="px-3 py-2">Item</th>
                         <th className="px-3 py-2">Sold</th>
@@ -1106,7 +1106,7 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
             </div>
 
             <div className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] p-3">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Refund (Requires Credit Note)</p>
+              <p className="text-[13px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Refund (Requires Credit Note)</p>
               {creditNotes.length === 0 ? (
                 <p className="mt-2 text-sm text-[var(--ink-muted)]">Create a credit note first.</p>
               ) : (
@@ -1145,7 +1145,7 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
 
             <div className="overflow-hidden rounded-lg border border-[var(--line)]">
               <div className="bg-[var(--panel-strong)] px-3 py-2">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Credit Notes</p>
+                <p className="text-[13px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Credit Notes</p>
               </div>
               <div className="bg-[var(--panel)] p-3 space-y-3">
                 {creditNotes.length === 0 ? (
@@ -1170,7 +1170,7 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
                     {cn.items.length ? (
                       <div className="mt-2 overflow-x-auto rounded-lg border border-[var(--line)] bg-[var(--panel)]">
                         <table className="w-full text-left text-sm">
-                          <thead className="bg-[var(--panel-strong)] text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
+                          <thead className="bg-[var(--panel-strong)] text-[12px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
                             <tr>
                               <th className="px-3 py-2">Item</th>
                               <th className="px-3 py-2">Qty</th>
@@ -1211,7 +1211,7 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
 
             <div className="overflow-hidden rounded-lg border border-[var(--line)]">
               <div className="bg-[var(--panel-strong)] px-3 py-2">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Refunds</p>
+                <p className="text-[13px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Refunds</p>
               </div>
               <div className="bg-[var(--panel)] p-3">
                 {refunds.length === 0 ? (
@@ -1219,7 +1219,7 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
                 ) : (
                   <div className="overflow-x-auto rounded-lg border border-[var(--line)]">
                     <table className="w-full text-left text-sm">
-                      <thead className="bg-[var(--panel-strong)] text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
+                      <thead className="bg-[var(--panel-strong)] text-[12px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
                         <tr>
                           <th className="px-3 py-2">Date</th>
                           <th className="px-3 py-2">Credit Note</th>

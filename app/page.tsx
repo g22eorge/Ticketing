@@ -185,7 +185,7 @@ function DuukaSaasLanding() {
         <div>
           <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-[#D4AF37]/25 bg-[#D4AF37]/8 px-4 py-1.5">
             <span className="h-1.5 w-1.5 rounded-full bg-[#D4AF37]" />
-            <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#D4AF37]">Business management, now with AI</span>
+            <span className="text-[13px] font-bold uppercase tracking-[0.18em] text-[#D4AF37]">Business management, now with AI</span>
           </div>
           <h1 className="max-w-3xl text-4xl font-black leading-[0.95] tracking-tight text-white md:text-6xl">
             Run sales, stock, service, finance, and teams from one
@@ -208,12 +208,12 @@ function DuukaSaasLanding() {
         <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-white/[0.03] p-5 shadow-2xl">
           <div className="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-[#D4AF37]/15 blur-[70px]" />
           <div className="relative rounded-2xl border border-white/8 bg-[#0b0b0b] p-5">
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#D4AF37]">Live Operations Command</p>
+            <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-[#D4AF37]">Live Operations Command</p>
             <div className="mt-5 grid grid-cols-2 gap-3">
               {STATS.map((s) => (
                 <div key={s.label} className="rounded-xl border border-white/8 bg-white/[0.03] p-4">
                   <p className="text-2xl font-extrabold text-white">{s.value}</p>
-                  <p className="mt-1 text-[11px] text-white/40">{s.label}</p>
+                  <p className="mt-1 text-[13px] text-white/40">{s.label}</p>
                 </div>
               ))}
             </div>
@@ -227,7 +227,7 @@ function DuukaSaasLanding() {
 
       <section className="mx-auto max-w-6xl px-4 pb-16">
         <div className="mb-8 max-w-2xl">
-          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#D4AF37]">Product Suite</p>
+          <p className="text-[13px] font-bold uppercase tracking-[0.18em] text-[#D4AF37]">Product Suite</p>
           <h2 className="mt-2 text-2xl font-extrabold text-white md:text-3xl">Everything your business needs to operate daily</h2>
           <p className="mt-3 text-sm leading-6 text-white/48">Start with the modules you need, then expand into full operations, finance, reporting, communications, and AI decision support.</p>
         </div>
@@ -238,7 +238,7 @@ function DuukaSaasLanding() {
               <p className="text-sm font-bold text-white">{mod.group}</p>
               <ul className="mt-2 space-y-1">
                 {mod.items.map((item) => (
-                  <li key={item} className="text-[11px] leading-snug text-white/45">{item}</li>
+                  <li key={item} className="text-[13px] leading-snug text-white/45">{item}</li>
                 ))}
               </ul>
             </div>
@@ -329,7 +329,7 @@ export default async function Page() {
               {/* Company badge */}
               <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/5 px-4 py-1.5">
                 <Image src="/eagle-info-logo.png" alt="" width={16} height={16} className="h-4 w-4 object-contain" />
-                <span className="text-[11px] font-semibold text-white/60">Eagle Info Solutions</span>
+                <span className="text-[13px] font-semibold text-white/60">Eagle Info Solutions</span>
               </div>
 
               <h1 className="text-3xl font-extrabold leading-tight text-white xl:text-4xl">
@@ -377,7 +377,7 @@ export default async function Page() {
 
               {/* Alternative contact */}
               <div className="mt-7 flex flex-col gap-2">
-                <p className="text-[11px] font-semibold uppercase tracking-widest text-white/25">Or contact us directly</p>
+                <p className="text-[13px] font-semibold uppercase tracking-widest text-white/25">Or contact us directly</p>
                 <a
                   href="https://wa.me/256772006344?text=Hi%20Eagle%20Info%2C%20I%20have%20a%20device%20I%20need%20repaired.%20Please%20help%20me."
                   target="_blank" rel="noreferrer"
@@ -416,7 +416,7 @@ export default async function Page() {
                     </div>
                     <div className="flex items-center gap-1.5 rounded-full border border-green-500/25 bg-green-500/8 px-3 py-1">
                       <span className="h-1.5 w-1.5 rounded-full bg-green-400" />
-                      <span className="text-[10px] font-semibold text-green-400">Live</span>
+                      <span className="text-[12px] font-semibold text-green-400">Live</span>
                     </div>
                   </div>
                   <RepairRequestForm />
@@ -455,10 +455,10 @@ export default async function Page() {
           <div className="absolute inset-x-0 top-1/2 h-px bg-gradient-to-r from-transparent via-white/8 to-transparent" />
           <div className="relative flex justify-center">
             <div className="flex items-center gap-3 rounded-full border border-white/8 bg-[#050505] px-5 py-2">
-              <span className="text-[11px] text-white/30">Also available as a</span>
-              <span className="text-[11px] font-bold text-[#D4AF37]/70">Dduuka ProMax</span>
-              <span className="text-[11px] text-white/30">business system</span>
-              <a href="#business-system" className="text-[11px] font-semibold text-[#D4AF37]/60 hover:text-[#D4AF37] transition-colors">
+              <span className="text-[13px] text-white/30">Also available as a</span>
+              <span className="text-[13px] font-bold text-[#D4AF37]/70">Dduuka ProMax</span>
+              <span className="text-[13px] text-white/30">business system</span>
+              <a href="#business-system" className="text-[13px] font-semibold text-[#D4AF37]/60 hover:text-[#D4AF37] transition-colors">
                 Learn more ↓
               </a>
             </div>
@@ -475,7 +475,7 @@ export default async function Page() {
             {STATS.map((s) => (
               <div key={s.label} className="rounded-xl border border-white/6 bg-white/[0.02] p-4 text-center">
                 <p className="text-2xl font-extrabold text-[#D4AF37]">{s.value}</p>
-                <p className="mt-0.5 text-[11px] text-white/40">{s.label}</p>
+                <p className="mt-0.5 text-[13px] text-white/40">{s.label}</p>
               </div>
             ))}
           </div>
@@ -483,7 +483,7 @@ export default async function Page() {
           {/* Heading */}
           <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-[#D4AF37]/25 bg-[#D4AF37]/8 px-4 py-1.5">
             <span className="h-1.5 w-1.5 rounded-full bg-[#D4AF37]" />
-            <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#D4AF37]/90">Dduuka ProMax — Business Management System</span>
+            <span className="text-[13px] font-semibold uppercase tracking-[0.18em] text-[#D4AF37]/90">Dduuka ProMax — Business Management System</span>
           </div>
           <h2 className="mt-3 text-2xl font-extrabold text-white md:text-3xl">
             Manage your entire business like a pro
@@ -505,7 +505,7 @@ export default async function Page() {
                 <p className="text-sm font-bold text-white">{mod.group}</p>
                 <ul className="mt-2 space-y-1">
                   {mod.items.map((item) => (
-                    <li key={item} className="text-[11px] text-white/45 leading-snug">
+                    <li key={item} className="text-[13px] text-white/45 leading-snug">
                       {item}
                     </li>
                   ))}
@@ -527,7 +527,7 @@ export default async function Page() {
             <div className="relative max-w-2xl">
               <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#D4AF37]/30 bg-[#D4AF37]/10 px-4 py-1.5">
                 <span className="h-1.5 w-1.5 rounded-full bg-[#D4AF37]" />
-                <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#D4AF37]">Get Dduuka ProMax for Your Business</span>
+                <span className="text-[13px] font-bold uppercase tracking-[0.18em] text-[#D4AF37]">Get Dduuka ProMax for Your Business</span>
               </div>
 
               <h3 className="text-2xl font-extrabold leading-snug text-white md:text-3xl">
@@ -584,7 +584,7 @@ export default async function Page() {
               <Image src="/eagle-info-logo.png" alt="Eagle Info Solutions" width={28} height={28} className="h-7 w-7 object-contain" />
               <div>
                 <p className="text-xs font-bold text-white">Eagle Info Solutions</p>
-                <p className="text-[10px] text-white/30">Powered by Duuka ProMax · © {new Date().getFullYear()}</p>
+                <p className="text-[12px] text-white/30">Powered by Duuka ProMax · © {new Date().getFullYear()}</p>
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-3">

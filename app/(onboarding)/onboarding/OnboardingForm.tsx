@@ -188,12 +188,12 @@ export function OnboardingForm() {
                     <div className="flex items-center gap-1.5">
                       <span className="text-sm font-semibold text-[var(--ink)]">{MODULE_LABELS[m]}</span>
                       {badge && (
-                        <span className="rounded-full bg-[var(--panel-strong)] px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-[var(--ink-muted)] border border-[var(--line)]">
+                        <span className="rounded-full bg-[var(--panel-strong)] px-1.5 py-0.5 text-[13px] font-bold uppercase tracking-wide text-[var(--ink-muted)] border border-[var(--line)]">
                           {badge}+
                         </span>
                       )}
                     </div>
-                    <p className="mt-0.5 text-[11px] leading-snug text-[var(--ink-muted)]">
+                    <p className="mt-0.5 text-[13px] leading-snug text-[var(--ink-muted)]">
                       {MODULE_DESCRIPTIONS[m]}
                     </p>
                   </div>
@@ -255,12 +255,12 @@ export function OnboardingForm() {
                     : `${fmt(meta.price)} after your 60-day free trial`}
                 </p>
               </div>
-              <span className="rounded-full bg-emerald-100 px-2 py-1 text-[10px] font-bold text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400">
+              <span className="rounded-full bg-emerald-100 px-2 py-1 text-[12px] font-bold text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400">
                 60 days free
               </span>
             </div>
             {meta.price != null && (
-              <p className="mt-3 text-[11px] text-[var(--ink-muted)]">
+              <p className="mt-3 text-[13px] text-[var(--ink-muted)]">
                 Your trial starts today. No payment required now. You&apos;ll get a reminder before it ends.
               </p>
             )}
@@ -268,7 +268,7 @@ export function OnboardingForm() {
 
           {/* Selected modules summary */}
           <div className="rounded-xl border border-[var(--line)] bg-[var(--panel-strong)] p-3">
-            <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-[var(--ink-muted)]">
+            <p className="mb-2 text-[12px] font-bold uppercase tracking-widest text-[var(--ink-muted)]">
               Enabled modules
             </p>
             <div className="flex flex-wrap gap-1.5">

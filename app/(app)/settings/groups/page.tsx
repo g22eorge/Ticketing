@@ -203,7 +203,7 @@ export default async function GroupsPage({ searchParams }: { searchParams: Promi
       <div className="grid gap-4 lg:grid-cols-[360px_1fr]">
         <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
           <div className="flex items-center justify-between gap-2">
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Groups</p>
+            <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Groups</p>
             <Link
               href={params.new === "1" ? `/settings/groups${params.groupId ? `?groupId=${params.groupId}` : ""}` : `/settings/groups?${new URLSearchParams({ ...(params.groupId ? { groupId: params.groupId } : {}), new: "1" }).toString()}`}
               className={`rounded-lg border px-3 py-1.5 text-[12px] font-semibold transition ${params.new === "1" ? "border-[var(--line)] text-[var(--ink-muted)] hover:text-[var(--ink)]" : "border-[var(--accent)]/40 bg-[var(--accent)] text-white hover:bg-[var(--accent)]/90"}`}

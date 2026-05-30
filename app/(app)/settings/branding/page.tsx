@@ -285,7 +285,7 @@ export default async function BrandingPage({
       <form action={saveBrandingAction} className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)] [&_*]:min-w-0">
         {/* Company & Numbering */}
         <div className="border-b border-[var(--line)] p-4">
-          <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Company &amp; Numbering</p>
+          <p className="mb-3 text-[12px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Company &amp; Numbering</p>
           <div className="grid gap-2 lg:grid-cols-2">
             <input name="companyName" defaultValue={settings.companyName} placeholder="Company name" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
             <input name="companyTagline" defaultValue={settings.companyTagline ?? ""} placeholder="Tagline" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
@@ -297,7 +297,7 @@ export default async function BrandingPage({
             <input name="documentTitle" defaultValue={settings.documentTitle} placeholder="Document title" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
             <input name="quotePrefix" defaultValue={settings.quotePrefix} placeholder="Quote prefix" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
             <input name="quoteFormat" defaultValue={settings.quoteFormat} placeholder="Quote format" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
-            <p className="text-[11px] text-[var(--ink-muted)] [overflow-wrap:anywhere] lg:col-span-2">
+            <p className="text-[13px] text-[var(--ink-muted)] [overflow-wrap:anywhere] lg:col-span-2">
               Preview: <span className="font-medium text-[var(--ink)]">{quotePreview}</span>
             </p>
             <input type="number" name="quoteValidityDays" defaultValue={settings.quoteValidityDays} placeholder="Validity days" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
@@ -307,8 +307,8 @@ export default async function BrandingPage({
 
         {/* Document Templates */}
         <div className="border-b border-[var(--line)] p-4">
-          <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Document Templates</p>
-          <p className="mb-3 text-[11px] text-[var(--ink-muted)]">Available templates depend on your plan ({planLabel(plan)}).</p>
+          <p className="mb-1 text-[12px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Document Templates</p>
+          <p className="mb-3 text-[13px] text-[var(--ink-muted)]">Available templates depend on your plan ({planLabel(plan)}).</p>
           <div className="grid gap-3 lg:grid-cols-2">
             {[
               { label: "Invoice", name: "invoiceTemplateKey", value: selectedInvoiceKey, allowed: invoiceTemplates.allowed, locked: invoiceTemplates.locked },
@@ -317,7 +317,7 @@ export default async function BrandingPage({
               { label: "Receipt", name: "receiptTemplateKey", value: selectedReceiptKey, allowed: receiptTemplates.allowed, locked: receiptTemplates.locked },
             ].map(({ label, name, value, allowed, locked }) => (
               <div key={name}>
-                <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">{label}</p>
+                <p className="mb-1 text-[12px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">{label}</p>
                 <select name={name} defaultValue={value} className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14">
                   {allowed.map((t) => <option key={t.key} value={t.key}>{t.label}</option>)}
                   {locked.map((t) => <option key={t.key} value={t.key} disabled>{t.label} (Upgrade to {planLabel(t.minPlan)})</option>)}
@@ -329,7 +329,7 @@ export default async function BrandingPage({
 
         {/* VAT & Sign-off */}
         <div className="border-b border-[var(--line)] p-4">
-          <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">VAT &amp; Sign-off</p>
+          <p className="mb-3 text-[12px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">VAT &amp; Sign-off</p>
           <div className="grid gap-2 lg:grid-cols-2">
             <select name="vatDefaultApplicable" defaultValue={settings.vatDefaultApplicable ? "true" : "false"} className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14">
               <option value="true">VAT default: applicable</option>
@@ -344,7 +344,7 @@ export default async function BrandingPage({
 
         {/* Colors */}
         <div className="border-b border-[var(--line)] p-4">
-          <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Colors</p>
+          <p className="mb-3 text-[12px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Colors</p>
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {[
               { name: "primaryColor", label: "Primary", value: settings.primaryColor },
@@ -364,7 +364,7 @@ export default async function BrandingPage({
 
         {/* Terms & Footer */}
         <div className="p-4">
-          <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Terms &amp; Footer</p>
+          <p className="mb-3 text-[12px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Terms &amp; Footer</p>
           <div className="grid gap-2">
             <textarea name="termsText" defaultValue={settings.termsText} className="min-h-28 w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
             <input name="footerText" defaultValue={settings.footerText} placeholder="Footer text" className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />

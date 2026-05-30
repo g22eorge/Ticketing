@@ -429,7 +429,7 @@ export default async function JobsPage({
         <div className="flex items-center gap-2 pb-3">
           <h2 className="text-[18px] font-black tracking-tight text-[var(--ink)]">Repairs</h2>
           {total > 0 && (
-            <span className="rounded-full bg-[var(--accent)] px-2 py-0.5 text-[11px] font-black text-black">
+            <span className="rounded-full bg-[var(--accent)] px-2 py-0.5 text-[13px] font-black text-black">
               {total}
             </span>
           )}
@@ -588,7 +588,7 @@ export default async function JobsPage({
                 <Link
                   key={v}
                   href={`/jobs?${params.toString()}`}
-                  className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[11px] font-semibold transition ${
+                  className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[13px] font-semibold transition ${
                     active ? "bg-[var(--panel)] text-[var(--ink)] shadow-sm" : "text-[var(--ink-muted)] hover:text-[var(--ink)]"
                   }`}
                 >
@@ -611,7 +611,7 @@ export default async function JobsPage({
           <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto [scrollbar-width:none]">
             <Link
               href={statusChipHref("")}
-              className={`shrink-0 rounded-full border px-3 py-1 text-[11px] font-semibold transition ${
+              className={`shrink-0 rounded-full border px-3 py-1 text-[13px] font-semibold transition ${
                 statusValue ? "border-[var(--line)] bg-[var(--panel)] text-[var(--ink-muted)] hover:border-[var(--accent)]/30" : "border-[var(--accent)] bg-[var(--accent)] text-black"
               }`}
             >
@@ -621,7 +621,7 @@ export default async function JobsPage({
               <Link
                 key={s}
                 href={statusChipHref(s)}
-                className={`shrink-0 rounded-full border px-3 py-1 text-[11px] font-semibold transition ${
+                className={`shrink-0 rounded-full border px-3 py-1 text-[13px] font-semibold transition ${
                   statusValue === s ? "border-[var(--accent)] bg-[var(--accent)] text-white" : "border-[var(--line)] bg-[var(--panel)] text-[var(--ink-muted)] hover:border-[var(--accent)]/30"
                 }`}
               >
@@ -631,7 +631,7 @@ export default async function JobsPage({
             <div className="mx-1 h-4 w-px shrink-0 bg-[var(--line)]" aria-hidden="true" />
             <Link
               href={overdueChipHref}
-              className={`shrink-0 rounded-full border px-3 py-1 text-[11px] font-semibold transition ${
+              className={`shrink-0 rounded-full border px-3 py-1 text-[13px] font-semibold transition ${
                 filters.overdue === "1"
                   ? "border-red-500 bg-red-500/10 text-red-700 dark:border-red-400 dark:bg-red-950/30 dark:text-red-400"
                   : "border-[var(--line)] bg-[var(--panel)] text-[var(--ink-muted)] hover:border-red-400/50 hover:text-red-600"
@@ -725,7 +725,7 @@ export default async function JobsPage({
           </form>
         ) : null}
         {filters.dateField === "completedAt" && (filters.from || filters.to) ? (
-          <p className="border-t border-[var(--line)] bg-[var(--accent)]/5 px-3 py-1.5 text-[11px] text-[var(--accent)]">
+          <p className="border-t border-[var(--line)] bg-[var(--accent)]/5 px-3 py-1.5 text-[13px] text-[var(--accent)]">
             Date range is filtering by <strong>completion date</strong>.
           </p>
         ) : null}

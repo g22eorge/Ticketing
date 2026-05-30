@@ -15,7 +15,7 @@ function AgeBadge({ receivedAt, status }: { receivedAt: Date; status: string }) 
   const terminal = status === "COMPLETED" || status === "CLOSED";
   const days = jobAgeDays(receivedAt);
   if (terminal) {
-    return <span className="text-[11px] tabular-nums text-[var(--ink-muted)]/50">{days}d</span>;
+    return <span className="text-[13px] tabular-nums text-[var(--ink-muted)]/50">{days}d</span>;
   }
   const cls =
     days >= 8
@@ -24,7 +24,7 @@ function AgeBadge({ receivedAt, status }: { receivedAt: Date; status: string }) 
         ? "bg-amber-500/10 text-amber-700 dark:text-amber-400"
         : "bg-[var(--panel-strong)] text-[var(--ink-muted)]";
   return (
-    <span className={`rounded-md px-1.5 py-0.5 text-[11px] font-semibold tabular-nums ${cls}`}>
+    <span className={`rounded-md px-1.5 py-0.5 text-[13px] font-semibold tabular-nums ${cls}`}>
       {days}d
     </span>
   );
@@ -229,7 +229,7 @@ export function JobTable({
 
       {/* ── Header bar (desktop only — mobile has its own header in page) ── */}
       <div className="hidden lg:flex items-center justify-between border-b border-[var(--line)] px-4 py-2">
-        <p className="text-[11px] text-[var(--ink-muted)]">
+        <p className="text-[13px] text-[var(--ink-muted)]">
           {hasPagination ? (
             <>
               <span className="font-bold text-[var(--ink)]">{pageStart}–{pageEnd}</span>
@@ -265,9 +265,9 @@ export function JobTable({
             // Pricing badge (admin/ops only)
             const pricingBadge = canManagePricing
               ? typeof job.clientBill === "number"
-                ? <span key="priced" className="rounded px-1.5 py-0.5 text-[10px] font-semibold bg-[var(--accent)]/10 text-[#7A5F00]">Priced</span>
+                ? <span key="priced" className="rounded px-1.5 py-0.5 text-[12px] font-semibold bg-[var(--accent)]/10 text-[#7A5F00]">Priced</span>
                 : ["AWAITING_APPROVAL", "IN_REPAIR", "READY_FOR_PICKUP"].includes(job.status)
-                  ? <span key="needs" className="rounded border border-amber-400/30 px-1.5 py-0.5 text-[10px] font-semibold bg-amber-500/10 text-amber-700 dark:text-amber-400">Needs pricing</span>
+                  ? <span key="needs" className="rounded border border-amber-400/30 px-1.5 py-0.5 text-[12px] font-semibold bg-amber-500/10 text-amber-700 dark:text-amber-400">Needs pricing</span>
                   : null
                   : null;
 
@@ -313,7 +313,7 @@ export function JobTable({
                           <span className="text-[12px] font-black tabular-nums text-[var(--ink)]">{costValue}</span>
                         ) : null}
                         {isActive ? (
-                          <span className={`text-[10px] font-bold ${ageCls}`}>
+                          <span className={`text-[12px] font-bold ${ageCls}`}>
                             {job.repairTimeline ?? `${ageDays}d`}
                           </span>
                         ) : null}
@@ -322,12 +322,12 @@ export function JobTable({
 
                     {/* Row 2: meta + status badge */}
                     <div className="mt-0.5 flex items-center justify-between gap-2">
-                      <p className="truncate text-[11px] text-[var(--ink-muted)]">
+                      <p className="truncate text-[13px] text-[var(--ink-muted)]">
                         {metaParts.join(" · ")}
                       </p>
                       <div className="flex shrink-0 items-center gap-1">
                         {flagCfg ? (
-                          <span className={`rounded px-1.5 py-0.5 text-[9px] font-semibold ${flagCfg.badge}`}>
+                          <span className={`rounded px-1.5 py-0.5 text-[13px] font-semibold ${flagCfg.badge}`}>
                             {flagCfg.label}
                           </span>
                         ) : null}
@@ -341,21 +341,21 @@ export function JobTable({
                 {(canUseJobCards || canDownloadQuotation || canDownloadInvoice || canEditPage || (canDelete && deleteAction)) ? (
                   <div className="pointer-events-auto absolute right-4 top-1/2 hidden -translate-y-1/2 items-center gap-2 lg:flex">
                     {canUseJobCards ? (
-                      <a href={`/api/jobs/${job.id}/job-card`} target="_blank" rel="noreferrer" className="text-[10px] font-semibold text-[var(--ink-muted)]/60 transition hover:text-[var(--ink-muted)]">Card</a>
+                      <a href={`/api/jobs/${job.id}/job-card`} target="_blank" rel="noreferrer" className="text-[12px] font-semibold text-[var(--ink-muted)]/60 transition hover:text-[var(--ink-muted)]">Card</a>
                     ) : null}
                     {canDownloadQuotation ? (
-                      <a href={`/api/jobs/${job.id}/quotation`} target="_blank" rel="noreferrer" className="text-[10px] font-semibold text-[var(--ink-muted)]/60 transition hover:text-[var(--ink-muted)]">Quote</a>
+                      <a href={`/api/jobs/${job.id}/quotation`} target="_blank" rel="noreferrer" className="text-[12px] font-semibold text-[var(--ink-muted)]/60 transition hover:text-[var(--ink-muted)]">Quote</a>
                     ) : null}
                     {canDownloadInvoice ? (
-                      <a href={`/api/jobs/${job.id}/invoice`} target="_blank" rel="noreferrer" className="text-[10px] font-semibold text-[var(--ink-muted)]/60 transition hover:text-[var(--ink-muted)]">Inv</a>
+                      <a href={`/api/jobs/${job.id}/invoice`} target="_blank" rel="noreferrer" className="text-[12px] font-semibold text-[var(--ink-muted)]/60 transition hover:text-[var(--ink-muted)]">Inv</a>
                     ) : null}
                     {canEditPage ? (
-                      <Link href={`/jobs/${job.id}/edit${returnTo ? `?returnTo=${encodeURIComponent(returnTo)}` : ""}`} className="text-[10px] font-semibold text-[var(--ink-muted)]/60 transition hover:text-[var(--ink-muted)]">Edit</Link>
+                      <Link href={`/jobs/${job.id}/edit${returnTo ? `?returnTo=${encodeURIComponent(returnTo)}` : ""}`} className="text-[12px] font-semibold text-[var(--ink-muted)]/60 transition hover:text-[var(--ink-muted)]">Edit</Link>
                     ) : null}
                     {canDelete && deleteAction ? (
                       <form action={deleteAction}>
                         <input type="hidden" name="id" value={job.id} />
-                        <button className="text-[10px] font-semibold text-[var(--ink-muted)]/40 transition hover:text-red-500">✕</button>
+                        <button className="text-[12px] font-semibold text-[var(--ink-muted)]/40 transition hover:text-red-500">✕</button>
                       </form>
                     ) : null}
                   </div>
@@ -369,7 +369,7 @@ export function JobTable({
           {jobs.length === 0 ? (
             <p className="text-sm text-[var(--ink-muted)]">No repairs found</p>
           ) : (
-            <p className="text-[11px] text-[var(--ink-muted)]">
+            <p className="text-[13px] text-[var(--ink-muted)]">
               {total != null ? `${total} repair${total !== 1 ? "s" : ""}` : `${jobs.length} shown`}
               {" · "}All caught up ✓
             </p>
@@ -384,16 +384,16 @@ export function JobTable({
             <tr className="border-b border-[var(--line)] bg-[var(--panel-strong)]/50">
               {/* narrow strip col */}
               <th className="w-[3px] p-0" aria-hidden="true" />
-              <th className="px-4 py-2.5 text-left text-[10px] font-bold uppercase tracking-[0.15em] text-[var(--ink-muted)]">Job #</th>
-              <th className="px-4 py-2.5 text-left text-[10px] font-bold uppercase tracking-[0.15em] text-[var(--ink-muted)]">Device</th>
-              <th className="px-4 py-2.5 text-left text-[10px] font-bold uppercase tracking-[0.15em] text-[var(--ink-muted)]">Status</th>
-              {canSeeClient ? <th className="px-4 py-2.5 text-left text-[10px] font-bold uppercase tracking-[0.15em] text-[var(--ink-muted)]">Client</th> : null}
-              {canSeeAssignment ? <th className="hidden px-4 py-2.5 text-left text-[10px] font-bold uppercase tracking-[0.15em] text-[var(--ink-muted)] 2xl:table-cell">Assigned</th> : null}
-              <th className="px-4 py-2.5 text-left text-[10px] font-bold uppercase tracking-[0.15em] text-[var(--ink-muted)]">Received</th>
-              <th className="px-4 py-2.5 text-left text-[10px] font-bold uppercase tracking-[0.15em] text-[var(--ink-muted)]">Age</th>
-              <th className="px-4 py-2.5 text-left text-[10px] font-bold uppercase tracking-[0.15em] text-[var(--ink-muted)]">Flag</th>
-              {canSeeCost ? <th className="hidden px-4 py-2.5 text-right text-[10px] font-bold uppercase tracking-[0.15em] text-[var(--ink-muted)] 2xl:table-cell">{showClientFacingCostOnly ? "Cost" : "Ext. Bill"}</th> : null}
-              <th className="px-4 py-2.5 text-right text-[10px] font-bold uppercase tracking-[0.15em] text-[var(--ink-muted)]">Actions</th>
+              <th className="px-4 py-2.5 text-left text-[12px] font-bold uppercase tracking-[0.15em] text-[var(--ink-muted)]">Job #</th>
+              <th className="px-4 py-2.5 text-left text-[12px] font-bold uppercase tracking-[0.15em] text-[var(--ink-muted)]">Device</th>
+              <th className="px-4 py-2.5 text-left text-[12px] font-bold uppercase tracking-[0.15em] text-[var(--ink-muted)]">Status</th>
+              {canSeeClient ? <th className="px-4 py-2.5 text-left text-[12px] font-bold uppercase tracking-[0.15em] text-[var(--ink-muted)]">Client</th> : null}
+              {canSeeAssignment ? <th className="hidden px-4 py-2.5 text-left text-[12px] font-bold uppercase tracking-[0.15em] text-[var(--ink-muted)] 2xl:table-cell">Assigned</th> : null}
+              <th className="px-4 py-2.5 text-left text-[12px] font-bold uppercase tracking-[0.15em] text-[var(--ink-muted)]">Received</th>
+              <th className="px-4 py-2.5 text-left text-[12px] font-bold uppercase tracking-[0.15em] text-[var(--ink-muted)]">Age</th>
+              <th className="px-4 py-2.5 text-left text-[12px] font-bold uppercase tracking-[0.15em] text-[var(--ink-muted)]">Flag</th>
+              {canSeeCost ? <th className="hidden px-4 py-2.5 text-right text-[12px] font-bold uppercase tracking-[0.15em] text-[var(--ink-muted)] 2xl:table-cell">{showClientFacingCostOnly ? "Cost" : "Ext. Bill"}</th> : null}
+              <th className="px-4 py-2.5 text-right text-[12px] font-bold uppercase tracking-[0.15em] text-[var(--ink-muted)]">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[var(--line)]">
@@ -428,7 +428,7 @@ export function JobTable({
                     <p className="max-w-[16rem] truncate font-semibold text-[var(--ink)]">
                       {deviceName(job.brand, job.model) ?? (deviceLabel[job.deviceType] ?? job.deviceType)}
                     </p>
-                    <span className="mt-0.5 inline-flex items-center gap-1 rounded bg-[var(--panel-strong)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--ink-muted)]">
+                    <span className="mt-0.5 inline-flex items-center gap-1 rounded bg-[var(--panel-strong)] px-1.5 py-0.5 text-[12px] font-medium text-[var(--ink-muted)]">
                       <DeviceIcon type={job.deviceType} />
                       {deviceLabel[job.deviceType] ?? job.deviceType}
                     </span>
@@ -467,12 +467,12 @@ export function JobTable({
                   <td className="px-4 py-3 align-middle">
                     <div className="flex flex-wrap items-center gap-1">
                       {flagCfg && (
-                        <span className={`rounded-md px-1.5 py-0.5 text-[10px] font-semibold ${flagCfg.badge}`}>
+                        <span className={`rounded-md px-1.5 py-0.5 text-[12px] font-semibold ${flagCfg.badge}`}>
                           {flagCfg.label}
                         </span>
                       )}
                       {canManagePricing && (
-                        <span className={`rounded-md px-1.5 py-0.5 text-[10px] font-semibold ${
+                        <span className={`rounded-md px-1.5 py-0.5 text-[12px] font-semibold ${
                           typeof job.clientBill === "number"
                             ? "bg-[var(--accent)]/10 text-[#7A5F00]"
                             : ["AWAITING_APPROVAL", "IN_REPAIR", "READY_FOR_PICKUP"].includes(job.status)
@@ -510,7 +510,7 @@ export function JobTable({
                     <div className="flex items-center justify-end gap-2">
                       <Link
                         href={`/jobs/${job.id}`}
-                        className="whitespace-nowrap rounded-lg border border-[var(--line)] px-2.5 py-1 text-[11px] font-semibold text-[var(--ink)] transition-colors hover:border-[var(--accent)]/50 hover:bg-[var(--accent)]/8 hover:text-[var(--accent)]"
+                        className="whitespace-nowrap rounded-lg border border-[var(--line)] px-2.5 py-1 text-[13px] font-semibold text-[var(--ink)] transition-colors hover:border-[var(--accent)]/50 hover:bg-[var(--accent)]/8 hover:text-[var(--accent)]"
                       >
                         Open
                       </Link>
@@ -555,7 +555,7 @@ export function JobTable({
                       {canDelete && deleteAction ? (
                         <form action={deleteAction} className="inline">
                           <input type="hidden" name="id" value={job.id} />
-                          <button className="whitespace-nowrap rounded-lg border border-red-300 px-2.5 py-1 text-[11px] font-medium text-red-700 transition-colors hover:border-red-400 hover:bg-red-50 hover:text-red-800">
+                          <button className="whitespace-nowrap rounded-lg border border-red-300 px-2.5 py-1 text-[13px] font-medium text-red-700 transition-colors hover:border-red-400 hover:bg-red-50 hover:text-red-800">
                             Delete
                           </button>
                         </form>

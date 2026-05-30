@@ -122,11 +122,11 @@ export default async function ComplaintsPage({
       <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
         <div className="flex items-center justify-between gap-2 px-4 py-3">
           <div>
-            <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Support</p>
+            <p className="text-[12px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Support</p>
             <div className="flex items-center gap-2">
               <p className="text-[13px] font-bold text-[var(--ink)]">Complaints</p>
               {totalOpen > 0 && (
-                <span className="rounded-full border border-amber-400/30 bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:text-amber-400">
+                <span className="rounded-full border border-amber-400/30 bg-amber-500/10 px-2 py-0.5 text-[12px] font-semibold text-amber-700 dark:text-amber-400">
                   {totalOpen} open
                 </span>
               )}
@@ -154,7 +154,7 @@ export default async function ComplaintsPage({
             <Link
               key={key || "all"}
               href={key ? `/complaints?status=${key}` : "/complaints"}
-              className={`shrink-0 rounded-full border px-3 py-1 text-[11px] font-semibold transition ${
+              className={`shrink-0 rounded-full border px-3 py-1 text-[13px] font-semibold transition ${
                 active
                   ? "border-[var(--accent)] bg-[var(--accent)] text-white"
                   : "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)] hover:border-[var(--accent)]/30"
@@ -183,17 +183,17 @@ export default async function ComplaintsPage({
                   <div className="mb-1.5 flex items-start justify-between gap-2">
                     <div>
                       <p className="font-mono text-[12px] font-bold text-[var(--ink)]">{c.complaintNumber}</p>
-                      <p className="text-[10px] text-[var(--ink-muted)]">{new Date(c.createdAt).toLocaleDateString()}</p>
+                      <p className="text-[12px] text-[var(--ink-muted)]">{new Date(c.createdAt).toLocaleDateString()}</p>
                     </div>
-                    <span className={`shrink-0 inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${COMPLAINT_STATUS_STYLES[c.status]}`}>
+                    <span className={`shrink-0 inline-flex items-center rounded-full border px-2.5 py-0.5 text-[13px] font-semibold ${COMPLAINT_STATUS_STYLES[c.status]}`}>
                       {COMPLAINT_STATUS_LABELS[c.status]}
                     </span>
                   </div>
                   <p className="mb-1 text-[13px] font-semibold text-[var(--ink)]">{c.clientName}
-                    <span className="ml-1.5 text-[11px] font-normal text-[var(--ink-muted)]">{c.clientPhone}</span>
+                    <span className="ml-1.5 text-[13px] font-normal text-[var(--ink-muted)]">{c.clientPhone}</span>
                   </p>
                   <p className="mb-1.5 line-clamp-2 text-[12px] text-[var(--ink-muted)]">{c.description}</p>
-                  <div className="flex items-center gap-2 text-[11px] text-[var(--ink-muted)]">
+                  <div className="flex items-center gap-2 text-[13px] text-[var(--ink-muted)]">
                     <span>{COMPLAINT_CATEGORY_LABELS[c.category]}</span>
                     {(sla === "overdue-ack" || sla === "overdue-res") && (
                       <span className={`font-semibold ${sla === "overdue-ack" ? "text-red-600" : "text-amber-600"}`}>
@@ -228,7 +228,7 @@ export default async function ComplaintsPage({
               <thead>
                 <tr className="border-b border-[var(--line)] bg-[var(--panel-strong)]/60">
                   {["Ref", "Status / SLA", "Category", "Client", "Description", "Job", "Actions"].map((h) => (
-                    <th key={h} className="px-4 py-2.5 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">{h}</th>
+                    <th key={h} className="px-4 py-2.5 text-[12px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -239,26 +239,26 @@ export default async function ComplaintsPage({
                     <tr key={`d-${c.id}`} className="group align-top transition-colors hover:bg-[var(--panel-strong)]/40">
                       <td className="px-4 py-3">
                         <p className="font-mono text-xs font-bold text-[var(--ink)]">{c.complaintNumber}</p>
-                        <p className="mt-0.5 text-[10px] text-[var(--ink-muted)]">{new Date(c.createdAt).toLocaleDateString()}</p>
+                        <p className="mt-0.5 text-[12px] text-[var(--ink-muted)]">{new Date(c.createdAt).toLocaleDateString()}</p>
                       </td>
                       <td className="px-4 py-3">
-                        <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${COMPLAINT_STATUS_STYLES[c.status]}`}>{COMPLAINT_STATUS_LABELS[c.status]}</span>
-                        {sla === "overdue-ack" && <p className="mt-1 text-[10px] font-semibold text-red-600">Ack overdue</p>}
-                        {sla === "overdue-res" && <p className="mt-1 text-[10px] font-semibold text-amber-600">Resolution overdue</p>}
+                        <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[13px] font-semibold ${COMPLAINT_STATUS_STYLES[c.status]}`}>{COMPLAINT_STATUS_LABELS[c.status]}</span>
+                        {sla === "overdue-ack" && <p className="mt-1 text-[12px] font-semibold text-red-600">Ack overdue</p>}
+                        {sla === "overdue-res" && <p className="mt-1 text-[12px] font-semibold text-amber-600">Resolution overdue</p>}
                       </td>
                       <td className="px-4 py-3">
-                        <p className="text-[11px] text-[var(--ink)]">{COMPLAINT_CATEGORY_LABELS[c.category]}</p>
-                        <p className="text-[10px] text-[var(--ink-muted)]">{c.channel}</p>
+                        <p className="text-[13px] text-[var(--ink)]">{COMPLAINT_CATEGORY_LABELS[c.category]}</p>
+                        <p className="text-[12px] text-[var(--ink-muted)]">{c.channel}</p>
                       </td>
                       <td className="px-4 py-3">
                         <p className="text-xs font-semibold text-[var(--ink)]">{c.clientName}</p>
-                        <p className="text-[10px] text-[var(--ink-muted)]">{c.clientPhone}</p>
+                        <p className="text-[12px] text-[var(--ink-muted)]">{c.clientPhone}</p>
                       </td>
                       <td className="px-4 py-3 max-w-[200px]">
-                        <p className="line-clamp-3 text-[11px] text-[var(--ink-muted)]" title={c.description}>{c.description}</p>
+                        <p className="line-clamp-3 text-[13px] text-[var(--ink-muted)]" title={c.description}>{c.description}</p>
                       </td>
                       <td className="px-4 py-3">
-                        {c.job ? <Link href={`/jobs/${c.job.id}`} className="font-mono text-[11px] font-semibold text-[var(--accent)] hover:underline">{c.job.jobNumber}</Link> : <span className="text-[11px] text-[var(--ink-muted)]">—</span>}
+                        {c.job ? <Link href={`/jobs/${c.job.id}`} className="font-mono text-[13px] font-semibold text-[var(--accent)] hover:underline">{c.job.jobNumber}</Link> : <span className="text-[13px] text-[var(--ink-muted)]">—</span>}
                       </td>
                       <td className="px-4 py-3">
                         <RowActionsMenu label="Update complaint">

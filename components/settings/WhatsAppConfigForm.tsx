@@ -17,7 +17,7 @@ export function WhatsAppConfigForm({ orgId, current }: Props) {
 
   return (
     <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-5">
-      <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]">
+      <p className="mb-1 text-[12px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]">
         {current ? "Update Credentials" : "Connect WhatsApp Business"}
       </p>
       <p className="mb-4 text-xs text-[var(--ink-muted)]">
@@ -72,7 +72,7 @@ export function WhatsAppConfigForm({ orgId, current }: Props) {
               className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm font-mono text-[var(--ink)] placeholder:text-[var(--ink-muted)]/50 focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/40"
             />
             {current && (
-              <p className="mt-1 text-[10px] text-[var(--ink-muted)]">Leave blank to keep the existing token.</p>
+              <p className="mt-1 text-[12px] text-[var(--ink-muted)]">Leave blank to keep the existing token.</p>
             )}
           </div>
 

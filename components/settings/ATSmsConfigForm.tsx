@@ -27,7 +27,7 @@ export function ATSmsConfigForm({ orgId, smsFallback, platformConfigured, stats 
     <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-5 space-y-4">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]">
+          <p className="text-[12px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]">
             SMS Notifications
           </p>
           <p className="mt-0.5 text-xs text-[var(--ink-muted)]">
@@ -35,7 +35,7 @@ export function ATSmsConfigForm({ orgId, smsFallback, platformConfigured, stats 
           </p>
         </div>
         <span
-          className={`shrink-0 rounded-full border px-2.5 py-1 text-[11px] font-semibold ${
+          className={`shrink-0 rounded-full border px-2.5 py-1 text-[13px] font-semibold ${
             platformConfigured
               ? "border-emerald-400/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
               : "border-amber-400/30 bg-amber-500/10 text-amber-700 dark:text-amber-400"
@@ -66,14 +66,14 @@ export function ATSmsConfigForm({ orgId, smsFallback, platformConfigured, stats 
                   style={{ width: `${Math.min(100, stats.percentUsed)}%` }}
                 />
               </div>
-              <div className="flex items-center justify-between text-[10px] text-[var(--ink-muted)]">
+              <div className="flex items-center justify-between text-[12px] text-[var(--ink-muted)]">
                 <span>{stats.remaining} remaining</span>
                 <span className={stats.percentUsed >= 90 ? "text-red-600 font-semibold" : ""}>
                   {stats.percentUsed}% used · {stats.plan} plan
                 </span>
               </div>
               {stats.percentUsed >= 90 && (
-                <p className="text-[10px] font-semibold text-red-600">
+                <p className="text-[12px] font-semibold text-red-600">
                   Almost at your limit. Upgrade your plan for more SMS.
                 </p>
               )}
@@ -98,7 +98,7 @@ export function ATSmsConfigForm({ orgId, smsFallback, platformConfigured, stats 
                 >
                   SMS fallback
                 </label>
-                <p className="mt-0.5 text-[10px] text-[var(--ink-muted)]">
+                <p className="mt-0.5 text-[12px] text-[var(--ink-muted)]">
                   If a WhatsApp message fails to deliver, automatically retry via SMS (uses your monthly quota).
                 </p>
               </div>

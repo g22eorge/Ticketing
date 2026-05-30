@@ -11,7 +11,7 @@ export default async function PlatformLayout({ children }: { children: React.Rea
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-6">
           <div className="flex items-center gap-4">
             <span className="flex items-center gap-2 text-xs font-bold tracking-wide text-[var(--ink)]">
-              <span className="rounded bg-[var(--gold)]/20 px-1.5 py-0.5 font-mono text-[10px] font-bold text-[var(--gold)]">PLATFORM</span>
+              <span className="rounded bg-[var(--gold)]/20 px-1.5 py-0.5 font-mono text-[12px] font-bold text-[var(--gold)]">PLATFORM</span>
               Admin
             </span>
             <div className="h-4 w-px bg-[var(--line)]" />

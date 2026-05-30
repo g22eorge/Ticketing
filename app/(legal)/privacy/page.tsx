@@ -18,7 +18,7 @@ export default function PrivacyPage() {
         <div className="mx-auto flex max-w-4xl items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
             <span className="text-base font-bold tracking-tight text-white">Duuka</span>
-            <span className="rounded bg-[#D4AF37]/15 px-1.5 py-0.5 text-[11px] font-bold text-[#D4AF37]">ProMax</span>
+            <span className="rounded bg-[#D4AF37]/15 px-1.5 py-0.5 text-[13px] font-bold text-[#D4AF37]">ProMax</span>
           </Link>
           <Link href="/register" className="text-sm text-white/50 transition-colors hover:text-white">
             Get started →
@@ -29,7 +29,7 @@ export default function PrivacyPage() {
       {/* Content */}
       <main className="mx-auto max-w-3xl px-4 py-12 md:px-6 md:py-16">
         <div className="mb-8">
-          <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.18em] text-[#D4AF37]/70">Legal</p>
+          <p className="mb-2 text-[13px] font-bold uppercase tracking-[0.18em] text-[#D4AF37]/70">Legal</p>
           <h1 className="mb-2 text-3xl font-bold text-white">Privacy Policy</h1>
           <p className="text-sm text-white/40">Effective date: {EFFECTIVE_DATE}</p>
         </div>

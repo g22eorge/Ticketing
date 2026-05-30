@@ -61,7 +61,7 @@ export function NewSupplierBillForm({
   return (
     <form onSubmit={submit} className="space-y-5">
       <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] p-5 space-y-4">
-        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Bill Details</p>
+        <p className="text-[12px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Bill Details</p>
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="block text-xs font-semibold text-[var(--ink-muted)]">
             Supplier
@@ -110,7 +110,7 @@ export function NewSupplierBillForm({
 
       <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] overflow-hidden">
         <div className="flex items-center justify-between px-5 py-3 border-b border-[var(--line)]">
-          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Line Items</p>
+          <p className="text-[12px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Line Items</p>
           <button type="button" onClick={() => setLines((prev) => [...prev, { key: nextKey(), description: "", quantity: 1, unitCost: 0 }])} className="rounded-md bg-[var(--gold)]/15 px-3 py-1 text-xs font-semibold text-[var(--gold)] hover:bg-[var(--gold)]/25">+ Add Line</button>
         </div>
         <div className="overflow-x-auto">

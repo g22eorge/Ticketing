@@ -162,7 +162,7 @@ export default async function QuotationsPage({
       {/* ── Mobile quick-gen explainer ── */}
       <div className="sm:hidden rounded-2xl border border-[var(--accent)]/20 bg-[var(--accent)]/6 px-4 py-3">
         <p className="text-[12px] font-semibold text-[var(--accent)] mb-1">How to create a quote</p>
-        <p className="text-[11px] text-[var(--ink-muted)] leading-relaxed">
+        <p className="text-[13px] text-[var(--ink-muted)] leading-relaxed">
           Quotes are generated from repair jobs. Open a job that is in <strong className="text-[var(--ink)]">Diagnosing</strong> or <strong className="text-[var(--ink)]">In Repair</strong> status, then tap <strong className="text-[var(--ink)]">Generate Quote</strong> from the action bar.
         </p>
         <Link
@@ -178,7 +178,7 @@ export default async function QuotationsPage({
       <div className="panel-shadow hidden sm:flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-2.5">
         <div className="flex items-center gap-3">
           <div>
-            <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Documents</p>
+            <p className="text-[12px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Documents</p>
             <p className="text-[13px] font-bold text-[var(--ink)]">
               Quotations{" "}
               <span className="font-normal text-[var(--ink-muted)]">
@@ -187,7 +187,7 @@ export default async function QuotationsPage({
             </p>
           </div>
           {pendingCount > 0 && (
-            <span className="rounded-full border border-amber-500/30 bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold text-amber-600">
+            <span className="rounded-full border border-amber-500/30 bg-amber-500/15 px-2 py-0.5 text-[12px] font-bold text-amber-600">
               {pendingCount} awaiting client
             </span>
           )}
@@ -235,7 +235,7 @@ export default async function QuotationsPage({
       {/* Table */}
       <div className="doc-list overflow-x-auto rounded-xl border border-[var(--line)]">
         <table className="w-full text-left text-sm">
-          <thead className="bg-[var(--panel-strong)] text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
+          <thead className="bg-[var(--panel-strong)] text-[12px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
             <tr>
               <th className="px-3 py-2.5">Job</th>
               <th className="hidden px-3 py-2.5 sm:table-cell">Client</th>
@@ -280,15 +280,15 @@ export default async function QuotationsPage({
 
                 const approvalBadge =
                   job.clientApproved === true ? (
-                    <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-bold text-emerald-600">
+                    <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-1.5 py-0.5 text-[12px] font-bold text-emerald-600">
                       Approved
                     </span>
                   ) : job.clientApproved === false ? (
-                    <span className="rounded-full border border-red-500/30 bg-red-500/10 px-1.5 py-0.5 text-[10px] font-bold text-red-500">
+                    <span className="rounded-full border border-red-500/30 bg-red-500/10 px-1.5 py-0.5 text-[12px] font-bold text-red-500">
                       Declined
                     </span>
                   ) : job.status === "AWAITING_APPROVAL" ? (
-                    <span className="rounded-full border border-amber-500/30 bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-bold text-amber-600 animate-pulse">
+                    <span className="rounded-full border border-amber-500/30 bg-amber-500/15 px-1.5 py-0.5 text-[12px] font-bold text-amber-600 animate-pulse">
                       Awaiting
                     </span>
                   ) : null;
@@ -320,12 +320,12 @@ export default async function QuotationsPage({
                         {job.jobNumber}
                       </Link>
                       {canGenerate && (
-                        <p className="mt-0.5 text-[10px] text-[var(--ink-muted)]">
+                        <p className="mt-0.5 text-[12px] text-[var(--ink-muted)]">
                           {quoteNumber}
                         </p>
                       )}
                       {/* Mobile: show client + approval inline */}
-                      <p className="mt-0.5 text-[10px] text-[var(--ink-muted)] sm:hidden">
+                      <p className="mt-0.5 text-[12px] text-[var(--ink-muted)] sm:hidden">
                         {job.client.fullName}
                       </p>
                       <div className="mt-1 sm:hidden">{approvalBadge}</div>
@@ -336,7 +336,7 @@ export default async function QuotationsPage({
                       <p className="text-xs font-medium text-[var(--ink)]">
                         {job.client.fullName}
                       </p>
-                      <p className="text-[10px] text-[var(--ink-muted)]">
+                      <p className="text-[12px] text-[var(--ink-muted)]">
                         {job.client.phone}
                       </p>
                     </td>
@@ -355,7 +355,7 @@ export default async function QuotationsPage({
                         {approvalBadge}
                         {daysPending !== null && daysPending > 0 && (
                           <span
-                            className={`text-[10px] font-medium ${daysPending >= 3 ? "text-red-400" : "text-amber-600"}`}
+                            className={`text-[12px] font-medium ${daysPending >= 3 ? "text-red-400" : "text-amber-600"}`}
                           >
                             {daysPending}d pending
                           </span>
@@ -377,7 +377,7 @@ export default async function QuotationsPage({
                     </td>
 
                     {/* Sent date */}
-                    <td className="hidden px-3 py-2.5 text-[10px] text-[var(--ink-muted)] lg:table-cell">
+                    <td className="hidden px-3 py-2.5 text-[12px] text-[var(--ink-muted)] lg:table-cell">
                       {job.quotedAt ? (
                         <span className="text-emerald-600">
                           ✓ {formatEATDate(job.quotedAt)}
@@ -447,7 +447,7 @@ export default async function QuotationsPage({
                             </RowActionsMenu>
                           </>
                         ) : (
-                          <span className="text-[11px] text-[var(--ink-muted)]">
+                          <span className="text-[13px] text-[var(--ink-muted)]">
                             {["RECEIVED"].includes(job.status) ? "Needs diagnosis" : "No estimate yet"}
                           </span>
                         )}

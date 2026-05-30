@@ -105,7 +105,7 @@ export function UserPasswordResetForm({
 
         {state.error ? <p className="text-[13px] text-red-400 md:col-span-3">{state.error}</p> : null}
         {state.success ? <p className="text-[13px] text-[var(--accent)] md:col-span-3">{state.success}</p> : null}
-        <p className="text-[11px] text-[var(--ink-muted)] md:col-span-3">Generate copies a temp password to clipboard — share it via WhatsApp.</p>
+        <p className="text-[13px] text-[var(--ink-muted)] md:col-span-3">Generate copies a temp password to clipboard — share it via WhatsApp.</p>
       </form>
     </>
   );

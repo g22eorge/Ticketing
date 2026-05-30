@@ -167,9 +167,9 @@ export default async function BankPage({
       <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
         <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
           <div>
-            <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Finance</p>
+            <p className="text-[12px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Finance</p>
             <p className="text-[13px] font-bold text-[var(--ink)]">Bank Accounts</p>
-            <p className="text-[11px] text-[var(--ink-muted)]">Manage accounts, record transactions, and reconcile</p>
+            <p className="text-[13px] text-[var(--ink-muted)]">Manage accounts, record transactions, and reconcile</p>
           </div>
           <Link
             href="/finance/accounts"
@@ -183,32 +183,32 @@ export default async function BankPage({
       {/* ── SUMMARY STRIP ────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
-          <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Total Accounts</p>
+          <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Total Accounts</p>
           <p className="mt-1 text-xl font-bold tabular-nums text-[var(--ink)]">
             {bankAccounts.filter((a) => a.isActive).length}
           </p>
-          <p className="mt-0.5 text-[11px] text-[var(--ink-muted)]">active bank accounts</p>
+          <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">active bank accounts</p>
         </div>
         <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
-          <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Net Bank Position</p>
+          <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Net Bank Position</p>
           <p className={`mt-1 text-xl font-bold tabular-nums ${totalBalance >= 0 ? "text-[var(--ink)]" : "text-red-500"}`}>
             {totalBalance < 0 ? "−" : ""}{formatMoneyCompact(Math.abs(totalBalance), currency)}
           </p>
-          <p className="mt-0.5 text-[11px] text-[var(--ink-muted)]">across all accounts</p>
+          <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">across all accounts</p>
         </div>
         <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
-          <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Credits This Month</p>
+          <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Credits This Month</p>
           <p className="mt-1 text-xl font-bold tabular-nums text-emerald-600">
             {formatMoneyCompact(globalCreditsThisMonth, currency)}
           </p>
-          <p className="mt-0.5 text-[11px] text-[var(--ink-muted)]">all accounts</p>
+          <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">all accounts</p>
         </div>
         <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
-          <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Debits This Month</p>
+          <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Debits This Month</p>
           <p className="mt-1 text-xl font-bold tabular-nums text-red-500">
             {formatMoneyCompact(globalDebitsThisMonth, currency)}
           </p>
-          <p className="mt-0.5 text-[11px] text-[var(--ink-muted)]">all accounts</p>
+          <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">all accounts</p>
         </div>
       </div>
 
@@ -304,12 +304,12 @@ export default async function BankPage({
                     {formatMoney(acc.currentBalance, currency)}
                   </p>
                   <div className="mt-1 flex items-center justify-between">
-                    <p className="text-[10px] text-[var(--ink-muted)]">
+                    <p className="text-[12px] text-[var(--ink-muted)]">
                       {acc._count.transactions} tx
                     </p>
                     {acctMonthNet !== 0 && (
                       <p
-                        className={`text-[10px] font-semibold ${acctMonthNet >= 0 ? "text-emerald-600" : "text-red-500"}`}
+                        className={`text-[12px] font-semibold ${acctMonthNet >= 0 ? "text-emerald-600" : "text-red-500"}`}
                       >
                         {acctMonthNet >= 0 ? "+" : "−"}
                         {formatMoneyCompact(Math.abs(acctMonthNet), currency)} this month
@@ -352,8 +352,8 @@ export default async function BankPage({
                 {allTransactions.length > 0 && (
                   <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
                     <div className="flex items-center justify-between">
-                      <p className="text-[11px] font-semibold text-[var(--ink)]">Reconciliation Status</p>
-                      <p className="text-[11px] text-[var(--ink-muted)]">
+                      <p className="text-[13px] font-semibold text-[var(--ink)]">Reconciliation Status</p>
+                      <p className="text-[13px] text-[var(--ink-muted)]">
                         {allTransactions.filter((t) => t.reconciledAt).length} of{" "}
                         {allTransactions.length} reconciled
                       </p>
@@ -371,7 +371,7 @@ export default async function BankPage({
                       />
                     </div>
                     {unreconciledTx.length > 0 && (
-                      <p className="mt-1.5 text-[11px] text-amber-600">
+                      <p className="mt-1.5 text-[13px] text-amber-600">
                         {unreconciledTx.length} unreconciled ·{" "}
                         {formatMoneyCompact(Math.abs(unreconciledAmount), currency)} net exposure
                       </p>
@@ -496,19 +496,19 @@ export default async function BankPage({
                                 </span>
                               </div>
                               <div className="flex items-center justify-between gap-2">
-                                <div className="flex items-center gap-2 text-[11px] text-[var(--ink-muted)]">
+                                <div className="flex items-center gap-2 text-[13px] text-[var(--ink-muted)]">
                                   <span>{new Date(tx.date).toLocaleDateString("en-UG", { day: "numeric", month: "short", year: "numeric" })}</span>
                                   {tx.reference && <><span className="opacity-40">·</span><span>{tx.reference}</span></>}
                                 </div>
                                 <div className="flex items-center gap-2">
                                   {rb !== undefined && (
-                                    <span className={`text-[11px] tabular-nums ${(rb ?? 0) >= 0 ? "text-[var(--ink-muted)]" : "text-red-600"}`}>
+                                    <span className={`text-[13px] tabular-nums ${(rb ?? 0) >= 0 ? "text-[var(--ink-muted)]" : "text-red-600"}`}>
                                       bal {rb < 0 ? "−" : ""}{formatMoney(Math.abs(rb), currency)}
                                     </span>
                                   )}
                                   <form action={reconcile}>
                                     <input type="hidden" name="id" value={tx.id} />
-                                    <button type="submit" className="text-[11px] text-[var(--accent)] hover:underline">
+                                    <button type="submit" className="text-[13px] text-[var(--accent)] hover:underline">
                                       {tx.reconciledAt ? "Unmark" : "Reconcile"}
                                     </button>
                                   </form>
@@ -561,9 +561,9 @@ export default async function BankPage({
                                   </td>
                                   <td className="px-4 py-2.5 text-center">
                                     {tx.reconciledAt ? (
-                                      <span className="rounded-full bg-green-500/10 px-2 py-0.5 text-[10px] font-medium text-green-700">✓ Done</span>
+                                      <span className="rounded-full bg-green-500/10 px-2 py-0.5 text-[12px] font-medium text-green-700">✓ Done</span>
                                     ) : (
-                                      <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-700">Pending</span>
+                                      <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-[12px] font-medium text-amber-700">Pending</span>
                                     )}
                                   </td>
                                   <td className="px-3 py-2.5 text-right">

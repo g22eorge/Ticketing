@@ -77,7 +77,7 @@ export default async function FinancePage() {
 
       {/* ── Mobile Hero: Revenue this month (Revolut-style) ──────── */}
       <div className="lg:hidden flex flex-col items-center gap-1 rounded-3xl bg-[var(--panel)] px-6 py-7">
-        <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Month Revenue</p>
+        <p className="text-[13px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Month Revenue</p>
         <p className="mt-1 text-[32px] font-black leading-none tracking-tight text-[var(--ink)]">
           {formatMoneyCompact(revTotal, currency)}
         </p>
@@ -93,9 +93,9 @@ export default async function FinancePage() {
       {/* ── Desktop page header ───────────────────────────────────── */}
       <div className="panel-shadow hidden overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)] lg:block">
         <div className="px-4 py-4">
-          <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Finance</p>
+          <p className="text-[12px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Finance</p>
           <p className="text-[15px] font-bold text-[var(--ink)]">Finance Hub</p>
-          <p className="text-[11px] text-[var(--ink-muted)]">
+          <p className="text-[13px] text-[var(--ink-muted)]">
             {now.toLocaleDateString("en-UG", { month: "long", year: "numeric" })}
           </p>
         </div>
@@ -105,7 +105,7 @@ export default async function FinancePage() {
       <div className="grid grid-cols-2 gap-2.5 lg:hidden">
         {STATS.map((s) => (
           <div key={s.label} className="rounded-2xl bg-[var(--panel)] px-4 py-3.5">
-            <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">{s.label}</p>
+            <p className="text-[12px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">{s.label}</p>
             <p className={`mt-1 text-[20px] font-black leading-none ${s.color}`}>{s.value}</p>
           </div>
         ))}
@@ -139,7 +139,7 @@ export default async function FinancePage() {
               <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--panel-strong)]">
                 <NavIcon d={item.icon} color={item.color} />
               </span>
-              <span className="text-[11px] font-semibold leading-tight text-[var(--ink)]">{item.label}</span>
+              <span className="text-[13px] font-semibold leading-tight text-[var(--ink)]">{item.label}</span>
             </Link>
           ))}
         </div>
@@ -149,7 +149,7 @@ export default async function FinancePage() {
       <div className="hidden gap-4 lg:grid lg:grid-cols-4">
         {STATS.map((s) => (
           <div key={s.label} className="rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-4">
-            <p className="text-[11px] text-[var(--ink-muted)]">{s.label}</p>
+            <p className="text-[13px] text-[var(--ink-muted)]">{s.label}</p>
             <p className={`mt-1 text-2xl font-black ${s.color}`}>{s.value}</p>
           </div>
         ))}

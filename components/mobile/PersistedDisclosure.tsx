@@ -43,7 +43,7 @@ export function PersistedDisclosure({
       <summary className="cursor-pointer list-none">
         <div className="flex items-center justify-between gap-2">
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">{title}</p>
-          <span className="text-[11px] text-[var(--ink-muted)]">Tap to expand</span>
+          <span className="text-[13px] text-[var(--ink-muted)]">Tap to expand</span>
         </div>
       </summary>
       <div className="mt-3">{children}</div>

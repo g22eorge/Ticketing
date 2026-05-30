@@ -81,7 +81,7 @@ function inlineFormat(text: string): React.ReactNode {
   const parts = text.split(/(\*\*[^*]+\*\*|`[^`]+`)/g);
   return parts.map((p, i) => {
     if (p.startsWith("**") && p.endsWith("**")) return <strong key={i}>{p.slice(2, -2)}</strong>;
-    if (p.startsWith("`") && p.endsWith("`")) return <code key={i} className="rounded bg-black/10 px-1 py-0.5 text-[11px] font-mono">{p.slice(1, -1)}</code>;
+    if (p.startsWith("`") && p.endsWith("`")) return <code key={i} className="rounded bg-black/10 px-1 py-0.5 text-[13px] font-mono">{p.slice(1, -1)}</code>;
     return p;
   });
 }
@@ -315,7 +315,7 @@ export function AiGuideBubble() {
             </div>
             <div className="min-w-0 flex-1">
               <p className="truncate text-[13px] font-black leading-tight text-black">Duuka AI Guide</p>
-              <p className="truncate text-[10px] font-medium text-black/60">
+              <p className="truncate text-[12px] font-medium text-black/60">
                 {minimised ? "Tap to expand" : "Ask me anything"}
               </p>
             </div>
@@ -368,7 +368,7 @@ export function AiGuideBubble() {
               <div className="flex flex-wrap gap-1.5 px-4 pb-2">
                 {SUGGESTIONS.map((s) => (
                   <button key={s} onClick={() => send(s)}
-                    className="rounded-full border border-[var(--accent)]/30 bg-[var(--accent)]/8 px-2.5 py-1 text-[11px] font-medium text-[var(--accent)] transition hover:bg-[var(--accent)]/15">
+                    className="rounded-full border border-[var(--accent)]/30 bg-[var(--accent)]/8 px-2.5 py-1 text-[13px] font-medium text-[var(--accent)] transition hover:bg-[var(--accent)]/15">
                     {s}
                   </button>
                 ))}

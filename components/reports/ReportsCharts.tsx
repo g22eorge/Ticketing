@@ -96,7 +96,7 @@ export function ReportsCharts({
             />
           </BarChart>
         </ResponsiveContainer>
-        <p className="mt-2 text-[11px] text-[var(--ink-muted)]">Tip: click a bar to open the matching jobs.</p>
+        <p className="mt-2 text-[13px] text-[var(--ink-muted)]">Tip: click a bar to open the matching jobs.</p>
       </div>
       <div className="panel-shadow h-72 rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
         <p className="mb-2 text-xs uppercase tracking-[0.15em] text-[var(--ink-muted)]">Repairs by Device Type</p>

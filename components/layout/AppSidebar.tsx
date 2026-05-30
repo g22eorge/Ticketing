@@ -455,7 +455,7 @@ export function AppSidebar({
               <span className="flex h-3.5 w-3.5 shrink-0 items-center justify-center text-[var(--ink-muted)]/40 [&_svg]:h-2.5 [&_svg]:w-2.5">
                 {groupIcon(section.group)}
               </span>
-              <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]" aria-hidden="true">
+              <p className="text-[13px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]" aria-hidden="true">
                 {section.label}
               </p>
               <div className="ml-1 h-px flex-1 bg-[var(--line)]/60" />
@@ -501,12 +501,12 @@ export function AppSidebar({
                     <span className="truncate">{item.label}</span>
                     <span className="ml-auto flex items-center gap-1">
                       {typeof newBadge === "number" && newBadge > 0 && (
-                        <span className="rounded-full bg-[var(--accent)] px-1.5 py-0.5 text-[10px] font-bold text-black">
+                        <span className="rounded-full bg-[var(--accent)] px-1.5 py-0.5 text-[12px] font-bold text-black">
                           {newBadge > 99 ? "99+" : newBadge} new
                         </span>
                       )}
                       {typeof badge === "number" && badge > 0 && (
-                        <span className="rounded-full border border-[var(--line)] bg-[var(--panel)] px-1.5 py-0.5 text-[10px] font-semibold text-[var(--ink-muted)]">
+                        <span className="rounded-full border border-[var(--line)] bg-[var(--panel)] px-1.5 py-0.5 text-[12px] font-semibold text-[var(--ink-muted)]">
                           {badge > 99 ? "99+" : badge}
                         </span>
                       )}
@@ -522,7 +522,7 @@ export function AppSidebar({
       {/* ── Platform admin section ── */}
       {isPlatformAdmin && (
         <div className="border-t border-[var(--line)] px-3 py-2">
-          <p className="mb-1 px-2 text-[9px] font-bold uppercase tracking-[0.18em] text-amber-500/70">
+          <p className="mb-1 px-2 text-[13px] font-bold uppercase tracking-[0.18em] text-amber-500/70">
             Platform Admin
           </p>
           <Link
@@ -546,9 +546,9 @@ export function AppSidebar({
       {/* ── Footer ── */}
       <div className="border-t border-[var(--line)] px-5 py-3 text-left">
         {orgName && (
-          <p className="truncate text-[11px] font-semibold text-[var(--ink)]" title={orgName}>{orgName}</p>
+          <p className="truncate text-[13px] font-semibold text-[var(--ink)]" title={orgName}>{orgName}</p>
         )}
-        <p className="mt-0.5 text-[10px] font-medium tracking-[0.08em] text-[var(--accent)]" aria-hidden="true">Duuka Pro Max</p>
+        <p className="mt-0.5 text-[12px] font-medium tracking-[0.08em] text-[var(--accent)]" aria-hidden="true">Duuka Pro Max</p>
       </div>
     </aside>
   );

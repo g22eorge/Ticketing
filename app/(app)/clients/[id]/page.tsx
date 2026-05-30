@@ -194,7 +194,7 @@ export default async function ClientDetailPage({
       </div>
       <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
         <div className="border-b border-[var(--accent)]/30 bg-[var(--accent)]/10 px-4 py-3">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--accent)]">Client Brief</p>
+          <p className="text-[13px] font-semibold uppercase tracking-[0.14em] text-[var(--accent)]">Client Brief</p>
           <p className="mt-1 text-sm text-[var(--ink)] [overflow-wrap:anywhere]">{clientBrief}</p>
         </div>
       </div>
@@ -203,12 +203,12 @@ export default async function ClientDetailPage({
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--line)] px-4 py-2.5">
           <div className="min-w-0">
             <p className="truncate text-[13px] font-bold text-[var(--ink)]">{client.fullName}</p>
-            <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[11px] text-[var(--ink-muted)]">
+            <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[13px] text-[var(--ink-muted)]">
               <a href={`tel:${client.phone}`} className="transition hover:text-[var(--accent)]">{client.phone}</a>
               {client.email ? <><span className="opacity-40">·</span><span>{client.email}</span></> : null}
               {client.organization ? <><span className="opacity-40">·</span><span className="truncate">{client.organization}</span></> : null}
             </div>
-            <p className="mt-0.5 text-[10px] text-[var(--ink-muted)]/60">Joined {formatEATDate(client.createdAt)} · last activity {formatEATDateTime(latestActivity)}</p>
+            <p className="mt-0.5 text-[12px] text-[var(--ink-muted)]/60">Joined {formatEATDate(client.createdAt)} · last activity {formatEATDateTime(latestActivity)}</p>
           </div>
           {canEdit ? (
             <Link href="/jobs/new" className="btn-premium shrink-0 rounded-lg px-3 py-1.5 text-[12px]">+ New Repair</Link>
@@ -216,19 +216,19 @@ export default async function ClientDetailPage({
         </div>
         <div className="grid grid-cols-2 divide-x divide-y divide-[var(--line)] sm:grid-cols-4 sm:divide-y-0">
           <div className="px-4 py-2">
-            <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">Total Jobs</p>
+            <p className="text-[13px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">Total Jobs</p>
             <p className="text-[15px] font-black tabular-nums leading-tight text-[var(--ink)]">{totalJobs}</p>
           </div>
           <div className="px-4 py-2">
-            <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">Open</p>
+            <p className="text-[13px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">Open</p>
             <p className="text-[15px] font-black tabular-nums leading-tight text-[var(--accent)]">{openJobs}</p>
           </div>
           <div className="px-4 py-2">
-            <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">Completed</p>
+            <p className="text-[13px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">Completed</p>
             <p className="text-[15px] font-black tabular-nums leading-tight text-[var(--ink)]">{completedJobs}</p>
           </div>
           <div className="px-4 py-2">
-            <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">Rate</p>
+            <p className="text-[13px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">Rate</p>
             <p className="text-[15px] font-black tabular-nums leading-tight text-[var(--ink)]">{completionRate.toFixed(0)}%</p>
           </div>
         </div>
@@ -287,13 +287,13 @@ export default async function ClientDetailPage({
 
       <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Job History</p>
+          <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Job History</p>
           <div className="flex items-center gap-2">
             {/* Status filter chips */}
             <div className="flex items-center gap-1">
               <Link
                 href={`/clients/${id}`}
-                className={`rounded-full border px-2.5 py-0.5 text-[11px] font-semibold transition ${!filters.status ? "border-[var(--accent)] bg-[var(--accent)] text-white" : "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)] hover:border-[var(--accent)]/30"}`}
+                className={`rounded-full border px-2.5 py-0.5 text-[13px] font-semibold transition ${!filters.status ? "border-[var(--accent)] bg-[var(--accent)] text-white" : "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)] hover:border-[var(--accent)]/30"}`}
               >
                 All
               </Link>
@@ -301,7 +301,7 @@ export default async function ClientDetailPage({
                 <Link
                   key={status}
                   href={`/clients/${id}?${new URLSearchParams({ ...(filters.q ? { q: filters.q } : {}), status }).toString()}`}
-                  className={`hidden rounded-full border px-2.5 py-0.5 text-[11px] font-semibold transition sm:block ${filters.status === status ? "border-[var(--accent)] bg-[var(--accent)] text-white" : "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)] hover:border-[var(--accent)]/30"}`}
+                  className={`hidden rounded-full border px-2.5 py-0.5 text-[13px] font-semibold transition sm:block ${filters.status === status ? "border-[var(--accent)] bg-[var(--accent)] text-white" : "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)] hover:border-[var(--accent)]/30"}`}
                 >
                   {statusOptionLabel[status]}
                 </Link>
@@ -329,13 +329,13 @@ export default async function ClientDetailPage({
                   <Link href={`/jobs/${job.id}?returnTo=/clients/${client.id}&returnLabel=Client`} className="absolute inset-0 z-0" aria-label={`Open ${job.jobNumber}`} />
                   <div className="pointer-events-none relative z-10 px-4 py-3 pl-6">
                     <div className="mb-1 flex items-center justify-between gap-2">
-                      <span className="mono text-[10px] font-medium tracking-wide text-[var(--ink-muted)]/50">{job.jobNumber}</span>
+                      <span className="mono text-[12px] font-medium tracking-wide text-[var(--ink-muted)]/50">{job.jobNumber}</span>
                       <svg viewBox="0 0 6 10" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="h-2.5 w-1.5 shrink-0 text-[var(--ink-muted)]/25" aria-hidden="true"><path d="M1 1l4 4-4 4"/></svg>
                     </div>
                     <p className="text-[15px] font-bold leading-snug tracking-tight text-[var(--ink)]">{device}</p>
                     <div className="mt-1.5 flex items-center gap-1.5">
                       <JobStatusBadge status={job.status} />
-                      <span className="text-[11px] text-[var(--ink-muted)]">· {formatEATDate(job.receivedAt)}</span>
+                      <span className="text-[13px] text-[var(--ink-muted)]">· {formatEATDate(job.receivedAt)}</span>
                     </div>
                   </div>
                 </div>
@@ -347,8 +347,8 @@ export default async function ClientDetailPage({
 
       <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
         <div className="border-b border-[var(--line)] px-4 py-2.5">
-          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Client Notes</p>
-          <p className="text-[11px] text-[var(--ink-muted)]">Internal notes visible to your team only</p>
+          <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Client Notes</p>
+          <p className="text-[13px] text-[var(--ink-muted)]">Internal notes visible to your team only</p>
         </div>
         <form action={addClientNote} className="flex flex-col gap-2 p-4">
           <textarea name="body" required placeholder="Add note" className="min-h-24 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm outline-none transition focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/20" />
@@ -366,7 +366,7 @@ export default async function ClientDetailPage({
             client.notesEntries.map((note: ClientDetail["notesEntries"][number]) => (
               <div key={note.id} className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] p-3">
                 <p className="text-sm leading-relaxed">{note.body}</p>
-                <p className="mt-1.5 text-[10px] text-[var(--ink-muted)]">
+                <p className="mt-1.5 text-[12px] text-[var(--ink-muted)]">
                   {note.author.name} · {formatEATDateTime(note.createdAt)}
                 </p>
               </div>

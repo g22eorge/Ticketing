@@ -97,7 +97,7 @@ function TargetCard({ target, currency }: { target: TargetRecord; currency: stri
 function TargetSection({ title, targets, currency }: { title: string; targets: TargetRecord[]; currency: string }) {
   return (
     <section>
-      <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]">{title}</p>
+      <p className="mb-3 text-[12px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]">{title}</p>
       {targets.length === 0 ? (
         <p className="rounded-lg border border-dashed border-[var(--line)] p-6 text-center text-sm text-[var(--ink-muted)]">
           No targets set for this period.
@@ -197,9 +197,9 @@ export default async function TargetsPage({ searchParams }: { searchParams: Sear
       <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
         <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
           <div>
-            <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Analytics</p>
+            <p className="text-[12px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Analytics</p>
             <p className="text-[13px] font-bold text-[var(--ink)]">Targets &amp; Productivity</p>
-            <p className="text-[11px] text-[var(--ink-muted)]">{periodLabel} — {label}</p>
+            <p className="text-[13px] text-[var(--ink-muted)]">{periodLabel} — {label}</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <form className="flex gap-1 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] p-0.5" method="GET" action="/targets">

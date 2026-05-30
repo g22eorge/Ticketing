@@ -38,15 +38,15 @@ export default async function PaymentsPage() {
       {/* Summary */}
       <div className="grid gap-4 sm:grid-cols-3">
         <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] px-5 py-4">
-          <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-[var(--ink-muted)]">Revenue This Month</p>
+          <p className="text-[12px] font-bold uppercase tracking-[0.15em] text-[var(--ink-muted)]">Revenue This Month</p>
           <p className="mt-1 text-2xl font-bold text-[var(--ink)]">{fmtMoney(monthRevenue)}</p>
         </div>
         <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] px-5 py-4">
-          <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-[var(--ink-muted)]">Total Revenue</p>
+          <p className="text-[12px] font-bold uppercase tracking-[0.15em] text-[var(--ink-muted)]">Total Revenue</p>
           <p className="mt-1 text-2xl font-bold text-[var(--ink)]">{fmtMoney(totalRevenue)}</p>
         </div>
         <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] px-5 py-4">
-          <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-[var(--ink-muted)]">Successful Transactions</p>
+          <p className="text-[12px] font-bold uppercase tracking-[0.15em] text-[var(--ink-muted)]">Successful Transactions</p>
           <p className="mt-1 text-2xl font-bold text-[var(--ink)]">{successfulCount}</p>
         </div>
       </div>

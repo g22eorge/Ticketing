@@ -58,7 +58,7 @@ export default async function SupplierDetailPage({
     <div className="space-y-6 max-w-2xl">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Inventory · Supplier</p>
+          <p className="text-[12px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Inventory · Supplier</p>
           <p className="mt-0.5 text-[13px] font-bold text-[var(--ink)]">{supplier.name}</p>
         </div>
         <span className={`mt-1 rounded-full px-3 py-1 text-xs font-semibold ${supplier.isActive ? "border border-emerald-400/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" : "border border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]"}`}>
@@ -76,7 +76,7 @@ export default async function SupplierDetailPage({
       {/* Supplier price list */}
       <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] overflow-x-auto">
         <div className="flex items-center justify-between px-5 py-3 border-b border-[var(--line)]">
-          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Price List ({prices.length})</p>
+          <p className="text-[12px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Price List ({prices.length})</p>
         </div>
         <form action={createSupplierPriceAction} className="grid gap-2 border-b border-[var(--line)] p-4 md:grid-cols-[1.4fr_1fr_0.7fr_0.6fr_0.7fr_auto]">
           <input type="hidden" name="supplierId" value={supplier.id} />
@@ -149,7 +149,7 @@ export default async function SupplierDetailPage({
 
       <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] overflow-x-auto">
         <div className="flex items-center justify-between px-5 py-3 border-b border-[var(--line)]">
-          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]">
+          <p className="text-[12px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]">
             Supplier Bills ({supplier.supplierBills.length})
           </p>
           <Link
@@ -192,7 +192,7 @@ export default async function SupplierDetailPage({
       {/* Purchase orders */}
       <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] overflow-x-auto">
         <div className="flex items-center justify-between px-5 py-3 border-b border-[var(--line)]">
-          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]">
+          <p className="text-[12px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]">
             Purchase Orders ({supplier.purchaseOrders.length})
           </p>
           <Link

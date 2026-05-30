@@ -90,7 +90,7 @@ export function MobileHomeDashboard(p: MobileHomeProps) {
 
       {/* ── Hero: total revenue today (repairs + POS) ─────────────── */}
       <div className="rounded-3xl bg-[var(--panel)] px-6 py-7 text-center">
-        <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]">
+        <p className="text-[13px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]">
           Revenue Today
         </p>
         <p className="mt-2 text-[36px] font-black leading-none tracking-tight text-[var(--ink)]">
@@ -100,11 +100,11 @@ export function MobileHomeDashboard(p: MobileHomeProps) {
         <div className="mx-auto mt-2 h-[3px] w-24 rounded-full bg-gradient-to-r from-[var(--accent)] to-emerald-400 opacity-80" aria-hidden />
         {/* Breakdown chips */}
         <div className="mt-3 flex items-center justify-center gap-3">
-          <span className="rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[10px] font-bold text-emerald-500">
+          <span className="rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[12px] font-bold text-emerald-500">
             Repairs {compact(p.cashTodayValue, p.currency)}
           </span>
           {p.salesTodayValue > 0 && (
-            <span className="rounded-full bg-violet-500/10 px-2.5 py-0.5 text-[10px] font-bold text-violet-400">
+            <span className="rounded-full bg-violet-500/10 px-2.5 py-0.5 text-[12px] font-bold text-violet-400">
               Sales {compact(p.salesTodayValue, p.currency)}
             </span>
           )}
@@ -122,26 +122,26 @@ export function MobileHomeDashboard(p: MobileHomeProps) {
           <span className={`text-[22px] font-black leading-none ${activeJobs > 0 ? "text-sky-400" : "text-[var(--ink-muted)]/25"}`}>
             {activeJobs}
           </span>
-          <span className="text-[9px] font-bold uppercase tracking-[0.1em] text-[var(--ink-muted)]">Active</span>
+          <span className="text-[13px] font-bold uppercase tracking-[0.1em] text-[var(--ink-muted)]">Active</span>
         </Link>
         <Link href="/documents/invoices?status=ISSUED" className="flex flex-col items-center gap-0.5 py-4 active:bg-[var(--panel-strong)]">
           <span className={`text-[18px] font-black leading-none ${p.outstandingValue > 0 ? "text-amber-400" : "text-[var(--ink-muted)]/25"}`}>
             {compact(p.outstandingValue, p.currency)}
           </span>
-          <span className="text-[9px] font-bold uppercase tracking-[0.1em] text-[var(--ink-muted)]">Due</span>
+          <span className="text-[13px] font-bold uppercase tracking-[0.1em] text-[var(--ink-muted)]">Due</span>
         </Link>
         <Link href="/jobs?status=READY_FOR_PICKUP" className="flex flex-col items-center gap-0.5 py-4 active:bg-[var(--panel-strong)]">
           <span className={`text-[22px] font-black leading-none ${p.readyForPickupCount > 0 ? "text-[var(--accent)]" : "text-[var(--ink-muted)]/25"}`}>
             {p.readyForPickupCount}
           </span>
-          <span className="text-[9px] font-bold uppercase tracking-[0.1em] text-[var(--ink-muted)]">Ready</span>
+          <span className="text-[13px] font-bold uppercase tracking-[0.1em] text-[var(--ink-muted)]">Ready</span>
         </Link>
       </div>
 
       {/* ── Needs attention ───────────────────────────────────────── */}
       {urgentItems.length > 0 && (
         <div className="rounded-2xl border border-amber-500/20 bg-amber-500/[0.06] p-4">
-          <p className="mb-3 text-[10px] font-black uppercase tracking-[0.16em] text-amber-500">
+          <p className="mb-3 text-[12px] font-black uppercase tracking-[0.16em] text-amber-500">
             ⚠ {urgentItems.length} need{urgentItems.length === 1 ? "s" : ""} attention
           </p>
           <div className="space-y-2.5">
@@ -171,7 +171,7 @@ export function MobileHomeDashboard(p: MobileHomeProps) {
             <span className={`flex h-14 w-14 items-center justify-center rounded-2xl ${a.bg}`}>
               {a.icon}
             </span>
-            <span className="text-[10px] font-semibold text-[var(--ink-muted)]">{a.label}</span>
+            <span className="text-[12px] font-semibold text-[var(--ink-muted)]">{a.label}</span>
           </Link>
         ))}
       </div>
@@ -180,7 +180,7 @@ export function MobileHomeDashboard(p: MobileHomeProps) {
       <Link href="/reports"
         className="flex items-center justify-between rounded-2xl bg-[var(--panel)] px-4 py-3.5 active:opacity-80">
         <div>
-          <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-[var(--ink-muted)]">Month to date</p>
+          <p className="text-[12px] font-bold uppercase tracking-[0.15em] text-[var(--ink-muted)]">Month to date</p>
           <p className="mt-0.5 text-[18px] font-black text-[var(--accent)]">
             {compact(p.revenueMtd, p.currency)}
           </p>

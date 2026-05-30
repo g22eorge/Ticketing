@@ -201,22 +201,22 @@ export default async function DeliveryNotesPage() {
       <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
         <div className="flex items-center justify-between gap-2 border-b border-[var(--line)] px-4 py-2.5">
           <div>
-            <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Documents</p>
+            <p className="text-[12px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Documents</p>
             <p className="text-[13px] font-bold text-[var(--ink)]">Delivery Notes</p>
           </div>
           <Link href="/documents/invoices" className="btn-premium rounded-lg px-3 py-1.5 text-[12px]">Create Delivery Note</Link>
         </div>
         <div className="grid grid-cols-2 divide-x divide-y divide-[var(--line)] sm:grid-cols-3 sm:divide-y-0">
           <div className="px-4 py-2">
-            <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">Total Notes</p>
+            <p className="text-[13px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">Total Notes</p>
             <p className="text-[15px] font-black tabular-nums leading-tight text-[var(--ink)]">{notes.length}</p>
           </div>
           <div className="px-4 py-2">
-            <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">This Month</p>
+            <p className="text-[13px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">This Month</p>
             <p className="text-[15px] font-black tabular-nums leading-tight text-[var(--ink)]">{thisMonth}</p>
           </div>
           <div className="px-4 py-2">
-            <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">Unique Sources</p>
+            <p className="text-[13px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">Unique Sources</p>
             <p className="text-[15px] font-black tabular-nums leading-tight text-[var(--ink)]">{uniqueSources}</p>
           </div>
         </div>
@@ -248,7 +248,7 @@ export default async function DeliveryNotesPage() {
 
       <div className="doc-list overflow-x-auto rounded-xl border border-[var(--line)]">
         <table className="w-full text-left text-sm">
-          <thead className="bg-[var(--panel-strong)] text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
+          <thead className="bg-[var(--panel-strong)] text-[12px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
             <tr>
               <th className="px-3 py-2.5">Delivery Note</th>
               <th className="hidden px-3 py-2.5 md:table-cell">Source</th>
@@ -265,7 +265,7 @@ export default async function DeliveryNotesPage() {
                   <p className="mono font-bold text-[var(--ink)]">{n.deliveryNoteNumber}</p>
                   <p className="text-xs text-[var(--ink-muted)]">{n.deliveredByName} → {n.receivedByName}</p>
                   {/* Client + source visible on mobile (those columns hidden at md/lg) */}
-                  <p className="mt-0.5 text-[11px] font-medium text-[var(--ink)] lg:hidden">
+                  <p className="mt-0.5 text-[13px] font-medium text-[var(--ink)] lg:hidden">
                     {n.invoice?.job?.client.fullName ?? n.sale?.client?.fullName ?? ""}
                   </p>
                 </td>
@@ -281,10 +281,10 @@ export default async function DeliveryNotesPage() {
                   ) : "-"}
                 </td>
                 <td className="hidden px-3 py-2.5 text-[var(--ink-muted)] lg:table-cell">{n.invoice?.job?.client.fullName ?? n.sale?.client?.fullName ?? "-"}</td>
-                <td className="px-3 py-2.5 text-[var(--ink-muted)]">{n.deliveredAt.toLocaleDateString()}<br /><span className="text-[10px]">{n.deliveredAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span></td>
+                <td className="px-3 py-2.5 text-[var(--ink-muted)]">{n.deliveredAt.toLocaleDateString()}<br /><span className="text-[12px]">{n.deliveredAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span></td>
                 <td className="hidden px-3 py-2.5 lg:table-cell">
                   {n.deliveryMethod ? (
-                    <span className="rounded-full border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-0.5 text-[11px] font-semibold text-[var(--ink-muted)]">
+                    <span className="rounded-full border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-0.5 text-[13px] font-semibold text-[var(--ink-muted)]">
                       {n.deliveryMethod.replaceAll("_", " ")}
                     </span>
                   ) : "-"}

@@ -575,22 +575,22 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
           <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-3">
             <div className="mb-3 flex items-start justify-between gap-2">
               <div>
-                <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Settings · User</p>
+                <p className="text-[12px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Settings · User</p>
                 <p className="mt-0.5 text-[13px] font-semibold text-[var(--ink)]">{target.name}</p>
-                <p className="text-[11px] text-[var(--ink-muted)]">{target.email}</p>
+                <p className="text-[13px] text-[var(--ink-muted)]">{target.email}</p>
               </div>
               <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-                <span className="rounded-full border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-0.5 text-[10px] font-semibold text-[var(--ink-muted)]">{roleLabel(target.role)}</span>
-                <span className="rounded-full border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-0.5 text-[10px] font-semibold text-[var(--ink-muted)]">{accessMode === "READ_ONLY" ? "Read-only" : "Full"}</span>
-                <span className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${target.isActive ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400" : "border-[var(--line)] text-[var(--ink-muted)]"}`}>{target.isActive ? "Active" : "Inactive"}</span>
+                <span className="rounded-full border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-0.5 text-[12px] font-semibold text-[var(--ink-muted)]">{roleLabel(target.role)}</span>
+                <span className="rounded-full border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-0.5 text-[12px] font-semibold text-[var(--ink-muted)]">{accessMode === "READ_ONLY" ? "Read-only" : "Full"}</span>
+                <span className={`rounded-full border px-2 py-0.5 text-[12px] font-semibold ${target.isActive ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400" : "border-[var(--line)] text-[var(--ink-muted)]"}`}>{target.isActive ? "Active" : "Inactive"}</span>
               </div>
             </div>
-            <p className="mb-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Profile</p>
+            <p className="mb-1.5 text-[12px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Profile</p>
             <UserDetailsForm id={target.id} name={target.name} email={target.email} phone={target.phone} action={updateUserDetails} />
           </section>
 
           <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-3">
-            <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Access Mode</p>
+            <p className="mb-2 text-[12px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Access Mode</p>
             <form action={setUserAccessMode} className="flex flex-wrap items-center gap-2">
               <input type="hidden" name="userId" value={target.id} />
               <select
@@ -604,25 +604,25 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
               </select>
               <button type="submit" className="btn-premium-secondary rounded-lg px-3 py-1.5 text-[13px]" disabled={target.id === actor.id}>Apply</button>
               {target.id === actor.id ? (
-                <p className="text-[11px] text-[var(--ink-muted)]">Cannot change your own mode.</p>
+                <p className="text-[13px] text-[var(--ink-muted)]">Cannot change your own mode.</p>
               ) : null}
             </form>
           </section>
 
           <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-3">
-            <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Reset Password</p>
+            <p className="mb-2 text-[12px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Reset Password</p>
             <UserPasswordResetForm userId={target.id} action={resetUserPassword} />
           </section>
 
           {/* Audit log */}
           <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)]">
-            <p className="px-3 pt-3 text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Access Log</p>
+            <p className="px-3 pt-3 text-[12px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Access Log</p>
             <div className="mt-1 divide-y divide-[var(--line)]">
               {accessAudit.length > 0 ? (
                 accessAudit.map((entry) => (
                   <div key={entry.id} className="px-3 py-2">
                     <p className="text-[13px] font-medium text-[var(--ink)]">{entry.action}</p>
-                    <p className="mt-0.5 text-[11px] text-[var(--ink-muted)]">{entry.actorUser.name} · {entry.createdAt.toLocaleString()}</p>
+                    <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">{entry.actorUser.name} · {entry.createdAt.toLocaleString()}</p>
                   </div>
                 ))
               ) : (
@@ -634,7 +634,7 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
 
         {/* Right column: Permissions */}
         <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-3">
-          <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Permissions</p>
+          <p className="mb-2 text-[12px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Permissions</p>
           <UserAccessControlPanel
             key={target.id}
             userId={target.id}

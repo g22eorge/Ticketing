@@ -36,7 +36,7 @@ export default async function SupplierBillDetailPage({ params }: { params: Promi
     <div className="max-w-3xl space-y-6">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Inventory · Supplier Bill</p>
+          <p className="text-[12px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Inventory · Supplier Bill</p>
           <p className="mt-0.5 font-mono text-[13px] font-bold text-[var(--ink)]">{bill.billNumber}</p>
           <p className="mt-0.5 text-sm text-[var(--ink-muted)]">Supplier: <Link href={`/inventory/suppliers/${bill.supplier.id}`} className="text-[var(--gold)] hover:underline">{bill.supplier.name}</Link></p>
         </div>
@@ -44,15 +44,15 @@ export default async function SupplierBillDetailPage({ params }: { params: Promi
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 py-2"><p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Issued</p><p className="mt-0.5 text-sm font-semibold text-[var(--ink)]">{fmt(bill.issuedAt)}</p></div>
-        <div className="rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 py-2"><p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Due</p><p className="mt-0.5 text-sm font-semibold text-[var(--ink)]">{fmt(bill.dueAt)}</p></div>
-        <div className="rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 py-2"><p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Total</p><p className="mt-0.5 text-sm font-semibold text-[var(--ink)] tabular-nums">{bill.currency} {bill.totalAmount.toLocaleString()}</p></div>
-        <div className="rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 py-2"><p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Balance</p><p className="mt-0.5 text-sm font-semibold text-[var(--ink)] tabular-nums">{bill.currency} {balance.toLocaleString()}</p></div>
+        <div className="rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 py-2"><p className="text-[12px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Issued</p><p className="mt-0.5 text-sm font-semibold text-[var(--ink)]">{fmt(bill.issuedAt)}</p></div>
+        <div className="rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 py-2"><p className="text-[12px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Due</p><p className="mt-0.5 text-sm font-semibold text-[var(--ink)]">{fmt(bill.dueAt)}</p></div>
+        <div className="rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 py-2"><p className="text-[12px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Total</p><p className="mt-0.5 text-sm font-semibold text-[var(--ink)] tabular-nums">{bill.currency} {bill.totalAmount.toLocaleString()}</p></div>
+        <div className="rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 py-2"><p className="text-[12px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Balance</p><p className="mt-0.5 text-sm font-semibold text-[var(--ink)] tabular-nums">{bill.currency} {balance.toLocaleString()}</p></div>
       </div>
 
       <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] overflow-hidden">
         <div className="px-5 py-3 border-b border-[var(--line)] flex flex-wrap items-center justify-between gap-2">
-          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Bill Lines</p>
+          <p className="text-[12px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Bill Lines</p>
           <div className="flex gap-2 text-xs font-semibold">
             {bill.po ? <Link href={`/inventory/purchase-orders/${bill.po.id}`} className="text-[var(--gold)] hover:underline">{bill.po.reference ?? "Purchase Order"}</Link> : null}
             {bill.grn ? <Link href={`/inventory/goods-received/${bill.grn.id}`} className="text-[var(--gold)] hover:underline">{bill.grn.grnNumber}</Link> : null}
@@ -67,11 +67,11 @@ export default async function SupplierBillDetailPage({ params }: { params: Promi
         </div>
       </div>
 
-      {bill.notes ? <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] px-5 py-4"><p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)] mb-1">Notes</p><p className="text-sm text-[var(--ink)] whitespace-pre-wrap">{bill.notes}</p></div> : null}
+      {bill.notes ? <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] px-5 py-4"><p className="text-[12px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)] mb-1">Notes</p><p className="text-sm text-[var(--ink)] whitespace-pre-wrap">{bill.notes}</p></div> : null}
 
       <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] overflow-hidden">
         <div className="px-5 py-3 border-b border-[var(--line)] flex items-center justify-between gap-2">
-          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Payments ({bill.payments.length})</p>
+          <p className="text-[12px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Payments ({bill.payments.length})</p>
           <p className="text-xs font-semibold text-[var(--ink-muted)]">Paid {bill.currency} {bill.paidAmount.toLocaleString()}</p>
         </div>
         {balance > 0 && bill.status !== "CANCELLED" ? (

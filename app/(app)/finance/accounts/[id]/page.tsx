@@ -135,23 +135,23 @@ export default async function AccountLedgerPage({
       {/* ── HEADER ───────────────────────────────────────────────────────── */}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Finance · Accounts</p>
+          <p className="text-[12px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Finance · Accounts</p>
           <p className="mt-0.5 text-[13px] font-bold text-[var(--ink)]">
             <span className="font-mono text-[var(--accent)]">{account.code}</span>
             {" "}
             {account.name}
           </p>
           <div className="mt-1 flex items-center gap-2">
-            <span className={`rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${TYPE_COLOR[account.type] ?? ""}`}>
+            <span className={`rounded-md px-2 py-0.5 text-[12px] font-bold uppercase tracking-wide ${TYPE_COLOR[account.type] ?? ""}`}>
               {account.type}
             </span>
             {account.parent && (
-              <span className="text-[11px] text-[var(--ink-muted)]">
+              <span className="text-[13px] text-[var(--ink-muted)]">
                 under {account.parent.code} {account.parent.name}
               </span>
             )}
             {account.description && (
-              <span className="text-[11px] text-[var(--ink-muted)]">· {account.description}</span>
+              <span className="text-[13px] text-[var(--ink-muted)]">· {account.description}</span>
             )}
           </div>
         </div>
@@ -205,18 +205,18 @@ export default async function AccountLedgerPage({
       {/* ── KPI TILES ────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-          <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">
+          <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">
             All-Time Balance
           </p>
           <p className={`mt-1.5 text-2xl font-bold tabular-nums ${allTimeBalance >= 0 ? "text-[var(--ink)]" : "text-red-500"}`}>
             {allTimeBalance < 0 ? "−" : ""}
             {formatMoneyCompact(Math.abs(allTimeBalance), currency)}
           </p>
-          <p className="mt-1 text-[11px] text-[var(--ink-muted)]">{allLines.length} postings</p>
+          <p className="mt-1 text-[13px] text-[var(--ink-muted)]">{allLines.length} postings</p>
         </div>
 
         <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-          <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">
+          <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">
             {periodLabel} — Debits
           </p>
           <p className="mt-1.5 text-2xl font-bold tabular-nums text-[var(--ink)]">
@@ -225,7 +225,7 @@ export default async function AccountLedgerPage({
         </div>
 
         <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-          <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">
+          <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">
             {periodLabel} — Credits
           </p>
           <p className="mt-1.5 text-2xl font-bold tabular-nums text-[var(--ink)]">
@@ -234,12 +234,12 @@ export default async function AccountLedgerPage({
         </div>
 
         <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-          <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Closing Balance</p>
+          <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Closing Balance</p>
           <p className={`mt-1.5 text-2xl font-bold tabular-nums ${closingBalance >= 0 ? "text-emerald-600" : "text-red-500"}`}>
             {closingBalance < 0 ? "−" : ""}
             {formatMoneyCompact(Math.abs(closingBalance), currency)}
           </p>
-          <p className="mt-1 text-[11px] text-[var(--ink-muted)]">{lines.length} transactions</p>
+          <p className="mt-1 text-[13px] text-[var(--ink-muted)]">{lines.length} transactions</p>
         </div>
       </div>
 
@@ -253,24 +253,24 @@ export default async function AccountLedgerPage({
           <table className="w-full text-sm">
             <thead className="border-b border-[var(--line)] bg-[var(--panel-strong)]">
               <tr>
-                <th className="px-4 py-2.5 text-left text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Date</th>
-                <th className="px-4 py-2.5 text-left text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Entry</th>
-                <th className="px-4 py-2.5 text-left text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Description</th>
-                <th className="hidden px-4 py-2.5 text-left text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)] md:table-cell">Memo</th>
-                <th className="px-4 py-2.5 text-right text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Debit</th>
-                <th className="px-4 py-2.5 text-right text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Credit</th>
-                <th className="px-4 py-2.5 text-right text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Balance</th>
+                <th className="px-4 py-2.5 text-left text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Date</th>
+                <th className="px-4 py-2.5 text-left text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Entry</th>
+                <th className="px-4 py-2.5 text-left text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Description</th>
+                <th className="hidden px-4 py-2.5 text-left text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)] md:table-cell">Memo</th>
+                <th className="px-4 py-2.5 text-right text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Debit</th>
+                <th className="px-4 py-2.5 text-right text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Credit</th>
+                <th className="px-4 py-2.5 text-right text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Balance</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--line)] bg-[var(--bg)]">
               {/* Opening balance row */}
               {openingBalance !== 0 && (
                 <tr className="bg-[var(--panel-strong)]/50">
-                  <td className="px-4 py-2 text-[11px] text-[var(--ink-muted)]">—</td>
-                  <td className="px-4 py-2 text-[11px] italic text-[var(--ink-muted)]" colSpan={4}>
+                  <td className="px-4 py-2 text-[13px] text-[var(--ink-muted)]">—</td>
+                  <td className="px-4 py-2 text-[13px] italic text-[var(--ink-muted)]" colSpan={4}>
                     Opening balance
                   </td>
-                  <td className="px-4 py-2 text-right text-[11px] font-semibold tabular-nums text-[var(--ink-muted)]" colSpan={2}>
+                  <td className="px-4 py-2 text-right text-[13px] font-semibold tabular-nums text-[var(--ink-muted)]" colSpan={2}>
                     {formatMoney(openingBalance, currency)}
                   </td>
                 </tr>
@@ -285,14 +285,14 @@ export default async function AccountLedgerPage({
                     })}
                   </td>
                   <td className="px-4 py-2.5">
-                    <span className="font-mono text-[11px] font-semibold text-[var(--accent)]">
+                    <span className="font-mono text-[13px] font-semibold text-[var(--accent)]">
                       {row.journalEntry.entryNumber}
                     </span>
                   </td>
                   <td className="px-4 py-2.5 text-[13px] font-medium text-[var(--ink)]">
                     {row.journalEntry.description}
                     {row.journalEntry.reference && (
-                      <span className="ml-1.5 text-[11px] text-[var(--ink-muted)]">
+                      <span className="ml-1.5 text-[13px] text-[var(--ink-muted)]">
                         · {row.journalEntry.reference}
                       </span>
                     )}

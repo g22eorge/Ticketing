@@ -227,7 +227,7 @@ export function SettingsPanel({
 
           {/* Profile section */}
           <details className="border-b border-[var(--line)] p-4">
-            <summary className="cursor-pointer text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)] hover:text-[var(--ink)]">
+            <summary className="cursor-pointer text-[12px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)] hover:text-[var(--ink)]">
               Your Profile
             </summary>
             <form action={formAction} className="mt-3 space-y-2">
@@ -241,24 +241,24 @@ export function SettingsPanel({
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2">
-                  <p className="text-[10px] uppercase tracking-[0.08em] text-[var(--ink-muted)]">Email</p>
+                  <p className="text-[12px] uppercase tracking-[0.08em] text-[var(--ink-muted)]">Email</p>
                   <p className="mt-0.5 truncate text-xs font-medium text-[var(--ink)]">{userEmail}</p>
                 </div>
                 <div className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2">
-                  <p className="text-[10px] uppercase tracking-[0.08em] text-[var(--ink-muted)]">Role</p>
+                  <p className="text-[12px] uppercase tracking-[0.08em] text-[var(--ink-muted)]">Role</p>
                   <p className="mt-0.5 text-xs font-medium text-[var(--ink)]">{userRole}</p>
                 </div>
               </div>
               <div className="flex items-center justify-between">
                 <SaveBtn />
-                <span className="text-[11px] text-[var(--ink-muted)]">Manage password below</span>
+                <span className="text-[13px] text-[var(--ink-muted)]">Manage password below</span>
               </div>
             </form>
           </details>
 
           {/* Password section */}
           <details ref={passwordSectionRef} className="border-b border-[var(--line)] p-4">
-            <summary className="cursor-pointer text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)] hover:text-[var(--ink)]">
+            <summary className="cursor-pointer text-[12px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)] hover:text-[var(--ink)]">
               Password
             </summary>
             <form action={passwordFormAction} className="mt-3 space-y-2">
@@ -276,14 +276,14 @@ export function SettingsPanel({
               </div>
               <div className="flex items-center justify-between gap-3">
                 <SaveBtn label="Change password" pendingLabel="Changing…" />
-                {passwordState.success ? <span className="text-[11px] text-[var(--accent)]">Updated</span> : null}
+                {passwordState.success ? <span className="text-[13px] text-[var(--accent)]">Updated</span> : null}
               </div>
             </form>
           </details>
 
           {isAdmin ? (
             <details className="border-b border-[var(--line)] p-4">
-              <summary className="cursor-pointer text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)] hover:text-[var(--ink)]">
+              <summary className="cursor-pointer text-[12px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)] hover:text-[var(--ink)]">
                 Admin password reset
               </summary>
               <form action={adminPasswordFormAction} className="mt-3 space-y-2">
@@ -308,7 +308,7 @@ export function SettingsPanel({
                 </div>
                 <div className="flex items-center justify-between gap-3">
                   <SaveBtn label="Reset password" pendingLabel="Resetting…" />
-                  {adminPasswordState.success ? <span className="text-[11px] text-[var(--accent)]">Updated</span> : null}
+                  {adminPasswordState.success ? <span className="text-[13px] text-[var(--accent)]">Updated</span> : null}
                 </div>
               </form>
             </details>
@@ -317,7 +317,7 @@ export function SettingsPanel({
           {/* Quick links */}
           {quickLinks.length > 0 ? (
             <div className="border-b border-[var(--line)] p-4">
-              <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
+              <p className="mb-3 text-[12px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
                 {isAdmin ? "Workspace" : "Notifications"}
               </p>
               <div className="flex flex-col gap-1">
@@ -333,7 +333,7 @@ export function SettingsPanel({
                     </span>
                     <div className="min-w-0">
                       <p className="text-xs font-semibold text-[var(--ink)]">{link.label}</p>
-                      <p className="text-[10px] text-[var(--ink-muted)]">{link.desc}</p>
+                      <p className="text-[12px] text-[var(--ink-muted)]">{link.desc}</p>
                     </div>
                     <svg viewBox="0 0 16 16" fill="currentColor" className="ml-auto h-3 w-3 shrink-0 text-[var(--ink-muted)]/50" aria-hidden="true">
                       <path fillRule="evenodd" d="M6.22 4.22a.75.75 0 0 1 1.06 0l3.25 3.25a.75.75 0 0 1 0 1.06l-3.25 3.25a.75.75 0 0 1-1.06-1.06L9.19 8 6.22 5.28a.75.75 0 0 1 0-1.06Z" clipRule="evenodd" />

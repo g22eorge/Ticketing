@@ -134,7 +134,7 @@ export function RegisterForm() {
         {isPending ? "Creating account…" : "Create account"}
       </button>
 
-      <p className="text-center text-[11px] text-white/20">
+      <p className="text-center text-[13px] text-white/20">
         By signing up you agree to our terms of service.
       </p>
     </form>

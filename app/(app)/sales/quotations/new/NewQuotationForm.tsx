@@ -98,12 +98,12 @@ export function NewQuotationForm({ leadId, clientId, jobId, currency, canOverrid
 
       <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
         <div className="border-b border-[var(--line)] px-4 py-3">
-          <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Line Items</p>
+          <p className="text-[13px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Line Items</p>
         </div>
 
         <div className="overflow-x-auto">
           <table className="w-full border-collapse text-[13px]">
-            <thead className="bg-[var(--panel-strong)]/50 text-left text-[10px] font-bold uppercase tracking-[0.15em] text-[var(--ink-muted)]">
+            <thead className="bg-[var(--panel-strong)]/50 text-left text-[12px] font-bold uppercase tracking-[0.15em] text-[var(--ink-muted)]">
               <tr className="border-b border-[var(--line)]">
                 <th className="px-3 py-2">Description</th>
                 <th className="w-20 px-3 py-2">Qty</th>
@@ -186,17 +186,17 @@ export function NewQuotationForm({ leadId, clientId, jobId, currency, canOverrid
             + Add Item
           </button>
           <div className="text-right">
-            <span className="text-[11px] text-[var(--ink-muted)]">Subtotal: </span>
+            <span className="text-[13px] text-[var(--ink-muted)]">Subtotal: </span>
             <span className="text-[14px] font-bold text-[var(--ink)]">{formatAmount(subtotal)}</span>
           </div>
         </div>
       </div>
 
       <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-        <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Quotation Details</p>
+        <p className="mb-3 text-[13px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Quotation Details</p>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div>
-            <label className="mb-1 block text-[11px] font-semibold text-[var(--ink-muted)]">Valid Until</label>
+            <label className="mb-1 block text-[13px] font-semibold text-[var(--ink-muted)]">Valid Until</label>
             <input
               type="date"
               value={validUntil}
@@ -205,7 +205,7 @@ export function NewQuotationForm({ leadId, clientId, jobId, currency, canOverrid
             />
           </div>
           <div className="sm:col-span-2">
-            <label className="mb-1 block text-[11px] font-semibold text-[var(--ink-muted)]">Notes</label>
+            <label className="mb-1 block text-[13px] font-semibold text-[var(--ink-muted)]">Notes</label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}

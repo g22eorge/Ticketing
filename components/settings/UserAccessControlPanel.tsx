@@ -149,7 +149,7 @@ export function UserAccessControlPanel({
       <input type="hidden" name="role" value={role} />
 
       <section className="rounded-xl border border-[var(--line)] bg-[var(--panel)] p-3 panel-shadow">
-        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Role</p>
+        <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Role</p>
         <div className="mt-2 grid gap-1.5 sm:grid-cols-2 xl:grid-cols-3">
           {uniqueRoleOptions.map((option) => {
             const active = role === option.value;
@@ -168,7 +168,7 @@ export function UserAccessControlPanel({
                 }`}
               >
                 <p className="text-[13px] font-semibold text-[var(--ink)]">{option.label}</p>
-                <p className="mt-0.5 text-[11px] leading-snug text-[var(--ink-muted)]">{option.description}</p>
+                <p className="mt-0.5 text-[13px] leading-snug text-[var(--ink-muted)]">{option.description}</p>
               </button>
             );
           })}
@@ -176,11 +176,11 @@ export function UserAccessControlPanel({
       </section>
 
       <section className="rounded-xl border border-[var(--line)] bg-[var(--panel)] panel-shadow">
-        <p className="px-3 pt-3 text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Permissions</p>
+        <p className="px-3 pt-3 text-[12px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Permissions</p>
         <div className="mt-2 space-y-0 divide-y divide-[var(--line)]">
           {byGroup.map(([groupName, groupItems]) => (
             <div key={groupName} className="px-3 py-2.5">
-              <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">{groupName}</p>
+              <p className="mb-2 text-[12px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">{groupName}</p>
               <div className="grid gap-1.5 sm:grid-cols-2">
                 {groupItems.map((item) => {
                   const inherited = Boolean(item.permission && defaultsForRole.includes(item.permission));
@@ -210,10 +210,10 @@ export function UserAccessControlPanel({
                       <div className="min-w-0">
                         <p className="text-[13px] font-medium leading-tight text-[var(--ink)]">
                           {item.label}
-                          <span className="ml-1 text-[10px] font-normal uppercase tracking-[0.08em] text-[var(--ink-muted)]">{item.action}</span>
+                          <span className="ml-1 text-[12px] font-normal uppercase tracking-[0.08em] text-[var(--ink-muted)]">{item.action}</span>
                         </p>
-                        <p className="mt-0.5 text-[11px] leading-snug text-[var(--ink-muted)]">{item.description}</p>
-                        {inherited ? <p className="mt-0.5 text-[10px] text-[var(--accent)]/70">Included in role</p> : null}
+                        <p className="mt-0.5 text-[13px] leading-snug text-[var(--ink-muted)]">{item.description}</p>
+                        {inherited ? <p className="mt-0.5 text-[12px] text-[var(--accent)]/70">Included in role</p> : null}
                       </div>
                     </label>
                   );
@@ -228,7 +228,7 @@ export function UserAccessControlPanel({
       </section>
 
       <section className="rounded-xl border border-[var(--line)] bg-[var(--panel)] p-3 panel-shadow">
-        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Summary</p>
+        <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Summary</p>
         <p className="mt-1.5 text-[13px] text-[var(--ink)]">{summaryText}</p>
       </section>
 

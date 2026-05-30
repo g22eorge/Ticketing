@@ -280,7 +280,7 @@ export default async function ExpensesPage({ searchParams }: Props) {
       {/* ── HEADER ───────────────────────────────────────────────────────── */}
       <div className="panel-shadow flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-2.5">
         <div>
-          <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Finance</p>
+          <p className="text-[12px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Finance</p>
           <p className="text-[13px] font-bold text-[var(--ink)]">
             Expenses{" "}
             <span className="font-normal text-[var(--ink-muted)]">
@@ -290,13 +290,13 @@ export default async function ExpensesPage({ searchParams }: Props) {
           <div className="mt-0.5 flex items-center gap-3">
             <Link
               href="/finance/reports/pl"
-              className="text-[11px] text-[var(--accent)] hover:underline"
+              className="text-[13px] text-[var(--accent)] hover:underline"
             >
               P&L Statement →
             </Link>
             <Link
               href={`/api/reports/export?type=expenses&month=${thisYear}-${String(thisMonth + 1).padStart(2, "0")}`}
-              className="text-[11px] text-[var(--ink-muted)] hover:text-[var(--ink)]"
+              className="text-[13px] text-[var(--ink-muted)] hover:text-[var(--ink)]"
             >
               ↓ Export CSV
             </Link>
@@ -311,7 +311,7 @@ export default async function ExpensesPage({ searchParams }: Props) {
               <p className="mb-3 text-[12px] font-bold text-[var(--ink)]">Record Business Expense</p>
               <form action={createExpenseAction} className="space-y-3">
                 <div>
-                  <label className="mb-1 block text-[11px] font-semibold text-[var(--ink-muted)]">
+                  <label className="mb-1 block text-[13px] font-semibold text-[var(--ink-muted)]">
                     Description *
                   </label>
                   <input
@@ -323,7 +323,7 @@ export default async function ExpensesPage({ searchParams }: Props) {
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="mb-1 block text-[11px] font-semibold text-[var(--ink-muted)]">
+                    <label className="mb-1 block text-[13px] font-semibold text-[var(--ink-muted)]">
                       Amount *
                     </label>
                     <input
@@ -341,7 +341,7 @@ export default async function ExpensesPage({ searchParams }: Props) {
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="mb-1 block text-[11px] font-semibold text-[var(--ink-muted)]">
+                    <label className="mb-1 block text-[13px] font-semibold text-[var(--ink-muted)]">
                       Category
                     </label>
                     <select
@@ -354,7 +354,7 @@ export default async function ExpensesPage({ searchParams }: Props) {
                     </select>
                   </div>
                   <div>
-                    <label className="mb-1 block text-[11px] font-semibold text-[var(--ink-muted)]">
+                    <label className="mb-1 block text-[13px] font-semibold text-[var(--ink-muted)]">
                       Payment Method
                     </label>
                     <select
@@ -369,7 +369,7 @@ export default async function ExpensesPage({ searchParams }: Props) {
                   </div>
                 </div>
                 <div>
-                  <label className="mb-1 block text-[11px] font-semibold text-[var(--ink-muted)]">
+                  <label className="mb-1 block text-[13px] font-semibold text-[var(--ink-muted)]">
                     Date Paid
                   </label>
                   <input
@@ -380,7 +380,7 @@ export default async function ExpensesPage({ searchParams }: Props) {
                 </div>
                 {suppliers.length > 0 && (
                   <div>
-                    <label className="mb-1 block text-[11px] font-semibold text-[var(--ink-muted)]">
+                    <label className="mb-1 block text-[13px] font-semibold text-[var(--ink-muted)]">
                       Supplier (optional)
                     </label>
                     <select
@@ -395,7 +395,7 @@ export default async function ExpensesPage({ searchParams }: Props) {
                   </div>
                 )}
                 <div>
-                  <label className="mb-1 block text-[11px] font-semibold text-[var(--ink-muted)]">
+                  <label className="mb-1 block text-[13px] font-semibold text-[var(--ink-muted)]">
                     Reference / Receipt #
                   </label>
                   <input
@@ -405,7 +405,7 @@ export default async function ExpensesPage({ searchParams }: Props) {
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-[11px] font-semibold text-[var(--ink-muted)]">Notes</label>
+                  <label className="mb-1 block text-[13px] font-semibold text-[var(--ink-muted)]">Notes</label>
                   <textarea
                     name="notes"
                     rows={2}
@@ -427,13 +427,13 @@ export default async function ExpensesPage({ searchParams }: Props) {
       {/* ── KPI STRIP ────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-          <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">This Month</p>
+          <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">This Month</p>
           <p className="mt-1.5 text-2xl font-bold text-[var(--ink)] tabular-nums">
             {formatMoneyCompact(thisMonthAmount, currency)}
           </p>
           {prevMonthTotal > 0 && (
             <p
-              className={`mt-1 text-[11px] font-semibold ${
+              className={`mt-1 text-[13px] font-semibold ${
                 momDelta <= 0 ? "text-emerald-500" : "text-red-500"
               }`}
             >
@@ -444,7 +444,7 @@ export default async function ExpensesPage({ searchParams }: Props) {
         </div>
 
         <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-          <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">
+          <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">
             YTD {thisYear}
           </p>
           <p className="mt-1.5 text-2xl font-bold text-[var(--ink)] tabular-nums">
@@ -452,7 +452,7 @@ export default async function ExpensesPage({ searchParams }: Props) {
           </p>
           {prevYtdTotal > 0 && (
             <p
-              className={`mt-1 text-[11px] font-semibold ${
+              className={`mt-1 text-[13px] font-semibold ${
                 ytdDelta <= 0 ? "text-emerald-500" : "text-red-500"
               }`}
             >
@@ -463,7 +463,7 @@ export default async function ExpensesPage({ searchParams }: Props) {
         </div>
 
         <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-          <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Avg / Month</p>
+          <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Avg / Month</p>
           <p className="mt-1.5 text-2xl font-bold text-[var(--ink)] tabular-nums">
             {trendData.filter((d) => d.amount > 0).length > 0
               ? formatMoneyCompact(
@@ -473,11 +473,11 @@ export default async function ExpensesPage({ searchParams }: Props) {
                 )
               : "—"}
           </p>
-          <p className="mt-1 text-[11px] text-[var(--ink-muted)]">Last 6 months</p>
+          <p className="mt-1 text-[13px] text-[var(--ink-muted)]">Last 6 months</p>
         </div>
 
         <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-          <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">
+          <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">
             Top Category
           </p>
           {byCategory.length > 0 ? (
@@ -485,7 +485,7 @@ export default async function ExpensesPage({ searchParams }: Props) {
               <p className="mt-1.5 text-2xl font-bold text-[var(--ink)] tabular-nums">
                 {formatMoneyCompact(byCategory.sort((a, b) => b.total - a.total)[0].total, currency)}
               </p>
-              <p className="mt-1 text-[11px] text-[var(--ink-muted)]">
+              <p className="mt-1 text-[13px] text-[var(--ink-muted)]">
                 {CATEGORY_LABELS[byCategory.sort((a, b) => b.total - a.total)[0].cat]}
               </p>
             </>
@@ -499,13 +499,13 @@ export default async function ExpensesPage({ searchParams }: Props) {
       <div className="grid gap-4 lg:grid-cols-2">
         {/* Monthly trend chart */}
         <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-          <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">
+          <p className="mb-3 text-[12px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">
             Monthly Spend — Last 6 Months
           </p>
           <ExpenseMonthlyChart data={trendData} currency={currency} />
           <div className="mt-3 flex items-center justify-between border-t border-[var(--line)] pt-2">
-            <p className="text-[11px] text-[var(--ink-muted)]">All categories</p>
-            <p className="text-[11px] font-semibold tabular-nums text-[var(--ink)]">
+            <p className="text-[13px] text-[var(--ink-muted)]">All categories</p>
+            <p className="text-[13px] font-semibold tabular-nums text-[var(--ink)]">
               Total: {formatMoneyCompact(trendData.reduce((s, d) => s + d.amount, 0), currency)}
             </p>
           </div>
@@ -513,7 +513,7 @@ export default async function ExpensesPage({ searchParams }: Props) {
 
         {/* Category breakdown */}
         <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-          <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">
+          <p className="mb-3 text-[12px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">
             Spend by Category
           </p>
           {byCategory.length === 0 ? (
@@ -547,7 +547,7 @@ export default async function ExpensesPage({ searchParams }: Props) {
                             style={{ width: `${pct}%` }}
                           />
                         </div>
-                        <p className="text-[10px] text-[var(--ink-muted)]">{count} record{count !== 1 ? "s" : ""}</p>
+                        <p className="text-[12px] text-[var(--ink-muted)]">{count} record{count !== 1 ? "s" : ""}</p>
                       </Link>
                     );
                   })}
@@ -579,7 +579,7 @@ export default async function ExpensesPage({ searchParams }: Props) {
         <div className="flex w-full min-w-0 gap-1 overflow-x-auto pb-1 sm:w-auto sm:flex-wrap sm:overflow-visible sm:pb-0">
           <Link
             href={filterUrl({ category: "" })}
-            className={`shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-semibold transition sm:px-2.5 ${
+            className={`shrink-0 rounded-full border px-2 py-0.5 text-[13px] font-semibold transition sm:px-2.5 ${
               !catFilter
                 ? "border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]"
                 : "border-[var(--line)] text-[var(--ink-muted)] hover:border-[var(--accent)]/50"
@@ -591,7 +591,7 @@ export default async function ExpensesPage({ searchParams }: Props) {
             <Link
               key={cat}
               href={filterUrl({ category: catFilter === cat ? "" : cat })}
-              className={`shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-semibold transition sm:px-2.5 ${
+              className={`shrink-0 rounded-full border px-2 py-0.5 text-[13px] font-semibold transition sm:px-2.5 ${
                 catFilter === cat
                   ? "border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]"
                   : "border-[var(--line)] text-[var(--ink-muted)] hover:border-[var(--accent)]/50"
@@ -607,7 +607,7 @@ export default async function ExpensesPage({ searchParams }: Props) {
       <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
         <div className="doc-list overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-[var(--panel-strong)] text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
+            <thead className="bg-[var(--panel-strong)] text-[12px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
               <tr>
                 <th className="px-4 py-2.5 text-left">Expense #</th>
                 <th className="px-4 py-2.5 text-left">Description</th>
@@ -630,20 +630,20 @@ export default async function ExpensesPage({ searchParams }: Props) {
                     <p className="mono text-[12px] font-bold text-[var(--ink)]">
                       {expense.expenseNumber}
                     </p>
-                    <p className="text-[11px] text-[var(--ink-muted)]">{fmt(expense.createdAt)}</p>
+                    <p className="text-[13px] text-[var(--ink-muted)]">{fmt(expense.createdAt)}</p>
                   </td>
                   <td className="px-4 py-3">
                     <p className="text-[13px] font-medium text-[var(--ink)]">{expense.description}</p>
                     {expense.reference && (
-                      <p className="text-[11px] text-[var(--ink-muted)]">Ref: {expense.reference}</p>
+                      <p className="text-[13px] text-[var(--ink-muted)]">Ref: {expense.reference}</p>
                     )}
                     {expense.notes && (
-                      <p className="text-[11px] italic text-[var(--ink-muted)]">{expense.notes}</p>
+                      <p className="text-[13px] italic text-[var(--ink-muted)]">{expense.notes}</p>
                     )}
                   </td>
                   <td className="px-4 py-3">
                     <span
-                      className={`rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${CATEGORY_COLORS[expense.category]}`}
+                      className={`rounded-full border px-2.5 py-0.5 text-[13px] font-semibold ${CATEGORY_COLORS[expense.category]}`}
                     >
                       {CATEGORY_LABELS[expense.category]}
                     </span>
@@ -662,7 +662,7 @@ export default async function ExpensesPage({ searchParams }: Props) {
                       {expense.currency} {expense.amount.toLocaleString()}
                     </p>
                   </td>
-                  <td className="hidden px-4 py-3 text-[11px] text-[var(--ink-muted)] sm:table-cell">
+                  <td className="hidden px-4 py-3 text-[13px] text-[var(--ink-muted)] sm:table-cell">
                     {expense.createdBy.name}
                   </td>
                   <td className="px-4 py-3 text-right">
@@ -696,7 +696,7 @@ export default async function ExpensesPage({ searchParams }: Props) {
         </div>
         {expenses.length > 0 && (
           <div className="flex items-center justify-between border-t border-[var(--line)] px-4 py-2.5">
-            <p className="text-[11px] text-[var(--ink-muted)]">
+            <p className="text-[13px] text-[var(--ink-muted)]">
               {expenses.length} record{expenses.length !== 1 ? "s" : ""}
               {catFilter ? ` · ${CATEGORY_LABELS[catFilter]}` : ""}
             </p>

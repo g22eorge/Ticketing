@@ -35,7 +35,7 @@ export function ReceiveStockForm({ poId, items, locations }: { poId: string; ite
   return (
     <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)]">
       <div className="px-5 py-3 border-b border-[var(--line)]">
-        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Receive Stock</p>
+        <p className="text-[12px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Receive Stock</p>
         <p className="mt-0.5 text-xs text-[var(--ink-muted)]">Update quantities received. Part inventory will be adjusted automatically.</p>
       </div>
       <form onSubmit={handleSubmit} className="p-5 space-y-3">

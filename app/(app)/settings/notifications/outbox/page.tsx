@@ -197,7 +197,7 @@ export default async function OutboxPage({
               <Link
                 key={key || "all"}
                 href={href}
-                className={`shrink-0 rounded-full border px-3 py-1 text-[11px] font-semibold transition ${
+                className={`shrink-0 rounded-full border px-3 py-1 text-[13px] font-semibold transition ${
                   active ? "border-[var(--accent)] bg-[var(--accent)] text-white" : "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)] hover:border-[var(--accent)]/30"
                 }`}
               >
@@ -234,35 +234,35 @@ export default async function OutboxPage({
                 <div key={`m-${r.id}`} className="px-4 py-3">
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex flex-wrap items-center gap-1.5">
-                      <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold ${STATUS_STYLES[r.status] ?? STATUS_STYLES.DEAD}`}>{r.status}</span>
-                      <span className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${CHANNEL_STYLES[r.channel] ?? ""}`}>{r.channel}</span>
+                      <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[13px] font-semibold ${STATUS_STYLES[r.status] ?? STATUS_STYLES.DEAD}`}>{r.status}</span>
+                      <span className={`inline-flex rounded-full border px-2 py-0.5 text-[12px] font-bold uppercase tracking-wide ${CHANNEL_STYLES[r.channel] ?? ""}`}>{r.channel}</span>
                     </div>
                     <div className="flex shrink-0 gap-1">
                       {r.status !== "SENT" && (
                         <form action={retryOneAction}>
                           <input type="hidden" name="id" value={r.id} />
-                          <button type="submit" className="rounded border border-[var(--line)] px-2 py-0.5 text-[11px] font-medium hover:bg-[var(--panel-strong)]">Retry</button>
+                          <button type="submit" className="rounded border border-[var(--line)] px-2 py-0.5 text-[13px] font-medium hover:bg-[var(--panel-strong)]">Retry</button>
                         </form>
                       )}
                       {r.status !== "DEAD" && r.status !== "SENT" && (
                         <form action={markDeadAction}>
                           <input type="hidden" name="id" value={r.id} />
-                          <button type="submit" className="rounded border border-[var(--line)] px-2 py-0.5 text-[11px] font-medium text-[var(--ink-muted)] hover:border-red-400/30 hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400">Discard</button>
+                          <button type="submit" className="rounded border border-[var(--line)] px-2 py-0.5 text-[13px] font-medium text-[var(--ink-muted)] hover:border-red-400/30 hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400">Discard</button>
                         </form>
                       )}
                     </div>
                   </div>
                   <p className="mt-1 font-mono text-sm font-medium text-[var(--ink)]">{r.to}</p>
-                  <div className="mt-0.5 flex flex-wrap gap-x-3 text-[11px] text-[var(--ink-muted)]">
+                  <div className="mt-0.5 flex flex-wrap gap-x-3 text-[13px] text-[var(--ink-muted)]">
                     <span>{r.type.replaceAll("_", " ").toLowerCase()}</span>
                     {r.sentAt && <span>{fmtDate(r.sentAt)}</span>}
                     {r.attemptCount > 0 && <span>{r.attemptCount} attempt{r.attemptCount !== 1 ? "s" : ""}</span>}
                   </div>
                   {r.providerDeliveryStatus && (
-                    <span className={`mt-1 inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${r.providerDeliveryStatus === "delivered" || r.providerDeliveryStatus === "read" ? "border-emerald-400/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" : "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]"}`}>{r.providerDeliveryStatus}</span>
+                    <span className={`mt-1 inline-flex rounded-full border px-2 py-0.5 text-[12px] font-semibold uppercase tracking-wide ${r.providerDeliveryStatus === "delivered" || r.providerDeliveryStatus === "read" ? "border-emerald-400/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" : "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]"}`}>{r.providerDeliveryStatus}</span>
                   )}
                   {r.lastError && (
-                    <p className="mt-0.5 line-clamp-2 text-[11px] text-red-600">{r.lastErrorCode ? `[${r.lastErrorCode}] ` : ""}{r.lastError}</p>
+                    <p className="mt-0.5 line-clamp-2 text-[13px] text-red-600">{r.lastErrorCode ? `[${r.lastErrorCode}] ` : ""}{r.lastError}</p>
                   )}
                 </div>
               ))}
@@ -273,7 +273,7 @@ export default async function OutboxPage({
                 <thead>
                   <tr className="border-b border-[var(--line)] bg-[var(--panel-strong)]/60">
                     {["Status", "Channel / Type", "Recipient", "Sent / Scheduled", "Delivery", "Error", "Actions"].map((h) => (
-                      <th key={h} className="px-4 py-2.5 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
+                      <th key={h} className="px-4 py-2.5 text-[12px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
                         {h}
                       </th>
                     ))}
@@ -285,21 +285,21 @@ export default async function OutboxPage({
 
                     {/* Status */}
                     <td className="px-4 py-3">
-                      <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${STATUS_STYLES[r.status] ?? STATUS_STYLES.DEAD}`}>
+                      <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[13px] font-semibold ${STATUS_STYLES[r.status] ?? STATUS_STYLES.DEAD}`}>
                         {r.status}
                       </span>
                     </td>
 
                     {/* Channel + Type */}
                     <td className="px-4 py-3">
-                      <span className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${CHANNEL_STYLES[r.channel] ?? ""}`}>
+                      <span className={`inline-flex rounded-full border px-2 py-0.5 text-[12px] font-bold uppercase tracking-wide ${CHANNEL_STYLES[r.channel] ?? ""}`}>
                         {r.channel}
                       </span>
-                      <p className="mt-1 text-[11px] text-[var(--ink-muted)]">
+                      <p className="mt-1 text-[13px] text-[var(--ink-muted)]">
                         {r.type.replaceAll("_", " ").toLowerCase()}
                       </p>
                       {r.metaTemplateName ? (
-                        <p className="mt-0.5 font-mono text-[10px] text-[var(--accent)]/70">
+                        <p className="mt-0.5 font-mono text-[12px] text-[var(--accent)]/70">
                           tpl: {r.metaTemplateName}
                         </p>
                       ) : null}
@@ -308,7 +308,7 @@ export default async function OutboxPage({
                     {/* Recipient */}
                     <td className="px-4 py-3">
                       <p className="font-mono text-sm font-medium text-[var(--ink)]">{r.to}</p>
-                      <p className="mt-0.5 text-[10px] text-[var(--ink-muted)]">{shortId(r.id)}</p>
+                      <p className="mt-0.5 text-[12px] text-[var(--ink-muted)]">{shortId(r.id)}</p>
                     </td>
 
                     {/* Sent / Scheduled */}
@@ -316,11 +316,11 @@ export default async function OutboxPage({
                       {r.sentAt ? (
                         <p className="text-xs font-medium text-[var(--ink)]">{fmtDate(r.sentAt)}</p>
                       ) : r.nextAttemptAt && r.nextAttemptAt > new Date() ? (
-                        <p className="text-[11px] text-amber-600">Due {fmtDate(r.nextAttemptAt)}</p>
+                        <p className="text-[13px] text-amber-600">Due {fmtDate(r.nextAttemptAt)}</p>
                       ) : (
-                        <p className="text-[11px] text-[var(--ink-muted)]">—</p>
+                        <p className="text-[13px] text-[var(--ink-muted)]">—</p>
                       )}
-                      <p className="mt-0.5 text-[10px] text-[var(--ink-muted)]">
+                      <p className="mt-0.5 text-[12px] text-[var(--ink-muted)]">
                         {r.attemptCount} attempt{r.attemptCount !== 1 ? "s" : ""}
                       </p>
                     </td>
@@ -329,19 +329,19 @@ export default async function OutboxPage({
                     <td className="px-4 py-3">
                       {r.providerDeliveryStatus ? (
                         <>
-                          <span className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${r.providerDeliveryStatus === "delivered" || r.providerDeliveryStatus === "read" ? "border-emerald-400/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" : "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]"}`}>
+                          <span className={`inline-flex rounded-full border px-2 py-0.5 text-[12px] font-semibold uppercase tracking-wide ${r.providerDeliveryStatus === "delivered" || r.providerDeliveryStatus === "read" ? "border-emerald-400/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" : "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]"}`}>
                             {r.providerDeliveryStatus}
                           </span>
                           {r.providerDeliveryAt ? (
-                            <p className="mt-0.5 text-[10px] text-[var(--ink-muted)]">{fmtDate(r.providerDeliveryAt)}</p>
+                            <p className="mt-0.5 text-[12px] text-[var(--ink-muted)]">{fmtDate(r.providerDeliveryAt)}</p>
                           ) : null}
                         </>
                       ) : r.providerMessageId ? (
-                        <p className="font-mono text-[10px] text-[var(--ink-muted)]" title={r.providerMessageId}>
+                        <p className="font-mono text-[12px] text-[var(--ink-muted)]" title={r.providerMessageId}>
                           {shortWamid(r.providerMessageId)}
                         </p>
                       ) : (
-                        <span className="text-[11px] text-[var(--ink-muted)]">—</span>
+                        <span className="text-[13px] text-[var(--ink-muted)]">—</span>
                       )}
                     </td>
 
@@ -350,14 +350,14 @@ export default async function OutboxPage({
                       {r.lastError ? (
                         <>
                           {r.lastErrorCode ? (
-                            <span className="font-mono text-[10px] font-semibold text-red-600">{r.lastErrorCode}</span>
+                            <span className="font-mono text-[12px] font-semibold text-red-600">{r.lastErrorCode}</span>
                           ) : null}
-                          <p className="mt-0.5 line-clamp-3 text-[11px] text-[var(--ink-muted)]" title={r.lastError}>
+                          <p className="mt-0.5 line-clamp-3 text-[13px] text-[var(--ink-muted)]" title={r.lastError}>
                             {r.lastError}
                           </p>
                         </>
                       ) : (
-                        <span className="text-[11px] text-[var(--ink-muted)]">—</span>
+                        <span className="text-[13px] text-[var(--ink-muted)]">—</span>
                       )}
                     </td>
 

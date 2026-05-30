@@ -84,7 +84,7 @@ export function NewPurchaseOrderForm({
     <form onSubmit={handleSubmit} className="space-y-5">
       {/* Header */}
       <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] p-5 space-y-4">
-        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Order Details</p>
+        <p className="text-[12px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Order Details</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-xs font-semibold text-[var(--ink-muted)] mb-1">
@@ -142,7 +142,7 @@ export function NewPurchaseOrderForm({
       {/* Line items */}
       <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] overflow-hidden">
         <div className="flex items-center justify-between px-5 py-3 border-b border-[var(--line)]">
-          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Items</p>
+          <p className="text-[12px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Items</p>
           <button
             type="button"
             onClick={addLine}

@@ -214,9 +214,9 @@ export default async function TechniciansPage({
       <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
         <div className="flex items-center justify-between gap-2 px-4 py-3">
           <div>
-            <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Workbench</p>
+            <p className="text-[12px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Workbench</p>
             <p className="text-[13px] font-bold text-[var(--ink)]">Technicians</p>
-            <p className="text-[11px] text-[var(--ink-muted)]">Active assignments and repair board</p>
+            <p className="text-[13px] text-[var(--ink-muted)]">Active assignments and repair board</p>
           </div>
           <Link href="/settings/users" className="btn-premium-secondary rounded-lg px-3 py-1.5 text-[12px]">Manage staff →</Link>
         </div>
@@ -225,24 +225,24 @@ export default async function TechniciansPage({
       {/* ── Technician KPI tiles ── */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
-          <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Total Technicians</p>
+          <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Total Technicians</p>
           <p className="mt-1 text-xl font-bold tabular-nums text-[var(--ink)]">{totalTechs}</p>
-          <p className="mt-0.5 text-[11px] text-[var(--ink-muted)]">internal + external</p>
+          <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">internal + external</p>
         </div>
         <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
-          <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Internal</p>
+          <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Internal</p>
           <p className="mt-1 text-xl font-bold tabular-nums text-[var(--ink)]">{internalCount}</p>
-          <p className="mt-0.5 text-[11px] text-[var(--ink-muted)]">in-house staff</p>
+          <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">in-house staff</p>
         </div>
         <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
-          <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">External</p>
+          <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">External</p>
           <p className="mt-1 text-xl font-bold tabular-nums text-[var(--ink)]">{externalCount}</p>
-          <p className="mt-0.5 text-[11px] text-[var(--ink-muted)]">contractors</p>
+          <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">contractors</p>
         </div>
         <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
-          <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Jobs Assigned This Month</p>
+          <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Jobs Assigned This Month</p>
           <p className="mt-1 text-xl font-bold tabular-nums text-[var(--ink)]">{assignedThisMonth}</p>
-          <p className="mt-0.5 text-[11px] text-[var(--ink-muted)]">this month</p>
+          <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">this month</p>
         </div>
       </div>
 
@@ -280,7 +280,7 @@ export default async function TechniciansPage({
               <div className="flex items-center gap-1.5 overflow-x-auto [scrollbar-width:none]">
                 <Link
                   href={statusHref("")}
-                  className={`shrink-0 rounded-full border px-3 py-1.5 text-[11px] font-semibold transition ${
+                  className={`shrink-0 rounded-full border px-3 py-1.5 text-[13px] font-semibold transition ${
                     activeStatus
                       ? "border-[var(--line)] bg-[var(--panel)] text-[var(--ink-muted)] hover:border-[var(--accent)]/30"
                       : "border-[var(--accent)] bg-[var(--accent)] text-white"
@@ -294,7 +294,7 @@ export default async function TechniciansPage({
                     <Link
                       key={status}
                       href={statusHref(status)}
-                      className={`shrink-0 rounded-full border px-3 py-1.5 text-[11px] font-semibold transition ${
+                      className={`shrink-0 rounded-full border px-3 py-1.5 text-[13px] font-semibold transition ${
                         active
                           ? "border-[var(--accent)] bg-[var(--accent)] text-white"
                           : "border-[var(--line)] bg-[var(--panel)] text-[var(--ink-muted)] hover:border-[var(--accent)]/30"
@@ -310,11 +310,11 @@ export default async function TechniciansPage({
         })()}
         {/* Auto-hide search after applying */}
         <details className="group border-b border-[var(--line)]" open={!filters.q}>
-          <summary className="flex cursor-pointer list-none items-center justify-between px-3 py-2.5 text-[11px] font-semibold text-[var(--ink-muted)] hover:bg-[var(--panel-strong)]/30 [&::-webkit-details-marker]:hidden">
+          <summary className="flex cursor-pointer list-none items-center justify-between px-3 py-2.5 text-[13px] font-semibold text-[var(--ink-muted)] hover:bg-[var(--panel-strong)]/30 [&::-webkit-details-marker]:hidden">
             <span className="truncate">
               Search
               {filters.q ? (
-                <span className="ml-2 rounded-full border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-0.5 text-[10px] font-semibold text-[var(--ink)]">
+                <span className="ml-2 rounded-full border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-0.5 text-[12px] font-semibold text-[var(--ink)]">
                   {filters.q}
                 </span>
               ) : null}
@@ -345,13 +345,13 @@ export default async function TechniciansPage({
               <Link
                 key={action.label}
                 href={action.href}
-                className={`rounded-full border px-3 py-2 text-[11px] font-semibold transition ${action.active ? "border-[var(--accent)] bg-[var(--accent)] text-white" : "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink)] hover:border-[var(--accent)]/30"}`}
+                className={`rounded-full border px-3 py-2 text-[13px] font-semibold transition ${action.active ? "border-[var(--accent)] bg-[var(--accent)] text-white" : "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink)] hover:border-[var(--accent)]/30"}`}
               >
                 {action.label} <span className={action.active ? "opacity-80" : "text-[var(--ink-muted)]"}>({action.count})</span>
               </Link>
             ))}
             {hasActiveFilters ? (
-              <Link href="/technicians" className="rounded-full border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-[11px] font-semibold text-[var(--ink-muted)] hover:border-red-400/30 hover:text-red-600 dark:hover:text-red-400">
+              <Link href="/technicians" className="rounded-full border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-[13px] font-semibold text-[var(--ink-muted)] hover:border-red-400/30 hover:text-red-600 dark:hover:text-red-400">
                 Clear filters
               </Link>
             ) : null}
@@ -373,7 +373,7 @@ export default async function TechniciansPage({
           <p className="text-xs text-[var(--ink-muted)]">
             <span className="font-bold text-[var(--ink)]">{sortedJobs.length}</span> jobs
           </p>
-          <Link href="/jobs" className="text-[11px] font-semibold text-[var(--accent)] hover:underline">All Jobs →</Link>
+          <Link href="/jobs" className="text-[13px] font-semibold text-[var(--accent)] hover:underline">All Jobs →</Link>
         </div>
 
         {sortedJobs.length === 0 ? (
@@ -399,7 +399,7 @@ export default async function TechniciansPage({
                             {isSpotlight && <svg viewBox="0 0 24 24" fill="currentColor" className="h-3 w-3 shrink-0 text-[var(--accent)]" aria-label="Priority" role="img"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>}
                             <Link href={`/jobs/${job.id}`} className="mono text-[13px] font-bold text-[var(--ink)] transition-colors hover:text-[var(--accent)]">{job.jobNumber}</Link>
                             <JobStatusBadge status={job.status} />
-                            <span className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${job.priority.tone}`}>
+                            <span className={`rounded-full border px-2 py-0.5 text-[12px] font-semibold ${job.priority.tone}`}>
                               {job.priority.label}
                             </span>
                           </div>
@@ -409,7 +409,7 @@ export default async function TechniciansPage({
                             <span>{formatEATDate(job.receivedAt)}</span>
                             <span>{job.ageDays}d old</span>
                             {job.repairTimeline ? <span className="rounded-full border border-[var(--accent)]/30 bg-[var(--accent)]/10 px-2 py-0.5 text-[var(--accent)]">ETA {job.repairTimeline}</span> : null}
-                            {job.overdue ? <span className="rounded-full bg-black px-2 py-0.5 text-white text-[10px]">Overdue</span> : null}
+                            {job.overdue ? <span className="rounded-full bg-black px-2 py-0.5 text-white text-[12px]">Overdue</span> : null}
                           </div>
                           {typeof job.etaProgress === "number" ? (
                             <div className="h-1 rounded-full bg-[var(--line)]">
@@ -417,7 +417,7 @@ export default async function TechniciansPage({
                             </div>
                           ) : null}
                           {job.timelineNote ? (
-                            <p className="rounded-md border border-amber-400/30 bg-amber-500/10 px-2 py-1 text-[11px] text-amber-700 dark:text-amber-400">
+                            <p className="rounded-md border border-amber-400/30 bg-amber-500/10 px-2 py-1 text-[13px] text-amber-700 dark:text-amber-400">
                               Delay: {shortText(job.timelineNote, 88)}
                             </p>
                           ) : null}
@@ -450,14 +450,14 @@ export default async function TechniciansPage({
                 <thead>
                   <tr className="border-b border-[var(--line)] bg-[var(--panel-strong)]/50">
                     <th className="w-[3px] p-0" aria-hidden="true" />
-                    <th className="px-4 py-2.5 text-left text-[10px] font-bold uppercase tracking-[0.15em] text-[var(--ink-muted)]">Job #</th>
-                    <th className="px-4 py-2.5 text-left text-[10px] font-bold uppercase tracking-[0.15em] text-[var(--ink-muted)]">Device</th>
-                    <th className="px-4 py-2.5 text-left text-[10px] font-bold uppercase tracking-[0.15em] text-[var(--ink-muted)]">Status</th>
-                    <th className="px-4 py-2.5 text-left text-[10px] font-bold uppercase tracking-[0.15em] text-[var(--ink-muted)]">Assigned</th>
-                    <th className="px-4 py-2.5 text-left text-[10px] font-bold uppercase tracking-[0.15em] text-[var(--ink-muted)]">Received</th>
-                    <th className="px-4 py-2.5 text-left text-[10px] font-bold uppercase tracking-[0.15em] text-[var(--ink-muted)]">Age / ETA</th>
-                    <th className="px-4 py-2.5 text-left text-[10px] font-bold uppercase tracking-[0.15em] text-[var(--ink-muted)]">Priority</th>
-                    <th className="px-4 py-2.5 text-right text-[10px] font-bold uppercase tracking-[0.15em] text-[var(--ink-muted)]">Actions</th>
+                    <th className="px-4 py-2.5 text-left text-[12px] font-bold uppercase tracking-[0.15em] text-[var(--ink-muted)]">Job #</th>
+                    <th className="px-4 py-2.5 text-left text-[12px] font-bold uppercase tracking-[0.15em] text-[var(--ink-muted)]">Device</th>
+                    <th className="px-4 py-2.5 text-left text-[12px] font-bold uppercase tracking-[0.15em] text-[var(--ink-muted)]">Status</th>
+                    <th className="px-4 py-2.5 text-left text-[12px] font-bold uppercase tracking-[0.15em] text-[var(--ink-muted)]">Assigned</th>
+                    <th className="px-4 py-2.5 text-left text-[12px] font-bold uppercase tracking-[0.15em] text-[var(--ink-muted)]">Received</th>
+                    <th className="px-4 py-2.5 text-left text-[12px] font-bold uppercase tracking-[0.15em] text-[var(--ink-muted)]">Age / ETA</th>
+                    <th className="px-4 py-2.5 text-left text-[12px] font-bold uppercase tracking-[0.15em] text-[var(--ink-muted)]">Priority</th>
+                    <th className="px-4 py-2.5 text-right text-[12px] font-bold uppercase tracking-[0.15em] text-[var(--ink-muted)]">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[var(--line)]">
@@ -504,7 +504,7 @@ export default async function TechniciansPage({
                           <td className="px-4 py-3 align-middle">
                             <p className="text-[var(--ink-muted)]">{job.ageDays}d old</p>
                             {job.repairTimeline ? (
-                              <p className="text-[11px] text-[var(--accent)]">ETA {job.repairTimeline}</p>
+                              <p className="text-[13px] text-[var(--accent)]">ETA {job.repairTimeline}</p>
                             ) : null}
                             {typeof job.etaProgress === "number" ? (
                               <div className="mt-1 h-1 w-20 rounded-full bg-[var(--line)]">
@@ -513,18 +513,18 @@ export default async function TechniciansPage({
                             ) : null}
                           </td>
                           <td className="px-4 py-3 align-middle">
-                            <span className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold ${job.priority.tone}`}>
+                            <span className={`inline-flex rounded-full border px-2 py-0.5 text-[12px] font-semibold ${job.priority.tone}`}>
                               {job.priority.label}
                             </span>
                             {job.overdue ? (
-                              <span className="ml-1 inline-flex rounded-full bg-black px-2 py-0.5 text-[10px] font-semibold text-white">Overdue</span>
+                              <span className="ml-1 inline-flex rounded-full bg-black px-2 py-0.5 text-[12px] font-semibold text-white">Overdue</span>
                             ) : null}
                           </td>
                           <td className="px-4 py-3 align-middle">
                             <div className="flex items-center justify-end gap-2">
                               <Link
                                 href={`/jobs/${job.id}?returnTo=${encodeURIComponent(boardReturnTo)}`}
-                                className="whitespace-nowrap rounded-md border border-[var(--line)] px-2.5 py-1 text-[11px] font-semibold text-[var(--ink)] transition-colors hover:border-[var(--accent)]/50 hover:bg-[var(--accent)]/8 hover:text-[var(--accent)]"
+                                className="whitespace-nowrap rounded-md border border-[var(--line)] px-2.5 py-1 text-[13px] font-semibold text-[var(--ink)] transition-colors hover:border-[var(--accent)]/50 hover:bg-[var(--accent)]/8 hover:text-[var(--accent)]"
                               >
                                 Open
                               </Link>

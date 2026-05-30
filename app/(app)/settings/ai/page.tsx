@@ -101,7 +101,7 @@ export default async function AiSettingsPage() {
     <section className="space-y-4">
       <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
         <p className="text-[13px] font-bold text-[var(--ink)]">AI Knowledge &amp; Feedback</p>
-        <p className="mt-0.5 text-[11px] text-[var(--ink-muted)]">
+        <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">
           Improve the AI guide without training on customer data. Add help articles and review feedback.
         </p>
       </div>
@@ -151,7 +151,7 @@ export default async function AiSettingsPage() {
             {feedback.length === 0 ? <p className="text-sm text-[var(--ink-muted)]">No AI feedback yet.</p> : null}
             {feedback.map((item) => (
               <article key={item.id} className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] p-3">
-                <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--ink-muted)]">
+                <div className="flex flex-wrap items-center gap-2 text-[13px] font-semibold uppercase tracking-[0.12em] text-[var(--ink-muted)]">
                   <span>{item.feature}</span>
                   <span className={item.rating === "HELPFUL" ? "text-emerald-600" : "text-amber-600"}>{item.rating.replace("_", " ")}</span>
                   <span>{item.createdAt.toLocaleString()}</span>
@@ -172,12 +172,12 @@ export default async function AiSettingsPage() {
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="text-sm font-semibold text-[var(--ink)]">{article.title}</p>
-                  <p className="mt-1 text-[11px] uppercase tracking-[0.12em] text-[var(--ink-muted)]">{article.module} · {article.orgId ? "Workspace" : "Global"}</p>
+                  <p className="mt-1 text-[13px] uppercase tracking-[0.12em] text-[var(--ink-muted)]">{article.module} · {article.orgId ? "Workspace" : "Global"}</p>
                 </div>
                 <form action={toggleArticleAction}>
                   <input type="hidden" name="id" value={article.id} />
                   <input type="hidden" name="isActive" value={String(article.isActive)} />
-                  <button type="submit" className="rounded-lg border border-[var(--line)] px-2 py-1 text-[11px] text-[var(--ink-muted)]">
+                  <button type="submit" className="rounded-lg border border-[var(--line)] px-2 py-1 text-[13px] text-[var(--ink-muted)]">
                     {article.isActive ? "Disable" : "Enable"}
                   </button>
                 </form>

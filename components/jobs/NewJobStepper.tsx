@@ -267,7 +267,7 @@ export function NewJobStepper({ receivedByName }: { receivedByName: string }) {
                 : idx === step ? "bg-[var(--accent)] ring-[var(--accent)]/50"
                 : "bg-[var(--panel-strong)] ring-[var(--line)]"
               }`} />
-              <p className={`mt-1 text-center text-[8px] font-bold uppercase leading-none tracking-wide ${
+              <p className={`mt-1 text-center text-[13px] font-bold uppercase leading-none tracking-wide ${
                 idx === step ? "text-[var(--accent)]" : "text-[var(--ink-muted)]"
               }`}>{label}</p>
             </button>

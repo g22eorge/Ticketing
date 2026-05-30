@@ -170,9 +170,9 @@ export default async function ChartOfAccountsPage() {
       <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
         <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
           <div>
-            <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Finance</p>
+            <p className="text-[12px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Finance</p>
             <p className="text-[13px] font-bold text-[var(--ink)]">Chart of Accounts</p>
-            <p className="text-[11px] text-[var(--ink-muted)]">Double-entry accounting structure — click any account to view its ledger</p>
+            <p className="text-[13px] text-[var(--ink-muted)]">Double-entry accounting structure — click any account to view its ledger</p>
           </div>
           <div className="flex gap-2">
             <Link
@@ -232,11 +232,11 @@ export default async function ChartOfAccountsPage() {
           const bal = byType.find((b) => b.type === type)!.totalBalance;
           return (
             <div key={type} className={`panel-shadow rounded-xl border bg-[var(--panel)] px-4 py-3 ${borderClass}`}>
-              <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">{label}</p>
+              <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">{label}</p>
               <p className={`mt-1 text-xl font-bold tabular-nums ${colorVal}`}>
                 {bal !== 0 ? formatMoneyCompact(Math.abs(bal), currency) : "—"}
               </p>
-              <p className="mt-0.5 text-[11px] text-[var(--ink-muted)]">
+              <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">
                 {totals[type]} account{totals[type] !== 1 ? "s" : ""}
               </p>
             </div>
@@ -319,7 +319,7 @@ export default async function ChartOfAccountsPage() {
         <div key={type}>
           <div className={`mb-2 flex items-center justify-between rounded-lg px-3 py-2 ${TYPE_HEADER[type]}`}>
             <div className="flex items-center gap-2">
-              <span className={`rounded-md px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide ${TYPE_COLOR[type]}`}>
+              <span className={`rounded-md px-2 py-0.5 text-[13px] font-bold uppercase tracking-wide ${TYPE_COLOR[type]}`}>
                 {type}
               </span>
               <span className="text-xs text-[var(--ink-muted)]">
@@ -375,7 +375,7 @@ export default async function ChartOfAccountsPage() {
                             <span className="font-medium text-[var(--ink)]">{acc.name}</span>
                           )}
                           {acc.description && (
-                            <p className="text-[11px] text-[var(--ink-muted)]">{acc.description}</p>
+                            <p className="text-[13px] text-[var(--ink-muted)]">{acc.description}</p>
                           )}
                         </td>
                         <td className="hidden px-4 py-3 text-xs text-[var(--ink-muted)] md:table-cell">
@@ -397,24 +397,24 @@ export default async function ChartOfAccountsPage() {
                         <td className="hidden px-4 py-3 text-right lg:table-cell">
                           {monthly !== 0 ? (
                             <span
-                              className={`text-[11px] font-semibold tabular-nums ${monthly >= 0 ? "text-emerald-600" : "text-red-500"}`}
+                              className={`text-[13px] font-semibold tabular-nums ${monthly >= 0 ? "text-emerald-600" : "text-red-500"}`}
                             >
                               {monthly >= 0 ? "+" : "−"}
                               {formatMoneyCompact(Math.abs(monthly), currency)}
                             </span>
                           ) : (
-                            <span className="text-[11px] text-[var(--ink-muted)]">—</span>
+                            <span className="text-[13px] text-[var(--ink-muted)]">—</span>
                           )}
                         </td>
                         <td className="px-4 py-3">
                           {acc.isSystem ? (
                             <span className="text-xs text-[var(--ink-muted)]">System</span>
                           ) : acc.isActive ? (
-                            <span className="rounded-full bg-green-500/10 px-2 py-0.5 text-[11px] font-medium text-green-700">
+                            <span className="rounded-full bg-green-500/10 px-2 py-0.5 text-[13px] font-medium text-green-700">
                               Active
                             </span>
                           ) : (
-                            <span className="rounded-full bg-[var(--panel-strong)] px-2 py-0.5 text-[11px] font-medium text-[var(--ink-muted)]">
+                            <span className="rounded-full bg-[var(--panel-strong)] px-2 py-0.5 text-[13px] font-medium text-[var(--ink-muted)]">
                               Inactive
                             </span>
                           )}
@@ -424,7 +424,7 @@ export default async function ChartOfAccountsPage() {
                             {hasActivity && (
                               <Link
                                 href={`/finance/accounts/${acc.id}`}
-                                className="rounded-lg border border-[var(--line)] px-2 py-1 text-[11px] font-medium text-[var(--ink-muted)] hover:border-[var(--accent)]/50 hover:text-[var(--accent)]"
+                                className="rounded-lg border border-[var(--line)] px-2 py-1 text-[13px] font-medium text-[var(--ink-muted)] hover:border-[var(--accent)]/50 hover:text-[var(--accent)]"
                               >
                                 Ledger →
                               </Link>

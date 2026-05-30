@@ -125,7 +125,7 @@ function DeliveryDot({ status }: { status: string | null }) {
     : status === "failed" ? "text-red-500"
     : "text-[var(--ink-muted)]";
   return (
-    <span className={`text-[10px] font-medium ${color}`} title={status}>
+    <span className={`text-[12px] font-medium ${color}`} title={status}>
       {status === "read" ? "Read" : status === "delivered" ? "Delivered" : status === "sent" ? "Sent" : status === "failed" ? "Failed" : status}
     </span>
   );
@@ -256,7 +256,7 @@ function MessagesTab({
                   <div className="max-w-[80%] rounded-2xl rounded-br-sm bg-[var(--accent)] px-3.5 py-2.5 text-sm text-white shadow-sm">
                     <p className="whitespace-pre-wrap leading-relaxed">{m.body}</p>
                   </div>
-                  <div className="mt-1 flex items-center gap-2 text-[10px] text-[var(--ink-muted)]">
+                  <div className="mt-1 flex items-center gap-2 text-[12px] text-[var(--ink-muted)]">
                     <span>{formatMsgTime(m.sentAt ?? m.createdAt)}</span>
                     {m.type === "STAFF_REPLY" ? (
                       <span className="text-[var(--ink-muted)]">staff reply</span>
@@ -284,7 +284,7 @@ function MessagesTab({
                       <p className="italic text-[var(--ink-muted)]">[message]</p>
                     )}
                   </div>
-                  <div className="mt-1 flex items-center gap-2 text-[10px] text-[var(--ink-muted)]">
+                  <div className="mt-1 flex items-center gap-2 text-[12px] text-[var(--ink-muted)]">
                     <span>{m.from}</span>
                     <span>{formatMsgTime(m.timestamp)}</span>
                     {!m.isRead ? (
@@ -376,7 +376,7 @@ function MessagesTab({
           {sendError ? (
             <p className="text-xs text-red-600">{sendError}</p>
           ) : null}
-          <p className="text-[10px] text-[var(--ink-muted)]">Sending to {clientPhone}</p>
+          <p className="text-[12px] text-[var(--ink-muted)]">Sending to {clientPhone}</p>
         </div>
       ) : (
         <div className="border-t border-[var(--line)] px-4 py-3 text-xs text-[var(--ink-muted)]">
@@ -874,7 +874,7 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
           <div className="min-w-0 flex-1">
             <div className="mb-1.5 flex flex-wrap items-center gap-2">
               <JobStatusBadge status={job.status} />
-              <span className="font-mono text-[11px] text-[var(--ink-muted)]">{job.jobNumber}</span>
+              <span className="font-mono text-[13px] text-[var(--ink-muted)]">{job.jobNumber}</span>
             </div>
             <h1 className="text-[22px] font-black leading-tight tracking-tight text-[var(--ink)]">
               {[job.brand, job.model].filter((v) => v && v !== "Unknown").join(" ") || job.deviceType}
@@ -912,7 +912,7 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
                       ? "bg-[var(--accent)] ring-[var(--accent)]/40"
                       : "bg-[var(--panel-strong)] ring-[var(--line)]"
                 }`} />
-                <p className={`mt-1 text-center text-[8px] font-bold uppercase leading-none tracking-wider ${
+                <p className={`mt-1 text-center text-[13px] font-bold uppercase leading-none tracking-wider ${
                   i === currentStageIndex ? "text-[var(--accent)]" : "text-[var(--ink-muted)]"
                 }`}>{label}</p>
               </div>
@@ -977,7 +977,7 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
                 <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-red-500" />
                 <div className="min-w-0">
                   <p className="text-xs font-semibold text-[var(--ink)]">{item.label}</p>
-                  <p className="text-[10px] text-[var(--ink-muted)]">{item.action}</p>
+                  <p className="text-[12px] text-[var(--ink-muted)]">{item.action}</p>
                 </div>
               </button>
             ))}
@@ -987,11 +987,11 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
         {/* Key facts 2×2 grid */}
         <div className="grid grid-cols-2 gap-2">
           <div className="rounded-xl border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2">
-            <p className="text-[9px] font-bold uppercase tracking-wider text-[var(--ink-muted)]">ETA</p>
+            <p className="text-[13px] font-bold uppercase tracking-wider text-[var(--ink-muted)]">ETA</p>
             <p className="mt-0.5 truncate text-sm font-semibold text-[var(--ink)]">{etaValue}</p>
           </div>
           <div className="rounded-xl border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2">
-            <p className="text-[9px] font-bold uppercase tracking-wider text-[var(--ink-muted)]">Technician</p>
+            <p className="text-[13px] font-bold uppercase tracking-wider text-[var(--ink-muted)]">Technician</p>
             <p className="mt-0.5 truncate text-sm font-semibold text-[var(--ink)]">{
               assignedLabel === "No technician assigned yet." ? "Unassigned" : assignedLabel
             }</p>
@@ -999,7 +999,7 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
           {canViewFinancials ? (
             <>
               <div className="rounded-xl border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2.5">
-                <p className="text-[9px] font-bold uppercase tracking-wider text-[var(--ink-muted)]">Total Bill</p>
+                <p className="text-[13px] font-bold uppercase tracking-wider text-[var(--ink-muted)]">Total Bill</p>
                 <p className="mt-0.5 text-sm font-semibold text-[var(--ink)]">
                   {clientBillValue > 0 ? `UGX ${formatBillAmount(clientBillValue)}` : "Not set"}
                 </p>
@@ -1011,7 +1011,7 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
                     ? "border-emerald-500/30 bg-emerald-500/8"
                     : "border-[var(--line)] bg-[var(--panel-strong)]"
               }`}>
-                <p className="text-[9px] font-bold uppercase tracking-wider text-[var(--ink-muted)]">Balance</p>
+                <p className="text-[13px] font-bold uppercase tracking-wider text-[var(--ink-muted)]">Balance</p>
                 <p className={`mt-0.5 text-sm font-semibold ${
                   clientBalanceDue > 0 ? "text-red-500"
                   : clientBillValue > 0 ? "text-emerald-600"
@@ -1049,7 +1049,7 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
             {tab === "messages" && unreadCount > 0 ? (
               <span className="inline-flex items-center gap-1.5">
                 messages
-                <span className="inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
+                <span className="inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[12px] font-bold text-white">
                   {unreadCount}
                 </span>
               </span>
@@ -1062,7 +1062,7 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
         <div className={`${panelShellClass} space-y-4`}>
           {/* Repair Journey — desktop only (mobile has progress dots above the tab bar) */}
           <div className="hidden lg:block">
-            <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Repair Journey</p>
+            <p className="mb-3 text-[12px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Repair Journey</p>
             <div className="overflow-x-auto [scrollbar-width:none]">
               <div className="flex min-w-max items-start gap-3 pb-1">
                 {stageLabels.map((label, index) => {
@@ -1079,10 +1079,10 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
                       }`}>
                         {isDone ? "✓" : isClosedStep ? "✗" : index + 1}
                       </div>
-                      <p className={`text-center text-[11px] font-semibold leading-tight ${
+                      <p className={`text-center text-[13px] font-semibold leading-tight ${
                         isClosedStep ? "text-red-600" : isDone ? "text-emerald-600" : isCurrent ? "text-[var(--accent)]" : "text-[var(--ink-muted)]"
                       }`}>{index + 1}. {label}</p>
-                      <p className={`text-[9px] ${
+                      <p className={`text-[13px] ${
                         isClosedStep ? "text-red-400" : isDone ? "text-emerald-500" : isCurrent ? "text-[var(--accent)]/70" : "text-[var(--ink-muted)]"
                       }`}>{isDone ? "Completed" : isClosedStep ? "Closed" : isCurrent ? "In progress" : "Pending"}</p>
                     </div>
@@ -1095,7 +1095,7 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
           {/* 3-column: Job Summary | Attention Needed | Financial Snapshot — desktop only */}
           <div className="hidden lg:grid gap-3 lg:grid-cols-3">
             <div className="rounded-xl border border-[var(--line)] bg-[var(--panel-strong)] p-4">
-              <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Job Summary</p>
+              <p className="mb-3 text-[12px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Job Summary</p>
               <dl className="space-y-2.5">
                 {([
                   ["Status", prettyEnum(job.status)],
@@ -1106,14 +1106,14 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
                   ["Repair Handling", derivedRepairPath],
                 ] as [string, string][]).map(([label, value]) => (
                   <div key={label}>
-                    <dt className="text-[10px] uppercase tracking-[0.08em] text-[var(--ink-muted)]">{label}</dt>
+                    <dt className="text-[12px] uppercase tracking-[0.08em] text-[var(--ink-muted)]">{label}</dt>
                     <dd className="mt-0.5 text-xs font-semibold text-[var(--ink)] [overflow-wrap:anywhere]">{value}</dd>
                   </div>
                 ))}
               </dl>
             </div>
             <div className="rounded-xl border border-amber-500/20 bg-amber-500/8 p-4">
-              <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.12em] text-amber-600">Attention Needed</p>
+              <p className="mb-3 text-[12px] font-bold uppercase tracking-[0.12em] text-amber-600">Attention Needed</p>
               {attentionItems.length ? (
                 <div className="space-y-2">
                   {attentionItems.map((item) => (
@@ -1122,7 +1122,7 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
                       <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-red-500" />
                       <div className="min-w-0">
                         <p className="text-xs font-semibold text-[var(--ink)]">{item.label}</p>
-                        <p className="text-[10px] text-[var(--ink-muted)]">{item.action}</p>
+                        <p className="text-[12px] text-[var(--ink-muted)]">{item.action}</p>
                       </div>
                     </button>
                   ))}
@@ -1132,7 +1132,7 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
               )}
             </div>
             <div className="rounded-xl border border-[var(--line)] bg-[var(--panel-strong)] p-4">
-              <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Financial Snapshot</p>
+              <p className="mb-3 text-[12px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Financial Snapshot</p>
               <dl className="space-y-2">
                 {([
                   ["Client Bill",    formatBillAmount(clientBillValue),   "text-[var(--ink)]"],
@@ -1141,7 +1141,7 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
                   ["Payment Status", paymentStatus,                       paymentStatus === "Paid" ? "text-emerald-600" : paymentStatus === "Overpaid" ? "text-blue-600" : "text-amber-600"],
                 ] as [string, string, string][]).map(([label, value, tone]) => (
                   <div key={label} className="flex items-center justify-between gap-2">
-                    <dt className="text-[10px] uppercase tracking-[0.08em] text-[var(--ink-muted)]">{label}</dt>
+                    <dt className="text-[12px] uppercase tracking-[0.08em] text-[var(--ink-muted)]">{label}</dt>
                     <dd className={`text-sm font-bold ${tone}`}>{value}</dd>
                   </div>
                 ))}
@@ -1155,15 +1155,15 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
 
           {/* Quick Overview — desktop only (mobile has key-facts grid above) */}
           <div className="hidden lg:block">
-            <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Quick Overview</p>
+            <p className="mb-2 text-[12px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Quick Overview</p>
             <div className="grid gap-3 lg:grid-cols-4">
               {quickOverviewGroups.map((group) => (
                 <div key={group.title} className="rounded-xl border border-[var(--line)] bg-[var(--panel-strong)] p-3">
-                  <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">{group.title}</p>
+                  <p className="text-[13px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">{group.title}</p>
                   <dl className="mt-2 space-y-2">
                     {group.rows.map(([label, value]) => (
                       <div key={label}>
-                        <dt className="text-[10px] uppercase tracking-[0.08em] text-[var(--ink-muted)]">{label}</dt>
+                        <dt className="text-[12px] uppercase tracking-[0.08em] text-[var(--ink-muted)]">{label}</dt>
                         <dd className="mt-0.5 text-sm font-semibold text-[var(--ink)] [overflow-wrap:anywhere]">{value}</dd>
                       </div>
                     ))}
@@ -1180,9 +1180,9 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
                 <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-sky-500/10 text-base">📋</span>
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-semibold text-[var(--ink)]">Intake Details</p>
-                  <p className="text-[11px] text-[var(--ink-muted)]">{previewText(job.issueDescription, 80)}</p>
+                  <p className="text-[13px] text-[var(--ink-muted)]">{previewText(job.issueDescription, 80)}</p>
                 </div>
-                <span className="shrink-0 rounded-lg border border-[var(--line)] bg-[var(--panel)] px-2.5 py-1 text-[11px] font-semibold text-[var(--ink-muted)]">View Details</span>
+                <span className="shrink-0 rounded-lg border border-[var(--line)] bg-[var(--panel)] px-2.5 py-1 text-[13px] font-semibold text-[var(--ink-muted)]">View Details</span>
               </summary>
               <div className="border-t border-[var(--line)] px-4 py-3">
                 <p className="text-sm text-[var(--ink)] [overflow-wrap:anywhere]">{previewText(job.issueDescription, 500)}</p>
@@ -1194,7 +1194,7 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
                 <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-violet-500/10 text-base">🔍</span>
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-semibold text-[var(--ink)]">Diagnosis Details</p>
-                  <p className="text-[11px] text-[var(--ink-muted)]">
+                  <p className="text-[13px] text-[var(--ink-muted)]">
                     {[
                       job.diagnosisNotes ? `Internal: ${previewText(job.diagnosisNotes, 40)}` : null,
                       job.externalDiagnosis ? `External: From assigned technician` : null,
@@ -1202,7 +1202,7 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
                   </p>
                 </div>
                 <button type="button" onClick={(e) => { e.stopPropagation(); setActive("diagnosis"); }}
-                  className="shrink-0 rounded-lg border border-[var(--line)] bg-[var(--panel)] px-2.5 py-1 text-[11px] font-semibold text-[var(--ink-muted)] transition hover:text-[var(--accent)]">
+                  className="shrink-0 rounded-lg border border-[var(--line)] bg-[var(--panel)] px-2.5 py-1 text-[13px] font-semibold text-[var(--ink-muted)] transition hover:text-[var(--accent)]">
                   View Details
                 </button>
               </summary>
@@ -1219,10 +1219,10 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
                 <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-500/10 text-base">📝</span>
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-semibold text-[var(--ink)]">Approval & Next Steps</p>
-                  <p className="text-[11px] text-[var(--ink-muted)]">Client decision, approval notes, recommendation and workflow.</p>
+                  <p className="text-[13px] text-[var(--ink-muted)]">Client decision, approval notes, recommendation and workflow.</p>
                 </div>
                 <button type="button" onClick={(e) => { e.stopPropagation(); setActive("timeline"); }}
-                  className="shrink-0 rounded-lg border border-[var(--line)] bg-[var(--panel)] px-2.5 py-1 text-[11px] font-semibold text-[var(--ink-muted)] transition hover:text-[var(--accent)]">
+                  className="shrink-0 rounded-lg border border-[var(--line)] bg-[var(--panel)] px-2.5 py-1 text-[13px] font-semibold text-[var(--ink-muted)] transition hover:text-[var(--accent)]">
                   View Details
                 </button>
               </summary>
@@ -1236,10 +1236,10 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
                 <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10 text-base">🕐</span>
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-semibold text-[var(--ink)]">Timeline</p>
-                  <p className="text-[11px] text-[var(--ink-muted)]">All activities and updates in chronological order.</p>
+                  <p className="text-[13px] text-[var(--ink-muted)]">All activities and updates in chronological order.</p>
                 </div>
                 <button type="button" onClick={(e) => { e.stopPropagation(); setActive("timeline"); }}
-                  className="shrink-0 rounded-lg border border-[var(--line)] bg-[var(--panel)] px-2.5 py-1 text-[11px] font-semibold text-[var(--ink-muted)] transition hover:text-[var(--accent)]">
+                  className="shrink-0 rounded-lg border border-[var(--line)] bg-[var(--panel)] px-2.5 py-1 text-[13px] font-semibold text-[var(--ink-muted)] transition hover:text-[var(--accent)]">
                   View Timeline
                 </button>
               </summary>
@@ -1253,14 +1253,14 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
                 <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-sky-500/10 text-base">🖼️</span>
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-semibold text-[var(--ink)]">Photos</p>
-                  <p className="text-[11px] text-[var(--ink-muted)]">All job photos and attachments.</p>
+                  <p className="text-[13px] text-[var(--ink-muted)]">All job photos and attachments.</p>
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
                   {job.photos.length > 0 && (
-                    <span className="rounded-full bg-sky-500/15 px-2 py-0.5 text-[10px] font-bold text-sky-600">{job.photos.length}</span>
+                    <span className="rounded-full bg-sky-500/15 px-2 py-0.5 text-[12px] font-bold text-sky-600">{job.photos.length}</span>
                   )}
                   <button type="button" onClick={(e) => { e.stopPropagation(); setActive("photos"); }}
-                    className="rounded-lg border border-[var(--line)] bg-[var(--panel)] px-2.5 py-1 text-[11px] font-semibold text-[var(--ink-muted)] transition hover:text-[var(--accent)]">
+                    className="rounded-lg border border-[var(--line)] bg-[var(--panel)] px-2.5 py-1 text-[13px] font-semibold text-[var(--ink-muted)] transition hover:text-[var(--accent)]">
                     View Photos
                   </button>
                 </div>
@@ -1276,14 +1276,14 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
                   <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10 text-base">💬</span>
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-semibold text-[var(--ink)]">Messages</p>
-                    <p className="text-[11px] text-[var(--ink-muted)]">All messages and status updates.</p>
+                    <p className="text-[13px] text-[var(--ink-muted)]">All messages and status updates.</p>
                   </div>
                   <div className="flex shrink-0 items-center gap-2">
                     {unreadCount > 0 && (
-                      <span className="rounded-full bg-red-500/15 px-2 py-0.5 text-[10px] font-bold text-red-600">{unreadCount} unread</span>
+                      <span className="rounded-full bg-red-500/15 px-2 py-0.5 text-[12px] font-bold text-red-600">{unreadCount} unread</span>
                     )}
                     <button type="button" onClick={(e) => { e.stopPropagation(); setActive("messages"); }}
-                      className="rounded-lg border border-[var(--line)] bg-[var(--panel)] px-2.5 py-1 text-[11px] font-semibold text-[var(--ink-muted)] transition hover:text-[var(--accent)]">
+                      className="rounded-lg border border-[var(--line)] bg-[var(--panel)] px-2.5 py-1 text-[13px] font-semibold text-[var(--ink-muted)] transition hover:text-[var(--accent)]">
                       View Messages
                     </button>
                   </div>
@@ -1314,7 +1314,7 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
                         {h.completedAt ? ` · Completed ${formatUtcDateTime(h.completedAt)}` : ""}
                       </p>
                     </div>
-                    <span className="rounded-full border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-1 text-[10px] uppercase tracking-[0.12em] text-[var(--ink-muted)]">
+                    <span className="rounded-full border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-1 text-[12px] uppercase tracking-[0.12em] text-[var(--ink-muted)]">
                       Open
                     </span>
                   </button>
@@ -1422,7 +1422,7 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
                           <button
                             type="button"
                             onClick={() => setShowOneTimeForm(false)}
-                            className="text-[10px] text-[var(--accent)] underline"
+                            className="text-[12px] text-[var(--accent)] underline"
                           >
                             ← Back to list
                           </button>
@@ -1728,7 +1728,7 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
               <div key={label} className="flex items-center gap-2 rounded-xl border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-2">
                 <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md ${bg} text-sm`}>{icon}</span>
                 <div className="min-w-0">
-                  <p className="text-[9px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">{label}</p>
+                  <p className="text-[13px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">{label}</p>
                   <p className={`truncate text-xs font-black tabular-nums ${tone}`}>{value}</p>
                 </div>
               </div>
@@ -1739,8 +1739,8 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
           {clientBillValue > 0 ? (
             <div className="rounded-xl border border-[var(--line)] bg-[var(--panel-strong)] p-3">
               <div className="mb-2 flex items-center justify-between">
-                <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Cash Position</p>
-                <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${paymentStatus === "Paid" ? "bg-emerald-500/20 text-emerald-700 dark:text-emerald-400" : paymentStatus === "Overpaid" ? "bg-blue-500/20 text-blue-700 dark:text-blue-400" : "bg-amber-400/20 text-amber-700"}`}>
+                <p className="text-[12px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Cash Position</p>
+                <span className={`rounded-full px-2 py-0.5 text-[13px] font-semibold ${paymentStatus === "Paid" ? "bg-emerald-500/20 text-emerald-700 dark:text-emerald-400" : paymentStatus === "Overpaid" ? "bg-blue-500/20 text-blue-700 dark:text-blue-400" : "bg-amber-400/20 text-amber-700"}`}>
                   {paymentStatus}
                 </span>
               </div>
@@ -1750,7 +1750,7 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
                   style={{ width: `${Math.min(100, clientBillValue > 0 ? (totalClientPaid / clientBillValue) * 100 : 0)}%` }}
                 />
               </div>
-              <div className="mt-1.5 flex justify-between text-[11px] text-[var(--ink-muted)]">
+              <div className="mt-1.5 flex justify-between text-[13px] text-[var(--ink-muted)]">
                 <span>Paid {formatBillAmount(totalClientPaid)}</span>
                 <span>Total {formatBillAmount(clientBillValue)}</span>
               </div>
@@ -1760,7 +1760,7 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
           {/* ── Section 1: Billing Details ────────────────────────────── */}
           <div className="overflow-hidden rounded-xl border border-[var(--line)]">
             <div className="flex items-center gap-2 bg-[var(--panel-strong)] px-3 py-2.5">
-              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[var(--accent)]/15 text-[10px] font-black text-[var(--accent)]">1</span>
+              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[var(--accent)]/15 text-[12px] font-black text-[var(--accent)]">1</span>
               <p className="text-xs font-semibold text-[var(--ink)]">Billing</p>
             </div>
             <div className="space-y-3 p-3">
@@ -1850,9 +1850,9 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
             <div className="overflow-hidden rounded-xl border border-[var(--line)]">
               <div className="flex items-center justify-between gap-2 bg-[var(--panel-strong)] px-3 py-2.5">
                 <div className="flex items-center gap-2">
-                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 text-[10px] font-black text-emerald-600">2</span>
+                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 text-[12px] font-black text-emerald-600">2</span>
                   <p className="text-xs font-semibold text-[var(--ink)]">Payments</p>
-                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${paymentStatus === "Paid" ? "bg-emerald-500/20 text-emerald-700 dark:text-emerald-400" : paymentStatus === "Overpaid" ? "bg-blue-500/20 text-blue-700 dark:text-blue-400" : "bg-amber-400/20 text-amber-700"}`}>
+                  <span className={`rounded-full px-2 py-0.5 text-[12px] font-semibold ${paymentStatus === "Paid" ? "bg-emerald-500/20 text-emerald-700 dark:text-emerald-400" : paymentStatus === "Overpaid" ? "bg-blue-500/20 text-blue-700 dark:text-blue-400" : "bg-amber-400/20 text-amber-700"}`}>
                     {paymentStatus}
                   </span>
                 </div>
@@ -1872,11 +1872,11 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
                     <div data-form-fields="client-payment" className="space-y-2" ref={(el) => { if (el) (el as HTMLElement & { _payFormEl?: HTMLElement })._payFormEl = el; }}>
                       <div className="grid gap-2 grid-cols-1 lg:grid-cols-3">
                         <div>
-                          <label className="mb-1 block text-[10px] font-medium uppercase tracking-wide text-[var(--ink-muted)]">Amount</label>
+                          <label className="mb-1 block text-[12px] font-medium uppercase tracking-wide text-[var(--ink-muted)]">Amount</label>
                           <input name="amount" inputMode="decimal" placeholder="0.00" className={fieldClass} required />
                         </div>
                         <div>
-                          <label className="mb-1 block text-[10px] font-medium uppercase tracking-wide text-[var(--ink-muted)]">Payment type</label>
+                          <label className="mb-1 block text-[12px] font-medium uppercase tracking-wide text-[var(--ink-muted)]">Payment type</label>
                           <select name="kind" defaultValue="PAYMENT" className={fieldClass}>
                             <option value="PAYMENT">Payment</option>
                             <option value="DEPOSIT">Deposit</option>
@@ -1887,7 +1887,7 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
                           </select>
                         </div>
                         <div>
-                          <label className="mb-1 block text-[10px] font-medium uppercase tracking-wide text-[var(--ink-muted)]">Method</label>
+                          <label className="mb-1 block text-[12px] font-medium uppercase tracking-wide text-[var(--ink-muted)]">Method</label>
                           <select name="method" defaultValue="CASH" className={fieldClass}>
                             <option value="CASH">Cash</option>
                             <option value="MOBILE_MONEY">Mobile money</option>
@@ -1902,12 +1902,12 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
                         <input type="hidden" name="currency" value="UGX" />
                         <input type="hidden" name="exchangeRateToBase" value="1" />
                         <div>
-                          <label className="mb-1 block text-[10px] font-medium uppercase tracking-wide text-[var(--ink-muted)]">Reference / receipt #</label>
+                          <label className="mb-1 block text-[12px] font-medium uppercase tracking-wide text-[var(--ink-muted)]">Reference / receipt #</label>
                           <input name="reference" placeholder="Optional" className={fieldClass} />
                         </div>
                       </div>
                       <div>
-                        <label className="mb-1 block text-[10px] font-medium uppercase tracking-wide text-[var(--ink-muted)]">Notes</label>
+                        <label className="mb-1 block text-[12px] font-medium uppercase tracking-wide text-[var(--ink-muted)]">Notes</label>
                         <textarea name="note" placeholder="Optional notes" className={`${fieldClass} min-h-[60px]`} />
                       </div>
                       <label className="flex items-center gap-2 text-xs text-[var(--ink-muted)]">
@@ -1967,14 +1967,14 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
                               {payment.kind === "REFUND" ? "-" : "+"}UGX {formatBillAmount(payment.amount)}
                             </span>
                           </div>
-                          <div className="flex items-center justify-between text-[11px] text-[var(--ink-muted)]">
+                          <div className="flex items-center justify-between text-[13px] text-[var(--ink-muted)]">
                             <span>{formatUtcDateTime(payment.receivedAt)}</span>
                             <span className={balance === 0 ? "text-emerald-600 font-semibold" : balance < 0 ? "text-blue-600 font-semibold" : "text-amber-600 font-semibold"}>
                               {balance === 0 ? "Fully paid ✓" : balance < 0 ? `${formatBillAmount(Math.abs(balance))} overpaid` : `${formatBillAmount(balance)} remaining`}
                             </span>
                           </div>
                           {(payment.reference || payment.note) ? (
-                            <p className="text-[11px] text-[var(--ink-muted)]">{[payment.reference, payment.note].filter(Boolean).join(" · ")}</p>
+                            <p className="text-[13px] text-[var(--ink-muted)]">{[payment.reference, payment.note].filter(Boolean).join(" · ")}</p>
                           ) : null}
                         </div>
                       );
@@ -2030,7 +2030,7 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
               <p className="text-xs font-semibold uppercase tracking-wide text-[var(--ink-muted)]">Client Payment</p>
               <div className="flex items-center justify-between rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] p-2">
                 <p className="text-xs text-[var(--ink-muted)]">Amount: {formatBillAmount(clientBillValue)}</p>
-                <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${job.clientPaid ? "bg-emerald-500 text-white" : "bg-amber-400/20 text-amber-700"}`}>
+                <span className={`rounded-full px-2 py-0.5 text-[13px] font-semibold ${job.clientPaid ? "bg-emerald-500 text-white" : "bg-amber-400/20 text-amber-700"}`}>
                   {job.clientPaid ? "Paid" : "Unpaid"}
                 </span>
               </div>
@@ -2042,9 +2042,9 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
             <div className="overflow-hidden rounded-xl border border-[var(--line)]">
               <div className="flex items-center justify-between gap-2 bg-[var(--panel-strong)] px-3 py-2.5">
                 <div className="flex items-center gap-2">
-                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-violet-500/15 text-[10px] font-black text-violet-600">3</span>
+                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-violet-500/15 text-[12px] font-black text-violet-600">3</span>
                   <p className="text-xs font-semibold text-[var(--ink)]">Tech payout</p>
-                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${technicianPayoutStatus === "Paid" ? "bg-emerald-500/20 text-emerald-700 dark:text-emerald-400" : technicianPayoutStatus === "Overpaid" ? "bg-amber-400/20 text-amber-700" : technicianCost <= 0 ? "bg-[var(--panel-strong)] text-[var(--ink-muted)]" : "bg-[var(--accent)]/10 text-[var(--accent)]"}`}>
+                  <span className={`rounded-full px-2 py-0.5 text-[12px] font-semibold ${technicianPayoutStatus === "Paid" ? "bg-emerald-500/20 text-emerald-700 dark:text-emerald-400" : technicianPayoutStatus === "Overpaid" ? "bg-amber-400/20 text-amber-700" : technicianCost <= 0 ? "bg-[var(--panel-strong)] text-[var(--ink-muted)]" : "bg-[var(--accent)]/10 text-[var(--accent)]"}`}>
                     {technicianPayoutStatus}
                   </span>
                 </div>
@@ -2070,11 +2070,11 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
                     <div data-form-fields="tech-payout" className="space-y-2">
                       <div className="grid gap-2 grid-cols-1 lg:grid-cols-3">
                         <div>
-                          <label className="mb-1 block text-[10px] font-medium text-[var(--ink-muted)]">Amount</label>
+                          <label className="mb-1 block text-[12px] font-medium text-[var(--ink-muted)]">Amount</label>
                           <input name="payout_amount" inputMode="decimal" placeholder="0.00" className={fieldClass} />
                         </div>
                         <div>
-                          <label className="mb-1 block text-[10px] font-medium text-[var(--ink-muted)]">Method</label>
+                          <label className="mb-1 block text-[12px] font-medium text-[var(--ink-muted)]">Method</label>
                           <select name="payout_method" defaultValue="CASH" className={fieldClass}>
                             <option value="CASH">Cash</option>
                             <option value="MOBILE_MONEY">Mobile money</option>
@@ -2084,12 +2084,12 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
                           </select>
                         </div>
                         <div>
-                          <label className="mb-1 block text-[10px] font-medium text-[var(--ink-muted)]">Reference</label>
+                          <label className="mb-1 block text-[12px] font-medium text-[var(--ink-muted)]">Reference</label>
                           <input name="payout_reference" placeholder="Optional" className={fieldClass} />
                         </div>
                       </div>
                       <div>
-                        <label className="mb-1 block text-[10px] font-medium text-[var(--ink-muted)]">Notes</label>
+                        <label className="mb-1 block text-[12px] font-medium text-[var(--ink-muted)]">Notes</label>
                         <textarea name="payout_note" placeholder="Optional notes" className={`${fieldClass} min-h-[60px]`} />
                       </div>
                       <label className="flex items-center gap-2 text-xs text-[var(--ink-muted)]">
@@ -2164,7 +2164,7 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
           {/* ── Section 4: Financial Summary ──────────────────────────── */}
           <div className="overflow-hidden rounded-xl border border-[var(--line)]">
             <div className="flex items-center gap-3 bg-[var(--panel-strong)] px-4 py-2.5">
-              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-sky-500/15 text-[10px] font-black text-sky-600">4</span>
+              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-sky-500/15 text-[12px] font-black text-sky-600">4</span>
               <p className="text-xs font-semibold text-[var(--ink)]">Financial summary</p>
             </div>
             <div className="divide-y divide-[var(--line)]">
@@ -2226,7 +2226,7 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
               <div>
                 <label className="mb-1.5 block text-xs font-medium text-[var(--ink-muted)]">
                   Client communication note
-                  {job.lastClientContactAt ? <span className="ml-2 text-[10px] text-[var(--accent)]">Last: {formatUtcDateTime(job.lastClientContactAt)}</span> : null}
+                  {job.lastClientContactAt ? <span className="ml-2 text-[12px] text-[var(--accent)]">Last: {formatUtcDateTime(job.lastClientContactAt)}</span> : null}
                 </label>
                 <textarea
                   name="clientConversationNote"
@@ -2546,7 +2546,7 @@ function StatusShareButton({ jobNumber, compact = false }: { jobNumber: string; 
         type="button"
         onClick={handleCopy}
         title="Copy client status link"
-        className="flex items-center gap-1 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-1 text-[11px] font-medium text-[var(--ink-muted)] transition hover:border-[var(--accent)]/40 hover:text-[var(--ink)]"
+        className="flex items-center gap-1 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-1 text-[13px] font-medium text-[var(--ink-muted)] transition hover:border-[var(--accent)]/40 hover:text-[var(--ink)]"
       >
         {copied ? (
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
@@ -2566,8 +2566,8 @@ function StatusShareButton({ jobNumber, compact = false }: { jobNumber: string; 
       </summary>
       <div className="panel-shadow absolute left-0 z-20 mt-2 w-52 overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
         <div className="p-3 space-y-2">
-          <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Client status link</p>
-          <p className="break-all rounded bg-[var(--panel-strong)] px-2 py-1.5 font-mono text-[10px] text-[var(--ink-muted)]">
+          <p className="text-[12px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Client status link</p>
+          <p className="break-all rounded bg-[var(--panel-strong)] px-2 py-1.5 font-mono text-[12px] text-[var(--ink-muted)]">
             /status/{jobNumber}
           </p>
           <button
