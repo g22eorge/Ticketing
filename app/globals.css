@@ -889,8 +889,9 @@ tr:has(details[open]) {
     background: var(--panel) !important;
   }
 
-  /* Every cell is a full-width block — override all Tailwind show/hide utilities */
-  .doc-list > table > tbody > tr > td {
+  /* Every cell is a full-width block — override all Tailwind show/hide utilities.
+   * Exception: cells with .doc-list-hide remain hidden (mobile-specific suppression). */
+  .doc-list > table > tbody > tr > td:not(.doc-list-hide) {
     display: block !important;
     width: 100% !important;
     padding: 0.5rem 0.875rem !important;
@@ -922,6 +923,15 @@ tr:has(details[open]) {
 
   /* Empty cells (—, null) collapse so they don't leave blank space */
   .doc-list > table > tbody > tr > td:empty {
+    display: none !important;
+    border: none !important;
+    padding: 0 !important;
+  }
+
+  /* doc-list-hide: explicitly suppress a cell even inside doc-list.
+   * Use on desktop-only columns (Balance, Overdue, redundant Client)
+   * that should truly be absent from the mobile card stack. */
+  .doc-list > table > tbody > tr > td.doc-list-hide {
     display: none !important;
     border: none !important;
     padding: 0 !important;

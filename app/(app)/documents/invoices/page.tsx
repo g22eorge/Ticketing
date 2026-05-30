@@ -49,7 +49,8 @@ export default async function InvoicesPage({
   const orgCurrency = normalizeCurrency(orgRow?.baseCurrency, "UGX");
 
   const params = await searchParams;
-  const createMode = params.create === "1"; // mobile "New Invoice" → show creation form
+  const createMode  = params.create === "1"; // mobile "New Invoice" → show creation form
+  const collectMode = params.collect === "1"; // mobile "Collect Revenue" button → show panel
   const typeFilter = params.type ?? "all";
   const statusFilter = params.status ?? "all";
   const agingFilter = params.aging ?? "all";
@@ -611,8 +612,33 @@ export default async function InvoicesPage({
             );
           }
 
-          // ALL / default filter: Collect Revenue (uninvoiced jobs)
+          // ALL / default filter: Collect Revenue behind a button tap
           if (readyJobs.length > 0 && (statusFilter === "all" || !statusFilter)) {
+            // Show button until tapped, then expand the panel
+            if (!collectMode) {
+              return (
+                <div className="mx-4 mb-3">
+                  <Link
+                    href="/documents/invoices?collect=1"
+                    className="flex w-full items-center justify-between rounded-2xl border border-emerald-500/30 bg-emerald-500/8 px-4 py-3.5 transition active:opacity-80"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-500">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                      </span>
+                      <div>
+                        <p className="text-[13px] font-bold text-emerald-600">Collect Revenue</p>
+                        <p className="text-[11px] text-[var(--ink-muted)]">{readyJobs.length} job{readyJobs.length !== 1 ? "s" : ""} ready to invoice</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[15px] font-black text-emerald-600">{formatMoneyCompact(readyJobsTotal, orgCurrency)}</p>
+                      <p className="text-[10px] text-emerald-500/70">tap to view →</p>
+                    </div>
+                  </Link>
+                </div>
+              );
+            }
             return (
               <div className="mx-4 mb-3 overflow-hidden rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.06]">
                 <div className="flex items-center justify-between px-4 py-3 border-b border-emerald-500/15">
@@ -1093,10 +1119,12 @@ export default async function InvoicesPage({
                     >
                       {inv.invoiceType.charAt(0) + inv.invoiceType.slice(1).toLowerCase()}
                     </span>
-                    {/* Client name visible on mobile (column hidden at md) */}
-                    <p className="mt-1 text-[12px] font-medium text-[var(--ink)] md:hidden">{clientName}</p>
+                    {/* Client name visible on mobile (only when not empty) */}
+                    {clientName && clientName !== "—" && (
+                      <p className="mt-1 text-[12px] font-medium text-[var(--ink)] md:hidden">{clientName}</p>
+                    )}
                   </td>
-                  <td className="hidden px-4 py-3 md:table-cell">
+                  <td className="doc-list-hide hidden px-4 py-3 md:table-cell">
                     <p className="font-medium text-[var(--ink)]">{clientName}</p>
                     {isRepair && inv.job ? (
                       <Link
@@ -1124,7 +1152,7 @@ export default async function InvoicesPage({
                       </p>
                     ) : null}
                   </td>
-                  <td className="hidden px-4 py-3 lg:table-cell">
+                  <td className="doc-list-hide hidden px-4 py-3 lg:table-cell">
                     {inv.isPaid ? (
                       <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-700">
                         Cleared
@@ -1137,7 +1165,7 @@ export default async function InvoicesPage({
                       <span className="text-[var(--ink-muted)]">—</span>
                     )}
                   </td>
-                  <td className="hidden px-4 py-3 lg:table-cell">
+                  <td className="doc-list-hide hidden px-4 py-3 lg:table-cell">
                     {isOverdue ? (
                       <span
                         className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
