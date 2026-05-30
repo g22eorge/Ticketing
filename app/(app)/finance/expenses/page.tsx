@@ -336,16 +336,8 @@ export default async function ExpensesPage({ searchParams }: Props) {
                       className="input-base w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-[12px]"
                     />
                   </div>
-                  <div>
-                    <label className="mb-1 block text-[11px] font-semibold text-[var(--ink-muted)]">
-                      Currency
-                    </label>
-                    <input
-                      name="currency"
-                      defaultValue={currency}
-                      className="input-base w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-[12px]"
-                    />
-                  </div>
+                  {/* Currency locked to org base — hidden field */}
+                  <input type="hidden" name="currency" value="UGX" />
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div>

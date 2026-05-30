@@ -366,9 +366,7 @@ export default async function ReceiptsPage({
               ))}
             </select>
             <input name="amount" required inputMode="decimal" placeholder="Amount" className="h-9 rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 text-sm" />
-            <select name="currency" defaultValue="UGX" className="h-9 rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 text-sm">
-              <option value="UGX">UGX</option>
-            </select>
+            <input type="hidden" name="currency" value="UGX" />
             <select name="method" defaultValue="CASH" className="h-9 rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 text-sm">
               {PAYMENT_METHODS.map((method) => <option key={method} value={method}>{method.replaceAll("_", " ")}</option>)}
             </select>

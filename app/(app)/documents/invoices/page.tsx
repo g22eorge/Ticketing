@@ -949,15 +949,7 @@ export default async function InvoicesPage({
                   required
                   className="h-9 flex-1 rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 text-sm outline-none focus:ring-2 focus:ring-[var(--accent)]"
                 />
-                <select
-                  name="currency"
-                  defaultValue="UGX"
-                  className="h-9 rounded-lg border border-[var(--line)] bg-[var(--panel)] px-2 text-sm"
-                >
-                  {SUPPORTED_CURRENCIES.map((c) => (
-                    <option key={c} value={c}>{c}</option>
-                  ))}
-                </select>
+                <input type="hidden" name="currency" value="UGX" />
               </div>
             </div>
             <div className="space-y-1">
@@ -1220,6 +1212,43 @@ export default async function InvoicesPage({
                           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M9 12h6M9 16h4"/></svg>
                         </a>
                       ) : null}
+                      {/* ── Mobile: inline Record Payment (visible, no menu needed) ── */}
+                      {inv.balance > 0 && inv.status !== "VOID" ? (
+                        <details className="lg:hidden">
+                          <summary className="inline-flex cursor-pointer list-none items-center gap-1 rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-2.5 py-1.5 text-[11px] font-bold text-emerald-700 transition hover:bg-emerald-500/20">
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+                            Pay
+                          </summary>
+                          <form action={addPaymentAction} className="mt-2 space-y-2 rounded-xl border border-[var(--line)] bg-[var(--panel-strong)] p-3">
+                            <input type="hidden" name="invoiceId" value={inv.id} />
+                            <input type="hidden" name="currency" value="UGX" />
+                            <input
+                              name="amount"
+                              inputMode="decimal"
+                              placeholder={`Amount (max ${formatMoney(inv.balance, invoiceCurrency)})`}
+                              className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 py-2 text-sm outline-none focus:border-[var(--accent)]/50"
+                            />
+                            <select
+                              name="method"
+                              defaultValue="CASH"
+                              className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 py-2 text-sm outline-none"
+                            >
+                              {PAYMENT_METHODS.map((m) => (
+                                <option key={m} value={m}>{m.replaceAll("_", " ")}</option>
+                              ))}
+                            </select>
+                            <input
+                              name="reference"
+                              placeholder="Reference / note (optional)"
+                              className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 py-2 text-sm outline-none focus:border-[var(--accent)]/50"
+                            />
+                            <button type="submit" className="btn-premium w-full rounded-xl py-2 text-sm font-bold">
+                              Record Payment
+                            </button>
+                          </form>
+                        </details>
+                      ) : null}
+
                       <RowActionsMenu label="Invoice actions">
                         {inv.balance > 0 && inv.status !== "VOID" ? (
                           <>
@@ -1233,15 +1262,7 @@ export default async function InvoicesPage({
                                   placeholder="Amount"
                                   className="min-w-0 flex-1 rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1.5 text-xs outline-none focus:border-[var(--accent)]/50"
                                 />
-                                <select
-                                  name="currency"
-                                  defaultValue={invoiceCurrency}
-                                  className="rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-1.5 text-xs outline-none"
-                                >
-                                  {SUPPORTED_CURRENCIES.map((c) => (
-                                    <option key={c} value={c}>{c}</option>
-                                  ))}
-                                </select>
+                                <input type="hidden" name="currency" value="UGX" />
                               </div>
                               <div className="flex gap-2">
                                 <select
