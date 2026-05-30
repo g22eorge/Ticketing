@@ -646,14 +646,15 @@ export function NewJobStepper({ receivedByName }: { receivedByName: string }) {
         </div>
       ) : null}
 
-      <div className="flex justify-between">
+      {/* Mobile: stacked column; Desktop: side by side */}
+      <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-between">
         <button
           type="button"
           disabled={step === 0}
           onClick={() => setStep((prev) => Math.max(prev - 1, 0))}
-          className="btn-premium-secondary rounded-lg px-3 py-1.5 text-[13px] disabled:opacity-50 sm:py-2 sm:text-sm"
+          className="btn-premium-secondary w-full rounded-xl py-2 text-sm disabled:opacity-40 sm:w-auto sm:px-4"
         >
-          Back
+          ← Back
         </button>
 
         {step < steps.length - 1 ? (
@@ -662,12 +663,12 @@ export function NewJobStepper({ receivedByName }: { receivedByName: string }) {
             onClick={() => {
               if (validateStep(step + 1)) setStep((prev) => Math.min(prev + 1, steps.length - 1));
             }}
-            className="btn-premium-dark rounded-lg px-3 py-1.5 text-[13px] sm:py-2 sm:text-sm"
+            className="btn-premium w-full rounded-xl py-2.5 text-sm font-bold sm:w-auto sm:px-6"
           >
-            Next
+            Next →
           </button>
         ) : (
-          <SubmitButton disabled={!agreedToServiceTerms} />
+          <div className="w-full sm:w-auto"><SubmitButton disabled={!agreedToServiceTerms} /></div>
         )}
       </div>
     </form>

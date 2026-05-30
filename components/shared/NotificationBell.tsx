@@ -64,7 +64,7 @@ export function NotificationBell() {
   const [isLoading, setIsLoading] = useState(true);
   const [fetchError, setFetchError] = useState(false);
   // Panel geometry — computed from the button's bounding rect on open
-  const [rect, setRect] = useState<{ top: number; right: number } | null>(null);
+  const [rect, setRect] = useState<{ top: number; right: number; bottom: number } | null>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
   const router = useRouter();
 
@@ -129,7 +129,7 @@ export function NotificationBell() {
   function openPanel() {
     if (btnRef.current) {
       const r = btnRef.current.getBoundingClientRect();
-      setRect({ top: r.bottom, right: window.innerWidth - r.right });
+      setRect({ top: r.bottom, right: window.innerWidth - r.right, bottom: r.bottom });
     }
     setIsOpen((v) => !v);
   }
@@ -158,22 +158,34 @@ export function NotificationBell() {
   }
 
   // ── Panel positioning ───────────────────────────────────────────────────────
-  // Clamp so the LEFT edge never goes off-screen (≥8px from left viewport edge).
   const panelStyle: React.CSSProperties = (() => {
     if (!rect || typeof window === "undefined") return { display: "none" };
     const vw = window.innerWidth;
-    const desiredWidth = Math.min(22 * 16, vw - 16); // max 352 or viewport-16
-    // Right edge offset: how many px from the viewport's right edge
-    const safeRight = Math.max(8, rect.right);
-    // How much width fits before hitting the left margin (8px)
-    const maxWidth = vw - safeRight - 8;
-    const width = Math.min(desiredWidth, maxWidth);
+    const isMobile = vw < 640;
+
+    if (isMobile) {
+      // Full-width minus 16px margins, anchored to viewport right edge
+      const width = Math.min(340, vw - 16);
+      return {
+        position: "fixed",
+        top: rect.bottom + 6,
+        right: 8,
+        width,
+        maxHeight: `calc(100dvh - ${rect.bottom + 24}px)`,
+        zIndex: 9999,
+      };
+    }
+
+    // Desktop: align right edge of panel with right edge of button
+    const desiredWidth = Math.min(22 * 16, vw - 16);
+    const rightEdgeFromViewportRight = vw - rect.right;
+    const safeRight = Math.max(8, rightEdgeFromViewportRight);
     return {
       position: "fixed",
-      top: rect.top + 8,
+      top: rect.bottom + 6,
       right: safeRight,
-      width,
-      maxHeight: `calc(100dvh - ${rect.top + 24}px)`,
+      width: desiredWidth,
+      maxHeight: `calc(100dvh - ${rect.bottom + 24}px)`,
       zIndex: 9999,
     };
   })();

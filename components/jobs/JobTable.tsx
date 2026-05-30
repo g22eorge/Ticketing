@@ -291,17 +291,14 @@ export function JobTable({
             return (
               <div
                 key={job.id}
-                className="relative border-b border-[var(--line)]/70 last:border-b-0 active:bg-[var(--panel-strong)]/60"
+                className="relative border-b border-[var(--line)]/70 last:border-b-0"
               >
-                {/* Full-bleed tap target */}
+                {/* Link WRAPS the content so taps always fire navigation */}
                 <Link
                   href={`/jobs/${job.id}`}
-                  className="absolute inset-0 z-0"
+                  className="flex items-center gap-3 px-4 py-3 active:bg-[var(--panel-strong)]/60 lg:pr-32"
                   aria-label={`Open job ${job.jobNumber}`}
-                />
-
-                {/* 2-line compact card */}
-                <div className="relative z-10 flex items-center gap-3 px-4 py-3">
+                >
                   {/* Status-colored avatar */}
                   <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl text-sm font-black ${avatarCls}`}>
                     {initial}
@@ -338,9 +335,9 @@ export function JobTable({
                       </div>
                     </div>
                   </div>
-                </div>
+                </Link>
 
-                {/* Desktop-only doc action links */}
+                {/* Desktop-only doc action links — absolutely positioned so they sit above the Link */}
                 {(canUseJobCards || canDownloadQuotation || canDownloadInvoice || canEditPage || (canDelete && deleteAction)) ? (
                   <div className="pointer-events-auto absolute right-4 top-1/2 hidden -translate-y-1/2 items-center gap-2 lg:flex">
                     {canUseJobCards ? (
