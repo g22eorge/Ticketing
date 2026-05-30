@@ -7,7 +7,7 @@ import { can } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { formatEATDate } from "@/lib/date-eat";
 import { formatMoney, formatMoneyCompact, getAppCurrency } from "@/lib/currency";
-import { createLead } from "./actions";
+import { createLead, updateLeadStatus, advanceLeadStageAction } from "./actions";
 
 const LEAD_STATUS_LABELS: Record<LeadStatus, string> = {
   NEW: "New",
@@ -111,6 +111,10 @@ export default async function SalesPage({
     quotationStats,
     acceptedQuoteStats,
     followupsDue,
+    stageValueGroups,
+    sourceStatusGroups,
+    overdueLeads,
+    lostReasonGroups,
   ] = await Promise.all([
     activeTab === "leads"
       ? prisma.lead.findMany({
@@ -195,6 +199,40 @@ export default async function SalesPage({
         followUpAt: { lte: now },
       },
     }).catch(() => 0),
+
+    // Stage value breakdown (sum of estimatedValue per status)
+    prisma.lead.groupBy({
+      by: ["status"],
+      where: { ...(onlyOwn ? { assignedToId: user.id } : {}), estimatedValue: { not: null } },
+      _sum: { estimatedValue: true },
+      _count: { status: true },
+    }).catch(() => []),
+
+    // Source win rates (count by source, split WON vs total)
+    prisma.lead.groupBy({
+      by: ["source", "status"],
+      where: { ...(onlyOwn ? { assignedToId: user.id } : {}) },
+      _count: { status: true },
+    }).catch(() => []),
+
+    // Overdue follow-up leads (for surfacing at top)
+    prisma.lead.findMany({
+      where: {
+        ...(onlyOwn ? { assignedToId: user.id } : {}),
+        status: { notIn: ["WON", "LOST", "STALE"] },
+        followUpAt: { lte: now },
+      },
+      select: { id: true, fullName: true, phone: true, status: true, estimatedValue: true, followUpAt: true, assignedTo: { select: { name: true } } },
+      orderBy: { followUpAt: "asc" },
+      take: 10,
+    }).catch(() => []),
+
+    // Lost reason breakdown
+    prisma.lead.groupBy({
+      by: ["lostReason"],
+      where: { ...(onlyOwn ? { assignedToId: user.id } : {}), status: "LOST", lostReason: { not: null } },
+      _count: { lostReason: true },
+    }).catch(() => []),
   ]);
 
   // ── Compute KPIs ────────────────────────────────────────────────────────
@@ -220,6 +258,40 @@ export default async function SalesPage({
       ? ((wonThisMonth - wonLastMonth) / wonLastMonth) * 100
       : null;
 
+  // Stage funnel data: count + value per stage
+  const stageValueMap = new Map<string, { count: number; value: number }>();
+  for (const row of stageValueGroups as Array<{ status: string; _sum: { estimatedValue: number | null }; _count: { status: number } }>) {
+    stageValueMap.set(row.status, { count: row._count.status, value: row._sum.estimatedValue ?? 0 });
+  }
+  // Merge with count-only rows (leads without estimatedValue won't appear in stageValueMap)
+  for (const [status, count] of Object.entries(statusCounts)) {
+    if (!stageValueMap.has(status)) stageValueMap.set(status, { count: count ?? 0, value: 0 });
+    else stageValueMap.set(status, { ...stageValueMap.get(status)!, count: count ?? 0 });
+  }
+
+  // Source win rates
+  const sourceStats = new Map<string, { total: number; won: number }>();
+  for (const row of sourceStatusGroups as Array<{ source: string; status: string; _count: { status: number } }>) {
+    const existing = sourceStats.get(row.source) ?? { total: 0, won: 0 };
+    sourceStats.set(row.source, {
+      total: existing.total + row._count.status,
+      won: existing.won + (row.status === "WON" ? row._count.status : 0),
+    });
+  }
+  const sourceWinRates = [...sourceStats.entries()]
+    .map(([source, { total, won }]) => ({ source, total, won, rate: total > 0 ? Math.round((won / total) * 100) : 0 }))
+    .sort((a, b) => b.won - a.won);
+
+  // Revenue forecast: sum(estimatedValue × stage_probability) for active stages
+  const stageProbability: Record<string, number> = {
+    NEW: 0.10, CONTACTED: 0.25, QUALIFIED: 0.40, PROPOSAL_SENT: 0.65, WON: 1.0,
+  };
+  let forecastedRevenue = 0;
+  for (const [status, prob] of Object.entries(stageProbability)) {
+    const stageData = stageValueMap.get(status);
+    if (stageData) forecastedRevenue += stageData.value * prob;
+  }
+
   const showNewLead = filters.newLead === "1" || Boolean(filters.createError);
 
   async function createLeadAction(formData: FormData) {
@@ -243,6 +315,14 @@ export default async function SalesPage({
       redirect(`/sales?tab=leads&newLead=1&createError=${encodeURIComponent(msg)}`);
     }
   }
+
+  // Next stage in the funnel
+  const NEXT_STAGE: Partial<Record<LeadStatus, LeadStatus>> = {
+    NEW: "CONTACTED", CONTACTED: "QUALIFIED",
+    QUALIFIED: "PROPOSAL_SENT", PROPOSAL_SENT: "WON",
+  };
+
+  const LOST_REASONS = ["Price too high", "Chose competitor", "No budget", "Bad timing", "Unreachable", "Other"];
 
   return (
     <div className="space-y-4">
@@ -343,6 +423,162 @@ export default async function SalesPage({
         </div>
       </div>
 
+      {/* ══════════════════════════════════════════════════════════════════════
+          1. VISUAL FUNNEL + FORECAST
+      ══════════════════════════════════════════════════════════════════════ */}
+      <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
+        <div className="flex items-center justify-between border-b border-[var(--line)] px-4 py-2.5">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Sales Funnel</p>
+          <p className="text-[11px] font-semibold text-[var(--ink-muted)]">
+            Forecast: <span className="text-[var(--accent)]">{formatMoneyCompact(forecastedRevenue, currency)}</span>
+          </p>
+        </div>
+        {/* Stage bars */}
+        {(() => {
+          const ACTIVE_STAGES = ["NEW","CONTACTED","QUALIFIED","PROPOSAL_SENT"] as const;
+          const maxCount = Math.max(1, ...ACTIVE_STAGES.map(s => stageValueMap.get(s)?.count ?? 0));
+          const stageColors: Record<string, string> = {
+            NEW: "bg-sky-500", CONTACTED: "bg-violet-500",
+            QUALIFIED: "bg-amber-500", PROPOSAL_SENT: "bg-orange-500",
+          };
+          const stageLabels: Record<string, string> = {
+            NEW: "New", CONTACTED: "Contacted", QUALIFIED: "Qualified", PROPOSAL_SENT: "Proposal",
+          };
+          return (
+            <div className="grid grid-cols-4 divide-x divide-[var(--line)] px-0">
+              {ACTIVE_STAGES.map((s, i) => {
+                const data = stageValueMap.get(s) ?? { count: 0, value: 0 };
+                const next = ACTIVE_STAGES[i + 1];
+                const nextCount = next ? (stageValueMap.get(next)?.count ?? 0) : 0;
+                const dropOff = data.count > 0 && i < ACTIVE_STAGES.length - 1
+                  ? Math.round(((data.count - nextCount) / data.count) * 100)
+                  : null;
+                const barWidth = Math.max(4, Math.round((data.count / maxCount) * 100));
+                return (
+                  <Link key={s} href={`/sales?tab=leads&status=${s}`}
+                    className="group flex flex-col gap-1.5 p-3 transition hover:bg-[var(--panel-strong)]">
+                    <div className="flex items-baseline justify-between gap-1">
+                      <p className="text-lg font-black text-[var(--ink)]">{data.count}</p>
+                      {dropOff !== null && dropOff > 0 && (
+                        <span className="text-[9px] font-bold text-red-500">-{dropOff}%</span>
+                      )}
+                    </div>
+                    {/* Bar */}
+                    <div className="h-1.5 w-full rounded-full bg-[var(--panel-strong)]">
+                      <div className={`h-full rounded-full ${stageColors[s]} transition-all`} style={{ width: `${barWidth}%` }} />
+                    </div>
+                    <p className="text-[10px] font-medium text-[var(--ink-muted)]">{stageLabels[s]}</p>
+                    {data.value > 0 && (
+                      <p className="text-[9px] font-semibold text-[var(--accent)]">{formatMoneyCompact(data.value, currency)}</p>
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
+          );
+        })()}
+        {/* Won / Lost summary row */}
+        <div className="flex divide-x divide-[var(--line)] border-t border-[var(--line)]">
+          {(["WON","LOST","STALE"] as const).map(s => {
+            const data = stageValueMap.get(s) ?? { count: 0, value: 0 };
+            const color = s === "WON" ? "text-emerald-600" : s === "LOST" ? "text-red-500" : "text-[var(--ink-muted)]";
+            const label = s === "WON" ? "Won" : s === "LOST" ? "Lost" : "Stale";
+            return (
+              <Link key={s} href={`/sales?tab=leads&status=${s}`}
+                className="flex flex-1 items-center justify-center gap-2 py-2 text-center transition hover:bg-[var(--panel-strong)]">
+                <p className={`text-sm font-black ${color}`}>{data.count}</p>
+                <p className="text-[10px] text-[var(--ink-muted)]">{label}</p>
+              </Link>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ══════════════════════════════════════════════════════════════════════
+          2. TODAY'S FOLLOW-UPS (shown only when there are overdue leads)
+      ══════════════════════════════════════════════════════════════════════ */}
+      {(overdueLeads as Array<{ id: string; fullName: string; phone: string; status: string; estimatedValue: number | null; followUpAt: Date | null; assignedTo: { name: string } | null }>).length > 0 && (
+        <div className="overflow-hidden rounded-xl border border-amber-500/30 bg-amber-500/6">
+          <div className="flex items-center justify-between border-b border-amber-500/20 px-4 py-2.5">
+            <div className="flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-amber-500" />
+              <p className="text-[11px] font-semibold text-amber-700 dark:text-amber-400">
+                {followupsDue} Follow-up{followupsDue !== 1 ? "s" : ""} Overdue
+              </p>
+            </div>
+            <Link href="/sales?tab=leads&overdue=1" className="text-[11px] font-semibold text-[var(--accent)]">See all →</Link>
+          </div>
+          <div className="divide-y divide-amber-500/10">
+            {(overdueLeads as Array<{ id: string; fullName: string; phone: string; status: string; estimatedValue: number | null; followUpAt: Date | null; assignedTo: { name: string } | null }>).map(lead => (
+              <Link key={lead.id} href={`/sales/leads/${lead.id}`}
+                className="flex items-center justify-between px-4 py-2.5 transition hover:bg-amber-500/8">
+                <div className="min-w-0">
+                  <p className="truncate text-[13px] font-semibold text-[var(--ink)]">{lead.fullName}</p>
+                  <p className="text-[10px] text-amber-600">
+                    {lead.followUpAt ? `${Math.floor((Date.now() - new Date(lead.followUpAt).getTime()) / 86400000)}d overdue` : "Overdue"}
+                    {lead.assignedTo ? ` · ${lead.assignedTo.name}` : ""}
+                  </p>
+                </div>
+                <div className="shrink-0 text-right">
+                  {lead.estimatedValue ? <p className="text-[12px] font-bold text-[var(--ink)]">{formatMoneyCompact(lead.estimatedValue, currency)}</p> : null}
+                  <p className="text-[10px] font-medium capitalize text-[var(--ink-muted)]">{lead.status.toLowerCase().replace("_", " ")}</p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════════════
+          3. SOURCE WIN RATES + LOST REASONS
+      ══════════════════════════════════════════════════════════════════════ */}
+      {sourceWinRates.length > 0 && (
+        <div className="grid gap-3 lg:grid-cols-2">
+          {/* Source win rates */}
+          <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
+            <div className="border-b border-[var(--line)] px-4 py-2.5">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Win Rate by Source</p>
+            </div>
+            <div className="divide-y divide-[var(--line)]">
+              {sourceWinRates.map(({ source, total, won, rate }) => (
+                <div key={source} className="flex items-center gap-3 px-4 py-2.5">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-baseline justify-between gap-2">
+                      <p className="text-[12px] font-semibold text-[var(--ink)] capitalize">{source.toLowerCase().replace("_", " ")}</p>
+                      <span className={`text-[11px] font-black ${rate >= 50 ? "text-emerald-600" : rate >= 25 ? "text-amber-600" : "text-[var(--ink-muted)]"}`}>{rate}%</span>
+                    </div>
+                    <div className="mt-1 h-1 w-full rounded-full bg-[var(--panel-strong)]">
+                      <div className={`h-full rounded-full ${rate >= 50 ? "bg-emerald-500" : rate >= 25 ? "bg-amber-500" : "bg-[var(--line)]"}`} style={{ width: `${rate}%` }} />
+                    </div>
+                    <p className="mt-0.5 text-[9px] text-[var(--ink-muted)]">{won} won / {total} total</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Lost reasons */}
+          {(lostReasonGroups as Array<{ lostReason: string | null; _count: { lostReason: number } }>).length > 0 && (
+            <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
+              <div className="border-b border-[var(--line)] px-4 py-2.5">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Why Leads Are Lost</p>
+              </div>
+              <div className="divide-y divide-[var(--line)]">
+                {(lostReasonGroups as Array<{ lostReason: string | null; _count: { lostReason: number } }>).map(({ lostReason, _count }) => (
+                  <div key={lostReason ?? "other"} className="flex items-center justify-between px-4 py-2.5">
+                    <p className="text-[12px] font-medium text-[var(--ink)]">{lostReason ?? "No reason given"}</p>
+                    <span className="text-[12px] font-bold text-red-500">{_count.lostReason}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════════════
+          4. LEADS + QUOTATIONS TABS (with quick-advance + lost reason)
+      ══════════════════════════════════════════════════════════════════════ */}
       {/* ── SEARCH + TABS ──────────────────────────────────────────────────── */}
       <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)]">
 
@@ -550,30 +786,65 @@ export default async function SalesPage({
                 <div className="divide-y divide-[var(--line)] lg:hidden">
                   {leads.map((lead) => {
                     const isOverdue = lead.followUpAt != null && lead.followUpAt <= now && !["WON", "LOST", "STALE"].includes(lead.status);
+                    const nextStage = NEXT_STAGE[lead.status as LeadStatus];
+                    const isTerminal = ["WON","LOST","STALE"].includes(lead.status);
                     return (
-                      <Link key={`m-${lead.id}`} href={`/sales/leads/${lead.id}`} className="block px-4 py-3 transition-colors hover:bg-[var(--panel-strong)]/40">
-                        <div className="mb-1 flex items-center justify-between gap-2">
-                          <span className="text-[14px] font-semibold text-[var(--ink)]">{lead.fullName}</span>
-                          <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold ${LEAD_STATUS_COLORS[lead.status]}`}>
-                            {LEAD_STATUS_LABELS[lead.status]}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2 text-[11px] text-[var(--ink-muted)]">
-                          <span>{lead.phone}</span>
-                          {lead.organization ? <><span className="opacity-40">·</span><span className="truncate">{lead.organization}</span></> : null}
-                        </div>
-                        {(lead.estimatedValue != null || lead.followUpAt) && (
-                          <div className="mt-1.5 flex items-center gap-3 text-[11px]">
-                            {lead.estimatedValue != null && <span className="font-semibold text-[var(--ink)]">{formatMoney(lead.estimatedValue, currency)}</span>}
-                            {lead.followUpAt && (
-                              <span className={`flex items-center gap-0.5 ${isOverdue ? "font-semibold text-red-600" : "text-[var(--ink-muted)]"}`}>
-                                {isOverdue && <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-3 w-3 shrink-0" aria-hidden><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>}
-                                {formatEATDate(lead.followUpAt)}
-                              </span>
+                      <div key={`m-${lead.id}`} className="border-b border-[var(--line)] last:border-b-0">
+                        <Link href={`/sales/leads/${lead.id}`} className="block px-4 py-3 transition-colors active:bg-[var(--panel-strong)]/40">
+                          <div className="mb-1 flex items-center justify-between gap-2">
+                            <span className="text-[14px] font-semibold text-[var(--ink)]">{lead.fullName}</span>
+                            <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold ${LEAD_STATUS_COLORS[lead.status]}`}>
+                              {LEAD_STATUS_LABELS[lead.status]}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2 text-[11px] text-[var(--ink-muted)]">
+                            <span>{lead.phone}</span>
+                            {lead.organization ? <><span className="opacity-40">·</span><span className="truncate">{lead.organization}</span></> : null}
+                          </div>
+                          {(lead.estimatedValue != null || lead.followUpAt) && (
+                            <div className="mt-1.5 flex items-center gap-3 text-[11px]">
+                              {lead.estimatedValue != null && <span className="font-semibold text-[var(--ink)]">{formatMoney(lead.estimatedValue, currency)}</span>}
+                              {lead.followUpAt && (
+                                <span className={`flex items-center gap-0.5 ${isOverdue ? "font-semibold text-red-600" : "text-[var(--ink-muted)]"}`}>
+                                  {isOverdue && <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-3 w-3 shrink-0" aria-hidden><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>}
+                                  {formatEATDate(lead.followUpAt)}
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </Link>
+                        {/* Quick-advance action strip */}
+                        {!isTerminal && (
+                          <div className="flex items-center gap-2 border-t border-[var(--line)]/50 px-4 pb-2.5 pt-2">
+                            {nextStage && (
+                              <form action={advanceLeadStageAction} className="flex-1">
+                                <input type="hidden" name="leadId" value={lead.id} />
+                                <input type="hidden" name="newStatus" value={nextStage} />
+                                <button type="submit" className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1 text-[11px] font-semibold text-[var(--ink)] transition active:opacity-70">
+                                  → {LEAD_STATUS_LABELS[nextStage]}
+                                </button>
+                              </form>
                             )}
+                            <details className="shrink-0">
+                              <summary className="cursor-pointer list-none rounded-lg border border-red-500/30 bg-red-500/8 px-2.5 py-1 text-[11px] font-semibold text-red-600 [&::-webkit-details-marker]:hidden">
+                                Mark Lost
+                              </summary>
+                              <div className="absolute z-20 mt-1 w-56 rounded-xl border border-[var(--line)] bg-[var(--panel)] shadow-lg">
+                                <form action={advanceLeadStageAction} className="p-2 space-y-1.5">
+                                  <input type="hidden" name="leadId" value={lead.id} />
+                                  <input type="hidden" name="newStatus" value="LOST" />
+                                  <p className="px-1 text-[10px] font-semibold text-[var(--ink-muted)]">Why was this lead lost?</p>
+                                  <select name="lostReason" className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-1.5 text-[12px] outline-none">
+                                    <option value="">Select reason</option>
+                                    {LOST_REASONS.map(r => <option key={r} value={r}>{r}</option>)}
+                                  </select>
+                                  <button type="submit" className="w-full rounded-lg bg-red-500 py-1.5 text-[12px] font-bold text-white">Confirm Lost</button>
+                                </form>
+                              </div>
+                            </details>
                           </div>
                         )}
-                      </Link>
+                      </div>
                     );
                   })}
                 </div>
@@ -621,7 +892,18 @@ export default async function SalesPage({
                               ) : <span className="opacity-40 text-[var(--ink-muted)]">—</span>}
                             </td>
                             <td className="px-4 py-3 text-right">
-                              <Link href={`/sales/leads/${lead.id}`} className="btn-premium-secondary whitespace-nowrap rounded-lg px-2.5 py-1 text-[11px] font-semibold">Open</Link>
+                              <div className="flex items-center justify-end gap-1.5">
+                                {!["WON","LOST","STALE"].includes(lead.status) && NEXT_STAGE[lead.status as LeadStatus] && (
+                                  <form action={advanceLeadStageAction}>
+                                    <input type="hidden" name="leadId" value={lead.id} />
+                                    <input type="hidden" name="newStatus" value={NEXT_STAGE[lead.status as LeadStatus]!} />
+                                    <button type="submit" className="whitespace-nowrap rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1 text-[11px] font-semibold text-[var(--ink)] transition hover:border-[var(--accent)]/40 hover:text-[var(--accent)]">
+                                      → {LEAD_STATUS_LABELS[NEXT_STAGE[lead.status as LeadStatus]!]}
+                                    </button>
+                                  </form>
+                                )}
+                                <Link href={`/sales/leads/${lead.id}`} className="btn-premium-secondary whitespace-nowrap rounded-lg px-2.5 py-1 text-[11px] font-semibold">Open</Link>
+                              </div>
                             </td>
                           </tr>
                         );

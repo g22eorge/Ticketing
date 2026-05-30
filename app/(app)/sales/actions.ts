@@ -76,7 +76,7 @@ export async function createLead(data: {
   return lead;
 }
 
-export async function updateLeadStatus(leadId: string, status: LeadStatus, note?: string) {
+export async function updateLeadStatus(leadId: string, status: LeadStatus, note?: string, lostReason?: string) {
   const { user, orgId } = await requireOrgSession();
   if (!can.createLeads(user)) {
     throw new Error("Unauthorized");
@@ -97,6 +97,7 @@ export async function updateLeadStatus(leadId: string, status: LeadStatus, note?
       status,
       ...(status === "WON" ? { convertedAt: new Date() } : {}),
       ...(status === "LOST" || status === "STALE" ? { closedAt: new Date() } : {}),
+      ...(status === "LOST" && lostReason ? { lostReason } : {}),
     },
   });
 
@@ -111,6 +112,15 @@ export async function updateLeadStatus(leadId: string, status: LeadStatus, note?
 
   revalidatePath(`/sales/leads/${leadId}`);
   revalidatePath("/sales");
+}
+
+// Quick-advance action used by inline forms in the lead list
+export async function advanceLeadStageAction(formData: FormData) {
+  const leadId    = String(formData.get("leadId") ?? "").trim();
+  const newStatus = String(formData.get("newStatus") ?? "").trim() as LeadStatus;
+  const reason    = String(formData.get("lostReason") ?? "").trim() || undefined;
+  if (!leadId || !newStatus) return;
+  await updateLeadStatus(leadId, newStatus, undefined, reason);
 }
 
 export async function addLeadActivity(

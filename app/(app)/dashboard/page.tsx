@@ -1458,18 +1458,69 @@ export default async function DashboardPage({
             <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Sales Funnel</p>
             <Link href="/sales/leads" className="text-[11px] font-semibold text-[var(--accent)] hover:underline">All leads →</Link>
           </div>
-          <div className="flex snap-x overflow-x-auto [scrollbar-width:thin]">
-            {LEAD_STAGES.map((stage) => {
-              const count = leadCountMap.get(stage.key) ?? 0;
-              return (
-                <Link key={stage.key} href={stage.href}
-                  className="flex min-w-[88px] shrink-0 flex-col items-center border-r border-[var(--line)] px-3 py-3.5 text-center transition hover:bg-[var(--panel-strong)] last:border-r-0">
-                  <p className={`text-xl font-bold ${count === 0 ? "text-[var(--ink-muted)]" : stage.color}`}>{count}</p>
-                  <p className="mt-0.5 text-[10px] leading-tight text-[var(--ink-muted)]">{stage.name}</p>
-                </Link>
-              );
-            })}
-          </div>
+          {/* Active stages with bars + drop-off */}
+          {(() => {
+            const ACTIVE = ["NEW","CONTACTED","QUALIFIED","PROPOSAL_SENT"] as const;
+            const stageBarColor: Record<string, string> = {
+              NEW: "bg-sky-500", CONTACTED: "bg-violet-500",
+              QUALIFIED: "bg-amber-500", PROPOSAL_SENT: "bg-orange-500",
+            };
+            const maxCount = Math.max(1, ...ACTIVE.map(s => leadCountMap.get(s) ?? 0));
+            const totalValue = ACTIVE.reduce((sum, s) => {
+              const row = (leadFunnel as Array<{ status: string; _sum?: { estimatedValue: number | null } }>).find(r => r.status === s);
+              return sum + (row?._sum?.estimatedValue ?? 0);
+            }, 0);
+            return (
+              <>
+                <div className="grid grid-cols-4 divide-x divide-[var(--line)]">
+                  {ACTIVE.map((s, i) => {
+                    const count = leadCountMap.get(s) ?? 0;
+                    const next = ACTIVE[i + 1];
+                    const nextCount = next ? (leadCountMap.get(next) ?? 0) : 0;
+                    const dropOff = count > 0 && i < ACTIVE.length - 1
+                      ? Math.round(((count - nextCount) / count) * 100) : null;
+                    const barW = Math.max(4, Math.round((count / maxCount) * 100));
+                    const row = (leadFunnel as Array<{ status: string; _sum?: { estimatedValue: number | null } }>).find(r => r.status === s);
+                    const val = row?._sum?.estimatedValue ?? 0;
+                    const stage = LEAD_STAGES.find(st => st.key === s)!;
+                    return (
+                      <Link key={s} href={stage.href} className="flex flex-col gap-1 p-2.5 transition hover:bg-[var(--panel-strong)]">
+                        <div className="flex items-baseline justify-between gap-1">
+                          <p className={`text-[18px] font-black leading-none ${count === 0 ? "text-[var(--ink-muted)]" : stage.color}`}>{count}</p>
+                          {dropOff !== null && dropOff > 0 && <span className="text-[9px] font-bold text-red-500">-{dropOff}%</span>}
+                        </div>
+                        <div className="h-1 w-full rounded-full bg-[var(--panel-strong)]">
+                          <div className={`h-full rounded-full ${stageBarColor[s]}`} style={{ width: `${barW}%` }} />
+                        </div>
+                        <p className="text-[9px] leading-tight text-[var(--ink-muted)]">{stage.name}</p>
+                        {val > 0 && <p className="text-[9px] font-semibold text-[var(--accent)]">{formatMoneyCompact(val, currency)}</p>}
+                      </Link>
+                    );
+                  })}
+                </div>
+                {/* Won / Lost row + total pipeline */}
+                <div className="border-t border-[var(--line)] flex divide-x divide-[var(--line)]">
+                  {(["WON","LOST"] as const).map(s => {
+                    const count = leadCountMap.get(s) ?? 0;
+                    const color = s === "WON" ? "text-emerald-600" : "text-red-500";
+                    const stage = LEAD_STAGES.find(st => st.key === s)!;
+                    return (
+                      <Link key={s} href={stage.href} className="flex flex-1 items-center justify-center gap-1.5 py-2 transition hover:bg-[var(--panel-strong)]">
+                        <p className={`text-sm font-black ${count === 0 ? "text-[var(--ink-muted)]" : color}`}>{count}</p>
+                        <p className="text-[10px] text-[var(--ink-muted)]">{stage.name}</p>
+                      </Link>
+                    );
+                  })}
+                  {totalValue > 0 && (
+                    <div className="flex flex-1 items-center justify-center gap-1 py-2">
+                      <p className="text-[10px] text-[var(--ink-muted)]">Pipeline</p>
+                      <p className="text-[11px] font-black text-[var(--accent)]">{formatMoneyCompact(totalValue, currency)}</p>
+                    </div>
+                  )}
+                </div>
+              </>
+            );
+          })()}
         </section>
 
         {/* ── Recent Activity + Technician Leaderboard ── */}

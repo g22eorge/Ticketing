@@ -2626,6 +2626,7 @@ model Lead {
   estimatedValue Float?
   score        Int     @default(0) // 0-100 lead quality score
   notes        String?
+  lostReason   String? // e.g. "Price", "Competitor", "No Budget", "Timing", "Other"
 
   clientId String?
   client   Client? @relation(fields: [clientId], references: [id], onDelete: SetNull)
