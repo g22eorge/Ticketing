@@ -2066,27 +2066,16 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
                 {showPayoutForm ? (
                   <div className="rounded-lg border border-[var(--line)] bg-[var(--panel)] p-3 space-y-3">
                     <p className="text-sm font-semibold text-[var(--ink)]">Record payout</p>
-                    <form
-                      action={(fd) => {
-                        fd.set("jobId", job.id);
-                        startFinancialTransition(async () => {
-                          const res = await recordTechnicianPayoutAction(fd);
-                          if (res.error) { toast.error(res.error); return; }
-                          toast.success("Technician payout recorded");
-                          setShowPayoutForm(false);
-                          router.refresh();
-                        });
-                      }}
-                      className="space-y-2"
-                    >
+                    {/* Use div + manual FormData — avoids nested <form> inside the outer financials form */}
+                    <div className="space-y-2">
                       <div className="grid gap-2 grid-cols-1 lg:grid-cols-3">
                         <div>
-                          <label className="mb-1 block text-[10px] font-medium uppercase tracking-wide text-[var(--ink-muted)]">Amount</label>
-                          <input name="amount" inputMode="decimal" placeholder="0.00" className={fieldClass} required />
+                          <label className="mb-1 block text-[10px] font-medium text-[var(--ink-muted)]">Amount</label>
+                          <input name="payout_amount" inputMode="decimal" placeholder="0.00" className={fieldClass} />
                         </div>
                         <div>
-                          <label className="mb-1 block text-[10px] font-medium uppercase tracking-wide text-[var(--ink-muted)]">Method</label>
-                          <select name="method" defaultValue="CASH" className={fieldClass}>
+                          <label className="mb-1 block text-[10px] font-medium text-[var(--ink-muted)]">Method</label>
+                          <select name="payout_method" defaultValue="CASH" className={fieldClass}>
                             <option value="CASH">Cash</option>
                             <option value="MOBILE_MONEY">Mobile money</option>
                             <option value="CARD">Card</option>
@@ -2095,22 +2084,46 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
                           </select>
                         </div>
                         <div>
-                          <label className="mb-1 block text-[10px] font-medium uppercase tracking-wide text-[var(--ink-muted)]">Reference / payout ID</label>
-                          <input name="reference" placeholder="Optional" className={fieldClass} />
+                          <label className="mb-1 block text-[10px] font-medium text-[var(--ink-muted)]">Reference</label>
+                          <input name="payout_reference" placeholder="Optional" className={fieldClass} />
                         </div>
                       </div>
                       <div>
-                        <label className="mb-1 block text-[10px] font-medium uppercase tracking-wide text-[var(--ink-muted)]">Notes</label>
-                        <textarea name="note" placeholder="Optional notes" className={`${fieldClass} min-h-[60px]`} />
+                        <label className="mb-1 block text-[10px] font-medium text-[var(--ink-muted)]">Notes</label>
+                        <textarea name="payout_note" placeholder="Optional notes" className={`${fieldClass} min-h-[60px]`} />
                       </div>
                       <label className="flex items-center gap-2 text-xs text-[var(--ink-muted)]">
-                        <input type="checkbox" name="confirmOverpayment" value="true" /> Confirm payout higher than technician cost
+                        <input type="checkbox" name="payout_confirmOverpayment" value="true" /> Confirm payout higher than technician cost
                       </label>
                       <div className="flex flex-wrap gap-2">
-                        <button type="submit" disabled={isFinancialPending} className="btn-premium rounded-lg px-4 py-2 text-sm disabled:opacity-60">Record Payout</button>
+                        <button
+                          type="button"
+                          disabled={isFinancialPending}
+                          className="btn-premium rounded-lg px-4 py-2 text-sm disabled:opacity-60"
+                          onClick={(e) => {
+                            const container = (e.currentTarget as HTMLElement).closest('.space-y-2');
+                            if (!container) return;
+                            const fd = new FormData();
+                            fd.set("jobId", job.id);
+                            const get = (n: string) => (container.querySelector(`[name="${n}"]`) as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | null)?.value ?? "";
+                            const chk = (n: string) => (container.querySelector(`[name="${n}"]`) as HTMLInputElement | null)?.checked ?? false;
+                            fd.set("amount", get("payout_amount"));
+                            fd.set("method", get("payout_method"));
+                            fd.set("reference", get("payout_reference"));
+                            fd.set("note", get("payout_note"));
+                            if (chk("payout_confirmOverpayment")) fd.set("confirmOverpayment", "true");
+                            startFinancialTransition(async () => {
+                              const res = await recordTechnicianPayoutAction(fd);
+                              if (res.error) { toast.error(res.error); return; }
+                              toast.success("Technician payout recorded");
+                              setShowPayoutForm(false);
+                              router.refresh();
+                            });
+                          }}
+                        >Record Payout</button>
                         <button type="button" onClick={() => setShowPayoutForm(false)} disabled={isFinancialPending} className="btn-premium-secondary rounded-lg px-4 py-2 text-sm">Cancel</button>
                       </div>
-                    </form>
+                    </div>
                   </div>
                 ) : null}
                 <div className="overflow-x-auto rounded-lg border border-[var(--line)]">

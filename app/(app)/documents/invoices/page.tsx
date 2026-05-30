@@ -117,7 +117,8 @@ export default async function InvoicesPage({
     const rawAmount = String(formData.get("amount") ?? "").trim();
     const method = String(formData.get("method") ?? "CASH").trim();
     const reference = String(formData.get("reference") ?? "").trim();
-    const currency = normalizeCurrency(formData.get("currency"), "UGX");
+    const baseCurrency = "UGX";
+    const currency = normalizeCurrency(formData.get("currency"), baseCurrency);
     const exchangeRateToBaseRaw = String(formData.get("exchangeRateToBase") ?? "").trim();
     if (!invoiceId) return;
 
@@ -125,13 +126,15 @@ export default async function InvoicesPage({
     if (!Number.isFinite(amount) || amount <= 0) return;
     if (!isSupportedCurrency(currency)) return;
 
-    const exchangeRateToBase =
-      currency === null
-        ? null
-        : exchangeRateToBaseRaw
-          ? Number(exchangeRateToBaseRaw)
-          : null;
-    if (currency !== null) {
+    // For the base currency (UGX) no exchange rate needed — null means 1:1
+    const isBaseCurrency = currency === baseCurrency;
+    const exchangeRateToBase = isBaseCurrency
+      ? null
+      : exchangeRateToBaseRaw
+        ? Number(exchangeRateToBaseRaw)
+        : null;
+    // Only require exchange rate for non-base currencies
+    if (!isBaseCurrency) {
       if (!exchangeRateToBase || !Number.isFinite(exchangeRateToBase) || exchangeRateToBase <= 0)
         return;
     }
