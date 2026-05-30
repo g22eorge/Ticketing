@@ -114,7 +114,8 @@ export default async function InvoicesPage({
     if (!("ADMIN" === user.role || "OPS" === user.role || can.approveInvoices(user))) return;
 
     const invoiceId = String(formData.get("invoiceId") ?? "").trim();
-    const rawAmount = String(formData.get("amount") ?? "").trim();
+    // Strip commas / currency prefix so "50,000" or "UGX 50,000" parses correctly
+    const rawAmount = String(formData.get("amount") ?? "").replace(/[^\d.]/g, "").trim();
     const method = String(formData.get("method") ?? "CASH").trim();
     const reference = String(formData.get("reference") ?? "").trim();
     const baseCurrency = "UGX";

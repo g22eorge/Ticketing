@@ -78,9 +78,17 @@ const updateSchema = z.object({
   deliveredTo: z.string().optional(),
 });
 
+// Strip commas and currency prefixes so "50,000" or "UGX 50,000" parses correctly
+function parseAmount(value: unknown): number {
+  const raw = typeof value === "string"
+    ? value.replace(/[^\d.]/g, "").trim()  // remove anything that's not a digit or dot
+    : String(value ?? "");
+  return raw ? Number(raw) : NaN;
+}
+
 const recordClientPaymentSchema = z.object({
   jobId: z.string().min(1),
-  amount: z.coerce.number().positive(),
+  amount: z.preprocess(parseAmount, z.number().positive("Enter a valid payment amount")),
   kind: z.enum(["PAYMENT", "DEPOSIT", "PARTIAL", "BALANCE", "REFUND", "ADJUSTMENT"]).default("PAYMENT"),
   method: z.string().optional(),
   reference: z.string().optional(),
@@ -99,7 +107,7 @@ const recordClientPaymentSchema = z.object({
 
 const recordTechnicianPayoutSchema = z.object({
   jobId: z.string().min(1),
-  amount: z.coerce.number().positive(),
+  amount: z.preprocess(parseAmount, z.number().positive("Enter a valid payout amount")),
   method: z.string().optional(),
   reference: z.string().optional(),
   note: z.string().optional(),
