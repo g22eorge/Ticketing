@@ -32,6 +32,22 @@ function AgeBadge({ receivedAt, status }: { receivedAt: Date; status: string }) 
 
 
 import { JobStatusBadge, statusStripClass } from "@/components/jobs/JobStatusBadge";
+import { normalizeJobStatus } from "@/lib/job-status";
+
+function statusAvatarClass(status: string): string {
+  const s = normalizeJobStatus(status as JobStatus);
+  const map: Record<string, string> = {
+    RECEIVED:          "bg-sky-400/15 text-sky-600",
+    DIAGNOSING:        "bg-blue-500/15 text-blue-600",
+    REFERRED:          "bg-violet-500/15 text-violet-600",
+    AWAITING_APPROVAL: "bg-orange-400/15 text-orange-600",
+    IN_REPAIR:         "bg-violet-500/15 text-violet-600",
+    READY_FOR_PICKUP:  "bg-[var(--accent)]/15 text-[var(--accent)]",
+    COMPLETED:         "bg-emerald-500/15 text-emerald-600",
+    CLOSED:            "bg-[var(--panel-strong)] text-[var(--ink-muted)]",
+  };
+  return map[s] ?? "bg-[var(--panel-strong)] text-[var(--ink-muted)]";
+}
 import { formatMoney } from "@/lib/currency";
 import { formatEATDate } from "@/lib/date-eat";
 import { JobStatus } from "@/lib/job-status";
@@ -262,14 +278,21 @@ export function JobTable({
             const ageDays = Math.floor((Date.now() - job.receivedAt.getTime()) / 86_400_000);
             const isActive = !["COMPLETED", "CLOSED", "DELIVERED"].includes(job.status);
 
+            const name = deviceName(job.brand, job.model) ?? deviceLabel[job.deviceType] ?? job.deviceType;
+            const initial = (name[0] ?? "?").toUpperCase();
+            const avatarCls = statusAvatarClass(job.status);
+            const ageCls = ageDays <= 2 ? "text-emerald-500" : ageDays <= 5 ? "text-amber-500" : "text-red-500";
+            const metaParts = [
+              canSeeClient && job.clientName ? job.clientName : null,
+              job.jobNumber,
+              deviceLabel[job.deviceType] ?? job.deviceType,
+            ].filter(Boolean);
+
             return (
               <div
                 key={job.id}
-                className="relative border-b border-[var(--line)]/70 bg-[var(--panel)] last:border-b-0 transition-colors hover:bg-[var(--panel-strong)]/30 active:bg-[var(--panel-strong)]/60"
+                className="relative border-b border-[var(--line)]/70 last:border-b-0 active:bg-[var(--panel-strong)]/60"
               >
-                {/* Status strip */}
-                <span className={`absolute inset-y-0 left-0 w-[4px] ${strip}`} aria-hidden="true" />
-
                 {/* Full-bleed tap target */}
                 <Link
                   href={`/jobs/${job.id}`}
@@ -277,88 +300,69 @@ export function JobTable({
                   aria-label={`Open job ${job.jobNumber}`}
                 />
 
-                {/* Card content */}
-                <div className="relative z-10 px-4 py-3.5 pl-5">
-
-                  {/* Row 1: Job # left · ETA badge right */}
-                  <div className="mb-1.5 flex items-center justify-between gap-2">
-                    <span className="mono text-[10px] font-semibold tracking-wider text-[var(--ink-muted)]/55">
-                      {job.jobNumber}
-                    </span>
-                    {isActive ? (
-                      <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold leading-tight ${
-                        ageDays <= 2
-                          ? "bg-emerald-500/15 text-emerald-500"
-                          : ageDays <= 5
-                            ? "bg-amber-500/15 text-amber-500"
-                            : "bg-red-500/15 text-red-500"
-                      }`}>
-                        {job.repairTimeline ? job.repairTimeline : `${ageDays}d`}
-                      </span>
-                    ) : null}
+                {/* 2-line compact card */}
+                <div className="relative z-10 flex items-center gap-3 px-4 py-3">
+                  {/* Status-colored avatar */}
+                  <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl text-sm font-black ${avatarCls}`}>
+                    {initial}
                   </div>
 
-                  {/* Row 2: Device name HERO (17px bold) + cost right-aligned bold */}
-                  <div className="mb-1 flex items-start justify-between gap-3">
-                    <p className="min-w-0 truncate text-[17px] font-bold leading-snug tracking-tight text-[var(--ink)]">
-                      {deviceName(job.brand, job.model) ?? (deviceLabel[job.deviceType] ?? job.deviceType)}
-                    </p>
-                    {costValue ? (
-                      <span className="shrink-0 text-[15px] font-black text-[var(--ink)]">{costValue}</span>
-                    ) : null}
-                  </div>
-
-                  {/* Row 3: Client name (13px muted) */}
-                  <div className="mb-2.5">
-                    {canSeeClient && job.clientName ? (
-                      <p className="min-w-0 truncate text-[13px] font-medium text-[var(--ink-muted)]">
-                        {job.clientName}
-                      </p>
-                    ) : (
-                      <div />
-                    )}
-                  </div>
-
-                  {/* Row 4: Status badge + device chip + flag */}
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    <JobStatusBadge status={job.status} />
-                    <span className="inline-flex items-center gap-1 rounded-md bg-[var(--panel-strong)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--ink-muted)]">
-                      <DeviceIcon type={job.deviceType} />
-                      {deviceLabel[job.deviceType] ?? job.deviceType}
-                    </span>
-                    {flagCfg ? (
-                      <span className={`rounded-md px-1.5 py-0.5 text-[10px] font-semibold ${flagCfg.badge}`}>
-                        {flagCfg.label}
-                      </span>
-                    ) : null}
-                    {pricingBadge}
-
-                    {/* Inline doc actions — desktop only; mobile users tap the card to reach job detail */}
-                    {(canUseJobCards || canDownloadQuotation || canDownloadInvoice || canEditPage || (canDelete && deleteAction)) ? (
-                      <div className="pointer-events-auto ml-auto hidden lg:flex items-center gap-2">
-                        {canUseJobCards ? (
-                          <a href={`/api/jobs/${job.id}/job-card`} target="_blank" rel="noreferrer" className="text-[10px] font-semibold text-[var(--ink-muted)]/60 transition hover:text-[var(--ink-muted)]">Card</a>
+                  <div className="min-w-0 flex-1">
+                    {/* Row 1: device name + age */}
+                    <div className="flex items-baseline justify-between gap-2">
+                      <p className="truncate text-[14px] font-bold text-[var(--ink)]">{name}</p>
+                      <div className="flex shrink-0 items-center gap-1.5">
+                        {costValue ? (
+                          <span className="text-[12px] font-black tabular-nums text-[var(--ink)]">{costValue}</span>
                         ) : null}
-                        {canDownloadQuotation ? (
-                          <a href={`/api/jobs/${job.id}/quotation`} target="_blank" rel="noreferrer" className="text-[10px] font-semibold text-[var(--ink-muted)]/60 transition hover:text-[var(--ink-muted)]">Quote</a>
-                        ) : null}
-                        {canDownloadInvoice ? (
-                          <a href={`/api/jobs/${job.id}/invoice`} target="_blank" rel="noreferrer" className="text-[10px] font-semibold text-[var(--ink-muted)]/60 transition hover:text-[var(--ink-muted)]">Inv</a>
-                        ) : null}
-                        {canEditPage ? (
-                          <Link href={`/jobs/${job.id}/edit${returnTo ? `?returnTo=${encodeURIComponent(returnTo)}` : ""}`} className="text-[10px] font-semibold text-[var(--ink-muted)]/60 transition hover:text-[var(--ink-muted)]">Edit</Link>
-                        ) : null}
-                        {canDelete && deleteAction ? (
-                          <form action={deleteAction}>
-                            <input type="hidden" name="id" value={job.id} />
-                            <button className="text-[10px] font-semibold text-[var(--ink-muted)]/40 transition hover:text-red-500">✕</button>
-                          </form>
+                        {isActive ? (
+                          <span className={`text-[10px] font-bold ${ageCls}`}>
+                            {job.repairTimeline ?? `${ageDays}d`}
+                          </span>
                         ) : null}
                       </div>
+                    </div>
+
+                    {/* Row 2: meta + status badge */}
+                    <div className="mt-0.5 flex items-center justify-between gap-2">
+                      <p className="truncate text-[11px] text-[var(--ink-muted)]">
+                        {metaParts.join(" · ")}
+                      </p>
+                      <div className="flex shrink-0 items-center gap-1">
+                        {flagCfg ? (
+                          <span className={`rounded px-1.5 py-0.5 text-[9px] font-semibold ${flagCfg.badge}`}>
+                            {flagCfg.label}
+                          </span>
+                        ) : null}
+                        <JobStatusBadge status={job.status} />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Desktop-only doc action links */}
+                {(canUseJobCards || canDownloadQuotation || canDownloadInvoice || canEditPage || (canDelete && deleteAction)) ? (
+                  <div className="pointer-events-auto absolute right-4 top-1/2 hidden -translate-y-1/2 items-center gap-2 lg:flex">
+                    {canUseJobCards ? (
+                      <a href={`/api/jobs/${job.id}/job-card`} target="_blank" rel="noreferrer" className="text-[10px] font-semibold text-[var(--ink-muted)]/60 transition hover:text-[var(--ink-muted)]">Card</a>
+                    ) : null}
+                    {canDownloadQuotation ? (
+                      <a href={`/api/jobs/${job.id}/quotation`} target="_blank" rel="noreferrer" className="text-[10px] font-semibold text-[var(--ink-muted)]/60 transition hover:text-[var(--ink-muted)]">Quote</a>
+                    ) : null}
+                    {canDownloadInvoice ? (
+                      <a href={`/api/jobs/${job.id}/invoice`} target="_blank" rel="noreferrer" className="text-[10px] font-semibold text-[var(--ink-muted)]/60 transition hover:text-[var(--ink-muted)]">Inv</a>
+                    ) : null}
+                    {canEditPage ? (
+                      <Link href={`/jobs/${job.id}/edit${returnTo ? `?returnTo=${encodeURIComponent(returnTo)}` : ""}`} className="text-[10px] font-semibold text-[var(--ink-muted)]/60 transition hover:text-[var(--ink-muted)]">Edit</Link>
+                    ) : null}
+                    {canDelete && deleteAction ? (
+                      <form action={deleteAction}>
+                        <input type="hidden" name="id" value={job.id} />
+                        <button className="text-[10px] font-semibold text-[var(--ink-muted)]/40 transition hover:text-red-500">✕</button>
+                      </form>
                     ) : null}
                   </div>
-
-                </div>
+                ) : null}
               </div>
             );
           })}

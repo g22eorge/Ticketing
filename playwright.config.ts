@@ -36,7 +36,7 @@ export default defineConfig({
   webServer: {
     command: webServerCommand,
     url: `${baseURL}/login`,
-    reuseExistingServer: false,
+    reuseExistingServer: !!(process.env.E2E_REUSE_SERVER),
     timeout: 300000,
   },
 });

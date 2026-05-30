@@ -138,14 +138,14 @@ test("document lifecycle generates job card, quote, invoice, receipt, and delive
   await expect.poll(async () => prisma.quotation.count({ where: { orgId: org.id, jobId: job.id } })).toBe(1);
 
   await page.goto("/documents/quotations?q=E2E-DOC-LIFE-0001");
-  await expect(page.getByRole("link", { name: "Create Quotation" })).toBeVisible();
+  await expect(page.getByRole("link", { name: /New Quote/i }).or(page.getByRole("link", { name: /New Quotation/i }))).toBeVisible();
   // "Convert to Invoice" is now in the ⋯ overflow menu — open it first
   await page.getByRole("button", { name: "Quotation actions" }).click();
   await page.getByRole("button", { name: "Convert to Invoice" }).click();
   await expect.poll(async () => prisma.invoice.count({ where: { orgId: org.id, jobId: job.id } })).toBe(1);
 
   await page.goto("/documents/invoices");
-  await expect(page.getByRole("link", { name: "Create Invoice" })).toBeVisible();
+  await expect(page.getByRole("link", { name: /New Invoice/i })).toBeVisible();
 
   await expectPdf(page, `/api/jobs/${job.id}/job-card`);
   await expectPdf(page, `/api/jobs/${job.id}/quotation`);
