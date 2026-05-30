@@ -622,7 +622,7 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
     typeof job.clientBill === "number" && typeof job.externalTechBill === "number"
       ? job.clientBill - job.externalTechBill
       : null;
-  const vatApplicable = job.vatApplicable ?? true;
+  const vatApplicable = job.vatApplicable ?? false;
   const clientBillValue = typeof job.clientBill === "number" ? job.clientBill : 0;
   const clientPayments = job.clientPayments ?? [];
   const totalClientPaid = clientPayments.reduce((sum, payment) => sum + (payment.kind === "REFUND" ? -1 : 1) * payment.amount, 0);
@@ -1724,11 +1724,11 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
               { icon: "💸", label: "Tech Paid",      value: formatBillAmount(technicianPaid),   tone: "text-emerald-600",    bg: "bg-emerald-500/10" },
               { icon: "📈", label: "Margin",         value: formatBillAmount(clientBillValue - technicianCost), tone: clientBillValue - technicianCost >= 0 ? "text-emerald-600" : "text-red-500", bg: clientBillValue - technicianCost >= 0 ? "bg-emerald-500/10" : "bg-red-500/10" },
             ] as { icon: string; label: string; value: string; tone: string; bg: string }[]).map(({ icon, label, value, tone, bg }) => (
-              <div key={label} className="flex items-center gap-3 rounded-xl border border-[var(--line)] bg-[var(--panel-strong)] p-3">
-                <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${bg} text-lg`}>{icon}</span>
+              <div key={label} className="flex items-center gap-2 rounded-xl border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-2">
+                <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md ${bg} text-sm`}>{icon}</span>
                 <div className="min-w-0">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">{label}</p>
-                  <p className={`truncate text-sm font-black ${tone}`}>{value}</p>
+                  <p className="text-[9px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">{label}</p>
+                  <p className={`truncate text-xs font-black tabular-nums ${tone}`}>{value}</p>
                 </div>
               </div>
             ))}
@@ -1758,17 +1758,14 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
 
           {/* ── Section 1: Billing Details ────────────────────────────── */}
           <div className="overflow-hidden rounded-xl border border-[var(--line)]">
-            <div className="flex items-center gap-3 bg-[var(--panel-strong)] px-4 py-3">
-              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--accent)]/15 text-xs font-black text-[var(--accent)]">1</span>
-              <div>
-                <p className="text-sm font-semibold text-[var(--ink)]">Billing Details</p>
-                <p className="text-[11px] text-[var(--ink-muted)]">Set technician cost and amount charged to client</p>
-              </div>
+            <div className="flex items-center gap-2 bg-[var(--panel-strong)] px-3 py-2.5">
+              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[var(--accent)]/15 text-[10px] font-black text-[var(--accent)]">1</span>
+              <p className="text-xs font-semibold text-[var(--ink)]">Billing</p>
             </div>
-            <div className="space-y-3 p-4">
+            <div className="space-y-3 p-3">
               <div className="grid gap-2 sm:grid-cols-2">
                 <div>
-                  <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">{repairCostLabel}</label>
+                  <label className="mb-1 block text-xs font-medium text-[var(--ink-muted)]">{repairCostLabel}</label>
                   <input
                     name="externalTechBill"
                     type="number"
@@ -1780,7 +1777,7 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
                 </div>
                 {canManageFinancials ? (
                   <div>
-                    <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">Amount Charged to Client</label>
+                    <label className="mb-1 block text-xs font-medium text-[var(--ink-muted)]">Client charge</label>
                     <input
                       name="clientBill"
                       type="number"
@@ -1801,17 +1798,17 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
               ) : null}
               {canManageFinancials ? (
                 <div className="grid grid-cols-3 rounded-xl border border-[var(--line)] bg-[var(--panel)] text-center">
-                  <div className="px-3 py-2.5">
-                    <p className="text-[10px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">Subtotal</p>
-                    <p className="mt-0.5 text-sm font-bold text-[var(--ink)]">{formatBillAmount(repairCostBeforeVat)}</p>
+                  <div className="px-2 py-2">
+                    <p className="text-[9px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">Subtotal</p>
+                    <p className="mt-0.5 text-xs font-bold text-[var(--ink)] tabular-nums">{formatBillAmount(repairCostBeforeVat)}</p>
                   </div>
-                  <div className="border-x border-[var(--line)] px-3 py-2.5">
-                    <p className="text-[10px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">VAT (18%)</p>
-                    <p className="mt-0.5 text-sm font-bold text-[var(--ink)]">{formatBillAmount(vatAmount)}</p>
+                  <div className="border-x border-[var(--line)] px-2 py-2">
+                    <p className="text-[9px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">VAT 18%</p>
+                    <p className="mt-0.5 text-xs font-bold text-[var(--ink)] tabular-nums">{formatBillAmount(vatAmount)}</p>
                   </div>
-                  <div className="px-3 py-2.5">
-                    <p className="text-[10px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">Total Bill</p>
-                    <p className="mt-0.5 text-sm font-black text-[var(--accent)]">{formatBillAmount(clientBillValue)}</p>
+                  <div className="px-2 py-2">
+                    <p className="text-[9px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">Total</p>
+                    <p className="mt-0.5 text-xs font-black text-[var(--accent)] tabular-nums">{formatBillAmount(clientBillValue)}</p>
                   </div>
                 </div>
               ) : null}
@@ -1850,21 +1847,18 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
           {/* ── Section 2: Client Payments ────────────────────────────── */}
           {canManageFinancials && typeof job.clientBill === "number" && job.clientBill > 0 ? (
             <div className="overflow-hidden rounded-xl border border-[var(--line)]">
-              <div className="flex flex-wrap items-center justify-between gap-2 bg-[var(--panel-strong)] px-4 py-3">
-                <div className="flex items-center gap-3">
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 text-xs font-black text-emerald-600">2</span>
-                  <div>
-                    <p className="text-sm font-semibold text-[var(--ink)]">Client Payments</p>
-                    <p className="text-[11px] text-[var(--ink-muted)]">Record and track client payments</p>
-                  </div>
-                </div>
+              <div className="flex items-center justify-between gap-2 bg-[var(--panel-strong)] px-3 py-2.5">
                 <div className="flex items-center gap-2">
-                  <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${paymentStatus === "Paid" ? "bg-emerald-500/20 text-emerald-700 dark:text-emerald-400" : paymentStatus === "Overpaid" ? "bg-blue-500/20 text-blue-700 dark:text-blue-400" : "bg-amber-400/20 text-amber-700"}`}>
+                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 text-[10px] font-black text-emerald-600">2</span>
+                  <p className="text-xs font-semibold text-[var(--ink)]">Payments</p>
+                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${paymentStatus === "Paid" ? "bg-emerald-500/20 text-emerald-700 dark:text-emerald-400" : paymentStatus === "Overpaid" ? "bg-blue-500/20 text-blue-700 dark:text-blue-400" : "bg-amber-400/20 text-amber-700"}`}>
                     {paymentStatus}
                   </span>
+                </div>
+                <div className="flex items-center gap-2">
                   {!showAddPaymentForm ? (
-                    <button type="button" onClick={() => setShowAddPaymentForm(true)} className="btn-premium rounded-lg px-3 py-1.5 text-xs">
-                      Add Payment
+                    <button type="button" onClick={() => setShowAddPaymentForm(true)} className="btn-premium rounded-lg px-2.5 py-1 text-xs">
+                      + Pay
                     </button>
                   ) : null}
                 </div>
@@ -2045,26 +2039,21 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
           {/* ── Section 3: Technician Payouts ─────────────────────────── */}
           {hasPayoutControls ? (
             <div className="overflow-hidden rounded-xl border border-[var(--line)]">
-              <div className="flex flex-wrap items-center justify-between gap-2 bg-[var(--panel-strong)] px-4 py-3">
-                <div className="flex items-center gap-3">
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-violet-500/15 text-xs font-black text-violet-600">3</span>
-                  <div>
-                    <p className="text-sm font-semibold text-[var(--ink)]">Technician Payouts</p>
-                    <p className="text-[11px] text-[var(--ink-muted)]">Record payments to the assigned technician</p>
-                  </div>
-                </div>
+              <div className="flex items-center justify-between gap-2 bg-[var(--panel-strong)] px-3 py-2.5">
                 <div className="flex items-center gap-2">
-                  <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${technicianPayoutStatus === "Paid" ? "bg-emerald-500/20 text-emerald-700 dark:text-emerald-400" : technicianPayoutStatus === "Overpaid" ? "bg-amber-400/20 text-amber-700" : technicianCost <= 0 ? "bg-[var(--panel-strong)] text-[var(--ink-muted)]" : "bg-[var(--accent)]/10 text-[var(--accent)]"}`}>
+                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-violet-500/15 text-[10px] font-black text-violet-600">3</span>
+                  <p className="text-xs font-semibold text-[var(--ink)]">Tech payout</p>
+                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${technicianPayoutStatus === "Paid" ? "bg-emerald-500/20 text-emerald-700 dark:text-emerald-400" : technicianPayoutStatus === "Overpaid" ? "bg-amber-400/20 text-amber-700" : technicianCost <= 0 ? "bg-[var(--panel-strong)] text-[var(--ink-muted)]" : "bg-[var(--accent)]/10 text-[var(--accent)]"}`}>
                     {technicianPayoutStatus}
                   </span>
-                  {!showPayoutForm ? (
-                    <button type="button" onClick={() => setShowPayoutForm(true)} className="btn-premium-secondary rounded-lg px-3 py-1.5 text-xs">
-                      Record Payout
-                    </button>
-                  ) : null}
                 </div>
+                {!showPayoutForm ? (
+                  <button type="button" onClick={() => setShowPayoutForm(true)} className="btn-premium-secondary rounded-lg px-2.5 py-1 text-xs">
+                    + Payout
+                  </button>
+                ) : null}
               </div>
-              <div className="space-y-3 p-4">
+              <div className="space-y-3 p-3">
                 <p className="text-xs text-[var(--ink-muted)]">
                   Cost: <strong className="text-[var(--ink)]">{formatBillAmount(technicianCost)}</strong>
                   {" · "}Paid: <strong className="text-emerald-600">{formatBillAmount(technicianPaid)}</strong>
@@ -2153,40 +2142,29 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
             </div>
           ) : null}
           {job.repairPath !== "EXTERNAL" ? (
-            <div className={softSectionClass}>
-              <p className="text-xs font-semibold uppercase tracking-wide text-[var(--ink-muted)]">Technician Payout</p>
-              <p className="mt-1 text-xs text-[var(--ink-muted)]">Payout controls appear only when this job is set to external repair.</p>
+            <div className="rounded-xl border border-[var(--line)] px-3 py-2.5">
+              <p className="text-xs font-semibold text-[var(--ink-muted)]">Tech payout — <span className="font-normal">only applies to external repairs</span></p>
             </div>
           ) : null}
 
           {/* ── Section 4: Financial Summary ──────────────────────────── */}
           <div className="overflow-hidden rounded-xl border border-[var(--line)]">
-            <div className="flex items-center gap-3 bg-[var(--panel-strong)] px-4 py-3">
-              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-sky-500/15 text-xs font-black text-sky-600">4</span>
-              <div>
-                <p className="text-sm font-semibold text-[var(--ink)]">Job Financial Summary</p>
-                <p className="text-[11px] text-[var(--ink-muted)]">Revenue minus cost equals margin</p>
-              </div>
+            <div className="flex items-center gap-3 bg-[var(--panel-strong)] px-4 py-2.5">
+              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-sky-500/15 text-[10px] font-black text-sky-600">4</span>
+              <p className="text-xs font-semibold text-[var(--ink)]">Financial summary</p>
             </div>
-            <div className="p-4">
-              <div className="flex items-stretch divide-x divide-[var(--line)] overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
-                <div className="flex-1 px-4 py-3 text-center">
-                  <p className="text-[10px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">Client Bill</p>
-                  <p className="mt-1 text-base font-black text-[var(--ink)]">{formatBillAmount(clientBillValue)}</p>
+            <div className="divide-y divide-[var(--line)]">
+              {([
+                { label: "Client bill",  value: formatBillAmount(clientBillValue),  tone: "text-[var(--ink)]" },
+                { label: "Tech cost",    value: formatBillAmount(technicianCost),    tone: "text-[var(--ink)]" },
+                { label: "Margin",       value: `${clientBillValue - technicianCost >= 0 ? "+" : ""}${formatBillAmount(clientBillValue - technicianCost)}`,
+                                         tone: clientBillValue - technicianCost >= 0 ? "text-emerald-600" : "text-red-500" },
+              ] as { label: string; value: string; tone: string }[]).map(({ label, value, tone }) => (
+                <div key={label} className="flex items-center justify-between px-4 py-2.5">
+                  <p className="text-xs text-[var(--ink-muted)]">{label}</p>
+                  <p className={`text-sm font-bold tabular-nums ${tone}`}>{value}</p>
                 </div>
-                <div className="flex items-center px-3 text-xl font-black text-[var(--ink-muted)]">-</div>
-                <div className="flex-1 px-4 py-3 text-center">
-                  <p className="text-[10px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">Tech Cost</p>
-                  <p className="mt-1 text-base font-black text-[var(--ink)]">{formatBillAmount(technicianCost)}</p>
-                </div>
-                <div className="flex items-center px-3 text-xl font-black text-[var(--ink-muted)]">=</div>
-                <div className="flex-1 px-4 py-3 text-center">
-                  <p className="text-[10px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">Margin</p>
-                  <p className={`mt-1 text-base font-black ${clientBillValue - technicianCost >= 0 ? "text-emerald-600" : "text-red-500"}`}>
-                    {clientBillValue - technicianCost >= 0 ? "+" : ""}{formatBillAmount(clientBillValue - technicianCost)}
-                  </p>
-                </div>
-              </div>
+              ))}
             </div>
           </div>
         </form>
