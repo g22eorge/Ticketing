@@ -90,26 +90,31 @@ function roleTagStyle(role: Role) {
   return "bg-[var(--panel-strong)] text-[var(--ink-muted)]";
 }
 
-// Root-level pages — mobile shows no header at all (each page has its own native header)
-const ROOT_PATHS = new Set([
-  "/dashboard", "/jobs", "/finance", "/reports", "/more",
-  "/inventory", "/pos", "/clients", "/sales", "/technicians",
-  "/intake", "/payout-followups", "/ai-insights", "/settings",
-  "/field", "/complaints", "/targets",
-  // Bottom-nav primary tabs — each has its own native header on mobile
-  "/documents/invoices",
+/**
+ * PRIMARY_TABS — the 5 bottom-nav tabs that are "home" screens.
+ * These have their own custom native headers on mobile, so:
+ *   • PageThemeHeader is hidden (hideMobile = true)
+ *   • No back button shown
+ *
+ * Every other page (even single-segment ones like /clients, /inventory,
+ * /payout-followups) navigated to FROM somewhere — they all get a back arrow.
+ */
+const PRIMARY_TABS = new Set([
+  "/dashboard",           // Home tab
+  "/jobs",                // Repairs tab
+  "/documents/invoices",  // Invoices tab
+  "/reports",             // Activity tab
+  "/more",                // More tab
 ]);
 
 function isSubPage(pathname: string) {
-  const parts = pathname.split("/").filter(Boolean);
-  if (parts.length < 2) return false;
-  if (ROOT_PATHS.has(pathname)) return false;
-  return true;
+  // Show back button on every page that is NOT a primary tab
+  return !PRIMARY_TABS.has(pathname);
 }
 
-// On mobile, root pages have their own custom headers — hide PageThemeHeader completely
+// On mobile, only the primary tab pages have their own native headers
 function isMobileRootPage(pathname: string) {
-  return ROOT_PATHS.has(pathname);
+  return PRIMARY_TABS.has(pathname);
 }
 
 export function PageThemeHeader({ role }: { role: Role }) {
