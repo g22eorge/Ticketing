@@ -1,7 +1,7 @@
 "use client";
 
 import { Role } from "@prisma/client";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
 function pageMeta(pathname: string, role: Role) {
@@ -119,11 +119,9 @@ function isMobileRootPage(pathname: string) {
 
 export function PageThemeHeader({ role }: { role: Role }) {
   const pathname = usePathname();
-  const router = useRouter();
   const meta = pageMeta(pathname, role);
   const [resolvedSubtitle, setResolvedSubtitle] = useState<{ path: string; text: string } | null>(null);
-  const showBack = isSubPage(pathname);
-  const hideMobile = isMobileRootPage(pathname); // root pages have own native headers
+  const hideMobile = isMobileRootPage(pathname); // primary-tab pages have own native headers
 
   useEffect(() => {
     let cancelled = false;
@@ -155,24 +153,12 @@ export function PageThemeHeader({ role }: { role: Role }) {
 
   return (
     <>
-      {/* Mobile: hidden on root pages (they have their own native headers).
-          On sub-pages: back arrow + page title. */}
+      {/* Mobile: hidden on primary-tab pages (own native headers).
+          On all other pages: show page title only.
+          Back button is now in the sticky Header bar above, not here. */}
       <div className={`flex items-center gap-2 sm:hidden ${hideMobile ? "hidden" : ""}`}>
-        {showBack ? (
-          <button
-            type="button"
-            onClick={() => router.back()}
-            aria-label="Go back"
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-[var(--ink-muted)] transition active:bg-[var(--panel-strong)]"
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-              strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path d="M19 12H5"/><path d="m12 5-7 7 7 7"/>
-            </svg>
-          </button>
-        ) : null}
         <div className="flex min-w-0 flex-1 items-baseline gap-2">
-          <h1 className="text-[14px] font-bold tracking-tight text-[var(--ink)]">{meta.title}</h1>
+          <h1 className="text-[15px] font-bold tracking-tight text-[var(--ink)]">{meta.title}</h1>
           {subtitle ? (
             <span className="rounded border border-[var(--line)] bg-[var(--panel-strong)] px-1.5 py-0.5 font-mono text-[10px] font-medium text-[var(--ink-muted)]">
               {subtitle}

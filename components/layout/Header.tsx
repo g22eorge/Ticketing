@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -65,6 +65,11 @@ function initials(name: string) {
 }
 
 
+// Primary nav tabs — show logo on mobile; everything else shows ← back
+const PRIMARY_TABS = new Set([
+  "/dashboard", "/jobs", "/documents/invoices", "/reports", "/more",
+]);
+
 export function Header({
   userName,
   userEmail,
@@ -76,6 +81,8 @@ export function Header({
   orgUsers = [],
 }: HeaderProps) {
   const router = useRouter();
+  const pathname = usePathname();
+  const showMobileBack = !PRIMARY_TABS.has(pathname);
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -94,13 +101,27 @@ export function Header({
       <header className="sticky top-0 z-30 border-b border-[var(--line)] bg-[var(--panel)]/95 backdrop-blur-md">
         <div className="mx-auto flex h-14 w-full max-w-[1360px] items-center gap-3 px-4">
 
-          {/* Mobile brand (sidebar takes over on lg+) */}
-          <Link
-            href="/dashboard"
-            className="flex items-center lg:hidden transition-opacity hover:opacity-75"
-          >
-            <AppLogo height={40} priority />
-          </Link>
+          {/* Mobile: ← back button on sub-pages, logo on primary tabs */}
+          {showMobileBack ? (
+            <button
+              type="button"
+              onClick={() => router.back()}
+              aria-label="Go back"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-[var(--ink)] transition active:bg-[var(--panel-strong)] lg:hidden"
+            >
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M19 12H5"/><path d="m12 5-7 7 7 7"/>
+              </svg>
+            </button>
+          ) : (
+            <Link
+              href="/dashboard"
+              className="flex items-center lg:hidden transition-opacity hover:opacity-75"
+            >
+              <AppLogo height={40} priority />
+            </Link>
+          )}
 
           {/* Spacer */}
           <div className="flex-1" />
