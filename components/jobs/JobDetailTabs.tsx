@@ -812,13 +812,16 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
 
   return (
     <div className="min-w-0 space-y-4">
-      <div>
+      {/* Back link — desktop only (mobile uses header back button) */}
+      <div className="hidden lg:block">
         <Link href={returnTo} className="inline-flex items-center gap-1.5 text-xs font-medium text-[var(--ink-muted)] transition hover:text-[var(--ink)]">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
           {returnLabel}
         </Link>
       </div>
-      <div className={panelShellClass}>
+
+      {/* ── DESKTOP HERO ── */}
+      <div className={`${panelShellClass} hidden lg:block`}>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
           {/* Device photo thumbnail */}
           <div className="h-20 w-20 shrink-0 overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel-strong)]">
@@ -865,6 +868,171 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
         </div>
       </div>
 
+      {/* ── MOBILE HERO (compact) ── */}
+      <div className={`${panelShellClass} lg:hidden`}>
+        <div className="flex items-start gap-3">
+          <div className="min-w-0 flex-1">
+            <div className="mb-1.5 flex flex-wrap items-center gap-2">
+              <JobStatusBadge status={job.status} />
+              <span className="font-mono text-[11px] text-[var(--ink-muted)]">{job.jobNumber}</span>
+            </div>
+            <h1 className="text-[22px] font-black leading-tight tracking-tight text-[var(--ink)]">
+              {[job.brand, job.model].filter((v) => v && v !== "Unknown").join(" ") || job.deviceType}
+            </h1>
+            <p className="mt-1 line-clamp-2 text-sm leading-snug text-[var(--ink-muted)]">{job.issueDescription}</p>
+            <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[12px] text-[var(--ink-muted)]">
+              {role !== "TECHNICIAN_EXTERNAL" && job.client?.fullName ? (
+                <span>👤 <strong className="text-[var(--ink)]">{job.client.fullName}</strong></span>
+              ) : null}
+              <span>⚡ <strong className="text-[var(--ink)]">{
+                assignedLabel === "No technician assigned yet." ? "Unassigned" : assignedLabel
+              }</strong></span>
+            </div>
+          </div>
+          {role !== "TECHNICIAN_EXTERNAL" ? (
+            <button type="button" onClick={() => router.push(`/jobs/${job.id}/edit`)}
+              className="shrink-0 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-xs font-semibold text-[var(--ink)] transition active:opacity-70">
+              Edit
+            </button>
+          ) : null}
+        </div>
+      </div>
+
+      {/* ── MOBILE PROGRESS + PRIMARY CTA ── */}
+      <div className="lg:hidden space-y-3">
+        {/* Slim progress dots with labels */}
+        <div className="flex items-start px-1">
+          {stageLabels.map((label, i) => (
+            <div key={label} className={`flex items-start ${i < stageLabels.length - 1 ? "flex-1" : ""}`}>
+              <div className="flex flex-col items-center" style={{ minWidth: 44 }}>
+                <div className={`h-2.5 w-2.5 rounded-full ring-2 ring-offset-1 ring-offset-[var(--bg)] ${
+                  i < currentStageIndex
+                    ? "bg-emerald-500 ring-emerald-500/40"
+                    : i === currentStageIndex
+                      ? "bg-[var(--accent)] ring-[var(--accent)]/40"
+                      : "bg-[var(--panel-strong)] ring-[var(--line)]"
+                }`} />
+                <p className={`mt-1 text-center text-[8px] font-bold uppercase leading-none tracking-wider ${
+                  i === currentStageIndex ? "text-[var(--accent)]" : "text-[var(--ink-muted)]"
+                }`}>{label}</p>
+              </div>
+              {i < stageLabels.length - 1 && (
+                <div className={`mt-[4px] h-px flex-1 mx-0.5 ${
+                  i < currentStageIndex ? "bg-emerald-500" : "bg-[var(--line)]"
+                }`} />
+              )}
+            </div>
+          ))}
+        </div>
+
+        {/* Primary workflow CTA */}
+        {!isTerminal && statusActions.length > 0 ? (
+          <form action={(fd) => {
+            fd.set("jobId", job.id);
+            fd.set("status", statusActions[0]);
+            fd.set("expectedUpdatedAt", expectedUpdatedAt);
+            startStatusTransition(async () => {
+              const res = await updateJobAction(fd);
+              if (res.error) { toast.error(res.error); return; }
+              toast.success("Status updated");
+              router.refresh();
+            });
+          }}>
+            <button
+              type="submit"
+              disabled={isStatusPending}
+              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[var(--accent)] py-4 text-[15px] font-bold text-white shadow-lg shadow-[var(--accent)]/20 transition-transform active:scale-[0.98] disabled:opacity-60"
+            >
+              {isStatusPending ? (
+                <span>Updating…</span>
+              ) : (
+                <>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8" fill="currentColor" stroke="none"/></svg>
+                  {nextActionByStatus[statusKey]}
+                </>
+              )}
+            </button>
+          </form>
+        ) : isTerminal ? (
+          <div className="flex items-center justify-center gap-2 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3.5">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-500"><polyline points="20 6 9 17 4 12"/></svg>
+            <p className="text-sm font-semibold text-emerald-600">{prettyEnum(job.status)}</p>
+          </div>
+        ) : null}
+
+        {/* Time alert */}
+        {watchLabel ? (
+          <div className="flex items-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/8 px-3 py-2.5">
+            <div className="h-2 w-2 shrink-0 rounded-full bg-amber-500" />
+            <p className="text-xs font-semibold text-amber-600">{watchLabel} · {statusAgeHours}h in this state</p>
+          </div>
+        ) : null}
+
+        {/* Attention items */}
+        {attentionItems.length > 0 ? (
+          <div className="space-y-1.5">
+            {attentionItems.map((item) => (
+              <button key={item.label} type="button" onClick={() => setActive(item.tab)}
+                className="flex w-full items-start gap-2 rounded-xl border border-amber-500/20 bg-amber-500/8 px-3 py-2.5 text-left active:opacity-70">
+                <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-red-500" />
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold text-[var(--ink)]">{item.label}</p>
+                  <p className="text-[10px] text-[var(--ink-muted)]">{item.action}</p>
+                </div>
+              </button>
+            ))}
+          </div>
+        ) : null}
+
+        {/* Key facts 2×2 grid */}
+        <div className="grid grid-cols-2 gap-2">
+          <div className="rounded-xl border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2.5">
+            <p className="text-[9px] font-bold uppercase tracking-wider text-[var(--ink-muted)]">ETA</p>
+            <p className="mt-0.5 truncate text-sm font-semibold text-[var(--ink)]">{etaValue}</p>
+          </div>
+          <div className="rounded-xl border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2.5">
+            <p className="text-[9px] font-bold uppercase tracking-wider text-[var(--ink-muted)]">Technician</p>
+            <p className="mt-0.5 truncate text-sm font-semibold text-[var(--ink)]">{
+              assignedLabel === "No technician assigned yet." ? "Unassigned" : assignedLabel
+            }</p>
+          </div>
+          {canViewFinancials ? (
+            <>
+              <div className="rounded-xl border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2.5">
+                <p className="text-[9px] font-bold uppercase tracking-wider text-[var(--ink-muted)]">Total Bill</p>
+                <p className="mt-0.5 text-sm font-semibold text-[var(--ink)]">
+                  {clientBillValue > 0 ? `UGX ${formatBillAmount(clientBillValue)}` : "Not set"}
+                </p>
+              </div>
+              <div className={`rounded-xl border px-3 py-2.5 ${
+                clientBalanceDue > 0
+                  ? "border-red-500/30 bg-red-500/8"
+                  : clientBillValue > 0
+                    ? "border-emerald-500/30 bg-emerald-500/8"
+                    : "border-[var(--line)] bg-[var(--panel-strong)]"
+              }`}>
+                <p className="text-[9px] font-bold uppercase tracking-wider text-[var(--ink-muted)]">Balance</p>
+                <p className={`mt-0.5 text-sm font-semibold ${
+                  clientBalanceDue > 0 ? "text-red-500"
+                  : clientBillValue > 0 ? "text-emerald-600"
+                  : "text-[var(--ink)]"
+                }`}>
+                  {paymentStatus === "Paid" ? "Paid ✓"
+                   : paymentStatus === "No bill set" ? "—"
+                   : `UGX ${formatBillAmount(clientBalanceDue)}`}
+                </p>
+              </div>
+            </>
+          ) : null}
+        </div>
+
+        {/* Share button */}
+        <div className="flex gap-2">
+          <StatusShareButton jobNumber={job.jobNumber} />
+        </div>
+      </div>
+
+      {/* ── TAB BAR (shown on all screen sizes for navigation) ── */}
       <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
         {visibleTabs.map((tab) => (
           <button
@@ -891,8 +1059,8 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
 
       {active === "overview" ? (
         <div className={`${panelShellClass} space-y-4`}>
-          {/* Repair Journey */}
-          <div>
+          {/* Repair Journey — desktop only (mobile has progress dots above the tab bar) */}
+          <div className="hidden lg:block">
             <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Repair Journey</p>
             <div className="overflow-x-auto [scrollbar-width:none]">
               <div className="flex min-w-max items-start gap-3 pb-1">
@@ -923,8 +1091,8 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
             </div>
           </div>
 
-          {/* 3-column: Job Summary | Attention Needed | Financial Snapshot */}
-          <div className="grid gap-3 lg:grid-cols-3">
+          {/* 3-column: Job Summary | Attention Needed | Financial Snapshot — desktop only */}
+          <div className="hidden lg:grid gap-3 lg:grid-cols-3">
             <div className="rounded-xl border border-[var(--line)] bg-[var(--panel-strong)] p-4">
               <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Job Summary</p>
               <dl className="space-y-2.5">
@@ -984,8 +1152,8 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
             </div>
           </div>
 
-          {/* Quick Overview */}
-          <div>
+          {/* Quick Overview — desktop only (mobile has key-facts grid above) */}
+          <div className="hidden lg:block">
             <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Quick Overview</p>
             <div className="grid gap-3 lg:grid-cols-4">
               {quickOverviewGroups.map((group) => (
