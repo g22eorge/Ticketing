@@ -217,50 +217,26 @@ export default async function AppLayout({
   );
 }
 
-// ── FAB actions ───────────────────────────────────────────────────────────────
-
-function Icon({ d, color = "currentColor" }: { d: string; color?: string }) {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-      <path d={d} />
-    </svg>
-  );
-}
+// ── FAB — single context-aware primary action (industry standard) ─────────────
+// Industry standard: ONE FAB = ONE primary action for the current screen.
+// The home Quick Actions grid already covers the full set; the FAB is a
+// shortcut to the most logical action per context.
 
 function buildFabActions(user: { role: string; permissions?: string[] }): FabAction[] {
   const u = user as Parameters<typeof can.createJob>[0];
-  const actions: FabAction[] = [];
+  if (!can.createJob(u)) return [];
 
-  if (can.createJob(u)) {
-    actions.push({
-      label: "New Job",
-      href: "/jobs/new",
-      color: "bg-emerald-500",
-      icon: <Icon d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" color="white" />,
-    });
-  }
-
-  if (can.viewClientInfo(u)) {
-    // No standalone "create client" flow yet. Avoid linking to a missing route.
-  }
-
-  if (can.viewIntake(u)) {
-    actions.push({
-      label: "Intake",
-      href: "/intake",
-      color: "bg-amber-500",
-      icon: <Icon d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" color="white" />,
-    });
-  }
-
-  if (can.viewFinancials(u)) {
-    actions.push({
-      label: "New Invoice",
-      href: "/jobs?invoice=1",
-      color: "bg-purple-500",
-      icon: <Icon d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M16 13H8M16 17H8M10 9H8" color="white" />,
-    });
-  }
-
-  return actions;
+  // Single action: New Job — universally useful on any repair-related page
+  return [{
+    label: "New Job",
+    href: "/jobs/new",
+    color: "bg-[var(--accent)]",
+    icon: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="black"
+        strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <line x1="12" y1="5" x2="12" y2="19"/>
+        <line x1="5"  y1="12" x2="19" y2="12"/>
+      </svg>
+    ),
+  }];
 }
