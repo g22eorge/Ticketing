@@ -2434,31 +2434,30 @@ function StatusShareButton({ jobNumber, compact = false }: { jobNumber: string; 
 
   function handleCopy() {
     const url = getUrl();
-    if (navigator.clipboard?.writeText) {
-      navigator.clipboard.writeText(url).then(
-        () => { setCopied(true); setTimeout(() => setCopied(false), 2000); },
-        () => fallbackCopy(url),
-      );
-    } else {
-      fallbackCopy(url);
-    }
-  }
-
-  function fallbackCopy(url: string) {
+    // Use execCommand fallback directly — avoids Clipboard API permission
+    // errors in iframes, WebViews, and non-HTTPS contexts.
     try {
       const el = document.createElement("textarea");
       el.value = url;
-      el.style.position = "fixed";
-      el.style.opacity = "0";
+      el.style.cssText = "position:fixed;top:0;left:0;opacity:0;pointer-events:none";
       document.body.appendChild(el);
       el.focus();
       el.select();
-      document.execCommand("copy");
+      const ok = document.execCommand("copy");
       document.body.removeChild(el);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      if (ok) {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+        return;
+      }
     } catch {
-      // last resort: nothing we can do without clipboard permission
+      // execCommand not available — try Clipboard API
+    }
+    // Clipboard API (modern browsers outside restricted contexts)
+    if (typeof navigator !== "undefined" && navigator.clipboard) {
+      navigator.clipboard.writeText(url).then(
+        () => { setCopied(true); setTimeout(() => setCopied(false), 2000); },
+      ).catch(() => { /* permission denied — silently ignore */ });
     }
   }
 
