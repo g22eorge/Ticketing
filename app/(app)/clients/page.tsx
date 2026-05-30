@@ -391,51 +391,51 @@ export default async function ClientsPage({
           {/* ── Mobile cards ── */}
           <div className="lg:hidden">
               {(clients as ClientRow[]).map((client) => (
-                <div
-                  key={client.id}
-                  className="relative border-b border-[var(--line)] bg-[var(--panel)] last:border-b-0 transition-colors hover:bg-[var(--panel-strong)]/40"
-                >
-                  <span
-                    className={`absolute inset-y-0 left-0 w-[5px] ${
-                      client._count.jobs >= 3
-                        ? "bg-[var(--accent)]"
-                        : client._count.jobs > 0
-                          ? "bg-blue-400"
-                          : "bg-slate-200"
-                    }`}
-                    aria-hidden="true"
-                  />
-                  {/* Full-bleed tap target */}
-                  <Link href={`/clients/${client.id}`} className="absolute inset-0 z-0" aria-label={`Open ${client.fullName}`} />
-
-                  <div className="pointer-events-none relative z-10 px-4 py-3 pl-6">
-                    <div className="mb-1 flex items-center justify-between gap-2">
-                      <span className="text-[10px] font-medium tracking-wide text-[var(--ink-muted)]/50">
-                        {client._count.jobs} {client._count.jobs === 1 ? "job" : "jobs"}
-                      </span>
-                      {user.role === "ADMIN" && client._count.jobs === 0 ? (
-                        <form action={deleteClientAction} className="pointer-events-auto">
-                          <input type="hidden" name="id" value={client.id} />
-                          <button type="submit" className="text-[10px] font-medium uppercase tracking-wide text-[var(--ink-muted)]/50 transition hover:text-red-500">
-                            ✕
-                          </button>
-                        </form>
-                      ) : (
-                        <svg viewBox="0 0 6 10" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="h-2.5 w-1.5 shrink-0 text-[var(--ink-muted)]/25" aria-hidden="true">
-                          <path d="M1 1l4 4-4 4"/>
-                        </svg>
-                      )}
+                <div key={client.id} className="border-b border-[var(--line)] last:border-b-0">
+                  {/* Main row — Link wraps content for reliable tap */}
+                  <Link
+                    href={`/clients/${client.id}`}
+                    className="flex items-center gap-3 px-4 py-3 active:bg-[var(--panel-strong)]/60"
+                    aria-label={`Open ${client.fullName}`}
+                  >
+                    {/* Avatar */}
+                    <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl text-sm font-black ${
+                      client._count.jobs >= 3 ? "bg-[var(--accent)]/15 text-[var(--accent)]"
+                      : client._count.jobs > 0 ? "bg-sky-500/15 text-sky-600"
+                      : "bg-[var(--panel-strong)] text-[var(--ink-muted)]"
+                    }`}>
+                      {client.fullName[0]?.toUpperCase() ?? "?"}
                     </div>
-                    <p className="text-[15px] font-bold leading-snug tracking-tight text-[var(--ink)]">{client.fullName}</p>
-                    <div className="mt-1 flex items-center gap-1 text-[11px] text-[var(--ink-muted)]">
-                      <span>{client.phone}</span>
-                      {client.organization ? (
-                        <>
-                          <span className="opacity-40">·</span>
-                          <span className="truncate">{client.organization}</span>
-                        </>
-                      ) : null}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-baseline justify-between gap-2">
+                        <p className="truncate text-[14px] font-bold text-[var(--ink)]">{client.fullName}</p>
+                        <span className="shrink-0 text-[11px] text-[var(--ink-muted)]">
+                          {client._count.jobs} {client._count.jobs === 1 ? "job" : "jobs"}
+                        </span>
+                      </div>
+                      <p className="mt-0.5 truncate text-[11px] text-[var(--ink-muted)]">
+                        {[client.phone, client.organization].filter(Boolean).join(" · ")}
+                      </p>
                     </div>
+                  </Link>
+                  {/* Action strip: tap-to-call + WhatsApp */}
+                  <div className="flex items-center gap-2 border-t border-[var(--line)]/50 px-4 pb-2.5 pt-2">
+                    <a href={`tel:${client.phone}`}
+                      className="flex items-center gap-1.5 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[11px] font-medium text-[var(--ink)]">
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.09 9.5a19.79 19.79 0 01-3-8.72A2 2 0 012.11 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14.92z"/></svg>
+                      Call
+                    </a>
+                    <a href={`https://wa.me/${client.phone.replace(/\D/g,"")}`} target="_blank" rel="noreferrer"
+                      className="flex items-center gap-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/8 px-3 py-1.5 text-[11px] font-medium text-emerald-700">
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                      WhatsApp
+                    </a>
+                    {user.role === "ADMIN" && client._count.jobs === 0 ? (
+                      <form action={deleteClientAction} className="ml-auto">
+                        <input type="hidden" name="id" value={client.id} />
+                        <button type="submit" className="text-[11px] font-medium text-[var(--ink-muted)]/60 transition hover:text-red-500">Delete</button>
+                      </form>
+                    ) : null}
                   </div>
                 </div>
               ))}

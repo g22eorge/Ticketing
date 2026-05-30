@@ -1,5 +1,6 @@
 type AuditItem = {
   id: string;
+  jobId?: string | null;
   action: string;
   detail: string | null;
   createdAt: Date;
@@ -110,8 +111,9 @@ export function AuditTimeline({ items }: { items: AuditItem[] }) {
         const detailEntries = detailObject ? Object.entries(detailObject) : [];
         const actionMeta = getActionMeta(item.action);
 
-        return (
-          <div key={item.id} className={`rounded-lg border bg-[var(--panel-strong)] p-3 ${actionMeta.panelClass}`}>
+        const cardCls = `rounded-lg border bg-[var(--panel-strong)] p-3 ${actionMeta.panelClass}`;
+        const inner = (
+          <>
             <div className="flex flex-wrap items-center justify-between gap-2">
               <p className="flex items-center gap-2 text-sm font-semibold">
                 <span className={`inline-flex h-5 min-w-5 items-center justify-center rounded-full border px-1 text-[11px] font-bold ${actionMeta.chipClass}`}>
@@ -137,6 +139,32 @@ export function AuditTimeline({ items }: { items: AuditItem[] }) {
             ) : item.detail ? (
               <pre className="mt-2 overflow-x-auto text-xs text-[var(--ink)]">{item.detail}</pre>
             ) : null}
+            {item.jobId ? <p className="mt-2 text-[10px] font-semibold text-[var(--accent)]">View job →</p> : null}
+          </>
+        );
+
+        return item.jobId ? (
+          // Tappable row when jobId is present
+          // eslint-disable-next-line @next/next/no-html-link-for-pages
+          <a key={item.id} href={`/jobs/${item.jobId}`} className={`block ${cardCls} active:opacity-70`}>
+            {inner}
+          </a>
+        ) : (
+          <div key={item.id} className={cardCls}>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="flex items-center gap-2 text-sm font-semibold">
+                <span className={`inline-flex h-5 min-w-5 items-center justify-center rounded-full border px-1 text-[11px] font-bold ${actionMeta.chipClass}`}>
+                  {actionMeta.icon}
+                </span>
+                {formatActionLabel(item.action)}
+              </p>
+              <p className="text-xs text-[var(--ink-muted)]">{item.createdAt.toLocaleString("en-GB", { timeZone: "Africa/Nairobi" })}</p>
+            </div>
+            <p className="text-xs text-[var(--ink-muted)]">by {item.user.name}</p>
+            {trainingSummary ? (
+              <p className="mt-2 rounded-md border border-[var(--accent)]/30 bg-[var(--accent)]/10 px-2 py-1 text-xs text-[var(--accent)]">{trainingSummary}</p>
+            ) : null}
+            {inner}
           </div>
         );
       })}

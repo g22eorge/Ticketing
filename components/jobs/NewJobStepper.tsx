@@ -257,8 +257,29 @@ export function NewJobStepper({ receivedByName }: { receivedByName: string }) {
 
   return (
     <form action={formAction} onSubmit={onSubmit} className="space-y-4">
-      {/* Step tabs */}
-      <div className="flex gap-2 overflow-x-auto pb-0.5 [scrollbar-width:none]">
+      {/* Mobile: slim progress dots strip */}
+      <div className="lg:hidden flex items-start px-1">
+        {steps.map((label, idx) => (
+          <div key={label} className={`flex items-start ${idx < steps.length - 1 ? "flex-1" : ""}`}>
+            <button type="button" onClick={() => { if (idx < step) setStep(idx); }} className="flex flex-col items-center" style={{ minWidth: 52 }}>
+              <div className={`h-2.5 w-2.5 rounded-full ring-2 ring-offset-1 ring-offset-[var(--bg)] transition-all ${
+                idx < step ? "bg-emerald-500 ring-emerald-500/50"
+                : idx === step ? "bg-[var(--accent)] ring-[var(--accent)]/50"
+                : "bg-[var(--panel-strong)] ring-[var(--line)]"
+              }`} />
+              <p className={`mt-1 text-center text-[8px] font-bold uppercase leading-none tracking-wide ${
+                idx === step ? "text-[var(--accent)]" : "text-[var(--ink-muted)]"
+              }`}>{label}</p>
+            </button>
+            {idx < steps.length - 1 && (
+              <div className={`mt-[4px] h-px flex-1 mx-0.5 ${idx < step ? "bg-emerald-500" : "bg-[var(--line)]"}`} />
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* Desktop: pill tabs */}
+      <div className="hidden lg:flex gap-2 overflow-x-auto pb-0.5 [scrollbar-width:none]">
         {steps.map((label, idx) => (
           <button
             key={label}
@@ -281,7 +302,7 @@ export function NewJobStepper({ receivedByName }: { receivedByName: string }) {
       {step === 0 ? (
         <section className="grid gap-3 rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 md:grid-cols-2">
           <div className="md:col-span-2">
-            <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Find Existing Client</label>
+            <label className="mb-1 block text-xs font-medium text-[var(--ink-muted)]">Find Existing Client</label>
             <div className="relative">
               <input
                 value={clientLookupQuery}
@@ -384,7 +405,7 @@ export function NewJobStepper({ receivedByName }: { receivedByName: string }) {
               return (
                 <div key={idx} className="rounded-xl border border-[var(--line)] bg-[var(--panel-strong)] p-3">
                   <div className="mb-2 flex items-center justify-between gap-2">
-                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Device {idx + 1}</p>
+                    <p className="text-xs font-medium text-[var(--ink-muted)]">Device {idx + 1}</p>
                     <button
                       type="button"
                       disabled={devices.length === 1}
@@ -554,7 +575,7 @@ export function NewJobStepper({ receivedByName }: { receivedByName: string }) {
               const errs = deviceErrors(device, idx);
               return (
                 <div key={idx} className="rounded-xl border border-[var(--line)] bg-[var(--panel-strong)] p-3">
-                  <p className="mb-2 text-xs font-semibold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Issue for device {idx + 1}</p>
+                  <p className="mb-2 text-xs font-medium text-[var(--ink-muted)]">Issue for device {idx + 1}</p>
                   <div className="space-y-0.5">
                     <textarea
                       value={device.issueDescription}
@@ -603,7 +624,7 @@ export function NewJobStepper({ receivedByName }: { receivedByName: string }) {
           <div className="mt-3 grid gap-2">
             {devices.map((d, idx) => (
               <div key={idx} className="rounded-xl border border-[var(--line)] bg-[var(--panel-strong)] p-3">
-                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Device {idx + 1}</p>
+                <p className="text-xs font-medium text-[var(--ink-muted)]">Device {idx + 1}</p>
                 <p className="mt-1 text-sm"><span className="font-medium">Type:</span> {d.deviceType || "—"}</p>
                 <p className="text-sm"><span className="font-medium">Model:</span> {[d.brand, d.model].filter(Boolean).join(" ") || "—"}</p>
                 {d.serialOrImei ? <p className="text-sm"><span className="font-medium">Serial/IMEI:</span> {d.serialOrImei}</p> : null}

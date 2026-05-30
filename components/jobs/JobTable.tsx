@@ -364,12 +364,17 @@ export function JobTable({
             );
           })}
 
-        {/* Mobile: show total count only, no pagination (continuous scroll) */}
-        {hasPagination && total != null && total > 0 ? (
-          <div className="border-t border-[var(--line)] px-4 py-3 text-center">
-            <span className="text-[11px] text-[var(--ink-muted)]">{total} repair{total !== 1 ? "s" : ""}</span>
-          </div>
-        ) : null}
+        {/* Mobile footer */}
+        <div className="border-t border-[var(--line)] px-4 py-3 text-center">
+          {jobs.length === 0 ? (
+            <p className="text-sm text-[var(--ink-muted)]">No repairs found</p>
+          ) : (
+            <p className="text-[11px] text-[var(--ink-muted)]">
+              {total != null ? `${total} repair${total !== 1 ? "s" : ""}` : `${jobs.length} shown`}
+              {" · "}All caught up ✓
+            </p>
+          )}
+        </div>
       </div>
 
       {/* ── Desktop table ── */}

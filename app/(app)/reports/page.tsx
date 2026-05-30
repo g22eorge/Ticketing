@@ -625,7 +625,48 @@ export default async function ReportsPage({
       {/* ── MOBILE ACTIVITY FEED (lg:hidden) ───────────────────────────────── */}
       <MobileActivityFeed orgId={orgId} />
 
-      {/* ── HEADER ─────────────────────────────────────────────────────────── */}
+      {/* ── MOBILE METRICS SUMMARY (lg:hidden) ──────────────────────────────── */}
+      <div className="lg:hidden space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-black text-[var(--ink)]">Reports</h2>
+          <span className="text-xs font-medium text-[var(--ink-muted)]">{selectedMonthString}</span>
+        </div>
+        {/* 2×2 key metric tiles */}
+        <div className="grid grid-cols-2 gap-2">
+          {([
+            { label: "Revenue",   value: formatMoneyCompact(revenueSelected, currency),     tone: "text-emerald-600", bg: "bg-emerald-500/10" },
+            { label: "Completed", value: String(completedSelected.length),                   tone: "text-[var(--ink)]", bg: "bg-sky-500/10" },
+            { label: "Total Billed", value: formatMoneyCompact(totalAllChannels, currency), tone: "text-[var(--accent)]", bg: "bg-[var(--accent)]/10" },
+            { label: "Expenses",  value: formatMoneyCompact(expensesTotal, currency),        tone: expensesTotal > 0 ? "text-amber-600" : "text-[var(--ink-muted)]", bg: "bg-amber-500/10" },
+          ] as { label: string; value: string; tone: string; bg: string }[]).map(({ label, value, tone, bg }) => (
+            <div key={label} className={`rounded-2xl border border-[var(--line)] ${bg} px-4 py-3`}>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--ink-muted)]">{label}</p>
+              <p className={`mt-1 text-xl font-black tabular-nums ${tone}`}>{value}</p>
+            </div>
+          ))}
+        </div>
+        {/* Top device types */}
+        {deviceRows.length > 0 && (
+          <div className="rounded-2xl border border-[var(--line)] bg-[var(--panel)] divide-y divide-[var(--line)] overflow-hidden">
+            <p className="px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-[var(--ink-muted)]">Top device types</p>
+            {deviceRows.slice(0, 4).map((d) => (
+              <div key={d.device} className="flex items-center justify-between px-4 py-2.5">
+                <p className="text-sm font-medium text-[var(--ink)]">{deviceLabel[d.device] ?? d.device}</p>
+                <div className="flex items-center gap-3">
+                  <span className="text-xs text-[var(--ink-muted)]">{d.total} jobs</span>
+                  <span className="text-sm font-bold tabular-nums text-[var(--ink)]">{formatMoneyCompact(d.revenue, currency)}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+        <Link href="/reports?tab=repairs" className="flex items-center justify-center gap-1 rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-2.5 text-sm font-medium text-[var(--accent)]">
+          Full reports →
+        </Link>
+      </div>
+
+      {/* ── HEADER (desktop) ─────────────────────────────────────────────────── */}
+      <div className="hidden lg:block">
       <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
         <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
           <div>
@@ -667,8 +708,10 @@ export default async function ReportsPage({
           </div>
         </div>
       </div>
+      </div>{/* end hidden lg:block header */}
 
-      {/* ── TAB NAV ─────────────────────────────────────────────────────────── */}
+      {/* ── TAB NAV (desktop only) ──────────────────────────────────────────── */}
+      <div className="hidden lg:block">
       <div className="flex gap-1 rounded-xl border border-[var(--line)] bg-[var(--panel-strong)] p-1">
         {TABS.map((t) => (
           <Link
@@ -680,9 +723,13 @@ export default async function ReportsPage({
           </Link>
         ))}
       </div>
+      </div>{/* end hidden lg:block tab nav */}
 
       {/* ══════════════════════════════════════════════════════════════════════
-          TAB: REPAIRS
+          TAB CONTENT: desktop only (mobile has summary above)
+      ══════════════════════════════════════════════════════════════════════ */}
+      <div className="hidden lg:block space-y-4">
+      {/* ── TAB: REPAIRS
       ══════════════════════════════════════════════════════════════════════ */}
       {tab === "repairs" && (
         <>
@@ -1388,6 +1435,7 @@ export default async function ReportsPage({
           {peopleExports.length > 0 && <ExportGrid items={peopleExports} />}
         </>
       )}
+      </div>{/* end hidden lg:block tab content */}
     </div>
   );
 }

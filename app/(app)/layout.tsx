@@ -5,6 +5,8 @@ import { Header } from "@/components/layout/Header";
 import { PageThemeHeader } from "@/components/layout/PageThemeHeader";
 import { QuickActionFAB } from "@/components/layout/QuickActionFAB";
 import type { FabAction } from "@/components/layout/QuickActionFAB";
+import { SpeedDialFAB } from "@/components/layout/SpeedDialFAB";
+import type { SpeedDialAction } from "@/components/layout/SpeedDialFAB";
 import { JobStatus, Prisma } from "@prisma/client";
 import { can } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
@@ -211,8 +213,18 @@ export default async function AppLayout({
           complaints: openComplaintsCount,
         }}
       />
-      <QuickActionFAB actions={isSuspended ? [] : buildFabActions(user)} />
-      <AiGuideBubble />
+      {/* Mobile: single speed-dial FAB (replaces separate FAB + AI bubble) */}
+      <SpeedDialFAB
+        actions={isSuspended ? [] : buildSpeedDialActions(user)}
+      />
+      {/* Desktop: keep the draggable AI bubble; mobile: hidden (AI is in speed-dial) */}
+      <div className="hidden lg:block">
+        <AiGuideBubble />
+      </div>
+      {/* Desktop-only legacy FAB (hidden on mobile) */}
+      <div className="hidden lg:block">
+        <QuickActionFAB actions={isSuspended ? [] : buildFabActions(user)} />
+      </div>
     </div>
   );
 }
@@ -225,8 +237,6 @@ export default async function AppLayout({
 function buildFabActions(user: { role: string; permissions?: string[] }): FabAction[] {
   const u = user as Parameters<typeof can.createJob>[0];
   if (!can.createJob(u)) return [];
-
-  // Single action: New Job — universally useful on any repair-related page
   return [{
     label: "New Job",
     href: "/jobs/new",
@@ -239,4 +249,25 @@ function buildFabActions(user: { role: string; permissions?: string[] }): FabAct
       </svg>
     ),
   }];
+}
+
+// Mobile speed-dial: New Job + AI Guide
+function buildSpeedDialActions(user: { role: string; permissions?: string[] }): SpeedDialAction[] {
+  const u = user as Parameters<typeof can.createJob>[0];
+  const actions: SpeedDialAction[] = [];
+  if (can.createJob(u)) {
+    actions.push({
+      label: "New Job",
+      href: "/jobs/new",
+      color: "bg-[var(--accent)]",
+      icon: (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="black"
+          strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19"/>
+          <line x1="5"  y1="12" x2="19" y2="12"/>
+        </svg>
+      ),
+    });
+  }
+  return actions;
 }

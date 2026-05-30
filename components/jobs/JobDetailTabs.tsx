@@ -1033,7 +1033,8 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
       </div>
 
       {/* ── TAB BAR (shown on all screen sizes for navigation) ── */}
-      <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
+      {/* Tab bar — sticky on mobile so it stays visible while scrolling tab content */}
+      <div className="sticky top-0 z-20 -mx-4 bg-[var(--bg)]/95 px-4 pb-2 pt-1 backdrop-blur-sm lg:static lg:bg-transparent lg:p-0 -mx-1 flex gap-2 overflow-x-auto [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:overflow-visible">
         {visibleTabs.map((tab) => (
           <button
             type="button"
