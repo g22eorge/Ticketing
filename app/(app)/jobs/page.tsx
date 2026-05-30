@@ -575,7 +575,7 @@ export default async function JobsPage({
       ) : null}
 
       {/* ── Desktop filter bar (hidden on mobile) ── */}
-      <div className="panel-shadow hidden overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)] sm:block">
+      <div className="panel-shadow hidden overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)] lg:block">
         {/* Row: view toggle | status chips | actions */}
         <div className="flex items-center gap-2 px-3 py-2">
           {/* View toggle */}

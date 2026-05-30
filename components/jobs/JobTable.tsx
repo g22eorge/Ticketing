@@ -211,8 +211,8 @@ export function JobTable({
   return (
     <div className="panel-shadow overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--panel)]">
 
-      {/* ── Header bar ── */}
-      <div className="flex items-center justify-between border-b border-[var(--line)] px-4 py-2">
+      {/* ── Header bar (desktop only — mobile has its own header in page) ── */}
+      <div className="hidden lg:flex items-center justify-between border-b border-[var(--line)] px-4 py-2">
         <p className="text-[11px] text-[var(--ink-muted)]">
           {hasPagination ? (
             <>
@@ -333,9 +333,9 @@ export function JobTable({
                     ) : null}
                     {pricingBadge}
 
-                    {/* Inline doc actions (pointer-events-auto since card is pointer-events-none via Link) */}
+                    {/* Inline doc actions — desktop only; mobile users tap the card to reach job detail */}
                     {(canUseJobCards || canDownloadQuotation || canDownloadInvoice || canEditPage || (canDelete && deleteAction)) ? (
-                      <div className="pointer-events-auto ml-auto flex items-center gap-2">
+                      <div className="pointer-events-auto ml-auto hidden lg:flex items-center gap-2">
                         {canUseJobCards ? (
                           <a href={`/api/jobs/${job.id}/job-card`} target="_blank" rel="noreferrer" className="text-[10px] font-semibold text-[var(--ink-muted)]/60 transition hover:text-[var(--ink-muted)]">Card</a>
                         ) : null}
