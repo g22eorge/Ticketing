@@ -1056,8 +1056,151 @@ export default async function InvoicesPage({
         </div>
       )}
 
-      {/* ── INVOICE TABLE ──────────────────────────────────────────────────── */}
-      <div className="doc-list overflow-x-auto rounded-xl border border-[var(--line)]">
+      {/* ── MOBILE INVOICE LIST (lg:hidden) ──────────────────────────────── */}
+      <div className="lg:hidden">
+        {filtered.length === 0 ? (
+          <div className="rounded-2xl border border-[var(--line)] bg-[var(--panel)] px-4 py-10 text-center text-sm text-[var(--ink-muted)]">
+            No invoices found
+          </div>
+        ) : (
+          <div className="overflow-hidden rounded-2xl border border-[var(--line)] divide-y divide-[var(--line)]">
+            {filtered.map((inv) => {
+              const clientName = inv.job?.client.fullName ?? inv.client?.fullName ?? inv.subject ?? "No client";
+              const isPaid = inv.isPaid;
+              const isOverdue = !isPaid && inv.daysOverdue > 0 && inv.status !== "VOID";
+              const isDraft = inv.status === "DRAFT";
+              const isVoid = inv.isVoid;
+              const isRepair = inv.invoiceType === "REPAIR";
+              const invoiceCurrency = inv.currency ?? orgCurrency;
+              const initial = (clientName.replace(/^No /, "")[0] ?? inv.invoiceNumber[0] ?? "?").toUpperCase();
+              const hasActions = (isRepair && !!inv.job) || inv.payments[0]?.id || (inv.balance > 0 && !isVoid);
+
+              const statusLabel = isPaid ? "Paid"
+                : isOverdue ? `${inv.daysOverdue}d overdue`
+                : isDraft ? "Draft"
+                : isVoid ? "Void"
+                : "Outstanding";
+
+              const avatarCls = isPaid
+                ? "bg-emerald-500/15 text-emerald-600"
+                : isOverdue
+                  ? "bg-red-500/15 text-red-600"
+                  : isDraft || isVoid
+                    ? "bg-[var(--panel-strong)] text-[var(--ink-muted)]"
+                    : "bg-amber-500/15 text-amber-700";
+
+              const amountCls = isPaid
+                ? "text-emerald-600"
+                : isOverdue
+                  ? "text-red-500"
+                  : "text-[var(--ink)]";
+
+              const statusCls = isPaid
+                ? "bg-emerald-500/15 text-emerald-700"
+                : isOverdue
+                  ? "bg-red-500/15 text-red-700"
+                  : isDraft
+                    ? "bg-[var(--panel-strong)] text-[var(--ink-muted)]"
+                    : isVoid
+                      ? "bg-[var(--panel-strong)] text-[var(--ink-muted)]"
+                      : "bg-amber-500/15 text-amber-700";
+
+              const cardHref = isRepair && inv.job ? `/jobs/${inv.job.id}` : "#";
+
+              return (
+                <div key={inv.id} className="bg-[var(--panel)]">
+                  {/* ── Main 2-line row ── */}
+                  <a href={cardHref} className="flex items-center gap-3 px-4 py-3 active:bg-[var(--panel-strong)]/50">
+                    {/* Status-colored avatar */}
+                    <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl text-[15px] font-black ${avatarCls}`}>
+                      {initial}
+                    </div>
+                    {/* Content */}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-baseline justify-between gap-2">
+                        <p className="truncate text-[14px] font-bold text-[var(--ink)]">{clientName}</p>
+                        <p className={`shrink-0 text-[14px] font-black tabular-nums ${amountCls}`}>
+                          {formatMoneyCompact(inv.totalAmount, invoiceCurrency)}
+                        </p>
+                      </div>
+                      <div className="mt-0.5 flex items-center justify-between gap-2">
+                        <p className="truncate text-[11px] text-[var(--ink-muted)]">
+                          {inv.invoiceNumber} · {inv.issuedAt.toLocaleDateString("en-UG", { day: "numeric", month: "short" })}
+                        </p>
+                        <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${statusCls}`}>
+                          {statusLabel}
+                        </span>
+                      </div>
+                    </div>
+                  </a>
+
+                  {/* ── Action strip ── */}
+                  {hasActions ? (
+                    <div className="flex flex-wrap items-center gap-1.5 border-t border-[var(--line)]/60 px-4 pb-2.5 pt-2">
+                      {isRepair && inv.job ? (
+                        <a href={`/jobs/${inv.job.id}`}
+                          className="flex items-center gap-1 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1 text-[11px] font-medium text-[var(--ink-muted)]">
+                          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                          Job
+                        </a>
+                      ) : null}
+                      {isRepair && inv.job ? (
+                        <a href={`/api/jobs/${inv.job.id}/invoice`} target="_blank" rel="noreferrer"
+                          className="flex items-center gap-1 rounded-lg border border-[var(--accent)]/30 bg-[var(--accent)]/8 px-2.5 py-1 text-[11px] font-medium text-[var(--accent)]">
+                          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                          PDF
+                        </a>
+                      ) : null}
+                      {inv.payments[0]?.id ? (
+                        <a href={`/api/payments/${inv.payments[0].id}/receipt`} target="_blank" rel="noreferrer"
+                          className="flex items-center gap-1 rounded-lg border border-emerald-500/30 bg-emerald-500/8 px-2.5 py-1 text-[11px] font-medium text-emerald-700">
+                          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M9 12h6M9 16h4"/></svg>
+                          Receipt
+                        </a>
+                      ) : null}
+                      {inv.balance > 0 && !isVoid ? (
+                        <details className="ml-auto">
+                          <summary className="flex cursor-pointer list-none items-center gap-1 rounded-lg bg-[var(--accent)] px-2.5 py-1 text-[11px] font-bold text-white [&::-webkit-details-marker]:hidden">
+                            + Collect
+                          </summary>
+                          <div className="absolute right-4 z-30 mt-2 w-72 overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--panel)] shadow-[0_8px_40px_rgba(0,0,0,0.18)]">
+                            <form action={addPaymentAction} className="space-y-2 p-3">
+                              <p className="text-xs font-semibold text-[var(--ink-muted)]">Collect payment · {clientName}</p>
+                              <input type="hidden" name="invoiceId" value={inv.id} />
+                              <input type="hidden" name="currency" value="UGX" />
+                              <input
+                                name="amount"
+                                inputMode="decimal"
+                                placeholder={`Amount (balance ${formatMoneyCompact(inv.balance, invoiceCurrency)})`}
+                                className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm outline-none focus:border-[var(--accent)]/50"
+                              />
+                              <select name="method" defaultValue="CASH"
+                                className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm outline-none">
+                                {PAYMENT_METHODS.map((m) => (
+                                  <option key={m} value={m}>{m.replaceAll("_", " ")}</option>
+                                ))}
+                              </select>
+                              <input name="reference" placeholder="Reference (optional)"
+                                className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm outline-none focus:border-[var(--accent)]/50"
+                              />
+                              <button type="submit" className="btn-premium w-full rounded-xl py-2 text-sm font-semibold">
+                                Record Payment
+                              </button>
+                            </form>
+                          </div>
+                        </details>
+                      ) : null}
+                    </div>
+                  ) : null}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* ── INVOICE TABLE (desktop only) ──────────────────────────────────── */}
+      <div className="hidden lg:block doc-list overflow-x-auto rounded-xl border border-[var(--line)]">
         <table className="w-full text-left text-sm">
           <thead className="bg-[var(--panel-strong)] text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
             <tr>
