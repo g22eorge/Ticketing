@@ -1869,7 +1869,7 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
                   <div className="rounded-lg border border-[var(--line)] bg-[var(--panel)] p-3 space-y-3">
                     <p className="text-sm font-semibold text-[var(--ink)]">Record payment</p>
                     {/* Use div + manual FormData to avoid nested <form> inside the outer financials form */}
-                    <div className="space-y-2" ref={(el) => { if (el) (el as HTMLElement & { _payFormEl?: HTMLElement })._payFormEl = el; }}>
+                    <div data-form-fields="client-payment" className="space-y-2" ref={(el) => { if (el) (el as HTMLElement & { _payFormEl?: HTMLElement })._payFormEl = el; }}>
                       <div className="grid gap-2 grid-cols-1 lg:grid-cols-3">
                         <div>
                           <label className="mb-1 block text-[10px] font-medium uppercase tracking-wide text-[var(--ink-muted)]">Amount</label>
@@ -1913,13 +1913,13 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
                       <label className="flex items-center gap-2 text-xs text-[var(--ink-muted)]">
                         <input type="checkbox" name="confirmOverpayment" value="true" /> Confirm overpayment / refund / adjustment is intentional
                       </label>
-                      <div className="space-y-2">
+                      <div className="flex flex-col gap-2">
                         <button
                           type="button"
                           disabled={isFinancialPending}
                           className="btn-premium w-full rounded-lg py-2 text-sm font-semibold disabled:opacity-60"
                           onClick={(e) => {
-                            const container = (e.currentTarget as HTMLElement).closest('.space-y-2');
+                            const container = (e.currentTarget as HTMLElement).closest('[data-form-fields="client-payment"]');
                             if (!container) return;
                             const fd = new FormData();
                             fd.set("jobId", job.id);
@@ -2067,7 +2067,7 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
                   <div className="rounded-lg border border-[var(--line)] bg-[var(--panel)] p-3 space-y-3">
                     <p className="text-sm font-semibold text-[var(--ink)]">Record payout</p>
                     {/* Use div + manual FormData — avoids nested <form> inside the outer financials form */}
-                    <div className="space-y-2">
+                    <div data-form-fields="tech-payout" className="space-y-2">
                       <div className="grid gap-2 grid-cols-1 lg:grid-cols-3">
                         <div>
                           <label className="mb-1 block text-[10px] font-medium text-[var(--ink-muted)]">Amount</label>
@@ -2101,7 +2101,7 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
                           disabled={isFinancialPending}
                           className="btn-premium rounded-lg px-4 py-2 text-sm disabled:opacity-60"
                           onClick={(e) => {
-                            const container = (e.currentTarget as HTMLElement).closest('.space-y-2');
+                            const container = (e.currentTarget as HTMLElement).closest('[data-form-fields="tech-payout"]');
                             if (!container) return;
                             const fd = new FormData();
                             fd.set("jobId", job.id);
