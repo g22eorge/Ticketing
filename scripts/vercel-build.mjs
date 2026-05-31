@@ -10,37 +10,34 @@ function run(command, args, options = {}) {
 }
 
 // ── Step 1: prisma generate + model assertion ────────────────────────────────
-// These steps only parse the schema — they never open a DB connection.
-// Prisma SQLite provider rejects any URL that doesn't start with "file:",
-// so we always use a local dev.db placeholder here regardless of what
-// TURSO_DATABASE_URL is set to on the deployment platform.
-const generateEnv = {
-  ...process.env,
-  DATABASE_URL: "file:./dev.db",
-  // Clear Turso vars so Prisma can't accidentally pick them up
-  TURSO_DATABASE_URL: "",
-  TURSO_AUTH_TOKEN: "",
-};
+// prisma.config.ts reads process.env.DATABASE_URL at PrismaClient init time,
+// so we must mutate process.env directly — passing via the child's env option
+// is not sufficient because Prisma v6 reads the parent's process.env.
+//
+// Stash the real URL, override to a valid SQLite file: URL for generate/assert
+// (these steps only parse schema — no DB connection ever made), then restore
+// the real URL before migrate/build.
+const realDatabaseUrl = process.env.DATABASE_URL || process.env.TURSO_DATABASE_URL || "";
 
-run("node", ["scripts/generate-prisma-clean.mjs"], { env: generateEnv });
-run("node", ["scripts/assert-prisma-models.mjs"], { env: generateEnv });
+process.env.DATABASE_URL    = "file:./dev.db";   // always valid for SQLite provider
+process.env.TURSO_DATABASE_URL = "";              // prevent prisma.config.ts fallback
+
+run("node", ["scripts/generate-prisma-clean.mjs"]);
+run("node", ["scripts/assert-prisma-models.mjs"]);
 
 // ── Step 2: migrations + Next.js build ───────────────────────────────────────
-// Use the real database URL (Turso in production, file: in preview/local).
-const runtimeEnv = { ...process.env };
-if (!runtimeEnv.DATABASE_URL && runtimeEnv.TURSO_DATABASE_URL) {
-  runtimeEnv.DATABASE_URL = runtimeEnv.TURSO_DATABASE_URL;
-}
-if (!runtimeEnv.DATABASE_URL) {
-  runtimeEnv.DATABASE_URL = "file:./dev.db";
+// Restore the real URL now that generate/assert are done.
+process.env.DATABASE_URL = realDatabaseUrl || "file:./dev.db";
+if (realDatabaseUrl.startsWith("libsql:")) {
+  process.env.TURSO_DATABASE_URL = realDatabaseUrl;
 }
 
-if (runtimeEnv.RUN_PRISMA_MIGRATE_DEPLOY === "1") {
-  if (!process.env.DATABASE_URL && !process.env.TURSO_DATABASE_URL) {
+if (process.env.RUN_PRISMA_MIGRATE_DEPLOY === "1") {
+  if (!realDatabaseUrl) {
     console.error("RUN_PRISMA_MIGRATE_DEPLOY=1 requires DATABASE_URL or TURSO_DATABASE_URL.");
     process.exit(1);
   }
-  run("bunx", ["prisma", "migrate", "deploy"], { env: runtimeEnv });
+  run("bunx", ["prisma", "migrate", "deploy"]);
 }
 
-run("next", ["build"], { env: runtimeEnv });
+run("next", ["build"]);
