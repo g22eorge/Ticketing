@@ -34,7 +34,7 @@ export const dynamic = "force-dynamic";
 export default async function InvoicesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ type?: string; status?: string; q?: string; aging?: string }>;
+  searchParams: Promise<{ type?: string; status?: string; q?: string; aging?: string; create?: string; collect?: string; pay?: string }>;
 }) {
   const { user } = await getCurrentUserRole();
   const db = orgDb(user.orgId);
@@ -51,6 +51,7 @@ export default async function InvoicesPage({
   const params = await searchParams;
   const createMode  = params.create === "1"; // mobile "New Invoice" → show creation form
   const collectMode = params.collect === "1"; // mobile "Collect Revenue" button → show panel
+  const payInvoiceId = (params.pay ?? "").trim(); // inline payment form for this invoice ID
   const typeFilter = params.type ?? "all";
   const statusFilter = params.status ?? "all";
   const agingFilter = params.aging ?? "all";
@@ -216,6 +217,8 @@ export default async function InvoicesPage({
     });
 
     revalidatePath("/documents/invoices");
+    // Clear the ?pay= param by redirecting back to the clean URL
+    redirect("/documents/invoices");
   }
 
   async function updateInvoiceAction(formData: FormData) {
@@ -1163,37 +1166,68 @@ export default async function InvoicesPage({
                         </a>
                       ) : null}
                       {inv.balance > 0 && !isVoid ? (
-                        <details className="ml-auto">
-                          <summary className="flex cursor-pointer list-none items-center gap-1 rounded-lg bg-[var(--accent)] px-2.5 py-1 text-[13px] font-bold text-white [&::-webkit-details-marker]:hidden">
+                        /* Inline expand via URL param — no popup, button always visible */
+                        payInvoiceId === inv.id ? (
+                          <a href="/documents/invoices"
+                            className="ml-auto flex items-center gap-1 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1 text-[13px] font-medium text-[var(--ink-muted)]">
+                            ✕ Cancel
+                          </a>
+                        ) : (
+                          <a href={`/documents/invoices?pay=${inv.id}`}
+                            className="ml-auto flex items-center gap-1 rounded-lg bg-[var(--accent)] px-2.5 py-1 text-[13px] font-bold text-white">
                             + Collect
-                          </summary>
-                          <div className="absolute right-4 z-30 mt-2 w-72 overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--panel)] shadow-[0_8px_40px_rgba(0,0,0,0.18)]">
-                            <form action={addPaymentAction} className="space-y-2 p-3">
-                              <p className="text-xs font-semibold text-[var(--ink-muted)]">Collect payment · {clientName}</p>
-                              <input type="hidden" name="invoiceId" value={inv.id} />
-                              <input type="hidden" name="currency" value="UGX" />
-                              <input
-                                name="amount"
-                                inputMode="decimal"
-                                placeholder={`Amount (balance ${formatMoneyCompact(inv.balance, invoiceCurrency)})`}
-                                className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm outline-none focus:border-[var(--accent)]/50"
-                              />
-                              <select name="method" defaultValue="CASH"
-                                className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm outline-none">
-                                {PAYMENT_METHODS.map((m) => (
-                                  <option key={m} value={m}>{m.replaceAll("_", " ")}</option>
-                                ))}
-                              </select>
-                              <input name="reference" placeholder="Reference (optional)"
-                                className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm outline-none focus:border-[var(--accent)]/50"
-                              />
-                              <button type="submit" className="btn-premium w-full rounded-xl py-2 text-sm font-semibold">
-                                Record Payment
-                              </button>
-                            </form>
-                          </div>
-                        </details>
+                          </a>
+                        )
                       ) : null}
+                    </div>
+                  ) : null}
+
+                  {/* Inline payment form — expands in-place when ?pay=this_id */}
+                  {payInvoiceId === inv.id && inv.balance > 0 && !isVoid ? (
+                    <div className="border-t border-[var(--accent)]/20 bg-[var(--accent)]/5 p-4 space-y-3">
+                      <p className="text-sm font-semibold text-[var(--ink)]">
+                        Collect payment
+                        <span className="ml-2 text-xs font-normal text-[var(--ink-muted)]">Balance: {formatMoneyCompact(inv.balance, invoiceCurrency)}</span>
+                      </p>
+                      <form action={addPaymentAction} className="space-y-3">
+                        <input type="hidden" name="invoiceId" value={inv.id} />
+                        <input type="hidden" name="currency" value="UGX" />
+                        <div>
+                          <label className="mb-1.5 block text-xs font-medium text-[var(--ink-muted)]">Amount (UGX)</label>
+                          <input
+                            name="amount"
+                            inputMode="decimal"
+                            autoFocus
+                            placeholder={`e.g. ${inv.balance.toLocaleString()}`}
+                            className="w-full rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3 text-base outline-none focus:border-[var(--accent)]/60 focus:ring-2 focus:ring-[var(--accent)]/15"
+                          />
+                        </div>
+                        <div>
+                          <label className="mb-1.5 block text-xs font-medium text-[var(--ink-muted)]">Payment method</label>
+                          <select name="method" defaultValue="CASH"
+                            className="w-full rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3 text-base outline-none">
+                            {PAYMENT_METHODS.map((m) => (
+                              <option key={m} value={m}>{m.replaceAll("_", " ")}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="mb-1.5 block text-xs font-medium text-[var(--ink-muted)]">Reference <span className="text-[var(--ink-muted)]/60">(optional)</span></label>
+                          <input name="reference" placeholder="e.g. MTN MoMo ref"
+                            className="w-full rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3 text-base outline-none focus:border-[var(--accent)]/60 focus:ring-2 focus:ring-[var(--accent)]/15"
+                          />
+                        </div>
+                        <div className="flex gap-2 pt-1">
+                          <button type="submit"
+                            className="btn-premium flex-1 rounded-xl py-3 text-base font-bold">
+                            Record Payment
+                          </button>
+                          <a href="/documents/invoices"
+                            className="flex items-center justify-center rounded-xl border border-[var(--line)] bg-[var(--panel-strong)] px-4 py-3 text-sm font-medium text-[var(--ink-muted)]">
+                            Cancel
+                          </a>
+                        </div>
+                      </form>
                     </div>
                   ) : null}
                 </div>
