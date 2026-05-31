@@ -221,6 +221,67 @@ export default async function InvoicesPage({
     redirect("/documents/invoices");
   }
 
+  // Create an invoice record from a completed job, then redirect straight to
+  // the inline payment form so the user can collect immediately in one flow.
+  async function createAndCollectAction(formData: FormData) {
+    "use server";
+    const { user } = await getCurrentUserRole();
+    const orgId = user.orgId;
+    const db = orgDb(orgId);
+    if (!["ADMIN", "OPS"].includes(user.role) && !can.approveInvoices(user)) return;
+
+    const jobId = String(formData.get("jobId") ?? "").trim();
+    if (!jobId) return;
+
+    const job = await db.job.findFirst({
+      where: { id: jobId },
+      select: { id: true, jobNumber: true, clientId: true, clientBill: true, invoiceIssuedAt: true, invoiceNumber: true, status: true },
+    });
+    if (!job || !job.clientBill || job.clientBill <= 0) return;
+
+    // If invoice already exists, go straight to collect
+    if (job.invoiceIssuedAt && job.invoiceNumber) {
+      const existing = await db.invoice.findFirst({ where: { jobId: job.id }, select: { id: true } });
+      if (existing) {
+        redirect(`/documents/invoices?pay=${existing.id}`);
+      }
+    }
+
+    // Create the invoice record
+    const invoice = await prisma.$transaction(async (tx) => {
+      const invoiceNumber = await nextDocumentNumber(tx, "INV", "invoice");
+      const inv = await tx.invoice.create({
+        data: {
+          orgId,
+          jobId: job.id,
+          clientId: job.clientId,
+          invoiceType: "REPAIR",
+          invoiceNumber,
+          subject: `Repair job ${job.jobNumber}`,
+          currency: orgCurrency,
+          status: "ISSUED",
+          totalAmount: job.clientBill!,
+          issuedAt: new Date(),
+        },
+      });
+      // Stamp invoice details on the job
+      await tx.job.update({
+        where: { id: job.id },
+        data: { invoiceIssuedAt: new Date(), invoiceNumber },
+      });
+      return inv;
+    });
+
+    await writeSystemAuditEvent({
+      orgId, actorUserId: user.id, entityType: "Invoice", entityId: invoice.id,
+      action: "INVOICE_CREATED", summary: `${invoice.invoiceNumber} created from ${job.jobNumber}`,
+    });
+
+    revalidatePath("/documents/invoices");
+    // Redirect straight to the inline payment form
+    redirect(`/documents/invoices?pay=${invoice.id}`);
+  }
+
   async function updateInvoiceAction(formData: FormData) {
     "use server";
     const { user: _u } = await getCurrentUserRole();
@@ -619,10 +680,10 @@ export default async function InvoicesPage({
             );
           }
 
-          // ALL / default filter: Collect Revenue behind a button tap
+          // ALL / default filter: always show Collect Revenue panel (no longer hidden behind a tap)
           if (readyJobs.length > 0 && (statusFilter === "all" || !statusFilter)) {
-            // Show button until tapped, then expand the panel
-            if (!collectMode) {
+            // Legacy tap-to-show button kept for backward compat but skipped — panel always shows now
+            if (false && !collectMode) {
               return (
                 <div className="mx-4 mb-3">
                   <Link
@@ -648,33 +709,45 @@ export default async function InvoicesPage({
             }
             return (
               <div className="mx-4 mb-3 overflow-hidden rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.06]">
-                <div className="flex items-center justify-between px-4 py-3 border-b border-emerald-500/15">
+                {/* Header */}
+                <div className="flex items-center justify-between border-b border-emerald-500/15 px-4 py-3">
                   <div>
-                    <p className="text-[12px] font-black uppercase tracking-[0.16em] text-emerald-500">Collect Revenue</p>
+                    <p className="text-sm font-bold text-emerald-600">Collect Revenue</p>
                     <p className="text-[13px] text-[var(--ink-muted)]">{readyJobs.length} repair{readyJobs.length !== 1 ? "s" : ""} ready to invoice</p>
                   </div>
-                  <p className="text-[16px] font-black text-emerald-500">{formatMoneyCompact(readyJobsTotal, orgCurrency)}</p>
+                  <p className="text-[16px] font-black text-emerald-600">{formatMoneyCompact(readyJobsTotal, orgCurrency)}</p>
                 </div>
-                {readyJobs.slice(0, 4).map(job => {
+                {/* All ready jobs — tap Invoice → creates invoice record + opens inline payment */}
+                {readyJobs.map(job => {
                   const ageDays = Math.floor((Date.now() - new Date(job.completedAt ?? job.receivedAt).getTime()) / 86_400_000);
                   return (
-                    <div key={job.id} className="flex items-center gap-3 px-4 py-3 border-b border-emerald-500/10 last:border-0">
+                    <div key={job.id} className="flex items-center gap-3 border-b border-emerald-500/10 px-4 py-3 last:border-0">
                       <div className="flex-1 min-w-0">
                         <p className="truncate text-[13px] font-semibold text-[var(--ink)]">{job.client?.fullName ?? "Client"}</p>
                         <p className="text-[12px] text-[var(--ink-muted)]">
                           {[job.brand, job.model].filter(Boolean).join(" ")} · {ageDays === 0 ? "today" : `${ageDays}d ago`}
                         </p>
                       </div>
-                      <div className="text-right shrink-0 flex items-center gap-2">
-                        {job.clientBill ? <p className="text-[12px] font-black text-emerald-500">{formatMoneyCompact(job.clientBill, orgCurrency)}</p> : null}
-                        <a href={`/api/jobs/${job.id}/invoice`} target="_blank" rel="noreferrer"
-                          className="rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-2.5 py-1.5 text-[13px] font-bold text-emerald-600 transition hover:bg-emerald-500/20">
-                          Invoice
-                        </a>
+                      <div className="flex shrink-0 items-center gap-2">
+                        {job.clientBill ? <p className="text-[13px] font-black text-emerald-600">{formatMoneyCompact(job.clientBill, orgCurrency)}</p> : null}
+                        {/* Server action: creates invoice record + redirects to inline payment form */}
+                        <form action={createAndCollectAction}>
+                          <input type="hidden" name="jobId" value={job.id} />
+                          <button type="submit"
+                            className="rounded-xl bg-emerald-600 px-3 py-1.5 text-[13px] font-bold text-white active:opacity-80">
+                            Invoice →
+                          </button>
+                        </form>
                       </div>
                     </div>
                   );
                 })}
+                {/* Dismiss panel */}
+                <div className="border-t border-emerald-500/10 px-4 py-2.5">
+                  <Link href="/documents/invoices" className="text-[12px] font-medium text-[var(--ink-muted)]">
+                    Done collecting →
+                  </Link>
+                </div>
               </div>
             );
           }
