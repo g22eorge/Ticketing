@@ -138,22 +138,51 @@ export function MobileHomeDashboard(p: MobileHomeProps) {
         </Link>
       </div>
 
-      {/* ── Needs attention ───────────────────────────────────────── */}
-      {urgentItems.length > 0 && (
-        <div className="rounded-2xl border border-amber-500/20 bg-amber-500/[0.06] p-4">
-          <p className="mb-3 text-[12px] font-black uppercase tracking-[0.16em] text-amber-500">
-            ⚠ {urgentItems.length} need{urgentItems.length === 1 ? "s" : ""} attention
-          </p>
-          <div className="space-y-2.5">
-            {urgentItems.map((item) => (
-              <Link key={item.href} href={item.href} className="flex items-center justify-between">
-                <span className={`text-[13px] font-semibold ${item.color}`}>{item.label}</span>
-                <Chevron />
-              </Link>
-            ))}
-          </div>
+      {/* ── Needs action — 3 hero numbers, colour-coded by urgency ──── */}
+      <div className="overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--panel)]">
+        <div className="flex items-center justify-between border-b border-[var(--line)] px-4 py-2.5">
+          <p className="text-sm font-semibold text-[var(--ink)]">Needs action</p>
+          <Link href="/jobs" className="text-[12px] font-semibold text-[var(--accent)]">All jobs →</Link>
         </div>
-      )}
+        <div className="grid grid-cols-3 divide-x divide-[var(--line)]">
+          {/* Awaiting approval */}
+          <Link href="/jobs?status=AWAITING_APPROVAL"
+            className={`flex flex-col items-center gap-1 px-2 py-4 text-center transition active:bg-[var(--panel-strong)] ${p.awaitingApprovalCount > 0 ? "bg-[var(--accent)]/6" : ""}`}>
+            <p className={`text-[32px] font-black leading-none tabular-nums ${p.awaitingApprovalCount > 0 ? "text-[var(--accent)]" : "text-[var(--ink-muted)]/30"}`}>
+              {p.awaitingApprovalCount}
+            </p>
+            <p className="mt-1 whitespace-pre-line text-[12px] leading-tight text-[var(--ink-muted)]">{"Awaiting\napproval"}</p>
+          </Link>
+          {/* Ready for pickup */}
+          <Link href="/jobs?status=READY_FOR_PICKUP"
+            className={`flex flex-col items-center gap-1 px-2 py-4 text-center transition active:bg-[var(--panel-strong)] ${p.readyForPickupCount > 0 ? "bg-emerald-500/6" : ""}`}>
+            <p className={`text-[32px] font-black leading-none tabular-nums ${p.readyForPickupCount > 0 ? "text-emerald-500" : "text-[var(--ink-muted)]/30"}`}>
+              {p.readyForPickupCount}
+            </p>
+            <p className="mt-1 whitespace-pre-line text-[12px] leading-tight text-[var(--ink-muted)]">{"Ready for\npickup"}</p>
+          </Link>
+          {/* Overdue */}
+          <Link href="/jobs?overdue=1"
+            className={`flex flex-col items-center gap-1 px-2 py-4 text-center transition active:bg-[var(--panel-strong)] ${p.overdueCount > 0 ? "bg-red-500/6" : ""}`}>
+            <p className={`text-[32px] font-black leading-none tabular-nums ${p.overdueCount > 0 ? "text-red-500" : "text-[var(--ink-muted)]/30"}`}>
+              {p.overdueCount}
+            </p>
+            <p className="mt-1 text-[12px] leading-tight text-[var(--ink-muted)]">Overdue</p>
+          </Link>
+        </div>
+        {/* Secondary alerts if any */}
+        {(p.completedUnpaidCount > 0) && (
+          <div className="border-t border-[var(--line)]">
+            <Link href="/jobs?status=COMPLETED"
+              className="flex items-center justify-between px-4 py-2.5 active:bg-[var(--panel-strong)]">
+              <p className="text-[13px] text-[var(--ink-muted)]">
+                <span className="font-bold text-red-400">{p.completedUnpaidCount}</span> completed unpaid
+              </p>
+              <Chevron />
+            </Link>
+          </div>
+        )}
+      </div>
 
       {/* ── Quick actions ─────────────────────────────────────────── */}
       <div className="grid grid-cols-4 gap-3">

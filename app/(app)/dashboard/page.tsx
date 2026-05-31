@@ -1251,35 +1251,85 @@ export default async function DashboardPage({
         {/* ── Attention Needed + Quick Actions (desktop only) ── */}
         <div className="hidden lg:grid gap-3 lg:grid-cols-3">
 
-          {/* Attention Needed */}
-          <section className="panel-shadow overflow-hidden rounded-xl border border-amber-500/20 bg-amber-500/8 lg:col-span-2">
-            <div className="flex items-center justify-between border-b border-amber-500/15 px-4 py-2.5">
-              <div className="flex items-center gap-2">
-                <span className="text-amber-500">⚠</span>
-                <p className="text-sm font-bold text-[var(--ink)]">Need attention</p>
-                {attentionItems.filter((i) => i.count > 0).length > 0 && (
-                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[12px] font-bold text-white">
-                    {attentionItems.filter((i) => i.count > 0).length}
-                  </span>
-                )}
-              </div>
-              <Link href="/jobs" className="text-[12px] font-semibold text-amber-600">View all →</Link>
+          {/* Needs Action — 3-column metric cards, number as the hero */}
+          <section className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)] lg:col-span-2">
+            <div className="flex items-center justify-between border-b border-[var(--line)] px-4 py-2.5">
+              <p className="text-sm font-semibold text-[var(--ink)]">Needs action</p>
+              <Link href="/jobs" className="text-[12px] font-semibold text-[var(--accent)]">All jobs →</Link>
             </div>
-            <div className="divide-y divide-amber-500/10">
-              {attentionItems.filter(i => i.count > 0).map((item) => (
-                <Link key={item.label} href={item.href}
-                  className="flex items-center justify-between px-4 py-3 transition active:bg-amber-500/10">
-                  <p className="text-[14px] font-medium text-[var(--ink)]">
-                    <span className={`font-black ${item.tone}`}>{item.count}</span>
-                    {" "}{item.label.toLowerCase()}
-                  </p>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-[var(--ink-muted)]/40"><path d="m9 18 6-6-6-6"/></svg>
-                </Link>
-              ))}
-              {attentionItems.filter(i => i.count > 0).length === 0 && (
-                <p className="px-4 py-4 text-sm text-[var(--ink-muted)]">All clear — no urgent items.</p>
-              )}
-            </div>
+            {(() => {
+              // Top 3 most urgent items — awaiting approval, ready for pickup, overdue
+              const actionCards = [
+                {
+                  count: awaitingApprovalCount,
+                  label: "Awaiting\napproval",
+                  href: "/jobs?status=AWAITING_APPROVAL",
+                  numColor: awaitingApprovalCount > 0 ? "text-[var(--accent)]" : "text-[var(--ink-muted)]",
+                  bg: awaitingApprovalCount > 0 ? "bg-[var(--accent)]/8" : "",
+                  border: awaitingApprovalCount > 0 ? "border-[var(--accent)]/20" : "border-transparent",
+                },
+                {
+                  count: readyForPickupCount,
+                  label: "Ready for\npickup",
+                  href: "/jobs?status=READY_FOR_PICKUP",
+                  numColor: readyForPickupCount > 0 ? "text-emerald-600" : "text-[var(--ink-muted)]",
+                  bg: readyForPickupCount > 0 ? "bg-emerald-500/8" : "",
+                  border: readyForPickupCount > 0 ? "border-emerald-500/20" : "border-transparent",
+                },
+                {
+                  count: overdueJobsCount,
+                  label: "Overdue",
+                  href: "/jobs?status=RECEIVED,DIAGNOSING,REFERRED,IN_EXTERNAL_REPAIR,AWAITING_APPROVAL,IN_REPAIR,READY_FOR_PICKUP",
+                  numColor: overdueJobsCount > 0 ? "text-red-500" : "text-[var(--ink-muted)]",
+                  bg: overdueJobsCount > 0 ? "bg-red-500/8" : "",
+                  border: overdueJobsCount > 0 ? "border-red-500/20" : "border-transparent",
+                },
+              ];
+              const totalActive = actionCards.reduce((s, c) => s + (c.count > 0 ? 1 : 0), 0);
+              return (
+                <>
+                  <div className="grid grid-cols-3 divide-x divide-[var(--line)]">
+                    {actionCards.map((card) => (
+                      <Link key={card.label} href={card.href}
+                        className={`flex flex-col items-center gap-1 px-3 py-4 text-center transition hover:bg-[var(--panel-strong)] ${card.bg}`}>
+                        <p className={`text-[32px] font-black leading-none tabular-nums ${card.numColor}`}>
+                          {card.count}
+                        </p>
+                        <p className="mt-1 whitespace-pre-line text-[12px] leading-tight text-[var(--ink-muted)]">
+                          {card.label}
+                        </p>
+                      </Link>
+                    ))}
+                  </div>
+                  {totalActive === 0 && (
+                    <p className="px-4 py-3 text-center text-sm text-[var(--ink-muted)]">All clear ✓</p>
+                  )}
+                  {/* Secondary alerts row */}
+                  {(completedUnpaidCount > 0 || jobsNoClientUpdateCount > 0) && (
+                    <div className="flex divide-x divide-[var(--line)] border-t border-[var(--line)]">
+                      {completedUnpaidCount > 0 && (
+                        <Link href="/jobs?status=COMPLETED"
+                          className="flex flex-1 items-center justify-between px-4 py-2.5 transition hover:bg-[var(--panel-strong)]">
+                          <p className="text-[13px] text-[var(--ink-muted)]">
+                            <span className="font-bold text-red-500">{completedUnpaidCount}</span> completed unpaid
+                          </p>
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--ink-muted)]/40"><path d="m9 18 6-6-6-6"/></svg>
+                        </Link>
+                      )}
+                      {jobsNoClientUpdateCount > 0 && (
+                        <Link href="/jobs"
+                          className="flex flex-1 items-center justify-between px-4 py-2.5 transition hover:bg-[var(--panel-strong)]">
+                          <p className="text-[13px] text-[var(--ink-muted)]">
+                            <span className="font-bold text-amber-600">{jobsNoClientUpdateCount}</span> no client update
+                          </p>
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--ink-muted)]/40"><path d="m9 18 6-6-6-6"/></svg>
+                        </Link>
+                      )}
+                    </div>
+                  )}
+                </>
+              );
+            })()}
           </section>
 
           {/* Quick Actions */}
