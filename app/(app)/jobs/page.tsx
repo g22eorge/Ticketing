@@ -483,12 +483,12 @@ export default async function JobsPage({
               </a>
             ) : null}
           </div>
-          {/* Filter toggle */}
+          {/* Filter toggle — desktop only; chips handle mobile filtering */}
           {!isExternalTech ? (
             <Link
               href={advToggleHref}
               aria-label="Filters"
-              className={`relative flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border transition ${
+              className={`relative hidden lg:flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border transition ${
                 hasAdvancedFilters
                   ? "border-[var(--accent)]/50 bg-[var(--accent)]/10 text-[var(--accent)]"
                   : "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]"
@@ -536,9 +536,9 @@ export default async function JobsPage({
           );
         })()}
 
-        {/* Advanced filters — settings-style rows, apply on submit */}
+        {/* Advanced filters — desktop only (chips handle mobile) */}
         {showAdv ? (
-          <form method="GET" className="mb-3 overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--panel)] divide-y divide-[var(--line)]">
+          <form method="GET" className="mb-3 hidden lg:block overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--panel)] divide-y divide-[var(--line)]">
             {filters.q ? <input type="hidden" name="q" value={filters.q} /> : null}
             {filters.status ? <input type="hidden" name="status" value={filters.status} /> : null}
             <input type="hidden" name="adv" value="1" />
