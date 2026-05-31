@@ -595,30 +595,23 @@ export default async function InvoicesPage({
           </Link>
         </div>
 
-        {/* ── Status chips — fade on right edge signals more to scroll ── */}
-        <div className="relative">
-          <div className="flex gap-2 overflow-x-auto px-4 pb-3 [scrollbar-width:none]">
-            {([
-              { label: "All",     count: invoices.filter(i=>!i.isVoid).length, href: "/documents/invoices",            active: statusFilter === "all" && agingFilter === "all" },
-              { label: "Unpaid",  count: invoices.filter(i=>!i.isPaid && !i.isVoid && i.status !== "DRAFT").length,     href: "/documents/invoices?status=ISSUED",  active: statusFilter === "ISSUED" },
-              { label: "Paid",    count: invoices.filter(i=>i.isPaid).length,                                           href: "/documents/invoices?status=PAID",    active: statusFilter === "PAID"   },
-              { label: "Overdue", count: invoices.filter(i=>!i.isPaid && !i.isVoid && i.daysOverdue > 0).length,        href: "/documents/invoices?aging=1-30",     active: agingFilter !== "all"     },
-              { label: "Draft",   count: invoices.filter(i=>i.status === "DRAFT").length,                               href: "/documents/invoices?status=DRAFT",   active: statusFilter === "DRAFT"  },
-            ] as const).map((chip) => (
-              <Link key={chip.href} href={chip.href}
-                className={`shrink-0 rounded-full px-4 py-1.5 text-[12px] font-bold transition ${
-                  chip.active
-                    ? "bg-[var(--accent)] text-black"
-                    : "border border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]"
-                }`}>
-                {chip.label}{chip.count > 0 ? ` ${chip.count}` : ""}
-              </Link>
-            ))}
-            {/* Trailing spacer so last chip isn't flush against fade */}
-            <span className="shrink-0 w-6" aria-hidden="true" />
-          </div>
-          {/* Right fade — signals scrollable content beyond viewport */}
-          <div className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-[var(--bg)] to-transparent" />
+        {/* ── Status chips — 4 chips fill the row evenly, no scroll needed ── */}
+        <div className="grid grid-cols-4 gap-2 px-4 pb-3">
+          {([
+            { label: "All",     count: invoices.filter(i=>!i.isVoid).length, href: "/documents/invoices",            active: statusFilter === "all" && agingFilter === "all" },
+            { label: "Unpaid",  count: invoices.filter(i=>!i.isPaid && !i.isVoid && i.status !== "DRAFT").length,     href: "/documents/invoices?status=ISSUED",  active: statusFilter === "ISSUED" },
+            { label: "Paid",    count: invoices.filter(i=>i.isPaid).length,                                           href: "/documents/invoices?status=PAID",    active: statusFilter === "PAID"   },
+            { label: "Overdue", count: invoices.filter(i=>!i.isPaid && !i.isVoid && i.daysOverdue > 0).length,        href: "/documents/invoices?aging=1-30",     active: agingFilter !== "all"     },
+          ] as const).map((chip) => (
+            <Link key={chip.href} href={chip.href}
+              className={`rounded-full px-2 py-1.5 text-center text-[12px] font-bold transition ${
+                chip.active
+                  ? "bg-[var(--accent)] text-black"
+                  : "border border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]"
+              }`}>
+              {chip.label}{chip.count > 0 ? ` ${chip.count}` : ""}
+            </Link>
+          ))}
         </div>
 
         {/* ── Context-aware action panel — changes with filter ── */}
