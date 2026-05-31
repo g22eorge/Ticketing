@@ -63,6 +63,7 @@ export type JobRow = {
   clientName?: string;
   assignedTo?: string;
   receivedAt: Date;
+  updatedAt?: Date;
   externalTechBill?: number | null;
   clientBill?: number | null;
   repairTimeline?: string | null;
@@ -149,6 +150,7 @@ export function JobTable({
   permissions = [],
   canDelete,
   deleteAction,
+  quickAdvanceAction,
   returnTo,
   pageStart,
   pageEnd,
@@ -165,6 +167,7 @@ export function JobTable({
   permissions?: string[];
   canDelete?: boolean;
   deleteAction?: (formData: FormData) => Promise<void>;
+  quickAdvanceAction?: (formData: FormData) => Promise<void>;
   returnTo?: string;
   pageStart?: number;
   pageEnd?: number;
@@ -288,10 +291,18 @@ export function JobTable({
               deviceLabel[job.deviceType] ?? job.deviceType,
             ].filter(Boolean);
 
+            // Enhancement 2: red left border for overdue (≥7 days active)
+            const isOverdue = isActive && ageDays >= 7;
+            // Enhancement 6: last-updated staleness (show when not updated in 48h+)
+            const updatedAgo = job.updatedAt
+              ? Math.floor((Date.now() - new Date(job.updatedAt).getTime()) / 3600000)
+              : null;
+            const showStale = updatedAgo !== null && updatedAgo >= 48 && isActive;
+
             return (
               <div
                 key={job.id}
-                className="relative border-b border-[var(--line)]/70 last:border-b-0"
+                className={`relative border-b border-[var(--line)]/70 last:border-b-0 ${isOverdue ? "border-l-2 border-l-red-500" : ""}`}
               >
                 {/* Link WRAPS the content so taps always fire navigation */}
                 <Link
@@ -324,6 +335,10 @@ export function JobTable({
                     <div className="mt-0.5 flex items-center justify-between gap-2">
                       <p className="truncate text-[13px] text-[var(--ink-muted)]">
                         {metaParts.join(" · ")}
+                        {/* Enhancement 6: show stale indicator */}
+                        {showStale && (
+                          <span className="ml-1 text-amber-600">· no update {updatedAgo}h</span>
+                        )}
                       </p>
                       <div className="flex shrink-0 items-center gap-1">
                         {flagCfg ? (
@@ -336,6 +351,19 @@ export function JobTable({
                     </div>
                   </div>
                 </Link>
+
+                {/* Enhancement 1: Quick advance button for RECEIVED → DIAGNOSING */}
+                {job.status === "RECEIVED" && quickAdvanceAction ? (
+                  <form action={quickAdvanceAction} className="flex border-t border-[var(--line)]/50 lg:hidden">
+                    <input type="hidden" name="jobId" value={job.id} />
+                    <input type="hidden" name="toStatus" value="DIAGNOSING" />
+                    <button type="submit"
+                      className="flex flex-1 items-center justify-center gap-1.5 px-4 py-2 text-[12px] font-semibold text-sky-600 transition active:bg-sky-500/10">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                      Start diagnosis
+                    </button>
+                  </form>
+                ) : null}
 
                 {/* Desktop-only doc action links — absolutely positioned so they sit above the Link */}
                 {(canUseJobCards || canDownloadQuotation || canDownloadInvoice || canEditPage || (canDelete && deleteAction)) ? (

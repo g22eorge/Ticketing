@@ -31,6 +31,7 @@ type SearchParams = {
   view?: string;
   adv?: string;
   overdue?: string;
+  mine?: string;
 };
 
 type JobWithClient = Prisma.JobGetPayload<{
@@ -120,8 +121,12 @@ export default async function JobsPage({
       ? { assignedToId: session.user.id }
       : {};
 
+  // "Mine" chip — filter to jobs assigned to the current user
+  const mineFilter = filters.mine === "1" ? { assignedToId: session.user.id } : {};
+
   const whereBase = {
     orgId,
+    ...mineFilter,
     ...(dbStatuses.length > 0 ? { status: { in: dbStatuses } } : {}),
     ...(pricingFilter === "needs"
       ? {
@@ -352,6 +357,21 @@ export default async function JobsPage({
     revalidatePath("/jobs");
   }
 
+  // Quick-advance action: tap button on card → advance to DIAGNOSING without opening job
+  async function quickAdvanceAction(formData: FormData) {
+    "use server";
+    const { user: u, orgId: qOrgId } = await requireOrgSession();
+    if (!can.editDiagnosis(u)) return;
+    const jobId = String(formData.get("jobId") ?? "").trim();
+    const toStatus = String(formData.get("toStatus") ?? "").trim() as JobStatus;
+    if (!jobId || !toStatus) return;
+    const job = await prisma.job.findFirst({ where: { id: jobId, orgId: qOrgId }, select: { id: true, status: true, updatedAt: true } });
+    if (!job) return;
+    await prisma.job.update({ where: { id: jobId }, data: { status: toStatus, updatedAt: new Date() } });
+    await prisma.auditLog.create({ data: { orgId: qOrgId, jobId, userId: u.id, action: "STATUS_CHANGED", detail: JSON.stringify({ from: job.status, to: toStatus, source: "quick_advance" }) } }).catch(() => {});
+    revalidatePath("/jobs");
+  }
+
   const rows: JobRow[] = jobs.map((job) => {
     const withWorkflow = job as typeof job & { workflowReason?: JobRow["workflowReason"] };
     const fallbackFields = job as typeof job & {
@@ -369,6 +389,7 @@ export default async function JobsPage({
       clientName: "client" in job ? job.client?.fullName : undefined,
       assignedTo: job.assignedTo?.name ?? job.oneTimeExternalAssignment?.technicianName,
       receivedAt: job.receivedAt,
+      updatedAt: job.updatedAt,
       externalTechBill: getExternalTechBill(job),
       clientBill: getClientBill(job),
       repairTimeline: (job as typeof job & { repairTimeline?: string | null }).repairTimeline ?? null,
@@ -483,28 +504,32 @@ export default async function JobsPage({
           ) : null}
         </form>
 
-        {/* Row 3: 4 key status chips — equal grid, always fits screen */}
+        {/* Row 3: 5 key status chips — equal grid, always fits screen */}
         {(() => {
+          const isMine = filters.mine === "1";
+          const mineHref = isMine ? statusChipHref("") : (() => {
+            const p = new URLSearchParams(preservedWithoutStatus);
+            p.set("mine", "1"); p.delete("status");
+            return `/jobs?${p.toString()}`;
+          })();
           const KEY_CHIPS = [
-            { status: "",                  label: "All",      count: total ?? 0,                                   urgent: false },
-            { status: "AWAITING_APPROVAL", label: "Awaiting", count: uiStatusCountMap.get("AWAITING_APPROVAL") ?? 0, urgent: true  },
-            { status: "IN_REPAIR",         label: "In Repair",count: uiStatusCountMap.get("IN_REPAIR") ?? 0,         urgent: false },
-            { status: "READY_FOR_PICKUP",  label: "Ready",    count: uiStatusCountMap.get("READY_FOR_PICKUP") ?? 0,  urgent: false },
-          ] as const;
-          const isActive = (s: string) => s === "" ? !statusValue : statusValue === s;
+            { href: statusChipHref(""),                  label: "All",      count: total ?? 0,                                     active: !statusValue && !isMine },
+            { href: mineHref,                            label: "Mine",     count: null,                                           active: isMine                  },
+            { href: statusChipHref("AWAITING_APPROVAL"), label: "Awaiting", count: uiStatusCountMap.get("AWAITING_APPROVAL") ?? 0,  active: statusValue === "AWAITING_APPROVAL" },
+            { href: statusChipHref("IN_REPAIR"),         label: "In Repair",count: uiStatusCountMap.get("IN_REPAIR") ?? 0,          active: statusValue === "IN_REPAIR" },
+            { href: statusChipHref("READY_FOR_PICKUP"),  label: "Ready",    count: uiStatusCountMap.get("READY_FOR_PICKUP") ?? 0,   active: statusValue === "READY_FOR_PICKUP" },
+          ];
           return (
-            <div className="grid grid-cols-4 gap-2 pb-2">
-              {KEY_CHIPS.map(({ status, label, count, urgent }) => (
-                <Link
-                  key={label}
-                  href={statusChipHref(status)}
-                  className={`rounded-full px-2 py-1.5 text-center text-[12px] font-bold transition ${
-                    isActive(status)
-                      ? urgent ? "bg-[var(--accent)] text-black" : "bg-[var(--accent)] text-black"
+            <div className="grid grid-cols-5 gap-1.5 pb-2">
+              {KEY_CHIPS.map(({ href, label, count, active }) => (
+                <Link key={label} href={href}
+                  className={`rounded-full px-1 py-1.5 text-center text-[11px] font-bold transition ${
+                    active
+                      ? "bg-[var(--accent)] text-black"
                       : "border border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]"
                   }`}
                 >
-                  {label}{count > 0 && !isActive(status) ? ` ${count}` : ""}
+                  {label}{count !== null && count > 0 && !active ? ` ${count}` : ""}
                 </Link>
               ))}
             </div>
@@ -753,6 +778,7 @@ export default async function JobsPage({
           permissions={user.permissions}
           canDelete={user.role === "ADMIN"}
           deleteAction={deleteJobAction}
+          quickAdvanceAction={can.editDiagnosis(user) ? quickAdvanceAction : undefined}
           returnTo={returnTo}
           pageStart={pageStart}
           pageEnd={pageEnd}
