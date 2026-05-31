@@ -2,9 +2,21 @@ import type { Metadata, Viewport } from "next";
 import { cookies } from "next/headers";
 import { Toaster } from "sonner";
 import { Analytics } from "@vercel/analytics/next";
+import { Inter } from "next/font/google";
 
 import { ThemeProvider } from "@/components/layout/ThemeProvider";
 import "./globals.css";
+
+// Inter — industry standard for business SaaS dashboards (Stripe, Linear, Figma).
+// Next.js serves it self-hosted with zero layout shift and full subsetting.
+// Variable font covers all weights (100–900) in a single ~95 KB download.
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+  display: "swap",
+  // Preload only the weights we actually use to keep the WOFF2 small
+  weight: ["400", "500", "600", "700", "800", "900"],
+});
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || "https://localhost:3000";
 const ogImage = `${siteUrl}/eagle-info-logo.png`;
@@ -63,7 +75,7 @@ export default async function RootLayout({
   const themeClass = stored === "dark" ? "theme-blackgold" : stored === "light" ? "light" : "";
 
   return (
-    <html lang="en" className={`h-full antialiased${themeClass ? " " + themeClass : ""}`}>
+    <html lang="en" className={`${inter.variable} h-full antialiased${themeClass ? " " + themeClass : ""}`}>
       <body className="min-h-full bg-[var(--page-bg)] text-[var(--ink)]">
         <ThemeProvider initialTheme={initialTheme}>
           {children}

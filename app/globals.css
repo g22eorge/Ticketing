@@ -244,12 +244,20 @@
 body {
   background: var(--page-bg);
   color: var(--ink);
-  font-family: var(--font-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif);
-  letter-spacing: -0.01em;
+  /* Inter first — falls back to system font stack if not yet loaded.
+     Inter is self-hosted by Next.js so it's typically already cached. */
+  font-family: var(--font-inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif);
+  /* Inter is designed with tighter letter-spacing than system fonts */
+  letter-spacing: -0.014em;
+  /* Sharper rendering on high-DPI screens */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11"; /* Inter's cleaner alternates */
 }
 
 :where(h1, h2, h3, h4) {
-  font-family: var(--font-display, var(--font-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif));
+  font-family: var(--font-display, var(--font-inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif));
   letter-spacing: -0.02em;
 }
 
