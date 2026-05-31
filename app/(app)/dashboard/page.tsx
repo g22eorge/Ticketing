@@ -1438,62 +1438,41 @@ export default async function DashboardPage({
           </div>
         )}
 
-        {/* ── Repair Pipeline (icon + flow) ── */}
+        {/* ── Repair Pipeline — compact 3×2 stat grid, no scroll ── */}
         <section className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
-          <div className="border-b border-[var(--line)] px-4 py-2.5 flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <p className="text-sm font-semibold text-[var(--ink)]">Repair pipeline</p>
-              {conversionRate > 0 && <span className="text-[12px] text-[var(--ink-muted)]">{conversionRate}% conversion</span>}
-            </div>
-            <Link href="/jobs" className="text-[13px] font-semibold text-[var(--accent)]">All jobs →</Link>
+          <div className="border-b border-[var(--line)] px-4 py-2.5 flex items-center justify-between">
+            <p className="text-sm font-semibold text-[var(--ink)]">
+              Repair pipeline
+              {conversionRate > 0 && <span className="ml-2 font-normal text-[var(--ink-muted)]">· {conversionRate}% conversion</span>}
+            </p>
+            <Link href="/jobs" className="text-[12px] font-semibold text-[var(--accent)]">All jobs →</Link>
           </div>
-          {/* Scrollable pipeline — hidden scrollbar + right fade */}
-          <div className="relative">
-            <div className="overflow-x-auto [scrollbar-width:none]">
-              <div className="flex min-w-max items-center gap-0.5 px-3 py-3">
-                {(() => {
-                  const PIPE_ICONS: Record<string, string> = {
-                    RECEIVED: "↙", DIAGNOSING: "🔍", REFERRED: "↗", IN_EXTERNAL_REPAIR: "🔧",
-                    AWAITING_APPROVAL: "⏳", IN_REPAIR: "🛠", READY_FOR_PICKUP: "📦", COMPLETED: "✓",
-                  };
-                  const visibleStages = statusData.filter((s) => s.key !== "CLOSED");
-                  return visibleStages.map((s, i) => {
-                    const isUrgent   = s.key === "AWAITING_APPROVAL" && s.value > 0;
-                    const isPositive = (s.key === "READY_FOR_PICKUP" || s.key === "COMPLETED") && s.value > 0;
-                    return (
-                      <React.Fragment key={s.key}>
-                        <Link href={`/jobs?status=${s.key}`}
-                          className="flex min-w-[60px] flex-col items-center gap-1 rounded-lg px-1.5 py-2 transition hover:bg-[var(--panel-strong)]">
-                          <div className={`flex h-9 w-9 items-center justify-center rounded-full border-2 text-sm font-bold ${
-                            isUrgent   ? "border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]" :
-                            isPositive ? "border-emerald-500 bg-emerald-500/10 text-emerald-600" :
-                            s.value > 0 ? "border-sky-400/40 bg-sky-500/8 text-sky-600" :
-                            "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]"
-                          }`}>{PIPE_ICONS[s.key] ?? "●"}</div>
-                          <p className={`text-lg font-bold leading-none ${s.value === 0 ? "text-[var(--ink-muted)]" : isUrgent ? "text-[var(--accent)]" : isPositive ? "text-emerald-600" : "text-[var(--ink)]"}`}>{s.value}</p>
-                          <p className="text-center text-[11px] leading-tight text-[var(--ink-muted)] whitespace-nowrap">{s.name}</p>
-                        </Link>
-                        {i < visibleStages.length - 1 && (
-                          <span className="shrink-0 text-[12px] text-[var(--ink-muted)]">→</span>
-                        )}
-                      </React.Fragment>
-                    );
-                  });
-                })()}
+          {/* 3-column grid — never scrolls, shows all key stages */}
+          {(() => {
+            const GRID_STAGES = [
+              { key: "RECEIVED",          name: "Received",   tone: (v: number) => v > 0 ? "text-sky-600"           : "text-[var(--ink-muted)]/40" },
+              { key: "DIAGNOSING",        name: "Diagnosing", tone: (v: number) => v > 0 ? "text-blue-600"          : "text-[var(--ink-muted)]/40" },
+              { key: "AWAITING_APPROVAL", name: "Awaiting",   tone: (v: number) => v > 0 ? "text-[var(--accent)]"   : "text-[var(--ink-muted)]/40" },
+              { key: "IN_REPAIR",         name: "In repair",  tone: (v: number) => v > 0 ? "text-violet-600"        : "text-[var(--ink-muted)]/40" },
+              { key: "READY_FOR_PICKUP",  name: "Ready",      tone: (v: number) => v > 0 ? "text-emerald-600"       : "text-[var(--ink-muted)]/40" },
+              { key: "COMPLETED",         name: "Completed",  tone: (v: number) => v > 0 ? "text-emerald-600"       : "text-[var(--ink-muted)]/40" },
+            ] as const;
+            const countFor = (key: string) => statusData.find(s => s.key === key)?.value ?? 0;
+            return (
+              <div className="grid grid-cols-3 divide-x divide-y divide-[var(--line)]">
+                {GRID_STAGES.map(({ key, name, tone }) => {
+                  const count = countFor(key);
+                  return (
+                    <Link key={key} href={`/jobs?status=${key}`}
+                      className="flex flex-col items-center gap-0.5 py-4 transition hover:bg-[var(--panel-strong)] active:bg-[var(--panel-strong)]">
+                      <p className={`text-[28px] font-black leading-none tabular-nums ${tone(count)}`}>{count}</p>
+                      <p className="text-[12px] text-[var(--ink-muted)]">{name}</p>
+                    </Link>
+                  );
+                })}
               </div>
-            </div>
-            <div className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-[var(--panel)] to-transparent" />
-          </div>
-          <div className="flex flex-wrap items-center gap-3 border-t border-[var(--line)] px-4 py-2">
-            <span className="flex items-center gap-1.5 text-[12px] text-[var(--ink-muted)]"><span className="h-2 w-2 rounded-full bg-emerald-500" />On Track</span>
-            <span className="flex items-center gap-1.5 text-[12px] text-[var(--ink-muted)]"><span className="h-2 w-2 rounded-full bg-amber-500" />Attention</span>
-            <span className="flex items-center gap-1.5 text-[12px] text-[var(--ink-muted)]"><span className="h-2 w-2 rounded-full bg-red-500" />Delayed</span>
-            {awaitingApprovalCount > 0 && (
-              <Link href="/jobs?status=AWAITING_APPROVAL" className="ml-auto rounded-lg border border-[var(--accent)]/35 bg-[var(--accent)]/10 px-2.5 py-1 text-[12px] font-semibold text-[var(--accent)]">
-                {awaitingApprovalCount} awaiting approval
-              </Link>
-            )}
-          </div>
+            );
+          })()}
         </section>
 
         {/* ── Sales Funnel ── */}
