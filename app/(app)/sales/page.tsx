@@ -7,7 +7,7 @@ import { can } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { formatEATDate } from "@/lib/date-eat";
 import { formatMoney, formatMoneyCompact, getAppCurrency } from "@/lib/currency";
-import { createLead, updateLeadStatus, advanceLeadStageAction } from "./actions";
+import { createLead, advanceLeadStageAction } from "./actions";
 
 const LEAD_STATUS_LABELS: Record<LeadStatus, string> = {
   NEW: "New",

@@ -1,7 +1,7 @@
 "use client";
 
-import { ChangeEvent, useEffect, useMemo, useState } from "react";
-import { useFormState, useFormStatus } from "react-dom";
+import { ChangeEvent, useActionState, useEffect, useMemo, useState } from "react";
+import { useFormStatus } from "react-dom";
 import { toast } from "sonner";
 
 import { createJobAction } from "@/app/(app)/jobs/new/actions";
@@ -225,7 +225,7 @@ export function NewJobStepper({ receivedByName }: { receivedByName: string }) {
     (d) => d.serviceType !== "HARDWARE" && !d.softwareLicenseAttested,
   );
 
-  const [state, formAction] = useFormState(createJobAction, { error: null });
+  const [state, formAction] = useActionState(createJobAction, { error: null });
 
   useEffect(() => {
     if (!state?.error) return;

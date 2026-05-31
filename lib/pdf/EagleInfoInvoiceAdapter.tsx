@@ -75,12 +75,6 @@ export function EagleInfoInvoiceAdapter(props: Props) {
     }
   }
 
-  const paymentNote = props.footerText || "";
-  // Split bank details out of the footer if it starts with a bank name pattern
-  const bankDetails = paymentNote.includes("Bank")
-    ? paymentNote
-    : "";
-
   return (
     <EagleInfoDocument
       companyName={props.companyName}

@@ -53,3 +53,11 @@ export function normalizeJobStatus(status: JobStatus): UiJobStatus {
   // Fallback for any unknown/added statuses.
   return "DIAGNOSING";
 }
+
+export function isOpenJobStatus(status: JobStatus | string) {
+  return !["COMPLETED", "CLOSED", "DELIVERED"].includes(status);
+}
+
+export function isCompletedJobStatus(status: JobStatus | string) {
+  return status === "COMPLETED" || status === "DELIVERED";
+}

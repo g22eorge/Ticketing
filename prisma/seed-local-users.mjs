@@ -239,8 +239,8 @@ async function main() {
   for (const j of jobDefs) {
     const job = createdJobs[j.n];
     if (!job) continue;
-    const ex = await prisma.auditLog.findFirst({ where: { jobId: job.id, action: "JOB_CREATED" } });
-    if (!ex) await prisma.auditLog.create({ data: { jobId: job.id, userId: adminId, action: "JOB_CREATED", detail: JSON.stringify({ seeded: true }) } });
+    const _ex = await prisma.auditLog.findFirst({ where: { jobId: job.id, action: "JOB_CREATED" } });
+    if (!_ex) await prisma.auditLog.create({ data: { jobId: job.id, userId: adminId, action: "JOB_CREATED", detail: JSON.stringify({ seeded: true }) } });
   }
 
   // ── Complaints ────────────────────────────────────────────────────────────
@@ -406,9 +406,6 @@ async function main() {
   // ── Sales Targets ─────────────────────────────────────────────────────────
   // Team-level targets (userId = null) + individual targets for OPS/Sales staff
   async function ensureSalesTarget(userId, period, targetRevenue, targetJobs) {
-    const ex = await prisma.salesTarget.findUnique({
-      where: { orgId_userId_period: { orgId, userId: userId ?? "", period } },
-    }).catch(() => null);
     // The unique constraint treats null userId specially; use findFirst for nulls
     const existing = userId
       ? await prisma.salesTarget.findFirst({ where: { orgId, userId, period } })

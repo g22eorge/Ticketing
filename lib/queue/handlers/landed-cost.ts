@@ -61,7 +61,7 @@ function allocate(
 }
 
 export async function handleLandedCostRecalc(data: unknown): Promise<void> {
-  const { orgId, poId, triggeredBy } = data as LandedCostRecalcPayload;
+  const { orgId: _orgId, poId, triggeredBy } = data as LandedCostRecalcPayload;
 
   // Retrieve PO items.
   let poItems: PoLineForAlloc[] = [];

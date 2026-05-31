@@ -287,9 +287,9 @@ export default async function ClientsPage({
               className="h-10 w-full rounded-2xl border border-[var(--line)] bg-[var(--panel-strong)] pl-9 pr-4 text-[13px] outline-none placeholder:text-[var(--ink-muted)]/50 focus:border-[var(--accent)]/60 focus:ring-2 focus:ring-[var(--accent)]/14"
             />
             {filters.q && (
-              <a href="/clients" className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--ink-muted)]/50">
+              <Link href="/clients" className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--ink-muted)]/50">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-              </a>
+              </Link>
             )}
           </div>
         </form>

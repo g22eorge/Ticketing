@@ -3,11 +3,32 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { auth } from "@/lib/auth";
+import { getDeploymentContext } from "@/lib/deployment-context";
+import { EIS_ORG_ID } from "@/lib/org";
 import { prisma } from "@/lib/prisma";
 
 function normalizeRole(role: Role): Role {
   // Keep legacy role values working with new UI language.
   return role === "INTAKE" ? "FRONT_DESK" : role;
+}
+
+function isPlatformAdminEmail(email?: string | null) {
+  const adminEmail = process.env.PLATFORM_ADMIN_EMAIL?.trim().toLowerCase();
+  return Boolean(adminEmail && email && email.toLowerCase() === adminEmail);
+}
+
+async function enforceDeploymentUser(user: { email: string; orgId: string | null }) {
+  const deployment = await getDeploymentContext();
+  if (deployment.mode !== "CARE_SINGLE_TENANT") return;
+  if (isPlatformAdminEmail(user.email)) return;
+  if (user.orgId !== EIS_ORG_ID) redirect("/login");
+}
+
+async function isAllowedOptionalDeploymentUser(user: { email: string; orgId: string | null }) {
+  const deployment = await getDeploymentContext();
+  if (deployment.mode !== "CARE_SINGLE_TENANT") return true;
+  if (isPlatformAdminEmail(user.email)) return true;
+  return user.orgId === EIS_ORG_ID;
 }
 
 export async function getSession() {
@@ -134,6 +155,8 @@ export async function getCurrentUserRole() {
     redirect("/login");
   }
 
+  await enforceDeploymentUser(user);
+
   return { session, user };
 }
 
@@ -164,21 +187,27 @@ export async function getCurrentUserRoleOptional() {
       return { session, user: null as null };
     }
 
+    const user = {
+      id: row.id,
+      role: normalizeRole(row.role),
+      isActive: row.isActive,
+      accessMode: (row.accessMode as unknown as "FULL" | "READ_ONLY") ?? "FULL",
+      name: row.name,
+      email: row.email,
+      phone: row.phone ?? null,
+      orgId: row.orgId ?? null,
+      permissions: row.permissionGrants
+        .map((p) => p.permission)
+        .filter((p): p is string => typeof p === "string" && p.length > 0),
+    };
+
+    if (!(await isAllowedOptionalDeploymentUser(user))) {
+      return { session, user: null as null };
+    }
+
     return {
       session,
-      user: {
-        id: row.id,
-        role: normalizeRole(row.role),
-        isActive: row.isActive,
-        accessMode: (row.accessMode as unknown as "FULL" | "READ_ONLY") ?? "FULL",
-        name: row.name,
-        email: row.email,
-        phone: row.phone ?? null,
-        orgId: row.orgId ?? null,
-        permissions: row.permissionGrants
-          .map((p) => p.permission)
-          .filter((p): p is string => typeof p === "string" && p.length > 0),
-      },
+      user,
     };
   } catch {
     const baseUser = await prisma.user.findUnique({
@@ -190,16 +219,22 @@ export async function getCurrentUserRoleOptional() {
       return { session, user: null as null };
     }
 
+    const user = {
+      ...baseUser,
+      role: normalizeRole(baseUser.role),
+      phone: null,
+      orgId: null,
+      accessMode: "FULL" as const,
+      permissions: [],
+    };
+
+    if (!(await isAllowedOptionalDeploymentUser(user))) {
+      return { session, user: null as null };
+    }
+
     return {
       session,
-      user: {
-        ...baseUser,
-        role: normalizeRole(baseUser.role),
-        phone: null,
-        orgId: null,
-        accessMode: "FULL" as const,
-        permissions: [],
-      },
+      user,
     };
   }
 }

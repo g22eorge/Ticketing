@@ -5,7 +5,7 @@
  * requirePermission, warmPermissions, and PermissionError behaviour.
  */
 
-import { describe, test, expect, beforeAll, afterAll } from "bun:test";
+import { test, expect, beforeAll, afterAll } from "bun:test";
 import {
   resolvePermissions,
   invalidatePermissions,

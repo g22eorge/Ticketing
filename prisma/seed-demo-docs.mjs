@@ -108,8 +108,8 @@ function upsertPayment(invoiceId, saleId, amount, method, reference, receivedAt)
   return id;
 }
 
-const pay1Id = upsertPayment(inv1Id, null, 180000, "MOBILE_MONEY", "MTN-884723",    daysAgo(11));
-const pay3Id = upsertPayment(inv3Id, null, 95000,  "CASH",         "CASH-REF-0019", daysAgo(19));
+const _pay1Id = upsertPayment(inv1Id, null, 180000, "MOBILE_MONEY", "MTN-884723",    daysAgo(11));
+const _pay3Id = upsertPayment(inv3Id, null, 95000,  "CASH",         "CASH-REF-0019", daysAgo(19));
 
 // ── Step 4: Delivery Notes ────────────────────────────────────────────────────
 console.log("Creating delivery notes...");
@@ -170,7 +170,7 @@ const POS_CLIENTS = [
   ensureClient("James Mwangi",   "+254710556677", "james@email.com"),
 ];
 
-function createSale({ saleNumber, clientId, status, items, paymentAmount, paymentMethod, paymentRef, createdAt, paidAt }) {
+function createSale({ saleNumber, clientId, status: _status, items, paymentAmount, paymentMethod, paymentRef, createdAt, paidAt }) {
   const existing = db.prepare("SELECT id FROM Sale WHERE saleNumber = ? AND orgId = ?").get(saleNumber, ORG_ID);
   if (existing) return existing.id;
 
@@ -179,8 +179,6 @@ function createSale({ saleNumber, clientId, status, items, paymentAmount, paymen
   const vatAmount = Math.round(subtotal * 0.18);
   const totalAmount = subtotal + vatAmount;
   const paidAmt = paymentAmount ?? 0;
-  const saleStatus = paidAmt >= totalAmount ? "PAID" : (paidAmt > 0 ? "OPEN" : "OPEN");
-
   db.prepare(`
     INSERT INTO Sale (id, orgId, clientId, saleNumber, status, billingMode, currency,
       subtotal, discountAmount, vatAmount, totalAmount, paidAmount, paidAt,
@@ -212,7 +210,7 @@ function createSale({ saleNumber, clientId, status, items, paymentAmount, paymen
   return saleId;
 }
 
-const sale1 = createSale({
+const _sale1 = createSale({
   saleNumber: "S-202505-0001",
   clientId: POS_CLIENTS[0],
   items: [
@@ -223,7 +221,7 @@ const sale1 = createSale({
   createdAt: daysAgo(14), paidAt: daysAgo(14),
 });
 
-const sale2 = createSale({
+const _sale2 = createSale({
   saleNumber: "S-202505-0002",
   clientId: POS_CLIENTS[1],
   items: [
@@ -234,7 +232,7 @@ const sale2 = createSale({
   createdAt: daysAgo(10), paidAt: daysAgo(10),
 });
 
-const sale3 = createSale({
+const _sale3 = createSale({
   saleNumber: "S-202505-0003",
   clientId: POS_CLIENTS[2],
   items: [
@@ -247,7 +245,7 @@ const sale3 = createSale({
 });
 
 // Partial payment — still outstanding
-const sale4 = createSale({
+const _sale4 = createSale({
   saleNumber: "S-202505-0004",
   clientId: POS_CLIENTS[3],
   items: [
@@ -259,7 +257,7 @@ const sale4 = createSale({
 });
 
 // Open sale — no payment yet
-const sale5 = createSale({
+const _sale5 = createSale({
   saleNumber: "S-202505-0005",
   clientId: POS_CLIENTS[4],
   items: [
@@ -274,7 +272,7 @@ const sale5 = createSale({
 console.log("Creating additional repair receipts...");
 
 // Partial advance on invoice 2 (LO-2025-0012, still ISSUED/outstanding)
-const pay2aId = (() => {
+const _pay2aId = (() => {
   const existing = db.prepare(
     "SELECT id FROM Payment WHERE invoiceId = ? AND method = 'MOBILE_MONEY' AND orgId = ?"
   ).get(inv2Id, ORG_ID);

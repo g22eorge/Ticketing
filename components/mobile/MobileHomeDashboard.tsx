@@ -8,6 +8,13 @@
  */
 import Link from "next/link";
 
+type MobileQuickAction = {
+  href: string;
+  label: string;
+  bg: string;
+  icon: React.ReactNode;
+};
+
 export type MobileHomeProps = {
   userName: string;
   orgName: string;
@@ -36,6 +43,7 @@ export type MobileHomeProps = {
   outstandingValue: number;
 
   currency: string;
+  quickActions?: MobileQuickAction[];
 };
 
 function hero(v: number, currency: string) {
@@ -67,12 +75,7 @@ export function MobileHomeDashboard(p: MobileHomeProps) {
   const firstName = p.userName.split(" ")[0];
   const revPct = pct(p.revenueTodayValue, p.cashYesterdayValue);
   const activeJobs = p.activeJobsCount ?? (p.receivedCount + p.inRepairCount + p.awaitingApprovalCount);
-  const urgentItems = [
-    p.awaitingApprovalCount > 0 && { href: "/jobs?status=AWAITING_APPROVAL", label: `${p.awaitingApprovalCount} awaiting approval`, color: "text-amber-400" },
-    p.readyForPickupCount > 0   && { href: "/jobs?status=READY_FOR_PICKUP",  label: `${p.readyForPickupCount} ready for pickup`,   color: "text-[var(--accent)]" },
-    p.completedUnpaidCount > 0  && { href: "/jobs?status=COMPLETED",         label: `${p.completedUnpaidCount} completed, unpaid`,  color: "text-amber-400" },
-    p.overdueCount > 0          && { href: "/jobs?overdue=1",                 label: `${p.overdueCount} overdue`,                    color: "text-red-400" },
-  ].filter(Boolean) as { href: string; label: string; color: string }[];
+  const quickActions = p.quickActions ?? [];
 
   return (
     <div className="lg:hidden -mx-4 px-4 space-y-4 pb-4">
@@ -185,25 +188,18 @@ export function MobileHomeDashboard(p: MobileHomeProps) {
       </div>
 
       {/* ── Quick actions ─────────────────────────────────────────── */}
-      <div className="grid grid-cols-4 gap-3">
-        {([
-          { href: "/jobs/new",           label: "New Job",
-            bg: "bg-[var(--accent)]",      icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="black" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> },
-          { href: "/documents/receipts", label: "Collect",
-            bg: "bg-emerald-500/15",        icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> },
-          { href: "/pos",                label: "Sale",
-            bg: "bg-violet-500/15",         icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg> },
-          { href: "/documents/invoices", label: "Invoice",
-            bg: "bg-amber-500/15",          icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> },
-        ] as const).map((a) => (
+      {quickActions.length > 0 ? (
+        <div className="grid grid-cols-4 gap-3">
+          {quickActions.map((a) => (
           <Link key={a.href} href={a.href} className="flex flex-col items-center gap-2">
             <span className={`flex h-14 w-14 items-center justify-center rounded-2xl ${a.bg}`}>
               {a.icon}
             </span>
             <span className="text-[12px] font-semibold text-[var(--ink-muted)]">{a.label}</span>
           </Link>
-        ))}
-      </div>
+          ))}
+        </div>
+      ) : null}
 
     </div>
   );

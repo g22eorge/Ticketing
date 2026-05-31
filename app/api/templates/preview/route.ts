@@ -9,7 +9,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { renderToBuffer } from "@react-pdf/renderer";
 import { createElement } from "react";
 import { readFile } from "node:fs/promises";
-import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 import { getDocumentBrandingSettings } from "@/lib/document-branding";
 import { requireOrgSession } from "@/lib/org-context";
@@ -30,19 +30,9 @@ export const dynamic = "force-dynamic";
 // ── Logo resolver (same as invoice route) ─────────────────────────────────────
 
 async function resolveLogoDataUri(): Promise<string | undefined> {
-  const candidates: Array<{ file: string; type: string }> = [
-    { file: path.join(process.cwd(), "public", "eagle-info-logo.png"),  type: "image/png"  },
-    { file: path.join(process.cwd(), "public", "eagle-info-logo.jpg"),  type: "image/jpeg" },
-    { file: path.join(process.cwd(), "public", "invoice-logo.png"),     type: "image/png"  },
-    { file: path.join(process.cwd(), "public", "invoice-logo.jpg"),     type: "image/jpeg" },
-  ];
-  for (const c of candidates) {
-    try {
-      const bytes = await readFile(c.file);
-      return `data:${c.type};base64,${bytes.toString("base64")}`;
-    } catch { /* try next */ }
-  }
-  return undefined;
+  const file = fileURLToPath(new URL("../../../../public/eagle-info-logo.png", import.meta.url));
+  const bytes = await readFile(file);
+  return `data:image/png;base64,${bytes.toString("base64")}`;
 }
 
 // ── Sample / dummy data ───────────────────────────────────────────────────────
@@ -122,7 +112,7 @@ const SAMPLE_SALE = {
 
 export async function GET(req: NextRequest) {
   // Auth check — anyone who can view financials or manage branding can preview
-  const { user, orgId, org } = await requireOrgSession();
+  const { user, orgId } = await requireOrgSession();
   if (
     !can.viewFinancials(user) &&
     !can.manageUsers(user) &&

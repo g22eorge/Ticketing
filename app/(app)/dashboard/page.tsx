@@ -11,12 +11,13 @@ import { RevenueLineChart } from "@/components/reports/ReportsCharts";
 import { getClientBill, resolveTechCost } from "@/lib/billing";
 import { formatMoney, formatMoneyCompact, getAppCurrency } from "@/lib/currency";
 import { formatEATMonthLabel } from "@/lib/date-eat";
-import { UI_JOB_STATUSES, JobStatus, normalizeJobStatus } from "@/lib/job-status";
+import { UI_JOB_STATUSES, JobStatus, isOpenJobStatus, normalizeJobStatus } from "@/lib/job-status";
 import { filterSupportedJobStatuses } from "@/lib/job-status-server";
 import { can } from "@/lib/permissions";
 import { getJobPayoutsByIds } from "@/lib/payouts";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserRole } from "@/lib/session";
+import { getOrgModules } from "@/lib/module-access";
 
 type SearchParams = {
   month?: string;
@@ -413,6 +414,7 @@ export default async function DashboardPage({
 
     const jobs = await prisma.job.findMany({
       where: {
+        ...(user.orgId ? { orgId: user.orgId } : {}),
         assignedToId: session.user.id,
         OR: [
           { receivedAt: { gte: selectedRange.start, lte: selectedRange.end } },
@@ -433,15 +435,7 @@ export default async function DashboardPage({
     const payouts = await getJobPayoutsByIds(jobs.map((job) => job.id)).catch(() => new Map());
 
     const currency = getAppCurrency();
-    const openCount = jobs.filter((job) => [
-      "RECEIVED",
-      "DIAGNOSING",
-      "REFERRED",
-      "IN_EXTERNAL_REPAIR",
-      "AWAITING_APPROVAL",
-      "IN_REPAIR",
-      "READY_FOR_PICKUP",
-    ].includes(job.status)).length;
+    const openCount = jobs.filter((job) => isOpenJobStatus(job.status)).length;
     const completedCount = jobs.filter((job) => job.status === "COMPLETED").length;
     const paidTotal = jobs
       .filter((job) => payouts.get(job.id)?.externalPaid)
@@ -934,7 +928,6 @@ export default async function DashboardPage({
     const yesterdayStart = new Date(todayStart.getTime() - 86_400_000);
     const yesterdayEnd = new Date(todayStart.getTime() - 1);
     const mtdStart = new Date(today.getFullYear(), today.getMonth(), 1, 0, 0, 0, 0);
-    const last6Months = monthSequence(today.getFullYear(), today.getMonth() + 1, 6);
     const orgFilter = user.orgId ? { orgId: user.orgId } : {};
 
     const [
@@ -959,10 +952,8 @@ export default async function DashboardPage({
       expensesToday,
       posSalesToday,
       overdueJobsCount,
-      jobsNoEtaCount,
       jobsNoClientUpdateCount,
       completedUnpaidCount,
-      supplierBillsDueCount,
       payoutDueJobs,
       // Sales funnel
       leadFunnel,
@@ -970,12 +961,6 @@ export default async function DashboardPage({
       lowStockParts,
       // Tech leaderboard
       techCompletedMtd,
-      // Recent activity
-      recentJobs,
-      // 6-month trend
-      completedForTrend,
-      salesForTrend,
-      invoicesForTrend,
       // Tech pending jobs (all active statuses)
       techPendingJobs,
       // Yesterday comparison
@@ -1034,10 +1019,8 @@ export default async function DashboardPage({
       // POS sales today — for mobile dashboard combined revenue
       prisma.sale.findMany({ where: { ...orgFilter, status: "PAID", paidAt: { gte: todayStart } }, select: { totalAmount: true } }).catch(() => [] as { totalAmount: number }[]),
       prisma.job.count({ where: { ...orgFilter, status: { in: filterSupportedJobStatuses(["RECEIVED", "DIAGNOSING", "REFERRED", "IN_EXTERNAL_REPAIR", "AWAITING_APPROVAL", "IN_REPAIR", "READY_FOR_PICKUP"]) as JobStatus[] }, receivedAt: { lt: new Date(today.getTime() - 3 * 86_400_000) } } }).catch(() => 0),
-      prisma.job.count({ where: { ...orgFilter, status: { in: filterSupportedJobStatuses(["RECEIVED", "DIAGNOSING", "REFERRED", "IN_EXTERNAL_REPAIR", "AWAITING_APPROVAL", "IN_REPAIR", "READY_FOR_PICKUP"]) as JobStatus[] }, repairTimeline: null } }).catch(() => 0),
       prisma.job.count({ where: { ...orgFilter, status: { in: filterSupportedJobStatuses(["DIAGNOSING", "REFERRED", "IN_EXTERNAL_REPAIR", "AWAITING_APPROVAL", "IN_REPAIR", "READY_FOR_PICKUP"]) as JobStatus[] }, lastClientContactAt: null } }).catch(() => 0),
       prisma.job.count({ where: { ...orgFilter, status: "COMPLETED", clientBill: { gt: 0 }, clientPaid: false } }).catch(() => 0),
-      prisma.supplierBill.count({ where: { ...orgFilter, dueAt: { lt: today }, status: { notIn: ["PAID", "CANCELLED"] } } }).catch(() => 0),
       prisma.job.findMany({ where: { ...orgFilter, repairPath: "EXTERNAL", status: { in: ["COMPLETED", "DELIVERED"] }, externalPaid: false }, select: { externalTechFee: true, externalTechBill: true } }).catch(() => [] as { externalTechFee: number | null; externalTechBill: number | null }[]),
 
       prisma.lead.groupBy({ by: ["status"], where: orgFilter, _count: { status: true } }).catch(() => [] as { status: string; _count: { status: number } }[]),
@@ -1051,29 +1034,6 @@ export default async function DashboardPage({
         where: { ...orgFilter, status: "COMPLETED", completedAt: { gte: mtdStart }, assignedToId: { not: null } },
         select: { assignedToId: true, assignedTo: { select: { name: true } }, clientBill: true, receivedAt: true, completedAt: true },
       }).catch(() => [] as { assignedToId: string | null; assignedTo: { name: string } | null; clientBill: number | null; receivedAt: Date; completedAt: Date | null }[]),
-
-      prisma.job.findMany({
-        where: orgFilter,
-        orderBy: { updatedAt: "desc" },
-        take: 8,
-        select: { id: true, jobNumber: true, status: true, updatedAt: true, receivedAt: true, completedAt: true, device: { select: { brand: true, model: true } } },
-      }).catch(async () => {
-        const fb = await prisma.job.findMany({ where: orgFilter, orderBy: { updatedAt: "desc" }, take: 8, select: { id: true, jobNumber: true, status: true, updatedAt: true, receivedAt: true, completedAt: true } });
-        return fb.map((j) => ({ ...j, device: null }));
-      }),
-
-      prisma.job.findMany({
-        where: { ...orgFilter, status: "COMPLETED", completedAt: { gte: last6Months[0].start, lte: last6Months[5].end } },
-        select: { clientBill: true, completedAt: true },
-      }),
-      prisma.sale.findMany({
-        where: { ...orgFilter, status: "PAID", paidAt: { gte: last6Months[0].start, lte: last6Months[5].end } },
-        select: { totalAmount: true, paidAt: true },
-      }).catch(() => [] as { totalAmount: number; paidAt: Date | null }[]),
-      prisma.invoice.findMany({
-        where: { ...orgFilter, status: "PAID", paidAt: { gte: last6Months[0].start, lte: last6Months[5].end } },
-        select: { totalAmount: true, paidAt: true },
-      }).catch(() => [] as { totalAmount: number; paidAt: Date | null }[]),
 
       prisma.job.findMany({
         where: { ...orgFilter, status: { in: filterSupportedJobStatuses(["RECEIVED", "DIAGNOSING", "REFERRED", "IN_EXTERNAL_REPAIR", "AWAITING_APPROVAL", "IN_REPAIR", "READY_FOR_PICKUP"]) as JobStatus[] }, assignedToId: { not: null } },
@@ -1092,7 +1052,6 @@ export default async function DashboardPage({
     const productsMtd  = paidSalesMtd.reduce((s, x) => s + x.totalAmount, 0);
     const corporateMtd = paidInvoicesMtd.reduce((s, x) => s + x.totalAmount, 0);
     const totalMtd     = repairsMtd + productsMtd + corporateMtd;
-    const avgJobValue  = completedMtdJobs.length > 0 ? repairsMtd / completedMtdJobs.length : 0;
     const conversionRate = receivedMtdCount > 0 ? Math.round(completedMtdJobs.length / receivedMtdCount * 100) : 0;
 
     // Financial position
@@ -1119,6 +1078,33 @@ export default async function DashboardPage({
 
     // Low stock
     const lowStockItems = lowStockParts.filter((p) => p.qtyOnHand <= p.reorderLevel);
+    const enabledModules = user.orgId ? await getOrgModules(user.orgId) : new Set(["JOBS", "INVOICING", "POS"]);
+    const quickActions = [
+      can.createJob(permissionUser) && enabledModules.has("JOBS") && {
+        href: "/jobs/new",
+        label: "New Job",
+        bg: "bg-[var(--accent)]",
+        icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="black" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>,
+      },
+      can.viewFinancials(permissionUser) && enabledModules.has("INVOICING") && {
+        href: "/documents/receipts",
+        label: "Collect",
+        bg: "bg-emerald-500/15",
+        icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>,
+      },
+      can.openPosSession(permissionUser) && enabledModules.has("POS") && {
+        href: "/pos",
+        label: "Sale",
+        bg: "bg-violet-500/15",
+        icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>,
+      },
+      can.viewFinancials(permissionUser) && enabledModules.has("INVOICING") && {
+        href: "/documents/invoices",
+        label: "Invoice",
+        bg: "bg-amber-500/15",
+        icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>,
+      },
+    ].filter(Boolean) as React.ComponentProps<typeof MobileHomeDashboard>["quickActions"];
 
     // Tech leaderboard
     const techPendingMap = new Map<string, number>();
@@ -1146,19 +1132,9 @@ export default async function DashboardPage({
     // Mobile-specific derived counts
     const inRepairCount      = statusCount.get("IN_REPAIR") ?? 0;
     const readyForPickupCount = statusCount.get("READY_FOR_PICKUP") ?? 0;
-    const depositsHeld = bankAccounts.reduce((s, a) => s + Math.max(0, a.currentBalance), 0);
-    const profitMtd    = totalMtd - expensesValue;
     const statusData = UI_JOB_STATUSES.map((status) => ({
       key: status, name: statusLabel[status], value: statusCount.get(status) ?? 0,
     }));
-
-    // 6-month trend bars
-    const streamTrend = last6Months.map((m) => {
-      const repairs   = completedForTrend.filter((j) => j.completedAt && j.completedAt >= m.start && j.completedAt <= m.end).reduce((s, j) => s + (getClientBill(j) ?? 0), 0);
-      const products  = salesForTrend.filter((x) => x.paidAt && x.paidAt >= m.start && x.paidAt <= m.end).reduce((s, x) => s + x.totalAmount, 0);
-      const corporate = invoicesForTrend.filter((x) => x.paidAt && x.paidAt >= m.start && x.paidAt <= m.end).reduce((s, x) => s + x.totalAmount, 0);
-      return { key: m.key, repairs, products, corporate, total: repairs + products + corporate };
-    });
 
     // Sales funnel counts
     const leadCountMap = new Map<string, number>();
@@ -1172,15 +1148,6 @@ export default async function DashboardPage({
       { key: "LOST",          name: "Lost",           color: "text-red-500",       href: "/sales/leads?status=LOST" },
       { key: "STALE",         name: "Stale",          color: "text-[var(--ink-muted)]", href: "/sales/leads?status=STALE" },
     ] as const;
-    const attentionItems = [
-      { label: "Jobs Awaiting Approval", description: "Needs client decision", count: awaitingApprovalCount, href: "/jobs?status=AWAITING_APPROVAL", tone: "text-[var(--accent)]" },
-      { label: "Jobs with No Client Update", description: "No update in 48h+", count: jobsNoClientUpdateCount, href: "/jobs", tone: "text-amber-600" },
-      { label: "Overdue Jobs", description: "Past expected date", count: overdueJobsCount, href: "/jobs?status=RECEIVED,DIAGNOSING,REFERRED,IN_EXTERNAL_REPAIR,AWAITING_APPROVAL,IN_REPAIR,READY_FOR_PICKUP", tone: "text-red-500" },
-      { label: "Completed but Unpaid", description: "Awaiting client payment", count: completedUnpaidCount, href: "/jobs?status=COMPLETED", tone: "text-red-500" },
-      { label: "Jobs with No ETA", description: "ETA not set by technician", count: jobsNoEtaCount, href: "/jobs", tone: "text-amber-600" },
-      { label: "Low Stock Alerts", description: lowStockItems.length === 0 ? "All items in stock" : `${lowStockItems.length} item${lowStockItems.length !== 1 ? "s" : ""} below reorder level`, count: lowStockItems.length, href: "/inventory", tone: "text-amber-600" },
-    ];
-
     return (
       <div className="space-y-4">
 
@@ -1203,6 +1170,7 @@ export default async function DashboardPage({
           outstandingValue={outstandingValue}
           revenueMtd={totalMtd}
           currency={currency}
+          quickActions={quickActions}
         />
 
         {/* ── Desktop dashboard starts here (hidden on mobile) ── */}

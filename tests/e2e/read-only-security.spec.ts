@@ -143,6 +143,24 @@ async function seedReadOnlyFixture() {
     },
   });
 
+  for (const job of [invoiceJob, quoteJob, jobCardJob]) {
+    const existingAudit = await prisma.auditLog.findFirst({
+      where: { jobId: job.id, action: "JOB_CREATED" },
+      select: { id: true },
+    });
+    if (!existingAudit) {
+      await prisma.auditLog.create({
+        data: {
+          orgId: org.id,
+          jobId: job.id,
+          userId: user.id,
+          action: "JOB_CREATED",
+          detail: JSON.stringify({ source: "e2e_read_only_fixture" }),
+        },
+      });
+    }
+  }
+
   await prisma.auditLog.deleteMany({ where: { jobId: jobCardJob.id, action: "JOB_CARD_GENERATED" } });
   return { user, invoiceJob, quoteJob, jobCardJob };
 }

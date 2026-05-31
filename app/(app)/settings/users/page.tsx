@@ -408,6 +408,11 @@ function formatDateTime(value?: Date | null) {
   return value.toLocaleString();
 }
 
+function allowedExtraPermissionsForRole(role: Role, values: Array<(typeof EXTRA_PERMISSIONS)[number]>) {
+  if (role === "TECHNICIAN_EXTERNAL") return [];
+  return Array.from(new Set(values));
+}
+
 function searchMatches(user: {
   name: string;
   email: string;
@@ -505,7 +510,7 @@ export default async function UsersPage({
   async function resetUserPassword(state: UserPasswordResetState, formData: FormData): Promise<UserPasswordResetState> {
     "use server";
 
-    const { session, user: actor } = await requireOrgSession();
+    const { session, user: actor, orgId: actorOrgId } = await requireOrgSession();
     if (actor.role !== "ADMIN") return { error: "Not authorized" };
 
     const parsed = resetPasswordSchema.safeParse({
@@ -517,7 +522,7 @@ export default async function UsersPage({
       return { error: parsed.error.issues[0]?.message ?? "Invalid password" };
     }
 
-    const target = await prisma.user.findUnique({ where: { id: parsed.data.userId }, select: { id: true } });
+    const target = await prisma.user.findFirst({ where: { id: parsed.data.userId, orgId: actorOrgId }, select: { id: true } });
     if (!target) return { error: "User not found" };
 
     const hashed = await hashPassword(parsed.data.password);
@@ -562,13 +567,13 @@ export default async function UsersPage({
   async function saveAccessChanges(formData: FormData) {
     "use server";
 
-    const { session, user: actor } = await requireOrgSession();
+    const { session, user: actor, orgId: actorOrgId } = await requireOrgSession();
     if (actor.role !== "ADMIN") return;
 
     const targetUserId = String(formData.get("userId") ?? "").trim();
     const q = String(formData.get("q") ?? "").trim();
     const nextRole = String(formData.get("role") ?? "") as Role;
-    const permissionValues = formData
+    const submittedPermissionValues = formData
       .getAll("permissions")
       .map((value) => String(value).trim())
       .filter((value): value is (typeof EXTRA_PERMISSIONS)[number] =>
@@ -579,8 +584,10 @@ export default async function UsersPage({
       redirect(`/settings/users?${new URLSearchParams({ q, userId: targetUserId }).toString()}`);
     }
 
-    const target = await prisma.user.findUnique({
-      where: { id: targetUserId },
+    const permissionValues = allowedExtraPermissionsForRole(nextRole, submittedPermissionValues);
+
+    const target = await prisma.user.findFirst({
+      where: { id: targetUserId, orgId: actorOrgId },
       select: {
         id: true,
         role: true,
@@ -617,7 +624,7 @@ export default async function UsersPage({
     }
 
     await prisma.$transaction(async (tx) => {
-      await tx.user.update({ where: { id: targetUserId }, data: { role: nextRole } });
+      await tx.user.updateMany({ where: { id: targetUserId, orgId: actorOrgId }, data: { role: nextRole } });
       await tx.userPermission.deleteMany({ where: { userId: targetUserId } });
 
       if (permissionValues.length > 0) {
@@ -656,7 +663,7 @@ export default async function UsersPage({
     const targetId = String(formData.get("userId") ?? "").trim();
     const q = String(formData.get("q") ?? "").trim();
     if (!targetId || targetId === session.user.id) return; // can't deactivate yourself
-    const target = await prisma.user.findUnique({ where: { id: targetId, orgId: actorOrgId }, select: { id: true, isActive: true } });
+    const target = await prisma.user.findFirst({ where: { id: targetId, orgId: actorOrgId }, select: { id: true, isActive: true } });
     if (!target) return;
     await prisma.user.update({ where: { id: targetId }, data: { isActive: !target.isActive } });
     // Revoke all active sessions when deactivating

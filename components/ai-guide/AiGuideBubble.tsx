@@ -170,7 +170,7 @@ export function AiGuideBubble() {
     setPos(clamp(drag.current.ox + dx, drag.current.oy + dy));
   }, []);
 
-  const onPtrUp = useCallback((e: React.PointerEvent) => {
+  const onPtrUp = useCallback(() => {
     if (!drag.current) return;
     drag.current = null;
     if (!didDrag.current) {
@@ -260,7 +260,7 @@ export function AiGuideBubble() {
   if (!pos) return null;
 
   return (
-    <div ref={wrapRef} className="lg:hidden">
+    <div ref={wrapRef}>
 
       {/* ── Bubble button — always visible, transforms when open ── */}
       <button

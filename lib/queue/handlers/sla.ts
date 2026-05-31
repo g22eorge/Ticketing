@@ -86,7 +86,7 @@ export async function handleSlaRepairOverdue(data: unknown): Promise<void> {
 // ── 3. PO overdue ─────────────────────────────────────────────────────────────
 
 export async function handleSlaPoOverdue(data: unknown): Promise<void> {
-  const { orgId, poId, poNumber, supplierId } = data as SlaPoOverduePayload;
+  const { orgId: _orgId, poId, poNumber, supplierId } = data as SlaPoOverduePayload;
 
   // Best-effort audit log — shape varies by schema version.
   // PO overdue is logged via SystemAuditEvent if AuditLog requires a Job.

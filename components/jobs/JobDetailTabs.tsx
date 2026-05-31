@@ -543,7 +543,7 @@ type Props = {
   };
 };
 
-export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, supportedCurrencies, job, technicians, deviceHistory = [], returnTo = "/jobs", returnLabel = "All jobs", initialTab }: Props) {
+export function JobDetailTabs({ role, permissions = [], job, technicians, deviceHistory = [], returnTo = "/jobs", returnLabel = "All jobs", initialTab }: Props) {
   const inboundMessages = job.inboundMessages ?? [];
   const outboundMessages = job.outboundMessages ?? [];
   const unreadCount = inboundMessages.filter((m) => !m.isRead).length;
@@ -555,7 +555,6 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
     return "overview";
   });
   const [savedSection, setSavedSection] = useState<string | null>(null);
-  const [clientPaymentCurrency, setClientPaymentCurrency] = useState(orgBaseCurrency);
   const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
   const [showOneTimeForm, setShowOneTimeForm] = useState(false);
   const [isDiagnosisPending, startDiagnosisTransition] = useTransition();
@@ -651,7 +650,6 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
           : technicianPaid === technicianCost
             ? "Paid"
             : "Overpaid";
-  const cashPosition = totalClientPaid - technicianPaid;
   const repairCostBeforeVat = vatApplicable ? clientBillValue / 1.18 : clientBillValue;
   const vatAmount = vatApplicable ? Math.max(clientBillValue - repairCostBeforeVat, 0) : 0;
   const hasPayoutControls = canManagePayouts && job.repairPath === "EXTERNAL";
@@ -736,13 +734,6 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
     : job.oneTimeExternalAssignment?.technicianName
       ? `One-time external: ${job.oneTimeExternalAssignment.technicianName}`
       : "No technician assigned yet.";
-  const narrativeBits = [
-    `Status is ${prettyEnum(job.status)}.`,
-    assignedLabel === "No technician assigned yet." ? assignedLabel : `Assigned to ${assignedLabel}.`,
-    `Client decision: ${clientDecision.toLowerCase()}.`,
-    job.repairTimeline ? `ETA ${etaValue}.` : "ETA not set.",
-    watchLabel ? `${watchLabel} (${statusAgeHours}h in this state).` : null,
-  ].filter(Boolean) as string[];
   type AttentionItem = { label: string; action: string; tab: (typeof tabs)[number] };
   const attentionItems = [
     !job.repairTimeline ? { label: "ETA not set", action: "Add an ETA so the client knows when to expect progress.", tab: "timeline" as const } : null,
@@ -826,6 +817,7 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
           {/* Device photo thumbnail */}
           <div className="h-20 w-20 shrink-0 overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel-strong)]">
             {job.photos?.[0]?.url ? (
+              // eslint-disable-next-line @next/next/no-img-element
               <img src={job.photos[0].url} alt="Device" className="h-full w-full object-cover" />
             ) : (
               <div className="flex h-full w-full items-center justify-center text-3xl">📱</div>
@@ -2401,7 +2393,7 @@ export function JobDetailTabs({ role, permissions = [], orgBaseCurrency, support
         </form>
         </> ) : null}
 
-      <div className="pointer-events-none fixed inset-x-0 bottom-[calc(var(--mobile-shell-bottom)+0.2rem)] z-30 px-3 lg:hidden">
+      <div className="mobile-job-action-bar pointer-events-none fixed inset-x-0 bottom-[calc(var(--mobile-shell-bottom)+0.2rem)] z-30 px-3 lg:hidden">
         <div className="pointer-events-auto mx-auto flex max-w-lg items-center gap-2 rounded-2xl border border-[var(--line)] bg-[var(--panel)]/96 p-2 shadow-[0_8px_32px_rgba(0,0,0,0.14)] backdrop-blur-md">
           {mobilePrimaryAction ? (
             mobilePrimaryAction.type === "link" ? (

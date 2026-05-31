@@ -196,7 +196,6 @@ export function BottomNav({
 
   const primaryItems = getPrimaryItems(role, permissions, enabledModules);
   const moreGroups   = getMoreGroups(role, permissions, enabledModules);
-  const hasExtra     = moreGroups.length > 0;
 
   const isActive = (href: string) =>
     pathname === href || (href !== "/dashboard" && pathname.startsWith(href));
@@ -206,12 +205,6 @@ export function BottomNav({
   const getBadge = (href: string): number | undefined => {
     if (href === "/jobs")     return badges?.receivedJobs ?? badges?.jobs;
     if (href === "/intake")   return badges?.pendingRequests;
-    return undefined;
-  };
-  const getMoreBadge = (href: string): number | undefined => {
-    if (href === "/inventory")       return badges?.inventory;
-    if (href === "/payout-followups")return badges?.paymentFollowups;
-    if (href === "/complaints")      return badges?.complaints;
     return undefined;
   };
 
@@ -300,4 +293,3 @@ export function BottomNav({
     </>
   );
 }
-

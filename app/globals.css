@@ -719,6 +719,12 @@ tr:has(details[open]) {
   body:has(input:focus) .jobs-fab,
   body:has(textarea:focus) .jobs-fab,
   body:has(select:focus) .jobs-fab,
+  body:has(input:focus) .speed-dial-fab,
+  body:has(textarea:focus) .speed-dial-fab,
+  body:has(select:focus) .speed-dial-fab,
+  body:has(input:focus) .mobile-job-action-bar,
+  body:has(textarea:focus) .mobile-job-action-bar,
+  body:has(select:focus) .mobile-job-action-bar,
   body:has(input:focus) .wa-float,
   body:has(textarea:focus) .wa-float,
   body:has(select:focus) .wa-float {

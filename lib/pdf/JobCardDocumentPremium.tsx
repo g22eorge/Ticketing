@@ -10,7 +10,6 @@ const GOLD  = "#d4af37";
 const GOLD2 = "#f6e27a";
 const MID   = "#475569";
 const LITE  = "#94a3b8";
-const LINE  = "#334155";
 const LINE_L= "#e2e8f0";
 const BG    = "#f8fafc";
 const WHITE = "#ffffff";

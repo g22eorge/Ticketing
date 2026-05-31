@@ -1,6 +1,5 @@
 import { hashPassword } from "better-auth/crypto";
 import { Role } from "@prisma/client";
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
@@ -300,9 +299,9 @@ function roleLabel(role: Role) {
   return "Admin";
 }
 
-function formatDateTime(value?: Date | null) {
-  if (!value) return "No activity yet";
-  return value.toLocaleString();
+function allowedExtraPermissionsForRole(role: Role, values: Array<(typeof EXTRA_PERMISSIONS)[number]>) {
+  if (role === "TECHNICIAN_EXTERNAL") return [];
+  return Array.from(new Set(values));
 }
 
 export default async function UserDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -410,7 +409,7 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
   async function resetUserPassword(state: UserPasswordResetState, formData: FormData): Promise<UserPasswordResetState> {
     "use server";
 
-    const { session, user: actor, org } = await requireOrgSession();
+    const { session, user: actor, orgId: actorOrgId, org } = await requireOrgSession();
     if (actor.role !== "ADMIN") return { error: "Not authorized" };
     assertOrgCanMutate({ access: org.access, userRole: actor.role, userAccessMode: actor.accessMode, kind: "GENERAL" });
 
@@ -420,6 +419,12 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
       confirm: String(formData.get("confirm") ?? ""),
     });
     if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Invalid password" };
+
+    const target = await prisma.user.findFirst({
+      where: { id: parsed.data.userId, orgId: actorOrgId },
+      select: { id: true },
+    });
+    if (!target) return { error: "User not found" };
 
     const hashed = await hashPassword(parsed.data.password);
 
@@ -506,7 +511,7 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
 
     const targetUserId = String(formData.get("userId") ?? "").trim();
     const nextRole = String(formData.get("role") ?? "") as Role;
-    const permissionValues = formData
+    const submittedPermissionValues = formData
       .getAll("permissions")
       .map((value) => String(value).trim())
       .filter((value): value is (typeof EXTRA_PERMISSIONS)[number] =>
@@ -514,6 +519,7 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
       );
 
     if (!targetUserId || !Object.values(Role).includes(nextRole)) return;
+    const permissionValues = allowedExtraPermissionsForRole(nextRole, submittedPermissionValues);
 
     const target = await prisma.user.findFirst({ where: { id: targetUserId, orgId: actorOrgId }, select: { id: true, role: true } });
     if (!target) return;
@@ -562,10 +568,6 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
     revalidatePath(`/settings/users/${targetUserId}`);
     revalidatePath("/settings/users");
   }
-
-  const lastActivity = formatDateTime(
-    target.sessions[0]?.updatedAt ?? target.auditLogs[0]?.createdAt ?? target.updatedAt,
-  );
 
   return (
     <div className="space-y-3">

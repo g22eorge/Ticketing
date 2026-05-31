@@ -4,7 +4,7 @@
  * At a 390×844 viewport (iPhone 14 size), verifies that:
  * - The bottom nav bar is visible on authenticated pages
  * - Tapping a nav item navigates to the correct route
- * - The "More" drawer (if present) opens and closes correctly
+ * - The "More" tab opens the full-screen navigation hub
  * - Settings hub link is present (not individual settings sub-items)
  */
 
@@ -109,26 +109,11 @@ test.describe("Mobile bottom navigation at 390×844", () => {
     await page.goto(`${baseUrl}/jobs`);
     await waitSettled(page);
 
-    // Click the Dashboard link in bottom nav
     const dashLink = page.locator(".mobile-bottom-nav a[href='/dashboard']").first();
-    if (await dashLink.isVisible()) {
-      await dashLink.click();
-      await page.waitForURL("**/dashboard**", { timeout: 10000 });
-      expect(page.url()).toContain("/dashboard");
-    } else {
-      // Dashboard may be in the "More" drawer — open it first
-      const moreButton = page.locator(".mobile-bottom-nav button").last();
-      if (await moreButton.isVisible()) {
-        await moreButton.click();
-        await page.waitForTimeout(300);
-        const drawerDashLink = page.getByRole("link", { name: /dashboard/i }).first();
-        if (await drawerDashLink.isVisible()) {
-          await drawerDashLink.click();
-          await page.waitForURL("**/dashboard**", { timeout: 10000 });
-          expect(page.url()).toContain("/dashboard");
-        }
-      }
-    }
+    await expect(dashLink).toBeVisible();
+    await dashLink.click();
+    await page.waitForURL("**/dashboard**", { timeout: 10000 });
+    expect(page.url()).toContain("/dashboard");
   });
 
   test("tapping Jobs nav item navigates to /jobs", async ({ page }) => {
@@ -137,45 +122,28 @@ test.describe("Mobile bottom navigation at 390×844", () => {
     await waitSettled(page);
 
     const jobsLink = page.locator(".mobile-bottom-nav a[href='/jobs']").first();
-    if (await jobsLink.isVisible()) {
-      await jobsLink.click();
-      await page.waitForURL("**/jobs**", { timeout: 10000 });
-      expect(page.url()).toContain("/jobs");
-    } else {
-      // May be in the More drawer
-      const moreButton = page.locator(".mobile-bottom-nav button").last();
-      if (await moreButton.isVisible()) {
-        await moreButton.click();
-        await page.waitForTimeout(300);
-        const drawerJobsLink = page.getByRole("link", { name: /^jobs$/i }).first();
-        if (await drawerJobsLink.isVisible()) {
-          await drawerJobsLink.click();
-          await page.waitForURL("**/jobs**", { timeout: 10000 });
-          expect(page.url()).toContain("/jobs");
-        }
-      }
-    }
+    await expect(jobsLink).toBeVisible();
+    await jobsLink.click();
+    await page.waitForURL("**/jobs**", { timeout: 10000 });
+    expect(page.url()).toContain("/jobs");
   });
 
-  test("Settings link in bottom nav points to /settings hub (not a sub-page)", async ({ page }) => {
+  test("Settings link is in /more and points to /settings hub", async ({ page }) => {
     await login(page);
     await page.goto(`${baseUrl}/dashboard`);
     await waitSettled(page);
 
-    // Settings hub should be accessible — check direct link or via More drawer
-    const settingsLink = page.locator(".mobile-bottom-nav a[href='/settings']").first();
-    const hasDirectLink = await settingsLink.isVisible();
+    const moreLink = page.locator(".mobile-bottom-nav a[href='/more']").first();
+    await expect(moreLink).toBeVisible();
+    await moreLink.click();
+    await page.waitForURL("**/more**", { timeout: 10000 });
+    await waitSettled(page);
 
-    if (!hasDirectLink) {
-      // Open More drawer if present
-      const moreButton = page.locator(".mobile-bottom-nav button").last();
-      if (await moreButton.isVisible()) {
-        await moreButton.click();
-        await page.waitForTimeout(300);
-      }
-    }
+    const settingsHubLink = page.locator("main a[href='/settings']").first();
+    await settingsHubLink.scrollIntoViewIfNeeded();
+    await expect(settingsHubLink).toBeVisible();
 
-    // Assert that no bottom nav link points directly to settings sub-pages
+    // Assert that no bottom nav link points directly to settings sub-pages.
     const subPageLinks = page.locator(
       ".mobile-bottom-nav a[href='/settings/users'], " +
       ".mobile-bottom-nav a[href='/settings/branding'], " +
@@ -185,32 +153,50 @@ test.describe("Mobile bottom navigation at 390×844", () => {
     expect(count, "Settings sub-pages should not appear in bottom nav").toBe(0);
   });
 
-  test("More drawer opens and closes via button tap", async ({ page }) => {
+  test("More tab opens the navigation hub page", async ({ page }) => {
     await login(page);
     await page.goto(`${baseUrl}/dashboard`);
     await waitSettled(page);
 
-    const moreButton = page.locator(".mobile-bottom-nav button").last();
-    if (!(await moreButton.isVisible())) {
-      // No More button — this nav may show all items directly; skip
-      console.log("No More button found — skipping drawer open/close test");
-      return;
-    }
+    const moreLink = page.locator(".mobile-bottom-nav a[href='/more']").first();
+    await expect(moreLink).toBeVisible();
+    await moreLink.click();
+    await page.waitForURL("**/more**", { timeout: 10000 });
+    await expect(page.getByText("Business")).toBeVisible();
+  });
 
-    // Open
-    await moreButton.click();
-    await page.waitForTimeout(300);
+  test("job detail mobile action bar hides while editing fields", async ({ page }) => {
+    await login(page);
+    await page.goto(`${baseUrl}/jobs`);
+    await waitSettled(page);
 
-    // Verify drawer or panel appeared (look for an element that wasn't in the nav bar itself)
-    const drawer = page.locator("[role='dialog'], [data-state='open'], .fixed.inset-0").first();
-    const drawerVisible = await drawer.isVisible().catch(() => false);
+    const firstJob = page.locator("main a[aria-label^='Open job']").first();
+    await expect(firstJob).toBeVisible();
+    await firstJob.click();
+    await page.waitForURL(/\/jobs\/[^/?#]+/, { timeout: 10000 });
+    await page.goto(`${page.url().split("?")[0]}?tab=diagnosis`);
+    await waitSettled(page);
 
-    if (drawerVisible) {
-      // Close via Escape or close button
-      await page.keyboard.press("Escape");
-      await page.waitForTimeout(300);
-      await expect(drawer).toBeHidden();
-    }
-    // If no explicit drawer overlay, the test passes — the nav may expand inline
+    const actionBar = page.locator(".mobile-job-action-bar");
+    await expect(actionBar).toBeVisible();
+
+    await expect(page.locator("textarea[name='diagnosisNotes'], textarea[name='externalDiagnosis']").first()).toBeVisible();
+    const activeTag = await page.evaluate(() => {
+      const controls = Array.from(
+        document.querySelectorAll<HTMLTextAreaElement | HTMLInputElement | HTMLSelectElement>(
+          "textarea, input:not([type='hidden']), select",
+        ),
+      ).filter((element) => {
+        const style = window.getComputedStyle(element);
+        return !element.disabled && style.visibility !== "hidden" && style.display !== "none" && element.getClientRects().length > 0;
+      });
+      controls[0]?.scrollIntoView({ block: "center" });
+      controls[0]?.focus();
+      return document.activeElement?.tagName ?? "";
+    });
+    expect(activeTag).toMatch(/INPUT|TEXTAREA|SELECT/);
+
+    await expect(actionBar).toHaveCSS("opacity", "0");
+    await expect(page.locator(".mobile-bottom-nav")).toHaveCSS("opacity", "0");
   });
 });

@@ -145,7 +145,6 @@ export function AuditTimeline({ items }: { items: AuditItem[] }) {
 
         return item.jobId ? (
           // Tappable row when jobId is present
-          // eslint-disable-next-line @next/next/no-html-link-for-pages
           <a key={item.id} href={`/jobs/${item.jobId}`} className={`block ${cardCls} active:opacity-70`}>
             {inner}
           </a>

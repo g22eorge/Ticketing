@@ -65,10 +65,15 @@ function initials(name: string) {
 }
 
 
-// Primary nav tabs — show logo on mobile; everything else shows ← back
-const PRIMARY_TABS = new Set([
+const PRIMARY_TABS = new Set<string>([
   "/dashboard", "/jobs", "/documents/invoices", "/reports", "/more",
 ]);
+
+function isPrimaryMobileTab(pathname: string, role: string, permissions: string[]) {
+  if (PRIMARY_TABS.has(pathname)) return true;
+  if (pathname !== "/technicians") return false;
+  return role === "TECHNICIAN_EXTERNAL" || !can.viewIntake({ role: role as never, permissions });
+}
 
 export function Header({
   userName,
@@ -82,7 +87,7 @@ export function Header({
 }: HeaderProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const showMobileBack = !PRIMARY_TABS.has(pathname);
+  const showMobileBack = !isPrimaryMobileTab(pathname, role, permissions);
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);

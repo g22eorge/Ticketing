@@ -18,10 +18,25 @@ import { getOrgAccess } from "@/lib/billing-access";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserRole, getCurrentUserRoleOptional } from "@/lib/session";
 import { checkIsPlatformAdmin } from "@/lib/platform-admin";
+import { getDeploymentContext } from "@/lib/deployment-context";
+import { EIS_ORG_ID } from "@/lib/org";
 
 /** Use in server components and server actions that require a full org context. */
 export async function requireOrgSession() {
   const { session, user } = await getCurrentUserRole();
+  const deployment = await getDeploymentContext();
+
+  if (deployment.mode === "CARE_SINGLE_TENANT") {
+    if (checkIsPlatformAdmin(user!.email)) {
+      redirect("/platform");
+    }
+
+    if (user!.orgId !== EIS_ORG_ID) {
+      redirect("/login");
+    }
+
+    return buildOrgSession(session, user!, deployment.fixedOrgId);
+  }
 
   if (!user!.orgId) {
     if (checkIsPlatformAdmin(user!.email)) {
@@ -30,7 +45,14 @@ export async function requireOrgSession() {
     redirect("/onboarding");
   }
 
-  const orgId = user!.orgId as string;
+  return buildOrgSession(session, user!, user!.orgId as string);
+}
+
+async function buildOrgSession(
+  session: Awaited<ReturnType<typeof getCurrentUserRole>>["session"],
+  user: NonNullable<Awaited<ReturnType<typeof getCurrentUserRole>>["user"]>,
+  orgId: string,
+) {
   const orgRow = await prisma.organization
     .findUnique({
       where: { id: orgId },
@@ -57,7 +79,7 @@ export async function requireOrgSession() {
 
   return {
     session,
-    user: user!,
+    user,
     orgId,
     org: {
       baseCurrency,

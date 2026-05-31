@@ -19,7 +19,6 @@ import {
   Prisma,
   RepairPath,
   Role,
-  SaleStatus,
   OutboundMessageChannel,
 } from "@prisma/client";
 
@@ -475,7 +474,7 @@ async function main() {
     phone: "+256772100001",
   });
 
-  const manager = await ensureUser({
+  const _manager = await ensureUser({
     name: "Sarah Manager",
     email: "manager@eagle.test",
     role: "MANAGER",
@@ -568,7 +567,7 @@ async function main() {
     phone: "+256772100009",
   });
 
-  const sales = await ensureUser({
+  const _sales = await ensureUser({
     name: "Brian Sales",
     email: "sales@eagle.test",
     role: "SALES",

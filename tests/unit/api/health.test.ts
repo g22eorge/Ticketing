@@ -10,12 +10,6 @@ mock.module("@/lib/prisma", () => ({
 
 const { GET } = await import("../../../app/api/health/route");
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-function makeRequest() {
-  return new Request("http://localhost/api/health");
-}
-
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
 describe("GET /api/health — DB healthy", () => {

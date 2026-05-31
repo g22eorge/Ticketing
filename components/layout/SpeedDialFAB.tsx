@@ -19,11 +19,9 @@ export type SpeedDialAction = {
 export function SpeedDialFAB({
   actions,
   onAiToggle,
-  aiOpen,
 }: {
   actions: SpeedDialAction[];
   onAiToggle?: () => void;
-  aiOpen?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -47,7 +45,7 @@ export function SpeedDialFAB({
   return (
     <div
       ref={ref}
-      className="fixed bottom-[calc(var(--bottom-nav-h,64px)+12px)] right-4 z-50 flex flex-col items-end gap-3 md:hidden"
+      className="speed-dial-fab fixed bottom-[calc(var(--bottom-nav-h,64px)+12px)] right-4 z-50 flex flex-col items-end gap-3 md:hidden"
     >
       {/* Action items — slide up when open */}
       {open && (
@@ -56,6 +54,7 @@ export function SpeedDialFAB({
           {onAiToggle && (
             <button
               type="button"
+              aria-label="Open AI Guide"
               onClick={() => { onAiToggle(); setOpen(false); }}
               className="flex items-center gap-2.5 active:scale-95"
             >

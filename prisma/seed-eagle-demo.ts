@@ -15,13 +15,6 @@ import { prisma } from "@/lib/prisma";
 const DEMO_PASSWORD = "Demo1234!";
 const ORG_ID = "cmoxvcxks00002lgy926wzxoi"; // Eagle Info Solutions
 
-// ── utilities ─────────────────────────────────────────────────────────────────
-
-function cuid() {
-  // simple enough for seeding
-  return "demo_" + Math.random().toString(36).slice(2, 18);
-}
-
 function d(year: number, month: number, day: number) {
   return new Date(year, month - 1, day);
 }
@@ -143,7 +136,6 @@ async function main() {
     upsertClient("+256701234010", "Joseph Mutembei", "joe.mutembei@gmail.com"),
   ]);
 
-  const clients = [c1, c2, c3, c4, c5, c6, c7, c8, c9, c10];
   console.log("  ✓ Clients seeded");
 
   // ── 3. Jobs ──────────────────────────────────────────────────────────────

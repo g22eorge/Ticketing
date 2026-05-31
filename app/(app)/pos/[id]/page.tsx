@@ -155,12 +155,6 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
     notFound(); // sale doesn't exist in this org
   }
 
-  const orgBranding = await prisma.documentBrandingSettings.findFirst({
-    where: { orgId },
-    select: { vatRatePercent: true },
-  }).catch(() => null);
-  const vatRate = Math.max(0, orgBranding?.vatRatePercent ?? 18) / 100;
-
   const saleCurrency = normalizeCurrency(sale.currency, org.baseCurrency);
   const branches = await prisma.branch.findMany({
     where: { orgId, isActive: true },

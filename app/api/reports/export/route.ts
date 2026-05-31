@@ -7,6 +7,7 @@ import { getAppCurrency } from "@/lib/currency";
 import { can } from "@/lib/permissions";
 import { getJobPayoutsByIds } from "@/lib/payouts";
 import { prisma } from "@/lib/prisma";
+import { JOB_STATUSES, isOpenJobStatus } from "@/lib/job-status";
 
 type ExportType =
   | "pipeline-aging"
@@ -127,7 +128,7 @@ export async function GET(req: NextRequest) {
         where: {
           orgId,
           status: {
-            in: ["RECEIVED", "DIAGNOSING", "AWAITING_APPROVAL", "IN_REPAIR", "READY_FOR_PICKUP"],
+            in: JOB_STATUSES.filter(isOpenJobStatus),
           },
         },
       include: { assignedTo: true },
@@ -316,7 +317,7 @@ export async function GET(req: NextRequest) {
     for (const job of jobs) {
       const bucket = get(job.deviceType);
       bucket.total += 1;
-      if (["RECEIVED", "DIAGNOSING", "AWAITING_APPROVAL", "IN_REPAIR", "READY_FOR_PICKUP"].includes(job.status)) {
+      if (isOpenJobStatus(job.status)) {
         bucket.open += 1;
       }
       if (job.status === "COMPLETED") {

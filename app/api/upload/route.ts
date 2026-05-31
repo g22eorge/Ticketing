@@ -18,6 +18,7 @@ const MIME_TO_EXT: Record<string, string> = {
   "image/png": "png",
   "image/webp": "webp",
 };
+const ALLOWED_LABELS = new Set(["before", "during", "after", "other"]);
 
 export async function POST(req: NextRequest) {
   const { session, user, orgId, org } = await requireOrgSession();
@@ -39,7 +40,8 @@ export async function POST(req: NextRequest) {
 
   const formData = await req.formData();
   const jobId = String(formData.get("jobId") ?? "");
-  const label = sanitizeText(String(formData.get("label") ?? "other"));
+  const rawLabel = sanitizeText(String(formData.get("label") ?? "other")).toLowerCase();
+  const label = ALLOWED_LABELS.has(rawLabel) ? rawLabel : "other";
   const files = formData.getAll("files") as File[];
 
   if (!jobId || files.length === 0) {
@@ -100,6 +102,15 @@ export async function POST(req: NextRequest) {
         label,
       },
     });
+    await prisma.auditLog.create({
+      data: {
+        orgId,
+        jobId,
+        userId: session.user.id,
+        action: "PHOTO_UPLOADED",
+        detail: JSON.stringify({ photoId: photo.id, label }),
+      },
+    }).catch(() => {});
     created.push(photo);
   }
 
@@ -107,7 +118,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-  const { user, orgId, org } = await requireOrgSession();
+  const { session, user, orgId, org } = await requireOrgSession();
   if (user.role !== "ADMIN") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
@@ -139,6 +150,15 @@ export async function DELETE(req: NextRequest) {
   const absPath = path.resolve(uploadsRoot, relative);
   const safeToUnlink = absPath.startsWith(path.resolve(uploadsRoot) + path.sep);
   await prisma.photo.deleteMany({ where: { id, job: { orgId } } });
+  await prisma.auditLog.create({
+    data: {
+      orgId,
+      jobId: photo.jobId,
+      userId: session.user.id,
+      action: "PHOTO_DELETED",
+      detail: JSON.stringify({ photoId: id }),
+    },
+  }).catch(() => {});
 
   if (safeToUnlink) {
     try {

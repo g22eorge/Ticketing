@@ -638,21 +638,37 @@ export async function updateJobAction(formData: FormData) {
     },
   });
 
-  const job = await prisma.job.findUnique({
-    where: { id: payload.jobId, orgId },
-    select: {
-      id: true,
-      jobNumber: true,
-      status: true,
-      assignedToId: true,
-      brand: true,
-      model: true,
-      repairTimeline: true,
-      timelineNote: true,
-      client: { select: { fullName: true, phone: true } },
-      assignedTo: { select: { id: true, name: true, role: true } },
-    },
-  });
+  const job =
+    user.role === "TECHNICIAN_EXTERNAL"
+      ? await prisma.job.findUnique({
+          where: { id: payload.jobId, orgId },
+          select: {
+            id: true,
+            jobNumber: true,
+            status: true,
+            assignedToId: true,
+            brand: true,
+            model: true,
+            repairTimeline: true,
+            timelineNote: true,
+            assignedTo: { select: { id: true, name: true, role: true } },
+          },
+        })
+      : await prisma.job.findUnique({
+          where: { id: payload.jobId, orgId },
+          select: {
+            id: true,
+            jobNumber: true,
+            status: true,
+            assignedToId: true,
+            brand: true,
+            model: true,
+            repairTimeline: true,
+            timelineNote: true,
+            client: { select: { fullName: true, phone: true } },
+            assignedTo: { select: { id: true, name: true, role: true } },
+          },
+        });
 
   if (!job) {
     return { success: true };
@@ -661,7 +677,14 @@ export async function updateJobAction(formData: FormData) {
   // Notifications must compare against the pre-update snapshot.
   // `job` is fetched after the update, so compare to `existing`.
   if (existing.status !== job.status) {
-    await notifyStatusChange(orgId, job.id, existing.status, job.status, job.jobNumber, job.client.fullName);
+    const clientName =
+      user.role === "TECHNICIAN_EXTERNAL"
+        ? "Client"
+        : (await prisma.job.findUnique({
+            where: { id: job.id, orgId },
+            select: { client: { select: { fullName: true } } },
+          }))?.client.fullName ?? "Client";
+    await notifyStatusChange(orgId, job.id, existing.status, job.status, job.jobNumber, clientName);
   }
 
   if (existing.assignedToId !== job.assignedToId && job.assignedToId) {
@@ -1083,9 +1106,12 @@ export async function updateOneTimeExternalAssignmentAction(formData: FormData) 
 }
 
 export async function markMessagesReadAction(jobId: string): Promise<void> {
-  const { user, org } = await requireOrgSession();
+  const { user, org, orgId } = await requireOrgSession();
   assertOrgCanMutate({ access: org.access, userRole: user.role, userAccessMode: user.accessMode, kind: "GENERAL" });
   if (!["ADMIN", "OPS", "FRONT_DESK"].includes(user.role)) return;
+
+  const job = await prisma.job.findFirst({ where: { id: jobId, orgId }, select: { id: true } });
+  if (!job) return;
 
   try {
     await prisma.inboundMessage.updateMany({
@@ -1103,7 +1129,7 @@ export async function sendManualReplyAction(
   jobId: string,
   message: string
 ): Promise<{ success: boolean; error?: string }> {
-  const { user, org } = await requireOrgSession();
+  const { user, org, orgId } = await requireOrgSession();
   assertOrgCanMutate({ access: org.access, userRole: user.role, userAccessMode: user.accessMode, kind: "GENERAL" });
   if (!["ADMIN", "OPS", "FRONT_DESK"].includes(user.role)) {
     return { success: false, error: "Not authorised" };
@@ -1115,7 +1141,7 @@ export async function sendManualReplyAction(
   }
 
   const job = await prisma.job.findUnique({
-    where: { id: jobId },
+    where: { id: jobId, orgId },
     select: { client: { select: { phone: true } } },
   });
 

@@ -28,6 +28,38 @@ export async function runDataHeal(prisma: PrismaClient, options: RunDataHealOpti
     }
   }
 
+  const jobsWithoutAudit = await prisma.job.findMany({
+    where: { auditLogs: { none: {} } },
+    select: {
+      id: true,
+      jobNumber: true,
+      orgId: true,
+      createdById: true,
+    },
+    orderBy: { updatedAt: "desc" },
+    take: limit,
+  });
+
+  let auditLogsCreated = 0;
+  if (!dryRun) {
+    for (const job of jobsWithoutAudit) {
+      await prisma.auditLog.create({
+        data: {
+          orgId: job.orgId,
+          jobId: job.id,
+          userId: job.createdById,
+          action: "JOB_CREATED",
+          detail: JSON.stringify({
+            source: "data-heal",
+            backfilled: true,
+            reason: "missing initial audit log",
+          }),
+        },
+      });
+      auditLogsCreated += 1;
+    }
+  }
+
   const candidates = await prisma.job.findMany({
     where: {
       OR: [{ brand: "Unknown" }, { model: "Unknown" }, { deviceType: "OTHER" }],
@@ -46,7 +78,16 @@ export async function runDataHeal(prisma: PrismaClient, options: RunDataHealOpti
   });
 
   if (candidates.length === 0) {
-    return { ok: true, dryRun, checked: 0, fixed: 0, pending: 0, changes: [] };
+    return {
+      ok: true,
+      dryRun,
+      checked: 0,
+      fixed: 0,
+      pending: 0,
+      auditLogsCreated,
+      jobsMissingAuditLogs: dryRun ? jobsWithoutAudit.length : 0,
+      changes: [],
+    };
   }
 
   const jobIds = candidates.map((job) => job.id);
@@ -141,6 +182,8 @@ export async function runDataHeal(prisma: PrismaClient, options: RunDataHealOpti
     checked: candidates.length,
     fixed: changes.length,
     pending,
+    auditLogsCreated,
+    jobsMissingAuditLogs: dryRun ? jobsWithoutAudit.length : 0,
     changes: changes.slice(0, 50),
   };
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState, useTransition } from "react";
+import { useActionState, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { OrgModule } from "@prisma/client";
 
@@ -50,7 +50,6 @@ const initial: CreateOrgState = {};
 
 export function OnboardingForm() {
   const [state, action] = useActionState(createOrganization, initial);
-  const [, startTransition] = useTransition();
 
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [businessName, setBusinessName] = useState("");

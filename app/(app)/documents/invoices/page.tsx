@@ -13,7 +13,6 @@ import {
   isSupportedCurrency,
   normalizeCurrency,
   toBaseAmount,
-  SUPPORTED_CURRENCIES,
 } from "@/lib/currency";
 import { canGenerateInvoiceForStatus } from "@/lib/documents";
 import { JobStatus } from "@/lib/job-status";

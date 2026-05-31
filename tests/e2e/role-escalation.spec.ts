@@ -7,7 +7,7 @@
  * Expects 403 (or 404 for org-scoped not-found) — never 200.
  */
 
-import { expect, test, type Cookie } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 import { OrgModule, PrismaClient } from "@prisma/client";
 import { hashPassword } from "better-auth/crypto";
 
@@ -16,37 +16,6 @@ process.env.DATABASE_URL = process.env.E2E_DATABASE_URL ?? process.env.DATABASE_
 const prisma = new PrismaClient();
 const baseUrl = process.env.E2E_BASE_URL ?? "http://127.0.0.1:4173";
 const password = process.env.E2E_PASSWORD ?? "Tenant123!";
-
-function parseSetCookie(setCookie: string, origin: URL): Cookie {
-  const [nameValue, ...attributes] = setCookie.split(";").map((v) => v.trim());
-  const [name, ...valueParts] = nameValue.split("=");
-  const cookie: Cookie = {
-    name,
-    value: valueParts.join("="),
-    domain: origin.hostname,
-    path: "/",
-    expires: -1,
-    httpOnly: false,
-    secure: false,
-    sameSite: "Lax",
-  };
-  for (const attribute of attributes) {
-    const [keyRaw, ...rawValue] = attribute.split("=");
-    const key = keyRaw.toLowerCase();
-    const value = rawValue.join("=");
-    if (key === "path" && value) cookie.path = value;
-    if (key === "domain" && value) cookie.domain = value;
-    if (key === "httponly") cookie.httpOnly = true;
-    if (key === "secure") cookie.secure = true;
-    if (key === "samesite" && (value === "Lax" || value === "Strict" || value === "None"))
-      cookie.sameSite = value;
-    if (key === "max-age" && value) {
-      const seconds = Number(value);
-      if (Number.isFinite(seconds)) cookie.expires = Math.floor(Date.now() / 1000) + seconds;
-    }
-  }
-  return cookie;
-}
 
 async function ensureAccount(userId: string) {
   const passwordHash = await hashPassword(password);
@@ -112,7 +81,6 @@ async function seedFixture() {
 }
 
 async function loginAs(email: string): Promise<string | null> {
-  const origin = new URL(baseUrl);
   for (let attempt = 1; attempt <= 15; attempt++) {
     const res = await fetch(`${baseUrl}/api/auth/sign-in/email`, {
       method: "POST",

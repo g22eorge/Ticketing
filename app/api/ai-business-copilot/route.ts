@@ -72,13 +72,6 @@ function formatAmount(value: number, currency: string) {
   return `${currency} ${Math.round(value).toLocaleString()}`;
 }
 
-function formatNumber(value: number, decimals = 0) {
-  return value.toLocaleString(undefined, {
-    maximumFractionDigits: decimals,
-    minimumFractionDigits: decimals,
-  });
-}
-
 function changePhrase(current: number, previous: number) {
   const change = pctChange(current, previous);
   if (change === 0) return "flat versus last month";

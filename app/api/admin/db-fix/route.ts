@@ -13,7 +13,7 @@ export async function GET(req: Request) {
   if (!admin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   if (new URL(req.url).searchParams.get("run") === "1") {
-    return runDbFix();
+    return NextResponse.json({ error: "Use POST to run DB fix." }, { status: 405 });
   }
 
   // Provide a safe in-browser runner (uses current session cookies).
@@ -33,9 +33,8 @@ export async function GET(req: Request) {
       <form method="post" style="margin: 0;">
         <button type="submit" style="padding: 10px 14px; border: 1px solid #777; background: #fff; color: #111; border-radius: 8px; cursor: pointer;">Run Fix (no JS)</button>
       </form>
-      <a href="/api/admin/db-fix?run=1" style="font-size: 14px; color: #111;">Direct run link</a>
     </div>
-    <p style="margin: 12px 0 0; color: #555; font-size: 14px;">If the black button is inactive, use the white no-JS button or the direct run link.</p>
+    <p style="margin: 12px 0 0; color: #555; font-size: 14px;">If the black button is inactive, use the white no-JS POST button.</p>
     <pre id="out" style="margin-top: 16px; padding: 12px; border: 1px solid #ddd; border-radius: 8px; background: #fafafa; white-space: pre-wrap;"></pre>
     <script>
       const out = document.getElementById('out');

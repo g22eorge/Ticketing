@@ -8,7 +8,7 @@ import type { PaymentMethod } from "@prisma/client";
 import { formatMoney, normalizeCurrency, toBaseAmount } from "@/lib/currency";
 import { can } from "@/lib/permissions";
 import { orgDb, prisma } from "@/lib/prisma";
-import { getCurrentUserRole } from "@/lib/session";
+import { requireOrgSession } from "@/lib/org-context";
 import { ConfirmSubmitButton } from "@/components/shared/ConfirmSubmitButton";
 import { writeSystemAuditEvent } from "@/lib/commercial/audit";
 import { RowActionsMenu, MenuSection, MenuDestructiveRow } from "@/components/shared/RowActionsMenu";
@@ -21,8 +21,9 @@ export default async function ReceiptsPage({
 }: {
   searchParams: Promise<{ q?: string; period?: string }>;
 }) {
-  const { user } = await getCurrentUserRole();
-  const db = orgDb(user.orgId);
+  const { user, orgId, org } = await requireOrgSession();
+  const db = orgDb(orgId);
+  const baseCurrency = org.baseCurrency;
   if (!(can.viewFinancials(user) || ["ADMIN", "OPS", "FRONT_DESK"].includes(user.role))) {
     redirect("/dashboard");
   }
@@ -33,17 +34,16 @@ export default async function ReceiptsPage({
 
   async function createReceiptAction(formData: FormData) {
     "use server";
-    const { user } = await getCurrentUserRole();
-    if (!user.orgId) return;
-    const orgId = user.orgId;
+    const { user, orgId, org } = await requireOrgSession();
     const db = orgDb(orgId);
+    const baseCurrency = org.baseCurrency;
     if (!(can.viewFinancials(user) || ["ADMIN", "OPS"].includes(user.role))) redirect("/dashboard");
 
     const invoiceId = String(formData.get("invoiceId") ?? "").trim();
     const amount = Number(String(formData.get("amount") ?? "").trim());
     const methodRaw = String(formData.get("method") ?? "CASH").trim();
     const reference = String(formData.get("reference") ?? "").trim();
-    const currency = normalizeCurrency(formData.get("currency"), "UGX");
+    const currency = normalizeCurrency(formData.get("currency"), baseCurrency);
     if (!invoiceId || !Number.isFinite(amount) || amount <= 0) return;
 
     const method = PAYMENT_METHODS.includes(methodRaw as PaymentMethod) ? (methodRaw as PaymentMethod) : "OTHER" as PaymentMethod;
@@ -54,7 +54,7 @@ export default async function ReceiptsPage({
       const payment = await tx.payment.create({ data: { orgId, invoiceId: invoice.id, amount, method, reference: reference || null, currency, createdById: user.id } });
       await createReceiptForPayment(tx, { orgId, paymentId: payment.id, invoiceId: invoice.id, clientId: invoice.clientId, amount, currency, issuedById: user.id });
       const payments = await tx.payment.findMany({ where: { invoiceId: invoice.id, orgId }, select: { amount: true, currency: true, exchangeRateToBase: true } });
-      const paidAmount = payments.reduce((sum, p) => sum + toBaseAmount({ amount: p.amount, currency: p.currency, baseCurrency: "UGX", exchangeRateToBase: p.exchangeRateToBase }), 0);
+      const paidAmount = payments.reduce((sum, p) => sum + toBaseAmount({ amount: p.amount, currency: p.currency, baseCurrency, exchangeRateToBase: p.exchangeRateToBase }), 0);
       const isPaid = invoice.totalAmount > 0 && paidAmount >= invoice.totalAmount;
       await tx.invoice.updateMany({ where: { id: invoice.id, orgId }, data: { paidAmount, paidAt: isPaid ? new Date() : null, status: invoice.totalAmount <= 0 ? "PAID" : isPaid ? "PAID" : "ISSUED" } });
       if (invoice.jobId) await tx.job.updateMany({ where: { id: invoice.jobId, orgId }, data: { clientPaid: isPaid, clientPaidAt: isPaid ? new Date() : null, clientPaidById: isPaid ? user.id : null } });
@@ -66,8 +66,9 @@ export default async function ReceiptsPage({
 
   async function updateReceiptAction(formData: FormData) {
     "use server";
-    const { user: _u } = await getCurrentUserRole();
-    const db = orgDb(user.orgId);
+    const { user, orgId, org } = await requireOrgSession();
+    const db = orgDb(orgId);
+    const baseCurrency = org.baseCurrency;
     if (!(can.viewFinancials(user) || ["ADMIN", "OPS"].includes(user.role))) redirect("/dashboard");
 
     const paymentId = String(formData.get("paymentId") ?? "").trim();
@@ -80,7 +81,7 @@ export default async function ReceiptsPage({
     const method = PAYMENT_METHODS.includes(methodRaw as PaymentMethod) ? (methodRaw as PaymentMethod) : "OTHER" as PaymentMethod;
 
     const source = await prisma.payment.findFirst({
-      where: { id: paymentId },
+      where: { id: paymentId, orgId },
       select: { invoiceId: true, saleId: true, currency: true, exchangeRateToBase: true },
     });
     if (!source) return;
@@ -89,42 +90,42 @@ export default async function ReceiptsPage({
       const invoice = await db.invoice.findFirst({ where: { id: source.invoiceId }, select: { id: true, totalAmount: true } });
       if (!invoice) return;
       const otherPayments = await prisma.payment.findMany({
-        where: { invoiceId: invoice.id, id: { not: paymentId } },
+        where: { invoiceId: invoice.id, orgId, id: { not: paymentId } },
         select: { amount: true, currency: true, exchangeRateToBase: true },
       });
-      const nextPaidAmount = otherPayments.reduce((sum, p) => sum + toBaseAmount({ amount: p.amount, currency: p.currency, baseCurrency: "UGX", exchangeRateToBase: p.exchangeRateToBase }), 0)
-        + toBaseAmount({ amount, currency: source.currency, baseCurrency: "UGX", exchangeRateToBase: source.exchangeRateToBase });
+      const nextPaidAmount = otherPayments.reduce((sum, p) => sum + toBaseAmount({ amount: p.amount, currency: p.currency, baseCurrency, exchangeRateToBase: p.exchangeRateToBase }), 0)
+        + toBaseAmount({ amount, currency: source.currency, baseCurrency, exchangeRateToBase: source.exchangeRateToBase });
       if (nextPaidAmount > invoice.totalAmount) return;
     }
 
     await prisma.$transaction(async (tx) => {
       await tx.payment.updateMany({
-        where: { id: paymentId },
+        where: { id: paymentId, orgId },
         data: { amount, method, reference: reference || null, note: note || null },
       });
 
       if (source.invoiceId) {
-        const invoice = await tx.invoice.findFirst({ where: { id: source.invoiceId }, select: { id: true, totalAmount: true, jobId: true } });
+        const invoice = await tx.invoice.findFirst({ where: { id: source.invoiceId, orgId }, select: { id: true, totalAmount: true, jobId: true } });
         if (invoice) {
-          const payments = await tx.payment.findMany({ where: { invoiceId: invoice.id }, select: { amount: true, currency: true, exchangeRateToBase: true } });
-          const paidAmount = payments.reduce((sum, p) => sum + toBaseAmount({ amount: p.amount, currency: p.currency, baseCurrency: "UGX", exchangeRateToBase: p.exchangeRateToBase }), 0);
+          const payments = await tx.payment.findMany({ where: { invoiceId: invoice.id, orgId }, select: { amount: true, currency: true, exchangeRateToBase: true } });
+          const paidAmount = payments.reduce((sum, p) => sum + toBaseAmount({ amount: p.amount, currency: p.currency, baseCurrency, exchangeRateToBase: p.exchangeRateToBase }), 0);
           const isPaid = invoice.totalAmount > 0 && paidAmount >= invoice.totalAmount;
-          await tx.invoice.updateMany({ where: { id: invoice.id }, data: { paidAmount, paidAt: isPaid ? new Date() : null, status: invoice.totalAmount <= 0 ? "PAID" : isPaid ? "PAID" : "ISSUED" } });
-          if (invoice.jobId) await tx.job.updateMany({ where: { id: invoice.jobId }, data: { clientPaid: isPaid, clientPaidAt: isPaid ? new Date() : null, clientPaidById: isPaid ? user.id : null } });
+          await tx.invoice.updateMany({ where: { id: invoice.id, orgId }, data: { paidAmount, paidAt: isPaid ? new Date() : null, status: invoice.totalAmount <= 0 ? "PAID" : isPaid ? "PAID" : "ISSUED" } });
+          if (invoice.jobId) await tx.job.updateMany({ where: { id: invoice.jobId, orgId }, data: { clientPaid: isPaid, clientPaidAt: isPaid ? new Date() : null, clientPaidById: isPaid ? user.id : null } });
         }
       }
 
       if (source.saleId) {
-        const sale = await tx.sale.findFirst({ where: { id: source.saleId }, select: { id: true, totalAmount: true } });
+        const sale = await tx.sale.findFirst({ where: { id: source.saleId, orgId }, select: { id: true, totalAmount: true } });
         if (sale) {
-          const agg = await tx.payment.aggregate({ where: { saleId: sale.id }, _sum: { amount: true } });
+          const agg = await tx.payment.aggregate({ where: { saleId: sale.id, orgId }, _sum: { amount: true } });
           const paidAmount = agg._sum.amount ?? 0;
           const isPaid = sale.totalAmount > 0 && paidAmount >= sale.totalAmount;
-          await tx.sale.updateMany({ where: { id: sale.id }, data: { paidAmount, paidAt: isPaid ? new Date() : null, status: isPaid ? "PAID" : "OPEN" } });
+          await tx.sale.updateMany({ where: { id: sale.id, orgId }, data: { paidAmount, paidAt: isPaid ? new Date() : null, status: isPaid ? "PAID" : "OPEN" } });
         }
       }
     });
-    await writeSystemAuditEvent({ actorUserId: user.id, entityType: "Payment", entityId: paymentId, action: "RECEIPT_UPDATED", summary: "Receipt/payment updated" });
+    await writeSystemAuditEvent({ orgId, actorUserId: user.id, entityType: "Payment", entityId: paymentId, action: "RECEIPT_UPDATED", summary: "Receipt/payment updated" });
 
     revalidatePath("/documents/receipts");
     revalidatePath("/documents/invoices");
@@ -132,43 +133,44 @@ export default async function ReceiptsPage({
 
   async function deleteReceiptAction(formData: FormData) {
     "use server";
-    const { user: _u } = await getCurrentUserRole();
+    const { user, orgId, org } = await requireOrgSession();
+    const baseCurrency = org.baseCurrency;
     if (!("ADMIN" === user.role || can.approveInvoices(user))) return;
 
     const paymentId = String(formData.get("paymentId") ?? "").trim();
     if (!paymentId) return;
 
     const source = await prisma.payment.findFirst({
-      where: { id: paymentId },
+      where: { id: paymentId, orgId },
       select: { invoiceId: true, saleId: true },
     });
     if (!source) return;
 
     await prisma.$transaction(async (tx) => {
-      await tx.payment.deleteMany({ where: { id: paymentId } });
+      await tx.payment.deleteMany({ where: { id: paymentId, orgId } });
 
       if (source.invoiceId) {
-        const invoice = await tx.invoice.findFirst({ where: { id: source.invoiceId }, select: { id: true, totalAmount: true, jobId: true } });
+        const invoice = await tx.invoice.findFirst({ where: { id: source.invoiceId, orgId }, select: { id: true, totalAmount: true, jobId: true } });
         if (invoice) {
-          const payments = await tx.payment.findMany({ where: { invoiceId: invoice.id }, select: { amount: true, currency: true, exchangeRateToBase: true } });
-          const paidAmount = payments.reduce((sum, p) => sum + toBaseAmount({ amount: p.amount, currency: p.currency, baseCurrency: "UGX", exchangeRateToBase: p.exchangeRateToBase }), 0);
+          const payments = await tx.payment.findMany({ where: { invoiceId: invoice.id, orgId }, select: { amount: true, currency: true, exchangeRateToBase: true } });
+          const paidAmount = payments.reduce((sum, p) => sum + toBaseAmount({ amount: p.amount, currency: p.currency, baseCurrency, exchangeRateToBase: p.exchangeRateToBase }), 0);
           const isPaid = invoice.totalAmount > 0 && paidAmount >= invoice.totalAmount;
-          await tx.invoice.updateMany({ where: { id: invoice.id }, data: { paidAmount, paidAt: isPaid ? new Date() : null, status: invoice.totalAmount <= 0 ? "PAID" : isPaid ? "PAID" : "ISSUED" } });
-          if (invoice.jobId) await tx.job.updateMany({ where: { id: invoice.jobId }, data: { clientPaid: isPaid, clientPaidAt: isPaid ? new Date() : null, clientPaidById: isPaid ? user.id : null } });
+          await tx.invoice.updateMany({ where: { id: invoice.id, orgId }, data: { paidAmount, paidAt: isPaid ? new Date() : null, status: invoice.totalAmount <= 0 ? "PAID" : isPaid ? "PAID" : "ISSUED" } });
+          if (invoice.jobId) await tx.job.updateMany({ where: { id: invoice.jobId, orgId }, data: { clientPaid: isPaid, clientPaidAt: isPaid ? new Date() : null, clientPaidById: isPaid ? user.id : null } });
         }
       }
 
       if (source.saleId) {
-        const sale = await tx.sale.findFirst({ where: { id: source.saleId }, select: { id: true, totalAmount: true } });
+        const sale = await tx.sale.findFirst({ where: { id: source.saleId, orgId }, select: { id: true, totalAmount: true } });
         if (sale) {
-          const agg = await tx.payment.aggregate({ where: { saleId: sale.id }, _sum: { amount: true } });
+          const agg = await tx.payment.aggregate({ where: { saleId: sale.id, orgId }, _sum: { amount: true } });
           const paidAmount = agg._sum.amount ?? 0;
           const isPaid = sale.totalAmount > 0 && paidAmount >= sale.totalAmount;
-          await tx.sale.updateMany({ where: { id: sale.id }, data: { paidAmount, paidAt: isPaid ? new Date() : null, status: isPaid ? "PAID" : "OPEN" } });
+          await tx.sale.updateMany({ where: { id: sale.id, orgId }, data: { paidAmount, paidAt: isPaid ? new Date() : null, status: isPaid ? "PAID" : "OPEN" } });
         }
       }
     });
-    await writeSystemAuditEvent({ actorUserId: user.id, entityType: "Payment", entityId: paymentId, action: "RECEIPT_DELETED", summary: "Receipt/payment deleted" });
+    await writeSystemAuditEvent({ orgId, actorUserId: user.id, entityType: "Payment", entityId: paymentId, action: "RECEIPT_DELETED", summary: "Receipt/payment deleted" });
 
     revalidatePath("/documents/receipts");
     revalidatePath("/documents/invoices");
@@ -199,6 +201,7 @@ export default async function ReceiptsPage({
 
   const payments = await prisma.payment.findMany({
     where: {
+      orgId,
       ...(periodFilter ? { receivedAt: periodFilter } : {}),
       ...(q ? searchWhere : {}),
     },
@@ -226,8 +229,8 @@ export default async function ReceiptsPage({
       sum +
         toBaseAmount({
           amount: p.amount,
-          currency: normalizeCurrency(p.currency, "UGX"),
-          baseCurrency: "UGX",
+          currency: normalizeCurrency(p.currency, baseCurrency),
+          baseCurrency,
           exchangeRateToBase: p.exchangeRateToBase,
         }),
     0,
@@ -238,8 +241,8 @@ export default async function ReceiptsPage({
       sum +
         toBaseAmount({
           amount: p.amount,
-          currency: normalizeCurrency(p.currency, "UGX"),
-          baseCurrency: "UGX",
+          currency: normalizeCurrency(p.currency, baseCurrency),
+          baseCurrency,
           exchangeRateToBase: p.exchangeRateToBase,
         }),
     0,
@@ -269,8 +272,8 @@ export default async function ReceiptsPage({
       (sum, p) =>
         sum + toBaseAmount({
           amount: p.amount,
-          currency: normalizeCurrency(p.currency, "UGX"),
-          baseCurrency: "UGX",
+          currency: normalizeCurrency(p.currency, baseCurrency),
+          baseCurrency,
           exchangeRateToBase: p.exchangeRateToBase,
         }),
       0,
@@ -314,11 +317,11 @@ export default async function ReceiptsPage({
           </div>
           <div className="px-4 py-2">
             <p className="text-[13px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">Total Amount</p>
-            <p className="text-[15px] font-black tabular-nums leading-tight text-[var(--ink)]">{formatMoney(totalAmountBase, "UGX")}</p>
+            <p className="text-[15px] font-black tabular-nums leading-tight text-[var(--ink)]">{formatMoney(totalAmountBase, baseCurrency)}</p>
           </div>
           <div className="px-4 py-2">
             <p className="text-[13px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">This Month</p>
-            <p className="text-[15px] font-black tabular-nums leading-tight text-[var(--accent)]">{formatMoney(thisMonthAmountBase, "UGX")}</p>
+            <p className="text-[15px] font-black tabular-nums leading-tight text-[var(--accent)]">{formatMoney(thisMonthAmountBase, baseCurrency)}</p>
           </div>
           <div className="px-4 py-2">
             <p className="text-[13px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">Cash</p>
@@ -362,11 +365,11 @@ export default async function ReceiptsPage({
             <select name="invoiceId" required className="h-9 rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 text-sm sm:col-span-2">
               <option value="">Select invoice...</option>
               {invoiceOptions.map((invoice) => (
-                <option key={invoice.id} value={invoice.id}>{invoice.invoiceNumber} - {invoice.job?.jobNumber ?? invoice.client?.fullName ?? "Invoice"} - due {formatMoney(invoice.totalAmount - invoice.paidAmount, normalizeCurrency(invoice.currency, "UGX"))}</option>
+                <option key={invoice.id} value={invoice.id}>{invoice.invoiceNumber} - {invoice.job?.jobNumber ?? invoice.client?.fullName ?? "Invoice"} - due {formatMoney(invoice.totalAmount - invoice.paidAmount, normalizeCurrency(invoice.currency, baseCurrency))}</option>
               ))}
             </select>
             <input name="amount" required inputMode="decimal" placeholder="Amount" className="h-9 rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 text-sm" />
-            <input type="hidden" name="currency" value="UGX" />
+            <input type="hidden" name="currency" value={baseCurrency} />
             <select name="method" defaultValue="CASH" className="h-9 rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 text-sm">
               {PAYMENT_METHODS.map((method) => <option key={method} value={method}>{method.replaceAll("_", " ")}</option>)}
             </select>
@@ -400,7 +403,7 @@ export default async function ReceiptsPage({
                   </div>
                 </div>
                 <span className="shrink-0 text-[13px] tabular-nums text-[var(--ink-muted)]">{m.pct}% · {m.count}</span>
-                <span className="shrink-0 text-[13px] font-semibold tabular-nums text-[var(--ink)]">{formatMoney(m.amount, "UGX")}</span>
+                <span className="shrink-0 text-[13px] font-semibold tabular-nums text-[var(--ink)]">{formatMoney(m.amount, baseCurrency)}</span>
               </div>
             ))}
           </div>
@@ -421,7 +424,7 @@ export default async function ReceiptsPage({
           </thead>
           <tbody>
             {payments.map((p) => {
-              const currency = normalizeCurrency(p.currency, "UGX");
+              const currency = normalizeCurrency(p.currency, baseCurrency);
               const label = p.invoice?.job?.jobNumber
                 ? `Repair ${p.invoice.job.jobNumber}`
                 : p.sale?.saleNumber

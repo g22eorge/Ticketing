@@ -32,7 +32,7 @@ async function sendEmail(to: string, subject: string, body: string): Promise<voi
 
 export async function handleApprovalReminder(data: unknown): Promise<void> {
   const {
-    orgId,
+    orgId: _orgId,
     approvalRequestId,
     approverUserId,
     module,

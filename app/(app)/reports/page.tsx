@@ -7,12 +7,11 @@ import { MonthSelectForm } from "@/components/shared/MonthSelectForm";
 import { TechnicianBarChart } from "@/components/reports/ReportsCharts";
 import { MobileActivityFeed } from "@/components/reports/MobileActivityFeed";
 import { getClientBill, getExternalTechBill, resolveTechCost } from "@/lib/billing";
-import { formatMoney, formatMoneyCompact, toBaseAmount } from "@/lib/currency";
+import { formatMoneyCompact, toBaseAmount } from "@/lib/currency";
 import { formatEATMonthLabel } from "@/lib/date-eat";
 import { UI_JOB_STATUSES, JobStatus, normalizeJobStatus } from "@/lib/job-status";
 import { filterSupportedJobStatuses } from "@/lib/job-status-server";
 import { can } from "@/lib/permissions";
-import { getJobPayoutsByIds } from "@/lib/payouts";
 import { prisma } from "@/lib/prisma";
 import { requireOrgSession } from "@/lib/org-context";
 import { requireModule, OrgModule } from "@/lib/module-access";
@@ -140,7 +139,7 @@ export default async function ReportsPage({
     openJobs,
     externalCount,
     inHouseCount,
-    externalPayoutOutstandingJobs,
+    _externalPayoutOutstandingJobs,
     paidExternalJobs,
     earliestJob,
     latestJob,
@@ -154,7 +153,7 @@ export default async function ReportsPage({
     lowStockParts,
     supplierBillsAgg,
     expensesMtd,
-    trendJobs,
+    _trendJobs,
     jobsInSelectedPeriod,
   ] = await Promise.all([
     prisma.job.groupBy({ by: ["status"], where: { orgId }, _count: { status: true } }),

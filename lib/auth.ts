@@ -23,6 +23,17 @@ function collectTrustedOrigins() {
     "https://mrms-apga.vercel.app",         // commercial Vercel deployment (apga)
   ];
 
+  const devOrigins = process.env.NODE_ENV === "production"
+    ? []
+    : [
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "http://localhost:4173",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:3001",
+        "http://127.0.0.1:4173",
+      ];
+
   const fromSingleEnv = [
     normalizeOrigin(process.env.BETTER_AUTH_URL),
     normalizeOrigin(process.env.NEXT_PUBLIC_APP_URL),
@@ -36,7 +47,7 @@ function collectTrustedOrigins() {
     .map((part) => normalizeOrigin(part))
     .filter((origin): origin is string => Boolean(origin));
 
-  return Array.from(new Set([...hardcoded, ...fromSingleEnv, ...fromListEnv]));
+  return Array.from(new Set([...hardcoded, ...devOrigins, ...fromSingleEnv, ...fromListEnv]));
 }
 
 const trustedOrigins = collectTrustedOrigins();

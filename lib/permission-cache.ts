@@ -20,7 +20,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { getRedisConnection } from "@/lib/queue/redis";
-import { EXTRA_PERMISSIONS, type ExtraPermission } from "@/lib/permissions";
+import { type ExtraPermission } from "@/lib/permissions";
 
 // ── Config ────────────────────────────────────────────────────────────────────
 
@@ -264,7 +264,7 @@ export async function invalidatePermissions(userId: string): Promise<void> {
  * Invalidate all cached entries for an org (e.g. when org-wide permissions change).
  * Only works when Redis is available — in-process cache entries are evicted by TTL.
  */
-export async function invalidateOrgPermissions(orgId: string): Promise<void> {
+export async function invalidateOrgPermissions(_orgId: string): Promise<void> {
   const redis = getRedisConnection();
   if (!redis) return;
   try {

@@ -18,7 +18,7 @@
 const BASE_URL = process.env.E2E_BASE_URL ?? "http://127.0.0.1:3000";
 const RATE_LIMIT_ENDPOINT = `${BASE_URL}/api/auth/sign-in/email`;
 const TOTAL_REQUESTS = 11;
-const RATE_LIMIT_THRESHOLD = 10; // server limit per 15 min window
+const _RATE_LIMIT_THRESHOLD = 10; // server limit per 15 min window
 
 console.log(`Rate-limit smoke test → ${RATE_LIMIT_ENDPOINT}`);
 console.log(`Sending ${TOTAL_REQUESTS} requests with wrong credentials...`);

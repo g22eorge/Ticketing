@@ -3,6 +3,7 @@
 import { Role } from "@prisma/client";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { can } from "@/lib/permissions";
 
 function pageMeta(pathname: string, role: Role) {
   const parts = pathname.split("/").filter(Boolean);
@@ -99,7 +100,7 @@ function roleTagStyle(role: Role) {
  * Every other page (even single-segment ones like /clients, /inventory,
  * /payout-followups) navigated to FROM somewhere — they all get a back arrow.
  */
-const PRIMARY_TABS = new Set([
+const PRIMARY_TABS = new Set<string>([
   "/dashboard",           // Home tab
   "/jobs",                // Repairs tab
   "/documents/invoices",  // Invoices tab
@@ -107,21 +108,22 @@ const PRIMARY_TABS = new Set([
   "/more",                // More tab
 ]);
 
-function isSubPage(pathname: string) {
-  // Show back button on every page that is NOT a primary tab
-  return !PRIMARY_TABS.has(pathname);
+function isPrimaryMobileTab(pathname: string, role: Role, permissions: string[]) {
+  if (PRIMARY_TABS.has(pathname)) return true;
+  if (pathname !== "/technicians") return false;
+  return role === "TECHNICIAN_EXTERNAL" || !can.viewIntake({ role, permissions });
 }
 
 // On mobile, only the primary tab pages have their own native headers
-function isMobileRootPage(pathname: string) {
-  return PRIMARY_TABS.has(pathname);
+function isMobileRootPage(pathname: string, role: Role, permissions: string[]) {
+  return isPrimaryMobileTab(pathname, role, permissions);
 }
 
-export function PageThemeHeader({ role }: { role: Role }) {
+export function PageThemeHeader({ role, permissions = [] }: { role: Role; permissions?: string[] }) {
   const pathname = usePathname();
   const meta = pageMeta(pathname, role);
   const [resolvedSubtitle, setResolvedSubtitle] = useState<{ path: string; text: string } | null>(null);
-  const hideMobile = isMobileRootPage(pathname); // primary-tab pages have own native headers
+  const hideMobile = isMobileRootPage(pathname, role, permissions); // primary-tab pages have own native headers
 
   useEffect(() => {
     let cancelled = false;
@@ -129,6 +131,7 @@ export function PageThemeHeader({ role }: { role: Role }) {
 
     const load = async () => {
       if (parts[0] === "jobs" && parts[1]) {
+        if (parts[1] === "new") return;
         const jobNumber = await fetchJobNumber(parts[1]);
         if (!cancelled && jobNumber) {
           setResolvedSubtitle({ path: pathname, text: jobNumber });

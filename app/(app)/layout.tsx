@@ -181,7 +181,7 @@ export default async function AppLayout({
                   shows back arrow + page title
                 • Desktop: always shows the full card with role badge
             */}
-            <PageThemeHeader role={user.role} />
+            <PageThemeHeader role={user.role} permissions={user.permissions} />
             {isSuspended ? (
               <div className="panel-shadow rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-100">
                 <div className="flex flex-wrap items-center justify-between gap-2">
@@ -215,7 +215,7 @@ export default async function AppLayout({
       />
       {/* Mobile: single speed-dial FAB (replaces separate FAB + AI bubble) */}
       <SpeedDialFAB
-        actions={isSuspended ? [] : buildSpeedDialActions(user)}
+        actions={isSuspended ? [] : buildSpeedDialActions(user, enabledModules)}
       />
       {/* Desktop: keep the draggable AI bubble; mobile: hidden (AI is in speed-dial) */}
       <div className="hidden lg:block">
@@ -252,9 +252,26 @@ function buildFabActions(user: { role: string; permissions?: string[] }): FabAct
 }
 
 // Mobile speed-dial: New Job + AI Guide
-function buildSpeedDialActions(user: { role: string; permissions?: string[] }): SpeedDialAction[] {
+function buildSpeedDialActions(
+  user: { role: string; permissions?: string[] },
+  enabledModules?: { has(value: "REPORTS"): boolean },
+): SpeedDialAction[] {
   const u = user as Parameters<typeof can.createJob>[0];
   const actions: SpeedDialAction[] = [];
+  if (can.viewAccountsSummary(u) && (!enabledModules || enabledModules.has("REPORTS"))) {
+    actions.push({
+      label: "AI Guide",
+      href: "/ai-insights",
+      color: "bg-[var(--panel)] border border-[var(--line)] text-[var(--accent)]",
+      icon: (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 0 2h-1v1a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-1H1a1 1 0 0 1 0-2h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2z" />
+          <path d="M8 12h.01M16 12h.01" />
+        </svg>
+      ),
+    });
+  }
   if (can.createJob(u)) {
     actions.push({
       label: "New Job",

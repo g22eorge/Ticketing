@@ -4,7 +4,6 @@ import {
   MODULE_LABELS,
   MODULE_ICONS,
   getOrgModules,
-  type OrgModule,
 } from "../../lib/module-access";
 
 // ── ALL_MODULES ───────────────────────────────────────────────────────────────

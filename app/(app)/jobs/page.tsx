@@ -244,9 +244,12 @@ export default async function JobsPage({
       take: pageSize,
     });
 
-    const clientIds = Array.from(
-      new Set(bareJobs.map((job) => job.clientId).filter((id): id is string => Boolean(id))),
-    );
+    const canLoadClientRows = user.role !== "TECHNICIAN_EXTERNAL";
+    const clientIds = canLoadClientRows
+      ? Array.from(
+          new Set(bareJobs.map((job) => job.clientId).filter((id): id is string => Boolean(id))),
+        )
+      : [];
     const assigneeIds = Array.from(
       new Set(bareJobs.map((job) => job.assignedToId).filter((id): id is string => Boolean(id))),
     );
@@ -255,10 +258,12 @@ export default async function JobsPage({
     );
 
     const [clientRows, assigneeRows, deviceRows] = await Promise.all([
-      prisma.client.findMany({
-        where: { id: { in: clientIds } },
-        select: { id: true, fullName: true },
-      }),
+      canLoadClientRows
+        ? prisma.client.findMany({
+            where: { id: { in: clientIds } },
+            select: { id: true, fullName: true },
+          })
+        : Promise.resolve([]),
       prisma.user.findMany({
         where: { id: { in: assigneeIds } },
         select: { id: true, name: true },
@@ -275,7 +280,7 @@ export default async function JobsPage({
 
     jobs = bareJobs.map((job) => ({
       ...job,
-      client: clientMap.get(job.clientId),
+      ...(canLoadClientRows ? { client: clientMap.get(job.clientId) } : {}),
       assignedTo: job.assignedToId ? assigneeMap.get(job.assignedToId) : null,
       device: job.deviceId ? deviceMap.get(job.deviceId) : undefined,
       oneTimeExternalAssignment: null,
@@ -360,14 +365,26 @@ export default async function JobsPage({
   // Quick-advance action: tap button on card → advance to DIAGNOSING without opening job
   async function quickAdvanceAction(formData: FormData) {
     "use server";
-    const { user: u, orgId: qOrgId } = await requireOrgSession();
+    const { session: quickSession, user: u, orgId: qOrgId } = await requireOrgSession();
     if (!can.editDiagnosis(u)) return;
     const jobId = String(formData.get("jobId") ?? "").trim();
     const toStatus = String(formData.get("toStatus") ?? "").trim() as JobStatus;
-    if (!jobId || !toStatus) return;
-    const job = await prisma.job.findFirst({ where: { id: jobId, orgId: qOrgId }, select: { id: true, status: true, updatedAt: true } });
+    if (!jobId || toStatus !== "DIAGNOSING") return;
+    const quickCanSearchAll =
+      u.role === "TECHNICIAN_INTERNAL" && (can.searchJobs(u) || can.approveInvoices(u));
+    const job = await prisma.job.findFirst({
+      where: {
+        id: jobId,
+        orgId: qOrgId,
+        status: "RECEIVED",
+        ...(u.role === "TECHNICIAN_EXTERNAL" || (u.role === "TECHNICIAN_INTERNAL" && !quickCanSearchAll)
+          ? { assignedToId: quickSession.user.id }
+          : {}),
+      },
+      select: { id: true, status: true, updatedAt: true },
+    });
     if (!job) return;
-    await prisma.job.update({ where: { id: jobId }, data: { status: toStatus, updatedAt: new Date() } });
+    await prisma.job.update({ where: { id: jobId, orgId: qOrgId }, data: { status: toStatus, updatedAt: new Date() } });
     await prisma.auditLog.create({ data: { orgId: qOrgId, jobId, userId: u.id, action: "STATUS_CHANGED", detail: JSON.stringify({ from: job.status, to: toStatus, source: "quick_advance" }) } }).catch(() => {});
     revalidatePath("/jobs");
   }

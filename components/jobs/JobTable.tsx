@@ -250,7 +250,6 @@ export function JobTable({
       {/* ── Mobile list — borderless card stack ── */}
       <div className="overflow-hidden rounded-2xl border border-[var(--line)]/60 bg-[var(--panel)] lg:hidden">
         {jobs.map((job) => {
-            const strip = statusStripClass(job.status);
             const hasFlag = job.workflowReason && job.workflowReason !== "NONE";
             const flagCfg = hasFlag ? workflowReasonConfig[job.workflowReason as HighlightReason] : null;
 
@@ -264,15 +263,6 @@ export function JobTable({
                   ? formatMoney(job.externalTechBill)
                   : null
               : null;
-
-            // Pricing badge (admin/ops only)
-            const pricingBadge = canManagePricing
-              ? typeof job.clientBill === "number"
-                ? <span key="priced" className="rounded px-1.5 py-0.5 text-[12px] font-semibold bg-[var(--accent)]/10 text-[#7A5F00]">Priced</span>
-                : ["AWAITING_APPROVAL", "IN_REPAIR", "READY_FOR_PICKUP"].includes(job.status)
-                  ? <span key="needs" className="rounded border border-amber-400/30 px-1.5 py-0.5 text-[12px] font-semibold bg-amber-500/10 text-amber-700 dark:text-amber-400">Needs pricing</span>
-                  : null
-                  : null;
 
             const canDownloadQuotation = canUseQuotations && quotationStatuses.has(job.status);
             const canDownloadInvoice = canUseInvoices && invoiceStatuses.has(job.status);

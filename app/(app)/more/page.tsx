@@ -4,7 +4,6 @@
  * Desktop: renders the same content but inside the normal sidebar layout.
  */
 import Link from "next/link";
-import { redirect } from "next/navigation";
 
 import { can } from "@/lib/permissions";
 import { requireOrgSession } from "@/lib/org-context";
@@ -31,7 +30,6 @@ function NavRow({
   label,
   badge,
   iconBg = "bg-[var(--panel-strong)]",
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   description: _desc,
 }: {
   href: string;

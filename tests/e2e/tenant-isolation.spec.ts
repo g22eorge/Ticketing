@@ -112,6 +112,21 @@ async function seedTenantFixture() {
       completedAt: new Date(),
     },
   });
+  const existingJobBAudit = await prisma.auditLog.findFirst({
+    where: { jobId: jobB.id, action: "JOB_CREATED" },
+    select: { id: true },
+  });
+  if (!existingJobBAudit) {
+    await prisma.auditLog.create({
+      data: {
+        orgId: orgB.id,
+        jobId: jobB.id,
+        userId: userB.id,
+        action: "JOB_CREATED",
+        detail: JSON.stringify({ source: "e2e_tenant_isolation_fixture" }),
+      },
+    });
+  }
   const invoiceB = await prisma.invoice.upsert({
     where: { jobId: jobB.id },
     update: { orgId: orgB.id, invoiceNumber: "INV-E2E-TENANT-B-0001", totalAmount: 999999, paidAmount: 999999, status: "PAID", paidAt: new Date() },

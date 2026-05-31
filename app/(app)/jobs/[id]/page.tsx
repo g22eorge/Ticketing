@@ -34,19 +34,32 @@ export default async function JobDetailPage({
   if (user.role === "TECHNICIAN_EXTERNAL") {
     const job = await prisma.job.findFirst({
       where,
-      include: { photos: true },
+      select: {
+        id: true,
+        jobNumber: true,
+        status: true,
+        updatedAt: true,
+        clientApproved: true,
+        approvalDate: true,
+        deviceType: true,
+        brand: true,
+        model: true,
+        serialOrImei: true,
+        accessories: true,
+        externalDiagnosis: true,
+        partsNeeded: true,
+        externalTechBill: true,
+        repairTimeline: true,
+        timelineMinMinutes: true,
+        timelineMaxMinutes: true,
+        timelineConfidence: true,
+        timelineNote: true,
+      },
     });
 
     if (!job) {
       notFound();
     }
-
-    const jobWithTimeline = job as typeof job & {
-      timelineMinMinutes?: number | null;
-      timelineMaxMinutes?: number | null;
-      timelineConfidence?: "FIRM" | "ESTIMATED" | "PARTS_DEPENDENT" | null;
-      timelineNote?: string | null;
-    };
 
     return (
       <ExternalTechJobView
@@ -66,10 +79,10 @@ export default async function JobDetailPage({
           partsNeeded: job.partsNeeded,
           externalTechBill: getExternalTechBill(job),
           repairTimeline: job.repairTimeline,
-          timelineMinMinutes: jobWithTimeline.timelineMinMinutes ?? null,
-          timelineMaxMinutes: jobWithTimeline.timelineMaxMinutes ?? null,
-          timelineConfidence: jobWithTimeline.timelineConfidence ?? null,
-          timelineNote: jobWithTimeline.timelineNote ?? null,
+          timelineMinMinutes: job.timelineMinMinutes ?? null,
+          timelineMaxMinutes: job.timelineMaxMinutes ?? null,
+          timelineConfidence: job.timelineConfidence ?? null,
+          timelineNote: job.timelineNote ?? null,
         }}
         returnTo={safeReturnTo}
       />

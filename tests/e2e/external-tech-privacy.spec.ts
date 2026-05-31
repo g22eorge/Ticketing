@@ -34,6 +34,11 @@ const forbiddenSeedValues = [
   "08010020001",
   "08010020002",
   "amina@train.eagle",
+  "Privacy Test Client",
+  "Privacy Test Org",
+  "08019990001",
+  "privacy-test-client@example.invalid",
+  "234567",
 ] as const;
 
 function parseSetCookie(setCookie: string, origin: URL): Cookie {
@@ -116,7 +121,7 @@ async function ensureAssignedPrivacyJob(email: string) {
     },
   });
 
-  await prisma.job.upsert({
+  const job = await prisma.job.upsert({
     where: { jobNumber: "E2E-PRIVACY-0001" },
     update: { orgId, clientId: client.id, assignedToId: user!.id, repairPath: "EXTERNAL" },
     create: {
@@ -136,6 +141,22 @@ async function ensureAssignedPrivacyJob(email: string) {
       clientBill: 234567,
     },
   });
+
+  const existingAudit = await prisma.auditLog.findFirst({
+    where: { jobId: job.id, action: "JOB_CREATED" },
+    select: { id: true },
+  });
+  if (!existingAudit) {
+    await prisma.auditLog.create({
+      data: {
+        orgId,
+        jobId: job.id,
+        userId: user!.id,
+        action: "JOB_CREATED",
+        detail: JSON.stringify({ source: "e2e_external_privacy_fixture" }),
+      },
+    });
+  }
 }
 
 function assertNoForbiddenData(payload: unknown) {
@@ -182,4 +203,19 @@ test("external technician job APIs do not expose client PII or billing history",
   }, firstJobId);
 
   assertNoForbiddenData(job);
+
+  await page.goto(`/jobs/${firstJobId}`);
+  await expect(page.getByText("External Work Brief")).toBeVisible();
+  const html = await page.locator("body").innerText();
+  for (const value of forbiddenSeedValues) {
+    expect(html, `External technician page leaked: ${value}`).not.toContain(value);
+  }
+
+  for (const suffix of ["job-card", "quotation", "invoice"]) {
+    const status = await page.evaluate(async ({ id, suffix }) => {
+      const response = await fetch(`/api/jobs/${id}/${suffix}`, { headers: { accept: "application/pdf" } });
+      return response.status;
+    }, { id: firstJobId, suffix });
+    expect(status, `External technician should not download ${suffix}`).toBe(403);
+  }
 });
