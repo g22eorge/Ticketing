@@ -483,50 +483,33 @@ export default async function JobsPage({
           ) : null}
         </form>
 
-        {/* Row 3: Status chips — horizontal scroll with right fade */}
-        <div className="relative">
-        <div className="flex gap-2 overflow-x-auto pb-2 [scrollbar-width:none]">
-          <Link
-            href={statusChipHref("")}
-            className={`shrink-0 rounded-full px-4 py-1.5 text-[12px] font-bold transition ${
-              !statusValue
-                ? "bg-[var(--accent)] text-black"
-                : "border border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]"
-            }`}
-          >
-            All {!statusValue && total > 0 ? `(${total})` : ""}
-          </Link>
-          {UI_JOB_STATUSES.map((s) => {
-            const cnt = uiStatusCountMap.get(s);
-            return (
-              <Link
-                key={s}
-                href={statusChipHref(s)}
-                className={`shrink-0 rounded-full px-4 py-1.5 text-[12px] font-bold transition ${
-                  statusValue === s
-                    ? "bg-[var(--accent)] text-black"
-                    : "border border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]"
-                }`}
-              >
-                {statusOptionLabel[s].replace(" for Pickup", "").replace("ing Approval", "")}
-                {cnt !== undefined && cnt > 0 ? ` (${cnt})` : ""}
-              </Link>
-            );
-          })}
-          <Link
-            href={overdueChipHref}
-            className={`shrink-0 rounded-full px-4 py-1.5 text-[12px] font-bold transition ${
-              filters.overdue === "1"
-                ? "bg-red-500 text-white"
-                : "border border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]"
-            }`}
-          >
-            Overdue
-          </Link>
-          <span className="shrink-0 w-6" aria-hidden="true" />
-        </div>
-        <div className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-[var(--bg)] to-transparent" />
-        </div>
+        {/* Row 3: 4 key status chips — equal grid, always fits screen */}
+        {(() => {
+          const KEY_CHIPS = [
+            { status: "",                  label: "All",      count: total ?? 0,                                   urgent: false },
+            { status: "AWAITING_APPROVAL", label: "Awaiting", count: uiStatusCountMap.get("AWAITING_APPROVAL") ?? 0, urgent: true  },
+            { status: "IN_REPAIR",         label: "In Repair",count: uiStatusCountMap.get("IN_REPAIR") ?? 0,         urgent: false },
+            { status: "READY_FOR_PICKUP",  label: "Ready",    count: uiStatusCountMap.get("READY_FOR_PICKUP") ?? 0,  urgent: false },
+          ] as const;
+          const isActive = (s: string) => s === "" ? !statusValue : statusValue === s;
+          return (
+            <div className="grid grid-cols-4 gap-2 pb-2">
+              {KEY_CHIPS.map(({ status, label, count, urgent }) => (
+                <Link
+                  key={label}
+                  href={statusChipHref(status)}
+                  className={`rounded-full px-2 py-1.5 text-center text-[12px] font-bold transition ${
+                    isActive(status)
+                      ? urgent ? "bg-[var(--accent)] text-black" : "bg-[var(--accent)] text-black"
+                      : "border border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]"
+                  }`}
+                >
+                  {label}{count > 0 && !isActive(status) ? ` ${count}` : ""}
+                </Link>
+              ))}
+            </div>
+          );
+        })()}
 
         {/* Advanced filters — mobile */}
         {showAdv ? (
