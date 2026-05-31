@@ -163,7 +163,7 @@ function RevenueMarginTrendSection({
     <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <div>
-          <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">{label}</p>
+          <p className="text-sm font-semibold text-[var(--ink)]">{label}</p>
           <p className="mt-0.5 text-sm font-semibold text-[var(--ink)]">
             {trendMonths[0]?.key} – {trendMonths[trendMonths.length - 1]?.key}
           </p>
@@ -1334,7 +1334,7 @@ export default async function DashboardPage({
 
           {/* Quick Actions */}
           <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-            <p className="mb-3 text-[12px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Quick Actions</p>
+            <p className="mb-3 text-sm font-semibold text-[var(--ink)]">Quick actions</p>
             <div className="grid grid-cols-2 gap-2">
               {([
                 { href: "/jobs/new",                        label: "New Repair Job",        icon: "🔧", bg: "bg-sky-500/10",    color: "text-sky-600" },
@@ -1397,27 +1397,29 @@ export default async function DashboardPage({
 
         {/* ── Financial Position (list) ── */}
         <section className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
-          <div className="border-b border-[var(--line)] px-4 py-2.5">
-            <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Financial Position</p>
+          <div className="flex items-center justify-between border-b border-[var(--line)] px-4 py-2.5">
+            <p className="text-sm font-semibold text-[var(--ink)]">Financial position</p>
+            <Link href="/reports" className="text-[12px] font-semibold text-[var(--accent)]">Reports →</Link>
           </div>
           <div className="divide-y divide-[var(--line)]">
             {([
-              { icon: "🏦", bg: "bg-sky-500/10",     label: "Cash & Bank Balance",          sub: `${bankAccounts.length} account${bankAccounts.length !== 1 ? "s" : ""}`,              value: totalBankBalance,          tone: "text-[var(--ink)]",                                            href: "/finance/bank" },
-              { icon: "📄", bg: "bg-amber-500/10",   label: "Receivables (Unpaid Invoices)", sub: `${outstandingInvoices.length} unpaid invoice${outstandingInvoices.length !== 1 ? "s" : ""}`, value: outstandingValue, tone: outstandingValue > 0 ? "text-amber-600" : "text-[var(--ink)]",  href: "/documents/invoices?status=ISSUED" },
-              { icon: "📦", bg: "bg-red-500/10",     label: "Payables (To Suppliers)",       sub: "outstanding to suppliers",                                                              value: payablesValue,             tone: payablesValue > 0 ? "text-red-500" : "text-[var(--ink)]",      href: "/inventory/supplier-bills?status=POSTED" },
-              { icon: "💸", bg: "bg-red-500/10",     label: "Expenses This Month",           sub: "costs this month",                                                                      value: expensesValue,             tone: "text-red-600",                                                 href: "/finance/expenses" },
-              { icon: "📈", bg: "bg-emerald-500/10", label: "Gross Margin (MTD)",            sub: `Revenue − Expenses · ${totalMtd > 0 ? Math.round((totalMtd - expensesValue) / totalMtd * 100) : 0}%`, value: totalMtd - expensesValue, tone: (totalMtd - expensesValue) >= 0 ? "text-emerald-600" : "text-red-600", href: "/reports" },
-              { icon: "🔧", bg: "bg-amber-500/10",   label: "Technician Payouts Due",        sub: `${payoutDueJobs.length} pending payout${payoutDueJobs.length !== 1 ? "s" : ""}`,       value: technicianPayoutsDue,      tone: technicianPayoutsDue > 0 ? "text-amber-600" : "text-[var(--ink)]", href: "/jobs?repairPath=EXTERNAL" },
+              { dot: "bg-sky-500",     label: "Cash & bank",        sub: `${bankAccounts.length} account${bankAccounts.length !== 1 ? "s" : ""}`,              value: totalBankBalance,          tone: "text-[var(--ink)]",                                                  href: "/finance/bank" },
+              { dot: "bg-amber-500",   label: "Receivables",        sub: `${outstandingInvoices.length} unpaid invoice${outstandingInvoices.length !== 1 ? "s" : ""}`, value: outstandingValue, tone: outstandingValue > 0 ? "text-amber-600" : "text-[var(--ink)]",      href: "/documents/invoices?status=ISSUED" },
+              { dot: "bg-red-400",     label: "Payables",           sub: "to suppliers",                                                                          value: payablesValue,             tone: payablesValue > 0 ? "text-red-500" : "text-[var(--ink)]",          href: "/inventory/supplier-bills?status=POSTED" },
+              { dot: "bg-rose-500",    label: "Expenses this month", sub: null,                                                                                   value: expensesValue,             tone: "text-red-600",                                                     href: "/finance/expenses" },
+              { dot: "bg-emerald-500", label: "Gross margin",        sub: `${totalMtd > 0 ? Math.round((totalMtd - expensesValue) / totalMtd * 100) : 0}% of revenue`, value: totalMtd - expensesValue, tone: (totalMtd - expensesValue) >= 0 ? "text-emerald-600" : "text-red-500", href: "/reports" },
+              { dot: "bg-amber-400",   label: "Tech payouts due",   sub: `${payoutDueJobs.length} pending`,                                                       value: technicianPayoutsDue,      tone: technicianPayoutsDue > 0 ? "text-amber-600" : "text-[var(--ink)]", href: "/jobs?repairPath=EXTERNAL" },
             ] as const).map((item) => (
               <Link key={item.label} href={item.href}
                 className="flex items-center gap-3 px-4 py-3 transition hover:bg-[var(--panel-strong)]">
-                <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-base ${item.bg}`}>{item.icon}</span>
+                {/* Coloured dot instead of emoji — clean, minimal */}
+                <span className={`h-2 w-2 shrink-0 rounded-full ${item.dot}`} />
                 <div className="min-w-0 flex-1">
-                  <p className="text-xs font-semibold text-[var(--ink)]">{item.label}</p>
-                  <p className="text-[12px] text-[var(--ink-muted)]">{item.sub}</p>
+                  <p className="text-[14px] font-medium text-[var(--ink)]">{item.label}</p>
+                  {item.sub && <p className="text-[12px] text-[var(--ink-muted)]">{item.sub}</p>}
                 </div>
-                <p className={`shrink-0 text-sm font-bold ${item.tone}`}>{formatMoneyCompact(item.value, currency)}</p>
-                <span className="shrink-0 text-[var(--ink-muted)]">›</span>
+                <p className={`shrink-0 text-[15px] font-bold tabular-nums ${item.tone}`}>{formatMoneyCompact(item.value, currency)}</p>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-[var(--ink-muted)]/40"><path d="m9 18 6-6-6-6"/></svg>
               </Link>
             ))}
           </div>
@@ -1426,12 +1428,13 @@ export default async function DashboardPage({
         {/* ── Low stock alert ── */}
         {lowStockItems.length > 0 && (
           <div className="flex items-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/8 px-4 py-2.5">
-            <span className="text-[13px] font-bold uppercase tracking-[0.12em] text-amber-600">Low Stock —</span>
-            <span className="text-[12px] text-[var(--ink)]">
+            <span className="h-2 w-2 shrink-0 rounded-full bg-amber-500" />
+            <span className="text-[13px] font-semibold text-amber-600">Low stock</span>
+            <span className="text-[13px] text-[var(--ink)]">
               {lowStockItems.slice(0, 3).map((p) => p.name).join(", ")}
               {lowStockItems.length > 3 && ` +${lowStockItems.length - 3} more`}
             </span>
-            <Link href="/inventory" className="ml-auto text-[13px] font-semibold text-amber-600 hover:underline">View parts →</Link>
+            <Link href="/inventory" className="ml-auto text-[13px] font-semibold text-[var(--accent)]">View →</Link>
           </div>
         )}
 
@@ -1573,8 +1576,8 @@ export default async function DashboardPage({
           {/* Recent Activity */}
           <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)]">
             <div className="border-b border-[var(--line)] px-4 py-2.5 flex items-center justify-between">
-              <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Recent Activity</p>
-              <Link href="/jobs" className="text-[13px] font-semibold text-[var(--accent)] hover:underline">All activity →</Link>
+              <p className="text-sm font-semibold text-[var(--ink)]">Recent activity</p>
+              <Link href="/jobs" className="text-[12px] font-semibold text-[var(--accent)]">All activity →</Link>
             </div>
             {recentJobs.length === 0 ? (
               <p className="px-4 py-6 text-sm text-[var(--ink-muted)]">No jobs yet.</p>
@@ -1609,10 +1612,10 @@ export default async function DashboardPage({
           {/* Technician Leaderboard */}
           <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)]">
             <div className="border-b border-[var(--line)] px-4 py-2.5 flex items-center justify-between">
-              <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">
-                Technician Leaderboard — {monthLabel(today.getFullYear(), today.getMonth() + 1)}
+              <p className="text-sm font-semibold text-[var(--ink)]">
+                Technicians <span className="font-normal text-[var(--ink-muted)]">· {monthLabel(today.getFullYear(), today.getMonth() + 1)}</span>
               </p>
-              <Link href="/technicians" className="text-[13px] font-semibold text-[var(--accent)] hover:underline">Full leaderboard →</Link>
+              <Link href="/technicians" className="text-[12px] font-semibold text-[var(--accent)]">Leaderboard →</Link>
             </div>
             {techLeaderboard.length === 0 ? (
               <p className="px-4 py-6 text-sm text-[var(--ink-muted)]">No completed jobs this month.</p>
