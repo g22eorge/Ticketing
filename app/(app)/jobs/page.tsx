@@ -474,7 +474,7 @@ export default async function JobsPage({
               type="search"
               name="q"
               defaultValue={filters.q}
-              placeholder={isExternalTech ? "Search job #" : lookupByPhone ? "Search name, phone, job #…" : "Search job #…"}
+              placeholder={isExternalTech ? "Search job #…" : lookupByPhone ? "Name, phone or job #…" : "Search job #…"}
               className="h-10 w-full rounded-2xl border border-[var(--line)] bg-[var(--panel-strong)] pl-9 pr-4 text-[13px] text-[var(--ink)] placeholder:text-[var(--ink-muted)]/50 outline-none focus:border-[var(--accent)]/60 focus:ring-2 focus:ring-[var(--accent)]/14"
             />
             {filters.q ? (
@@ -536,39 +536,59 @@ export default async function JobsPage({
           );
         })()}
 
-        {/* Advanced filters — mobile */}
+        {/* Advanced filters — settings-style rows, apply on submit */}
         {showAdv ? (
-          <form className="mb-3 grid grid-cols-2 gap-2 rounded-2xl border border-[var(--line)] bg-[var(--panel)] p-3">
+          <form method="GET" className="mb-3 overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--panel)] divide-y divide-[var(--line)]">
             {filters.q ? <input type="hidden" name="q" value={filters.q} /> : null}
             {filters.status ? <input type="hidden" name="status" value={filters.status} /> : null}
-            <select name="deviceType" defaultValue={filters.deviceType} className={ctrlClass}>
-              <option value="">All devices</option>
-              <option value="PHONE_ANDROID">Android</option>
-              <option value="PHONE_IPHONE">iPhone</option>
-              <option value="TABLET">Tablet</option>
-              <option value="WINDOWS_PC">Windows</option>
-              <option value="MAC">Mac</option>
-              <option value="OTHER">Other</option>
-            </select>
-            <select name="repairPath" defaultValue={filters.repairPath} className={ctrlClass}>
-              <option value="">All paths</option>
-              <option value="IN_HOUSE">In-house</option>
-              <option value="EXTERNAL">External</option>
-            </select>
-            <select name="sort" defaultValue={sort} className={ctrlClass}>
-              <option value="received_desc">Newest first</option>
-              <option value="job_number_desc">Job # desc</option>
-            </select>
-            {!isExternalTech && can.approveInvoices(user) ? (
-              <select name="pricing" defaultValue={pricingFilter} className={ctrlClass}>
-                <option value="">All pricing</option>
-                <option value="needs">Needs pricing</option>
-                <option value="priced">Priced</option>
+            <input type="hidden" name="adv" value="1" />
+            <div className="flex items-center justify-between px-4 py-2.5">
+              <span className="text-[13px] font-medium text-[var(--ink-muted)]">Device</span>
+              <select name="deviceType" defaultValue={filters.deviceType}
+                className="border-0 bg-transparent text-right text-[13px] font-semibold text-[var(--ink)] outline-none">
+                <option value="">All</option>
+                <option value="PHONE_ANDROID">Android</option>
+                <option value="PHONE_IPHONE">iPhone</option>
+                <option value="TABLET">Tablet</option>
+                <option value="WINDOWS_PC">Windows PC</option>
+                <option value="MAC">Mac</option>
+                <option value="OTHER">Other</option>
               </select>
+            </div>
+            <div className="flex items-center justify-between px-4 py-2.5">
+              <span className="text-[13px] font-medium text-[var(--ink-muted)]">Path</span>
+              <select name="repairPath" defaultValue={filters.repairPath}
+                className="border-0 bg-transparent text-right text-[13px] font-semibold text-[var(--ink)] outline-none">
+                <option value="">All</option>
+                <option value="IN_HOUSE">In-house</option>
+                <option value="EXTERNAL">External</option>
+              </select>
+            </div>
+            <div className="flex items-center justify-between px-4 py-2.5">
+              <span className="text-[13px] font-medium text-[var(--ink-muted)]">Sort</span>
+              <select name="sort" defaultValue={sort}
+                className="border-0 bg-transparent text-right text-[13px] font-semibold text-[var(--ink)] outline-none">
+                <option value="received_desc">Newest first</option>
+                <option value="job_number_desc">Job # desc</option>
+              </select>
+            </div>
+            {!isExternalTech && can.approveInvoices(user) ? (
+              <div className="flex items-center justify-between px-4 py-2.5">
+                <span className="text-[13px] font-medium text-[var(--ink-muted)]">Pricing</span>
+                <select name="pricing" defaultValue={pricingFilter}
+                  className="border-0 bg-transparent text-right text-[13px] font-semibold text-[var(--ink)] outline-none">
+                  <option value="">All</option>
+                  <option value="needs">Needs pricing</option>
+                  <option value="priced">Priced</option>
+                </select>
+              </div>
             ) : null}
-            <div className="col-span-2 flex gap-2">
-              <button type="submit" className="btn-premium flex-1 rounded-xl py-2 text-[13px] font-semibold">Apply</button>
-              {hasAnyFilter ? <Link href="/jobs" className="flex-1 rounded-xl border border-[var(--line)] py-2 text-center text-[13px] text-[var(--ink-muted)]">Reset</Link> : null}
+            {/* Footer: Apply + optional Clear */}
+            <div className="flex items-center gap-3 px-4 py-2.5">
+              <button type="submit" className="btn-premium rounded-xl px-5 py-1.5 text-[13px] font-semibold">Apply</button>
+              {hasAdvancedFilters && (
+                <Link href="/jobs?adv=1" className="text-[13px] font-medium text-[var(--ink-muted)]">Clear</Link>
+              )}
             </div>
           </form>
         ) : null}
