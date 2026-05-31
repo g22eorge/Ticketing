@@ -1356,60 +1356,73 @@ export default async function DashboardPage({
         </div>
 
         {/* ── Revenue Summary ── */}
-        <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-          <div className="mb-3 flex items-center justify-between">
-            <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">
-              Revenue Summary — {monthLabel(today.getFullYear(), today.getMonth() + 1)}
+        <section className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
+          {/* Header — single line, no ALL CAPS */}
+          <div className="flex items-center justify-between border-b border-[var(--line)] px-4 py-2.5">
+            <p className="text-sm font-semibold text-[var(--ink)]">
+              Revenue <span className="font-normal text-[var(--ink-muted)]">· {monthLabel(today.getFullYear(), today.getMonth() + 1)}</span>
             </p>
-            <Link href="/reports" className="text-[13px] font-semibold text-[var(--ink-muted)] hover:text-[var(--ink)] hover:underline">Full reports →</Link>
+            <Link href="/reports" className="text-[12px] font-semibold text-[var(--accent)]">Reports →</Link>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {/* 3 channel tiles — compact, no wrapping */}
+          <div className="grid grid-cols-3 divide-x divide-[var(--line)]">
             {([
-              { label: "Repairs",   value: repairsMtd,   pct: totalMtd > 0 ? Math.round(repairsMtd / totalMtd * 100) : 0,   color: "text-sky-600",     pctColor: "text-sky-700",     ring: "border-sky-500/20 bg-sky-500/8",       href: "/jobs?status=COMPLETED" },
-              { label: "Products",  value: productsMtd,  pct: totalMtd > 0 ? Math.round(productsMtd / totalMtd * 100) : 0,  color: "text-violet-600",  pctColor: "text-violet-700",  ring: "border-violet-500/20 bg-violet-500/8", href: "/pos" },
-              { label: "Corporate", value: corporateMtd, pct: totalMtd > 0 ? Math.round(corporateMtd / totalMtd * 100) : 0, color: "text-emerald-600", pctColor: "text-emerald-700", ring: "border-emerald-500/20 bg-emerald-500/8",href: "/documents/invoices" },
-              { label: "Total Revenue (MTD)", value: totalMtd, pct: null, color: "text-[var(--ink)]", pctColor: "text-[var(--ink-muted)]", ring: "border-[var(--accent)]/25 bg-[var(--accent)]/8", href: "/reports" },
+              { label: "Repairs",   value: repairsMtd,   pct: totalMtd > 0 ? Math.round(repairsMtd / totalMtd * 100) : 0,   dot: "bg-sky-500",     num: "text-sky-600",     href: "/jobs?status=COMPLETED" },
+              { label: "Products",  value: productsMtd,  pct: totalMtd > 0 ? Math.round(productsMtd / totalMtd * 100) : 0,  dot: "bg-violet-500",  num: "text-violet-600",  href: "/pos" },
+              { label: "Corporate", value: corporateMtd, pct: totalMtd > 0 ? Math.round(corporateMtd / totalMtd * 100) : 0, dot: "bg-emerald-500", num: "text-emerald-600", href: "/documents/invoices" },
             ] as const).map((s) => (
-              <Link key={s.label} href={s.href} className={`rounded-xl border ${s.ring} p-4 transition hover:-translate-y-[2px]`}>
-                <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">{s.label}</p>
-                <p className={`mt-1.5 text-2xl font-bold ${s.color}`}>{formatMoneyCompact(s.value, currency)}</p>
-                {s.pct !== null ? (
-                  <p className={`mt-0.5 text-[12px] font-semibold ${s.pctColor}`}>{s.pct}%</p>
-                ) : (
-                  <p className="mt-0.5 text-[12px] text-[var(--ink-muted)]">{formatMoney(s.value, currency)}</p>
-                )}
+              <Link key={s.label} href={s.href}
+                className="flex flex-col gap-1 px-3 py-3 transition hover:bg-[var(--panel-strong)]">
+                <div className="flex items-center gap-1.5">
+                  <span className={`h-2 w-2 rounded-full ${s.dot}`} />
+                  <p className="text-[12px] text-[var(--ink-muted)]">{s.label}</p>
+                </div>
+                <p className={`text-[15px] font-black tabular-nums ${s.num}`}>
+                  {formatMoneyCompact(s.value, currency)}
+                </p>
+                <p className="text-[11px] font-semibold text-[var(--ink-muted)]">{s.pct}%</p>
               </Link>
             ))}
           </div>
 
-          <div className="-mx-1 mt-4 overflow-x-auto px-1 pb-1 [scrollbar-width:none]">
-            <div className="min-w-max">
-              <div className="mb-2 flex items-center gap-3 px-1 text-[12px] text-[var(--ink-muted)]">
-                <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-sky-500/70" />Repairs</span>
-                <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-violet-500/70" />Products</span>
-                <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-emerald-500/70" />Corporate</span>
-              </div>
+          {/* Total MTD — full-width highlight row */}
+          <Link href="/reports"
+            className="flex items-center justify-between border-t border-[var(--line)] bg-[var(--accent)]/6 px-4 py-3 transition hover:bg-[var(--accent)]/10">
+            <p className="text-[13px] font-semibold text-[var(--ink)]">Total this month</p>
+            <p className="text-[18px] font-black tabular-nums text-[var(--accent)]">{formatMoneyCompact(totalMtd, currency)}</p>
+          </Link>
+
+          {/* Monthly trend chart — hidden scrollbar + right fade */}
+          <div className="relative border-t border-[var(--line)] px-4 pb-3 pt-3">
+            <div className="mb-2 flex items-center gap-3 text-[12px] text-[var(--ink-muted)]">
+              <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-sky-500/70" />Repairs</span>
+              <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-violet-500/70" />Products</span>
+              <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-emerald-500/70" />Corporate</span>
+            </div>
+            <div className="overflow-x-auto [scrollbar-width:none]">
               <div className="flex gap-2">
                 {streamTrend.map((m) => {
                   const maxVal = Math.max(...streamTrend.map((x) => x.total), 1);
-                  const rH = Math.max(2, Math.round((m.repairs / maxVal) * 44));
-                  const pH = Math.max(2, Math.round((m.products / maxVal) * 44));
-                  const cH = Math.max(2, Math.round((m.corporate / maxVal) * 44));
+                  const rH = Math.max(2, Math.round((m.repairs / maxVal) * 40));
+                  const pH = Math.max(2, Math.round((m.products / maxVal) * 40));
+                  const cH = Math.max(2, Math.round((m.corporate / maxVal) * 40));
                   return (
-                    <div key={m.key} className="flex w-[76px] shrink-0 flex-col items-center rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-2">
-                      <div className="flex h-11 w-full items-end justify-center gap-1">
-                        <div className="w-3 rounded-t bg-sky-500/60"     style={{ height: `${rH}px` }} />
-                        <div className="w-3 rounded-t bg-violet-500/60"  style={{ height: `${pH}px` }} />
-                        <div className="w-3 rounded-t bg-emerald-500/60" style={{ height: `${cH}px` }} />
+                    <div key={m.key} className="flex w-[64px] shrink-0 flex-col items-center rounded-xl border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-2">
+                      <div className="flex h-10 w-full items-end justify-center gap-1">
+                        <div className="w-2.5 rounded-t bg-sky-500/60"     style={{ height: `${rH}px` }} />
+                        <div className="w-2.5 rounded-t bg-violet-500/60"  style={{ height: `${pH}px` }} />
+                        <div className="w-2.5 rounded-t bg-emerald-500/60" style={{ height: `${cH}px` }} />
                       </div>
-                      <p className="mt-1 text-[13px] font-medium text-[var(--ink-muted)]">{m.key.slice(5)}</p>
-                      <p className="text-[12px] font-semibold text-[var(--ink)]">{formatMoneyCompact(m.total, currency)}</p>
+                      <p className="mt-1 text-[11px] font-medium text-[var(--ink-muted)]">{m.key.slice(5)}</p>
+                      <p className="text-[11px] font-bold tabular-nums text-[var(--ink)]">{formatMoneyCompact(m.total, currency)}</p>
                     </div>
                   );
                 })}
+                <span className="shrink-0 w-4" aria-hidden="true" />
               </div>
             </div>
+            <div className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-[var(--panel)] to-transparent" />
           </div>
         </section>
 

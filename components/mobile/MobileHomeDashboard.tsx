@@ -90,7 +90,7 @@ export function MobileHomeDashboard(p: MobileHomeProps) {
 
       {/* ── Hero: total revenue today (repairs + POS) ─────────────── */}
       <div className="rounded-3xl bg-[var(--panel)] px-6 py-7 text-center">
-        <p className="text-[13px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]">
+        <p className="text-[13px] font-medium text-[var(--ink-muted)]">
           Revenue Today
         </p>
         <p className="mt-2 text-[36px] font-black leading-none tracking-tight text-[var(--ink)]">
@@ -122,19 +122,19 @@ export function MobileHomeDashboard(p: MobileHomeProps) {
           <span className={`text-[22px] font-black leading-none ${activeJobs > 0 ? "text-sky-400" : "text-[var(--ink-muted)]/25"}`}>
             {activeJobs}
           </span>
-          <span className="text-[13px] font-bold uppercase tracking-[0.1em] text-[var(--ink-muted)]">Active</span>
+          <span className="text-[13px] font-bold font-medium text-[var(--ink-muted)]">Active</span>
         </Link>
         <Link href="/documents/invoices?status=ISSUED" className="flex flex-col items-center gap-0.5 py-4 active:bg-[var(--panel-strong)]">
           <span className={`text-[18px] font-black leading-none ${p.outstandingValue > 0 ? "text-amber-400" : "text-[var(--ink-muted)]/25"}`}>
             {compact(p.outstandingValue, p.currency)}
           </span>
-          <span className="text-[13px] font-bold uppercase tracking-[0.1em] text-[var(--ink-muted)]">Due</span>
+          <span className="text-[13px] font-bold font-medium text-[var(--ink-muted)]">Due</span>
         </Link>
         <Link href="/jobs?status=READY_FOR_PICKUP" className="flex flex-col items-center gap-0.5 py-4 active:bg-[var(--panel-strong)]">
           <span className={`text-[22px] font-black leading-none ${p.readyForPickupCount > 0 ? "text-[var(--accent)]" : "text-[var(--ink-muted)]/25"}`}>
             {p.readyForPickupCount}
           </span>
-          <span className="text-[13px] font-bold uppercase tracking-[0.1em] text-[var(--ink-muted)]">Ready</span>
+          <span className="text-[13px] font-bold font-medium text-[var(--ink-muted)]">Ready</span>
         </Link>
       </div>
 
@@ -209,7 +209,7 @@ export function MobileHomeDashboard(p: MobileHomeProps) {
       <Link href="/reports"
         className="flex items-center justify-between rounded-2xl bg-[var(--panel)] px-4 py-3.5 active:opacity-80">
         <div>
-          <p className="text-[12px] font-bold uppercase tracking-[0.15em] text-[var(--ink-muted)]">Month to date</p>
+          <p className="text-[12px] font-medium text-[var(--ink-muted)]">Month to date</p>
           <p className="mt-0.5 text-[18px] font-black text-[var(--accent)]">
             {compact(p.revenueMtd, p.currency)}
           </p>
