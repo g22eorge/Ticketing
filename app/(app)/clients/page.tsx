@@ -223,8 +223,80 @@ export default async function ClientsPage({
   return (
     <div className="space-y-4">
 
-      {/* ── KPI tiles ── */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      {/* ══ MOBILE HEADER ══ */}
+      <div className="lg:hidden space-y-3">
+        {/* Title row + New Client CTA */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-[22px] font-black text-[var(--ink)]">Clients</h1>
+            <p className="text-[13px] text-[var(--ink-muted)]">{kpiTotal} total</p>
+          </div>
+          {(user.role === "ADMIN" || user.role === "OPS") ? (
+            <Link href="/clients?create=1"
+              className="btn-premium rounded-xl px-4 py-2 text-[13px] font-bold">
+              + New
+            </Link>
+          ) : null}
+        </div>
+
+        {/* Compact 4-number stat row */}
+        <div className="grid grid-cols-4 overflow-hidden rounded-2xl border border-[var(--line)] divide-x divide-[var(--line)]">
+          {([
+            { label: "Total",   value: kpiTotal },
+            { label: "New",     value: kpiNewThisMonth },
+            { label: "Active",  value: kpiWithActiveJobs },
+            { label: "Orgs",    value: kpiWithOrg },
+          ] as const).map(({ label, value }) => (
+            <div key={label} className="flex flex-col items-center py-3">
+              <p className="text-[22px] font-black leading-none tabular-nums text-[var(--ink)]">{value}</p>
+              <p className="mt-0.5 text-[11px] text-[var(--ink-muted)]">{label}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* 4-chip segment filter — grid fills full width */}
+        <div className="grid grid-cols-4 gap-1.5">
+          {([
+            { seg: "all",    label: "All",      count: totalClients },
+            { seg: "active", label: "Active",   count: activeClients },
+            { seg: "new",    label: "No job",   count: newClients },
+            { seg: "high",   label: "Top",      count: withManyJobs },
+          ] as const).map(({ seg, label, count }) => (
+            <Link key={seg} href={segmentHref(seg)}
+              className={`rounded-full py-1.5 text-center text-[12px] font-bold transition ${
+                segment === seg
+                  ? "bg-[var(--accent)] text-black"
+                  : "border border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]"
+              }`}>
+              {label}{count > 0 && segment !== seg ? ` ${count}` : ""}
+            </Link>
+          ))}
+        </div>
+
+        {/* Search — full width, no redundant button */}
+        <form method="GET">
+          {filters.segment ? <input type="hidden" name="segment" value={filters.segment} /> : null}
+          <div className="relative">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--ink-muted)]/50" aria-hidden>
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <input
+              name="q"
+              defaultValue={filters.q}
+              placeholder="Name, phone or email…"
+              className="h-10 w-full rounded-2xl border border-[var(--line)] bg-[var(--panel-strong)] pl-9 pr-4 text-[13px] outline-none placeholder:text-[var(--ink-muted)]/50 focus:border-[var(--accent)]/60 focus:ring-2 focus:ring-[var(--accent)]/14"
+            />
+            {filters.q && (
+              <a href="/clients" className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--ink-muted)]/50">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </a>
+            )}
+          </div>
+        </form>
+      </div>
+
+      {/* ══ DESKTOP: KPI tiles (unchanged) ══ */}
+      <div className="hidden lg:grid grid-cols-2 gap-3 sm:grid-cols-4">
         <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
           <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Total Clients</p>
           <p className="mt-1 text-xl font-bold tabular-nums text-[var(--ink)]">{kpiTotal}</p>
@@ -247,64 +319,35 @@ export default async function ClientsPage({
         </div>
       </div>
 
-      {/* ── Stat chips bar ── */}
-      <div className="panel-shadow flex flex-wrap items-center gap-2 rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
+      {/* ══ DESKTOP: Stat chips + New Client ══ */}
+      <div className="panel-shadow hidden lg:flex flex-wrap items-center gap-2 rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
         <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
-          <Link
-            href={segmentHref("all")}
-            className={`rounded-full border px-3 py-1 text-[13px] font-semibold transition-colors ${
-              segment === "all"
-                ? "border-[var(--accent)] bg-[var(--accent)] text-black"
-                : "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)] hover:border-[var(--accent)]/40 hover:text-[var(--ink)]"
-            }`}
-          >
-            <span className={`font-bold ${segment === "all" ? "text-black" : "text-[var(--ink)]"}`}>{totalClients}</span> total
-          </Link>
-          <Link
-            href={segmentHref("active")}
-            className={`rounded-full border px-3 py-1 text-[13px] font-semibold transition-colors ${
-              segment === "active"
-                ? "border-[var(--accent)] bg-[var(--accent)] text-black"
-                : "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)] hover:border-[var(--accent)]/40 hover:text-[var(--ink)]"
-            }`}
-          >
-            <span className={`font-bold ${segment === "active" ? "text-black" : "text-[var(--ink)]"}`}>{activeClients}</span> active
-          </Link>
-          <Link
-            href={segmentHref("new")}
-            className={`rounded-full border px-3 py-1 text-[13px] font-semibold transition-colors ${
-              segment === "new"
-                ? "border-[var(--accent)] bg-[var(--accent)] text-black"
-                : "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)] hover:border-[var(--accent)]/40 hover:text-[var(--ink)]"
-            }`}
-          >
-            <span className={`font-bold ${segment === "new" ? "text-black" : "text-[var(--ink)]"}`}>{newClients}</span> no job
-          </Link>
-          <Link
-            href={segmentHref("high")}
-            className={`rounded-full border px-3 py-1 text-[13px] font-semibold transition-colors ${
-              segment === "high"
-                ? "border-[var(--accent)] bg-[var(--accent)] text-black"
-                : "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)] hover:border-[var(--accent)]/40 hover:text-[var(--ink)]"
-            }`}
-          >
-            <span className={`font-bold ${segment === "high" ? "text-black" : "text-[var(--ink)]"}`}>{withManyJobs}</span> high activity
-          </Link>
+          {([
+            { seg: "all",  label: `${totalClients} total`          },
+            { seg: "active", label: `${activeClients} active`       },
+            { seg: "new",  label: `${newClients} no job`            },
+            { seg: "high", label: `${withManyJobs} high activity`   },
+          ] as const).map(({ seg, label }) => (
+            <Link key={seg} href={segmentHref(seg)}
+              className={`rounded-full border px-3 py-1 text-[13px] font-semibold transition-colors ${
+                segment === seg
+                  ? "border-[var(--accent)] bg-[var(--accent)] text-black"
+                  : "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)] hover:border-[var(--accent)]/40"
+              }`}>
+              {label}
+            </Link>
+          ))}
         </div>
         {(user.role === "ADMIN" || user.role === "OPS") ? (
-          <Link
-            href="/clients?create=1"
-            className="btn-premium shrink-0 rounded-lg px-4 py-2.5 text-[12px] font-bold"
-          >
+          <Link href="/clients?create=1" className="btn-premium shrink-0 rounded-lg px-4 py-2.5 text-[12px] font-bold">
             + New Client
           </Link>
         ) : null}
       </div>
 
-      {/* ── Filter panel ── */}
-      <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)]">
+      {/* ══ DESKTOP: Filter panel ══ */}
+      <div className="panel-shadow hidden lg:block rounded-xl border border-[var(--line)] bg-[var(--panel)]">
         <form className="space-y-2.5 p-3">
-          {/* Row 1: search + action buttons */}
           <div className="flex items-center gap-2">
             <input
               name="q"
@@ -313,19 +356,9 @@ export default async function ClientsPage({
               placeholder="Search by name, phone, email…"
               className="min-w-0 flex-1 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-sm outline-none transition placeholder:text-[var(--ink-muted)] focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/15"
             />
-            <button
-              type="submit"
-              className="btn-premium-secondary shrink-0 rounded-lg px-3 py-1.5 text-[12px] font-medium"
-            >
-              Search
-            </button>
+            <button type="submit" className="btn-premium-secondary shrink-0 rounded-lg px-3 py-1.5 text-[12px] font-medium">Search</button>
             {hasClientFilters ? (
-              <Link
-                href="/clients"
-                className="shrink-0 rounded-lg border border-[var(--line)] px-3 py-1.5 text-[12px] text-[var(--ink-muted)] transition hover:text-[var(--ink)]"
-              >
-                Reset
-              </Link>
+              <Link href="/clients" className="shrink-0 rounded-lg border border-[var(--line)] px-3 py-1.5 text-[12px] text-[var(--ink-muted)]">Reset</Link>
             ) : null}
           </div>
         </form>
@@ -377,8 +410,8 @@ export default async function ClientsPage({
       ) : (
         <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
 
-          {/* Table header bar with count + pagination */}
-          <div className="flex items-center justify-between border-b border-[var(--line)] px-4 py-2.5">
+          {/* Table header bar — desktop shows pagination, mobile shows count only */}
+          <div className="hidden lg:flex items-center justify-between border-b border-[var(--line)] px-4 py-2.5">
             <p className="text-xs text-[var(--ink-muted)]">
               <span className="font-bold text-[var(--ink)]">{pageStart}–{pageEnd}</span>
               {" of "}
