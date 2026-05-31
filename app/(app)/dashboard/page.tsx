@@ -1393,36 +1393,6 @@ export default async function DashboardPage({
             <p className="text-[18px] font-black tabular-nums text-[var(--accent)]">{formatMoneyCompact(totalMtd, currency)}</p>
           </Link>
 
-          {/* Monthly trend — last 6 months as a compact bar row, always fits screen */}
-          {streamTrend.length > 0 && (
-            <div className="border-t border-[var(--line)] px-4 pb-3 pt-3">
-              <div className="mb-2 flex items-center gap-3 text-[12px] text-[var(--ink-muted)]">
-                <span className="flex items-center gap-1"><span className="inline-block h-1.5 w-1.5 rounded-full bg-sky-500/70" />Repairs</span>
-                <span className="flex items-center gap-1"><span className="inline-block h-1.5 w-1.5 rounded-full bg-violet-500/70" />Products</span>
-                <span className="flex items-center gap-1"><span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500/70" />Corporate</span>
-              </div>
-              {/* Show last 6 months, evenly distributed — no horizontal scroll */}
-              <div className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(${Math.min(streamTrend.length, 6)}, 1fr)` }}>
-                {streamTrend.slice(-6).map((m) => {
-                  const maxVal = Math.max(...streamTrend.map((x) => x.total), 1);
-                  const rH = Math.max(2, Math.round((m.repairs / maxVal) * 36));
-                  const pH = Math.max(2, Math.round((m.products / maxVal) * 36));
-                  const cH = Math.max(2, Math.round((m.corporate / maxVal) * 36));
-                  return (
-                    <div key={m.key} className="flex flex-col items-center rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-1 py-1.5">
-                      <div className="flex h-9 w-full items-end justify-center gap-0.5">
-                        <div className="w-2 rounded-t bg-sky-500/60"     style={{ height: `${rH}px` }} />
-                        <div className="w-2 rounded-t bg-violet-500/60"  style={{ height: `${pH}px` }} />
-                        <div className="w-2 rounded-t bg-emerald-500/60" style={{ height: `${cH}px` }} />
-                      </div>
-                      <p className="mt-1 text-[10px] font-medium text-[var(--ink-muted)]">{m.key.slice(5)}</p>
-                      <p className="whitespace-nowrap text-[10px] font-bold tabular-nums text-[var(--ink)]">{formatMoneyCompact(m.total, currency)}</p>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
         </section>
 
         {/* ── Financial Position (list) ── */}
