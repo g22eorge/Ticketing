@@ -1252,28 +1252,34 @@ export default async function DashboardPage({
         <div className="hidden lg:grid gap-3 lg:grid-cols-3">
 
           {/* Attention Needed */}
-          <section className="panel-shadow rounded-xl border border-amber-500/20 bg-amber-500/8 p-4 lg:col-span-2">
-            <div className="mb-3 flex items-center gap-2">
-              <p className="text-sm font-bold text-[var(--ink)]">Attention Needed</p>
-              {attentionItems.filter((i) => i.count > 0).length > 0 && (
-                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[12px] font-bold text-white">
-                  {attentionItems.filter((i) => i.count > 0).length}
-                </span>
-              )}
+          <section className="panel-shadow overflow-hidden rounded-xl border border-amber-500/20 bg-amber-500/8 lg:col-span-2">
+            <div className="flex items-center justify-between border-b border-amber-500/15 px-4 py-2.5">
+              <div className="flex items-center gap-2">
+                <span className="text-amber-500">⚠</span>
+                <p className="text-sm font-bold text-[var(--ink)]">Need attention</p>
+                {attentionItems.filter((i) => i.count > 0).length > 0 && (
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[12px] font-bold text-white">
+                    {attentionItems.filter((i) => i.count > 0).length}
+                  </span>
+                )}
+              </div>
+              <Link href="/jobs" className="text-[12px] font-semibold text-amber-600">View all →</Link>
             </div>
-            <div className="grid gap-2 sm:grid-cols-2">
-              {attentionItems.map((item) => (
+            <div className="divide-y divide-amber-500/10">
+              {attentionItems.filter(i => i.count > 0).map((item) => (
                 <Link key={item.label} href={item.href}
-                  className="flex items-start gap-3 rounded-lg border border-amber-500/20 bg-[var(--panel)]/80 p-3 transition hover:border-amber-500/40">
-                  <p className={`text-xl font-black leading-none ${item.count > 0 ? item.tone : "text-[var(--ink-muted)]"}`}>{item.count}</p>
-                  <div className="min-w-0">
-                    <p className="text-xs font-semibold text-[var(--ink)]">{item.label}</p>
-                    <p className="text-[12px] text-[var(--ink-muted)]">{item.description}</p>
-                  </div>
+                  className="flex items-center justify-between px-4 py-3 transition active:bg-amber-500/10">
+                  <p className="text-[14px] font-medium text-[var(--ink)]">
+                    <span className={`font-black ${item.tone}`}>{item.count}</span>
+                    {" "}{item.label.toLowerCase()}
+                  </p>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-[var(--ink-muted)]/40"><path d="m9 18 6-6-6-6"/></svg>
                 </Link>
               ))}
+              {attentionItems.filter(i => i.count > 0).length === 0 && (
+                <p className="px-4 py-4 text-sm text-[var(--ink-muted)]">All clear — no urgent items.</p>
+              )}
             </div>
-            <Link href="/jobs" className="mt-3 block text-[13px] font-semibold text-amber-600 hover:underline">View All Alerts →</Link>
           </section>
 
           {/* Quick Actions */}
@@ -1399,53 +1405,56 @@ export default async function DashboardPage({
 
         {/* ── Repair Pipeline (icon + flow) ── */}
         <section className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
-          <div className="border-b border-[var(--line)] px-4 py-2.5 flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-3">
-              <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Repair Pipeline</p>
+          <div className="border-b border-[var(--line)] px-4 py-2.5 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <p className="text-sm font-semibold text-[var(--ink)]">Repair pipeline</p>
               {conversionRate > 0 && <span className="text-[12px] text-[var(--ink-muted)]">{conversionRate}% conversion</span>}
-              {avgJobValue > 0 && <span className="text-[12px] text-[var(--ink-muted)]">· avg {formatMoneyCompact(avgJobValue, currency)}/job</span>}
             </div>
-            <Link href="/jobs" className="text-[13px] font-semibold text-[var(--accent)] hover:underline">All jobs →</Link>
+            <Link href="/jobs" className="text-[13px] font-semibold text-[var(--accent)]">All jobs →</Link>
           </div>
-          <div className="overflow-x-auto [scrollbar-width:thin]">
-            <div className="flex min-w-max items-center gap-1 px-4 py-4">
-              {(() => {
-                const PIPE_ICONS: Record<string, string> = {
-                  RECEIVED: "↙", DIAGNOSING: "🔍", REFERRED: "↗", IN_EXTERNAL_REPAIR: "🔧",
-                  AWAITING_APPROVAL: "⏳", IN_REPAIR: "🛠", READY_FOR_PICKUP: "📦", COMPLETED: "✓",
-                };
-                const visibleStages = statusData.filter((s) => s.key !== "CLOSED");
-                return visibleStages.map((s, i) => {
-                  const isUrgent   = s.key === "AWAITING_APPROVAL" && s.value > 0;
-                  const isPositive = (s.key === "READY_FOR_PICKUP" || s.key === "COMPLETED") && s.value > 0;
-                  return (
-                    <React.Fragment key={s.key}>
-                      <Link href={`/jobs?status=${s.key}`}
-                        className="flex min-w-[72px] flex-col items-center gap-1 rounded-lg px-2 py-2 transition hover:bg-[var(--panel-strong)]">
-                        <div className={`flex h-10 w-10 items-center justify-center rounded-full border-2 text-base font-bold ${
-                          isUrgent   ? "border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]" :
-                          isPositive ? "border-emerald-500 bg-emerald-500/10 text-emerald-600" :
-                          s.value > 0 ? "border-sky-400/40 bg-sky-500/8 text-sky-600" :
-                          "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]"
-                        }`}>{PIPE_ICONS[s.key] ?? "●"}</div>
-                        <p className={`text-xl font-bold leading-none ${s.value === 0 ? "text-[var(--ink-muted)]" : isUrgent ? "text-[var(--accent)]" : isPositive ? "text-emerald-600" : "text-[var(--ink)]"}`}>{s.value}</p>
-                        <p className="text-center text-[13px] leading-tight text-[var(--ink-muted)]">{s.name}</p>
-                      </Link>
-                      {i < visibleStages.length - 1 && (
-                        <span className="shrink-0 text-sm text-[var(--ink-muted)]">→</span>
-                      )}
-                    </React.Fragment>
-                  );
-                });
-              })()}
+          {/* Scrollable pipeline — hidden scrollbar + right fade */}
+          <div className="relative">
+            <div className="overflow-x-auto [scrollbar-width:none]">
+              <div className="flex min-w-max items-center gap-0.5 px-3 py-3">
+                {(() => {
+                  const PIPE_ICONS: Record<string, string> = {
+                    RECEIVED: "↙", DIAGNOSING: "🔍", REFERRED: "↗", IN_EXTERNAL_REPAIR: "🔧",
+                    AWAITING_APPROVAL: "⏳", IN_REPAIR: "🛠", READY_FOR_PICKUP: "📦", COMPLETED: "✓",
+                  };
+                  const visibleStages = statusData.filter((s) => s.key !== "CLOSED");
+                  return visibleStages.map((s, i) => {
+                    const isUrgent   = s.key === "AWAITING_APPROVAL" && s.value > 0;
+                    const isPositive = (s.key === "READY_FOR_PICKUP" || s.key === "COMPLETED") && s.value > 0;
+                    return (
+                      <React.Fragment key={s.key}>
+                        <Link href={`/jobs?status=${s.key}`}
+                          className="flex min-w-[60px] flex-col items-center gap-1 rounded-lg px-1.5 py-2 transition hover:bg-[var(--panel-strong)]">
+                          <div className={`flex h-9 w-9 items-center justify-center rounded-full border-2 text-sm font-bold ${
+                            isUrgent   ? "border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]" :
+                            isPositive ? "border-emerald-500 bg-emerald-500/10 text-emerald-600" :
+                            s.value > 0 ? "border-sky-400/40 bg-sky-500/8 text-sky-600" :
+                            "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]"
+                          }`}>{PIPE_ICONS[s.key] ?? "●"}</div>
+                          <p className={`text-lg font-bold leading-none ${s.value === 0 ? "text-[var(--ink-muted)]" : isUrgent ? "text-[var(--accent)]" : isPositive ? "text-emerald-600" : "text-[var(--ink)]"}`}>{s.value}</p>
+                          <p className="text-center text-[11px] leading-tight text-[var(--ink-muted)] whitespace-nowrap">{s.name}</p>
+                        </Link>
+                        {i < visibleStages.length - 1 && (
+                          <span className="shrink-0 text-[12px] text-[var(--ink-muted)]">→</span>
+                        )}
+                      </React.Fragment>
+                    );
+                  });
+                })()}
+              </div>
             </div>
+            <div className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-[var(--panel)] to-transparent" />
           </div>
-          <div className="flex flex-wrap items-center gap-4 border-t border-[var(--line)] px-4 py-2">
+          <div className="flex flex-wrap items-center gap-3 border-t border-[var(--line)] px-4 py-2">
             <span className="flex items-center gap-1.5 text-[12px] text-[var(--ink-muted)]"><span className="h-2 w-2 rounded-full bg-emerald-500" />On Track</span>
-            <span className="flex items-center gap-1.5 text-[12px] text-[var(--ink-muted)]"><span className="h-2 w-2 rounded-full bg-amber-500" />Needs Attention</span>
+            <span className="flex items-center gap-1.5 text-[12px] text-[var(--ink-muted)]"><span className="h-2 w-2 rounded-full bg-amber-500" />Attention</span>
             <span className="flex items-center gap-1.5 text-[12px] text-[var(--ink-muted)]"><span className="h-2 w-2 rounded-full bg-red-500" />Delayed</span>
             {awaitingApprovalCount > 0 && (
-              <Link href="/jobs?status=AWAITING_APPROVAL" className="ml-auto rounded border border-[var(--accent)]/35 bg-[var(--accent)]/10 px-2 py-1 text-[13px] font-semibold text-[var(--accent)]">
+              <Link href="/jobs?status=AWAITING_APPROVAL" className="ml-auto rounded-lg border border-[var(--accent)]/35 bg-[var(--accent)]/10 px-2.5 py-1 text-[12px] font-semibold text-[var(--accent)]">
                 {awaitingApprovalCount} awaiting approval
               </Link>
             )}
@@ -1455,7 +1464,7 @@ export default async function DashboardPage({
         {/* ── Sales Funnel ── */}
         <section className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
           <div className="border-b border-[var(--line)] px-3 py-2.5 flex items-center justify-between gap-2">
-            <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Sales Funnel</p>
+            <p className="text-sm font-semibold text-[var(--ink)]">Sales funnel</p>
             <Link href="/sales/leads" className="text-[13px] font-semibold text-[var(--accent)] hover:underline">All leads →</Link>
           </div>
           {/* Active stages with bars + drop-off */}
@@ -1472,7 +1481,8 @@ export default async function DashboardPage({
             }, 0);
             return (
               <>
-                <div className="grid grid-cols-4 divide-x divide-[var(--line)]">
+                <div className="relative">
+                <div className="flex divide-x divide-[var(--line)] overflow-x-auto [scrollbar-width:none]">
                   {ACTIVE.map((s, i) => {
                     const count = leadCountMap.get(s) ?? 0;
                     const next = ACTIVE[i + 1];
@@ -1484,19 +1494,21 @@ export default async function DashboardPage({
                     const val = row?._sum?.estimatedValue ?? 0;
                     const stage = LEAD_STAGES.find(st => st.key === s)!;
                     return (
-                      <Link key={s} href={stage.href} className="flex flex-col gap-1 p-2.5 transition hover:bg-[var(--panel-strong)]">
+                      <Link key={s} href={stage.href} className="flex min-w-[70px] flex-1 flex-col gap-1 p-2.5 transition hover:bg-[var(--panel-strong)]">
                         <div className="flex items-baseline justify-between gap-1">
                           <p className={`text-[18px] font-black leading-none ${count === 0 ? "text-[var(--ink-muted)]" : stage.color}`}>{count}</p>
-                          {dropOff !== null && dropOff > 0 && <span className="text-[13px] font-bold text-red-500">-{dropOff}%</span>}
+                          {dropOff !== null && dropOff > 0 && <span className="whitespace-nowrap text-[11px] font-bold text-red-500">-{dropOff}%</span>}
                         </div>
                         <div className="h-1 w-full rounded-full bg-[var(--panel-strong)]">
                           <div className={`h-full rounded-full ${stageBarColor[s]}`} style={{ width: `${barW}%` }} />
                         </div>
-                        <p className="text-[13px] leading-tight text-[var(--ink-muted)]">{stage.name}</p>
-                        {val > 0 && <p className="text-[13px] font-semibold text-[var(--accent)]">{formatMoneyCompact(val, currency)}</p>}
+                        <p className="text-[12px] leading-tight text-[var(--ink-muted)]">{stage.name}</p>
+                        {val > 0 && <p className="whitespace-nowrap text-[12px] font-semibold text-[var(--accent)]">{formatMoneyCompact(val, currency)}</p>}
                       </Link>
                     );
                   })}
+                </div>
+                <div className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-[var(--panel)] to-transparent" />
                 </div>
                 {/* Won / Lost row + total pipeline */}
                 <div className="border-t border-[var(--line)] flex divide-x divide-[var(--line)]">
