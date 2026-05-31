@@ -1,0 +1,33 @@
+#!/bin/sh
+# Auto-sync commercial branch every 10 commits on main.
+# Saves Vercel deployments — commercial only gets ~1/10 of the pushes.
+#
+# Enable once after cloning:
+#   git config core.hooksPath .githooks
+#
+# To force a sync now regardless of count:
+#   git push origin main:commercial
+
+# Only run when pushing main
+CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+if [ "$CURRENT_BRANCH" != "main" ]; then
+  exit 0
+fi
+
+# Count how many commits main is ahead of commercial
+AHEAD=$(git rev-list origin/commercial..origin/main --count 2>/dev/null)
+
+# If we can't determine the count (e.g. no remote yet), skip
+if [ -z "$AHEAD" ]; then
+  exit 0
+fi
+
+if [ "$AHEAD" -ge 10 ]; then
+  echo ""
+  echo "🚀  main is ${AHEAD} commits ahead of commercial — syncing..."
+  git push origin main:commercial
+  echo "✓   commercial synced."
+else
+  REMAINING=$((10 - AHEAD))
+  echo "ℹ   commercial sync in ${REMAINING} more commit(s) (${AHEAD}/10)"
+fi
