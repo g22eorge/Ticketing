@@ -1549,44 +1549,8 @@ export default async function DashboardPage({
           })()}
         </section>
 
-        {/* ── Recent Activity + Technician Leaderboard ── */}
-        <div className="grid gap-3 lg:grid-cols-2">
-
-          {/* Recent Activity */}
-          <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)]">
-            <div className="border-b border-[var(--line)] px-4 py-2.5 flex items-center justify-between">
-              <p className="text-sm font-semibold text-[var(--ink)]">Recent activity</p>
-              <Link href="/jobs" className="text-[12px] font-semibold text-[var(--accent)]">All activity →</Link>
-            </div>
-            {recentJobs.length === 0 ? (
-              <p className="px-4 py-6 text-sm text-[var(--ink-muted)]">No jobs yet.</p>
-            ) : (
-              <div className="divide-y divide-[var(--line)]">
-                {recentJobs.map((j) => {
-                  const deviceLabel = [j.device?.brand, j.device?.model].filter(Boolean).join(" ") || "Device";
-                  const isCompleted = j.status === "COMPLETED" || j.status === "DELIVERED";
-                  const isNew       = j.status === "RECEIVED";
-                  return (
-                    <Link key={j.id} href={`/jobs/${j.id}`}
-                      className="flex items-center justify-between px-4 py-2.5 transition hover:bg-[var(--panel-strong)]">
-                      <div className="min-w-0">
-                        <p className="mono text-xs font-bold text-[var(--accent)]">{j.jobNumber}</p>
-                        <p className="truncate text-[12px] text-[var(--ink-muted)]">{deviceLabel}</p>
-                      </div>
-                      <div className="ml-3 shrink-0 text-right">
-                        <p className={`text-[12px] font-semibold ${isCompleted ? "text-emerald-600" : isNew ? "text-sky-500" : "text-[var(--ink-muted)]"}`}>
-                          {statusLabel[j.status as keyof typeof statusLabel] ?? j.status}
-                        </p>
-                        <p className="text-[12px] text-[var(--ink-muted)]">
-                          {new Date(j.updatedAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
-                        </p>
-                      </div>
-                    </Link>
-                  );
-                })}
-              </div>
-            )}
-          </section>
+        {/* ── Technician Leaderboard (full width — Recent Activity removed) ── */}
+        <div>
 
           {/* Technician Leaderboard */}
           <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)]">
