@@ -445,7 +445,8 @@ export default async function SalesPage({
             NEW: "New", CONTACTED: "Contacted", QUALIFIED: "Qualified", PROPOSAL_SENT: "Proposal",
           };
           return (
-            <div className="grid grid-cols-4 divide-x divide-[var(--line)] px-0">
+            /* Horizontal scroll so each column has breathing room on narrow screens */
+            <div className="flex divide-x divide-[var(--line)] overflow-x-auto [scrollbar-width:none]">
               {ACTIVE_STAGES.map((s, i) => {
                 const data = stageValueMap.get(s) ?? { count: 0, value: 0 };
                 const next = ACTIVE_STAGES[i + 1];
@@ -456,11 +457,11 @@ export default async function SalesPage({
                 const barWidth = Math.max(4, Math.round((data.count / maxCount) * 100));
                 return (
                   <Link key={s} href={`/sales?tab=leads&status=${s}`}
-                    className="group flex flex-col gap-1.5 p-3 transition hover:bg-[var(--panel-strong)]">
+                    className="group flex min-w-[88px] flex-1 flex-col gap-1.5 p-3 transition hover:bg-[var(--panel-strong)]">
                     <div className="flex items-baseline justify-between gap-1">
                       <p className="text-lg font-black text-[var(--ink)]">{data.count}</p>
                       {dropOff !== null && dropOff > 0 && (
-                        <span className="text-[13px] font-bold text-red-500">-{dropOff}%</span>
+                        <span className="whitespace-nowrap text-[11px] font-bold text-red-500">-{dropOff}%</span>
                       )}
                     </div>
                     {/* Bar */}
@@ -469,7 +470,7 @@ export default async function SalesPage({
                     </div>
                     <p className="text-[12px] font-medium text-[var(--ink-muted)]">{stageLabels[s]}</p>
                     {data.value > 0 && (
-                      <p className="text-[13px] font-semibold text-[var(--accent)]">{formatMoneyCompact(data.value, currency)}</p>
+                      <p className="whitespace-nowrap text-[12px] font-semibold text-[var(--accent)]">{formatMoneyCompact(data.value, currency)}</p>
                     )}
                   </Link>
                 );
@@ -656,8 +657,9 @@ export default async function SalesPage({
         {/* ── LEADS TAB ──────────────────────────────────────────────── */}
         {activeTab === "leads" ? (
           <div>
-            {/* Status filter pills */}
-            <div className="flex flex-wrap items-center gap-2 border-b border-[var(--line)] px-4 py-2.5">
+            {/* Status filter pills — horizontal scroll with right fade */}
+            <div className="relative border-b border-[var(--line)]">
+            <div className="flex items-center gap-2 overflow-x-auto px-4 py-2.5 [scrollbar-width:none]">
               <Link
                 href={`/sales?tab=leads${searchQ ? `&q=${encodeURIComponent(searchQ)}` : ""}`}
                 className={`rounded-full border px-3 py-1 text-[13px] font-semibold transition-colors ${
@@ -687,6 +689,9 @@ export default async function SalesPage({
                   {LEAD_STATUS_LABELS[s]}
                 </Link>
               ))}
+              <span className="shrink-0 w-4" aria-hidden="true" />
+            </div>
+            <div className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-[var(--bg)] to-transparent" />
             </div>
 
             {/* New lead form */}

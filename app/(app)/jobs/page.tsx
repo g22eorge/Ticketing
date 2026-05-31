@@ -483,7 +483,8 @@ export default async function JobsPage({
           ) : null}
         </form>
 
-        {/* Row 3: Status chips — horizontal scroll with counts */}
+        {/* Row 3: Status chips — horizontal scroll with right fade */}
+        <div className="relative">
         <div className="flex gap-2 overflow-x-auto pb-2 [scrollbar-width:none]">
           <Link
             href={statusChipHref("")}
@@ -522,6 +523,9 @@ export default async function JobsPage({
           >
             Overdue
           </Link>
+          <span className="shrink-0 w-6" aria-hidden="true" />
+        </div>
+        <div className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-[var(--bg)] to-transparent" />
         </div>
 
         {/* Advanced filters — mobile */}
