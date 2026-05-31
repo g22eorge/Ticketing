@@ -205,18 +205,6 @@ export function MobileHomeDashboard(p: MobileHomeProps) {
         ))}
       </div>
 
-      {/* ── MTD summary row ───────────────────────────────────────── */}
-      <Link href="/reports"
-        className="flex items-center justify-between rounded-2xl bg-[var(--panel)] px-4 py-3.5 active:opacity-80">
-        <div>
-          <p className="text-[12px] font-medium text-[var(--ink-muted)]">Month to date</p>
-          <p className="mt-0.5 text-[18px] font-black text-[var(--accent)]">
-            {compact(p.revenueMtd, p.currency)}
-          </p>
-        </div>
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--ink-muted)]/40" aria-hidden><path d="M9 18l6-6-6-6"/></svg>
-      </Link>
-
     </div>
   );
 }
