@@ -414,6 +414,7 @@ async function runDbFix() {
         "exchangeRateToBase" REAL,
         "amount" REAL NOT NULL,
         "method" TEXT NOT NULL DEFAULT 'CASH',
+        "kind" TEXT NOT NULL DEFAULT 'PAYMENT',
         "reference" TEXT,
         "receivedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
         "createdById" TEXT,
@@ -444,6 +445,7 @@ async function runDbFix() {
     await addPayColumn("exchangeRateToBase", "REAL");
     await addPayColumn("amount", "REAL", "0");
     await addPayColumn("method", "TEXT", "'CASH'");
+    await addPayColumn("kind", "TEXT", "'PAYMENT'");
     await addPayColumn("reference", "TEXT");
     await addPayColumn("receivedAt", "DATETIME");
     await addPayColumn("createdById", "TEXT");
@@ -465,6 +467,7 @@ async function runDbFix() {
           "exchangeRateToBase" REAL,
           "amount" REAL NOT NULL,
           "method" TEXT NOT NULL DEFAULT 'CASH',
+          "kind" TEXT NOT NULL DEFAULT 'PAYMENT',
           "reference" TEXT,
           "receivedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
           "createdById" TEXT,
@@ -480,8 +483,9 @@ async function runDbFix() {
       const hasSaleId = payCols.has("saleId");
       const hasCurrency = payCols.has("currency");
       const hasRate = payCols.has("exchangeRateToBase");
+      const hasKind = payCols.has("kind");
       await prisma.$executeRawUnsafe(`
-        INSERT OR REPLACE INTO "_Payment_new" (id, orgId, invoiceId, saleId, currency, exchangeRateToBase, amount, method, reference, receivedAt, createdById, note, createdAt)
+        INSERT OR REPLACE INTO "_Payment_new" (id, orgId, invoiceId, saleId, currency, exchangeRateToBase, amount, method, kind, reference, receivedAt, createdById, note, createdAt)
         SELECT
           id,
           orgId,
@@ -491,6 +495,7 @@ async function runDbFix() {
           ${hasRate ? "exchangeRateToBase" : "NULL"} as exchangeRateToBase,
           amount,
           method,
+          ${hasKind ? "kind" : "'PAYMENT'"} as kind,
           reference,
           receivedAt,
           createdById,
