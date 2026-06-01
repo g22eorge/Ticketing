@@ -10,6 +10,7 @@ import { requireOrgSession } from "@/lib/org-context";
 import { requireModule, OrgModule } from "@/lib/module-access";
 import { assertOrgCanMutate } from "@/lib/org-write";
 import { ConfirmSubmitButton } from "@/components/shared/ConfirmSubmitButton";
+import { nextDocumentNumber } from "@/lib/commercial/document-workflow";
 
 const PAYMENT_METHODS: PaymentMethod[] = ["CASH", "MOBILE_MONEY", "BANK_TRANSFER", "CARD", "OTHER"];
 
@@ -118,27 +119,27 @@ export default async function CreditNotesPage({
 
     const totalAmount = items.reduce((s, i) => s + i.quantity * i.unitPrice, 0);
 
-    const countThisMonth = await prisma.creditNote.count({ where: { orgId } });
-    const creditNoteNumber = `CN-${new Date().getFullYear()}-${String(countThisMonth + 1).padStart(4, "0")}`;
-
-    await prisma.creditNote.create({
-      data: {
-        orgId,
-        saleId,
-        creditNoteNumber,
-        currency: sale.currency,
-        totalAmount,
-        reason,
-        createdById: user.id,
-        items: {
-          create: items.map((i) => ({
-            description: i.description,
-            quantity: i.quantity,
-            unitPrice: i.unitPrice,
-            lineTotal: i.quantity * i.unitPrice,
-          })),
+    await prisma.$transaction(async (tx) => {
+      const creditNoteNumber = await nextDocumentNumber(tx, "CN", "creditNote");
+      await tx.creditNote.create({
+        data: {
+          orgId,
+          saleId,
+          creditNoteNumber,
+          currency: sale.currency,
+          totalAmount,
+          reason,
+          createdById: user.id,
+          items: {
+            create: items.map((i) => ({
+              description: i.description,
+              quantity: i.quantity,
+              unitPrice: i.unitPrice,
+              lineTotal: i.quantity * i.unitPrice,
+            })),
+          },
         },
-      },
+      });
     });
     revalidatePath("/documents/credit-notes");
   }

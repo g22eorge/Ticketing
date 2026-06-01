@@ -1,5 +1,7 @@
 import { Prisma } from "@prisma/client";
 
+import { nextDocumentNumber } from "@/lib/commercial/document-workflow";
+
 type Tx = Prisma.TransactionClient;
 
 type InvoiceLineInput = {
@@ -122,14 +124,12 @@ export async function writePaymentAccountingDocuments({
       },
     });
 
-    const year = new Date().getFullYear();
-    const count = await tx.receipt.count({ where: { orgId } }).catch(() => 0);
-    const baseReceiptNumber = `RCPT-${year}-${String(count + 1).padStart(5, "0")}`;
+    const receiptNumber = await nextDocumentNumber(tx, "RCT", "receipt");
 
     await tx.receipt.create({
       data: {
         orgId,
-        receiptNumber: baseReceiptNumber,
+        receiptNumber,
         paymentId,
         saleId,
         invoiceId,
@@ -138,20 +138,6 @@ export async function writePaymentAccountingDocuments({
         currency,
         issuedById: issuedById ?? null,
       },
-    }).catch(async () => {
-      await tx.receipt.create({
-        data: {
-          orgId,
-          receiptNumber: `${baseReceiptNumber}-${Date.now()}`,
-          paymentId,
-          saleId,
-          invoiceId,
-          branchId,
-          amount,
-          currency,
-          issuedById: issuedById ?? null,
-        },
-      });
     });
   } catch {
     // Receipts/allocations are additive commercial records; keep payment capture non-blocking.

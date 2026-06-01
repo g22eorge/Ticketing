@@ -1,7 +1,11 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import { Prisma, QuotationStatus } from "@prisma/client";
 
+import { CopyButton } from "@/components/shared/CopyButton";
+import { ensureInvoiceFromQuotation } from "@/lib/commercial/document-workflow";
+import { writeSystemAuditEvent } from "@/lib/commercial/audit";
 import { can } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { requireOrgSession } from "@/lib/org-context";
@@ -48,8 +52,8 @@ export default async function QuotationDetailPage({
   const quotation = await prisma.quotation.findFirst({
     where: quotationWhere,
     include: {
-      lead: { select: { id: true, fullName: true } },
-      client: { select: { id: true, fullName: true } },
+      lead: { select: { id: true, fullName: true, phone: true, email: true, organization: true } },
+      client: { select: { id: true, fullName: true, phone: true, email: true, organization: true } },
       job: { select: { id: true, jobNumber: true } },
       createdBy: { select: { id: true, name: true } },
       approvedBy: { select: { id: true, name: true } },
@@ -64,7 +68,19 @@ export default async function QuotationDetailPage({
   const canAccept = can.approveQuotations(user) && quotation.status === "SENT";
   const canReject = can.createQuotations(user) && quotation.status === "SENT";
   const canEditDraft = can.createQuotations(user) && quotation.status === "DRAFT" && !quotation.convertedToInvoiceId;
+  const canConvert = can.approveInvoices(user) && quotation.status === "ACCEPTED" && !quotation.convertedToInvoiceId;
   const canOverrideDiscount = can.overrideDiscount(user);
+  const recipientName = quotation.client?.fullName ?? quotation.lead?.fullName ?? null;
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+  const pdfHref = `/api/quotations/${quotation.id}`;
+  const pdfUrl = `${appUrl}${pdfHref}`;
+  const recipientPhone = (quotation.client?.phone ?? quotation.lead?.phone ?? "").replace(/\D/g, "");
+  const whatsappPhone = recipientPhone.startsWith("0") ? `256${recipientPhone.slice(1)}` : recipientPhone;
+  const emailTo = quotation.client?.email ?? quotation.lead?.email ?? "";
+  const shareText = `Hi ${recipientName ?? "there"}, quotation ${quotation.quoteNumber} is ready.\n\nTotal: ${formatMoney(quotation.totalAmount, currency)}\nPDF: ${pdfUrl}`;
+  const mailSubject = encodeURIComponent(`Quotation ${quotation.quoteNumber}`);
+  const mailBody = encodeURIComponent(`${shareText}\n\nRegards,\n${user.name}`);
+  const whatsappText = encodeURIComponent(shareText);
 
   async function sendAction() {
     "use server";
@@ -165,8 +181,29 @@ export default async function QuotationDetailPage({
     }
   }
 
-  const recipientName = quotation.client?.fullName ?? quotation.lead?.fullName ?? null;
+  async function convertToInvoiceAction() {
+    "use server";
+    const { user, orgId, org } = await requireOrgSession();
+    if (!can.approveInvoices(user)) redirect(`/sales/quotations/${id}`);
 
+    const invoice = await prisma.$transaction(async (tx) => (
+      ensureInvoiceFromQuotation(tx, { orgId, quotationId: id, currency: org.baseCurrency })
+    ));
+    if (invoice) {
+      await writeSystemAuditEvent({
+        orgId,
+        actorUserId: user.id,
+        entityType: "Invoice",
+        entityId: invoice.id,
+        action: "QUOTATION_CONVERTED_TO_INVOICE",
+        summary: `Quotation converted to ${invoice.invoiceNumber}`,
+      });
+      revalidatePath("/documents/invoices");
+      revalidatePath("/documents/quotations");
+      redirect(`/documents/invoices?pay=${invoice.id}`);
+    }
+    redirect(`/sales/quotations/${id}`);
+  }
   return (
     <div className="mx-auto max-w-3xl space-y-4">
       <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
@@ -189,6 +226,53 @@ export default async function QuotationDetailPage({
           <span className={`inline-flex items-center rounded-full border px-3 py-1 text-[13px] font-semibold ${QUOTATION_STATUS_COLORS[quotation.status]}`}>
             {quotation.status}
           </span>
+        </div>
+      </div>
+
+      <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
+        <p className="mb-3 text-[13px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Document Actions</p>
+        <div className="flex flex-wrap gap-2">
+          <a
+            href={pdfHref}
+            target="_blank"
+            rel="noreferrer"
+            className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-4 py-2 text-[12px] font-bold text-[var(--ink)] transition hover:border-[var(--accent)]/40"
+          >
+            Download PDF
+          </a>
+          <a
+            href={`mailto:${emailTo}?subject=${mailSubject}&body=${mailBody}`}
+            className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-4 py-2 text-[12px] font-bold text-[var(--ink)] transition hover:border-[var(--accent)]/40"
+          >
+            Email
+          </a>
+          {whatsappPhone ? (
+            <a
+              href={`https://wa.me/${whatsappPhone}?text=${whatsappText}`}
+              target="_blank"
+              rel="noreferrer"
+              className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-2 text-[12px] font-bold text-emerald-700 transition hover:bg-emerald-500/20 dark:text-emerald-400"
+            >
+              WhatsApp
+            </a>
+          ) : null}
+          <CopyButton
+            text={pdfUrl}
+            label="Copy PDF Link"
+            title="Copy quotation PDF link"
+            className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-4 py-2 text-[12px] font-bold text-[var(--ink)] transition hover:border-[var(--accent)]/40"
+          />
+          {canConvert ? (
+            <form action={convertToInvoiceAction}>
+              <button type="submit" className="btn-premium rounded-lg px-4 py-2 text-[12px] font-bold">
+                Convert to Invoice
+              </button>
+            </form>
+          ) : quotation.convertedToInvoiceId ? (
+            <Link href="/documents/invoices" className="rounded-lg border border-green-400/30 bg-green-500/10 px-4 py-2 text-[12px] font-bold text-green-700 dark:text-green-400">
+              Invoice Created
+            </Link>
+          ) : null}
         </div>
       </div>
 

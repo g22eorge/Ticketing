@@ -7,6 +7,7 @@ import { requireOrgSession } from "@/lib/org-context";
 import { can } from "@/lib/permissions";
 import { assertOrgCanMutate } from "@/lib/org-write";
 import { writeSystemAuditEvent } from "@/lib/commercial/audit";
+import { nextDocumentNumber } from "@/lib/commercial/document-workflow";
 import { ConfirmSubmitButton } from "@/components/shared/ConfirmSubmitButton";
 import { RowActionsMenu, MenuSection, MenuDestructiveRow } from "@/components/shared/RowActionsMenu";
 
@@ -165,9 +166,6 @@ export default async function RecurringInvoicesPage() {
     });
     if (!rec) return;
 
-    const count = await prisma.invoice.count({ where: { orgId } });
-    const year = new Date().getFullYear();
-    const invoiceNumber = `INV-${year}-${String(count + 1).padStart(4, "0")}`;
     const totalAmount = rec.items.reduce((s, item) => s + item.lineTotal, 0);
     const frequency = (FREQUENCIES as readonly string[]).includes(rec.frequency)
       ? (rec.frequency as Frequency)
@@ -175,6 +173,7 @@ export default async function RecurringInvoicesPage() {
     const nextDue = nextDueDateFromFrequency(new Date(), frequency);
 
     await prisma.$transaction(async (tx) => {
+      const invoiceNumber = await nextDocumentNumber(tx, "INV", "invoice");
       const invoice = await tx.invoice.create({
         data: {
           orgId,

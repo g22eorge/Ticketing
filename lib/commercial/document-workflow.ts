@@ -2,7 +2,7 @@ import type { Prisma } from "@prisma/client";
 
 type Tx = Prisma.TransactionClient;
 
-export async function nextDocumentNumber(tx: Tx, prefix: string, countModel: "quotation" | "invoice" | "deliveryNote" | "receipt") {
+export async function nextDocumentNumber(tx: Tx, prefix: string, countModel: "quotation" | "invoice" | "deliveryNote" | "receipt" | "creditNote") {
   const year = new Date().getFullYear();
   const startsWith = `${prefix}-${year}-`;
   const numbers = countModel === "quotation"
@@ -11,7 +11,9 @@ export async function nextDocumentNumber(tx: Tx, prefix: string, countModel: "qu
       ? await tx.invoice.findMany({ where: { invoiceNumber: { startsWith } }, select: { invoiceNumber: true } })
       : countModel === "deliveryNote"
         ? await tx.deliveryNote.findMany({ where: { deliveryNoteNumber: { startsWith } }, select: { deliveryNoteNumber: true } })
-        : await tx.receipt.findMany({ where: { receiptNumber: { startsWith } }, select: { receiptNumber: true } });
+        : countModel === "creditNote"
+          ? await tx.creditNote.findMany({ where: { creditNoteNumber: { startsWith } }, select: { creditNoteNumber: true } })
+          : await tx.receipt.findMany({ where: { receiptNumber: { startsWith } }, select: { receiptNumber: true } });
   const max = numbers.reduce((highest, record) => {
     const value = "quoteNumber" in record
       ? record.quoteNumber
@@ -19,7 +21,9 @@ export async function nextDocumentNumber(tx: Tx, prefix: string, countModel: "qu
         ? record.invoiceNumber
         : "deliveryNoteNumber" in record
           ? record.deliveryNoteNumber
-          : record.receiptNumber;
+          : "creditNoteNumber" in record
+            ? record.creditNoteNumber
+            : record.receiptNumber;
     const sequence = Number(value.slice(startsWith.length));
     return Number.isFinite(sequence) ? Math.max(highest, sequence) : highest;
   }, 0);

@@ -12,6 +12,7 @@ import { can } from "@/lib/permissions";
 import { assertOrgCanMutate } from "@/lib/org-write";
 import { ConfirmSubmitButton } from "@/components/shared/ConfirmSubmitButton";
 import { writeSystemAuditEvent } from "@/lib/commercial/audit";
+import { nextDocumentNumber } from "@/lib/commercial/document-workflow";
 
 const METHODS: PaymentMethod[] = ["CASH", "MOBILE_MONEY", "BANK_TRANSFER", "CARD", "OTHER"];
 
@@ -557,11 +558,8 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
     if (!Number.isFinite(totalAmount) || totalAmount <= 0) return;
 
     await prisma.$transaction(async (tx) => {
-      const count = await tx.creditNote.count({ where: { orgId, saleId } }).catch(() => 0);
-      const baseNumber = `CN-${existingSale.saleNumber}-${String(count + 1).padStart(2, "0")}`;
-      let creditNoteNumber = baseNumber;
+      const creditNoteNumber = await nextDocumentNumber(tx, "CN", "creditNote");
 
-      // Try insert; if number collides (rare), suffix with timestamp.
       const created = await tx.creditNote.create({
         data: {
           orgId,
@@ -573,20 +571,6 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
           createdById: session.user.id,
         },
         select: { id: true },
-      }).catch(async () => {
-        creditNoteNumber = `${baseNumber}-${Date.now()}`;
-        return tx.creditNote.create({
-          data: {
-            orgId,
-            saleId,
-            creditNoteNumber,
-            currency,
-            totalAmount,
-            reason,
-            createdById: session.user.id,
-          },
-          select: { id: true },
-        });
       });
 
       await tx.creditNoteItem.createMany({
