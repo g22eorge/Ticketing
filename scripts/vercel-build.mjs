@@ -21,12 +21,17 @@ function run(command, args, options = {}) {
 // when serving the deployed app.
 const realDatabaseUrl = process.env.DATABASE_URL || process.env.TURSO_DATABASE_URL || "";
 const buildDatabaseUrl = "file:./dev.db";
+const buildEnv = {
+  ...process.env,
+  DATABASE_URL: buildDatabaseUrl,
+  TURSO_DATABASE_URL: "",
+};
 
 process.env.DATABASE_URL    = buildDatabaseUrl;  // always valid for SQLite provider
 process.env.TURSO_DATABASE_URL = "";              // prevent prisma.config.ts fallback
 
-run("node", ["scripts/generate-prisma-clean.mjs"]);
-run("node", ["scripts/assert-prisma-models.mjs"]);
+run("node", ["scripts/generate-prisma-clean.mjs"], { env: buildEnv });
+run("node", ["scripts/assert-prisma-models.mjs"], { env: buildEnv });
 
 // ── Step 2: migrations + Next.js build ───────────────────────────────────────
 if (process.env.RUN_PRISMA_MIGRATE_DEPLOY === "1") {
@@ -44,4 +49,4 @@ if (process.env.RUN_PRISMA_MIGRATE_DEPLOY === "1") {
 process.env.DATABASE_URL = buildDatabaseUrl;
 process.env.TURSO_DATABASE_URL = "";
 
-run("next", ["build"]);
+run("next", ["build"], { env: buildEnv });
