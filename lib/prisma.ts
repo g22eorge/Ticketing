@@ -107,18 +107,61 @@ if (isStaleSingleton(globalForPrisma.prisma)) {
   globalForPrisma.prisma = undefined;
 }
 
-export const prisma =
+const basePrisma =
   globalForPrisma.prisma ??
   createPrismaClient();
 
 if (process.env.NODE_ENV !== "production") {
-  globalForPrisma.prisma = prisma;
+  globalForPrisma.prisma = basePrisma;
 }
+
+let paymentKindRepair: Promise<void> | null = null;
+
+function isMissingPaymentKindError(error: unknown) {
+  return String(error).includes("no such column: main.Payment.kind")
+    || String(error).includes("no such column: Payment.kind");
+}
+
+function isDuplicateColumnError(error: unknown) {
+  const message = String(error).toLowerCase();
+  return message.includes("duplicate column name") || message.includes("already exists");
+}
+
+async function ensurePaymentKindColumn() {
+  paymentKindRepair ??= basePrisma.$executeRawUnsafe(
+    `ALTER TABLE "Payment" ADD COLUMN "kind" TEXT NOT NULL DEFAULT 'PAYMENT'`,
+  ).then(
+    () => undefined,
+    (error) => {
+      if (isDuplicateColumnError(error)) return undefined;
+      paymentKindRepair = null;
+      throw error;
+    },
+  );
+
+  return paymentKindRepair;
+}
+
+export const prisma = basePrisma.$extends({
+  query: {
+    payment: {
+      async $allOperations({ args, query }) {
+        try {
+          return await query(args);
+        } catch (error) {
+          if (!isMissingPaymentKindError(error)) throw error;
+          await ensurePaymentKindColumn();
+          return query(args);
+        }
+      },
+    },
+  },
+}) as unknown as PrismaClient;
 
 // Eagerly start the engine connection so it's ready before the first request.
 // Without this, Prisma 6's lazy initializer races against incoming requests
 // (especially better-auth session checks) and throws "Engine is not yet connected".
-void prisma.$connect().catch(() => {/* errors will surface on first query */});
+void basePrisma.$connect().catch(() => {/* errors will surface on first query */});
 
 // ── Org-scoped query layer ────────────────────────────────────────────────────
 const ORG_SCOPED_MODELS = new Set([
