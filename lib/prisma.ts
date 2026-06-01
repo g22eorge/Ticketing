@@ -116,10 +116,17 @@ if (process.env.NODE_ENV !== "production") {
 }
 
 let paymentKindRepair: Promise<void> | null = null;
+let leadLostReasonRepair: Promise<void> | null = null;
 
 function isMissingPaymentKindError(error: unknown) {
   return String(error).includes("no such column: main.Payment.kind")
     || String(error).includes("no such column: Payment.kind");
+}
+
+function isMissingLeadLostReasonError(error: unknown) {
+  return String(error).includes("no such column: main.Lead.lostReason")
+    || String(error).includes("no such column: Lead.lostReason")
+    || String(error).includes("no such column: lostReason");
 }
 
 function isDuplicateColumnError(error: unknown) {
@@ -142,6 +149,21 @@ async function ensurePaymentKindColumn() {
   return paymentKindRepair;
 }
 
+async function ensureLeadLostReasonColumn() {
+  leadLostReasonRepair ??= basePrisma.$executeRawUnsafe(
+    `ALTER TABLE "Lead" ADD COLUMN "lostReason" TEXT`,
+  ).then(
+    () => undefined,
+    (error) => {
+      if (isDuplicateColumnError(error)) return undefined;
+      leadLostReasonRepair = null;
+      throw error;
+    },
+  );
+
+  return leadLostReasonRepair;
+}
+
 export const prisma = basePrisma.$extends({
   query: {
     payment: {
@@ -151,6 +173,17 @@ export const prisma = basePrisma.$extends({
         } catch (error) {
           if (!isMissingPaymentKindError(error)) throw error;
           await ensurePaymentKindColumn();
+          return query(args);
+        }
+      },
+    },
+    lead: {
+      async $allOperations({ args, query }) {
+        try {
+          return await query(args);
+        } catch (error) {
+          if (!isMissingLeadLostReasonError(error)) throw error;
+          await ensureLeadLostReasonColumn();
           return query(args);
         }
       },
