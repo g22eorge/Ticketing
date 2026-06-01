@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { LeadStatus, QuotationStatus } from "@prisma/client";
+import { LeadSource, LeadStatus, QuotationStatus } from "@prisma/client";
 
 import { can } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
@@ -20,6 +20,18 @@ const createLeadSchema = z.object({
   notes: z.string().optional(),
   assignedToId: z.string().optional(),
   estimatedValue: z.coerce.number().optional(),
+});
+
+const updateLeadDetailsSchema = z.object({
+  fullName: z.string().min(2),
+  phone: z.string().min(3),
+  email: z.string().optional(),
+  organization: z.string().optional(),
+  interest: z.string().optional(),
+  source: z.string().optional(),
+  notes: z.string().optional(),
+  estimatedValue: z.coerce.number().optional(),
+  followUpAt: z.string().optional(),
 });
 
 export async function createLead(data: {
@@ -107,6 +119,73 @@ export async function updateLeadStatus(leadId: string, status: LeadStatus, note?
       userId: user.id,
       type: "STATUS_CHANGE",
       note: note ? sanitizeText(note) : `Status changed to ${status}`,
+    },
+  });
+
+  revalidatePath(`/sales/leads/${leadId}`);
+  revalidatePath("/sales");
+}
+
+export async function updateLeadDetails(
+  leadId: string,
+  data: {
+    fullName: string;
+    phone: string;
+    email?: string;
+    organization?: string;
+    interest?: string;
+    source?: string;
+    notes?: string;
+    estimatedValue?: number;
+    followUpAt?: string;
+  },
+) {
+  const { user, orgId } = await requireOrgSession();
+  if (!can.createLeads(user)) {
+    throw new Error("Unauthorized");
+  }
+
+  const parsed = updateLeadDetailsSchema.safeParse(data);
+  if (!parsed.success) {
+    throw new Error(parsed.error.issues[0]?.message ?? "Invalid input");
+  }
+
+  const leadAccessWhere = {
+    id: leadId,
+    orgId,
+    ...(!can.viewAllSales(user) ? { OR: [{ assignedToId: user.id }, { createdById: user.id }] } : {}),
+  };
+
+  const existing = await prisma.lead.findFirst({ where: leadAccessWhere, select: { id: true } });
+  if (!existing) throw new Error("Lead not found");
+
+  const validSources: LeadSource[] = ["WALK_IN", "REFERRAL", "PHONE", "SOCIAL_MEDIA", "WEBSITE", "OTHER"];
+  const source = validSources.includes(parsed.data.source as LeadSource)
+    ? parsed.data.source as LeadSource
+    : "WALK_IN";
+  const followUpAt = parsed.data.followUpAt ? new Date(parsed.data.followUpAt) : null;
+
+  await prisma.lead.updateMany({
+    where: leadAccessWhere,
+    data: {
+      fullName: sanitizeText(parsed.data.fullName),
+      phone: sanitizeText(parsed.data.phone),
+      email: sanitizeOptionalText(parsed.data.email),
+      organization: sanitizeOptionalText(parsed.data.organization),
+      interest: sanitizeOptionalText(parsed.data.interest),
+      source,
+      notes: sanitizeOptionalText(parsed.data.notes),
+      estimatedValue: parsed.data.estimatedValue ?? null,
+      followUpAt: followUpAt && !Number.isNaN(followUpAt.getTime()) ? followUpAt : null,
+    },
+  });
+
+  await prisma.leadActivity.create({
+    data: {
+      leadId,
+      userId: user.id,
+      type: "NOTE",
+      note: "Lead details updated",
     },
   });
 

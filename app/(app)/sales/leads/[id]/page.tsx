@@ -7,7 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { requireOrgSession } from "@/lib/org-context";
 import { formatEATDate, formatEATDateTime } from "@/lib/date-eat";
 import { formatMoney, getAppCurrency } from "@/lib/currency";
-import { updateLeadStatus, addLeadActivity } from "../../actions";
+import { updateLeadStatus, addLeadActivity, updateLeadDetails } from "../../actions";
 
 const LEAD_STATUS_LABELS: Record<LeadStatus, string> = {
   NEW: "New",
@@ -48,6 +48,7 @@ const QUOTATION_STATUS_COLORS: Record<string, string> = {
 type SearchParams = {
   statusError?: string;
   activityError?: string;
+  editError?: string;
 };
 
 export default async function LeadDetailPage({
@@ -101,6 +102,27 @@ export default async function LeadDetailPage({
       const msg = e instanceof Error ? e.message : "Failed to update status";
       redirect(`/sales/leads/${id}?statusError=${encodeURIComponent(msg)}`);
     }
+  }
+
+  async function updateLeadDetailsAction(formData: FormData) {
+    "use server";
+    try {
+      await updateLeadDetails(id, {
+        fullName: String(formData.get("fullName") ?? ""),
+        phone: String(formData.get("phone") ?? ""),
+        email: String(formData.get("email") ?? ""),
+        organization: String(formData.get("organization") ?? ""),
+        interest: String(formData.get("interest") ?? ""),
+        source: String(formData.get("source") ?? ""),
+        notes: String(formData.get("notes") ?? ""),
+        estimatedValue: Number(formData.get("estimatedValue") || 0) || undefined,
+        followUpAt: String(formData.get("followUpAt") ?? ""),
+      });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Failed to update lead";
+      redirect(`/sales/leads/${id}?editError=${encodeURIComponent(msg)}`);
+    }
+    redirect(`/sales/leads/${id}`);
   }
 
   async function addActivityAction(formData: FormData) {
@@ -159,6 +181,67 @@ export default async function LeadDetailPage({
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <div className="space-y-4 lg:col-span-2">
+          {canEdit ? (
+            <details className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+              <summary className="cursor-pointer list-none text-[13px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)] [&::-webkit-details-marker]:hidden">
+                Edit Lead Details
+              </summary>
+              {filters.editError ? (
+                <p className="mt-3 rounded-lg border border-red-400/30 bg-red-500/10 px-3 py-2 text-xs text-red-700 dark:text-red-400">{filters.editError}</p>
+              ) : null}
+              <form action={updateLeadDetailsAction} className="mt-3 grid gap-3 md:grid-cols-2">
+                <label className="space-y-1 text-[12px] font-semibold text-[var(--ink-muted)]">
+                  Name
+                  <input name="fullName" required defaultValue={lead.fullName} className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm font-normal text-[var(--ink)] outline-none focus:border-[var(--accent)]/50" />
+                </label>
+                <label className="space-y-1 text-[12px] font-semibold text-[var(--ink-muted)]">
+                  Phone
+                  <input name="phone" required defaultValue={lead.phone} className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm font-normal text-[var(--ink)] outline-none focus:border-[var(--accent)]/50" />
+                </label>
+                <label className="space-y-1 text-[12px] font-semibold text-[var(--ink-muted)]">
+                  Email
+                  <input name="email" type="email" defaultValue={lead.email ?? ""} className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm font-normal text-[var(--ink)] outline-none focus:border-[var(--accent)]/50" />
+                </label>
+                <label className="space-y-1 text-[12px] font-semibold text-[var(--ink-muted)]">
+                  Organization
+                  <input name="organization" defaultValue={lead.organization ?? ""} className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm font-normal text-[var(--ink)] outline-none focus:border-[var(--accent)]/50" />
+                </label>
+                <label className="space-y-1 text-[12px] font-semibold text-[var(--ink-muted)]">
+                  Source
+                  <select name="source" defaultValue={lead.source} className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm font-normal text-[var(--ink)] outline-none focus:border-[var(--accent)]/50">
+                    <option value="WALK_IN">Walk in</option>
+                    <option value="REFERRAL">Referral</option>
+                    <option value="PHONE">Phone</option>
+                    <option value="SOCIAL_MEDIA">Social media</option>
+                    <option value="WEBSITE">Website</option>
+                    <option value="OTHER">Other</option>
+                  </select>
+                </label>
+                <label className="space-y-1 text-[12px] font-semibold text-[var(--ink-muted)]">
+                  Estimated Value
+                  <input name="estimatedValue" type="number" min="0" step="1" defaultValue={lead.estimatedValue ?? ""} className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm font-normal text-[var(--ink)] outline-none focus:border-[var(--accent)]/50" />
+                </label>
+                <label className="space-y-1 text-[12px] font-semibold text-[var(--ink-muted)]">
+                  Follow-up
+                  <input name="followUpAt" type="date" defaultValue={lead.followUpAt ? lead.followUpAt.toISOString().slice(0, 10) : ""} className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm font-normal text-[var(--ink)] outline-none focus:border-[var(--accent)]/50" />
+                </label>
+                <label className="space-y-1 text-[12px] font-semibold text-[var(--ink-muted)] md:col-span-2">
+                  Interest
+                  <input name="interest" defaultValue={lead.interest ?? ""} className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm font-normal text-[var(--ink)] outline-none focus:border-[var(--accent)]/50" />
+                </label>
+                <label className="space-y-1 text-[12px] font-semibold text-[var(--ink-muted)] md:col-span-2">
+                  Notes
+                  <textarea name="notes" rows={3} defaultValue={lead.notes ?? ""} className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm font-normal text-[var(--ink)] outline-none focus:border-[var(--accent)]/50" />
+                </label>
+                <div className="md:col-span-2">
+                  <button type="submit" className="btn-premium rounded-lg px-4 py-2 text-[12px] font-bold">
+                    Save Lead
+                  </button>
+                </div>
+              </form>
+            </details>
+          ) : null}
+
           {canEdit ? (
             <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
               <p className="mb-3 text-[13px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Update Status</p>
