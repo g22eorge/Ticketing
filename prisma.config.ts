@@ -3,6 +3,18 @@ import path from "node:path";
 import { defineConfig } from "prisma/config";
 
 function getDatabaseUrl() {
+  const isBuildValidation =
+    process.env.RUN_PRISMA_MIGRATE_DEPLOY !== "1"
+    && (
+      process.env.NEXT_PHASE === "phase-production-build"
+      || process.env.VERCEL === "1"
+      || process.env.VERCEL_ENV !== undefined
+    );
+
+  if (isBuildValidation) {
+    return `file:${path.resolve(process.cwd(), "prisma", "dev.db")}`;
+  }
+
   const url = process.env.DATABASE_URL || process.env.TURSO_DATABASE_URL || "file:./dev.db";
 
   // Allow Prisma CLI to target Turso/libSQL when explicitly configured.
