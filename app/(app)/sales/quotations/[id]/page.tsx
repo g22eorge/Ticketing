@@ -7,7 +7,14 @@ import { prisma } from "@/lib/prisma";
 import { requireOrgSession } from "@/lib/org-context";
 import { formatEATDate, formatEATDateTime } from "@/lib/date-eat";
 import { formatMoney } from "@/lib/currency";
-import { updateQuotationStatus } from "../../actions";
+import {
+  addQuotationItem,
+  deleteQuotation,
+  removeQuotationItem,
+  updateQuotationDetails,
+  updateQuotationItem,
+  updateQuotationStatus,
+} from "../../actions";
 
 const QUOTATION_STATUS_COLORS: Record<QuotationStatus, string> = {
   DRAFT:    "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]",
@@ -19,10 +26,13 @@ const QUOTATION_STATUS_COLORS: Record<QuotationStatus, string> = {
 
 export default async function QuotationDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ editError?: string }>;
 }) {
   const { id } = await params;
+  const filters = await searchParams;
   const { user, orgId } = await requireOrgSession();
 
   if (!can.createQuotations(user) && !can.viewAllSales(user)) {
@@ -53,6 +63,8 @@ export default async function QuotationDetailPage({
   const canSend = can.createQuotations(user) && quotation.status === "DRAFT";
   const canAccept = can.approveQuotations(user) && quotation.status === "SENT";
   const canReject = can.createQuotations(user) && quotation.status === "SENT";
+  const canEditDraft = can.createQuotations(user) && quotation.status === "DRAFT" && !quotation.convertedToInvoiceId;
+  const canOverrideDiscount = can.overrideDiscount(user);
 
   async function sendAction() {
     "use server";
@@ -82,6 +94,75 @@ export default async function QuotationDetailPage({
       redirect(`/sales/quotations/${id}`);
     }
     redirect(`/sales/quotations/${id}`);
+  }
+
+  async function updateDetailsAction(formData: FormData) {
+    "use server";
+    try {
+      await updateQuotationDetails(id, {
+        validUntil: String(formData.get("validUntil") ?? ""),
+        notes: String(formData.get("notes") ?? ""),
+      });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Failed to update quotation";
+      redirect(`/sales/quotations/${id}?editError=${encodeURIComponent(msg)}`);
+    }
+    redirect(`/sales/quotations/${id}`);
+  }
+
+  async function addItemAction(formData: FormData) {
+    "use server";
+    try {
+      await addQuotationItem(id, {
+        description: String(formData.get("description") ?? ""),
+        quantity: Number(formData.get("quantity") ?? 1),
+        unitPrice: Number(formData.get("unitPrice") ?? 0),
+        discount: Number(formData.get("discount") ?? 0),
+      });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Failed to add item";
+      redirect(`/sales/quotations/${id}?editError=${encodeURIComponent(msg)}`);
+    }
+    redirect(`/sales/quotations/${id}`);
+  }
+
+  async function updateItemAction(formData: FormData) {
+    "use server";
+    const itemId = String(formData.get("itemId") ?? "");
+    try {
+      await updateQuotationItem(itemId, {
+        description: String(formData.get("description") ?? ""),
+        quantity: Number(formData.get("quantity") ?? 1),
+        unitPrice: Number(formData.get("unitPrice") ?? 0),
+        discount: Number(formData.get("discount") ?? 0),
+      });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Failed to update item";
+      redirect(`/sales/quotations/${id}?editError=${encodeURIComponent(msg)}`);
+    }
+    redirect(`/sales/quotations/${id}`);
+  }
+
+  async function removeItemAction(formData: FormData) {
+    "use server";
+    const itemId = String(formData.get("itemId") ?? "");
+    try {
+      await removeQuotationItem(itemId);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Failed to remove item";
+      redirect(`/sales/quotations/${id}?editError=${encodeURIComponent(msg)}`);
+    }
+    redirect(`/sales/quotations/${id}`);
+  }
+
+  async function deleteAction() {
+    "use server";
+    try {
+      await deleteQuotation(id);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Failed to delete quotation";
+      redirect(`/sales/quotations/${id}?editError=${encodeURIComponent(msg)}`);
+    }
   }
 
   const recipientName = quotation.client?.fullName ?? quotation.lead?.fullName ?? null;
@@ -149,6 +230,48 @@ export default async function QuotationDetailPage({
         </div>
       ) : null}
 
+      {filters.editError ? (
+        <div className="rounded-lg border border-red-400/30 bg-red-500/10 px-3 py-2 text-xs text-red-700 dark:text-red-400">{filters.editError}</div>
+      ) : null}
+
+      {canEditDraft ? (
+        <details className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+          <summary className="cursor-pointer list-none text-[13px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)] [&::-webkit-details-marker]:hidden">
+            Edit Quote
+          </summary>
+          <form action={updateDetailsAction} className="mt-3 grid gap-3 sm:grid-cols-2">
+            <label className="space-y-1 text-[12px] font-semibold text-[var(--ink-muted)]">
+              Valid Until
+              <input
+                type="date"
+                name="validUntil"
+                defaultValue={quotation.validUntil ? quotation.validUntil.toISOString().slice(0, 10) : ""}
+                className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm font-normal text-[var(--ink)] outline-none focus:border-[var(--accent)]/50"
+              />
+            </label>
+            <label className="space-y-1 text-[12px] font-semibold text-[var(--ink-muted)] sm:col-span-2">
+              Notes
+              <textarea
+                name="notes"
+                rows={3}
+                defaultValue={quotation.notes ?? ""}
+                className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm font-normal text-[var(--ink)] outline-none focus:border-[var(--accent)]/50"
+              />
+            </label>
+            <div className="sm:col-span-2">
+              <button type="submit" className="btn-premium rounded-lg px-4 py-2 text-[12px] font-bold">
+                Save Quote
+              </button>
+            </div>
+          </form>
+          <form action={deleteAction} className="mt-3 border-t border-[var(--line)] pt-3">
+            <button type="submit" className="rounded-lg border border-red-400/30 bg-red-500/10 px-4 py-2 text-[12px] font-bold text-red-700 transition hover:bg-red-500/20 dark:text-red-400">
+              Delete Draft
+            </button>
+          </form>
+        </details>
+      ) : null}
+
       <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
         <div className="border-b border-[var(--line)] px-4 py-3">
           <p className="text-[13px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Line Items</p>
@@ -162,26 +285,69 @@ export default async function QuotationDetailPage({
                 <th className="w-28 px-4 py-2.5 text-right">Unit Price</th>
                 <th className="w-16 px-4 py-2.5 text-right">Disc %</th>
                 <th className="w-28 px-4 py-2.5 text-right">Total</th>
+                {canEditDraft ? <th className="w-28 px-4 py-2.5 text-right">Actions</th> : null}
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--line)]">
               {quotation.items.map((item) => (
                 <tr key={item.id}>
-                  <td className="px-4 py-3 text-[var(--ink)]">{item.description}</td>
-                  <td className="px-4 py-3 text-right text-[var(--ink-muted)]">{item.quantity}</td>
-                  <td className="px-4 py-3 text-right text-[var(--ink-muted)]">{formatMoney(item.unitPrice, currency)}</td>
-                  <td className="px-4 py-3 text-right text-[var(--ink-muted)]">{item.discount > 0 ? `${item.discount}%` : <span className="opacity-40">—</span>}</td>
+                  <td className="px-4 py-3 text-[var(--ink)]">
+                    {canEditDraft ? (
+                      <input form={`quote-item-${item.id}`} name="description" defaultValue={item.description} className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1.5 text-sm outline-none focus:border-[var(--accent)]/50" />
+                    ) : item.description}
+                  </td>
+                  <td className="px-4 py-3 text-right text-[var(--ink-muted)]">
+                    {canEditDraft ? (
+                      <input form={`quote-item-${item.id}`} name="quantity" type="number" min="1" step="any" defaultValue={item.quantity} className="w-20 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-1.5 text-right text-sm outline-none focus:border-[var(--accent)]/50" />
+                    ) : item.quantity}
+                  </td>
+                  <td className="px-4 py-3 text-right text-[var(--ink-muted)]">
+                    {canEditDraft ? (
+                      <input form={`quote-item-${item.id}`} name="unitPrice" type="number" min="0" step="any" defaultValue={item.unitPrice} className="w-28 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-1.5 text-right text-sm outline-none focus:border-[var(--accent)]/50" />
+                    ) : formatMoney(item.unitPrice, currency)}
+                  </td>
+                  <td className="px-4 py-3 text-right text-[var(--ink-muted)]">
+                    {canEditDraft && canOverrideDiscount ? (
+                      <input form={`quote-item-${item.id}`} name="discount" type="number" min="0" max="100" step="any" defaultValue={item.discount} className="w-20 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-1.5 text-right text-sm outline-none focus:border-[var(--accent)]/50" />
+                    ) : item.discount > 0 ? `${item.discount}%` : <span className="opacity-40">—</span>}
+                  </td>
                   <td className="px-4 py-3 text-right font-medium text-[var(--ink)]">{formatMoney(item.lineTotal, currency)}</td>
+                  {canEditDraft ? (
+                    <td className="px-4 py-3 text-right">
+                      <form id={`quote-item-${item.id}`} action={updateItemAction} className="inline">
+                        <input type="hidden" name="itemId" value={item.id} />
+                        {!canOverrideDiscount ? <input type="hidden" name="discount" value="0" /> : null}
+                        <button type="submit" className="rounded-lg border border-[var(--line)] px-2.5 py-1 text-[12px] font-semibold text-[var(--ink)]">Save</button>
+                      </form>
+                      <form action={removeItemAction} className="ml-1 inline">
+                        <input type="hidden" name="itemId" value={item.id} />
+                        <button type="submit" className="rounded-lg border border-red-400/30 px-2.5 py-1 text-[12px] font-semibold text-red-600">Remove</button>
+                      </form>
+                    </td>
+                  ) : null}
                 </tr>
               ))}
               {quotation.items.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-4 py-6 text-center text-sm text-[var(--ink-muted)]">No items</td>
+                  <td colSpan={canEditDraft ? 6 : 5} className="px-4 py-6 text-center text-sm text-[var(--ink-muted)]">No items</td>
                 </tr>
               ) : null}
             </tbody>
           </table>
         </div>
+        {canEditDraft ? (
+          <form action={addItemAction} className="grid gap-2 border-t border-[var(--line)] px-4 py-3 md:grid-cols-[1fr_80px_120px_90px_auto]">
+            <input name="description" placeholder="New item description" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm outline-none focus:border-[var(--accent)]/50" />
+            <input name="quantity" type="number" min="1" step="any" defaultValue="1" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm outline-none focus:border-[var(--accent)]/50" />
+            <input name="unitPrice" type="number" min="0" step="any" defaultValue="0" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm outline-none focus:border-[var(--accent)]/50" />
+            {canOverrideDiscount ? (
+              <input name="discount" type="number" min="0" max="100" step="any" defaultValue="0" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm outline-none focus:border-[var(--accent)]/50" />
+            ) : <input type="hidden" name="discount" value="0" />}
+            <button type="submit" className="btn-premium-secondary rounded-lg px-4 py-2 text-[12px] font-semibold">
+              Add Item
+            </button>
+          </form>
+        ) : null}
         <div className="border-t border-[var(--line)] px-4 py-3">
           <div className="flex flex-col items-end gap-1 text-[13px]">
             {quotation.discountAmount > 0 ? (

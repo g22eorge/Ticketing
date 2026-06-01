@@ -239,6 +239,34 @@ async function generateQuoteNumber(): Promise<string> {
   return `QT-${year}-${String(count + 1).padStart(4, "0")}`;
 }
 
+function quotationLineTotal(item: { quantity: number; unitPrice: number; discount: number }) {
+  return item.quantity * item.unitPrice * (1 - item.discount / 100);
+}
+
+async function recalculateQuotationTotals(quotationId: string) {
+  const items = await prisma.quotationItem.findMany({ where: { quotationId } });
+  const subtotal = items.reduce((sum, i) => sum + i.lineTotal, 0);
+  await prisma.quotation.update({
+    where: { id: quotationId },
+    data: { subtotal, totalAmount: subtotal },
+  });
+}
+
+async function assertEditableQuotation(quotationId: string, orgId: string, user: Awaited<ReturnType<typeof requireOrgSession>>["user"]) {
+  const quote = await prisma.quotation.findFirst({
+    where: {
+      id: quotationId,
+      orgId,
+      status: "DRAFT",
+      convertedToInvoiceId: null,
+      ...(!can.viewAllSales(user) ? { createdById: user.id } : {}),
+    },
+    select: { id: true },
+  });
+  if (!quote) throw new Error("Draft quotation not found");
+  return quote;
+}
+
 export async function createQuotation(data: {
   leadId?: string;
   clientId?: string;
@@ -258,8 +286,8 @@ export async function createQuotation(data: {
   }
 
   const items = data.items.map((item) => {
-    const lineTotal = item.quantity * item.unitPrice * (1 - item.discount / 100);
-    return { ...item, lineTotal };
+    const discount = can.overrideDiscount(user) ? item.discount : 0;
+    return { ...item, discount, lineTotal: quotationLineTotal({ ...item, discount }) };
   });
 
   const subtotal = items.reduce((sum, item) => sum + item.lineTotal, 0);
@@ -350,13 +378,9 @@ export async function addQuotationItem(
   const { user, orgId } = await requireOrgSession();
   if (!can.createQuotations(user)) throw new Error("Unauthorized");
 
-  const lineTotal = item.quantity * item.unitPrice * (1 - item.discount / 100);
-
-  const quote = await prisma.quotation.findFirst({
-    where: { id: quotationId, orgId, ...(!can.viewAllSales(user) ? { createdById: user.id } : {}) },
-    select: { id: true },
-  });
-  if (!quote) throw new Error("Quotation not found");
+  await assertEditableQuotation(quotationId, orgId, user);
+  const discount = can.overrideDiscount(user) ? item.discount : 0;
+  const lineTotal = quotationLineTotal({ ...item, discount });
 
   await prisma.quotationItem.create({
     data: {
@@ -364,20 +388,67 @@ export async function addQuotationItem(
       description: sanitizeText(item.description),
       quantity: item.quantity,
       unitPrice: item.unitPrice,
-      discount: item.discount,
+      discount,
       lineTotal,
     },
   });
 
-  const items = await prisma.quotationItem.findMany({ where: { quotationId } });
-  const subtotal = items.reduce((sum, i) => sum + i.lineTotal, 0);
+  await recalculateQuotationTotals(quotationId);
+
+  revalidatePath(`/sales/quotations/${quotationId}`);
+}
+
+export async function updateQuotationDetails(
+  quotationId: string,
+  data: { validUntil?: string; notes?: string },
+) {
+  const { user, orgId } = await requireOrgSession();
+  if (!can.createQuotations(user)) throw new Error("Unauthorized");
+
+  await assertEditableQuotation(quotationId, orgId, user);
 
   await prisma.quotation.update({
     where: { id: quotationId },
-    data: { subtotal, totalAmount: subtotal },
+    data: {
+      validUntil: data.validUntil ? new Date(data.validUntil) : null,
+      notes: sanitizeOptionalText(data.notes),
+    },
   });
 
   revalidatePath(`/sales/quotations/${quotationId}`);
+  revalidatePath("/sales");
+}
+
+export async function updateQuotationItem(
+  itemId: string,
+  item: { description: string; quantity: number; unitPrice: number; discount: number },
+) {
+  const { user, orgId } = await requireOrgSession();
+  if (!can.createQuotations(user)) throw new Error("Unauthorized");
+
+  const existing = await prisma.quotationItem.findFirst({
+    where: { id: itemId, quotation: { orgId } },
+    select: { quotationId: true, quotation: { select: { createdById: true, status: true, convertedToInvoiceId: true } } },
+  });
+  if (!existing) throw new Error("Quotation item not found");
+  await assertEditableQuotation(existing.quotationId, orgId, user);
+
+  const discount = can.overrideDiscount(user) ? item.discount : 0;
+  const lineTotal = quotationLineTotal({ ...item, discount });
+
+  await prisma.quotationItem.update({
+    where: { id: itemId },
+    data: {
+      description: sanitizeText(item.description),
+      quantity: item.quantity,
+      unitPrice: item.unitPrice,
+      discount,
+      lineTotal,
+    },
+  });
+
+  await recalculateQuotationTotals(existing.quotationId);
+  revalidatePath(`/sales/quotations/${existing.quotationId}`);
 }
 
 export async function removeQuotationItem(itemId: string) {
@@ -389,18 +460,21 @@ export async function removeQuotationItem(itemId: string) {
     select: { quotationId: true },
   });
   if (!item) return;
+  await assertEditableQuotation(item.quotationId, orgId, user);
 
   await prisma.quotationItem.delete({ where: { id: itemId } });
-
-  const remaining = await prisma.quotationItem.findMany({
-    where: { quotationId: item.quotationId },
-  });
-  const subtotal = remaining.reduce((sum, i) => sum + i.lineTotal, 0);
-
-  await prisma.quotation.update({
-    where: { id: item.quotationId },
-    data: { subtotal, totalAmount: subtotal },
-  });
+  await recalculateQuotationTotals(item.quotationId);
 
   revalidatePath(`/sales/quotations/${item.quotationId}`);
+}
+
+export async function deleteQuotation(quotationId: string) {
+  const { user, orgId } = await requireOrgSession();
+  if (!can.createQuotations(user)) throw new Error("Unauthorized");
+
+  await assertEditableQuotation(quotationId, orgId, user);
+  await prisma.quotation.delete({ where: { id: quotationId } });
+
+  revalidatePath("/sales");
+  redirect("/sales?tab=quotations");
 }
