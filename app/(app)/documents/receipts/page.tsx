@@ -410,7 +410,89 @@ export default async function ReceiptsPage({
         </div>
       )}
 
-      <div className="doc-list overflow-x-auto rounded-xl border border-[var(--line)]">
+      <div className="space-y-3 md:hidden">
+        {payments.map((p) => {
+          const currency = normalizeCurrency(p.currency, baseCurrency);
+          const label = p.invoice?.job?.jobNumber
+            ? `Repair ${p.invoice.job.jobNumber}`
+            : p.sale?.saleNumber
+              ? `Sale ${p.sale.saleNumber}`
+              : p.invoice?.invoiceNumber
+                ? `Invoice ${p.invoice.invoiceNumber}`
+                : "Payment";
+
+          const linkHref = p.invoice?.job?.id
+            ? `/jobs/${p.invoice.job.id}`
+            : p.sale?.id
+              ? `/pos/${p.sale.id}`
+              : null;
+
+          return (
+            <article key={p.id} className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-[12px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">
+                    {p.receivedAt.toLocaleDateString()} · {p.receivedAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                  </p>
+                  <p className="mt-1 mono text-base font-black text-[var(--ink)]">{formatMoney(p.amount, currency)}</p>
+                </div>
+                <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[12px] font-semibold ${methodBadge(p.method)}`}>
+                  {p.method.replaceAll("_", " ")}
+                </span>
+              </div>
+
+              <div className="mt-3 flex items-center justify-between gap-3 border-t border-[var(--line)] pt-3">
+                <div className="min-w-0">
+                  {linkHref ? (
+                    <Link href={linkHref} className="block truncate text-[13px] font-semibold text-[var(--ink)]">
+                      {label}
+                    </Link>
+                  ) : (
+                    <p className="truncate text-[13px] font-semibold text-[var(--ink-muted)]">{label}</p>
+                  )}
+                  <p className="truncate text-[12px] text-[var(--ink-muted)]">{p.reference ?? "No reference"}</p>
+                </div>
+                <div className="flex shrink-0 items-center gap-2">
+                  {linkHref ? (
+                    <Link href={linkHref} title="View source" className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)] transition hover:border-[var(--accent)]/50 hover:text-[var(--accent)]">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                    </Link>
+                  ) : null}
+                  <a href={`/api/payments/${p.id}/receipt`} target="_blank" rel="noreferrer" title="Open receipt PDF" className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--accent)]/40 bg-[var(--accent)]/10 text-[var(--accent)] transition hover:bg-[var(--accent)]/20">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M9 12h6M9 16h4"/></svg>
+                  </a>
+                  <RowActionsMenu label="Receipt actions">
+                    <MenuSection label="Edit Receipt" />
+                    <form action={updateReceiptAction} className="space-y-2 p-3">
+                      <input type="hidden" name="paymentId" value={p.id} />
+                      <input name="amount" inputMode="decimal" defaultValue={p.amount} className="w-full rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1.5 text-xs outline-none focus:border-[var(--accent)]/50" />
+                      <select name="method" defaultValue={p.method} className="w-full rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1.5 text-xs outline-none focus:border-[var(--accent)]/50">
+                        {PAYMENT_METHODS.map((m) => <option key={m} value={m}>{m.replaceAll("_", " ")}</option>)}
+                      </select>
+                      <input name="reference" defaultValue={p.reference ?? ""} placeholder="Reference" className="w-full rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1.5 text-xs outline-none focus:border-[var(--accent)]/50" />
+                      <textarea name="note" defaultValue={p.note ?? ""} placeholder="Note" className="min-h-14 w-full rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1.5 text-xs outline-none focus:border-[var(--accent)]/50" />
+                      <button type="submit" className="btn-premium w-full rounded-lg px-3 py-1.5 text-xs font-semibold">Save</button>
+                    </form>
+                    <MenuDestructiveRow>
+                      <form action={deleteReceiptAction}>
+                        <input type="hidden" name="paymentId" value={p.id} />
+                        <ConfirmSubmitButton message="Delete this receipt/payment? Totals will be recalculated." className="text-xs font-semibold text-red-600 transition hover:text-red-700">Delete Receipt</ConfirmSubmitButton>
+                      </form>
+                    </MenuDestructiveRow>
+                  </RowActionsMenu>
+                </div>
+              </div>
+            </article>
+          );
+        })}
+        {payments.length === 0 ? (
+          <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-8 text-center text-sm text-[var(--ink-muted)]">
+            No payments yet.
+          </div>
+        ) : null}
+      </div>
+
+      <div className="doc-list hidden overflow-x-auto rounded-xl border border-[var(--line)] md:block">
         <table className="w-full text-left text-sm">
           <thead className="bg-[var(--panel-strong)] text-[12px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
             <tr>
@@ -461,12 +543,12 @@ export default async function ReceiptsPage({
                   <td className="px-3 py-2">
                     <div className="flex items-center justify-end gap-1.5">
                       {linkHref ? (
-                        <Link href={linkHref} title="View source" className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)] transition hover:border-[var(--accent)]/50 hover:text-[var(--accent)]">
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                        <Link href={linkHref} title="View source" className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)] transition hover:border-[var(--accent)]/50 hover:text-[var(--accent)]">
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
                         </Link>
                       ) : null}
-                      <a href={`/api/payments/${p.id}/receipt`} target="_blank" rel="noreferrer" title="Open receipt PDF" className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-[var(--accent)]/40 bg-[var(--accent)]/10 text-[var(--accent)] transition hover:bg-[var(--accent)]/20">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M9 12h6M9 16h4"/></svg>
+                      <a href={`/api/payments/${p.id}/receipt`} target="_blank" rel="noreferrer" title="Open receipt PDF" className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--accent)]/40 bg-[var(--accent)]/10 text-[var(--accent)] transition hover:bg-[var(--accent)]/20">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M9 12h6M9 16h4"/></svg>
                       </a>
                       <RowActionsMenu label="Receipt actions">
                         <MenuSection label="Edit Receipt" />

@@ -71,21 +71,21 @@ export function SettingsShell({
 
   return (
     <section className="space-y-4">
-      <div className="panel-shadow overflow-hidden rounded-[1.75rem] border border-[var(--line)] bg-[var(--panel)] p-4 sm:p-6">
+      <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)] p-3 sm:rounded-[1.75rem] sm:p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex min-w-0 items-center gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-[var(--line)] bg-[var(--accent)] text-lg font-black text-[var(--accent-contrast)]">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[var(--line)] bg-[var(--accent)] text-base font-black text-[var(--accent-contrast)] sm:h-11 sm:w-11 sm:rounded-2xl sm:text-lg">
               {workspaceName.trim().slice(0, 1).toUpperCase() || "S"}
             </div>
             <div className="min-w-0">
-              <p className="truncate text-xl font-black text-[var(--ink)]">Settings</p>
-              <p className="mt-0.5 truncate text-xs text-[var(--ink-muted)]">
+              <p className="truncate text-lg font-black text-[var(--ink)] sm:text-xl">Settings</p>
+              <p className="mt-0.5 truncate text-xs text-[var(--ink-muted)] max-sm:max-w-[220px]">
                 {workspaceName} · {actorName} · Updated {lastEditedAt}
               </p>
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
             {quickActions?.length ? (
               <div className="flex items-center gap-2">
                 {quickActions.map((a) => (
@@ -93,7 +93,7 @@ export function SettingsShell({
                     key={a.href}
                     href={a.href}
                     title={a.label}
-                    className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)] transition hover:border-[var(--accent)]/35 hover:text-[var(--ink)]"
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)] transition hover:border-[var(--accent)]/35 hover:text-[var(--ink)] sm:h-10 sm:w-10"
                   >
                     {a.icon}
                   </Link>
@@ -101,7 +101,7 @@ export function SettingsShell({
               </div>
             ) : null}
 
-            <div className="flex items-center gap-2 rounded-full border border-[var(--line)] bg-[var(--panel-strong)] px-4 py-2">
+            <div className="flex min-w-0 flex-1 items-center gap-2 rounded-full border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 sm:flex-none sm:px-4">
               <svg className="h-4 w-4 text-[var(--ink-muted)]" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                 <path fillRule="evenodd" d="M9 3.5a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11ZM2 9a7 7 0 1 1 12.2 4.43l3.18 3.19a.75.75 0 1 1-1.06 1.06l-3.19-3.18A7 7 0 0 1 2 9Z" clipRule="evenodd" />
               </svg>
@@ -115,14 +115,14 @@ export function SettingsShell({
           </div>
         </div>
 
-        <div className="mt-5 flex flex-wrap gap-1.5">
+        <div className="mt-4 flex gap-1.5 overflow-x-auto pb-1 sm:mt-5 sm:flex-wrap sm:overflow-visible sm:pb-0">
           {filteredItems.map((item) => {
             const active = isActive(pathname, item.href);
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-all ${
+                className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-all ${
                   active
                     ? "border-[var(--accent)]/70 bg-[var(--accent)] text-[var(--accent-contrast)] shadow-sm"
                     : "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)] hover:border-[var(--accent)]/40 hover:bg-[var(--panel)] hover:text-[var(--ink)]"

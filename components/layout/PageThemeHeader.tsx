@@ -45,6 +45,10 @@ function pageMeta(pathname: string, role: Role) {
   if (pathname === "/technicians") return { title: "Technician Portal", description: "Prioritized queue for assigned repair work." };
   if (pathname === "/technicians/payouts") return { title: "Technician Payouts", description: "Track paid and unpaid fees across your external assignments." };
   if (pathname === "/settings/users") return { title: "User Management", description: "Create users, assign roles, and manage active access." };
+  if (pathname === "/documents/receipts") return { title: "Receipts", description: "Track payments, receipt PDFs, and collection history." };
+  if (pathname === "/documents/invoices") return { title: "Invoices", description: "Issue, collect, and monitor customer invoices." };
+  if (pathname === "/documents/job-cards") return { title: "Job Cards", description: "Generate intake documents and handoff cards." };
+  if (pathname === "/documents/quotations") return { title: "Quotations", description: "Prepare repair and sales quotes for approval." };
   if (pathname === "/settings/branding") return { title: "Branding", description: "Manage invoice logo, company details, VAT defaults, and document colours." };
   if (pathname === "/settings/profile") return { title: "Profile", description: "Update your personal account details and contact info." };
   if (pathname === "/settings/notifications") return { title: "Notifications", description: "Choose which job events trigger alerts for your account." };

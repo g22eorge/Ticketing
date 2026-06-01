@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useState, useRef, useEffect } from "react";
 
 export type SpeedDialAction = {
@@ -25,6 +26,7 @@ export function SpeedDialFAB({
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const pathname = usePathname();
 
   // Close on outside click
   useEffect(() => {
@@ -41,6 +43,7 @@ export function SpeedDialFAB({
   }, [open]);
 
   if (actions.length === 0 && !onAiToggle) return null;
+  if (pathname.startsWith("/settings") || pathname.startsWith("/documents")) return null;
 
   return (
     <div

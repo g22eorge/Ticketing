@@ -88,13 +88,13 @@ export function RowActionsMenu({ children, label = "Actions" }: RowActionsMenuPr
         onClick={toggle}
         aria-label={label}
         aria-expanded={open}
-        className={`inline-flex h-[28px] w-[28px] items-center justify-center rounded-lg border transition
+        className={`inline-flex h-9 w-9 items-center justify-center rounded-lg border transition
           ${open
             ? "border-[var(--accent)]/50 bg-[var(--accent)]/10 text-[var(--accent)]"
             : "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)] hover:border-[var(--accent)]/40 hover:text-[var(--ink)]"
           }`}
       >
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
           <circle cx="5" cy="12" r="1.8" />
           <circle cx="12" cy="12" r="1.8" />
           <circle cx="19" cy="12" r="1.8" />

@@ -521,7 +521,7 @@ export default async function JobsPage({
           ) : null}
         </form>
 
-        {/* Row 3: 5 key status chips — equal grid, always fits screen */}
+        {/* Row 3: key status chips */}
         {(() => {
           const isMine = filters.mine === "1";
           const mineHref = isMine ? statusChipHref("") : (() => {
@@ -537,10 +537,10 @@ export default async function JobsPage({
             { href: statusChipHref("READY_FOR_PICKUP"),  label: "Ready",    count: uiStatusCountMap.get("READY_FOR_PICKUP") ?? 0,   active: statusValue === "READY_FOR_PICKUP" },
           ];
           return (
-            <div className="grid grid-cols-5 gap-1.5 pb-2">
+            <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-2">
               {KEY_CHIPS.map(({ href, label, count, active }) => (
                 <Link key={label} href={href}
-                  className={`rounded-full px-1 py-1.5 text-center text-[11px] font-bold transition ${
+                  className={`inline-flex h-9 shrink-0 items-center justify-center rounded-full px-3 text-center text-[12px] font-bold transition ${
                     active
                       ? "bg-[var(--accent)] text-black"
                       : "border border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]"
