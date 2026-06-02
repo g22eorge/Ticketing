@@ -9,6 +9,7 @@ import { can } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { sanitizeOptionalText, sanitizeText } from "@/lib/sanitize";
 import { requireOrgSession } from "@/lib/org-context";
+import { nextDocumentNumber } from "@/lib/commercial/document-workflow";
 
 const createLeadSchema = z.object({
   fullName: z.string().min(2),
@@ -107,9 +108,13 @@ export async function updateLeadStatus(leadId: string, status: LeadStatus, note?
     where: leadAccessWhere,
     data: {
       status,
-      ...(status === "WON" ? { convertedAt: new Date() } : {}),
-      ...(status === "LOST" || status === "STALE" ? { closedAt: new Date() } : {}),
-      ...(status === "LOST" && lostReason ? { lostReason } : {}),
+      ...(status === "WON"
+        ? { convertedAt: new Date(), closedAt: null, lostReason: null }
+        : status === "LOST"
+          ? { convertedAt: null, closedAt: new Date(), lostReason: lostReason ? sanitizeText(lostReason) : null }
+          : status === "STALE"
+            ? { convertedAt: null, closedAt: new Date(), lostReason: null }
+            : { convertedAt: null, closedAt: null, lostReason: null }),
     },
   });
 
@@ -233,12 +238,6 @@ export async function addLeadActivity(
   revalidatePath(`/sales/leads/${leadId}`);
 }
 
-async function generateQuoteNumber(): Promise<string> {
-  const year = new Date().getFullYear();
-  const count = await prisma.quotation.count();
-  return `QT-${year}-${String(count + 1).padStart(4, "0")}`;
-}
-
 function quotationLineTotal(item: { quantity: number; unitPrice: number; discount: number }) {
   return item.quantity * item.unitPrice * (1 - item.discount / 100);
 }
@@ -284,15 +283,26 @@ export async function createQuotation(data: {
   if (!can.createQuotations(user)) {
     throw new Error("Unauthorized");
   }
+  if (!data.leadId && !data.clientId && !data.jobId) {
+    throw new Error("Choose a lead, client, or job for this quotation");
+  }
 
   const items = data.items.map((item) => {
-    const discount = can.overrideDiscount(user) ? item.discount : 0;
-    return { ...item, discount, lineTotal: quotationLineTotal({ ...item, discount }) };
+    const description = item.description.trim();
+    const quantity = Number(item.quantity);
+    const unitPrice = Number(item.unitPrice);
+    const requestedDiscount = Number(item.discount);
+    if (!description || !Number.isFinite(quantity) || quantity <= 0 || !Number.isFinite(unitPrice) || unitPrice < 0) {
+      throw new Error("Each quotation item needs a description, quantity, and valid price");
+    }
+    if (!Number.isFinite(requestedDiscount) || requestedDiscount < 0 || requestedDiscount > 100) {
+      throw new Error("Discount must be between 0 and 100");
+    }
+    const discount = can.overrideDiscount(user) ? requestedDiscount : 0;
+    return { description, quantity, unitPrice, discount, lineTotal: quotationLineTotal({ quantity, unitPrice, discount }) };
   });
 
   const subtotal = items.reduce((sum, item) => sum + item.lineTotal, 0);
-  const quoteNumber = await generateQuoteNumber();
-
   const currency = (process.env.APP_CURRENCY ?? "UGX").toUpperCase().trim() || "UGX";
   if (data.leadId) {
     const lead = await prisma.lead.findFirst({
@@ -310,34 +320,44 @@ export async function createQuotation(data: {
     if (!client) throw new Error("Client not found");
   }
   if (data.jobId) {
-    const job = await prisma.job.findFirst({ where: { id: data.jobId, orgId }, select: { id: true } });
+    const job = await prisma.job.findFirst({
+      where: {
+        id: data.jobId,
+        orgId,
+        ...(!can.viewAllSales(user) ? { OR: [{ assignedToId: user.id }, { createdById: user.id }] } : {}),
+      },
+      select: { id: true },
+    });
     if (!job) throw new Error("Job not found");
   }
 
-  const quotation = await prisma.quotation.create({
-    data: {
-      quoteNumber,
-      orgId,
-      leadId: data.leadId || null,
-      clientId: data.clientId || null,
-      jobId: data.jobId || null,
-      createdById: user.id,
-      status: "DRAFT",
-      subtotal,
-      totalAmount: subtotal,
-      currency,
-      validUntil: data.validUntil ? new Date(data.validUntil) : null,
-      notes: data.notes ? sanitizeText(data.notes) : null,
-      items: {
-        create: items.map((item) => ({
-          description: sanitizeText(item.description),
-          quantity: item.quantity,
-          unitPrice: item.unitPrice,
-          discount: item.discount,
-          lineTotal: item.lineTotal,
-        })),
+  const quotation = await prisma.$transaction(async (tx) => {
+    const quoteNumber = await nextDocumentNumber(tx, "QT", "quotation");
+    return tx.quotation.create({
+      data: {
+        quoteNumber,
+        orgId,
+        leadId: data.leadId || null,
+        clientId: data.clientId || null,
+        jobId: data.jobId || null,
+        createdById: user.id,
+        status: "DRAFT",
+        subtotal,
+        totalAmount: subtotal,
+        currency,
+        validUntil: data.validUntil ? new Date(data.validUntil) : null,
+        notes: data.notes ? sanitizeText(data.notes) : null,
+        items: {
+          create: items.map((item) => ({
+            description: sanitizeText(item.description),
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            discount: item.discount,
+            lineTotal: item.lineTotal,
+          })),
+        },
       },
-    },
+    });
   });
 
   revalidatePath("/sales");
@@ -355,9 +375,20 @@ export async function updateQuotationStatus(quotationId: string, status: Quotati
     if (!can.createQuotations(user)) throw new Error("Unauthorized");
   }
 
+  const accessWhere = {
+    id: quotationId,
+    orgId,
+    ...(status === "ACCEPTED" || can.viewAllSales(user) ? {} : { createdById: user.id }),
+  };
+  const quotation = await prisma.quotation.findFirst({
+    where: accessWhere,
+    select: { id: true, leadId: true },
+  });
+  if (!quotation) throw new Error("Quotation not found");
+
   const now = new Date();
   const result = await prisma.quotation.updateMany({
-    where: { id: quotationId, orgId, ...(status === "ACCEPTED" || can.viewAllSales(user) ? {} : { createdById: user.id }) },
+    where: accessWhere,
     data: {
       status,
       ...(status === "SENT" ? { sentAt: now } : {}),
@@ -367,7 +398,29 @@ export async function updateQuotationStatus(quotationId: string, status: Quotati
   });
   if (result.count === 0) throw new Error("Quotation not found");
 
+  if (quotation.leadId) {
+    if (status === "SENT") {
+      await prisma.lead.updateMany({
+        where: { id: quotation.leadId, orgId, status: { notIn: ["WON", "LOST", "STALE"] } },
+        data: { status: "PROPOSAL_SENT" },
+      });
+      await prisma.leadActivity.create({
+        data: { leadId: quotation.leadId, userId: user.id, type: "STATUS_CHANGE", note: "Quotation sent" },
+      });
+    }
+    if (status === "ACCEPTED") {
+      await prisma.lead.updateMany({
+        where: { id: quotation.leadId, orgId },
+        data: { status: "WON", convertedAt: now, closedAt: null, lostReason: null },
+      });
+      await prisma.leadActivity.create({
+        data: { leadId: quotation.leadId, userId: user.id, type: "STATUS_CHANGE", note: "Quotation accepted" },
+      });
+    }
+  }
+
   revalidatePath(`/sales/quotations/${quotationId}`);
+  if (quotation.leadId) revalidatePath(`/sales/leads/${quotation.leadId}`);
   revalidatePath("/sales");
 }
 

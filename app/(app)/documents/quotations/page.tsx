@@ -29,7 +29,7 @@ export default async function QuotationsPage({
   searchParams: Promise<SearchParams>;
 }) {
   const { user, orgId } = await requireOrgSession();
-  if (!((["ADMIN", "OPS", "MANAGER", "SALES", "TECHNICIAN_INTERNAL"].includes(user.role) || can.viewFinancials(user)))) {
+  if (!(can.createQuotations(user) || can.viewFinancials(user))) {
     redirect("/dashboard");
   }
   await requireModule(OrgModule.INVOICING);
@@ -41,7 +41,7 @@ export default async function QuotationsPage({
   async function markSent(formData: FormData) {
     "use server";
     const { user, orgId, org } = await requireOrgSession();
-    if (!(["ADMIN", "OPS", "MANAGER", "SALES", "FINANCE"].includes(user.role) || can.viewFinancials(user))) return;
+    if (!(can.createQuotations(user) || can.viewFinancials(user))) return;
     assertOrgCanMutate({ access: org.access, userRole: user.role, userAccessMode: user.accessMode, kind: "GENERAL" });
 
     const jobId = formData.get("jobId") as string;
@@ -56,7 +56,7 @@ export default async function QuotationsPage({
   async function convertQuotationToInvoiceAction(formData: FormData) {
     "use server";
     const { user, orgId, org } = await requireOrgSession();
-    if (!(["ADMIN", "OPS", "MANAGER", "FINANCE"].includes(user.role) || can.approveInvoices(user))) return;
+    if (!(can.createInvoices(user) || can.approveInvoices(user))) return;
     assertOrgCanMutate({ access: org.access, userRole: user.role, userAccessMode: user.accessMode, kind: "GENERAL" });
 
     const jobId = String(formData.get("jobId") ?? "").trim();
@@ -65,7 +65,16 @@ export default async function QuotationsPage({
 
     const result = await prisma.$transaction(async (tx) => {
       const quotation = quotationId
-        ? await tx.quotation.findFirst({ where: { id: quotationId, orgId }, include: { items: true } })
+        ? await tx.quotation.findFirst({
+            where: {
+              id: quotationId,
+              orgId,
+              status: "ACCEPTED",
+              convertedToInvoiceId: null,
+              ...(!can.viewAllSales(user) && !can.approveInvoices(user) ? { createdById: user.id } : {}),
+            },
+            include: { items: true },
+          })
         : await ensureQuotationFromJob(tx, { orgId, jobId, userId: user.id, currency: org.baseCurrency });
       if (!quotation) return;
       const invoice = await ensureInvoiceFromQuotation(tx, { orgId, quotationId: quotation.id, currency: org.baseCurrency });
@@ -83,6 +92,7 @@ export default async function QuotationsPage({
     prisma.job.findMany({
       where: {
         orgId,
+        ...(!can.viewAllSales(user) && !can.viewFinancials(user) ? { OR: [{ assignedToId: user.id }, { createdById: user.id }] } : {}),
         status: approvalFilter === "pending"
           ? ("AWAITING_APPROVAL" as JobStatus)
           : {

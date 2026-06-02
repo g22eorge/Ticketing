@@ -68,7 +68,7 @@ export default async function QuotationDetailPage({
   const canAccept = can.approveQuotations(user) && quotation.status === "SENT";
   const canReject = can.createQuotations(user) && quotation.status === "SENT";
   const canEditDraft = can.createQuotations(user) && quotation.status === "DRAFT" && !quotation.convertedToInvoiceId;
-  const canConvert = can.approveInvoices(user) && quotation.status === "ACCEPTED" && !quotation.convertedToInvoiceId;
+  const canConvert = can.createInvoices(user) && quotation.status === "ACCEPTED" && !quotation.convertedToInvoiceId;
   const canOverrideDiscount = can.overrideDiscount(user);
   const recipientName = quotation.client?.fullName ?? quotation.lead?.fullName ?? null;
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
@@ -184,7 +184,19 @@ export default async function QuotationDetailPage({
   async function convertToInvoiceAction() {
     "use server";
     const { user, orgId, org } = await requireOrgSession();
-    if (!can.approveInvoices(user)) redirect(`/sales/quotations/${id}`);
+    if (!can.createInvoices(user)) redirect(`/sales/quotations/${id}`);
+
+    const quotation = await prisma.quotation.findFirst({
+      where: {
+        id,
+        orgId,
+        status: "ACCEPTED",
+        convertedToInvoiceId: null,
+        ...(!can.viewAllSales(user) && !can.approveInvoices(user) ? { createdById: user.id } : {}),
+      },
+      select: { id: true },
+    });
+    if (!quotation) redirect(`/sales/quotations/${id}`);
 
     const invoice = await prisma.$transaction(async (tx) => (
       ensureInvoiceFromQuotation(tx, { orgId, quotationId: id, currency: org.baseCurrency })

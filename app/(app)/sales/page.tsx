@@ -187,7 +187,7 @@ export default async function SalesPage({
 
     // All quotation stats
     prisma.quotation.aggregate({
-      where: { ...(!can.viewAllSales(user) ? { createdById: user.id } : {}) },
+      where: { orgId: user.orgId, ...(!can.viewAllSales(user) ? { createdById: user.id } : {}) },
       _sum:   { totalAmount: true },
       _count: true,
     }).catch(() => ({ _sum: { totalAmount: 0 }, _count: 0 })),
@@ -195,6 +195,7 @@ export default async function SalesPage({
     // Accepted quotations value
     prisma.quotation.aggregate({
       where: {
+        orgId: user.orgId,
         ...(!can.viewAllSales(user) ? { createdById: user.id } : {}),
         status: "ACCEPTED",
       },
