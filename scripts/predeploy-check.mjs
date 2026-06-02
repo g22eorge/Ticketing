@@ -23,6 +23,12 @@ if (!process.env.PROD) {
 
 if (process.env.PROD !== "true") {
   process.env.DATABASE_URL = process.env.PREDEPLOY_DATABASE_URL ?? "file:./dev.db";
+  process.env.TURSO_DATABASE_URL = "";
+  process.env.TURSO_AUTH_TOKEN = "";
+  process.env.ALLOW_SQLITE_PRODUCTION = "1";
+  process.env.BETTER_AUTH_SECRET ??= "predeploy-local-better-auth-secret-32-chars";
+  process.env.NEXT_PUBLIC_APP_URL ??= "http://127.0.0.1:4020";
+  process.env.BETTER_AUTH_URL ??= process.env.NEXT_PUBLIC_APP_URL;
 }
 
 const secret = process.env.BETTER_AUTH_SECRET ?? "";
@@ -51,7 +57,7 @@ if (publicUrl.includes("localhost") || authUrl.includes("localhost")) {
 run("bunx", ["prisma", "migrate", "status"]);
 if (process.env.PROD !== "true") {
   run("bunx", ["prisma", "migrate", "deploy"]);
-  run("bun", ["run", "seed"]);
+  run("bun", ["run", process.env.PREDEPLOY_DEMO_SEED === "1" ? "seed" : "seed:base"]);
 }
 run("bun", ["run", "lint"]);
 run("bun", ["run", "build"]);
@@ -59,12 +65,10 @@ run("bun", ["run", "qa:data-integrity"]);
 run("bun", ["run", "qa:concurrency"]);
 run("bun", ["run", "qa:perf"]);
 
-if (process.env.QA_BASE_URL) {
-  run("bun", ["run", "qa:http-security"]);
-} else if (process.env.REQUIRE_QA_HTTP === "1") {
-  fail("QA_BASE_URL must be set when REQUIRE_QA_HTTP=1");
+if (process.env.PREDEPLOY_SKIP_QA_HTTP === "1") {
+  warn("PREDEPLOY_SKIP_QA_HTTP=1; skipped qa:http-security.");
 } else {
-  warn("QA_BASE_URL not set; skipped qa:http-security.");
+  run("bun", ["run", "qa:http-security"]);
 }
 
 if (process.env.REQUIRE_E2E === "1") {

@@ -41,7 +41,20 @@ try {
     const url = new URL(base);
     const port = url.port || "4030";
     serverProcess = spawn("bun", ["run", "start"], {
-      env: { ...process.env, PORT: port },
+      env: {
+        ...process.env,
+        PORT: port,
+        ALLOW_SQLITE_PRODUCTION: "1",
+        DATABASE_URL: process.env.DATABASE_URL ?? "file:./dev.db",
+        TURSO_DATABASE_URL: "",
+        TURSO_AUTH_TOKEN: "",
+        BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET ?? "qa-local-better-auth-secret-at-least-32-chars",
+        BETTER_AUTH_URL: process.env.BETTER_AUTH_URL ?? base,
+        NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL ?? base,
+        BETTER_AUTH_TRUSTED_ORIGINS: process.env.BETTER_AUTH_TRUSTED_ORIGINS
+          ? `${process.env.BETTER_AUTH_TRUSTED_ORIGINS},${base}`
+          : base,
+      },
       stdio: "ignore",
     });
     spawnedServer = true;

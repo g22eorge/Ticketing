@@ -15,15 +15,22 @@
  *   DATABASE_URL=file:./dev.db E2E_BASE_URL=http://localhost:3000 bun scripts/qa-pdf-smoke.mjs
  */
 
+import { spawn } from "node:child_process";
 import { PrismaClient } from "@prisma/client";
 
-const BASE_URL = process.env.E2E_BASE_URL ?? "http://127.0.0.1:3000";
-const ADMIN_EMAIL = process.env.SEED_ADMIN_EMAIL ?? process.env.E2E_ADMIN_EMAIL ?? "admin@eagle.tech";
+const BASE_URL = process.env.E2E_BASE_URL ?? "http://127.0.0.1:4041";
+const ADMIN_EMAIL = process.env.SEED_ADMIN_EMAIL ?? process.env.E2E_ADMIN_EMAIL ?? "admin@eagle.local";
 const ADMIN_PASSWORD = process.env.SEED_PASSWORD ?? process.env.E2E_PASSWORD ?? "Admin123!";
+
+process.env.DATABASE_URL ??= "file:./dev.db";
+process.env.TURSO_DATABASE_URL = "";
+process.env.TURSO_AUTH_TOKEN = "";
 
 const prisma = new PrismaClient({ log: [] });
 
 let failed = false;
+let serverProcess = null;
+let spawnedServer = false;
 
 function fail(msg) {
   console.error(`FAIL: ${msg}`);
@@ -32,6 +39,52 @@ function fail(msg) {
 
 function ok(msg) {
   console.log(`OK:   ${msg}`);
+}
+
+async function sleep(ms) {
+  await new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function waitForServer(baseUrl, timeoutMs = 30000) {
+  const started = Date.now();
+  while (Date.now() - started < timeoutMs) {
+    try {
+      const response = await fetch(`${baseUrl}/login`, { redirect: "manual" });
+      if (response.status === 200 || response.status === 307) {
+        return;
+      }
+    } catch {
+      // retry
+    }
+    await sleep(700);
+  }
+  throw new Error(`Server did not become ready at ${baseUrl} within ${timeoutMs}ms`);
+}
+
+async function startServerIfNeeded() {
+  if (process.env.E2E_BASE_URL) return;
+
+  const url = new URL(BASE_URL);
+  const port = url.port || "4041";
+  serverProcess = spawn("bun", ["run", "start"], {
+    env: {
+      ...process.env,
+      PORT: port,
+      ALLOW_SQLITE_PRODUCTION: "1",
+      DATABASE_URL: process.env.DATABASE_URL ?? "file:./dev.db",
+      TURSO_DATABASE_URL: "",
+      TURSO_AUTH_TOKEN: "",
+      BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET ?? "qa-local-better-auth-secret-at-least-32-chars",
+      BETTER_AUTH_URL: process.env.BETTER_AUTH_URL ?? BASE_URL,
+      NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL ?? BASE_URL,
+      BETTER_AUTH_TRUSTED_ORIGINS: process.env.BETTER_AUTH_TRUSTED_ORIGINS
+        ? `${process.env.BETTER_AUTH_TRUSTED_ORIGINS},${BASE_URL}`
+        : BASE_URL,
+    },
+    stdio: "ignore",
+  });
+  spawnedServer = true;
+  await waitForServer(BASE_URL);
 }
 
 // ── Step 1: Login ─────────────────────────────────────────────────────────────
@@ -120,16 +173,36 @@ async function resolveEndpoints() {
   const endpoints = [];
 
   try {
+    const invoiceJob = await prisma.job.findFirst({
+      where: { status: { in: ["READY_FOR_PICKUP", "COMPLETED", "CLOSED"] } },
+      orderBy: { updatedAt: "desc" },
+      select: { id: true },
+    });
+    if (invoiceJob) {
+      endpoints.push({ label: "Job Invoice PDF", url: `/api/jobs/${invoiceJob.id}/invoice` });
+    } else {
+      console.log("SKIP: no invoiceable jobs found in DB - skipping job invoice PDF check");
+    }
+
+    const quotationJob = await prisma.job.findFirst({
+      where: { status: { in: ["DIAGNOSING", "REFERRED", "AWAITING_APPROVAL", "IN_REPAIR", "READY_FOR_PICKUP", "COMPLETED", "CLOSED"] } },
+      orderBy: { updatedAt: "desc" },
+      select: { id: true },
+    });
+    if (quotationJob) {
+      endpoints.push({ label: "Job Quotation PDF", url: `/api/jobs/${quotationJob.id}/quotation` });
+    } else {
+      console.log("SKIP: no quotation-ready jobs found in DB - skipping job quotation PDF check");
+    }
+
     const job = await prisma.job.findFirst({
       orderBy: { updatedAt: "desc" },
       select: { id: true },
     });
     if (job) {
-      endpoints.push({ label: "Job Invoice PDF", url: `/api/jobs/${job.id}/invoice` });
-      endpoints.push({ label: "Job Quotation PDF", url: `/api/jobs/${job.id}/quotation` });
       endpoints.push({ label: "Job Card PDF", url: `/api/jobs/${job.id}/job-card` });
     } else {
-      console.log("SKIP: no jobs found in DB — skipping job PDF checks");
+      console.log("SKIP: no jobs found in DB - skipping job card PDF check");
     }
   } catch {
     console.log("SKIP: could not query jobs table");
@@ -151,7 +224,7 @@ async function resolveEndpoints() {
 
   try {
     const payment = await prisma.payment.findFirst({
-      orderBy: { updatedAt: "desc" },
+      orderBy: { createdAt: "desc" },
       select: { id: true },
     });
     if (payment) {
@@ -165,7 +238,7 @@ async function resolveEndpoints() {
 
   try {
     const dn = await prisma.deliveryNote.findFirst({
-      orderBy: { updatedAt: "desc" },
+      orderBy: { deliveredAt: "desc" },
       select: { id: true },
     });
     if (dn) {
@@ -183,6 +256,8 @@ async function resolveEndpoints() {
 // ── Main ──────────────────────────────────────────────────────────────────────
 
 try {
+  await startServerIfNeeded();
+
   const cookieHeader = await login();
   if (!cookieHeader) {
     process.exit(1);
@@ -200,6 +275,9 @@ try {
   }
 } finally {
   await prisma.$disconnect();
+  if (spawnedServer && serverProcess?.pid) {
+    serverProcess.kill("SIGTERM");
+  }
 }
 
 if (failed) {
