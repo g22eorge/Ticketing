@@ -57,9 +57,9 @@ function typeIcon(type: string) {
 }
 
 export function NotificationBell() {
-  // Only unread notifications are shown — the list empties as you read them
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [showAll, setShowAll] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [fetchError, setFetchError] = useState(false);
@@ -68,10 +68,9 @@ export function NotificationBell() {
   const btnRef = useRef<HTMLButtonElement>(null);
   const router = useRouter();
 
-  // Fetch UNREAD only — after they're read they drop off the list
   const fetchNotifications = useCallback(async () => {
     try {
-      const res = await fetch("/api/notifications?all=false&limit=30");
+      const res = await fetch(`/api/notifications?all=${showAll ? "true" : "false"}&limit=30`);
       if (!res.ok || !res.headers.get("content-type")?.includes("application/json")) {
         setFetchError(true);
         return;
@@ -85,7 +84,7 @@ export function NotificationBell() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [showAll]);
 
   // Initial fetch + 30-second poll
   useEffect(() => {
@@ -134,16 +133,19 @@ export function NotificationBell() {
     setIsOpen((v) => !v);
   }
 
-  // Mark a single notification as read → remove it from the list immediately
   async function markRead(id: string) {
-    setNotifications((prev) => prev.filter((n) => n.id !== id));
+    setNotifications((prev) => (
+      showAll
+        ? prev.map((n) => n.id === id ? { ...n, isRead: true } : n)
+        : prev.filter((n) => n.id !== id)
+    ));
     setUnreadCount((c) => Math.max(0, c - 1));
     await fetch(`/api/notifications/${id}`, { method: "POST" }).catch(() => {});
   }
 
   // Mark all read → clear the entire list
   async function markAllRead() {
-    setNotifications([]);
+    setNotifications((prev) => showAll ? prev.map((n) => ({ ...n, isRead: true })) : []);
     setUnreadCount(0);
     await fetch("/api/notifications/read-all", { method: "POST" }).catch(() => {});
   }
@@ -239,14 +241,22 @@ export function NotificationBell() {
                 </span>
               )}
             </div>
-            {notifications.length > 0 && (
+            <div className="flex items-center gap-2">
               <button
-                onClick={markAllRead}
+                onClick={() => setShowAll((v) => !v)}
                 className="text-[13px] font-medium text-[var(--accent)] transition hover:underline"
               >
-                Clear all
+                {showAll ? "Unread" : "All"}
               </button>
-            )}
+              {notifications.some((n) => !n.isRead) && (
+                <button
+                  onClick={markAllRead}
+                  className="text-[13px] font-medium text-[var(--accent)] transition hover:underline"
+                >
+                  Clear all
+                </button>
+              )}
+            </div>
           </div>
 
           {/* List */}
@@ -272,7 +282,9 @@ export function NotificationBell() {
             ) : notifications.length === 0 ? (
               <div className="flex flex-col items-center gap-2 px-4 py-10 text-center">
                 <span className="text-2xl opacity-30">🔔</span>
-                <p className="text-sm font-medium text-[var(--ink-muted)]">All caught up</p>
+                <p className="text-sm font-medium text-[var(--ink-muted)]">
+                  {showAll ? "No notifications yet" : "All caught up"}
+                </p>
                 <p className="text-xs text-[var(--ink-muted)]/70">
                   Alerts appear here when job statuses change, approvals are needed, or techs are assigned.
                 </p>
@@ -282,7 +294,9 @@ export function NotificationBell() {
                 <button
                   key={n.id}
                   onClick={() => handleClick(n)}
-                  className="group w-full border-b border-[var(--line)] bg-[var(--accent)]/5 px-4 py-3 text-left transition-colors last:border-0 hover:bg-[var(--panel-strong)]"
+                  className={`group w-full border-b border-[var(--line)] px-4 py-3 text-left transition-colors last:border-0 hover:bg-[var(--panel-strong)] ${
+                    n.isRead ? "bg-[var(--panel)]" : "bg-[var(--accent)]/5"
+                  }`}
                   style={{ animationDelay: `${i * 20}ms` }}
                 >
                   <div className="flex items-start gap-3">
@@ -292,8 +306,7 @@ export function NotificationBell() {
                         <p className="text-[13px] font-semibold leading-tight text-[var(--ink)]">
                           {n.title}
                         </p>
-                        {/* Unread dot */}
-                        <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-[var(--accent)]" />
+                        {!n.isRead && <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-[var(--accent)]" />}
                       </div>
                       <p className="mt-0.5 line-clamp-2 text-[13px] leading-relaxed text-[var(--ink-muted)]">
                         {n.message}
@@ -319,12 +332,18 @@ export function NotificationBell() {
           </div>
 
           {/* Footer */}
-          <div className="border-t border-[var(--line)] px-4 py-2.5">
+          <div className="flex items-center justify-between gap-2 border-t border-[var(--line)] px-4 py-2.5">
+            <button
+              onClick={() => setShowAll((v) => !v)}
+              className="text-[13px] font-medium text-[var(--accent)] transition hover:underline"
+            >
+              {showAll ? "Show unread" : "View all"}
+            </button>
             <button
               onClick={() => { router.push("/settings/notifications"); setIsOpen(false); }}
-              className="w-full text-center text-[13px] font-medium text-[var(--ink-muted)] transition hover:text-[var(--accent)]"
+              className="text-[13px] font-medium text-[var(--ink-muted)] transition hover:text-[var(--accent)]"
             >
-              Notification settings →
+              Settings
             </button>
           </div>
         </div>,
