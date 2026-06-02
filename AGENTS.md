@@ -1,737 +1,354 @@
-# AGENT.md — Eagle Info Machine Repair Management System
-> **For AI Agents & Developers:** This document is the single source of truth for building this application. Follow the phases in strict order. Do not skip ahead. Each phase must be fully complete and verified before proceeding to the next.
+# AGENTS.md - Eagle Info Repair Manager Current Runbook
 
----
+This file is the operating guide for AI agents and developers working in this repo. It describes the current system, the desired production behavior, and the checks to run when troubleshooting reliability, security, tenant isolation, and performance.
 
-## 📐 Project Overview
+Last updated: 2026-06-02.
 
-**App Name:** Eagle Info Repair Manager  
-**Purpose:** A role-based, multi-tenant repair job management system for a device repair business. Supports in-house and external technician workflows with strict client data protection.
+## Current System State
 
-**Core Business Rule:** External technicians NEVER see client identity or pricing history. They only see device specs and diagnosis summaries.
+Eagle Info Repair Manager is no longer a simple repair-only scaffold. It is a Next.js App Router business system covering:
 
----
+- Repair jobs, intake, clients, technicians, diagnosis, status flow, pricing, payouts, and job documents.
+- Client-facing WhatsApp/email communications with an outbox, retry paths, templates, policies, and inbound message logging.
+- Quotations, invoices, receipts, delivery notes, credit notes, refunds, and shared document numbering.
+- Sales/POS, leads, campaigns, finance, expenses, inventory, procurement, stock, suppliers, and reports.
+- Admin settings for users, orgs, branches, groups, branding, notifications, WhatsApp, billing, audit, and data health.
+- Commercial multi-tenant behavior for subscription customers.
 
-## 🛠️ Tech Stack (Locked — Do Not Deviate)
+Primary stack:
 
-| Layer | Technology |
-|---|---|
-| Framework | Next.js 14+ (App Router) |
-| Database | SQLite (local) via Prisma ORM |
-| Auth | BetterAuth |
-| UI | shadcn/ui + Tailwind CSS |
-| File Uploads | Local filesystem (`/uploads`) or `next/server` route handlers |
-| State | React Server Components + `useActionState` / `useState` |
-| Forms | React Hook Form + Zod validation |
-| Notifications | shadcn Toast / Sonner |
+- Next.js 16 App Router, React 19, TypeScript.
+- Prisma 6.19 with SQLite schema provider.
+- Local development database is SQLite file URL.
+- Production runtime uses Turso/libSQL through `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN`.
+- BetterAuth for auth/session.
+- Tailwind/shadcn-style UI, Sonner/toasts, React Hook Form/Zod where forms are client-driven.
+- Bun is the package/runtime command used by this repo.
 
----
+## Branch Policy
 
-## 👥 User Roles (Non-Negotiable)
+The owner's current workflow is:
 
-| Role | Key Permissions |
-|---|---|
-| `ADMIN` | Full access — all jobs, all clients, all reports, pricing overrides, user management |
-| `TECHNICIAN_INTERNAL` | View assigned jobs, add diagnosis, update repair work |
-| `TECHNICIAN_EXTERNAL` | View job ID + device specs + diagnosis summary ONLY. Can add cost estimate & timeline. Cannot see client info |
-| `OPS` | Create jobs, capture client + device info, communicate with client, update approval status, add notes, view costs, generate invoices, track payments |
+- `main` is priority production work.
+- Commit and push `main` after verified fixes.
+- `commercial` should be synced/committed locally after main, but do not push it unless the owner explicitly asks or the agreed "after 10 pushes to main" rule is reached.
+- Do not push `commercial` by habit.
+- Do not revert user or other-agent changes unless explicitly asked.
 
----
+Before code work:
 
-## 🗂️ Job Status Flow (Enum — Enforce in DB and UI)
-
-```
-RECEIVED → DIAGNOSING → REFERRED → AWAITING_APPROVAL → IN_REPAIR → COMPLETED
-                                                      ↘ CLOSED (client declined or unrepairable)
-```
-
----
-
-## 🧱 PHASE 1 — Project Scaffold & Auth
-
-**Goal:** Running Next.js app with BetterAuth, Prisma + SQLite, and role-based session.
-
-### 1.1 Init Project
 ```bash
-npx create-next-app@latest eagle-repair --typescript --tailwind --app --src-dir
-cd eagle-repair
+git status --short --branch
 ```
 
-### 1.2 Install Core Dependencies
+If changing code for production, work from `main` unless the owner explicitly says otherwise. After pushing `main`, fast-forward `commercial` locally when requested/appropriate:
+
 ```bash
-# Prisma + SQLite
-npm install prisma @prisma/client
-npx prisma init --datasource-provider sqlite
-
-# BetterAuth
-npm install better-auth
-
-# shadcn/ui
-npx shadcn@latest init
-# Choose: Default style, Slate base color, CSS variables: yes
-
-# Forms + Validation
-npm install react-hook-form zod @hookform/resolvers
-
-# Utilities
-npm install sonner date-fns clsx
+git switch commercial
+git merge --ff-only main
 ```
 
-### 1.3 Prisma Schema (`prisma/schema.prisma`)
+## Deployment Domains And Tenant Intent
 
-Define the **full schema** in one go. All models below are required:
+The same codebase supports two deployment intents:
 
-```prisma
-generator client {
-  provider = "prisma-client-js"
-}
+- `care.eagleinfosolutions.com`: Eagle Info's own repair business. Treat as effectively single tenant, but still keep server-side `orgId` filters where the data model requires them. Do not remove tenant safety just because care is single tenant.
+- `app.eagleinfosolutions.com`: Commercial subscription product. Must enforce `orgId` everywhere commercial/customer data is accessed.
 
-datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
-}
+Auth trusted origins currently include the care domain, app domain, and Vercel deployments in `lib/auth.ts`.
 
-// ── AUTH (BetterAuth required tables) ──────────────────────────────────────
+Critical tenant rule:
 
-model User {
-  id            String   @id @default(cuid())
-  name          String
-  email         String   @unique
-  emailVerified Boolean  @default(false)
-  image         String?
-  role          Role     @default(OPS)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+- Every business query that reads or writes customer/org data must scope by the authenticated user's `orgId`, except platform-admin flows that intentionally operate across orgs.
+- External technicians must never receive client PII or pricing history from server queries. UI hiding is not enough.
 
-  sessions      Session[]
-  accounts      Account[]
-  jobsCreated   Job[]         @relation("CreatedBy")
-  jobsAssigned  Job[]         @relation("AssignedTo")
-  auditLogs     AuditLog[]
-}
+## Core Security Invariants
 
-model Session {
-  id        String   @id @default(cuid())
-  expiresAt DateTime
-  token     String   @unique
-  ipAddress String?
-  userAgent String?
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
+Always preserve these:
 
-model Account {
-  id                    String    @id @default(cuid())
-  accountId             String
-  providerId            String
-  userId                String
-  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  accessToken           String?
-  refreshToken          String?
-  idToken               String?
-  accessTokenExpiresAt  DateTime?
-  refreshTokenExpiresAt DateTime?
-  scope                 String?
-  password              String?
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
-}
+- Server-side role checks before DB writes and sensitive reads.
+- External techs see only allowed job/device/diagnosis fields.
+- `orgId` isolation for commercial routes and APIs.
+- Append-only audit logs. Do not delete audit entries as a cleanup shortcut.
+- File uploads must validate file type and size.
+- Production auth must set `BETTER_AUTH_SECRET` and `BETTER_AUTH_URL` or `NEXT_PUBLIC_APP_URL`.
+- Production runtime must set Turso env vars. Local SQLite is only allowed in development/build/CI or when explicitly allowed.
 
-model Verification {
-  id         String   @id @default(cuid())
-  identifier String
-  value      String
-  expiresAt  DateTime
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-}
+## Job Status And Desired Messaging Behavior
 
-// ── CORE BUSINESS MODELS ────────────────────────────────────────────────────
+Status changes are handled in `app/(app)/jobs/[id]/actions.ts`. When the persisted status changes, it calls `notifyStatusChange(...)` in `lib/notifications/index.ts`.
 
-enum Role {
-  ADMIN
-  TECHNICIAN_INTERNAL
-  TECHNICIAN_EXTERNAL
-  OPS
-}
+Desired behavior:
 
-enum JobStatus {
-  RECEIVED
-  DIAGNOSING
-  REFERRED
-  AWAITING_APPROVAL
-  IN_REPAIR
-  COMPLETED
-  CLOSED
-}
+- Dashboard notification is created for ADMIN/OPS users whose preferences allow status-change notifications.
+- Client WhatsApp/email messages use `CommunicationPolicy` when enabled for the new status.
+- If WhatsApp policy is not enabled, a preference-gated fallback WhatsApp status update should still enqueue through `OutboundMessage` so the job Messages tab shows the attempt.
+- Ready-for-pickup nudges are scheduled only when configured and should be cancelled when a job leaves `READY_FOR_PICKUP`.
+- Status-triggered outbound messages must be linked to `jobId` and `orgId`.
 
-enum RepairPath {
-  IN_HOUSE
-  EXTERNAL
-}
+Troubleshooting missing status messages:
 
-enum DeviceType {
-  PHONE_ANDROID
-  PHONE_IPHONE
-  TABLET
-  WINDOWS_PC
-  MAC
-  OTHER
-}
+1. Confirm the status actually changed in the DB, not just in the form state.
+2. Confirm `notifyStatusChange` ran from `app/(app)/jobs/[id]/actions.ts`.
+3. Check `NotificationPreferences.whatsappEnabled` for ADMIN/OPS users in the org.
+4. Check `CommunicationPolicy` for the target status if expecting a template-specific send.
+5. Check `OutboundMessage` rows for the job:
 
-model Client {
-  id           String   @id @default(cuid())
-  fullName     String
-  phone        String
-  email        String?
-  organization String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  jobs         Job[]
-}
-
-model Job {
-  id              String      @id @default(cuid())
-  jobNumber       String      @unique // human-readable, e.g. EI-2024-0001
-  status          JobStatus   @default(RECEIVED)
-  repairPath      RepairPath?
-
-  // Relations
-  clientId        String
-  client          Client      @relation(fields: [clientId], references: [id])
-  createdById     String
-  createdBy       User        @relation("CreatedBy", fields: [createdById], references: [id])
-  assignedToId    String?
-  assignedTo      User?       @relation("AssignedTo", fields: [assignedToId], references: [id])
-
-  // Device info
-  deviceType      DeviceType
-  brand           String
-  model           String
-  serialOrImei    String?
-  accessories     String?     // comma-separated or JSON string
-  physicalNotes   String?
-
-  // Job details
-  issueDescription     String   // client's words
-  diagnosisNotes       String?  // internal
-  externalDiagnosis    String?  // external tech input (no client info here)
-  recommendedRepair    String?
-  partsNeeded          String?
-
-  // Financials
-  costEstimate         Float?
-  finalCost            Float?
-  clientApproved       Boolean?
-  approvalDate         DateTime?
-  quotedAt             DateTime?
-
-  // Timeline
-  repairTimeline       String?  // e.g. "2-3 days"
-  technicianNotes      String?
-  workDone             String?
-  partsReplaced        String?
-
-  // Dates
-  receivedAt      DateTime    @default(now())
-  completedAt     DateTime?
-  closedAt        DateTime?
-  updatedAt       DateTime    @updatedAt
-
-  photos          Photo[]
-  auditLogs       AuditLog[]
-}
-
-model Photo {
-  id        String   @id @default(cuid())
-  jobId     String
-  job       Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
-  url       String
-  label     String?  // e.g. "before", "during", "after"
-  uploadedAt DateTime @default(now())
-}
-
-model AuditLog {
-  id        String   @id @default(cuid())
-  jobId     String
-  job       Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
-  userId    String
-  user      User     @relation(fields: [userId], references: [id])
-  action    String   // e.g. "STATUS_CHANGED", "DIAGNOSIS_ADDED"
-  detail    String?  // JSON string of what changed
-  createdAt DateTime @default(now())
-}
+```sql
+SELECT id, channel, status, type, jobId, orgId, to, lastError, createdAt
+FROM OutboundMessage
+WHERE jobId = '<jobId>'
+ORDER BY createdAt DESC;
 ```
 
-Run migrations:
+6. If a row exists but is `FAILED` or `DEAD`, inspect WhatsApp configuration and provider errors.
+7. If no row exists, inspect preference/policy gates and whether the job has a client phone.
+
+The job Messages tab reads outbound rows by `jobId` plus linked repair request rows. If the row exists with the right `jobId`, the UI should show it even when delivery failed.
+
+## WhatsApp And Outbox Behavior
+
+Key files:
+
+- `lib/notifications/whatsapp.ts`: Meta WhatsApp configuration and direct provider calls.
+- `lib/notifications/whatsapp-outbox.ts`: `enqueueWhatsAppMessage`, `enqueueEmailMessage`, and `deliverOutboundMessage`.
+- `lib/notifications/index.ts`: business notification triggers.
+- `app/api/cron/whatsapp-retry/route.ts`: retry path.
+- `app/(app)/settings/notifications/outbox/page.tsx`: admin visibility.
+- `app/(app)/settings/notifications/whatsapp/page.tsx`: WhatsApp config.
+
+Desired behavior:
+
+- User-visible sends should create an outbox row before provider delivery when the outbox schema exists.
+- Delivery success updates status to `SENT`.
+- Provider/config/network failures update status to `FAILED` or eventually `DEAD`, with `lastError`.
+- PDF sends from jobs should also log a row before upload/send, so failed document sends remain visible.
+- Org-specific WhatsApp configuration must be resolved by `orgId`; do not use a global config when an org-specific config applies.
+
+Troubleshooting:
+
+- No outbox row: trigger did not enqueue, the outbox table is missing/stale, or the code fell back because Prisma client is stale.
+- Row pending forever: retry cron/worker not running, `nextAttemptAt` is future, or row is locked.
+- Failed row: inspect `lastError`, `lastErrorCode`, provider credentials, phone format, Meta template approval, media upload, and org WhatsApp config.
+- Messages tab empty: ensure row has the correct `jobId`; repair-request-only rows appear only when the request is linked to the job.
+
+## Database And Prisma Runbook
+
+The Prisma schema provider is SQLite. This means Prisma validation during build requires `DATABASE_URL` to start with `file:`.
+
+Important files:
+
+- `prisma/schema.prisma`: source of model truth.
+- `lib/prisma.ts`: runtime client selection, local SQLite vs Turso/libSQL adapter, stale singleton guard, targeted runtime repairs.
+- `scripts/vercel-build.mjs`: forces build-time `DATABASE_URL=file:./dev.db`, clears Turso env for build validation, generates Prisma client, asserts required models, then runs `next build`.
+- `scripts/assert-prisma-models.mjs`: required model sanity check.
+- `app/api/admin/db-fix/route.ts`: emergency production schema repair endpoint for platform/admin use.
+- `scripts/prod-job-column-safety.mjs`: production job-column safety repair.
+
+Common production DB errors and what they mean:
+
+- `SQLite input error: no such column: main.Payment.kind`: production schema is behind code. Apply migrations/db fix for the `Payment.kind` column.
+- `SQLite input error: no such column: lostReason`: production schema is behind code for leads. Apply the lead schema repair/migration.
+- Prisma build error `URL must start with the protocol file:`: the build is validating the SQLite schema with a non-file runtime URL. Use `scripts/vercel-build.mjs` path; do not run raw `prisma generate`/`next build` in Vercel with Turso in `DATABASE_URL`.
+- `Missing TURSO_DATABASE_URL`: production runtime started without Turso env vars.
+- BetterAuth warnings during build about default secret/base URL: expected in local build if env is absent; production runtime must set proper values.
+
+Local dev:
+
 ```bash
-npx prisma migrate dev --name init
-npx prisma generate
+bun run dev
 ```
 
-### 1.4 BetterAuth Setup
+Schema/client:
 
-Create `src/lib/auth.ts`:
-```ts
-import { betterAuth } from "better-auth";
-import { prismaAdapter } from "better-auth/adapters/prisma";
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
-
-export const auth = betterAuth({
-  database: prismaAdapter(prisma, { provider: "sqlite" }),
-  emailAndPassword: { enabled: true },
-  session: { cookieCache: { enabled: true, maxAge: 60 * 60 * 24 * 7 } },
-});
-```
-
-Create `src/app/api/auth/[...all]/route.ts`:
-```ts
-import { auth } from "@/lib/auth";
-import { toNextJsHandler } from "better-auth/next-js";
-export const { GET, POST } = toNextJsHandler(auth);
-```
-
-Create `src/lib/auth-client.ts`:
-```ts
-import { createAuthClient } from "better-auth/react";
-export const authClient = createAuthClient({ baseURL: process.env.NEXT_PUBLIC_APP_URL });
-```
-
-### 1.5 Route Protection Middleware
-
-Create `src/middleware.ts`:
-```ts
-import { NextRequest, NextResponse } from "next/server";
-import { getSessionCookie } from "better-auth/cookies";
-
-const PUBLIC_PATHS = ["/login", "/api/auth"];
-
-export function middleware(req: NextRequest) {
-  const session = getSessionCookie(req);
-  const isPublic = PUBLIC_PATHS.some(p => req.nextUrl.pathname.startsWith(p));
-  if (!session && !isPublic) {
-    return NextResponse.redirect(new URL("/login", req.url));
-  }
-  return NextResponse.next();
-}
-
-export const config = { matcher: ["/((?!_next|favicon.ico).*)"] };
-```
-
-### 1.6 Seed Admin User
-Create `prisma/seed.ts` to create the first ADMIN user on `npm run seed`.
-
-### ✅ Phase 1 Done When:
-- [ ] App runs on `localhost:3000`
-- [ ] `/login` page works with email + password
-- [ ] Session persists across refreshes
-- [ ] Unauthenticated users redirected to `/login`
-- [ ] Prisma Studio shows all tables created
-
----
-
-## 🧱 PHASE 2 — Layout, Navigation & Role Shell
-
-**Goal:** Authenticated shell with sidebar, role-aware navigation, and protected route groups.
-
-### 2.1 Install shadcn Components
 ```bash
-npx shadcn@latest add sidebar button badge avatar dropdown-menu separator skeleton toast
+bun run db:push
+bun run prisma:generate
 ```
 
-### 2.2 Route Structure
+Production-style build:
 
-```
-src/app/
-├── (auth)/
-│   └── login/page.tsx
-├── (app)/
-│   ├── layout.tsx           ← Authenticated shell with sidebar
-│   ├── dashboard/page.tsx
-│   ├── jobs/
-│   │   ├── page.tsx         ← Job list
-│   │   ├── new/page.tsx     ← Create job (OPS, ADMIN)
-│   │   └── [id]/
-│   │       ├── page.tsx     ← Job detail (role-filtered view)
-│   │       └── edit/page.tsx
-│   ├── clients/
-│   │   ├── page.tsx         ← Client list (ADMIN, OPS only)
-│   │   └── [id]/page.tsx
-│   ├── technicians/page.tsx ← External tech portal filtered view
-│   ├── reports/page.tsx     ← ADMIN, OPS only
-│   └── settings/
-│       ├── users/page.tsx   ← ADMIN only
-│       └── profile/page.tsx
-└── api/
-    ├── auth/[...all]/route.ts
-    ├── jobs/route.ts
-    ├── jobs/[id]/route.ts
-    └── upload/route.ts
-```
-
-### 2.3 Sidebar Navigation (Role-Filtered)
-
-Build a `<AppSidebar>` component that shows nav items based on session role:
-
-| Nav Item | Visible To |
-|---|---|
-| Dashboard | All |
-| Jobs | All |
-| Clients | ADMIN, OPS |
-| Reports | ADMIN, OPS |
-| Users / Settings | ADMIN only |
-
-### 2.4 Role Guard Utility
-
-Create `src/lib/permissions.ts`:
-```ts
-import { Role } from "@prisma/client";
-
-export const can = {
-  viewClientInfo: (role: Role) => ["ADMIN", "OPS"].includes(role),
-  viewFinancials: (role: Role) => ["ADMIN", "OPS"].includes(role),
-  createJob: (role: Role) => ["ADMIN", "OPS"].includes(role),
-  editDiagnosis: (role: Role) => ["ADMIN", "TECHNICIAN_INTERNAL", "TECHNICIAN_EXTERNAL"].includes(role),
-  manageUsers: (role: Role) => role === "ADMIN",
-  approveWork: (role: Role) => ["ADMIN", "OPS"].includes(role),
-};
-```
-
-Use this in both Server Components (check session role) and API routes.
-
-### ✅ Phase 2 Done When:
-- [ ] Authenticated users see role-appropriate sidebar
-- [ ] ADMIN sees all nav items
-- [ ] TECHNICIAN_EXTERNAL sees only Jobs (filtered)
-- [ ] Unauthenticated access to `(app)` routes redirects to login
-
----
-
-## 🧱 PHASE 3 — Job Creation (Intake Flow)
-
-**Goal:** Multi-step form to create a new repair job capturing all required data.
-
-### 3.1 Install Components
 ```bash
-npx shadcn@latest add form input select textarea card progress stepper
+bun run vercel-build
 ```
 
-### 3.2 Multi-Step Form Steps
+If the sandbox blocks Google Fonts, rerun the same build with network access rather than treating it as an app error.
 
-Build as a client component with local step state. Steps:
+## Documents And Numbering
 
-**Step 1 — Client Info**
-- Full Name (required)
-- Phone (required)
-- Email (optional)
-- Organization (optional)
-- Search existing clients by phone to avoid duplicates
+The document workflow includes quotations, invoices, receipts, delivery notes, credit notes, refunds, and POS/sales documents. Shared document numbering logic lives under `lib/commercial/document-workflow` and related document modules.
 
-**Step 2 — Device Info**
-- Device Type (select: Phone Android / iPhone / Tablet / Windows PC / Mac / Other)
-- Brand (text input with suggestions)
-- Model (required)
-- Serial / IMEI (optional)
-- Accessories brought in (textarea)
-- Physical condition notes (textarea)
-- Photo upload (before repair) — multiple files
+Desired behavior:
 
-**Step 3 — Issue Description**
-- Issue description (client's exact words) — large textarea
-- Received by (auto-filled from session)
-- Date received (auto-filled, editable)
+- Winning/approved work should be convertible through the relevant document chain without losing job/sale/org context.
+- Documents must be org-scoped.
+- Generated PDFs must use branding settings for the org.
+- WhatsApp/email PDF sends must log through outbox before provider delivery.
+- Payments and refunds must update document status and totals consistently.
 
-**Step 4 — Review & Submit**
-- Summary of all entered data
-- Submit button → creates Job + Client records
-- Auto-generate Job Number: `EI-YYYY-XXXX`
+Troubleshooting document issues:
 
-### 3.3 Job Number Generation
+1. Confirm the source entity has `orgId`.
+2. Confirm the document number sequence is using the correct org/year/type.
+3. Confirm the document row links back to job, sale, invoice, credit note, or refund as expected.
+4. Confirm the PDF route can fetch the same row server-side with `orgId`.
+5. Confirm WhatsApp PDF send creates an `OutboundMessage` even if provider delivery fails.
 
-```ts
-// In your API route / server action
-async function generateJobNumber(): Promise<string> {
-  const year = new Date().getFullYear();
-  const count = await prisma.job.count();
-  return `EI-${year}-${String(count + 1).padStart(4, "0")}`;
-}
-```
+## UI And Browser Troubleshooting
 
-### 3.4 Server Action
-Use Next.js Server Actions for form submission. Validate with Zod on server. Create `Client` if new, then create `Job`, then create initial `AuditLog` entry.
+Use the in-app browser for local UI checks when the user is already viewing localhost.
 
-### ✅ Phase 3 Done When:
-- [ ] OPS/ADMIN can create a full job in 4 steps
-- [ ] Duplicate client check works
-- [ ] Job number auto-generates correctly
-- [ ] Job appears in job list with status `RECEIVED`
-- [ ] Audit log entry created on job creation
+Recent known UI behavior:
 
----
+- Notification bell popover is expected to stay anchored inside the viewport, not open far off-screen.
+- Notifications live inside the bell menu with unread/all behavior.
+- Job Messages tab should display outbound and inbound job messages. It is not limited to sent messages.
 
-## 🧱 PHASE 4 — Job List & Filtering
+UI checks:
 
-**Goal:** Paginated, filterable job list — filtered by role automatically.
+- Verify mobile and desktop widths.
+- Confirm controls do not overlap or overflow.
+- Confirm role-hidden data is not present in the rendered page payload for unauthorized roles.
+- Confirm buttons/forms have loading/error states for async actions.
 
-### 4.1 Components
+## Performance Expectations
+
+When investigating performance:
+
+- Start with server query shape: avoid unscoped org-wide `findMany` with large includes.
+- Paginate large lists: jobs, clients, outbound messages, invoices, inventory, audit logs.
+- Prefer aggregate/count queries over loading rows for dashboard metrics.
+- Keep dashboard calculations fresh by avoiding stale hard-coded values and by scoping all counts to the active org.
+- Watch N+1 patterns in job lists, finance reports, inventory tables, and document pages.
+- Use indexes already in Prisma schema for `orgId`, status, created dates, and document states.
+
+Performance commands:
+
 ```bash
-npx shadcn@latest add table pagination input select badge
+bun run qa:perf
+bun run qa:all
 ```
 
-### 4.2 Columns (Table)
+Use targeted tests when the change is narrow; use broader QA for shared data, finance, documents, auth, or tenant behavior.
 
-| Column | Who Sees It |
-|---|---|
-| Job # | All |
-| Device | All |
-| Status (badge) | All |
-| Client Name | All except TECHNICIAN_EXTERNAL |
-| Assigned To | ADMIN, OPS |
-| Received Date | All |
-| Cost Estimate | ADMIN, OPS |
-| Actions | All (context-sensitive) |
+## Required Verification Before Commit
 
-### 4.3 Filters
-- Status (multi-select)
-- Device Type
-- Repair Path (In-house / External)
-- Date range
-- Search (job number or client name — hidden from external tech)
+For production fixes, run:
 
-### 4.4 Role-Based Data Fetching
-
-In the API/server component, filter query based on role:
-- `TECHNICIAN_EXTERNAL`: Only see jobs assigned to them, exclude `client` relation from response
-- `TECHNICIAN_INTERNAL`: Only see jobs assigned to them
-- All others: See all jobs (with client info)
-
-### ✅ Phase 4 Done When:
-- [ ] Job list loads with pagination
-- [ ] Filters work correctly
-- [ ] External tech cannot see client names in list
-- [ ] Status badges use correct colors per status
-
----
-
-## 🧱 PHASE 5 — Job Detail & Diagnosis Flow
-
-**Goal:** Role-filtered job detail page with status-driven action panels.
-
-### 5.1 Job Detail Page Layout
-
-```
-[Job Header: Job # | Status Badge | Device Info | Assigned To]
-[Tabs]
-  → Overview       (all roles — device + issue summary)
-  → Client Info    (hidden from TECHNICIAN_EXTERNAL)
-  → Diagnosis      (editable by TECHNICIAN_INTERNAL, TECHNICIAN_EXTERNAL — limited)
-  → Repair Log     (editable by TECHNICIAN_INTERNAL, ADMIN)
-  → Financials     (ADMIN, OPS only)
-  → Timeline/Audit (ADMIN, OPS)
-  → Photos         (all roles)
+```bash
+bunx tsc --noEmit
+bun run lint
+bun audit
+bun run vercel-build
 ```
 
-### 5.2 Status-Driven Action Panels
+If `bun audit` cannot connect because of sandbox/network restrictions, rerun with network permission. Do not skip it.
 
-Render action panel based on current status:
+For broader system changes, also consider:
 
-| Current Status | Available Actions |
-|---|---|
-| `RECEIVED` | "Start Diagnosis" → sets `DIAGNOSING` |
-| `DIAGNOSING` | Add diagnosis notes. Choose repair path → sets `IN_REPAIR` or `REFERRED` |
-| `REFERRED` | External tech adds estimate. OPS/ADMIN reviews → sets `AWAITING_APPROVAL` |
-| `AWAITING_APPROVAL` | OPS records client decision → `IN_REPAIR` or `CLOSED` |
-| `IN_REPAIR` | Tech updates work done, parts, notes → sets `COMPLETED` |
-| `COMPLETED` / `CLOSED` | Read-only. Can generate invoice |
-
-### 5.3 External Tech View (Critical)
-
-When `session.role === TECHNICIAN_EXTERNAL`, the job detail MUST:
-- ✅ Show: Job Number, Device Type, Brand, Model, Serial, Accessories, Diagnosis Summary
-- ❌ Hide: Client name, phone, email, organization, cost history, internal notes tab
-- ✅ Allow: Updating external diagnosis, parts needed, cost estimate, timeline field only
-
-Implement this as a **separate component** `<ExternalTechJobView>` rendered conditionally.
-
-### 5.4 Audit Log Display
-Every status change, field update, and note addition must:
-1. Write to `AuditLog` table (who, what, when)
-2. Display in Timeline tab as a vertical feed
-
-### ✅ Phase 5 Done When:
-- [ ] Job detail shows correct tabs per role
-- [ ] External tech cannot see client tab (tested manually)
-- [ ] Status transitions work and update DB
-- [ ] Each status action writes an audit log
-- [ ] External tech can submit estimate; internal staff can view it
-
----
-
-## 🧱 PHASE 6 — Client Management
-
-**Goal:** Protected client directory. Not visible to external techs.
-
-### 6.1 Route Guard
-`/clients` and `/clients/[id]` — server-side check: redirect if role is `TECHNICIAN_EXTERNAL` or `TECHNICIAN_INTERNAL`.
-
-### 6.2 Client Detail Page
-- Client info (editable by ADMIN, OPS)
-- Job history (all jobs linked to client, with status)
-- Notes field
-
-### ✅ Phase 6 Done When:
-- [ ] External/internal techs cannot access `/clients`
-- [ ] Client page shows full job history
-- [ ] Client info is editable by authorized roles
-
----
-
-## 🧱 PHASE 7 — Photo Uploads
-
-**Goal:** Before/during/after photos attached to jobs.
-
-### 7.1 Upload Route
-Create `src/app/api/upload/route.ts` using Next.js `formData()`. Save files to `public/uploads/jobs/[jobId]/`. Return file URL.
-
-### 7.2 Photo Component
-- Upload button with label selector (before / during / after / other)
-- Image grid display on job detail Photos tab
-- Delete (ADMIN only)
-
-### ✅ Phase 7 Done When:
-- [ ] Photos upload and persist across page reloads
-- [ ] Photos visible in Photos tab
-- [ ] Labels display correctly
-
----
-
-## 🧱 PHASE 8 — Reports Dashboard
-
-**Goal:** Admin/OPS reporting page.
-
-Route: `/reports` — protected for `ADMIN` and `OPS` roles.
-
-### Metrics to Display:
-- Total jobs by status (bar or donut chart)
-- Repairs by device type
-- In-house vs External ratio
-- Revenue this month (sum of `finalCost` where `COMPLETED`)
-- Most common faults (from diagnosis text — simple frequency count)
-- Average repair time (receivedAt → completedAt)
-
-Use shadcn `Card` components for metric tiles. Use Recharts (included in Next.js) or `chart.js` for charts.
-
-### ✅ Phase 8 Done When:
-- [ ] Reports page loads with real data from DB
-- [ ] Charts render correctly
-- [ ] Non-admin/ops roles get 403 or redirect
-
----
-
-## 🧱 PHASE 9 — User Management
-
-**Goal:** Admin can create, view, edit, and deactivate users.
-
-Route: `/settings/users` — ADMIN only.
-
-### Features:
-- List all users with role badges
-- Invite / create user (name, email, password, role)
-- Edit role
-- Deactivate user (set a `isActive` flag — add to schema if needed)
-
-### ✅ Phase 9 Done When:
-- [ ] Admin can create users with any role
-- [ ] Role changes reflect immediately on next login
-- [ ] Non-admin cannot access this route
-
----
-
-## 🧱 PHASE 10 — Polish, Validation & Edge Cases
-
-**Goal:** Production hardening.
-
-### Checklist:
-- [ ] All forms have Zod validation (client + server)
-- [ ] All API routes check session + role before any DB operation
-- [ ] Loading states on all async actions (use `useTransition` or `isPending`)
-- [ ] Error boundaries on key pages
-- [ ] Empty states for all lists (no jobs, no clients, etc.)
-- [ ] Confirm dialogs for destructive actions (close job, delete photo)
-- [ ] Responsive layout (mobile-friendly sidebar collapses)
-- [ ] Toast notifications for all actions (success + error)
-- [ ] 404 page for unknown job IDs
-- [ ] Input sanitization (especially free-text fields)
-- [ ] `NEXT_PUBLIC_APP_URL` and any secrets in `.env.local` (never committed)
-
----
-
-## 🔒 Security Invariants (Never Violate These)
-
-These must be enforced at the **API/server layer**, not just UI:
-
-1. **Client PII never reaches TECHNICIAN_EXTERNAL** — exclude `client` from Prisma queries for external tech sessions
-2. **Role checks happen server-side** — never trust client-sent role values
-3. **Job number ≠ sequential integer** — use padded count, not raw ID
-4. **Audit log is append-only** — never delete audit log entries
-5. **File uploads validate type + size** — accept only images (jpeg, png, webp), max 5MB
-
----
-
-## 📁 Key File Reference
-
-```
-src/
-├── lib/
-│   ├── auth.ts              ← BetterAuth config
-│   ├── auth-client.ts       ← Client-side auth hooks
-│   ├── prisma.ts            ← Prisma singleton
-│   └── permissions.ts       ← Role permission helpers
-├── components/
-│   ├── jobs/
-│   │   ├── JobTable.tsx
-│   │   ├── JobStatusBadge.tsx
-│   │   ├── JobDetailTabs.tsx
-│   │   ├── ExternalTechJobView.tsx   ← Critical isolation component
-│   │   └── NewJobStepper.tsx
-│   ├── layout/
-│   │   ├── AppSidebar.tsx
-│   │   └── Header.tsx
-│   └── shared/
-│       ├── AuditTimeline.tsx
-│       └── PhotoUploader.tsx
-├── app/
-│   └── (structure as defined in Phase 2)
-└── middleware.ts
+```bash
+bun run test:unit
+bun run qa:data-integrity
+bun run qa:concurrency
+bun run qa:http-security
+bun run qa:pdf-smoke
+bun run qa:rate-limit
+bun run predeploy:check
 ```
 
----
+For deployment gate:
 
-## 🚀 Deployment Notes (For Later)
+```bash
+bun run predeploy:ci
+```
 
-- SQLite is suitable for single-server deployment (VPS, Railway, Render)
-- For multi-server, migrate schema to PostgreSQL (change `provider` in `schema.prisma` only — queries stay the same)
-- Use `pm2` or platform-managed process for Node.js
-- Set up daily SQLite backups (`cp dev.db backups/dev-$(date +%F).db`)
+## Troubleshooting Checklist By Symptom
 
----
+Messages not logged:
 
-## ✅ Master Completion Checklist
+- Check `OutboundMessage` by `jobId`.
+- Check `NotificationPreferences`.
+- Check `CommunicationPolicy`.
+- Check client phone/email exists.
+- Check `orgId` was passed to enqueue/delivery.
+- Check stale Prisma client/schema.
 
-- [ ] Phase 1 — Scaffold, Auth, DB
-- [ ] Phase 2 — Layout & Role Shell
-- [ ] Phase 3 — Job Creation (Intake)
-- [ ] Phase 4 — Job List & Filtering
-- [ ] Phase 5 — Job Detail & Diagnosis Flow
-- [ ] Phase 6 — Client Management
-- [ ] Phase 7 — Photo Uploads
-- [ ] Phase 8 — Reports Dashboard
-- [ ] Phase 9 — User Management
-- [ ] Phase 10 — Polish & Hardening
+WhatsApp not sending:
 
-**Do not mark a phase complete until every checkbox in that phase is verified.**
+- Check org WhatsApp settings.
+- Check provider credentials, phone number ID, token, and template approval.
+- Check outbox `lastError`.
+- Check retry cron.
+- Check media upload path for PDFs.
+
+Notifications not showing:
+
+- Check `Notification` rows by user/org.
+- Check `NotificationBell` API response and unread/all filters.
+- Check popover positioning only after data is confirmed present.
+
+DB column missing:
+
+- Confirm current deployed DB schema.
+- Run admin db health/db fix if this is production and the missing column is known.
+- Apply migration/db push in lower environments.
+- Regenerate Prisma client after schema changes.
+
+Dashboard wrong/stale:
+
+- Check org filter.
+- Check date boundaries/timezone.
+- Check status lists include current `JobStatus` values.
+- Check aggregate query vs loaded data mismatch.
+- Check whether values are cached or statically generated unexpectedly.
+
+External tech privacy issue:
+
+- Inspect server query selects/includes, not just UI.
+- Ensure `client`, phone, email, financial fields, invoices, payments, and pricing history are excluded.
+- Confirm routes and APIs reject unauthorized roles.
+
+Build fails on Vercel:
+
+- Use `bun run vercel-build`.
+- Ensure Prisma build validation sees `DATABASE_URL=file:./dev.db`.
+- Ensure runtime env has Turso variables.
+- Ensure `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, and trusted origins are configured.
+
+## Coding Practices In This Repo
+
+- Prefer existing helpers and patterns over new abstractions.
+- Keep edits scoped.
+- Use `rg` for search.
+- Use `apply_patch` for manual file edits.
+- Do not use destructive git commands unless explicitly requested.
+- Preserve user/other-agent changes.
+- Keep comments useful and sparse.
+- Use ASCII in docs/code unless the file already requires Unicode.
+
+## High-Risk Areas
+
+Be extra careful around:
+
+- Auth/session/role logic.
+- Tenant scoping and `orgId`.
+- External technician views.
+- Prisma schema and production DB compatibility.
+- WhatsApp/outbox retry behavior.
+- Document numbering and finance totals.
+- Payments, refunds, credit notes, and inventory stock changes.
+- Dashboard metrics and cross-org aggregation.
+- Build scripts that intentionally override DB env during build.
+
+## Production Readiness Standard
+
+A change is not production-ready just because it compiles. It should satisfy:
+
+- Correct behavior for the target workflow.
+- Server-side permission and tenant checks.
+- Visible audit/outbox/logging where expected.
+- No known DB drift for touched models.
+- Passing typecheck, lint, audit, and production build.
+- Manual/browser verification for UI-facing changes.
+- Clear commit on `main` and push when the owner asked for production work.
+
