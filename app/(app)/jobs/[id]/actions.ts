@@ -1177,23 +1177,73 @@ async function sendPdfViaWhatsApp(opts: {
   auditDetail: Record<string, string>;
   orgId: string;
 }): Promise<{ success: boolean; error?: string }> {
+  const outbox = await prisma.outboundMessage.create({
+    data: {
+      channel: "WHATSAPP",
+      status: "PENDING",
+      type: "STAFF_REPLY",
+      to: opts.clientPhone,
+      subject: null,
+      body: opts.outboxBody,
+      provider: "meta",
+      jobId: opts.jobId,
+      orgId: opts.orgId,
+      nextAttemptAt: new Date(),
+    },
+    select: { id: true },
+  }).catch(() => null);
+
+  async function markOutboxFailed(error: string) {
+    if (!outbox) return;
+    await prisma.outboundMessage.update({
+      where: { id: outbox.id },
+      data: {
+        status: "FAILED",
+        attemptCount: { increment: 1 },
+        lastAttemptAt: new Date(),
+        nextAttemptAt: new Date(Date.now() + 30_000),
+        lastErrorCode: "SEND_ERROR",
+        lastError: error.slice(0, 500),
+        lockedAt: null,
+      },
+    }).catch(() => null);
+  }
+
   const cfg = await getWhatsAppConfigForOrg(opts.orgId);
-  if (!cfg) return { success: false, error: "WhatsApp not configured" };
+  if (!cfg) {
+    await markOutboxFailed("WhatsApp not configured");
+    return { success: false, error: "WhatsApp not configured" };
+  }
 
   const upload = await uploadWhatsAppMedia(opts.buffer, opts.filename, "application/pdf", cfg);
-  if (!upload.ok) return { success: false, error: upload.error };
+  if (!upload.ok) {
+    await markOutboxFailed(upload.error);
+    return { success: false, error: upload.error };
+  }
 
   const send = await sendWhatsAppDocument(opts.clientPhone, upload.mediaId, opts.filename, opts.caption, cfg);
-  if (!send.success) return { success: false, error: send.error };
+  if (!send.success) {
+    await markOutboxFailed(send.error ?? "Document send failed");
+    return { success: false, error: send.error };
+  }
+
+  if (outbox) {
+    await prisma.outboundMessage.update({
+      where: { id: outbox.id },
+      data: {
+        status: "SENT",
+        providerMessageId: send.messageId,
+        sentAt: new Date(),
+        attemptCount: { increment: 1 },
+        lastAttemptAt: new Date(),
+        lastErrorCode: null,
+        lastError: null,
+        lockedAt: null,
+      },
+    }).catch(() => null);
+  }
 
   await Promise.allSettled([
-    enqueueWhatsAppMessage({
-      orgId: opts.orgId,
-      to: opts.clientPhone,
-      body: opts.outboxBody,
-      type: "STAFF_REPLY",
-      jobId: opts.jobId,
-    }).catch(() => null),
     prisma.auditLog.create({
       data: {
         jobId: opts.jobId,
