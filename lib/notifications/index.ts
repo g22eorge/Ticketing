@@ -220,8 +220,9 @@ export async function notifyStatusChange(
     });
   }
 
-  // If policies are enabled and WhatsApp is configured for this status, send via template/outbox.
-  // Otherwise, preserve legacy behavior (READY_FOR_PICKUP only, preference-gated).
+  // If the status policy enables WhatsApp, use that policy's template.
+  // Otherwise, preserve the preference-gated client status update through the outbox
+  // so every triggered client status message is visible in the job thread.
   if (policy?.whatsappEnabled) {
     await sendClientWhatsAppForStatusChange({ orgId, jobId, jobNumber, oldStatus, newStatus, templateKey: policy.templateKey ?? null });
     if (newStatus === JobStatus.READY_FOR_PICKUP) {
@@ -234,36 +235,8 @@ export async function notifyStatusChange(
         templateKey: policy.templateKey ?? null,
       });
     }
-  } else if (newStatus === JobStatus.READY_FOR_PICKUP) {
-    const client = await prisma.client.findFirst({
-      where: { orgId, jobs: { some: { id: jobId } } },
-      select: { phone: true, fullName: true },
-    });
-
-    if (client?.phone && prefs.some((p) => p.whatsappEnabled)) {
-      const body = `Hi ${client.fullName}, your device for job ${jobNumber} is ready for pickup. Please visit us to collect it. - Your Repair Team`;
-      const enqueueResult = await enqueueWhatsAppMessage({
-        orgId,
-        to: client.phone,
-        body,
-        type: OutboundMessageType.JOB_STATUS_UPDATE,
-        jobId,
-        provider: "meta",
-        templateKey: OutboundMessageType.JOB_STATUS_UPDATE,
-        templateVars: JSON.stringify({
-          customerName: client.fullName,
-          jobNumber,
-          oldStatus,
-          newStatus,
-          oldStatusLabel: oldStatus.replaceAll("_", " "),
-          newStatusLabel: newStatus.replaceAll("_", " "),
-        }),
-      }).catch(() => null);
-
-      if (enqueueResult && "outboxId" in enqueueResult && enqueueResult.outboxId) {
-        await deliverOutboundMessage(enqueueResult.outboxId).catch(() => null);
-      }
-    }
+  } else if (prefs.some((p) => p.whatsappEnabled)) {
+    await sendClientWhatsAppForStatusChange({ orgId, jobId, jobNumber, oldStatus, newStatus, templateKey: null });
   }
 
   // Email: status-change messages and optional nudges.
