@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { Prisma, QuotationStatus } from "@prisma/client";
 
 import { CopyButton } from "@/components/shared/CopyButton";
-import { MenuSection, RowActionsMenu } from "@/components/shared/RowActionsMenu";
+import { MenuActionButton, MenuActionLink, MenuSection, RowActionsMenu } from "@/components/shared/RowActionsMenu";
 import { ensureInvoiceFromQuotation } from "@/lib/commercial/document-workflow";
 import { writeSystemAuditEvent } from "@/lib/commercial/audit";
 import { can } from "@/lib/permissions";
@@ -254,22 +254,24 @@ export default async function QuotationDetailPage({
             Download PDF
           </a>
           <RowActionsMenu label={`Quotation actions for ${quotation.quoteNumber}`}>
+            <div className="py-1 text-left">
+              <MenuActionLink href={pdfHref} external icon="quote" tone="accent">
+                Download Quotation PDF
+              </MenuActionLink>
+              {quotation.job ? (
+                <MenuActionLink href={`/jobs/${quotation.job.id}`} icon="job">
+                  Open Job
+                </MenuActionLink>
+              ) : null}
+            </div>
             <MenuSection label="Share" />
-            <a
-              href={`mailto:${emailTo}?subject=${mailSubject}&body=${mailBody}`}
-              className="flex w-full px-4 py-2.5 text-sm font-medium text-[var(--ink)] transition hover:bg-[var(--panel-strong)]"
-            >
+            <MenuActionLink href={`mailto:${emailTo}?subject=${mailSubject}&body=${mailBody}`} icon="open">
               Email quotation
-            </a>
+            </MenuActionLink>
             {whatsappPhone ? (
-              <a
-                href={`https://wa.me/${whatsappPhone}?text=${whatsappText}`}
-                target="_blank"
-                rel="noreferrer"
-                className="flex w-full px-4 py-2.5 text-sm font-medium text-emerald-700 transition hover:bg-[var(--panel-strong)] dark:text-emerald-400"
-              >
+              <MenuActionLink href={`https://wa.me/${whatsappPhone}?text=${whatsappText}`} external icon="whatsapp" tone="success">
                 Send via WhatsApp
-              </a>
+              </MenuActionLink>
             ) : null}
             <div className="px-3 py-1.5">
               <CopyButton
@@ -284,12 +286,9 @@ export default async function QuotationDetailPage({
                 <MenuSection label="Status" />
                 <div className="px-3 py-1.5">
               <form action={sendAction}>
-                <button
-                  type="submit"
-                      className="flex w-full rounded-md px-2 py-1.5 text-left text-sm font-medium text-[var(--accent)] transition hover:bg-[var(--panel-strong)]"
-                >
+                <MenuActionButton icon="save" tone="accent">
                   Send to Client
-                </button>
+                </MenuActionButton>
               </form>
                 </div>
               </>
@@ -299,12 +298,9 @@ export default async function QuotationDetailPage({
                 {!canSend ? <MenuSection label="Status" /> : null}
                 <div className="px-3 py-1.5">
               <form action={acceptAction}>
-                <button
-                  type="submit"
-                      className="flex w-full rounded-md px-2 py-1.5 text-left text-sm font-medium text-emerald-700 transition hover:bg-[var(--panel-strong)] dark:text-emerald-400"
-                >
+                <MenuActionButton icon="save" tone="success">
                   Mark Accepted
-                </button>
+                </MenuActionButton>
               </form>
                 </div>
               </>
@@ -312,12 +308,9 @@ export default async function QuotationDetailPage({
             {canReject ? (
               <div className="px-3 py-1.5">
               <form action={rejectAction}>
-                <button
-                  type="submit"
-                    className="flex w-full rounded-md px-2 py-1.5 text-left text-sm font-medium text-red-700 transition hover:bg-[var(--panel-strong)] dark:text-red-400"
-                >
+                <MenuActionButton icon="close" tone="danger">
                   Mark Rejected
-                </button>
+                </MenuActionButton>
               </form>
               </div>
             ) : null}
@@ -326,18 +319,18 @@ export default async function QuotationDetailPage({
                 <MenuSection label="Convert" />
                 <div className="px-3 py-1.5">
                   <form action={convertToInvoiceAction}>
-                    <button type="submit" className="flex w-full rounded-md px-2 py-1.5 text-left text-sm font-medium text-[var(--accent)] transition hover:bg-[var(--panel-strong)]">
+                    <MenuActionButton icon="invoice" tone="accent">
                       Convert to Invoice
-                    </button>
+                    </MenuActionButton>
                   </form>
                 </div>
               </>
             ) : quotation.convertedToInvoiceId ? (
               <>
                 <MenuSection label="Invoice" />
-                <Link href="/documents/invoices" className="flex w-full px-4 py-2.5 text-sm font-medium text-emerald-700 transition hover:bg-[var(--panel-strong)] dark:text-emerald-400">
+                <MenuActionLink href="/documents/invoices" icon="invoice" tone="success">
                   Invoice Created
-                </Link>
+                </MenuActionLink>
               </>
             ) : null}
           </RowActionsMenu>

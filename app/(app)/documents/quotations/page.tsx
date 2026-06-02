@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { JobStatusBadge } from "@/components/jobs/JobStatusBadge";
 import { CopyButton } from "@/components/shared/CopyButton";
 import { RowActionsMenu, MenuSection, MenuActionLink, MenuActionButton } from "@/components/shared/RowActionsMenu";
+import { ConfirmSubmitButton } from "@/components/shared/ConfirmSubmitButton";
 import { getClientBill } from "@/lib/billing";
 import { formatMoney, getAppCurrency } from "@/lib/currency";
 import { formatEATDate } from "@/lib/date-eat";
@@ -16,10 +17,12 @@ import { can } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { requireOrgSession } from "@/lib/org-context";
 import { requireModule, OrgModule } from "@/lib/module-access";
-import { JobStatus } from "@prisma/client";
+import { JobStatus, OutboundMessageType, QuotationStatus } from "@prisma/client";
 import { assertOrgCanMutate } from "@/lib/org-write";
 import { writeSystemAuditEvent } from "@/lib/commercial/audit";
 import { ensureInvoiceFromQuotation, ensureQuotationFromJob } from "@/lib/commercial/document-workflow";
+import { sendQuotationViaWhatsAppAction } from "@/app/(app)/jobs/[id]/actions";
+import { enqueueEmailMessage } from "@/lib/notifications/whatsapp-outbox";
 
 type SearchParams = { q?: string; approval?: string };
 
@@ -88,6 +91,143 @@ export default async function QuotationsPage({
     revalidatePath("/documents/invoices");
   }
 
+  async function sendQuotationWhatsAppAction(formData: FormData) {
+    "use server";
+    const jobId = String(formData.get("jobId") ?? "").trim();
+    if (!jobId) return;
+    await sendQuotationViaWhatsAppAction(jobId);
+    revalidatePath("/documents/quotations");
+  }
+
+  async function sendQuotationEmailAction(formData: FormData) {
+    "use server";
+    const { user, orgId, org } = await requireOrgSession();
+    if (!(can.createQuotations(user) || can.viewFinancials(user))) return;
+    assertOrgCanMutate({ access: org.access, userRole: user.role, userAccessMode: user.accessMode, kind: "GENERAL" });
+
+    const jobId = String(formData.get("jobId") ?? "").trim();
+    if (!jobId) return;
+    const job = await prisma.job.findFirst({
+      where: { id: jobId, orgId },
+      select: {
+        id: true,
+        jobNumber: true,
+        brand: true,
+        model: true,
+        clientBill: true,
+        client: { select: { fullName: true, email: true } },
+      },
+    });
+    if (!job?.client.email) return;
+
+    const quoteNumber = String(formData.get("quoteNumber") ?? "").trim() || `Quote for ${job.jobNumber}`;
+    const pdfUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}/api/jobs/${job.id}/quotation`;
+    const body = [
+      `Hi ${job.client.fullName},`,
+      "",
+      `Your repair quotation is ready.`,
+      `Quote: ${quoteNumber}`,
+      `Job: ${job.jobNumber}`,
+      `Device: ${job.brand} ${job.model}`,
+      job.clientBill ? `Estimate: ${formatMoney(job.clientBill, getAppCurrency())}` : null,
+      "",
+      `Download PDF: ${pdfUrl}`,
+    ].filter(Boolean).join("\n");
+
+    await enqueueEmailMessage({
+      orgId,
+      jobId: job.id,
+      to: job.client.email,
+      subject: `Quotation ${quoteNumber}`,
+      body,
+      type: OutboundMessageType.JOB_STATUS_UPDATE,
+    });
+    revalidatePath("/documents/quotations");
+  }
+
+  async function updateQuotationStatusAction(formData: FormData) {
+    "use server";
+    const { user, orgId, org } = await requireOrgSession();
+    assertOrgCanMutate({ access: org.access, userRole: user.role, userAccessMode: user.accessMode, kind: "GENERAL" });
+    const quotationId = String(formData.get("quotationId") ?? "").trim();
+    const status = String(formData.get("status") ?? "").trim();
+    if (!quotationId || !["SENT", "ACCEPTED", "REJECTED"].includes(status)) return;
+
+    if (status === "SENT" && !can.createQuotations(user)) return;
+    if (status === "ACCEPTED" && !can.approveQuotations(user)) return;
+    if (status === "REJECTED" && !can.createQuotations(user)) return;
+
+    const accessWhere = {
+      id: quotationId,
+      orgId,
+      ...(status === "ACCEPTED" || can.viewAllSales(user) ? {} : { createdById: user.id }),
+    };
+    const quote = await prisma.quotation.findFirst({ where: accessWhere, select: { id: true, leadId: true } });
+    if (!quote) return;
+    const now = new Date();
+    await prisma.quotation.updateMany({
+      where: accessWhere,
+      data: {
+        status: status as QuotationStatus,
+        ...(status === "SENT" ? { sentAt: now } : {}),
+        ...(status === "ACCEPTED" ? { acceptedAt: now, approvedById: user.id } : {}),
+        ...(status === "REJECTED" ? { rejectedAt: now } : {}),
+      },
+    });
+    if (quote.leadId && status === "ACCEPTED") {
+      await prisma.lead.updateMany({ where: { id: quote.leadId, orgId }, data: { status: "WON", convertedAt: now, closedAt: null, lostReason: null } });
+    }
+    revalidatePath("/documents/quotations");
+    revalidatePath(`/sales/quotations/${quotationId}`);
+  }
+
+  async function updateQuotationDetailsAction(formData: FormData) {
+    "use server";
+    const { user, orgId, org } = await requireOrgSession();
+    if (!can.createQuotations(user)) return;
+    assertOrgCanMutate({ access: org.access, userRole: user.role, userAccessMode: user.accessMode, kind: "GENERAL" });
+
+    const quotationId = String(formData.get("quotationId") ?? "").trim();
+    if (!quotationId) return;
+    const validUntilRaw = String(formData.get("validUntil") ?? "").trim();
+    const notes = String(formData.get("notes") ?? "").trim();
+    await prisma.quotation.updateMany({
+      where: {
+        id: quotationId,
+        orgId,
+        status: "DRAFT",
+        convertedToInvoiceId: null,
+        ...(!can.viewAllSales(user) ? { createdById: user.id } : {}),
+      },
+      data: {
+        validUntil: validUntilRaw ? new Date(validUntilRaw) : null,
+        notes: notes || null,
+      },
+    });
+    revalidatePath("/documents/quotations");
+    revalidatePath(`/sales/quotations/${quotationId}`);
+  }
+
+  async function deleteQuotationRowAction(formData: FormData) {
+    "use server";
+    const { user, orgId, org } = await requireOrgSession();
+    if (!can.createQuotations(user)) return;
+    assertOrgCanMutate({ access: org.access, userRole: user.role, userAccessMode: user.accessMode, kind: "GENERAL" });
+
+    const quotationId = String(formData.get("quotationId") ?? "").trim();
+    if (!quotationId) return;
+    await prisma.quotation.deleteMany({
+      where: {
+        id: quotationId,
+        orgId,
+        status: "DRAFT",
+        convertedToInvoiceId: null,
+        ...(!can.viewAllSales(user) ? { createdById: user.id } : {}),
+      },
+    });
+    revalidatePath("/documents/quotations");
+  }
+
   const [jobs, branding] = await Promise.all([
     prisma.job.findMany({
       where: {
@@ -144,8 +284,8 @@ export default async function QuotationsPage({
         updatedAt: true,
         clientApproved: true,
         approvalDate: true,
-        client: { select: { fullName: true, phone: true } },
-        quotations: { select: { id: true, quoteNumber: true, convertedToInvoiceId: true }, orderBy: { createdAt: "desc" }, take: 1 },
+        client: { select: { fullName: true, phone: true, email: true } },
+        quotations: { select: { id: true, quoteNumber: true, status: true, validUntil: true, notes: true, convertedToInvoiceId: true }, orderBy: { createdAt: "desc" }, take: 1 },
       },
     }),
     getDocumentBrandingSettings(),
@@ -315,6 +455,34 @@ export default async function QuotationsPage({
                 );
 
                 const normalStatus = normalizeJobStatus(job.status as never);
+                const canOpenPersistedQuote = Boolean(persistedQuotation);
+                const canEditDraftQuote = Boolean(
+                  persistedQuotation &&
+                  persistedQuotation.status === "DRAFT" &&
+                  !persistedQuotation.convertedToInvoiceId &&
+                  can.createQuotations(user),
+                );
+                const canSendPersistedQuote = Boolean(
+                  persistedQuotation &&
+                  persistedQuotation.status === "DRAFT" &&
+                  can.createQuotations(user),
+                );
+                const canAcceptPersistedQuote = Boolean(
+                  persistedQuotation &&
+                  persistedQuotation.status === "SENT" &&
+                  can.approveQuotations(user),
+                );
+                const canRejectPersistedQuote = Boolean(
+                  persistedQuotation &&
+                  persistedQuotation.status === "SENT" &&
+                  can.createQuotations(user),
+                );
+                const canConvertPersistedQuote = Boolean(
+                  persistedQuotation &&
+                  persistedQuotation.status === "ACCEPTED" &&
+                  !persistedQuotation.convertedToInvoiceId &&
+                  (can.createInvoices(user) || can.approveInvoices(user)),
+                );
 
                 return (
                   <tr
@@ -416,13 +584,38 @@ export default async function QuotationsPage({
                             {/* Overflow: share, mark sent, convert */}
                             <RowActionsMenu label="Quotation actions">
                               <div className="py-1 text-left">
+                                {canOpenPersistedQuote ? (
+                                  <MenuActionLink href={`/sales/quotations/${persistedQuotation!.id}`} icon="open">
+                                    Open Quotation
+                                  </MenuActionLink>
+                                ) : null}
+                                <MenuActionLink href={`/jobs/${job.id}`} icon="job">
+                                  Open Job
+                                </MenuActionLink>
                                 <MenuActionLink href={pdfHref} external icon="quote" tone="accent">
                                   Download Quotation PDF
                                 </MenuActionLink>
                               </div>
                               <MenuSection label="Share" />
+                              <form action={sendQuotationWhatsAppAction}>
+                                <input type="hidden" name="jobId" value={job.id} />
+                                <MenuActionButton icon="whatsapp" tone="success">
+                                  Send via WhatsApp
+                                </MenuActionButton>
+                              </form>
+                              {job.client.email ? (
+                                <form action={sendQuotationEmailAction}>
+                                  <input type="hidden" name="jobId" value={job.id} />
+                                  <input type="hidden" name="quoteNumber" value={persistedQuotation?.quoteNumber ?? quoteNumber} />
+                                  <MenuActionButton icon="open">
+                                    Email quotation
+                                  </MenuActionButton>
+                                </form>
+                              ) : (
+                                <span className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-[var(--ink-muted)]">Email unavailable</span>
+                              )}
                               <MenuActionLink href={`https://wa.me/${waPhone}?text=${waQuoteText}`} external icon="whatsapp" tone="success">
-                                Send via WhatsApp
+                                Open WhatsApp Link
                               </MenuActionLink>
                               <div className="px-3 py-1">
                                 <CopyButton
@@ -432,25 +625,101 @@ export default async function QuotationsPage({
                                   className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-[12px] font-medium text-[var(--ink)] transition hover:bg-[var(--panel-strong)]"
                                 />
                               </div>
-                              {!job.quotedAt && (
+                              {canEditDraftQuote ? (
                                 <>
-                                  <MenuSection label="Status" />
-                                  <form action={markSent} className="px-3 py-1.5">
-                                    <input type="hidden" name="jobId" value={job.id} />
+                                  <MenuSection label="Edit Draft" />
+                                  <form action={updateQuotationDetailsAction} className="space-y-2 p-3">
+                                    <input type="hidden" name="quotationId" value={persistedQuotation!.id} />
+                                    <input
+                                      type="date"
+                                      name="validUntil"
+                                      defaultValue={persistedQuotation!.validUntil ? persistedQuotation!.validUntil.toISOString().slice(0, 10) : ""}
+                                      className="w-full rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1.5 text-xs outline-none"
+                                    />
+                                    <textarea
+                                      name="notes"
+                                      defaultValue={persistedQuotation!.notes ?? ""}
+                                      placeholder="Notes"
+                                      className="min-h-14 w-full rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1.5 text-xs outline-none"
+                                    />
                                     <MenuActionButton icon="save" tone="accent">
-                                      Mark as sent
+                                      Save Draft
                                     </MenuActionButton>
                                   </form>
                                 </>
+                              ) : null}
+                              {(!job.quotedAt || canSendPersistedQuote || canAcceptPersistedQuote || canRejectPersistedQuote) && (
+                                <>
+                                  <MenuSection label="Status" />
+                                  {!job.quotedAt ? (
+                                    <form action={markSent} className="px-3 py-1.5">
+                                      <input type="hidden" name="jobId" value={job.id} />
+                                      <MenuActionButton icon="save" tone="accent">
+                                        Mark as sent
+                                      </MenuActionButton>
+                                    </form>
+                                  ) : null}
+                                  {canSendPersistedQuote ? (
+                                    <form action={updateQuotationStatusAction} className="px-3 py-1.5">
+                                      <input type="hidden" name="quotationId" value={persistedQuotation!.id} />
+                                      <input type="hidden" name="status" value="SENT" />
+                                      <MenuActionButton icon="save" tone="accent">
+                                        Send to Client
+                                      </MenuActionButton>
+                                    </form>
+                                  ) : null}
+                                  {canAcceptPersistedQuote ? (
+                                    <form action={updateQuotationStatusAction} className="px-3 py-1.5">
+                                      <input type="hidden" name="quotationId" value={persistedQuotation!.id} />
+                                      <input type="hidden" name="status" value="ACCEPTED" />
+                                      <MenuActionButton icon="save" tone="success">
+                                        Mark Accepted
+                                      </MenuActionButton>
+                                    </form>
+                                  ) : null}
+                                  {canRejectPersistedQuote ? (
+                                    <form action={updateQuotationStatusAction} className="px-3 py-1.5">
+                                      <input type="hidden" name="quotationId" value={persistedQuotation!.id} />
+                                      <input type="hidden" name="status" value="REJECTED" />
+                                      <MenuActionButton icon="close" tone="danger">
+                                        Mark Rejected
+                                      </MenuActionButton>
+                                    </form>
+                                  ) : null}
+                                </>
                               )}
                               <MenuSection label="Convert" />
-                              <form action={convertQuotationToInvoiceAction} className="px-3 py-1.5">
-                                <input type="hidden" name="jobId" value={job.id} />
-                                {persistedQuotation ? <input type="hidden" name="quotationId" value={persistedQuotation.id} /> : null}
-                                <MenuActionButton icon="invoice" tone="accent">
-                                  Convert to Invoice
-                                </MenuActionButton>
-                              </form>
+                              {canConvertPersistedQuote ? (
+                                <form action={convertQuotationToInvoiceAction} className="px-3 py-1.5">
+                                  <input type="hidden" name="quotationId" value={persistedQuotation!.id} />
+                                  <MenuActionButton icon="invoice" tone="accent">
+                                    Convert to Invoice
+                                  </MenuActionButton>
+                                </form>
+                              ) : persistedQuotation?.convertedToInvoiceId ? (
+                                <MenuActionLink href="/documents/invoices" icon="invoice" tone="success">
+                                  Invoice Created
+                                </MenuActionLink>
+                              ) : (
+                                <span className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-[var(--ink-muted)]">
+                                  Accept quotation before converting
+                                </span>
+                              )}
+                              {canEditDraftQuote ? (
+                                <>
+                                  <MenuSection label="Delete" />
+                                  <form action={deleteQuotationRowAction} className="px-3 py-1.5">
+                                    <input type="hidden" name="quotationId" value={persistedQuotation!.id} />
+                                    <ConfirmSubmitButton
+                                      message={`Delete draft quotation ${persistedQuotation!.quoteNumber}? This cannot be undone.`}
+                                      confirmLabel="Delete"
+                                      className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm font-semibold text-red-600 transition hover:bg-red-500/10 hover:text-red-700"
+                                    >
+                                      Delete Draft
+                                    </ConfirmSubmitButton>
+                                  </form>
+                                </>
+                              ) : null}
                             </RowActionsMenu>
                           </>
                         ) : (
