@@ -327,6 +327,7 @@ export default async function SalesPage({
       const msg = e instanceof Error ? e.message : "Failed to create lead";
       redirect(`/sales?tab=leads&newLead=1&createError=${encodeURIComponent(msg)}`);
     }
+    redirect("/sales?tab=leads");
   }
 
   // Next stage in the funnel

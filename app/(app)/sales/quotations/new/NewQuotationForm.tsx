@@ -83,7 +83,7 @@ export function NewQuotationForm({ leadId, clientId, jobId, currency, canOverrid
         });
       } catch (err) {
         if (err instanceof Error && err.message === "NEXT_REDIRECT") {
-          return;
+          throw err;
         }
         setError(err instanceof Error ? err.message : "Failed to create quotation");
       }
