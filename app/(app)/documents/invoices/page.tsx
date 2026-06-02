@@ -37,7 +37,9 @@ export default async function InvoicesPage({
 }) {
   const { user } = await getCurrentUserRole();
   const db = orgDb(user.orgId);
-  if (!("ADMIN" === user.role || "OPS" === user.role || can.approveInvoices(user))) {
+  const canCreateInvoice = can.createInvoices(user);
+  const canManageInvoicePayments = "ADMIN" === user.role || "OPS" === user.role || can.approveInvoices(user);
+  if (!(canCreateInvoice || canManageInvoicePayments)) {
     redirect("/dashboard");
   }
 
@@ -65,7 +67,7 @@ export default async function InvoicesPage({
     const { user } = await getCurrentUserRole();
     const orgId = user.orgId;
     const db = orgDb(orgId);
-    if (!["ADMIN", "OPS"].includes(user.role)) return;
+    if (!can.createInvoices(user)) return;
 
     const clientId = String(formData.get("clientId") ?? "").trim();
     const subject = String(formData.get("subject") ?? "").trim();
@@ -227,13 +229,14 @@ export default async function InvoicesPage({
     const { user } = await getCurrentUserRole();
     const orgId = user.orgId;
     const db = orgDb(orgId);
-    if (!["ADMIN", "OPS"].includes(user.role) && !can.approveInvoices(user)) return;
+    const canManagePayments = "ADMIN" === user.role || "OPS" === user.role || can.approveInvoices(user);
+    if (!can.createInvoices(user) && !can.approveInvoices(user)) return;
 
     const jobId = String(formData.get("jobId") ?? "").trim();
     if (!jobId) return;
 
     const job = await db.job.findFirst({
-      where: { id: jobId },
+      where: { id: jobId, ...(canManagePayments ? {} : { createdById: user.id }) },
       select: { id: true, jobNumber: true, clientId: true, clientBill: true, invoiceIssuedAt: true, invoiceNumber: true, status: true },
     });
     if (!job || !job.clientBill || job.clientBill <= 0) return;
@@ -283,7 +286,7 @@ export default async function InvoicesPage({
 
   async function updateInvoiceAction(formData: FormData) {
     "use server";
-    const { user: _u } = await getCurrentUserRole();
+    const { user } = await getCurrentUserRole();
     const db = orgDb(user.orgId);
     if (!("ADMIN" === user.role || "OPS" === user.role || can.approveInvoices(user))) return;
 
@@ -305,7 +308,7 @@ export default async function InvoicesPage({
 
   async function deleteInvoiceAction(formData: FormData) {
     "use server";
-    const { user: _u } = await getCurrentUserRole();
+    const { user } = await getCurrentUserRole();
     const db = orgDb(user.orgId);
     if (!("ADMIN" === user.role || can.approveInvoices(user))) return;
 
@@ -337,7 +340,7 @@ export default async function InvoicesPage({
 
   async function createDeliveryNoteAction(formData: FormData) {
     "use server";
-    const { user: _u } = await getCurrentUserRole();
+    const { user } = await getCurrentUserRole();
     const db = orgDb(user.orgId);
     if (!(can.viewFinancials(user) || ["ADMIN", "OPS"].includes(user.role))) redirect("/dashboard");
 
@@ -487,7 +490,11 @@ export default async function InvoicesPage({
 
   const readyJobs = await db.job
     .findMany({
-      where: { status: { in: ["READY_FOR_PICKUP", "COMPLETED", "CLOSED"] }, invoiceIssuedAt: null },
+      where: {
+        status: { in: ["READY_FOR_PICKUP", "COMPLETED", "CLOSED"] },
+        invoiceIssuedAt: null,
+        ...(canManageInvoicePayments ? {} : { createdById: user.id }),
+      },
       orderBy: { completedAt: "asc" }, // oldest first — most urgent to collect
       take: 20,
       select: {
@@ -765,10 +772,12 @@ export default async function InvoicesPage({
             <p className="text-[13px] font-bold text-[var(--ink)]">Invoices</p>
           </div>
           <div className="flex gap-2">
-            <Link href={`/api/reports/export?type=invoices&month=${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`}
-              className="btn-premium-secondary rounded-lg px-3 py-1.5 text-[12px] font-medium">
-              ↓ Export CSV
-            </Link>
+            {canManageInvoicePayments ? (
+              <Link href={`/api/reports/export?type=invoices&month=${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`}
+                className="btn-premium-secondary rounded-lg px-3 py-1.5 text-[12px] font-medium">
+                ↓ Export CSV
+              </Link>
+            ) : null}
             <a href="#create-invoice" className="btn-premium rounded-lg px-3 py-1.5 text-[12px]">+ New Invoice</a>
           </div>
         </div>
@@ -966,7 +975,7 @@ export default async function InvoicesPage({
 
       {/* ── STANDALONE INVOICE CREATION ─────────────────────────────────────── */}
       {/* Desktop: always available. Mobile: only when ?create=1 (from "New Invoice" button) */}
-      {["ADMIN", "OPS"].includes(user.role) && clients.length > 0 && (
+      {canCreateInvoice && clients.length > 0 && (
         <details id="create-invoice" open={createMode}
           className={`group rounded-xl border border-[var(--line)] bg-[var(--panel)] ${createMode ? "" : "hidden lg:block"}`}>
           <summary className="cursor-pointer select-none px-4 py-2.5 text-[12px] font-semibold text-[var(--ink)] group-open:border-b group-open:border-[var(--line)]">
@@ -1465,7 +1474,7 @@ export default async function InvoicesPage({
                         </a>
                       ) : null}
                       {/* ── Mobile: inline Record Payment (visible, no menu needed) ── */}
-                      {inv.balance > 0 && inv.status !== "VOID" ? (
+                      {canManageInvoicePayments && inv.balance > 0 && inv.status !== "VOID" ? (
                         <details className="lg:hidden">
                           <summary className="inline-flex cursor-pointer list-none items-center gap-1 rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-2.5 py-1.5 text-[13px] font-bold text-emerald-700 transition hover:bg-emerald-500/20">
                             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
@@ -1501,8 +1510,9 @@ export default async function InvoicesPage({
                         </details>
                       ) : null}
 
-                      <RowActionsMenu label="Invoice actions">
-                        {inv.balance > 0 && inv.status !== "VOID" ? (
+                      {canManageInvoicePayments || "ADMIN" === user.role ? (
+                        <RowActionsMenu label="Invoice actions">
+                          {canManageInvoicePayments && inv.balance > 0 && inv.status !== "VOID" ? (
                           <>
                             <MenuSection label="Generate Receipt" />
                             <form action={addPaymentAction} className="space-y-2 p-3">
@@ -1541,7 +1551,7 @@ export default async function InvoicesPage({
                             </form>
                           </>
                         ) : null}
-                        {inv.balance <= 0 && inv.status !== "VOID" ? (
+                        {canManageInvoicePayments && inv.balance <= 0 && inv.status !== "VOID" ? (
                           <>
                             <MenuSection label="Generate Delivery Note" />
                             <form action={createDeliveryNoteAction} className="space-y-2 p-3">
@@ -1575,40 +1585,44 @@ export default async function InvoicesPage({
                             </form>
                           </>
                         ) : null}
-                        <MenuSection label="Edit" />
-                        <form action={updateInvoiceAction} className="space-y-2 p-3">
-                          <input type="hidden" name="invoiceId" value={inv.id} />
-                          {!isRepair && (
-                            <input
-                              name="subject"
-                              defaultValue={inv.subject ?? ""}
-                              placeholder="Subject"
-                              className="w-full rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1.5 text-xs outline-none"
-                            />
-                          )}
-                          <select
-                            name="status"
-                            defaultValue={inv.status}
-                            className="w-full rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1.5 text-xs outline-none"
-                          >
-                            {INVOICE_STATUSES.map((s) => (
-                              <option key={s} value={s}>{s}</option>
-                            ))}
-                          </select>
-                          <textarea
-                            name="notes"
-                            defaultValue={inv.notes ?? ""}
-                            placeholder="Notes"
-                            className="min-h-12 w-full rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1.5 text-xs outline-none"
-                          />
-                          <button
-                            type="submit"
-                            className="btn-premium w-full rounded-lg px-3 py-1.5 text-xs font-semibold"
-                          >
-                            Save
-                          </button>
-                        </form>
-                        {inv.payments.length === 0 && inv.deliveryNotes.length === 0 ? (
+                        {canManageInvoicePayments ? (
+                          <>
+                            <MenuSection label="Edit" />
+                            <form action={updateInvoiceAction} className="space-y-2 p-3">
+                              <input type="hidden" name="invoiceId" value={inv.id} />
+                              {!isRepair && (
+                                <input
+                                  name="subject"
+                                  defaultValue={inv.subject ?? ""}
+                                  placeholder="Subject"
+                                  className="w-full rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1.5 text-xs outline-none"
+                                />
+                              )}
+                              <select
+                                name="status"
+                                defaultValue={inv.status}
+                                className="w-full rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1.5 text-xs outline-none"
+                              >
+                                {INVOICE_STATUSES.map((s) => (
+                                  <option key={s} value={s}>{s}</option>
+                                ))}
+                              </select>
+                              <textarea
+                                name="notes"
+                                defaultValue={inv.notes ?? ""}
+                                placeholder="Notes"
+                                className="min-h-12 w-full rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1.5 text-xs outline-none"
+                              />
+                              <button
+                                type="submit"
+                                className="btn-premium w-full rounded-lg px-3 py-1.5 text-xs font-semibold"
+                              >
+                                Save
+                              </button>
+                            </form>
+                          </>
+                        ) : null}
+                        {"ADMIN" === user.role && inv.payments.length === 0 && inv.deliveryNotes.length === 0 ? (
                           <MenuDestructiveRow>
                             <form action={deleteInvoiceAction}>
                               <input type="hidden" name="invoiceId" value={inv.id} />
@@ -1621,7 +1635,8 @@ export default async function InvoicesPage({
                             </form>
                           </MenuDestructiveRow>
                         ) : null}
-                      </RowActionsMenu>
+                        </RowActionsMenu>
+                      ) : null}
                     </div>
                   </td>
                 </tr>

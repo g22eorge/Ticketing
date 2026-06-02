@@ -50,6 +50,11 @@ const supportsOneTimeExternal = Boolean(
     .find((model) => model.name === "Job")
     ?.fields.some((field) => field.name === "oneTimeExternalAssignment"),
 );
+const supportsServiceType = Boolean(
+  Prisma.dmmf.datamodel.models
+    .find((model) => model.name === "Job")
+    ?.fields.some((field) => field.name === "serviceType"),
+);
 
 const statusOptionLabel: Record<ReturnType<typeof normalizeJobStatus>, string> = {
   RECEIVED: "Received",
@@ -116,10 +121,18 @@ export default async function JobsPage({
         ? { assignedToId: filters.assignedToId }
         : {};
 
+  const salesOwnedServiceScopeFilter: Prisma.JobWhereInput =
+    ["SALES", "SALES_CORPORATE", "SALES_RETAIL"].includes(user.role)
+      ? {
+          OR: [{ assignedToId: session.user.id }, { createdById: session.user.id }],
+          ...(supportsServiceType ? { serviceType: { in: ["SOFTWARE", "BOTH"] } } : {}),
+        }
+      : {};
+
   const roleScopeFilter =
     user.role === "TECHNICIAN_EXTERNAL" || (user.role === "TECHNICIAN_INTERNAL" && !internalCanSearchAll)
       ? { assignedToId: session.user.id }
-      : {};
+      : salesOwnedServiceScopeFilter;
 
   // "Mine" chip — filter to jobs assigned to the current user
   const mineFilter = filters.mine === "1" ? { assignedToId: session.user.id } : {};

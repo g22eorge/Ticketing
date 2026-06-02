@@ -16,6 +16,7 @@ export function RowActionsMenu({ children, label = "Actions" }: RowActionsMenuPr
   const [open, setOpen] = useState(false);
   const [rect, setRect] = useState<Rect | null>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
+  const popupRef = useRef<HTMLDivElement>(null);
 
   const close = useCallback(() => setOpen(false), []);
 
@@ -23,23 +24,25 @@ export function RowActionsMenu({ children, label = "Actions" }: RowActionsMenuPr
   useEffect(() => {
     if (!open) return;
     function onMouse(e: MouseEvent) {
-      const popup = document.getElementById("row-menu-portal-active");
       if (
         btnRef.current && !btnRef.current.contains(e.target as Node) &&
-        popup && !popup.contains(e.target as Node)
+        popupRef.current && !popupRef.current.contains(e.target as Node)
       ) setOpen(false);
     }
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") setOpen(false);
     }
     function onScroll() { setOpen(false); }
+    function onResize() { setOpen(false); }
     document.addEventListener("mousedown", onMouse);
     document.addEventListener("keydown", onKey);
     window.addEventListener("scroll", onScroll, true);
+    window.addEventListener("resize", onResize);
     return () => {
       document.removeEventListener("mousedown", onMouse);
       document.removeEventListener("keydown", onKey);
       window.removeEventListener("scroll", onScroll, true);
+      window.removeEventListener("resize", onResize);
     };
   }, [open]);
 
@@ -65,7 +68,7 @@ export function RowActionsMenu({ children, label = "Actions" }: RowActionsMenuPr
       ? rect.bottom + 6
       : rect.top - 6  // will be offset upward via transform
     : 0;
-  const popupRight = rect ? window.innerWidth - rect.right : 0;
+  const popupRight = rect ? Math.max(8, window.innerWidth - rect.right) : 0;
 
   const popupStyle: React.CSSProperties = rect
     ? {
@@ -77,6 +80,8 @@ export function RowActionsMenu({ children, label = "Actions" }: RowActionsMenuPr
         zIndex: 9999,
         minWidth: 220,
         maxWidth: 300,
+        maxHeight: Math.max(160, window.innerHeight - 24),
+        overflowY: "auto",
       }
     : {};
 
@@ -103,8 +108,12 @@ export function RowActionsMenu({ children, label = "Actions" }: RowActionsMenuPr
 
       {open && typeof document !== "undefined" && createPortal(
         <div
-          id="row-menu-portal-active"
+          ref={popupRef}
           className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]"
+          onClickCapture={(event) => {
+            const target = event.target as HTMLElement;
+            if (target.closest("a")) setTimeout(close, 0);
+          }}
           style={{ ...popupStyle, animation: "rowMenuIn 100ms ease-out both" }}
         >
           {children}

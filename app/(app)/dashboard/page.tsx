@@ -2491,7 +2491,7 @@ export default async function DashboardPage({
   if (user.role === "SALES_CORPORATE") {
     const orgFilter = user.orgId ? { orgId: user.orgId } : {};
     const myLeadAccess = { OR: [{ assignedToId: session.user.id }, { createdById: session.user.id }] };
-    const [myQuotationsDraft, myQuotationsSent, myLeads] = await Promise.all([
+    const [myQuotationsDraft, myQuotationsSent, myLeads, openInvoices] = await Promise.all([
       prisma.quotation.count({
         where: { ...orgFilter, createdById: session.user.id, status: "DRAFT" },
       }).catch(() => 0),
@@ -2504,6 +2504,9 @@ export default async function DashboardPage({
           ...myLeadAccess,
           status: { in: ["NEW", "CONTACTED", "QUALIFIED", "PROPOSAL_SENT"] },
         },
+      }).catch(() => 0),
+      prisma.invoice.count({
+        where: { ...orgFilter, status: { in: ["DRAFT", "ISSUED"] } },
       }).catch(() => 0),
     ]);
 
@@ -2523,10 +2526,11 @@ export default async function DashboardPage({
             { label: "Draft Quotes", value: String(myQuotationsDraft), href: "/sales?tab=quotations", tone: "warning" },
             { label: "Sent Quotes", value: String(myQuotationsSent), href: "/sales?tab=quotations", tone: "brand" },
             { label: "My Leads", value: String(myLeads), href: "/sales", tone: "success" },
+            { label: "Open Invoices", value: String(openInvoices), href: "/documents/invoices", tone: "warning" },
           ]}
         />
 
-        <div className="grid gap-3 lg:grid-cols-3">
+        <div className="grid gap-3 lg:grid-cols-4">
           <Link href="/sales?tab=quotations" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px] sm:p-5">
             <p className="text-[12px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Draft Quotations</p>
             <p className="mt-2 text-3xl font-semibold text-[var(--accent)]">{myQuotationsDraft}</p>
@@ -2541,6 +2545,11 @@ export default async function DashboardPage({
             <p className="text-[12px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Active Leads</p>
             <p className="mt-2 text-3xl font-semibold text-[var(--accent)]">{myLeads}</p>
             <p className="mt-2 text-xs font-medium text-[var(--accent)]">View my leads →</p>
+          </Link>
+          <Link href="/documents/invoices" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px] sm:p-5">
+            <p className="text-[12px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Open Invoices</p>
+            <p className="mt-2 text-3xl font-semibold text-[var(--accent)]">{openInvoices}</p>
+            <p className="mt-2 text-xs font-medium text-[var(--accent)]">Open invoices →</p>
           </Link>
         </div>
       </div>

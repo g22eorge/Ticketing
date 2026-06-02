@@ -10,6 +10,7 @@ import { requireOrgSession } from "@/lib/org-context";
 import { requireModule, OrgModule } from "@/lib/module-access";
 import { assertOrgCanMutate } from "@/lib/org-write";
 import { ConfirmSubmitButton } from "@/components/shared/ConfirmSubmitButton";
+import { RowActionsMenu } from "@/components/shared/RowActionsMenu";
 import { nextDocumentNumber } from "@/lib/commercial/document-workflow";
 
 const PAYMENT_METHODS: PaymentMethod[] = ["CASH", "MOBILE_MONEY", "BANK_TRANSFER", "CARD", "OTHER"];
@@ -412,11 +413,8 @@ export default async function CreditNotesPage({
                           </form>
                         )}
                         {outstanding > 0 && (
-                          <details className="group relative">
-                            <summary className="cursor-pointer list-none rounded border border-[var(--gold)]/40 px-2 py-0.5 text-[13px] font-semibold text-[var(--gold)] hover:bg-[var(--gold)]/10">
-                              Refund
-                            </summary>
-                            <div className="absolute right-0 top-full z-20 mt-1 w-64 rounded-xl border border-[var(--line)] bg-[var(--panel)] p-3 shadow-lg">
+                          <RowActionsMenu label={`Refund ${cn.creditNoteNumber}`}>
+                            <div className="w-64 p-3">
                               <form action={issueRefundFromCreditNoteAction} className="space-y-2">
                                 <input type="hidden" name="creditNoteId" value={cn.id} />
                                 <div>
@@ -436,7 +434,7 @@ export default async function CreditNotesPage({
                                 </button>
                               </form>
                             </div>
-                          </details>
+                          </RowActionsMenu>
                         )}
                         {user.role === "ADMIN" && cn.refunds.length === 0 && (
                           <form action={deleteCreditNoteAction}>

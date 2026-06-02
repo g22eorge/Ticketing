@@ -52,6 +52,7 @@ import { formatMoney } from "@/lib/currency";
 import { formatEATDate } from "@/lib/date-eat";
 import { JobStatus } from "@/lib/job-status";
 import { can } from "@/lib/permissions";
+import { RowActionsMenu } from "@/components/shared/RowActionsMenu";
 
 export type JobRow = {
   id: string;
@@ -532,44 +533,34 @@ export function JobTable({
                       >
                         Open
                       </Link>
-                      <details className="relative inline-block">
-                        <summary className="inline-flex h-7 w-8 cursor-pointer list-none items-center justify-center rounded-lg border border-[var(--line)] text-[var(--ink-muted)] transition-colors hover:border-[var(--accent)]/50 hover:bg-[var(--accent)]/8 hover:text-[var(--accent)]">
-                          <span className="sr-only">More actions</span>
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                            <circle cx="5" cy="12" r="1.8" />
-                            <circle cx="12" cy="12" r="1.8" />
-                            <circle cx="19" cy="12" r="1.8" />
-                          </svg>
-                        </summary>
-                        <div className="panel-shadow absolute right-0 z-20 mt-2 w-52 overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)] text-left">
-                          <div className="py-1">
-                            {canEditPage ? (
-                              <Link href={`/jobs/${job.id}/edit${returnTo ? `?returnTo=${encodeURIComponent(returnTo)}` : ""}`} className="flex w-full px-4 py-2.5 text-sm font-medium text-[var(--ink)] transition hover:bg-[var(--panel-strong)]">
-                                Edit Job
-                              </Link>
-                            ) : null}
-                            {canUseJobCards ? (
-                              <a href={`/api/jobs/${job.id}/job-card`} target="_blank" rel="noreferrer" className="flex w-full px-4 py-2.5 text-sm font-medium text-[var(--ink)] transition hover:bg-[var(--panel-strong)]">
-                                Download Job Card
-                              </a>
-                            ) : null}
-                            {canDownloadQuotation ? (
-                              <a href={`/api/jobs/${job.id}/quotation`} target="_blank" rel="noreferrer" className="flex w-full px-4 py-2.5 text-sm font-medium text-[var(--ink)] transition hover:bg-[var(--panel-strong)]">
-                                Download Quotation
-                              </a>
-                            ) : (
-                              canUseQuotations ? <span className="flex w-full px-4 py-2.5 text-sm font-medium text-[var(--ink-muted)]">Quotation unavailable</span> : null
-                            )}
-                            {canDownloadInvoice ? (
-                              <a href={`/api/jobs/${job.id}/invoice`} target="_blank" rel="noreferrer" className="flex w-full px-4 py-2.5 text-sm font-medium text-[var(--ink)] transition hover:bg-[var(--panel-strong)]">
-                                Download Invoice
-                              </a>
-                            ) : (
-                              canUseInvoices ? <span className="flex w-full px-4 py-2.5 text-sm font-medium text-[var(--ink-muted)]">Invoice unavailable</span> : null
-                            )}
-                          </div>
+                      <RowActionsMenu label={`More actions for ${job.jobNumber}`}>
+                        <div className="py-1 text-left">
+                          {canEditPage ? (
+                            <Link href={`/jobs/${job.id}/edit${returnTo ? `?returnTo=${encodeURIComponent(returnTo)}` : ""}`} className="flex w-full px-4 py-2.5 text-sm font-medium text-[var(--ink)] transition hover:bg-[var(--panel-strong)]">
+                              Edit Job
+                            </Link>
+                          ) : null}
+                          {canUseJobCards ? (
+                            <a href={`/api/jobs/${job.id}/job-card`} target="_blank" rel="noreferrer" className="flex w-full px-4 py-2.5 text-sm font-medium text-[var(--ink)] transition hover:bg-[var(--panel-strong)]">
+                              Download Job Card
+                            </a>
+                          ) : null}
+                          {canDownloadQuotation ? (
+                            <a href={`/api/jobs/${job.id}/quotation`} target="_blank" rel="noreferrer" className="flex w-full px-4 py-2.5 text-sm font-medium text-[var(--ink)] transition hover:bg-[var(--panel-strong)]">
+                              Download Quotation
+                            </a>
+                          ) : (
+                            canUseQuotations ? <span className="flex w-full px-4 py-2.5 text-sm font-medium text-[var(--ink-muted)]">Quotation unavailable</span> : null
+                          )}
+                          {canDownloadInvoice ? (
+                            <a href={`/api/jobs/${job.id}/invoice`} target="_blank" rel="noreferrer" className="flex w-full px-4 py-2.5 text-sm font-medium text-[var(--ink)] transition hover:bg-[var(--panel-strong)]">
+                              Download Invoice
+                            </a>
+                          ) : (
+                            canUseInvoices ? <span className="flex w-full px-4 py-2.5 text-sm font-medium text-[var(--ink-muted)]">Invoice unavailable</span> : null
+                          )}
                         </div>
-                      </details>
+                      </RowActionsMenu>
                       {canDelete && deleteAction ? (
                         <form action={deleteAction} className="inline">
                           <input type="hidden" name="id" value={job.id} />
