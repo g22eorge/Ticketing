@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireOrgSession } from "@/lib/org-context";
 import { can } from "@/lib/permissions";
+import { RowActionsMenu } from "@/components/shared/RowActionsMenu";
 import { SupplierEditForm } from "./SupplierEditForm";
 import { createSupplierPriceAction, deleteSupplierPriceAction, updateSupplierPriceAction } from "../actions";
 
@@ -114,31 +115,34 @@ export default async function SupplierDetailPage({
                   <td className="hidden px-4 py-3 text-right text-[var(--ink-muted)] sm:table-cell">{price.minQuantity ?? "—"}</td>
                   <td className="hidden px-4 py-3 text-right text-[var(--ink-muted)] sm:table-cell">{price.leadTimeDays != null ? `${price.leadTimeDays}d` : "—"}</td>
                   <td className="px-4 py-3 text-right">
-                    <details className="group">
-                      <summary className="cursor-pointer list-none text-xs font-semibold text-[var(--gold)] hover:underline">Edit</summary>
-                      <form action={updateSupplierPriceAction} className="mt-3 grid min-w-[280px] gap-2 rounded-xl border border-[var(--line)] bg-[var(--panel)] p-3 text-left shadow-xl">
-                        <input type="hidden" name="id" value={price.id} />
-                        <input type="hidden" name="supplierId" value={supplier.id} />
-                        <select name="partId" defaultValue={price.partId ?? ""} className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/60">
-                          <option value="">No linked part</option>
-                          {parts.map((part) => <option key={part.id} value={part.id}>{part.sku} · {part.name}</option>)}
-                        </select>
-                        <input name="description" defaultValue={price.description} required className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/60" />
-                        <input name="sku" defaultValue={price.sku ?? ""} placeholder="SKU" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/60" />
-                        <input name="unitCost" defaultValue={price.unitCost} required inputMode="decimal" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/60" />
-                        <div className="grid grid-cols-2 gap-2">
-                          <input name="minQuantity" defaultValue={price.minQuantity ?? ""} placeholder="MOQ" inputMode="numeric" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/60" />
-                          <input name="leadTimeDays" defaultValue={price.leadTimeDays ?? ""} placeholder="Lead days" inputMode="numeric" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/60" />
+                    <div className="flex justify-end">
+                      <RowActionsMenu label={`Supplier price actions for ${price.description}`}>
+                        <div className="w-72 p-3">
+                          <form action={updateSupplierPriceAction} className="grid gap-2 text-left">
+                            <input type="hidden" name="id" value={price.id} />
+                            <input type="hidden" name="supplierId" value={supplier.id} />
+                            <select name="partId" defaultValue={price.partId ?? ""} className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/60">
+                              <option value="">No linked part</option>
+                              {parts.map((part) => <option key={part.id} value={part.id}>{part.sku} · {part.name}</option>)}
+                            </select>
+                            <input name="description" defaultValue={price.description} required className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/60" />
+                            <input name="sku" defaultValue={price.sku ?? ""} placeholder="SKU" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/60" />
+                            <input name="unitCost" defaultValue={price.unitCost} required inputMode="decimal" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/60" />
+                            <div className="grid grid-cols-2 gap-2">
+                              <input name="minQuantity" defaultValue={price.minQuantity ?? ""} placeholder="MOQ" inputMode="numeric" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/60" />
+                              <input name="leadTimeDays" defaultValue={price.leadTimeDays ?? ""} placeholder="Lead days" inputMode="numeric" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/60" />
+                            </div>
+                            <input name="currency" defaultValue={price.currency} placeholder="Currency" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] uppercase outline-none focus:border-[var(--accent)]/60" />
+                            <button type="submit" className="btn-premium rounded-lg px-3 py-1.5 text-xs font-semibold">Save Price</button>
+                          </form>
+                          <form action={deleteSupplierPriceAction} className="mt-2 border-t border-[var(--line)] pt-2">
+                            <input type="hidden" name="id" value={price.id} />
+                            <input type="hidden" name="supplierId" value={supplier.id} />
+                            <button type="submit" className="text-xs font-semibold text-red-600 hover:text-red-700">Delete</button>
+                          </form>
                         </div>
-                        <input name="currency" defaultValue={price.currency} placeholder="Currency" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] uppercase outline-none focus:border-[var(--accent)]/60" />
-                        <button type="submit" className="btn-premium rounded-lg px-3 py-1.5 text-xs font-semibold">Save Price</button>
-                      </form>
-                      <form action={deleteSupplierPriceAction} className="mt-2">
-                        <input type="hidden" name="id" value={price.id} />
-                        <input type="hidden" name="supplierId" value={supplier.id} />
-                        <button type="submit" className="text-xs font-semibold text-red-600 hover:text-red-700">Delete</button>
-                      </form>
-                    </details>
+                      </RowActionsMenu>
+                    </div>
                   </td>
                 </tr>
               ))}

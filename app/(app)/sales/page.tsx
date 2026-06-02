@@ -7,6 +7,7 @@ import { can } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { formatEATDate } from "@/lib/date-eat";
 import { formatMoney, formatMoneyCompact, getAppCurrency } from "@/lib/currency";
+import { RowActionsMenu } from "@/components/shared/RowActionsMenu";
 import { createLead, advanceLeadStageAction } from "./actions";
 
 const LEAD_STATUS_LABELS: Record<LeadStatus, string> = {
@@ -845,12 +846,9 @@ export default async function SalesPage({
                                 </button>
                               </form>
                             )}
-                            <details className="shrink-0">
-                              <summary className="cursor-pointer list-none rounded-lg border border-red-500/30 bg-red-500/8 px-2.5 py-1 text-[13px] font-semibold text-red-600 [&::-webkit-details-marker]:hidden">
-                                Mark Lost
-                              </summary>
-                              <div className="absolute z-20 mt-1 w-56 rounded-xl border border-[var(--line)] bg-[var(--panel)] shadow-lg">
-                                <form action={advanceLeadStageAction} className="p-2 space-y-1.5">
+                            <RowActionsMenu label={`Lead actions for ${lead.fullName}`}>
+                              <div className="w-56 p-3">
+                                <form action={advanceLeadStageAction} className="space-y-1.5">
                                   <input type="hidden" name="leadId" value={lead.id} />
                                   <input type="hidden" name="newStatus" value="LOST" />
                                   <p className="px-1 text-[12px] font-semibold text-[var(--ink-muted)]">Why was this lead lost?</p>
@@ -861,7 +859,7 @@ export default async function SalesPage({
                                   <button type="submit" className="w-full rounded-lg bg-red-500 py-1.5 text-[12px] font-bold text-white">Confirm Lost</button>
                                 </form>
                               </div>
-                            </details>
+                            </RowActionsMenu>
                           </div>
                         )}
                       </div>

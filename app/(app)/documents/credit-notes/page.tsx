@@ -327,9 +327,8 @@ export default async function CreditNotesPage({
                     </form>
                   )}
                   {outstandingM > 0 && (
-                    <details className="group relative">
-                      <summary className="cursor-pointer list-none rounded border border-[var(--gold)]/40 px-2 py-0.5 text-[13px] font-semibold text-[var(--gold)] hover:bg-[var(--gold)]/10">Refund</summary>
-                      <div className="absolute left-0 top-full z-20 mt-1 w-64 rounded-xl border border-[var(--line)] bg-[var(--panel)] p-3 shadow-lg">
+                    <RowActionsMenu label={`Refund ${cn.creditNoteNumber}`}>
+                      <div className="w-64 p-3">
                         <form action={issueRefundFromCreditNoteAction} className="space-y-2">
                           <input type="hidden" name="creditNoteId" value={cn.id} />
                           <div>
@@ -347,7 +346,7 @@ export default async function CreditNotesPage({
                           <button type="submit" className="w-full rounded bg-[var(--gold)]/20 py-1.5 text-xs font-semibold text-[var(--gold)] hover:bg-[var(--gold)]/30">Issue Refund</button>
                         </form>
                       </div>
-                    </details>
+                    </RowActionsMenu>
                   )}
                   {user.role === "ADMIN" && cn.refunds.length === 0 && (
                     <form action={deleteCreditNoteAction}>

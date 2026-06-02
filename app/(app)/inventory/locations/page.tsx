@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { requireOrgSession } from "@/lib/org-context";
 import { requireModule, OrgModule } from "@/lib/module-access";
 import { can } from "@/lib/permissions";
+import { RowActionsMenu } from "@/components/shared/RowActionsMenu";
 import { createStockLocationAction, toggleStockLocationAction, updateStockLocationAction } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -109,29 +110,32 @@ export default async function StockLocationsPage({
                         </span>
                       </td>
                       <td className="px-4 py-3">
-                        <details className="group text-right">
-                          <summary className="cursor-pointer list-none text-xs font-semibold text-[var(--accent)] hover:underline">Edit</summary>
-                          <form action={updateStockLocationAction} className="mt-3 grid min-w-[280px] gap-2 rounded-xl border border-[var(--line)] bg-[var(--panel)] p-3 text-left shadow-xl">
-                            <input type="hidden" name="id" value={location.id} />
-                            <input name="name" defaultValue={location.name} required className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/60" />
-                            <input name="code" defaultValue={location.code ?? ""} placeholder="Code" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] uppercase outline-none focus:border-[var(--accent)]/60" />
-                            <select name="branchId" defaultValue={location.branchId ?? ""} className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/60">
-                              <option value="">No branch</option>
-                              {branches.map((branch) => <option key={branch.id} value={branch.id}>{branch.name}</option>)}
-                            </select>
-                            <label className="flex items-center gap-2 text-xs text-[var(--ink-muted)]">
-                              <input type="checkbox" name="isActive" value="1" defaultChecked={location.isActive} /> Active
-                            </label>
-                            <button type="submit" className="btn-premium rounded-lg px-3 py-1.5 text-xs font-semibold">Save Location</button>
-                          </form>
-                          <form action={toggleStockLocationAction} className="mt-2">
-                            <input type="hidden" name="id" value={location.id} />
-                            <input type="hidden" name="isActive" value={location.isActive ? "0" : "1"} />
-                            <button type="submit" className="text-xs font-semibold text-[var(--ink-muted)] hover:text-[var(--ink)]">
-                              {location.isActive ? "Deactivate" : "Activate"}
-                            </button>
-                          </form>
-                        </details>
+                        <div className="flex justify-end">
+                          <RowActionsMenu label={`Location actions for ${location.name}`}>
+                            <div className="w-72 p-3">
+                              <form action={updateStockLocationAction} className="grid gap-2 text-left">
+                                <input type="hidden" name="id" value={location.id} />
+                                <input name="name" defaultValue={location.name} required className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/60" />
+                                <input name="code" defaultValue={location.code ?? ""} placeholder="Code" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] uppercase outline-none focus:border-[var(--accent)]/60" />
+                                <select name="branchId" defaultValue={location.branchId ?? ""} className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/60">
+                                  <option value="">No branch</option>
+                                  {branches.map((branch) => <option key={branch.id} value={branch.id}>{branch.name}</option>)}
+                                </select>
+                                <label className="flex items-center gap-2 text-xs text-[var(--ink-muted)]">
+                                  <input type="checkbox" name="isActive" value="1" defaultChecked={location.isActive} /> Active
+                                </label>
+                                <button type="submit" className="btn-premium rounded-lg px-3 py-1.5 text-xs font-semibold">Save Location</button>
+                              </form>
+                              <form action={toggleStockLocationAction} className="mt-2 border-t border-[var(--line)] pt-2">
+                                <input type="hidden" name="id" value={location.id} />
+                                <input type="hidden" name="isActive" value={location.isActive ? "0" : "1"} />
+                                <button type="submit" className="text-xs font-semibold text-[var(--ink-muted)] hover:text-[var(--ink)]">
+                                  {location.isActive ? "Deactivate" : "Activate"}
+                                </button>
+                              </form>
+                            </div>
+                          </RowActionsMenu>
+                        </div>
                       </td>
                     </tr>
                   );
