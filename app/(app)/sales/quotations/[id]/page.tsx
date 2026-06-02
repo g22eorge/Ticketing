@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { Prisma, QuotationStatus } from "@prisma/client";
 
 import { CopyButton } from "@/components/shared/CopyButton";
+import { MenuSection, RowActionsMenu } from "@/components/shared/RowActionsMenu";
 import { ensureInvoiceFromQuotation } from "@/lib/commercial/document-workflow";
 import { writeSystemAuditEvent } from "@/lib/commercial/audit";
 import { can } from "@/lib/permissions";
@@ -243,7 +244,7 @@ export default async function QuotationDetailPage({
 
       <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
         <p className="mb-3 text-[13px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Document Actions</p>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <a
             href={pdfHref}
             target="_blank"
@@ -252,79 +253,96 @@ export default async function QuotationDetailPage({
           >
             Download PDF
           </a>
-          <a
-            href={`mailto:${emailTo}?subject=${mailSubject}&body=${mailBody}`}
-            className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-4 py-2 text-[12px] font-bold text-[var(--ink)] transition hover:border-[var(--accent)]/40"
-          >
-            Email
-          </a>
-          {whatsappPhone ? (
+          <RowActionsMenu label={`Quotation actions for ${quotation.quoteNumber}`}>
+            <MenuSection label="Share" />
             <a
-              href={`https://wa.me/${whatsappPhone}?text=${whatsappText}`}
-              target="_blank"
-              rel="noreferrer"
-              className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-2 text-[12px] font-bold text-emerald-700 transition hover:bg-emerald-500/20 dark:text-emerald-400"
+              href={`mailto:${emailTo}?subject=${mailSubject}&body=${mailBody}`}
+              className="flex w-full px-4 py-2.5 text-sm font-medium text-[var(--ink)] transition hover:bg-[var(--panel-strong)]"
             >
-              WhatsApp
+              Email quotation
             </a>
-          ) : null}
-          <CopyButton
-            text={pdfUrl}
-            label="Copy PDF Link"
-            title="Copy quotation PDF link"
-            className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-4 py-2 text-[12px] font-bold text-[var(--ink)] transition hover:border-[var(--accent)]/40"
-          />
-          {canConvert ? (
-            <form action={convertToInvoiceAction}>
-              <button type="submit" className="btn-premium rounded-lg px-4 py-2 text-[12px] font-bold">
-                Convert to Invoice
-              </button>
-            </form>
-          ) : quotation.convertedToInvoiceId ? (
-            <Link href="/documents/invoices" className="rounded-lg border border-green-400/30 bg-green-500/10 px-4 py-2 text-[12px] font-bold text-green-700 dark:text-green-400">
-              Invoice Created
-            </Link>
-          ) : null}
-        </div>
-      </div>
-
-      {canSend || canAccept || canReject ? (
-        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
-          <p className="mb-3 text-[13px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Actions</p>
-          <div className="flex flex-wrap gap-2">
+            {whatsappPhone ? (
+              <a
+                href={`https://wa.me/${whatsappPhone}?text=${whatsappText}`}
+                target="_blank"
+                rel="noreferrer"
+                className="flex w-full px-4 py-2.5 text-sm font-medium text-emerald-700 transition hover:bg-[var(--panel-strong)] dark:text-emerald-400"
+              >
+                Send via WhatsApp
+              </a>
+            ) : null}
+            <div className="px-3 py-1.5">
+              <CopyButton
+                text={pdfUrl}
+                label="Copy PDF link"
+                title="Copy quotation PDF link"
+                className="flex w-full rounded-md px-2 py-1.5 text-left text-sm font-medium text-[var(--ink)] transition hover:bg-[var(--panel-strong)]"
+              />
+            </div>
             {canSend ? (
+              <>
+                <MenuSection label="Status" />
+                <div className="px-3 py-1.5">
               <form action={sendAction}>
                 <button
                   type="submit"
-                  className="btn-premium rounded-lg px-4 py-2 text-[12px] font-bold"
+                      className="flex w-full rounded-md px-2 py-1.5 text-left text-sm font-medium text-[var(--accent)] transition hover:bg-[var(--panel-strong)]"
                 >
                   Send to Client
                 </button>
               </form>
+                </div>
+              </>
             ) : null}
             {canAccept ? (
+              <>
+                {!canSend ? <MenuSection label="Status" /> : null}
+                <div className="px-3 py-1.5">
               <form action={acceptAction}>
                 <button
                   type="submit"
-                  className="rounded-lg border border-green-400/30 bg-green-500/10 px-4 py-2 text-[12px] font-bold text-green-700 shadow-sm transition hover:bg-green-500/20 dark:text-green-400"
+                      className="flex w-full rounded-md px-2 py-1.5 text-left text-sm font-medium text-emerald-700 transition hover:bg-[var(--panel-strong)] dark:text-emerald-400"
                 >
                   Mark Accepted
                 </button>
               </form>
+                </div>
+              </>
             ) : null}
             {canReject ? (
+              <div className="px-3 py-1.5">
               <form action={rejectAction}>
                 <button
                   type="submit"
-                  className="rounded-lg border border-red-400/30 bg-red-500/10 px-4 py-2 text-[12px] font-bold text-red-700 shadow-sm transition hover:bg-red-500/20 dark:text-red-400"
+                    className="flex w-full rounded-md px-2 py-1.5 text-left text-sm font-medium text-red-700 transition hover:bg-[var(--panel-strong)] dark:text-red-400"
                 >
                   Mark Rejected
                 </button>
               </form>
+              </div>
             ) : null}
-          </div>
+            {canConvert ? (
+              <>
+                <MenuSection label="Convert" />
+                <div className="px-3 py-1.5">
+                  <form action={convertToInvoiceAction}>
+                    <button type="submit" className="flex w-full rounded-md px-2 py-1.5 text-left text-sm font-medium text-[var(--accent)] transition hover:bg-[var(--panel-strong)]">
+                      Convert to Invoice
+                    </button>
+                  </form>
+                </div>
+              </>
+            ) : quotation.convertedToInvoiceId ? (
+              <>
+                <MenuSection label="Invoice" />
+                <Link href="/documents/invoices" className="flex w-full px-4 py-2.5 text-sm font-medium text-emerald-700 transition hover:bg-[var(--panel-strong)] dark:text-emerald-400">
+                  Invoice Created
+                </Link>
+              </>
+            ) : null}
+          </RowActionsMenu>
         </div>
-      ) : null}
+      </div>
 
       {filters.editError ? (
         <div className="rounded-lg border border-red-400/30 bg-red-500/10 px-3 py-2 text-xs text-red-700 dark:text-red-400">{filters.editError}</div>
