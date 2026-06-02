@@ -178,10 +178,9 @@ export function NotificationBell() {
       };
     }
 
-    // Desktop: align right edge of panel with right edge of button
+    // Desktop: align the panel's right edge with the button's right edge.
     const desiredWidth = Math.min(22 * 16, vw - 16);
-    const rightEdgeFromViewportRight = vw - rect.right;
-    const safeRight = Math.max(8, rightEdgeFromViewportRight);
+    const safeRight = Math.max(8, rect.right);
     return {
       position: "fixed",
       top: rect.bottom + 6,
