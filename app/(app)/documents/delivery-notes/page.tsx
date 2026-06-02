@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import type { DeliveryMethod } from "@prisma/client";
+import { OutboundMessageType, type DeliveryMethod } from "@prisma/client";
 
 import { can } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
@@ -12,6 +12,7 @@ import { ConfirmSubmitButton } from "@/components/shared/ConfirmSubmitButton";
 import { writeSystemAuditEvent } from "@/lib/commercial/audit";
 import { RowActionsMenu, MenuSection, MenuDestructiveRow, MenuActionLink, MenuActionButton } from "@/components/shared/RowActionsMenu";
 import { nextDocumentNumber } from "@/lib/commercial/document-workflow";
+import { enqueueEmailMessage, enqueueWhatsAppMessage } from "@/lib/notifications/whatsapp-outbox";
 
 const DELIVERY_METHODS: DeliveryMethod[] = ["PICKUP", "DELIVERY", "COURIER"];
 
@@ -21,6 +22,7 @@ export default async function DeliveryNotesPage() {
     redirect("/dashboard");
   }
   await requireModule(OrgModule.INVOICING);
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
   async function createDeliveryNoteAction(formData: FormData) {
     "use server";
@@ -111,6 +113,68 @@ export default async function DeliveryNotesPage() {
     revalidatePath("/documents/delivery-notes");
   }
 
+  async function shareDeliveryNoteWhatsAppAction(formData: FormData) {
+    "use server";
+    const { user, orgId } = await requireOrgSession();
+    if (!(can.viewFinancials(user) || ["ADMIN", "OPS", "FRONT_DESK"].includes(user.role))) return;
+
+    const deliveryNoteId = String(formData.get("deliveryNoteId") ?? "").trim();
+    if (!deliveryNoteId) return;
+    const note = await prisma.deliveryNote.findFirst({
+      where: { id: deliveryNoteId, orgId },
+      select: {
+        id: true,
+        deliveryNoteNumber: true,
+        invoice: { select: { invoiceNumber: true, job: { select: { id: true, jobNumber: true, client: { select: { fullName: true, phone: true } } } }, client: { select: { fullName: true, phone: true } } } },
+        sale: { select: { saleNumber: true, client: { select: { fullName: true, phone: true } } } },
+      },
+    });
+    const recipient = note?.invoice?.job?.client ?? note?.invoice?.client ?? note?.sale?.client ?? null;
+    if (!note || !recipient?.phone) return;
+    const source = note.invoice?.invoiceNumber ?? note.sale?.saleNumber ?? note.deliveryNoteNumber;
+    const pdfUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}/api/delivery-notes/${note.id}`;
+    await enqueueWhatsAppMessage({
+      orgId,
+      jobId: note.invoice?.job?.id,
+      to: recipient.phone,
+      type: OutboundMessageType.JOB_STATUS_UPDATE,
+      body: `Hi ${recipient.fullName}, your delivery note ${note.deliveryNoteNumber} for ${source} is ready.\n\nDownload PDF: ${pdfUrl}`,
+    });
+    revalidatePath("/documents/delivery-notes");
+  }
+
+  async function shareDeliveryNoteEmailAction(formData: FormData) {
+    "use server";
+    const { user, orgId } = await requireOrgSession();
+    if (!(can.viewFinancials(user) || ["ADMIN", "OPS", "FRONT_DESK"].includes(user.role))) return;
+
+    const deliveryNoteId = String(formData.get("deliveryNoteId") ?? "").trim();
+    if (!deliveryNoteId) return;
+    const note = await prisma.deliveryNote.findFirst({
+      where: { id: deliveryNoteId, orgId },
+      select: {
+        id: true,
+        deliveryNoteNumber: true,
+        invoice: { select: { invoiceNumber: true, job: { select: { id: true, jobNumber: true, client: { select: { fullName: true, email: true } } } }, client: { select: { fullName: true, email: true } } } },
+        sale: { select: { saleNumber: true, client: { select: { fullName: true, email: true } } } },
+      },
+    });
+    const recipient = note?.invoice?.job?.client ?? note?.invoice?.client ?? note?.sale?.client ?? null;
+    if (!note || !recipient?.email) return;
+    const source = note.invoice?.invoiceNumber ?? note.sale?.saleNumber ?? note.deliveryNoteNumber;
+    const pdfUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}/api/delivery-notes/${note.id}`;
+    const body = `Hi ${recipient.fullName},\n\nYour delivery note ${note.deliveryNoteNumber} for ${source} is ready.\n\nDownload PDF: ${pdfUrl}`;
+    await enqueueEmailMessage({
+      orgId,
+      jobId: note.invoice?.job?.id,
+      to: recipient.email,
+      subject: `Delivery note ${note.deliveryNoteNumber}`,
+      body,
+      type: OutboundMessageType.JOB_STATUS_UPDATE,
+    });
+    revalidatePath("/documents/delivery-notes");
+  }
+
   type DeliveryNoteRow = {
     id: string;
     deliveryNoteNumber: string;
@@ -120,8 +184,8 @@ export default async function DeliveryNotesPage() {
     receivedByName: string;
     receivedBySignatureText: string | null;
     note: string | null;
-    sale: { id: string; saleNumber: string; invoiceNumber: string | null; client: { fullName: string } | null } | null;
-    invoice?: { id: string; invoiceNumber: string; job: { id: string; jobNumber: string; client: { fullName: string } } | null } | null;
+    sale: { id: string; saleNumber: string; invoiceNumber: string | null; client: { fullName: string; phone: string | null; email: string | null } | null } | null;
+    invoice?: { id: string; invoiceNumber: string; client: { fullName: string; phone: string | null; email: string | null } | null; job: { id: string; jobNumber: string; client: { fullName: string; phone: string | null; email: string | null } } | null } | null;
   };
 
   let notes: DeliveryNoteRow[] = [];
@@ -144,14 +208,15 @@ export default async function DeliveryNotesPage() {
             id: true,
             saleNumber: true,
             invoiceNumber: true,
-            client: { select: { fullName: true } },
+            client: { select: { fullName: true, phone: true, email: true } },
           },
         },
         invoice: {
           select: {
             id: true,
             invoiceNumber: true,
-            job: { select: { id: true, jobNumber: true, client: { select: { fullName: true } } } },
+            client: { select: { fullName: true, phone: true, email: true } },
+            job: { select: { id: true, jobNumber: true, client: { select: { fullName: true, phone: true, email: true } } } },
           },
         },
       },
@@ -178,7 +243,7 @@ export default async function DeliveryNotesPage() {
             id: true,
             saleNumber: true,
             invoiceNumber: true,
-            client: { select: { fullName: true } },
+            client: { select: { fullName: true, phone: true, email: true } },
           },
         },
       },
@@ -259,7 +324,14 @@ export default async function DeliveryNotesPage() {
             </tr>
           </thead>
           <tbody>
-            {notes.map((n) => (
+            {notes.map((n) => {
+              const recipientPhone = n.invoice?.job?.client.phone ?? n.invoice?.client?.phone ?? n.sale?.client?.phone ?? null;
+              const recipientEmail = n.invoice?.job?.client.email ?? n.invoice?.client?.email ?? n.sale?.client?.email ?? null;
+              const deliveryUrl = `${appUrl}/api/delivery-notes/${n.id}`;
+              const sourceLabel = n.invoice?.invoiceNumber ?? n.sale?.invoiceNumber ?? n.sale?.saleNumber ?? n.deliveryNoteNumber;
+              const deliveryShareText = encodeURIComponent(`Your delivery note is ready.\n\n${n.deliveryNoteNumber} for ${sourceLabel}\nPDF: ${deliveryUrl}`);
+              const deliveryWaPhone = recipientPhone?.replace(/\D/g, "").replace(/^0/, "256");
+              return (
               <tr key={n.id} className="border-t border-[var(--line)] align-middle hover:bg-[var(--panel-strong)]/40">
                 <td className="px-3 py-2.5">
                   <p className="mono font-bold text-[var(--ink)]">{n.deliveryNoteNumber}</p>
@@ -303,6 +375,28 @@ export default async function DeliveryNotesPage() {
                           Download Delivery Note
                         </MenuActionLink>
                       </div>
+                      <MenuSection label="Share" />
+                      {recipientPhone ? (
+                        <form action={shareDeliveryNoteWhatsAppAction}>
+                          <input type="hidden" name="deliveryNoteId" value={n.id} />
+                          <MenuActionButton icon="whatsapp" tone="success">Send via WhatsApp</MenuActionButton>
+                        </form>
+                      ) : (
+                        <span className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-[var(--ink-muted)]">WhatsApp unavailable</span>
+                      )}
+                      {recipientEmail ? (
+                        <form action={shareDeliveryNoteEmailAction}>
+                          <input type="hidden" name="deliveryNoteId" value={n.id} />
+                          <MenuActionButton icon="open">Email delivery note</MenuActionButton>
+                        </form>
+                      ) : (
+                        <span className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-[var(--ink-muted)]">Email unavailable</span>
+                      )}
+                      {deliveryWaPhone ? (
+                        <MenuActionLink href={`https://wa.me/${deliveryWaPhone}?text=${deliveryShareText}`} external icon="whatsapp" tone="success">
+                          Open WhatsApp Link
+                        </MenuActionLink>
+                      ) : null}
                       <MenuSection label="Edit Delivery Note" />
                       <form action={updateDeliveryNoteAction} className="space-y-2 p-3">
                         <input type="hidden" name="deliveryNoteId" value={n.id} />
@@ -326,7 +420,8 @@ export default async function DeliveryNotesPage() {
                   </div>
                 </td>
               </tr>
-            ))}
+              );
+            })}
             {notes.length === 0 ? (
               <tr className="border-t border-[var(--line)]">
                 <td className="px-3 py-8 text-sm text-[var(--ink-muted)]" colSpan={6}>

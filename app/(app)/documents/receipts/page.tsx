@@ -3,7 +3,7 @@ export const dynamic = "force-dynamic";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import type { PaymentMethod } from "@prisma/client";
+import { OutboundMessageType, type PaymentMethod } from "@prisma/client";
 
 import { formatMoney, normalizeCurrency, toBaseAmount } from "@/lib/currency";
 import { can } from "@/lib/permissions";
@@ -13,6 +13,7 @@ import { ConfirmSubmitButton } from "@/components/shared/ConfirmSubmitButton";
 import { writeSystemAuditEvent } from "@/lib/commercial/audit";
 import { RowActionsMenu, MenuSection, MenuDestructiveRow, MenuActionLink, MenuActionButton } from "@/components/shared/RowActionsMenu";
 import { createReceiptForPayment } from "@/lib/commercial/document-workflow";
+import { enqueueEmailMessage, enqueueWhatsAppMessage } from "@/lib/notifications/whatsapp-outbox";
 
 const PAYMENT_METHODS: PaymentMethod[] = ["CASH", "MOBILE_MONEY", "BANK_TRANSFER", "CARD", "OTHER"];
 
@@ -31,6 +32,7 @@ export default async function ReceiptsPage({
   const params = await searchParams;
   const q = (params.q ?? "").trim();
   const period = params.period ?? "all";
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
   async function createReceiptAction(formData: FormData) {
     "use server";
@@ -176,6 +178,70 @@ export default async function ReceiptsPage({
     revalidatePath("/documents/invoices");
   }
 
+  async function shareReceiptWhatsAppAction(formData: FormData) {
+    "use server";
+    const { user, orgId } = await requireOrgSession();
+    if (!(can.viewFinancials(user) || ["ADMIN", "OPS", "FRONT_DESK"].includes(user.role))) return;
+
+    const paymentId = String(formData.get("paymentId") ?? "").trim();
+    if (!paymentId) return;
+    const payment = await prisma.payment.findFirst({
+      where: { id: paymentId, orgId },
+      select: {
+        id: true,
+        amount: true,
+        currency: true,
+        invoice: { select: { invoiceNumber: true, job: { select: { id: true, jobNumber: true, client: { select: { fullName: true, phone: true } } } }, client: { select: { fullName: true, phone: true } } } },
+        sale: { select: { saleNumber: true, client: { select: { fullName: true, phone: true } } } },
+      },
+    });
+    const recipient = payment?.invoice?.job?.client ?? payment?.invoice?.client ?? payment?.sale?.client ?? null;
+    if (!payment || !recipient?.phone) return;
+    const receiptUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}/api/payments/${payment.id}/receipt`;
+    const source = payment.invoice?.invoiceNumber ?? payment.sale?.saleNumber ?? "payment";
+    await enqueueWhatsAppMessage({
+      orgId,
+      jobId: payment.invoice?.job?.id,
+      to: recipient.phone,
+      type: OutboundMessageType.JOB_STATUS_UPDATE,
+      body: `Hi ${recipient.fullName}, your receipt for ${source} is ready.\n\nAmount: ${formatMoney(payment.amount, payment.currency)}\nDownload PDF: ${receiptUrl}`,
+    });
+    revalidatePath("/documents/receipts");
+  }
+
+  async function shareReceiptEmailAction(formData: FormData) {
+    "use server";
+    const { user, orgId } = await requireOrgSession();
+    if (!(can.viewFinancials(user) || ["ADMIN", "OPS", "FRONT_DESK"].includes(user.role))) return;
+
+    const paymentId = String(formData.get("paymentId") ?? "").trim();
+    if (!paymentId) return;
+    const payment = await prisma.payment.findFirst({
+      where: { id: paymentId, orgId },
+      select: {
+        id: true,
+        amount: true,
+        currency: true,
+        invoice: { select: { invoiceNumber: true, job: { select: { id: true, jobNumber: true, client: { select: { fullName: true, email: true } } } }, client: { select: { fullName: true, email: true } } } },
+        sale: { select: { saleNumber: true, client: { select: { fullName: true, email: true } } } },
+      },
+    });
+    const recipient = payment?.invoice?.job?.client ?? payment?.invoice?.client ?? payment?.sale?.client ?? null;
+    if (!payment || !recipient?.email) return;
+    const receiptUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}/api/payments/${payment.id}/receipt`;
+    const source = payment.invoice?.invoiceNumber ?? payment.sale?.saleNumber ?? "payment";
+    const body = `Hi ${recipient.fullName},\n\nYour receipt for ${source} is ready.\n\nAmount: ${formatMoney(payment.amount, payment.currency)}\nDownload PDF: ${receiptUrl}`;
+    await enqueueEmailMessage({
+      orgId,
+      jobId: payment.invoice?.job?.id,
+      to: recipient.email,
+      subject: `Receipt for ${source}`,
+      body,
+      type: OutboundMessageType.JOB_STATUS_UPDATE,
+    });
+    revalidatePath("/documents/receipts");
+  }
+
   const now2 = new Date();
   const thisMonthStart = new Date(now2.getFullYear(), now2.getMonth(), 1);
   const lastMonthStart = new Date(now2.getFullYear(), now2.getMonth() - 1, 1);
@@ -216,8 +282,8 @@ export default async function ReceiptsPage({
       reference: true,
       note: true,
       receivedAt: true,
-      sale: { select: { id: true, saleNumber: true } },
-      invoice: { select: { id: true, invoiceNumber: true, job: { select: { id: true, jobNumber: true } } } },
+      sale: { select: { id: true, saleNumber: true, client: { select: { fullName: true, phone: true, email: true } } } },
+      invoice: { select: { id: true, invoiceNumber: true, client: { select: { fullName: true, phone: true, email: true } }, job: { select: { id: true, jobNumber: true, client: { select: { fullName: true, phone: true, email: true } } } } } },
     },
   });
 
@@ -426,6 +492,11 @@ export default async function ReceiptsPage({
             : p.sale?.id
               ? `/pos/${p.sale.id}`
               : null;
+          const recipientPhone = p.invoice?.job?.client?.phone ?? p.invoice?.client?.phone ?? p.sale?.client?.phone ?? null;
+          const recipientEmail = p.invoice?.job?.client?.email ?? p.invoice?.client?.email ?? p.sale?.client?.email ?? null;
+          const receiptUrl = `${appUrl}/api/payments/${p.id}/receipt`;
+          const receiptShareText = encodeURIComponent(`Your receipt is ready.\n\n${label}\nAmount: ${formatMoney(p.amount, currency)}\nPDF: ${receiptUrl}`);
+          const receiptWaPhone = recipientPhone?.replace(/\D/g, "").replace(/^0/, "256");
 
           return (
             <article key={p.id} className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-3">
@@ -467,6 +538,28 @@ export default async function ReceiptsPage({
                         Download Receipt PDF
                       </MenuActionLink>
                     </div>
+                    <MenuSection label="Share" />
+                    {recipientPhone ? (
+                      <form action={shareReceiptWhatsAppAction}>
+                        <input type="hidden" name="paymentId" value={p.id} />
+                        <MenuActionButton icon="whatsapp" tone="success">Send via WhatsApp</MenuActionButton>
+                      </form>
+                    ) : (
+                      <span className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-[var(--ink-muted)]">WhatsApp unavailable</span>
+                    )}
+                    {recipientEmail ? (
+                      <form action={shareReceiptEmailAction}>
+                        <input type="hidden" name="paymentId" value={p.id} />
+                        <MenuActionButton icon="open">Email receipt</MenuActionButton>
+                      </form>
+                    ) : (
+                      <span className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-[var(--ink-muted)]">Email unavailable</span>
+                    )}
+                    {receiptWaPhone ? (
+                      <MenuActionLink href={`https://wa.me/${receiptWaPhone}?text=${receiptShareText}`} external icon="whatsapp" tone="success">
+                        Open WhatsApp Link
+                      </MenuActionLink>
+                    ) : null}
                     <MenuSection label="Edit Receipt" />
                     <form action={updateReceiptAction} className="space-y-2 p-3">
                       <input type="hidden" name="paymentId" value={p.id} />
@@ -525,6 +618,11 @@ export default async function ReceiptsPage({
                 : p.sale?.id
                   ? `/pos/${p.sale.id}`
                   : null;
+              const recipientPhone = p.invoice?.job?.client?.phone ?? p.invoice?.client?.phone ?? p.sale?.client?.phone ?? null;
+              const recipientEmail = p.invoice?.job?.client?.email ?? p.invoice?.client?.email ?? p.sale?.client?.email ?? null;
+              const receiptUrl = `${appUrl}/api/payments/${p.id}/receipt`;
+              const receiptShareText = encodeURIComponent(`Your receipt is ready.\n\n${label}\nAmount: ${formatMoney(p.amount, currency)}\nPDF: ${receiptUrl}`);
+              const receiptWaPhone = recipientPhone?.replace(/\D/g, "").replace(/^0/, "256");
 
               return (
                 <tr key={p.id} className="border-t border-[var(--line)] align-middle hover:bg-[var(--panel-strong)]/40">
@@ -561,6 +659,28 @@ export default async function ReceiptsPage({
                             Download Receipt PDF
                           </MenuActionLink>
                         </div>
+                        <MenuSection label="Share" />
+                        {recipientPhone ? (
+                          <form action={shareReceiptWhatsAppAction}>
+                            <input type="hidden" name="paymentId" value={p.id} />
+                            <MenuActionButton icon="whatsapp" tone="success">Send via WhatsApp</MenuActionButton>
+                          </form>
+                        ) : (
+                          <span className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-[var(--ink-muted)]">WhatsApp unavailable</span>
+                        )}
+                        {recipientEmail ? (
+                          <form action={shareReceiptEmailAction}>
+                            <input type="hidden" name="paymentId" value={p.id} />
+                            <MenuActionButton icon="open">Email receipt</MenuActionButton>
+                          </form>
+                        ) : (
+                          <span className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-[var(--ink-muted)]">Email unavailable</span>
+                        )}
+                        {receiptWaPhone ? (
+                          <MenuActionLink href={`https://wa.me/${receiptWaPhone}?text=${receiptShareText}`} external icon="whatsapp" tone="success">
+                            Open WhatsApp Link
+                          </MenuActionLink>
+                        ) : null}
                         <MenuSection label="Edit Receipt" />
                         <form action={updateReceiptAction} className="space-y-2 p-3">
                           <input type="hidden" name="paymentId" value={p.id} />
