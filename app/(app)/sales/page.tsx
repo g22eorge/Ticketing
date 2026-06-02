@@ -55,6 +55,9 @@ export default async function SalesPage({
   if (!can.viewAllSales(user) && !can.createLeads(user)) {
     redirect("/dashboard");
   }
+  if (!user.orgId) {
+    redirect("/dashboard");
+  }
 
   const filters = await searchParams;
   const activeTab    = filters.tab === "quotations" ? "quotations" : "leads";
@@ -63,8 +66,12 @@ export default async function SalesPage({
   const currency     = getAppCurrency();
 
   const onlyOwn = !can.viewAllSales(user) && can.createLeads(user);
+  const ownLeadAccess: Prisma.LeadWhereInput = onlyOwn
+    ? { OR: [{ assignedToId: user.id }, { createdById: user.id }] }
+    : {};
 
   const quotationWhere: Prisma.QuotationWhereInput = {
+    orgId: user.orgId,
     ...(!can.viewAllSales(user) ? { createdById: user.id } : {}),
     ...(searchQ
       ? {
@@ -78,7 +85,8 @@ export default async function SalesPage({
   };
 
   const leadsWhere: Prisma.LeadWhereInput = {
-    ...(onlyOwn ? { assignedToId: user.id } : {}),
+    orgId: user.orgId,
+    ...ownLeadAccess,
     ...(statusFilter ? { status: statusFilter } : {}),
     ...(searchQ
       ? {
@@ -97,7 +105,8 @@ export default async function SalesPage({
   const lastMonthEnd   = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
 
   const activeLeadsWhere: Prisma.LeadWhereInput = {
-    ...(onlyOwn ? { assignedToId: user.id } : {}),
+    orgId: user.orgId,
+    ...ownLeadAccess,
     status: { notIn: ["WON", "LOST", "STALE"] },
   };
 
@@ -144,7 +153,7 @@ export default async function SalesPage({
     prisma.lead
       .groupBy({
         by: ["status"],
-        where: { ...(onlyOwn ? { assignedToId: user.id } : {}) },
+        where: { orgId: user.orgId, ...ownLeadAccess },
         _count: true,
       })
       .catch(() => []),
@@ -159,7 +168,8 @@ export default async function SalesPage({
     // Won this month
     prisma.lead.count({
       where: {
-        ...(onlyOwn ? { assignedToId: user.id } : {}),
+        orgId: user.orgId,
+        ...ownLeadAccess,
         status: "WON",
         updatedAt: { gte: thisMonthStart },
       },
@@ -168,7 +178,8 @@ export default async function SalesPage({
     // Won last month (for delta)
     prisma.lead.count({
       where: {
-        ...(onlyOwn ? { assignedToId: user.id } : {}),
+        orgId: user.orgId,
+        ...ownLeadAccess,
         status: "WON",
         updatedAt: { gte: lastMonthStart, lte: lastMonthEnd },
       },
@@ -194,7 +205,8 @@ export default async function SalesPage({
     // Follow-ups due today or overdue
     prisma.lead.count({
       where: {
-        ...(onlyOwn ? { assignedToId: user.id } : {}),
+        orgId: user.orgId,
+        ...ownLeadAccess,
         status: { notIn: ["WON", "LOST", "STALE"] },
         followUpAt: { lte: now },
       },
@@ -203,7 +215,7 @@ export default async function SalesPage({
     // Stage value breakdown (sum of estimatedValue per status)
     prisma.lead.groupBy({
       by: ["status"],
-      where: { ...(onlyOwn ? { assignedToId: user.id } : {}), estimatedValue: { not: null } },
+      where: { orgId: user.orgId, ...ownLeadAccess, estimatedValue: { not: null } },
       _sum: { estimatedValue: true },
       _count: { status: true },
     }).catch(() => []),
@@ -211,14 +223,15 @@ export default async function SalesPage({
     // Source win rates (count by source, split WON vs total)
     prisma.lead.groupBy({
       by: ["source", "status"],
-      where: { ...(onlyOwn ? { assignedToId: user.id } : {}) },
+      where: { orgId: user.orgId, ...ownLeadAccess },
       _count: { status: true },
     }).catch(() => []),
 
     // Overdue follow-up leads (for surfacing at top)
     prisma.lead.findMany({
       where: {
-        ...(onlyOwn ? { assignedToId: user.id } : {}),
+        orgId: user.orgId,
+        ...ownLeadAccess,
         status: { notIn: ["WON", "LOST", "STALE"] },
         followUpAt: { lte: now },
       },
@@ -230,7 +243,7 @@ export default async function SalesPage({
     // Lost reason breakdown
     prisma.lead.groupBy({
       by: ["lostReason"],
-      where: { ...(onlyOwn ? { assignedToId: user.id } : {}), status: "LOST", lostReason: { not: null } },
+      where: { orgId: user.orgId, ...ownLeadAccess, status: "LOST", lostReason: { not: null } },
       _count: { lostReason: true },
     }).catch(() => []),
   ]);

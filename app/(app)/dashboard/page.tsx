@@ -2420,18 +2420,20 @@ export default async function DashboardPage({
     const currency = getAppCurrency();
     const now = new Date();
     const { start: monthStart, end: monthEnd } = monthRange(now.getFullYear(), now.getMonth() + 1);
+    const orgFilter = user.orgId ? { orgId: user.orgId } : {};
 
     const [leadsOpen, leadsWon, quotationsPending, salesThisMonthAgg] = await Promise.all([
       prisma.lead.count({
-        where: { status: { in: ["NEW", "CONTACTED", "QUALIFIED", "PROPOSAL_SENT"] } },
+        where: { ...orgFilter, status: { in: ["NEW", "CONTACTED", "QUALIFIED", "PROPOSAL_SENT"] } },
       }).catch(() => 0),
-      prisma.lead.count({ where: { status: "WON" } }).catch(() => 0),
+      prisma.lead.count({ where: { ...orgFilter, status: "WON" } }).catch(() => 0),
       prisma.quotation.count({
-        where: { status: { in: ["DRAFT", "SENT"] } },
+        where: { ...orgFilter, status: { in: ["DRAFT", "SENT"] } },
       }).catch(() => 0),
       prisma.sale.aggregate({
         _sum: { totalAmount: true },
         where: {
+          ...orgFilter,
           status: "PAID",
           createdAt: { gte: monthStart, lte: monthEnd },
         },
@@ -2487,16 +2489,19 @@ export default async function DashboardPage({
   }
 
   if (user.role === "SALES_CORPORATE") {
+    const orgFilter = user.orgId ? { orgId: user.orgId } : {};
+    const myLeadAccess = { OR: [{ assignedToId: session.user.id }, { createdById: session.user.id }] };
     const [myQuotationsDraft, myQuotationsSent, myLeads] = await Promise.all([
       prisma.quotation.count({
-        where: { createdById: session.user.id, status: "DRAFT" },
+        where: { ...orgFilter, createdById: session.user.id, status: "DRAFT" },
       }).catch(() => 0),
       prisma.quotation.count({
-        where: { createdById: session.user.id, status: "SENT" },
+        where: { ...orgFilter, createdById: session.user.id, status: "SENT" },
       }).catch(() => 0),
       prisma.lead.count({
         where: {
-          assignedToId: session.user.id,
+          ...orgFilter,
+          ...myLeadAccess,
           status: { in: ["NEW", "CONTACTED", "QUALIFIED", "PROPOSAL_SENT"] },
         },
       }).catch(() => 0),
@@ -2543,21 +2548,25 @@ export default async function DashboardPage({
   }
 
   if (user.role === "SALES_RETAIL") {
+    const orgFilter = user.orgId ? { orgId: user.orgId } : {};
+    const myLeadAccess = { OR: [{ assignedToId: session.user.id }, { createdById: session.user.id }] };
     const [myLeads, myQuotations, posOpen] = await Promise.all([
       prisma.lead.count({
         where: {
-          assignedToId: session.user.id,
+          ...orgFilter,
+          ...myLeadAccess,
           status: { notIn: ["WON", "LOST", "STALE"] },
         },
       }).catch(() => 0),
       prisma.quotation.count({
         where: {
+          ...orgFilter,
           createdById: session.user.id,
           status: { in: ["DRAFT", "SENT"] },
         },
       }).catch(() => 0),
       prisma.posSession.count({
-        where: { operatorId: session.user.id, status: "OPEN" },
+        where: { ...orgFilter, operatorId: session.user.id, status: "OPEN" },
       }).catch(() => 0),
     ]);
 
