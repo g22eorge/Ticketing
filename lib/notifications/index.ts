@@ -241,10 +241,28 @@ export async function notifyStatusChange(
     });
 
     if (client?.phone && prefs.some((p) => p.whatsappEnabled)) {
-      await sendCustomWhatsAppMessage(
-        client.phone,
-        `Hi ${client.fullName}, your device for job ${jobNumber} is ready for pickup. Please visit us to collect it. - Your Repair Team`,
-      );
+      const body = `Hi ${client.fullName}, your device for job ${jobNumber} is ready for pickup. Please visit us to collect it. - Your Repair Team`;
+      const enqueueResult = await enqueueWhatsAppMessage({
+        orgId,
+        to: client.phone,
+        body,
+        type: OutboundMessageType.JOB_STATUS_UPDATE,
+        jobId,
+        provider: "meta",
+        templateKey: OutboundMessageType.JOB_STATUS_UPDATE,
+        templateVars: JSON.stringify({
+          customerName: client.fullName,
+          jobNumber,
+          oldStatus,
+          newStatus,
+          oldStatusLabel: oldStatus.replaceAll("_", " "),
+          newStatusLabel: newStatus.replaceAll("_", " "),
+        }),
+      }).catch(() => null);
+
+      if (enqueueResult && "outboxId" in enqueueResult && enqueueResult.outboxId) {
+        await deliverOutboundMessage(enqueueResult.outboxId).catch(() => null);
+      }
     }
   }
 
