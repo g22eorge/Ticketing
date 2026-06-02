@@ -19,9 +19,10 @@ import { JobStatus } from "@/lib/job-status";
 import { can } from "@/lib/permissions";
 import { orgDb, prisma } from "@/lib/prisma";
 import { ConfirmSubmitButton } from "@/components/shared/ConfirmSubmitButton";
-import { RowActionsMenu, MenuSection, MenuDestructiveRow } from "@/components/shared/RowActionsMenu";
+import { RowActionsMenu, MenuSection, MenuDestructiveRow, MenuActionLink, MenuActionButton } from "@/components/shared/RowActionsMenu";
 import { createReceiptForPayment, nextDocumentNumber } from "@/lib/commercial/document-workflow";
 import { writeSystemAuditEvent } from "@/lib/commercial/audit";
+import { sendInvoiceViaWhatsAppAction } from "@/app/(app)/jobs/[id]/actions";
 
 const PAYMENT_METHODS: PaymentMethod[] = ["CASH", "MOBILE_MONEY", "BANK_TRANSFER", "CARD", "OTHER"];
 const INVOICE_STATUSES: InvoiceStatus[] = ["DRAFT", "ISSUED", "PAID", "VOID"];
@@ -335,6 +336,14 @@ export default async function InvoicesPage({
         });
       }
     });
+    revalidatePath("/documents/invoices");
+  }
+
+  async function sendInvoiceWhatsAppFromRowAction(formData: FormData) {
+    "use server";
+    const jobId = String(formData.get("jobId") ?? "").trim();
+    if (!jobId) return;
+    await sendInvoiceViaWhatsAppAction(jobId);
     revalidatePath("/documents/invoices");
   }
 
@@ -1223,42 +1232,50 @@ export default async function InvoicesPage({
 
                   {/* ── Action strip ── */}
                   {hasActions ? (
-                    <div className="flex flex-wrap items-center gap-1.5 border-t border-[var(--line)]/60 px-4 pb-2.5 pt-2">
-                      {isRepair && inv.job ? (
-                        <a href={`/jobs/${inv.job.id}`}
-                          className="flex items-center gap-1 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1 text-[13px] font-medium text-[var(--ink-muted)]">
-                          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-                          Job
-                        </a>
-                      ) : null}
-                      {isRepair && inv.job ? (
-                        <a href={`/api/jobs/${inv.job.id}/invoice`} target="_blank" rel="noreferrer"
-                          className="flex items-center gap-1 rounded-lg border border-[var(--accent)]/30 bg-[var(--accent)]/8 px-2.5 py-1 text-[13px] font-medium text-[var(--accent)]">
-                          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                          PDF
-                        </a>
-                      ) : null}
-                      {inv.payments[0]?.id ? (
-                        <a href={`/api/payments/${inv.payments[0].id}/receipt`} target="_blank" rel="noreferrer"
-                          className="flex items-center gap-1 rounded-lg border border-emerald-500/30 bg-emerald-500/8 px-2.5 py-1 text-[13px] font-medium text-emerald-700">
-                          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M9 12h6M9 16h4"/></svg>
-                          Receipt
-                        </a>
-                      ) : null}
-                      {inv.balance > 0 && !isVoid ? (
-                        /* Inline expand via URL param — no popup, button always visible */
-                        payInvoiceId === inv.id ? (
-                          <a href="/documents/invoices"
-                            className="ml-auto flex items-center gap-1 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1 text-[13px] font-medium text-[var(--ink-muted)]">
-                            ✕ Cancel
-                          </a>
-                        ) : (
-                          <a href={`/documents/invoices?pay=${inv.id}`}
-                            className="ml-auto flex items-center gap-1 rounded-lg bg-[var(--accent)] px-2.5 py-1 text-[13px] font-bold text-white">
-                            + Collect
-                          </a>
-                        )
-                      ) : null}
+                    <div className="flex items-center justify-end border-t border-[var(--line)]/60 px-4 pb-2.5 pt-2">
+                      <RowActionsMenu label={`Invoice actions for ${inv.invoiceNumber}`}>
+                        <div className="py-1 text-left">
+                          {isRepair && inv.job ? (
+                            <MenuActionLink href={`/jobs/${inv.job.id}`} icon="job">
+                              Open Job
+                            </MenuActionLink>
+                          ) : null}
+                          {isRepair && inv.job && canGenerateInvoiceForStatus(inv.job.status) ? (
+                            <MenuActionLink href={`/api/jobs/${inv.job.id}/invoice`} external icon="invoice" tone="accent">
+                              Download Invoice PDF
+                            </MenuActionLink>
+                          ) : null}
+                          {isRepair && inv.job && canGenerateInvoiceForStatus(inv.job.status) ? (
+                            <form action={sendInvoiceWhatsAppFromRowAction}>
+                              <input type="hidden" name="jobId" value={inv.job.id} />
+                              <MenuActionButton icon="whatsapp" tone="success">
+                                Share Invoice on WhatsApp
+                              </MenuActionButton>
+                            </form>
+                          ) : null}
+                          {inv.payments[0]?.id ? (
+                            <MenuActionLink href={`/api/payments/${inv.payments[0].id}/receipt`} external icon="receipt" tone="success">
+                              Download Receipt PDF
+                            </MenuActionLink>
+                          ) : null}
+                          {inv.deliveryNotes[0]?.id ? (
+                            <MenuActionLink href={`/api/delivery-notes/${inv.deliveryNotes[0].id}`} external icon="delivery" tone="accent">
+                              Download Delivery Note
+                            </MenuActionLink>
+                          ) : null}
+                          {inv.balance > 0 && !isVoid ? (
+                            payInvoiceId === inv.id ? (
+                              <MenuActionLink href="/documents/invoices" icon="close">
+                                Cancel Collection
+                              </MenuActionLink>
+                            ) : (
+                              <MenuActionLink href={`/documents/invoices?pay=${inv.id}`} icon="payment" tone="success">
+                                Collect Payment
+                              </MenuActionLink>
+                            )
+                          ) : null}
+                        </div>
+                      </RowActionsMenu>
                     </div>
                   ) : null}
 
@@ -1439,79 +1456,38 @@ export default async function InvoicesPage({
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-end gap-1.5">
-                      {/* View job */}
-                      {isRepair && inv.job && (
-                        <Link
-                          href={`/jobs/${inv.job.id}`}
-                          title="Open job"
-                          className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)] hover:border-[var(--accent)]/50 hover:text-[var(--accent)]"
-                        >
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-                        </Link>
-                      )}
-                      {/* PDF */}
-                      {isRepair && inv.job && canGenerateInvoiceForStatus(inv.job.status) ? (
-                        <a
-                          href={`/api/jobs/${inv.job.id}/invoice`}
-                          target="_blank"
-                          rel="noreferrer"
-                          title="Open invoice PDF"
-                          className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-[var(--accent)]/40 bg-[var(--accent)]/10 text-[var(--accent)] hover:bg-[var(--accent)]/20"
-                        >
-                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                        </a>
-                      ) : null}
-                      {/* Receipt */}
-                      {inv.payments[0]?.id ? (
-                        <a
-                          href={`/api/payments/${inv.payments[0].id}/receipt`}
-                          target="_blank"
-                          rel="noreferrer"
-                          title="Open receipt"
-                          className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-emerald-500/40 bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/20"
-                        >
-                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M9 12h6M9 16h4"/></svg>
-                        </a>
-                      ) : null}
-                      {/* ── Mobile: inline Record Payment (visible, no menu needed) ── */}
-                      {canManageInvoicePayments && inv.balance > 0 && inv.status !== "VOID" ? (
-                        <details className="lg:hidden">
-                          <summary className="inline-flex cursor-pointer list-none items-center gap-1 rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-2.5 py-1.5 text-[13px] font-bold text-emerald-700 transition hover:bg-emerald-500/20">
-                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-                            Pay
-                          </summary>
-                          <form action={addPaymentAction} className="mt-2 space-y-2 rounded-xl border border-[var(--line)] bg-[var(--panel-strong)] p-3">
-                            <input type="hidden" name="invoiceId" value={inv.id} />
-                            <input type="hidden" name="currency" value="UGX" />
-                            <input
-                              name="amount"
-                              inputMode="decimal"
-                              placeholder={`Amount (max ${formatMoney(inv.balance, invoiceCurrency)})`}
-                              className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 py-2 text-sm outline-none focus:border-[var(--accent)]/50"
-                            />
-                            <select
-                              name="method"
-                              defaultValue="CASH"
-                              className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 py-2 text-sm outline-none"
-                            >
-                              {PAYMENT_METHODS.map((m) => (
-                                <option key={m} value={m}>{m.replaceAll("_", " ")}</option>
-                              ))}
-                            </select>
-                            <input
-                              name="reference"
-                              placeholder="Reference / note (optional)"
-                              className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 py-2 text-sm outline-none focus:border-[var(--accent)]/50"
-                            />
-                            <button type="submit" className="btn-premium w-full rounded-xl py-2 text-sm font-bold">
-                              Record Payment
-                            </button>
-                          </form>
-                        </details>
-                      ) : null}
-
-                      {canManageInvoicePayments || "ADMIN" === user.role ? (
-                        <RowActionsMenu label="Invoice actions">
+                      {(isRepair && inv.job) || inv.payments[0]?.id || inv.deliveryNotes[0]?.id || canManageInvoicePayments || "ADMIN" === user.role ? (
+                        <RowActionsMenu label={`Invoice actions for ${inv.invoiceNumber}`}>
+                          <div className="py-1 text-left">
+                            {isRepair && inv.job ? (
+                              <MenuActionLink href={`/jobs/${inv.job.id}`} icon="job">
+                                Open Job
+                              </MenuActionLink>
+                            ) : null}
+                            {isRepair && inv.job && canGenerateInvoiceForStatus(inv.job.status) ? (
+                              <MenuActionLink href={`/api/jobs/${inv.job.id}/invoice`} external icon="invoice" tone="accent">
+                                Download Invoice PDF
+                              </MenuActionLink>
+                            ) : null}
+                            {isRepair && inv.job && canGenerateInvoiceForStatus(inv.job.status) ? (
+                              <form action={sendInvoiceWhatsAppFromRowAction}>
+                                <input type="hidden" name="jobId" value={inv.job.id} />
+                                <MenuActionButton icon="whatsapp" tone="success">
+                                  Share Invoice on WhatsApp
+                                </MenuActionButton>
+                              </form>
+                            ) : null}
+                            {inv.payments[0]?.id ? (
+                              <MenuActionLink href={`/api/payments/${inv.payments[0].id}/receipt`} external icon="receipt" tone="success">
+                                Download Receipt PDF
+                              </MenuActionLink>
+                            ) : null}
+                            {inv.deliveryNotes[0]?.id ? (
+                              <MenuActionLink href={`/api/delivery-notes/${inv.deliveryNotes[0].id}`} external icon="delivery" tone="accent">
+                                Download Delivery Note
+                              </MenuActionLink>
+                            ) : null}
+                          </div>
                           {canManageInvoicePayments && inv.balance > 0 && inv.status !== "VOID" ? (
                           <>
                             <MenuSection label="Generate Receipt" />
@@ -1542,12 +1518,9 @@ export default async function InvoicesPage({
                                   className="min-w-0 flex-1 rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1.5 text-xs outline-none"
                                 />
                               </div>
-                              <button
-                                type="submit"
-                                className="btn-premium w-full rounded-lg px-3 py-1.5 text-xs font-semibold"
-                              >
+                              <MenuActionButton icon="receipt" tone="success" className="bg-emerald-500/8">
                                 Generate Receipt
-                              </button>
+                              </MenuActionButton>
                             </form>
                           </>
                         ) : null}
@@ -1576,12 +1549,9 @@ export default async function InvoicesPage({
                                   <option key={m} value={m}>{m.replaceAll("_", " ")}</option>
                                 ))}
                               </select>
-                              <button
-                                type="submit"
-                                className="btn-premium w-full rounded-lg px-3 py-1.5 text-xs font-semibold"
-                              >
+                              <MenuActionButton icon="delivery" tone="accent" className="bg-[var(--accent)]/8">
                                 Generate Delivery Note
-                              </button>
+                              </MenuActionButton>
                             </form>
                           </>
                         ) : null}
@@ -1613,12 +1583,9 @@ export default async function InvoicesPage({
                                 placeholder="Notes"
                                 className="min-h-12 w-full rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1.5 text-xs outline-none"
                               />
-                              <button
-                                type="submit"
-                                className="btn-premium w-full rounded-lg px-3 py-1.5 text-xs font-semibold"
-                              >
+                              <MenuActionButton icon="save" tone="accent" className="bg-[var(--accent)]/8">
                                 Save
-                              </button>
+                              </MenuActionButton>
                             </form>
                           </>
                         ) : null}
@@ -1628,7 +1595,7 @@ export default async function InvoicesPage({
                               <input type="hidden" name="invoiceId" value={inv.id} />
                               <ConfirmSubmitButton
                                 message="Delete this invoice? This cannot be undone."
-                                className="text-xs font-semibold text-red-600 hover:text-red-700"
+                                className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm font-semibold text-red-600 transition hover:bg-red-500/10 hover:text-red-700"
                               >
                                 Delete Invoice
                               </ConfirmSubmitButton>

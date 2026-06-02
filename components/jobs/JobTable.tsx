@@ -52,7 +52,7 @@ import { formatMoney } from "@/lib/currency";
 import { formatEATDate } from "@/lib/date-eat";
 import { JobStatus } from "@/lib/job-status";
 import { can } from "@/lib/permissions";
-import { RowActionsMenu } from "@/components/shared/RowActionsMenu";
+import { RowActionsMenu, MenuActionLink } from "@/components/shared/RowActionsMenu";
 
 export type JobRow = {
   id: string;
@@ -298,7 +298,7 @@ export function JobTable({
                 {/* Link WRAPS the content so taps always fire navigation */}
                 <Link
                   href={`/jobs/${job.id}`}
-                  className="flex items-center gap-3 px-4 py-3 active:bg-[var(--panel-strong)]/60 lg:pr-32"
+                  className="flex items-center gap-3 px-4 py-3 pr-16 active:bg-[var(--panel-strong)]/60 lg:pr-32"
                   aria-label={`Open job ${job.jobNumber}`}
                 >
                   {/* Status-colored avatar */}
@@ -356,27 +356,48 @@ export function JobTable({
                   </form>
                 ) : null}
 
-                {/* Desktop-only doc action links — absolutely positioned so they sit above the Link */}
+                {/* Mobile row action menu */}
                 {(canUseJobCards || canDownloadQuotation || canDownloadInvoice || canEditPage || (canDelete && deleteAction)) ? (
-                  <div className="pointer-events-auto absolute right-4 top-1/2 hidden -translate-y-1/2 items-center gap-2 lg:flex">
-                    {canUseJobCards ? (
-                      <a href={`/api/jobs/${job.id}/job-card`} target="_blank" rel="noreferrer" className="text-[12px] font-semibold text-[var(--ink-muted)]/60 transition hover:text-[var(--ink-muted)]">Card</a>
-                    ) : null}
-                    {canDownloadQuotation ? (
-                      <a href={`/api/jobs/${job.id}/quotation`} target="_blank" rel="noreferrer" className="text-[12px] font-semibold text-[var(--ink-muted)]/60 transition hover:text-[var(--ink-muted)]">Quote</a>
-                    ) : null}
-                    {canDownloadInvoice ? (
-                      <a href={`/api/jobs/${job.id}/invoice`} target="_blank" rel="noreferrer" className="text-[12px] font-semibold text-[var(--ink-muted)]/60 transition hover:text-[var(--ink-muted)]">Inv</a>
-                    ) : null}
-                    {canEditPage ? (
-                      <Link href={`/jobs/${job.id}/edit${returnTo ? `?returnTo=${encodeURIComponent(returnTo)}` : ""}`} className="text-[12px] font-semibold text-[var(--ink-muted)]/60 transition hover:text-[var(--ink-muted)]">Edit</Link>
-                    ) : null}
-                    {canDelete && deleteAction ? (
-                      <form action={deleteAction}>
-                        <input type="hidden" name="id" value={job.id} />
-                        <button className="text-[12px] font-semibold text-[var(--ink-muted)]/40 transition hover:text-red-500">✕</button>
-                      </form>
-                    ) : null}
+                  <div className="pointer-events-auto absolute right-4 top-1/2 -translate-y-1/2 lg:hidden">
+                    <RowActionsMenu label={`More actions for ${job.jobNumber}`}>
+                      <div className="py-1 text-left">
+                        {canEditPage ? (
+                          <MenuActionLink href={`/jobs/${job.id}/edit${returnTo ? `?returnTo=${encodeURIComponent(returnTo)}` : ""}`} icon="edit">
+                            Edit Job
+                          </MenuActionLink>
+                        ) : null}
+                        {canUseJobCards ? (
+                          <MenuActionLink href={`/api/jobs/${job.id}/job-card`} external icon="job" tone="accent">
+                            Download Job Card
+                          </MenuActionLink>
+                        ) : null}
+                        {canDownloadQuotation ? (
+                          <MenuActionLink href={`/api/jobs/${job.id}/quotation`} external icon="quote" tone="accent">
+                            Download Quotation
+                          </MenuActionLink>
+                        ) : canUseQuotations ? (
+                          <span className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-[var(--ink-muted)]">Quotation unavailable</span>
+                        ) : null}
+                        {canDownloadInvoice ? (
+                          <MenuActionLink href={`/api/jobs/${job.id}/invoice`} external icon="invoice" tone="accent">
+                            Download Invoice
+                          </MenuActionLink>
+                        ) : canUseInvoices ? (
+                          <span className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-[var(--ink-muted)]">Invoice unavailable</span>
+                        ) : null}
+                        {canDelete && deleteAction ? (
+                          <form action={deleteAction} className="border-t border-[var(--line)] px-3 py-2">
+                            <input type="hidden" name="id" value={job.id} />
+                            <button className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm font-semibold text-red-600 transition hover:bg-red-500/10 hover:text-red-700">
+                              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                <path d="M3 6h18" /><path d="M8 6V4h8v2" /><path d="M19 6l-1 14H6L5 6" /><path d="M10 11v5" /><path d="M14 11v5" />
+                              </svg>
+                              Delete Job
+                            </button>
+                          </form>
+                        ) : null}
+                      </div>
+                    </RowActionsMenu>
                   </div>
                 ) : null}
               </div>
@@ -536,39 +557,42 @@ export function JobTable({
                       <RowActionsMenu label={`More actions for ${job.jobNumber}`}>
                         <div className="py-1 text-left">
                           {canEditPage ? (
-                            <Link href={`/jobs/${job.id}/edit${returnTo ? `?returnTo=${encodeURIComponent(returnTo)}` : ""}`} className="flex w-full px-4 py-2.5 text-sm font-medium text-[var(--ink)] transition hover:bg-[var(--panel-strong)]">
+                            <MenuActionLink href={`/jobs/${job.id}/edit${returnTo ? `?returnTo=${encodeURIComponent(returnTo)}` : ""}`} icon="edit">
                               Edit Job
-                            </Link>
+                            </MenuActionLink>
                           ) : null}
                           {canUseJobCards ? (
-                            <a href={`/api/jobs/${job.id}/job-card`} target="_blank" rel="noreferrer" className="flex w-full px-4 py-2.5 text-sm font-medium text-[var(--ink)] transition hover:bg-[var(--panel-strong)]">
+                            <MenuActionLink href={`/api/jobs/${job.id}/job-card`} external icon="job" tone="accent">
                               Download Job Card
-                            </a>
+                            </MenuActionLink>
                           ) : null}
                           {canDownloadQuotation ? (
-                            <a href={`/api/jobs/${job.id}/quotation`} target="_blank" rel="noreferrer" className="flex w-full px-4 py-2.5 text-sm font-medium text-[var(--ink)] transition hover:bg-[var(--panel-strong)]">
+                            <MenuActionLink href={`/api/jobs/${job.id}/quotation`} external icon="quote" tone="accent">
                               Download Quotation
-                            </a>
+                            </MenuActionLink>
                           ) : (
-                            canUseQuotations ? <span className="flex w-full px-4 py-2.5 text-sm font-medium text-[var(--ink-muted)]">Quotation unavailable</span> : null
+                            canUseQuotations ? <span className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-[var(--ink-muted)]">Quotation unavailable</span> : null
                           )}
                           {canDownloadInvoice ? (
-                            <a href={`/api/jobs/${job.id}/invoice`} target="_blank" rel="noreferrer" className="flex w-full px-4 py-2.5 text-sm font-medium text-[var(--ink)] transition hover:bg-[var(--panel-strong)]">
+                            <MenuActionLink href={`/api/jobs/${job.id}/invoice`} external icon="invoice" tone="accent">
                               Download Invoice
-                            </a>
+                            </MenuActionLink>
                           ) : (
-                            canUseInvoices ? <span className="flex w-full px-4 py-2.5 text-sm font-medium text-[var(--ink-muted)]">Invoice unavailable</span> : null
+                            canUseInvoices ? <span className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-[var(--ink-muted)]">Invoice unavailable</span> : null
                           )}
+                          {canDelete && deleteAction ? (
+                            <form action={deleteAction} className="border-t border-[var(--line)] px-3 py-2">
+                              <input type="hidden" name="id" value={job.id} />
+                              <button className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm font-semibold text-red-600 transition hover:bg-red-500/10 hover:text-red-700">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                  <path d="M3 6h18" /><path d="M8 6V4h8v2" /><path d="M19 6l-1 14H6L5 6" /><path d="M10 11v5" /><path d="M14 11v5" />
+                                </svg>
+                                Delete Job
+                              </button>
+                            </form>
+                          ) : null}
                         </div>
                       </RowActionsMenu>
-                      {canDelete && deleteAction ? (
-                        <form action={deleteAction} className="inline">
-                          <input type="hidden" name="id" value={job.id} />
-                          <button className="whitespace-nowrap rounded-lg border border-red-300 px-2.5 py-1 text-[13px] font-medium text-red-700 transition-colors hover:border-red-400 hover:bg-red-50 hover:text-red-800">
-                            Delete
-                          </button>
-                        </form>
-                      ) : null}
                     </div>
                   </td>
                 </tr>

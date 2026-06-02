@@ -7,7 +7,7 @@ import { can } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { formatEATDate } from "@/lib/date-eat";
 import { formatMoney, formatMoneyCompact, getAppCurrency } from "@/lib/currency";
-import { RowActionsMenu } from "@/components/shared/RowActionsMenu";
+import { RowActionsMenu, MenuActionLink, MenuActionButton, MenuSection } from "@/components/shared/RowActionsMenu";
 import { createLead, advanceLeadStageAction } from "./actions";
 
 const LEAD_STATUS_LABELS: Record<LeadStatus, string> = {
@@ -847,7 +847,13 @@ export default async function SalesPage({
                               </form>
                             )}
                             <RowActionsMenu label={`Lead actions for ${lead.fullName}`}>
-                              <div className="w-56 p-3">
+                              <div className="py-1 text-left">
+                                <MenuActionLink href={`/sales/leads/${lead.id}`} icon="open">
+                                  Open Lead
+                                </MenuActionLink>
+                              </div>
+                              <MenuSection label="Mark Lost" />
+                              <div className="w-56 p-3 pt-2">
                                 <form action={advanceLeadStageAction} className="space-y-1.5">
                                   <input type="hidden" name="leadId" value={lead.id} />
                                   <input type="hidden" name="newStatus" value="LOST" />
@@ -856,7 +862,7 @@ export default async function SalesPage({
                                     <option value="">Select reason</option>
                                     {LOST_REASONS.map(r => <option key={r} value={r}>{r}</option>)}
                                   </select>
-                                  <button type="submit" className="w-full rounded-lg bg-red-500 py-1.5 text-[12px] font-bold text-white">Confirm Lost</button>
+                                  <MenuActionButton icon="close" tone="danger" className="bg-red-500/8">Confirm Lost</MenuActionButton>
                                 </form>
                               </div>
                             </RowActionsMenu>
@@ -911,16 +917,38 @@ export default async function SalesPage({
                             </td>
                             <td className="px-4 py-3 text-right">
                               <div className="flex items-center justify-end gap-1.5">
-                                {!["WON","LOST","STALE"].includes(lead.status) && NEXT_STAGE[lead.status as LeadStatus] && (
-                                  <form action={advanceLeadStageAction}>
-                                    <input type="hidden" name="leadId" value={lead.id} />
-                                    <input type="hidden" name="newStatus" value={NEXT_STAGE[lead.status as LeadStatus]!} />
-                                    <button type="submit" className="whitespace-nowrap rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1 text-[13px] font-semibold text-[var(--ink)] transition hover:border-[var(--accent)]/40 hover:text-[var(--accent)]">
-                                      → {LEAD_STATUS_LABELS[NEXT_STAGE[lead.status as LeadStatus]!]}
-                                    </button>
-                                  </form>
-                                )}
-                                <Link href={`/sales/leads/${lead.id}`} className="btn-premium-secondary whitespace-nowrap rounded-lg px-2.5 py-1 text-[13px] font-semibold">Open</Link>
+                                <RowActionsMenu label={`Lead actions for ${lead.fullName}`}>
+                                  <div className="py-1 text-left">
+                                    <MenuActionLink href={`/sales/leads/${lead.id}`} icon="open">
+                                      Open Lead
+                                    </MenuActionLink>
+                                    {!["WON","LOST","STALE"].includes(lead.status) && NEXT_STAGE[lead.status as LeadStatus] ? (
+                                      <form action={advanceLeadStageAction}>
+                                        <input type="hidden" name="leadId" value={lead.id} />
+                                        <input type="hidden" name="newStatus" value={NEXT_STAGE[lead.status as LeadStatus]!} />
+                                        <MenuActionButton icon="save" tone="accent">
+                                          Advance to {LEAD_STATUS_LABELS[NEXT_STAGE[lead.status as LeadStatus]!]}
+                                        </MenuActionButton>
+                                      </form>
+                                    ) : null}
+                                  </div>
+                                  {!["WON","LOST","STALE"].includes(lead.status) ? (
+                                    <>
+                                      <MenuSection label="Mark Lost" />
+                                      <div className="w-56 p-3 pt-2 text-left">
+                                        <form action={advanceLeadStageAction} className="space-y-1.5">
+                                          <input type="hidden" name="leadId" value={lead.id} />
+                                          <input type="hidden" name="newStatus" value="LOST" />
+                                          <select name="lostReason" className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-1.5 text-[12px] outline-none">
+                                            <option value="">Select reason</option>
+                                            {LOST_REASONS.map(r => <option key={r} value={r}>{r}</option>)}
+                                          </select>
+                                          <MenuActionButton icon="close" tone="danger" className="bg-red-500/8">Confirm Lost</MenuActionButton>
+                                        </form>
+                                      </div>
+                                    </>
+                                  ) : null}
+                                </RowActionsMenu>
                               </div>
                             </td>
                           </tr>

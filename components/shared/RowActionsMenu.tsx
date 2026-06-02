@@ -12,6 +12,45 @@ interface RowActionsMenuProps {
   label?: string;
 }
 
+type MenuIcon =
+  | "open"
+  | "edit"
+  | "download"
+  | "receipt"
+  | "delivery"
+  | "whatsapp"
+  | "payment"
+  | "save"
+  | "delete"
+  | "quote"
+  | "invoice"
+  | "job"
+  | "close";
+
+const iconPaths: Record<MenuIcon, string[]> = {
+  open: ["M7 17 17 7", "M7 7h10v10"],
+  edit: ["M12 20h9", "M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z"],
+  download: ["M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4", "M7 10l5 5 5-5", "M12 15V3"],
+  receipt: ["M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z", "M9 8h6", "M9 12h6", "M9 16h4"],
+  delivery: ["M3 7h11v10H3z", "M14 10h4l3 3v4h-7z", "M7 21a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z", "M18 21a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"],
+  whatsapp: ["M20 11.5a8.5 8.5 0 0 1-12.6 7.4L3 20l1.2-4.2A8.5 8.5 0 1 1 20 11.5Z", "M9 8.5c.2 3 2.1 5 5.5 6l1.5-1.4-2.1-1.1-.9.8c-1.3-.6-2.2-1.4-2.8-2.8l.8-.9L10 7 9 8.5Z"],
+  payment: ["M2 6h20v12H2z", "M2 10h20", "M6 15h4"],
+  save: ["M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z", "M17 21v-8H7v8", "M7 3v5h8"],
+  delete: ["M3 6h18", "M8 6V4h8v2", "M19 6l-1 14H6L5 6", "M10 11v5", "M14 11v5"],
+  quote: ["M7 7h10", "M7 11h10", "M7 15h6", "M5 3h14a2 2 0 0 1 2 2v16l-4-3H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"],
+  invoice: ["M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z", "M14 2v6h6", "M8 13h8", "M8 17h5"],
+  job: ["M10 6h4", "M4 8h16v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z", "M8 8V6a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"],
+  close: ["M18 6 6 18", "M6 6l12 12"],
+};
+
+function MenuIconSvg({ icon }: { icon: MenuIcon }) {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      {iconPaths[icon].map((d) => <path key={d} d={d} />)}
+    </svg>
+  );
+}
+
 export function RowActionsMenu({ children, label = "Actions" }: RowActionsMenuProps) {
   const [open, setOpen] = useState(false);
   const [rect, setRect] = useState<Rect | null>(null);
@@ -145,5 +184,73 @@ export function MenuDestructiveRow({ children }: { children: React.ReactNode }) 
     <div className="border-t border-[var(--line)] px-3 py-2">
       {children}
     </div>
+  );
+}
+
+export function MenuActionLink({
+  href,
+  children,
+  icon = "open",
+  external = false,
+  tone = "default",
+}: {
+  href: string;
+  children: React.ReactNode;
+  icon?: MenuIcon;
+  external?: boolean;
+  tone?: "default" | "accent" | "success" | "danger";
+}) {
+  const toneClass =
+    tone === "accent"
+      ? "text-[var(--accent)]"
+      : tone === "success"
+        ? "text-emerald-700 dark:text-emerald-400"
+        : tone === "danger"
+          ? "text-red-600 dark:text-red-400"
+          : "text-[var(--ink)]";
+  return (
+    <a
+      href={href}
+      target={external ? "_blank" : undefined}
+      rel={external ? "noreferrer" : undefined}
+      className={`flex w-full items-center gap-2.5 px-4 py-2.5 text-sm font-medium transition hover:bg-[var(--panel-strong)] ${toneClass}`}
+    >
+      <span className="flex h-5 w-5 shrink-0 items-center justify-center opacity-80">
+        <MenuIconSvg icon={icon} />
+      </span>
+      <span className="min-w-0 flex-1">{children}</span>
+    </a>
+  );
+}
+
+export function MenuActionButton({
+  children,
+  icon = "save",
+  tone = "default",
+  className = "",
+}: {
+  children: React.ReactNode;
+  icon?: MenuIcon;
+  tone?: "default" | "accent" | "success" | "danger";
+  className?: string;
+}) {
+  const toneClass =
+    tone === "accent"
+      ? "text-[var(--accent)]"
+      : tone === "success"
+        ? "text-emerald-700 dark:text-emerald-400"
+        : tone === "danger"
+          ? "text-red-600 dark:text-red-400"
+          : "text-[var(--ink)]";
+  return (
+    <button
+      type="submit"
+      className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm font-semibold transition hover:bg-[var(--panel-strong)] ${toneClass} ${className}`}
+    >
+      <span className="flex h-5 w-5 shrink-0 items-center justify-center opacity-80">
+        <MenuIconSvg icon={icon} />
+      </span>
+      <span className="min-w-0 flex-1">{children}</span>
+    </button>
   );
 }
