@@ -92,6 +92,14 @@ async function getConfigForOrg(orgId?: string): Promise<WhatsAppConfig | null> {
   return getConfig();
 }
 
+export async function getWhatsAppConfigForOrg(orgId?: string): Promise<WhatsAppConfig | null> {
+  return getConfigForOrg(orgId);
+}
+
+export async function whatsappIsConfiguredForOrg(orgId?: string): Promise<boolean> {
+  return Boolean(await getConfigForOrg(orgId));
+}
+
 async function healthCheckWithConfig(config: WhatsAppConfig): Promise<{ ok: boolean; error?: string }> {
   try {
     const response = await fetch(

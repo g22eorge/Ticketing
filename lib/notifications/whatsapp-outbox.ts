@@ -3,7 +3,12 @@ import React from "react";
 
 import { prisma } from "@/lib/prisma";
 import { sendEmail, emailIsConfigured } from "@/lib/notifications/email";
-import { sendCustomWhatsAppMessage, sendWhatsAppTemplateMessage, whatsappHealthCheck, whatsappIsConfigured } from "@/lib/notifications/whatsapp";
+import {
+  getWhatsAppConfigForOrg,
+  sendCustomWhatsAppMessage,
+  sendWhatsAppTemplateMessage,
+  whatsappHealthCheck,
+} from "@/lib/notifications/whatsapp";
 import { RepairRequestAlertEmail } from "@/emails/RepairRequestAlertEmail";
 
 const MAX_ATTEMPTS = 8;
@@ -65,7 +70,8 @@ export async function enqueueWhatsAppMessage(input: {
       return { queued: false, sent: false, deferred: true, error: "Outbox not supported for scheduled messages" };
     }
 
-    const direct = await sendCustomWhatsAppMessage(input.to, input.body);
+    const cfg = await getWhatsAppConfigForOrg(input.orgId);
+    const direct = await sendCustomWhatsAppMessage(input.to, input.body, cfg ?? undefined);
     return {
       queued: false,
       sent: direct.success,
@@ -101,14 +107,16 @@ export async function enqueueWhatsAppMessage(input: {
       // If the outbox table hasn't been deployed yet, fall back to best-effort send.
       const message = error instanceof Error ? error.message : String(error);
       if (message.toLowerCase().includes("no such table") || message.toLowerCase().includes("outboundmessage")) {
+        const cfg = await getWhatsAppConfigForOrg(input.orgId);
         const direct = input.metaTemplateName
           ? await sendWhatsAppTemplateMessage(
               input.to,
               input.metaTemplateName,
               input.metaTemplateLanguage ?? "en",
-              safeJsonArray(input.metaTemplateVars)
+              safeJsonArray(input.metaTemplateVars),
+              cfg ?? undefined,
             )
-          : await sendCustomWhatsAppMessage(input.to, input.body);
+          : await sendCustomWhatsAppMessage(input.to, input.body, cfg ?? undefined);
         return { id: "", direct } as const;
       }
       throw error;
@@ -198,7 +206,9 @@ export async function deliverOutboundMessage(id: string) {
   if (row.nextAttemptAt && row.nextAttemptAt > new Date()) return { ok: true, deferred: true } satisfies DeliveryResult;
 
   // Config check first (avoid spinning retries when not configured)
-  if (row.channel === "WHATSAPP" && !whatsappIsConfigured()) {
+  const whatsappCfg = row.channel === "WHATSAPP" ? await getWhatsAppConfigForOrg(row.orgId ?? undefined) : null;
+
+  if (row.channel === "WHATSAPP" && !whatsappCfg) {
     await prisma.outboundMessage.update({
       where: { id },
       data: {
@@ -265,9 +275,10 @@ export async function deliverOutboundMessage(id: string) {
             row.to,
             row.metaTemplateName,
             row.metaTemplateLanguage ?? "en",
-            safeJsonArray(row.metaTemplateVars)
+            safeJsonArray(row.metaTemplateVars),
+            whatsappCfg ?? undefined,
           )
-        : await sendCustomWhatsAppMessage(row.to, row.body)
+        : await sendCustomWhatsAppMessage(row.to, row.body, whatsappCfg ?? undefined)
       : await deliverEmail(row);
 
   if (result.success) {

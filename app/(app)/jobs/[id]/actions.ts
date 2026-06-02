@@ -26,7 +26,7 @@ import {
   notifyDelayNote,
 } from "@/lib/notifications";
 import { deliverOutboundMessage, enqueueWhatsAppMessage } from "@/lib/notifications/whatsapp-outbox";
-import { uploadWhatsAppMedia, sendWhatsAppDocument } from "@/lib/notifications/whatsapp";
+import { getWhatsAppConfigForOrg, uploadWhatsAppMedia, sendWhatsAppDocument } from "@/lib/notifications/whatsapp";
 import { generateQuotationBuffer } from "@/lib/pdf/generate-quotation";
 import { generateInvoiceBuffer } from "@/lib/pdf/generate-invoice";
 import { generateJobCardBuffer } from "@/lib/pdf/generate-job-card";
@@ -1150,6 +1150,7 @@ export async function sendManualReplyAction(
   }
 
   const result = await enqueueWhatsAppMessage({
+    orgId,
     to: job.client.phone,
     body: trimmed,
     type: "STAFF_REPLY",
@@ -1174,15 +1175,20 @@ async function sendPdfViaWhatsApp(opts: {
   outboxBody: string;
   auditAction: string;
   auditDetail: Record<string, string>;
+  orgId: string;
 }): Promise<{ success: boolean; error?: string }> {
-  const upload = await uploadWhatsAppMedia(opts.buffer, opts.filename, "application/pdf");
+  const cfg = await getWhatsAppConfigForOrg(opts.orgId);
+  if (!cfg) return { success: false, error: "WhatsApp not configured" };
+
+  const upload = await uploadWhatsAppMedia(opts.buffer, opts.filename, "application/pdf", cfg);
   if (!upload.ok) return { success: false, error: upload.error };
 
-  const send = await sendWhatsAppDocument(opts.clientPhone, upload.mediaId, opts.filename, opts.caption);
+  const send = await sendWhatsAppDocument(opts.clientPhone, upload.mediaId, opts.filename, opts.caption, cfg);
   if (!send.success) return { success: false, error: send.error };
 
   await Promise.allSettled([
     enqueueWhatsAppMessage({
+      orgId: opts.orgId,
       to: opts.clientPhone,
       body: opts.outboxBody,
       type: "STAFF_REPLY",
@@ -1213,7 +1219,7 @@ export async function sendQuotationViaWhatsAppAction(
   const result = await generateQuotationBuffer(jobId, user.name, user.role, true, user.id, orgId);
   if (!result.ok) return { success: false, error: result.error };
   return sendPdfViaWhatsApp({
-    jobId, userId: user.id,
+    jobId, userId: user.id, orgId,
     buffer: result.buffer, filename: result.filename, clientPhone: result.clientPhone,
     caption: `Please find your quotation (${result.quotationNumber}) attached.`,
     outboxBody: `[Quotation PDF] ${result.quotationNumber}`,
@@ -1233,7 +1239,7 @@ export async function sendInvoiceViaWhatsAppAction(
   const result = await generateInvoiceBuffer(jobId, user.name, user.role, user.id, orgId);
   if (!result.ok) return { success: false, error: result.error };
   return sendPdfViaWhatsApp({
-    jobId, userId: user.id,
+    jobId, userId: user.id, orgId,
     buffer: result.buffer, filename: result.filename, clientPhone: result.clientPhone,
     caption: `Please find your invoice (${result.invoiceNumber}) attached.`,
     outboxBody: `[Invoice PDF] ${result.invoiceNumber}`,
@@ -1253,7 +1259,7 @@ export async function sendJobCardViaWhatsAppAction(
   const result = await generateJobCardBuffer(jobId, user.name, user.role, user.id, orgId);
   if (!result.ok) return { success: false, error: result.error };
   return sendPdfViaWhatsApp({
-    jobId, userId: user.id,
+    jobId, userId: user.id, orgId,
     buffer: result.buffer, filename: result.filename, clientPhone: result.clientPhone,
     caption: `Please find your job card (${result.documentNumber}) attached.`,
     outboxBody: `[Job Card PDF] ${result.documentNumber}`,
