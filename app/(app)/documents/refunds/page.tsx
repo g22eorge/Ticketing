@@ -21,7 +21,7 @@ export const dynamic = "force-dynamic";
 export default async function RefundsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; method?: string; type?: string }>;
+  searchParams: Promise<{ q?: string; method?: string; type?: string; new?: string }>;
 }) {
   await requireModule(OrgModule.INVOICING);
   const { user, orgId, org } = await requireOrgSession();
@@ -33,6 +33,7 @@ export default async function RefundsPage({
   const q = (params.q ?? "").trim();
   const methodFilter = params.method ?? "all";
   const typeFilter = params.type ?? "all";
+  const showNewRefundForm = params.new === "1";
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
   // ── Server actions ───────────────────────────────────────────────────────────
@@ -243,98 +244,9 @@ export default async function RefundsPage({
             <p className="text-[13px] text-[var(--ink-muted)]">All cash refunds issued against invoices and sales</p>
           </div>
           {["ADMIN", "OPS", "MANAGER", "FINANCE"].includes(user.role) && (
-            <details className="group relative">
-              <summary className="btn-premium cursor-pointer list-none rounded-lg px-3 py-1.5 text-[12px]">
-                + New Refund
-              </summary>
-              <div className="absolute right-0 top-full z-30 mt-2 w-[min(92vw,720px)] rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 text-left shadow-xl">
-                <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-[var(--ink-muted)]">Issue New Refund</p>
-                <form action={createRefundAction} className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                  <div className="space-y-1">
-                    <label className="text-[13px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
-                      Invoice ID
-                    </label>
-                    <input
-                      name="invoiceId"
-                      placeholder="Invoice ID"
-                      className="h-9 w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 text-sm outline-none focus:ring-2 focus:ring-[var(--accent)]"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[13px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
-                      Sale ID
-                    </label>
-                    <input
-                      name="saleId"
-                      placeholder="Sale ID"
-                      className="h-9 w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 text-sm outline-none focus:ring-2 focus:ring-[var(--accent)]"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[13px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
-                      Credit Note ID
-                    </label>
-                    <input
-                      name="creditNoteId"
-                      placeholder="Optional"
-                      className="h-9 w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 text-sm outline-none focus:ring-2 focus:ring-[var(--accent)]"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[13px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
-                      Amount ({currency})
-                    </label>
-                    <input
-                      name="amount"
-                      type="number"
-                      min="0.01"
-                      step="0.01"
-                      placeholder="0.00"
-                      required
-                      className="h-9 w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 text-sm outline-none focus:ring-2 focus:ring-[var(--accent)]"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[13px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
-                      Method
-                    </label>
-                    <select
-                      name="method"
-                      className="h-9 w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 text-sm"
-                    >
-                      {PAYMENT_METHODS.map((m) => (
-                        <option key={m} value={m}>{m.replace(/_/g, " ")}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[13px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
-                      Reference
-                    </label>
-                    <input
-                      name="reference"
-                      placeholder="Optional"
-                      className="h-9 w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 text-sm outline-none focus:ring-2 focus:ring-[var(--accent)]"
-                    />
-                  </div>
-                  <div className="space-y-1 sm:col-span-2 lg:col-span-3">
-                    <label className="text-[13px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
-                      Note
-                    </label>
-                    <input
-                      name="note"
-                      placeholder="Optional reason for refund"
-                      className="h-9 w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 text-sm outline-none focus:ring-2 focus:ring-[var(--accent)]"
-                    />
-                  </div>
-                  <div className="flex justify-end gap-2 sm:col-span-2 lg:col-span-3">
-                    <button type="submit" className="h-9 rounded-lg bg-[var(--accent)] px-5 text-sm font-semibold text-white hover:opacity-90">
-                      Issue Refund
-                    </button>
-                  </div>
-                </form>
-              </div>
-            </details>
+            <Link href="/documents/refunds?new=1" className="btn-premium rounded-lg px-3 py-1.5 text-[12px]">
+              + New Refund
+            </Link>
           )}
         </div>
         <div className="grid grid-cols-2 divide-x divide-y divide-[var(--line)] sm:grid-cols-4 sm:divide-y-0">
@@ -357,6 +269,104 @@ export default async function RefundsPage({
           </div>
         </div>
       </div>
+
+      {showNewRefundForm && ["ADMIN", "OPS", "MANAGER", "FINANCE"].includes(user.role) && (
+        <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 shadow-sm">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-[var(--ink-muted)]">Issue New Refund</p>
+              <p className="text-[13px] text-[var(--ink-muted)]">Record cash-out against an invoice, sale, or credit note.</p>
+            </div>
+            <Link href="/documents/refunds" className="rounded-lg border border-[var(--line)] px-3 py-1.5 text-[13px] font-semibold text-[var(--ink-muted)] hover:text-[var(--ink)]">
+              Cancel
+            </Link>
+          </div>
+          <form action={createRefundAction} className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="space-y-1">
+              <label className="text-[13px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
+                Invoice ID
+              </label>
+              <input
+                name="invoiceId"
+                placeholder="Invoice ID"
+                className="h-9 w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 text-sm outline-none focus:ring-2 focus:ring-[var(--accent)]"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-[13px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
+                Sale ID
+              </label>
+              <input
+                name="saleId"
+                placeholder="Sale ID"
+                className="h-9 w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 text-sm outline-none focus:ring-2 focus:ring-[var(--accent)]"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-[13px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
+                Credit Note ID
+              </label>
+              <input
+                name="creditNoteId"
+                placeholder="Optional"
+                className="h-9 w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 text-sm outline-none focus:ring-2 focus:ring-[var(--accent)]"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-[13px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
+                Amount ({currency})
+              </label>
+              <input
+                name="amount"
+                type="number"
+                min="0.01"
+                step="0.01"
+                placeholder="0.00"
+                required
+                className="h-9 w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 text-sm outline-none focus:ring-2 focus:ring-[var(--accent)]"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-[13px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
+                Method
+              </label>
+              <select
+                name="method"
+                className="h-9 w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 text-sm"
+              >
+                {PAYMENT_METHODS.map((m) => (
+                  <option key={m} value={m}>{m.replace(/_/g, " ")}</option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-1">
+              <label className="text-[13px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
+                Reference
+              </label>
+              <input
+                name="reference"
+                placeholder="Optional"
+                className="h-9 w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 text-sm outline-none focus:ring-2 focus:ring-[var(--accent)]"
+              />
+            </div>
+            <div className="space-y-1 sm:col-span-2 lg:col-span-3">
+              <label className="text-[13px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
+                Note
+              </label>
+              <input
+                name="note"
+                placeholder="Optional reason for refund"
+                className="h-9 w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 text-sm outline-none focus:ring-2 focus:ring-[var(--accent)]"
+              />
+            </div>
+            <div className="flex justify-end gap-2 sm:col-span-2 lg:col-span-3">
+              <button type="submit" className="h-9 rounded-lg bg-[var(--accent)] px-5 text-sm font-semibold text-white hover:opacity-90">
+                Issue Refund
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
 
       {/* Filters */}
       <form method="GET" className="hidden lg:flex flex-wrap gap-2">
