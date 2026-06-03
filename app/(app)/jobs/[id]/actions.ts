@@ -917,71 +917,80 @@ export async function recordClientPaymentAction(formData: FormData) {
 }
 
 export async function recordTechnicianPayoutAction(formData: FormData) {
-  const { session, user, orgId, org } = await requireOrgSession();
-  assertOrgCanMutate({ access: org.access, userRole: user.role, userAccessMode: user.accessMode, kind: "PAYMENT" });
-  const permissionUser = { role: user.role, permissions: user.permissions };
-  if (!(user.role === "ADMIN" || can.reviewExternalBills(permissionUser))) return { error: "Forbidden" };
+  try {
+    const { session, user, orgId, org } = await requireOrgSession();
+    assertOrgCanMutate({ access: org.access, userRole: user.role, userAccessMode: user.accessMode, kind: "PAYMENT" });
+    const permissionUser = { role: user.role, permissions: user.permissions };
+    if (!(user.role === "ADMIN" || can.reviewExternalBills(permissionUser))) return { error: "Forbidden" };
 
-  const parsed = recordTechnicianPayoutSchema.safeParse(Object.fromEntries(formData.entries()));
-  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Invalid payout" };
-  const payload = parsed.data;
+    const parsed = recordTechnicianPayoutSchema.safeParse(Object.fromEntries(formData.entries()));
+    if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Invalid payout" };
+    const payload = parsed.data;
 
-  const job = await prisma.job.findUnique({
-    where: { id: payload.jobId, orgId },
-    select: { id: true, externalTechBill: true, externalTechFee: true },
-  });
-  if (!job) return { error: "Job not found" };
+    const job = await prisma.job.findUnique({
+      where: { id: payload.jobId, orgId },
+      select: { id: true, externalTechBill: true, externalTechFee: true },
+    });
+    if (!job) return { error: "Job not found" };
 
-  const technicianCost = resolveTechCost(job.externalTechFee, job.externalTechBill);
-  const existingPayouts = await prisma.technicianPayout.findMany({ where: { orgId, jobId: job.id }, select: { amount: true } }).catch(() => []);
-  const alreadyPaid = existingPayouts.reduce((sum, p) => sum + p.amount, 0);
-  if (technicianCost > 0 && alreadyPaid + payload.amount > technicianCost && payload.confirmOverpayment !== "true") {
-    return { error: "This payout is higher than the technician cost. Tick confirm overpayment if this is intentional." };
+    const technicianCost = resolveTechCost(job.externalTechFee, job.externalTechBill);
+    const existingPayouts = await prisma.technicianPayout
+      .findMany({ where: { orgId, jobId: job.id }, select: { amount: true } })
+      .catch(() => []);
+    const alreadyPaid = existingPayouts.reduce((sum, p) => sum + p.amount, 0);
+    if (technicianCost > 0 && alreadyPaid + payload.amount > technicianCost && payload.confirmOverpayment !== "true") {
+      return { error: "This payout is higher than the technician cost. Tick confirm overpayment if this is intentional." };
+    }
+
+    const rawMethod = String(payload.method ?? "CASH").trim();
+    const safeMethod: PaymentMethod = (Object.values(PaymentMethod) as string[]).includes(rawMethod)
+      ? (rawMethod as PaymentMethod)
+      : PaymentMethod.OTHER;
+
+    await prisma.$transaction(async (tx) => {
+      await tx.technicianPayout.create({
+        data: {
+          orgId,
+          jobId: job.id,
+          amount: payload.amount,
+          method: safeMethod,
+          reference: sanitizeOptionalText(payload.reference) || null,
+          note: sanitizeOptionalText(payload.note) || null,
+          recordedById: session.user.id,
+        },
+      }).catch(() => null);
+
+      const paidTotal = alreadyPaid + payload.amount;
+      const isSettled = technicianCost > 0 && paidTotal >= technicianCost;
+      await tx.job.updateMany({
+        where: { id: job.id, orgId },
+        data: {
+          externalPaid: isSettled,
+          externalPaidAt: isSettled ? new Date() : null,
+          externalPaidById: isSettled ? session.user.id : null,
+        },
+      });
+      await tx.auditLog.create({
+        data: {
+          orgId,
+          jobId: job.id,
+          userId: session.user.id,
+          action: "TECHNICIAN_PAYOUT_RECORDED",
+          detail: JSON.stringify({ amount: payload.amount, method: safeMethod, technicianCost, paidTotal }),
+        },
+      }).catch(() => {});
+    });
+
+    revalidatePath(`/jobs/${job.id}`);
+    revalidatePath("/technicians/payouts");
+    revalidatePath("/payout-followups");
+    revalidatePath("/reports");
+    revalidatePath("/dashboard");
+    return { ok: true };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to record technician payout";
+    return { error: message };
   }
-
-  const rawMethod = String(payload.method ?? "CASH").trim();
-  const safeMethod: PaymentMethod = (Object.values(PaymentMethod) as string[]).includes(rawMethod)
-    ? (rawMethod as PaymentMethod)
-    : PaymentMethod.OTHER;
-
-  await prisma.$transaction(async (tx) => {
-    await tx.technicianPayout.create({
-      data: {
-        orgId,
-        jobId: job.id,
-        amount: payload.amount,
-        method: safeMethod,
-        reference: sanitizeOptionalText(payload.reference) || null,
-        note: sanitizeOptionalText(payload.note) || null,
-        recordedById: session.user.id,
-      },
-    });
-    const paidTotal = alreadyPaid + payload.amount;
-    await tx.job.update({
-      where: { id: job.id, orgId },
-      data: {
-        externalPaid: technicianCost > 0 && paidTotal >= technicianCost,
-        externalPaidAt: technicianCost > 0 && paidTotal >= technicianCost ? new Date() : null,
-        externalPaidById: technicianCost > 0 && paidTotal >= technicianCost ? session.user.id : null,
-      },
-    });
-    await tx.auditLog.create({
-      data: {
-        orgId,
-        jobId: job.id,
-        userId: session.user.id,
-        action: "TECHNICIAN_PAYOUT_RECORDED",
-        detail: JSON.stringify({ amount: payload.amount, method: safeMethod, technicianCost, paidTotal }),
-      },
-    });
-  });
-
-  revalidatePath(`/jobs/${job.id}`);
-  revalidatePath("/technicians/payouts");
-  revalidatePath("/payout-followups");
-  revalidatePath("/reports");
-  revalidatePath("/dashboard");
-  return { ok: true };
 }
 
 export async function updateOneTimeExternalAssignmentAction(formData: FormData) {
