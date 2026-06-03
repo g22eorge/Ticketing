@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import type { PaymentMethod } from "@prisma/client";
+import { OutboundMessageType, type PaymentMethod } from "@prisma/client";
 import { Prisma } from "@prisma/client";
 
 import { formatMoney, normalizeCurrency } from "@/lib/currency";
@@ -11,6 +11,8 @@ import { requireOrgSession } from "@/lib/org-context";
 import { requireModule, OrgModule } from "@/lib/module-access";
 import { assertOrgCanMutate } from "@/lib/org-write";
 import { ConfirmSubmitButton } from "@/components/shared/ConfirmSubmitButton";
+import { RowActionsMenu, MenuActionButton, MenuActionLink, MenuDestructiveRow, MenuSection } from "@/components/shared/RowActionsMenu";
+import { enqueueEmailMessage, enqueueWhatsAppMessage } from "@/lib/notifications/whatsapp-outbox";
 
 const PAYMENT_METHODS: PaymentMethod[] = ["CASH", "MOBILE_MONEY", "BANK_TRANSFER", "CARD", "OTHER"];
 
@@ -31,6 +33,7 @@ export default async function RefundsPage({
   const q = (params.q ?? "").trim();
   const methodFilter = params.method ?? "all";
   const typeFilter = params.type ?? "all";
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
   // ── Server actions ───────────────────────────────────────────────────────────
 
@@ -95,6 +98,73 @@ export default async function RefundsPage({
     revalidatePath("/documents/refunds");
   }
 
+  async function shareRefundWhatsAppAction(formData: FormData) {
+    "use server";
+    const { user, orgId } = await requireOrgSession();
+    if (!(can.viewFinancials(user) || ["ADMIN", "OPS", "MANAGER", "FINANCE"].includes(user.role))) return;
+
+    const refundId = String(formData.get("refundId") ?? "").trim();
+    if (!refundId) return;
+    const refund = await prisma.refund.findFirst({
+      where: { id: refundId, orgId },
+      select: {
+        id: true,
+        amount: true,
+        currency: true,
+        invoice: { select: { invoiceNumber: true, job: { select: { id: true, jobNumber: true, client: { select: { fullName: true, phone: true } } } }, client: { select: { fullName: true, phone: true } } } },
+        sale: { select: { saleNumber: true, client: { select: { fullName: true, phone: true } } } },
+        creditNote: { select: { creditNoteNumber: true, sale: { select: { client: { select: { fullName: true, phone: true } } } } } },
+      },
+    });
+    const recipient = refund?.invoice?.job?.client ?? refund?.invoice?.client ?? refund?.sale?.client ?? refund?.creditNote?.sale.client ?? null;
+    if (!refund || !recipient?.phone) return;
+
+    const source = refund.invoice?.invoiceNumber ?? refund.sale?.saleNumber ?? refund.creditNote?.creditNoteNumber ?? "refund";
+    const pdfUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}/api/refunds/${refund.id}`;
+    await enqueueWhatsAppMessage({
+      orgId,
+      jobId: refund.invoice?.job?.id,
+      to: recipient.phone,
+      type: OutboundMessageType.JOB_STATUS_UPDATE,
+      body: `Hi ${recipient.fullName}, your refund document for ${source} is ready.\n\nAmount: ${formatMoney(refund.amount, refund.currency)}\nDownload PDF: ${pdfUrl}`,
+    });
+    revalidatePath("/documents/refunds");
+  }
+
+  async function shareRefundEmailAction(formData: FormData) {
+    "use server";
+    const { user, orgId } = await requireOrgSession();
+    if (!(can.viewFinancials(user) || ["ADMIN", "OPS", "MANAGER", "FINANCE"].includes(user.role))) return;
+
+    const refundId = String(formData.get("refundId") ?? "").trim();
+    if (!refundId) return;
+    const refund = await prisma.refund.findFirst({
+      where: { id: refundId, orgId },
+      select: {
+        id: true,
+        amount: true,
+        currency: true,
+        invoice: { select: { invoiceNumber: true, job: { select: { id: true, jobNumber: true, client: { select: { fullName: true, email: true } } } }, client: { select: { fullName: true, email: true } } } },
+        sale: { select: { saleNumber: true, client: { select: { fullName: true, email: true } } } },
+        creditNote: { select: { creditNoteNumber: true, sale: { select: { client: { select: { fullName: true, email: true } } } } } },
+      },
+    });
+    const recipient = refund?.invoice?.job?.client ?? refund?.invoice?.client ?? refund?.sale?.client ?? refund?.creditNote?.sale.client ?? null;
+    if (!refund || !recipient?.email) return;
+
+    const source = refund.invoice?.invoiceNumber ?? refund.sale?.saleNumber ?? refund.creditNote?.creditNoteNumber ?? "refund";
+    const pdfUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}/api/refunds/${refund.id}`;
+    await enqueueEmailMessage({
+      orgId,
+      jobId: refund.invoice?.job?.id,
+      to: recipient.email,
+      subject: `Refund document for ${source}`,
+      body: `Hi ${recipient.fullName},\n\nYour refund document for ${source} is ready.\n\nAmount: ${formatMoney(refund.amount, refund.currency)}\nDownload PDF: ${pdfUrl}`,
+      type: OutboundMessageType.JOB_STATUS_UPDATE,
+    });
+    revalidatePath("/documents/refunds");
+  }
+
   // ── Data fetching ────────────────────────────────────────────────────────────
 
   const baseWhere: Prisma.RefundWhereInput = { orgId };
@@ -119,9 +189,9 @@ export default async function RefundsPage({
         invoiceId: true,
         saleId: true,
         creditNoteId: true,
-        invoice: { select: { invoiceNumber: true, job: { select: { client: { select: { fullName: true } } } } } },
-        sale: { select: { saleNumber: true, client: { select: { fullName: true } } } },
-        creditNote: { select: { creditNoteNumber: true } },
+        invoice: { select: { invoiceNumber: true, client: { select: { fullName: true, phone: true, email: true } }, job: { select: { id: true, client: { select: { fullName: true, phone: true, email: true } } } } } },
+        sale: { select: { saleNumber: true, client: { select: { fullName: true, phone: true, email: true } } } },
+        creditNote: { select: { creditNoteNumber: true, sale: { select: { client: { select: { fullName: true, phone: true, email: true } } } } } },
         createdBy: { select: { name: true } },
       },
     }).catch(() => [] as never[]),
@@ -243,9 +313,14 @@ export default async function RefundsPage({
             <div className="divide-y divide-[var(--line)] lg:hidden">
               {filtered.map((r) => {
                 const refundCurrencyM = normalizeCurrency(r.currency, currency);
-                const sourceLabelM = r.invoice ? r.invoice.invoiceNumber : r.sale ? r.sale.saleNumber : "—";
+                const sourceLabelM = r.invoice ? r.invoice.invoiceNumber : r.sale ? r.sale.saleNumber : r.creditNote ? r.creditNote.creditNoteNumber : "—";
                 const sourceHrefM = r.invoiceId ? `/documents/invoices?id=${r.invoiceId}` : r.saleId ? `/sales/${r.saleId}` : null;
-                const clientNameM = r.invoice?.job?.client?.fullName ?? r.sale?.client?.fullName ?? "—";
+                const clientNameM = r.invoice?.job?.client?.fullName ?? r.invoice?.client?.fullName ?? r.sale?.client?.fullName ?? r.creditNote?.sale.client?.fullName ?? "—";
+                const recipientPhoneM = r.invoice?.job?.client?.phone ?? r.invoice?.client?.phone ?? r.sale?.client?.phone ?? r.creditNote?.sale.client?.phone ?? null;
+                const recipientEmailM = r.invoice?.job?.client?.email ?? r.invoice?.client?.email ?? r.sale?.client?.email ?? r.creditNote?.sale.client?.email ?? null;
+                const refundUrlM = `${appUrl}/api/refunds/${r.id}`;
+                const refundShareTextM = encodeURIComponent(`Your refund document is ready.\n\n${sourceLabelM}\nAmount: ${formatMoney(r.amount, refundCurrencyM)}\nPDF: ${refundUrlM}`);
+                const refundWaPhoneM = recipientPhoneM?.replace(/\D/g, "").replace(/^0/, "256");
                 return (
                   <div key={`m-${r.id}`} className="px-4 py-3">
                     <div className="flex items-start justify-between gap-2">
@@ -274,12 +349,43 @@ export default async function RefundsPage({
                     )}
                     <div className="mt-1 flex items-center justify-between text-[13px] text-[var(--ink-muted)]">
                       <span>By: {r.createdBy?.name ?? "—"}</span>
-                      {user.role === "ADMIN" && (
-                        <form action={deleteRefundAction}>
-                          <input type="hidden" name="refundId" value={r.id} />
-                          <ConfirmSubmitButton message="Delete this refund? This cannot be undone." confirmLabel="Delete" className="rounded border border-red-400/30 px-2 py-0.5 text-[13px] font-semibold text-red-600 hover:bg-red-500/10 dark:text-red-400">Delete</ConfirmSubmitButton>
-                        </form>
-                      )}
+                      <RowActionsMenu label={`Refund actions for ${sourceLabelM}`}>
+                        <div className="py-1 text-left">
+                          <MenuActionLink href={`/api/refunds/${r.id}`} external icon="receipt" tone="accent">
+                            Download Refund PDF
+                          </MenuActionLink>
+                        </div>
+                        <MenuSection label="Share" />
+                        {recipientPhoneM ? (
+                          <form action={shareRefundWhatsAppAction}>
+                            <input type="hidden" name="refundId" value={r.id} />
+                            <MenuActionButton icon="whatsapp" tone="success">Send via WhatsApp</MenuActionButton>
+                          </form>
+                        ) : (
+                          <span className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-[var(--ink-muted)]">WhatsApp unavailable</span>
+                        )}
+                        {recipientEmailM ? (
+                          <form action={shareRefundEmailAction}>
+                            <input type="hidden" name="refundId" value={r.id} />
+                            <MenuActionButton icon="open">Email refund</MenuActionButton>
+                          </form>
+                        ) : (
+                          <span className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-[var(--ink-muted)]">Email unavailable</span>
+                        )}
+                        {refundWaPhoneM ? (
+                          <MenuActionLink href={`https://wa.me/${refundWaPhoneM}?text=${refundShareTextM}`} external icon="whatsapp" tone="success">
+                            Open WhatsApp Link
+                          </MenuActionLink>
+                        ) : null}
+                        {user.role === "ADMIN" ? (
+                          <MenuDestructiveRow>
+                            <form action={deleteRefundAction}>
+                              <input type="hidden" name="refundId" value={r.id} />
+                              <ConfirmSubmitButton message="Delete this refund? This cannot be undone." confirmLabel="Delete" className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm font-semibold text-red-600 transition hover:bg-red-500/10 hover:text-red-700">Delete Refund</ConfirmSubmitButton>
+                            </form>
+                          </MenuDestructiveRow>
+                        ) : null}
+                      </RowActionsMenu>
                     </div>
                   </div>
                 );
@@ -298,7 +404,7 @@ export default async function RefundsPage({
                     <th className="px-4 py-3 text-left">Reference</th>
                     <th className="px-4 py-3 text-left">Note</th>
                     <th className="px-4 py-3 text-left">Issued By</th>
-                    {user.role === "ADMIN" && <th className="px-4 py-3" />}
+                    <th className="px-4 py-3 text-right">Actions</th>
                   </tr>
                 </thead>
               <tbody>
@@ -308,6 +414,8 @@ export default async function RefundsPage({
                     ? r.invoice.invoiceNumber
                     : r.sale
                     ? r.sale.saleNumber
+                    : r.creditNote
+                    ? r.creditNote.creditNoteNumber
                     : "—";
                   const sourceHref = r.invoiceId
                     ? `/documents/invoices?id=${r.invoiceId}`
@@ -316,8 +424,25 @@ export default async function RefundsPage({
                     : null;
                   const clientName =
                     r.invoice?.job?.client?.fullName ??
+                    r.invoice?.client?.fullName ??
                     r.sale?.client?.fullName ??
+                    r.creditNote?.sale.client?.fullName ??
                     "—";
+                  const recipientPhone =
+                    r.invoice?.job?.client?.phone ??
+                    r.invoice?.client?.phone ??
+                    r.sale?.client?.phone ??
+                    r.creditNote?.sale.client?.phone ??
+                    null;
+                  const recipientEmail =
+                    r.invoice?.job?.client?.email ??
+                    r.invoice?.client?.email ??
+                    r.sale?.client?.email ??
+                    r.creditNote?.sale.client?.email ??
+                    null;
+                  const refundUrl = `${appUrl}/api/refunds/${r.id}`;
+                  const refundShareText = encodeURIComponent(`Your refund document is ready.\n\n${sourceLabel}\nAmount: ${formatMoney(r.amount, refundCurrency)}\nPDF: ${refundUrl}`);
+                  const refundWaPhone = recipientPhone?.replace(/\D/g, "").replace(/^0/, "256");
 
                   return (
                     <tr key={r.id} className="border-b border-[var(--border)] last:border-0 hover:bg-[var(--surface-raised)]">
@@ -361,18 +486,54 @@ export default async function RefundsPage({
                       <td className="whitespace-nowrap px-4 py-3 text-[var(--ink-muted)]">
                         {r.createdBy?.name ?? "—"}
                       </td>
-                      {user.role === "ADMIN" && (
-                        <td className="px-4 py-3">
-                          <form action={deleteRefundAction}>
-                            <input type="hidden" name="refundId" value={r.id} />
-                            <ConfirmSubmitButton
-                              message="Delete this refund? This cannot be undone."
-                              confirmLabel="Delete"
-                              className="rounded border border-red-400/30 px-2 py-0.5 text-[13px] font-semibold text-red-600 hover:bg-red-500/10 dark:text-red-400"
-                            >Delete</ConfirmSubmitButton>
-                          </form>
-                        </td>
-                      )}
+                      <td className="px-4 py-3">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <a href={`/api/refunds/${r.id}`} target="_blank" rel="noreferrer" title="Download PDF" className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--accent)]/40 bg-[var(--accent)]/10 text-[var(--accent)] transition hover:bg-[var(--accent)]/20">
+                            PDF
+                          </a>
+                          <RowActionsMenu label={`Refund actions for ${sourceLabel}`}>
+                            <div className="py-1 text-left">
+                              <MenuActionLink href={`/api/refunds/${r.id}`} external icon="receipt" tone="accent">
+                                Download Refund PDF
+                              </MenuActionLink>
+                            </div>
+                            <MenuSection label="Share" />
+                            {recipientPhone ? (
+                              <form action={shareRefundWhatsAppAction}>
+                                <input type="hidden" name="refundId" value={r.id} />
+                                <MenuActionButton icon="whatsapp" tone="success">Send via WhatsApp</MenuActionButton>
+                              </form>
+                            ) : (
+                              <span className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-[var(--ink-muted)]">WhatsApp unavailable</span>
+                            )}
+                            {recipientEmail ? (
+                              <form action={shareRefundEmailAction}>
+                                <input type="hidden" name="refundId" value={r.id} />
+                                <MenuActionButton icon="open">Email refund</MenuActionButton>
+                              </form>
+                            ) : (
+                              <span className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-[var(--ink-muted)]">Email unavailable</span>
+                            )}
+                            {refundWaPhone ? (
+                              <MenuActionLink href={`https://wa.me/${refundWaPhone}?text=${refundShareText}`} external icon="whatsapp" tone="success">
+                                Open WhatsApp Link
+                              </MenuActionLink>
+                            ) : null}
+                            {user.role === "ADMIN" ? (
+                              <MenuDestructiveRow>
+                                <form action={deleteRefundAction}>
+                                  <input type="hidden" name="refundId" value={r.id} />
+                                  <ConfirmSubmitButton
+                                    message="Delete this refund? This cannot be undone."
+                                    confirmLabel="Delete"
+                                    className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm font-semibold text-red-600 transition hover:bg-red-500/10 hover:text-red-700"
+                                  >Delete Refund</ConfirmSubmitButton>
+                                </form>
+                              </MenuDestructiveRow>
+                            ) : null}
+                          </RowActionsMenu>
+                        </div>
+                      </td>
                     </tr>
                   );
                 })}

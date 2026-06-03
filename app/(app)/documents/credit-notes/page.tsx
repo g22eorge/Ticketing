@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import type { PaymentMethod } from "@prisma/client";
+import { OutboundMessageType, type PaymentMethod } from "@prisma/client";
 
 import { formatMoney } from "@/lib/currency";
 import { can } from "@/lib/permissions";
@@ -10,8 +10,9 @@ import { requireOrgSession } from "@/lib/org-context";
 import { requireModule, OrgModule } from "@/lib/module-access";
 import { assertOrgCanMutate } from "@/lib/org-write";
 import { ConfirmSubmitButton } from "@/components/shared/ConfirmSubmitButton";
-import { RowActionsMenu } from "@/components/shared/RowActionsMenu";
+import { RowActionsMenu, MenuActionButton, MenuActionLink, MenuDestructiveRow, MenuSection } from "@/components/shared/RowActionsMenu";
 import { nextDocumentNumber } from "@/lib/commercial/document-workflow";
+import { enqueueEmailMessage, enqueueWhatsAppMessage } from "@/lib/notifications/whatsapp-outbox";
 
 const PAYMENT_METHODS: PaymentMethod[] = ["CASH", "MOBILE_MONEY", "BANK_TRANSFER", "CARD", "OTHER"];
 
@@ -31,6 +32,7 @@ export default async function CreditNotesPage({
   const params = await searchParams;
   const q = (params.q ?? "").trim();
   const filter = params.filter ?? "all";
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
   // ── Server actions ───────────────────────────────────────────────────────────
 
@@ -95,6 +97,67 @@ export default async function CreditNotesPage({
     });
     revalidatePath("/documents/credit-notes");
     revalidatePath("/documents/refunds");
+  }
+
+  async function shareCreditNoteWhatsAppAction(formData: FormData) {
+    "use server";
+    const { user, orgId } = await requireOrgSession();
+    if (!(can.viewFinancials(user) || ["ADMIN", "OPS", "MANAGER"].includes(user.role))) return;
+
+    const creditNoteId = String(formData.get("creditNoteId") ?? "").trim();
+    if (!creditNoteId) return;
+    const creditNote = await prisma.creditNote.findFirst({
+      where: { id: creditNoteId, orgId },
+      select: {
+        id: true,
+        creditNoteNumber: true,
+        totalAmount: true,
+        currency: true,
+        sale: { select: { saleNumber: true, client: { select: { fullName: true, phone: true } } } },
+      },
+    });
+    const recipient = creditNote?.sale.client ?? null;
+    if (!creditNote || !recipient?.phone) return;
+
+    const pdfUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}/api/credit-notes/${creditNote.id}`;
+    await enqueueWhatsAppMessage({
+      orgId,
+      to: recipient.phone,
+      type: OutboundMessageType.JOB_STATUS_UPDATE,
+      body: `Hi ${recipient.fullName}, your credit note ${creditNote.creditNoteNumber} for ${creditNote.sale.saleNumber} is ready.\n\nAmount: ${formatMoney(creditNote.totalAmount, creditNote.currency)}\nDownload PDF: ${pdfUrl}`,
+    });
+    revalidatePath("/documents/credit-notes");
+  }
+
+  async function shareCreditNoteEmailAction(formData: FormData) {
+    "use server";
+    const { user, orgId } = await requireOrgSession();
+    if (!(can.viewFinancials(user) || ["ADMIN", "OPS", "MANAGER"].includes(user.role))) return;
+
+    const creditNoteId = String(formData.get("creditNoteId") ?? "").trim();
+    if (!creditNoteId) return;
+    const creditNote = await prisma.creditNote.findFirst({
+      where: { id: creditNoteId, orgId },
+      select: {
+        id: true,
+        creditNoteNumber: true,
+        totalAmount: true,
+        currency: true,
+        sale: { select: { saleNumber: true, client: { select: { fullName: true, email: true } } } },
+      },
+    });
+    const recipient = creditNote?.sale.client ?? null;
+    if (!creditNote || !recipient?.email) return;
+
+    const pdfUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}/api/credit-notes/${creditNote.id}`;
+    await enqueueEmailMessage({
+      orgId,
+      to: recipient.email,
+      subject: `Credit note ${creditNote.creditNoteNumber}`,
+      body: `Hi ${recipient.fullName},\n\nYour credit note ${creditNote.creditNoteNumber} for ${creditNote.sale.saleNumber} is ready.\n\nAmount: ${formatMoney(creditNote.totalAmount, creditNote.currency)}\nDownload PDF: ${pdfUrl}`,
+      type: OutboundMessageType.JOB_STATUS_UPDATE,
+    });
+    revalidatePath("/documents/credit-notes");
   }
 
   async function createCreditNoteAction(formData: FormData) {
@@ -182,7 +245,7 @@ export default async function CreditNotesPage({
           : {}),
       },
       include: {
-        sale: { select: { saleNumber: true, client: { select: { fullName: true } } } },
+        sale: { select: { saleNumber: true, client: { select: { fullName: true, phone: true, email: true } } } },
         items: { select: { description: true, quantity: true, unitPrice: true, lineTotal: true } },
         refunds: { select: { amount: true, method: true, refundedAt: true } },
         itemsReceivedBackBy: { select: { name: true } },
@@ -299,6 +362,11 @@ export default async function CreditNotesPage({
           ) : creditNotes.map((cn) => {
             const refundedTotalM = cn.refunds.reduce((s, r) => s + r.amount, 0);
             const outstandingM = cn.totalAmount - refundedTotalM;
+            const recipientPhoneM = cn.sale?.client?.phone ?? null;
+            const recipientEmailM = cn.sale?.client?.email ?? null;
+            const creditNoteUrlM = `${appUrl}/api/credit-notes/${cn.id}`;
+            const creditNoteShareTextM = encodeURIComponent(`Your credit note is ready.\n\n${cn.creditNoteNumber}\nSale: ${cn.sale?.saleNumber ?? "-"}\nAmount: ${formatMoney(cn.totalAmount, cn.currency)}\nPDF: ${creditNoteUrlM}`);
+            const creditNoteWaPhoneM = recipientPhoneM?.replace(/\D/g, "").replace(/^0/, "256");
             return (
               <div key={`m-${cn.id}`} className="px-4 py-3">
                 <div className="flex items-start justify-between gap-2">
@@ -320,15 +388,48 @@ export default async function CreditNotesPage({
                   <span className="text-[var(--ink-muted)]">Issued {fmt(cn.issuedAt)}</span>
                 </div>
                 <div className="mt-2 flex flex-wrap gap-1.5">
-                  {!cn.itemsReceivedBackAt && (
-                    <form action={markItemsReceivedAction}>
-                      <input type="hidden" name="creditNoteId" value={cn.id} />
-                      <button type="submit" className="rounded border border-emerald-400/30 bg-emerald-500/5 px-2 py-0.5 text-[13px] font-semibold text-emerald-700 hover:bg-emerald-500/10 dark:text-emerald-400">Mark Received</button>
-                    </form>
-                  )}
-                  {outstandingM > 0 && (
-                    <RowActionsMenu label={`Refund ${cn.creditNoteNumber}`}>
-                      <div className="w-64 p-3">
+                  <a href={`/api/credit-notes/${cn.id}`} target="_blank" rel="noreferrer" className="rounded border border-[var(--accent)]/40 bg-[var(--accent)]/10 px-2 py-0.5 text-[13px] font-semibold text-[var(--accent)] hover:bg-[var(--accent)]/20">PDF</a>
+                  <RowActionsMenu label={`Credit note actions for ${cn.creditNoteNumber}`}>
+                    <div className="py-1 text-left">
+                      <MenuActionLink href={`/api/credit-notes/${cn.id}`} external icon="quote" tone="accent">
+                        Download Credit Note PDF
+                      </MenuActionLink>
+                    </div>
+                    <MenuSection label="Share" />
+                    {recipientPhoneM ? (
+                      <form action={shareCreditNoteWhatsAppAction}>
+                        <input type="hidden" name="creditNoteId" value={cn.id} />
+                        <MenuActionButton icon="whatsapp" tone="success">Send via WhatsApp</MenuActionButton>
+                      </form>
+                    ) : (
+                      <span className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-[var(--ink-muted)]">WhatsApp unavailable</span>
+                    )}
+                    {recipientEmailM ? (
+                      <form action={shareCreditNoteEmailAction}>
+                        <input type="hidden" name="creditNoteId" value={cn.id} />
+                        <MenuActionButton icon="open">Email credit note</MenuActionButton>
+                      </form>
+                    ) : (
+                      <span className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-[var(--ink-muted)]">Email unavailable</span>
+                    )}
+                    {creditNoteWaPhoneM ? (
+                      <MenuActionLink href={`https://wa.me/${creditNoteWaPhoneM}?text=${creditNoteShareTextM}`} external icon="whatsapp" tone="success">
+                        Open WhatsApp Link
+                      </MenuActionLink>
+                    ) : null}
+                    {!cn.itemsReceivedBackAt ? (
+                      <>
+                        <MenuSection label="Inventory Return" />
+                        <form action={markItemsReceivedAction} className="p-3">
+                          <input type="hidden" name="creditNoteId" value={cn.id} />
+                          <MenuActionButton icon="save" tone="success">Mark Items Received</MenuActionButton>
+                        </form>
+                      </>
+                    ) : null}
+                    {outstandingM > 0 ? (
+                      <>
+                        <MenuSection label="Refund" />
+                        <div className="w-64 p-3">
                         <form action={issueRefundFromCreditNoteAction} className="space-y-2">
                           <input type="hidden" name="creditNoteId" value={cn.id} />
                           <div>
@@ -345,19 +446,22 @@ export default async function CreditNotesPage({
                           <input name="reference" placeholder="Reference (optional)" className="w-full rounded border border-[var(--line)] bg-[var(--bg)] px-2 py-1 text-sm text-[var(--ink)]" />
                           <button type="submit" className="w-full rounded bg-[var(--gold)]/20 py-1.5 text-xs font-semibold text-[var(--gold)] hover:bg-[var(--gold)]/30">Issue Refund</button>
                         </form>
-                      </div>
-                    </RowActionsMenu>
-                  )}
-                  {user.role === "ADMIN" && cn.refunds.length === 0 && (
-                    <form action={deleteCreditNoteAction}>
-                      <input type="hidden" name="id" value={cn.id} />
-                      <ConfirmSubmitButton
-                        message={`Delete credit note ${cn.creditNoteNumber}? This cannot be undone.`}
-                        confirmLabel="Delete"
-                        className="rounded border border-red-400/30 px-2 py-0.5 text-[13px] font-semibold text-red-600 hover:bg-red-500/10 dark:text-red-400"
-                      >Delete</ConfirmSubmitButton>
-                    </form>
-                  )}
+                        </div>
+                      </>
+                    ) : null}
+                    {user.role === "ADMIN" && cn.refunds.length === 0 ? (
+                      <MenuDestructiveRow>
+                        <form action={deleteCreditNoteAction}>
+                          <input type="hidden" name="id" value={cn.id} />
+                          <ConfirmSubmitButton
+                            message={`Delete credit note ${cn.creditNoteNumber}? This cannot be undone.`}
+                            confirmLabel="Delete"
+                            className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm font-semibold text-red-600 transition hover:bg-red-500/10 hover:text-red-700"
+                          >Delete Credit Note</ConfirmSubmitButton>
+                        </form>
+                      </MenuDestructiveRow>
+                    ) : null}
+                  </RowActionsMenu>
                 </div>
               </div>
             );
@@ -383,6 +487,11 @@ export default async function CreditNotesPage({
               {creditNotes.map((cn) => {
                 const refundedTotal = cn.refunds.reduce((s, r) => s + r.amount, 0);
                 const outstanding = cn.totalAmount - refundedTotal;
+                const recipientPhone = cn.sale?.client?.phone ?? null;
+                const recipientEmail = cn.sale?.client?.email ?? null;
+                const creditNoteUrl = `${appUrl}/api/credit-notes/${cn.id}`;
+                const creditNoteShareText = encodeURIComponent(`Your credit note is ready.\n\n${cn.creditNoteNumber}\nSale: ${cn.sale?.saleNumber ?? "-"}\nAmount: ${formatMoney(cn.totalAmount, cn.currency)}\nPDF: ${creditNoteUrl}`);
+                const creditNoteWaPhone = recipientPhone?.replace(/\D/g, "").replace(/^0/, "256");
                 return (
                   <tr key={cn.id} className="hover:bg-[var(--gold)]/5">
                     <td className="px-4 py-3 font-mono text-xs font-semibold text-[var(--ink)]">{cn.creditNoteNumber}</td>
@@ -403,17 +512,50 @@ export default async function CreditNotesPage({
                     <td className="px-4 py-3 text-[var(--ink-muted)]">{fmt(cn.issuedAt)}</td>
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap gap-1.5">
-                        {!cn.itemsReceivedBackAt && (
-                          <form action={markItemsReceivedAction}>
-                            <input type="hidden" name="creditNoteId" value={cn.id} />
-                            <button type="submit" className="rounded border border-emerald-400/30 bg-emerald-500/5 px-2 py-0.5 text-[13px] font-semibold text-emerald-700 hover:bg-emerald-500/10 dark:text-emerald-400">
-                              Mark Received
-                            </button>
-                          </form>
-                        )}
-                        {outstanding > 0 && (
-                          <RowActionsMenu label={`Refund ${cn.creditNoteNumber}`}>
-                            <div className="w-64 p-3">
+                        <a href={`/api/credit-notes/${cn.id}`} target="_blank" rel="noreferrer" title="Download PDF" className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--accent)]/40 bg-[var(--accent)]/10 text-[var(--accent)] transition hover:bg-[var(--accent)]/20">
+                          PDF
+                        </a>
+                        <RowActionsMenu label={`Credit note actions for ${cn.creditNoteNumber}`}>
+                          <div className="py-1 text-left">
+                            <MenuActionLink href={`/api/credit-notes/${cn.id}`} external icon="quote" tone="accent">
+                              Download Credit Note PDF
+                            </MenuActionLink>
+                          </div>
+                          <MenuSection label="Share" />
+                          {recipientPhone ? (
+                            <form action={shareCreditNoteWhatsAppAction}>
+                              <input type="hidden" name="creditNoteId" value={cn.id} />
+                              <MenuActionButton icon="whatsapp" tone="success">Send via WhatsApp</MenuActionButton>
+                            </form>
+                          ) : (
+                            <span className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-[var(--ink-muted)]">WhatsApp unavailable</span>
+                          )}
+                          {recipientEmail ? (
+                            <form action={shareCreditNoteEmailAction}>
+                              <input type="hidden" name="creditNoteId" value={cn.id} />
+                              <MenuActionButton icon="open">Email credit note</MenuActionButton>
+                            </form>
+                          ) : (
+                            <span className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-[var(--ink-muted)]">Email unavailable</span>
+                          )}
+                          {creditNoteWaPhone ? (
+                            <MenuActionLink href={`https://wa.me/${creditNoteWaPhone}?text=${creditNoteShareText}`} external icon="whatsapp" tone="success">
+                              Open WhatsApp Link
+                            </MenuActionLink>
+                          ) : null}
+                          {!cn.itemsReceivedBackAt ? (
+                            <>
+                              <MenuSection label="Inventory Return" />
+                              <form action={markItemsReceivedAction} className="p-3">
+                                <input type="hidden" name="creditNoteId" value={cn.id} />
+                                <MenuActionButton icon="save" tone="success">Mark Items Received</MenuActionButton>
+                              </form>
+                            </>
+                          ) : null}
+                          {outstanding > 0 ? (
+                            <>
+                              <MenuSection label="Refund" />
+                              <div className="w-64 p-3">
                               <form action={issueRefundFromCreditNoteAction} className="space-y-2">
                                 <input type="hidden" name="creditNoteId" value={cn.id} />
                                 <div>
@@ -432,19 +574,22 @@ export default async function CreditNotesPage({
                                   Issue Refund
                                 </button>
                               </form>
-                            </div>
-                          </RowActionsMenu>
-                        )}
-                        {user.role === "ADMIN" && cn.refunds.length === 0 && (
-                          <form action={deleteCreditNoteAction}>
-                            <input type="hidden" name="id" value={cn.id} />
-                            <ConfirmSubmitButton
-                              message={`Delete credit note ${cn.creditNoteNumber}? This cannot be undone.`}
-                              confirmLabel="Delete"
-                              className="rounded border border-red-400/30 px-2 py-0.5 text-[13px] font-semibold text-red-600 hover:bg-red-500/10 dark:text-red-400"
-                            >Delete</ConfirmSubmitButton>
-                          </form>
-                        )}
+                              </div>
+                            </>
+                          ) : null}
+                          {user.role === "ADMIN" && cn.refunds.length === 0 ? (
+                            <MenuDestructiveRow>
+                              <form action={deleteCreditNoteAction}>
+                                <input type="hidden" name="id" value={cn.id} />
+                                <ConfirmSubmitButton
+                                  message={`Delete credit note ${cn.creditNoteNumber}? This cannot be undone.`}
+                                  confirmLabel="Delete"
+                                  className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm font-semibold text-red-600 transition hover:bg-red-500/10 hover:text-red-700"
+                                >Delete Credit Note</ConfirmSubmitButton>
+                              </form>
+                            </MenuDestructiveRow>
+                          ) : null}
+                        </RowActionsMenu>
                       </div>
                     </td>
                   </tr>
