@@ -6,6 +6,7 @@ import { can } from "@/lib/permissions";
 import { orgDb } from "@/lib/prisma";
 import { requireOrgSession } from "@/lib/org-context";
 import { formatMoneyCompact } from "@/lib/currency";
+import { loadCashCollectionsByChannel, loadExpensesTotal } from "@/lib/finance/reconciliation";
 
 /* ─── quick-action tiles ─────────────────────────────── */
 const QUICK_ACTIONS = [
@@ -31,29 +32,24 @@ function NavIcon({ d, color }: { d: string; color: string }) {
 }
 
 export default async function FinancePage() {
-  const { user, orgId } = await requireOrgSession();
+  const { user, orgId, org } = await requireOrgSession();
   if (!can.viewFinancials(user)) redirect("/dashboard");
 
   const db = orgDb(orgId);
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  const currency = (user as { org?: { baseCurrency?: string } }).org?.baseCurrency ?? "UGX";
+  const currency = org.baseCurrency;
 
-  // Fetch summary stats
-  const [expensesMtd, invoicesPaid, receiptsCount] = await Promise.all([
-    db.expense.aggregate({
-      where: { orgId, date: { gte: monthStart } },
-      _sum: { amount: true },
-    }).catch(() => ({ _sum: { amount: null } })),
-    db.invoice.aggregate({
-      where: { orgId, status: "PAID", paidAt: { gte: monthStart } },
-      _sum: { totalAmount: true },
-    }).catch(() => ({ _sum: { totalAmount: null } })),
-    db.receipt.count({ where: { orgId, createdAt: { gte: monthStart } } }).catch(() => 0),
+  // Fetch summary stats from the cash ledger. Payments cover invoice receipts
+  // and POS receipts, so do not add sale totals again here.
+  const [expensesTotal, collectionsMtd, receiptsCount] = await Promise.all([
+    loadExpensesTotal({ orgId, range: { start: monthStart } }).catch(() => 0),
+    loadCashCollectionsByChannel({ orgId, baseCurrency: currency, range: { start: monthStart } }).catch(() => ({ total: 0 })),
+    db.payment.count({ where: { receivedAt: { gte: monthStart }, kind: "PAYMENT" } }).catch(() => 0),
   ]);
 
-  const expTotal  = expensesMtd._sum.amount ?? 0;
-  const revTotal  = invoicesPaid._sum.totalAmount ?? 0;
+  const expTotal  = expensesTotal;
+  const revTotal  = collectionsMtd.total;
 
   const STATS = [
     { label: "Revenue MTD",  value: formatMoneyCompact(revTotal,  currency), color: "text-emerald-600 dark:text-emerald-400" },
@@ -65,11 +61,12 @@ export default async function FinancePage() {
   // Month-over-month revenue (last month for % change)
   const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
   const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 1);
-  const invoicesPaidLastMonth = await db.invoice.aggregate({
-    where: { orgId, status: "PAID", paidAt: { gte: lastMonthStart, lt: lastMonthEnd } },
-    _sum: { totalAmount: true },
-  }).catch(() => ({ _sum: { totalAmount: null } }));
-  const revLastMonth = invoicesPaidLastMonth._sum.totalAmount ?? 0;
+  const collectionsLastMonth = await loadCashCollectionsByChannel({
+    orgId,
+    baseCurrency: currency,
+    range: { start: lastMonthStart, end: lastMonthEnd },
+  }).catch(() => ({ total: 0 }));
+  const revLastMonth = collectionsLastMonth.total;
   const revPct = revLastMonth > 0 ? Math.round(((revTotal - revLastMonth) / revLastMonth) * 100) : null;
 
   return (

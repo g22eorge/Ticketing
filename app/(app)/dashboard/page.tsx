@@ -11,6 +11,7 @@ import { RevenueLineChart } from "@/components/reports/ReportsCharts";
 import { getClientBill, resolveTechCost } from "@/lib/billing";
 import { formatMoney, formatMoneyCompact, getAppCurrency } from "@/lib/currency";
 import { formatEATMonthLabel } from "@/lib/date-eat";
+import { loadCashCollectionsByChannel, loadReceivablesTotal } from "@/lib/finance/reconciliation";
 import { UI_JOB_STATUSES, JobStatus, isOpenJobStatus, normalizeJobStatus } from "@/lib/job-status";
 import { filterSupportedJobStatuses } from "@/lib/job-status-server";
 import { can } from "@/lib/permissions";
@@ -89,9 +90,10 @@ function trendMonthsForYear(year: number, endMonth: number) {
 }
 
 /** Repair revenue only — job clientBill on COMPLETED jobs (used by TECH_MANAGER) */
-async function loadRepairRevenueTrend(trendMonths: { key: string; start: Date; end: Date }[]) {
+async function loadRepairRevenueTrend(trendMonths: { key: string; start: Date; end: Date }[], orgId?: string | null) {
   const completed = await prisma.job.findMany({
     where: {
+      ...(orgId ? { orgId } : {}),
       status: "COMPLETED",
       completedAt: { gte: trendMonths[0].start, lte: trendMonths[trendMonths.length - 1].end },
     },
@@ -110,34 +112,27 @@ async function loadRepairRevenueTrend(trendMonths: { key: string; start: Date; e
 }
 
 /** Sales revenue only — POS sales (paidAt) + invoices (paidAt) (used by SALES manager) */
-async function loadSalesRevenueTrend(trendMonths: { key: string; start: Date; end: Date }[]) {
-  const rangeStart = trendMonths[0].start;
-  const rangeEnd   = trendMonths[trendMonths.length - 1].end;
-
-  const [paidSales, paidInvoices] = await Promise.all([
-    prisma.sale.findMany({
-      where: { status: "PAID", paidAt: { gte: rangeStart, lte: rangeEnd } },
-      select: { totalAmount: true, paidAt: true },
+async function loadSalesRevenueTrend(trendMonths: { key: string; start: Date; end: Date }[], orgId?: string | null, currency = getAppCurrency()) {
+  if (!orgId) return trendMonths.map((m) => ({ key: m.key, revenue: 0, margin: 0 }));
+  const rows = await Promise.all(
+    trendMonths.map(async (m) => {
+      const collections = await loadCashCollectionsByChannel({
+        orgId,
+        baseCurrency: currency,
+        range: { start: m.start, end: m.end },
+      });
+      const revenue = collections.products + collections.corporate + collections.unallocated;
+      return { key: m.key, revenue, margin: revenue };
     }),
-    prisma.invoice.findMany({
-      where: { status: "PAID", paidAt: { gte: rangeStart, lte: rangeEnd } },
-      select: { totalAmount: true, paidAt: true },
-    }),
-  ]);
-
-  return trendMonths.map((m) => {
-    const salesRev   = paidSales.filter((s) => s.paidAt && s.paidAt >= m.start && s.paidAt <= m.end).reduce((sum, s) => sum + s.totalAmount, 0);
-    const invoiceRev = paidInvoices.filter((i) => i.paidAt && i.paidAt >= m.start && i.paidAt <= m.end).reduce((sum, i) => sum + i.totalAmount, 0);
-    const revenue = salesRev + invoiceRev;
-    return { key: m.key, revenue, margin: revenue }; // no tracked cost on sales side
-  });
+  );
+  return rows;
 }
 
 /** Total revenue — repairs + POS + invoices combined (used by ADMIN) */
-async function loadTotalRevenueTrend(trendMonths: { key: string; start: Date; end: Date }[]) {
+async function loadTotalRevenueTrend(trendMonths: { key: string; start: Date; end: Date }[], orgId?: string | null, currency = getAppCurrency()) {
   const [repairTrend, salesTrend] = await Promise.all([
-    loadRepairRevenueTrend(trendMonths),
-    loadSalesRevenueTrend(trendMonths),
+    loadRepairRevenueTrend(trendMonths, orgId),
+    loadSalesRevenueTrend(trendMonths, orgId, currency),
   ]);
 
   return trendMonths.map((m, i) => ({
@@ -815,7 +810,7 @@ export default async function DashboardPage({
     const overdueWithDays = overdueJobs.map(j => ({ ...j, ageDays: Math.floor((today.getTime() - new Date(j.receivedAt).getTime()) / 86400000) }));
 
     const trendMonths = trendMonthsSinceStartOfYear(today);
-    const repairTrend = await loadRepairRevenueTrend(trendMonths);
+    const repairTrend = await loadRepairRevenueTrend(trendMonths, user.orgId);
     const currency = getAppCurrency();
 
     return (
@@ -934,13 +929,8 @@ export default async function DashboardPage({
       statusGroup,
       // Stream 1: Repairs MTD
       completedMtdJobs,
-      // Stream 2: Products (POS) MTD
-      paidSalesMtd,
-      // Stream 3: Corporate (Invoices) MTD
-      paidInvoicesMtd,
       // Financial position
       bankAccounts,
-      outstandingInvoices,
       expensesMtd,
       payablesAgg,
       // Operations
@@ -948,9 +938,7 @@ export default async function DashboardPage({
       receivedToday,
       completedToday,
       receivedMtdCount,
-      cashCollectedToday,
       expensesToday,
-      posSalesToday,
       overdueJobsCount,
       jobsNoClientUpdateCount,
       completedUnpaidCount,
@@ -966,7 +954,6 @@ export default async function DashboardPage({
       // Yesterday comparison
       receivedYesterday,
       completedYesterday,
-      cashYesterdayRaw,
       expensesYesterdayRaw,
       // Per-tech payout due
       techPayoutByTech,
@@ -978,25 +965,10 @@ export default async function DashboardPage({
         select: { clientBill: true },
       }),
 
-      prisma.sale.findMany({
-        where: { ...orgFilter, status: "PAID", paidAt: { gte: mtdStart, lte: today } },
-        select: { totalAmount: true },
-      }).catch(() => [] as { totalAmount: number }[]),
-
-      prisma.invoice.findMany({
-        where: { ...orgFilter, status: "PAID", paidAt: { gte: mtdStart, lte: today } },
-        select: { totalAmount: true },
-      }).catch(() => [] as { totalAmount: number }[]),
-
       prisma.bankAccount.findMany({
         where: { ...orgFilter, isActive: true },
         select: { currentBalance: true },
       }).catch(() => [] as { currentBalance: number }[]),
-
-      prisma.invoice.findMany({
-        where: { ...orgFilter, status: "ISSUED" },
-        select: { totalAmount: true },
-      }).catch(() => [] as { totalAmount: number }[]),
 
       prisma.expense.findMany({
         where: { orgId: orgFilter.orgId ?? undefined, paidAt: { gte: mtdStart, lte: today } },
@@ -1014,10 +986,7 @@ export default async function DashboardPage({
       prisma.job.count({ where: { ...orgFilter, completedAt: { gte: todayStart } } }),
       prisma.job.count({ where: { ...orgFilter, receivedAt: { gte: mtdStart, lte: today } } }),
 
-      prisma.payment.findMany({ where: { ...orgFilter, receivedAt: { gte: todayStart } }, select: { amount: true } }).catch(() => [] as { amount: number }[]),
       prisma.expense.findMany({ where: { orgId: orgFilter.orgId ?? undefined, paidAt: { gte: todayStart } }, select: { amount: true } }).catch(() => [] as { amount: number }[]),
-      // POS sales today — for mobile dashboard combined revenue
-      prisma.sale.findMany({ where: { ...orgFilter, status: "PAID", paidAt: { gte: todayStart } }, select: { totalAmount: true } }).catch(() => [] as { totalAmount: number }[]),
       prisma.job.count({ where: { ...orgFilter, status: { in: filterSupportedJobStatuses(["RECEIVED", "DIAGNOSING", "REFERRED", "IN_EXTERNAL_REPAIR", "AWAITING_APPROVAL", "IN_REPAIR", "READY_FOR_PICKUP"]) as JobStatus[] }, receivedAt: { lt: new Date(today.getTime() - 3 * 86_400_000) } } }).catch(() => 0),
       prisma.job.count({ where: { ...orgFilter, status: { in: filterSupportedJobStatuses(["DIAGNOSING", "REFERRED", "IN_EXTERNAL_REPAIR", "AWAITING_APPROVAL", "IN_REPAIR", "READY_FOR_PICKUP"]) as JobStatus[] }, lastClientContactAt: null } }).catch(() => 0),
       prisma.job.count({ where: { ...orgFilter, status: "COMPLETED", clientBill: { gt: 0 }, clientPaid: false } }).catch(() => 0),
@@ -1042,31 +1011,50 @@ export default async function DashboardPage({
 
       prisma.job.count({ where: { ...orgFilter, receivedAt: { gte: yesterdayStart, lte: yesterdayEnd } } }).catch(() => 0),
       prisma.job.count({ where: { ...orgFilter, completedAt: { gte: yesterdayStart, lte: yesterdayEnd } } }).catch(() => 0),
-      prisma.payment.findMany({ where: { ...orgFilter, receivedAt: { gte: yesterdayStart, lte: yesterdayEnd } }, select: { amount: true } }).catch(() => [] as { amount: number }[]),
       prisma.expense.findMany({ where: { orgId: orgFilter.orgId ?? undefined, paidAt: { gte: yesterdayStart, lte: yesterdayEnd } }, select: { amount: true } }).catch(() => [] as { amount: number }[]),
       prisma.job.findMany({ where: { ...orgFilter, repairPath: "EXTERNAL", status: { in: filterSupportedJobStatuses(["COMPLETED", "DELIVERED"]) as JobStatus[] }, externalPaid: false, assignedToId: { not: null } }, select: { assignedToId: true, externalTechFee: true, externalTechBill: true } }).catch(() => [] as { assignedToId: string | null; externalTechFee: number | null; externalTechBill: number | null }[]),
     ]);
 
+    const [
+      collectionsMtd,
+      collectionsToday,
+      collectionsYesterday,
+      receivables,
+    ] = user.orgId
+      ? await Promise.all([
+          loadCashCollectionsByChannel({ orgId: user.orgId, baseCurrency: currency, range: { start: mtdStart, end: today } }),
+          loadCashCollectionsByChannel({ orgId: user.orgId, baseCurrency: currency, range: { start: todayStart } }),
+          loadCashCollectionsByChannel({ orgId: user.orgId, baseCurrency: currency, range: { start: yesterdayStart, end: yesterdayEnd } }),
+          loadReceivablesTotal(user.orgId),
+        ])
+      : [
+          { repairs: 0, products: 0, corporate: 0, unallocated: 0, total: 0 },
+          { repairs: 0, products: 0, corporate: 0, unallocated: 0, total: 0 },
+          { repairs: 0, products: 0, corporate: 0, unallocated: 0, total: 0 },
+          { invoiceBalance: 0, saleBalance: 0, total: 0, invoiceCount: 0, saleCount: 0 },
+        ];
+
     // Revenue stream totals
-    const repairsMtd   = completedMtdJobs.reduce((s, j) => s + (getClientBill(j) ?? 0), 0);
-    const productsMtd  = paidSalesMtd.reduce((s, x) => s + x.totalAmount, 0);
-    const corporateMtd = paidInvoicesMtd.reduce((s, x) => s + x.totalAmount, 0);
-    const totalMtd     = repairsMtd + productsMtd + corporateMtd;
+    const repairsMtd   = collectionsMtd.repairs;
+    const productsMtd  = collectionsMtd.products;
+    const corporateMtd = collectionsMtd.corporate + collectionsMtd.unallocated;
+    const totalMtd     = collectionsMtd.total;
     const conversionRate = receivedMtdCount > 0 ? Math.round(completedMtdJobs.length / receivedMtdCount * 100) : 0;
 
     // Financial position
     const totalBankBalance  = bankAccounts.reduce((s, a) => s + a.currentBalance, 0);
-    const outstandingValue  = outstandingInvoices.reduce((s, i) => s + i.totalAmount, 0);
+    const outstandingValue  = receivables.total;
+    const outstandingCount  = receivables.invoiceCount + receivables.saleCount;
     const expensesValue     = expensesMtd.reduce((s, e) => s + e.amount, 0);
-    const cashTodayValue    = cashCollectedToday.reduce((s, p) => s + p.amount, 0);
-    const salesTodayValue   = posSalesToday.reduce((s, x) => s + x.totalAmount, 0);
-    const revenueTodayValue = cashTodayValue + salesTodayValue;
+    const cashTodayValue    = collectionsToday.total;
+    const salesTodayValue   = collectionsToday.products;
+    const revenueTodayValue = collectionsToday.total;
     const expensesTodayValue = expensesToday.reduce((s, e) => s + e.amount, 0);
     const payablesValue     = (payablesAgg._sum.totalAmount ?? 0) - (payablesAgg._sum.paidAmount ?? 0);
     const technicianPayoutsDue = payoutDueJobs.reduce((sum, job) => sum + resolveTechCost(job.externalTechFee, job.externalTechBill), 0);
 
     // Yesterday comparison values
-    const cashYesterdayValue = cashYesterdayRaw.reduce((s, p) => s + p.amount, 0);
+    const cashYesterdayValue = collectionsYesterday.total;
     const expensesYesterdayValue = expensesYesterdayRaw.reduce((s, e) => s + e.amount, 0);
 
     // Per-tech payout due map
@@ -1372,7 +1360,7 @@ export default async function DashboardPage({
           <div className="divide-y divide-[var(--line)]">
             {([
               { dot: "bg-sky-500",     label: "Cash & bank",        sub: `${bankAccounts.length} account${bankAccounts.length !== 1 ? "s" : ""}`,              value: totalBankBalance,          tone: "text-[var(--ink)]",                                                  href: "/finance/bank" },
-              { dot: "bg-amber-500",   label: "Receivables",        sub: `${outstandingInvoices.length} unpaid invoice${outstandingInvoices.length !== 1 ? "s" : ""}`, value: outstandingValue, tone: outstandingValue > 0 ? "text-amber-600" : "text-[var(--ink)]",      href: "/documents/invoices?status=ISSUED" },
+              { dot: "bg-amber-500",   label: "Receivables",        sub: `${outstandingCount} open balance${outstandingCount !== 1 ? "s" : ""}`, value: outstandingValue, tone: outstandingValue > 0 ? "text-amber-600" : "text-[var(--ink)]",      href: "/documents/invoices?status=ISSUED" },
               { dot: "bg-red-400",     label: "Payables",           sub: "to suppliers",                                                                          value: payablesValue,             tone: payablesValue > 0 ? "text-red-500" : "text-[var(--ink)]",          href: "/inventory/supplier-bills?status=POSTED" },
               { dot: "bg-rose-500",    label: "Expenses this month", sub: null,                                                                                   value: expensesValue,             tone: "text-red-600",                                                     href: "/finance/expenses" },
               { dot: "bg-emerald-500", label: "Gross margin",        sub: `${totalMtd > 0 ? Math.round((totalMtd - expensesValue) / totalMtd * 100) : 0}% of revenue`, value: totalMtd - expensesValue, tone: (totalMtd - expensesValue) >= 0 ? "text-emerald-600" : "text-red-500", href: "/reports" },
@@ -1663,7 +1651,7 @@ export default async function DashboardPage({
 
     const monthRevenue = completedThisMonth.reduce((sum, job) => sum + (getClientBill(job) ?? 0), 0);
 
-    const revenueTrend = await loadRepairRevenueTrend(trendMonths);
+    const revenueTrend = await loadRepairRevenueTrend(trendMonths, user.orgId);
 
     const payoutMap = await getJobPayoutsByIds(externalCompleted.map((job) => job.id)).catch(() => new Map());
     // externalCompleted already pre-filtered to externalPaid=false in the DB query
@@ -1877,7 +1865,7 @@ export default async function DashboardPage({
     }
     const techRows = [...techMap.values()].sort((a, b) => b.count - a.count).slice(0, 6);
     const trendMonths = trendMonthsSinceStartOfYear(today);
-    const revenueTrend = await loadTotalRevenueTrend(trendMonths);
+    const revenueTrend = await loadTotalRevenueTrend(trendMonths, user.orgId, currency);
 
     return (
       <div className="space-y-4">
@@ -2238,7 +2226,7 @@ export default async function DashboardPage({
     const conversionRate = allJobsMtd > 0 ? Math.round((wonMtd / allJobsMtd) * 100) : 0;
 
     const trendMonths  = trendMonthsSinceStartOfYear(today);
-    const revenueTrend = await loadTotalRevenueTrend(trendMonths);
+    const revenueTrend = await loadTotalRevenueTrend(trendMonths, user.orgId, currency);
 
     return (
       <div className="space-y-4">

@@ -2317,6 +2317,7 @@ export function JobDetailTabs({ role, permissions = [], job, technicians, device
             formData.set("jobId", job.id);
             formData.set("expectedUpdatedAt", expectedUpdatedAt);
             formData.set("nextStatus", "CLOSED");
+            formData.set("workflowReason", "UNREPAIRABLE");
             startStatusTransition(async () => {
               const res = await updateJobAction(formData);
               if (res.error) {

@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 
 import { formatMoneyCompact, normalizeCurrency, getAppCurrency } from "@/lib/currency";
+import { loadCashCollectionsByChannel } from "@/lib/finance/reconciliation";
 import { orgDb, prisma } from "@/lib/prisma";
 import { can } from "@/lib/permissions";
 import { ConfirmSubmitButton } from "@/components/shared/ConfirmSubmitButton";
@@ -39,13 +40,13 @@ export default async function PosPage() {
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
-  const [kpiTodayAgg, kpiMonthAgg, kpiMonthCount] = await Promise.all([
-    db.sale.aggregate({ _sum: { totalAmount: true }, where: { createdAt: { gte: todayStart } } }).catch(() => ({ _sum: { totalAmount: 0 } })),
-    db.sale.aggregate({ _sum: { totalAmount: true }, where: { createdAt: { gte: monthStart } } }).catch(() => ({ _sum: { totalAmount: 0 } })),
-    db.sale.count({ where: { createdAt: { gte: monthStart } } }).catch(() => 0),
+  const [kpiTodayCollections, kpiMonthCollections, kpiMonthCount] = await Promise.all([
+    loadCashCollectionsByChannel({ orgId: user.orgId, baseCurrency: currency, range: { start: todayStart } }).catch(() => ({ products: 0 })),
+    loadCashCollectionsByChannel({ orgId: user.orgId, baseCurrency: currency, range: { start: monthStart } }).catch(() => ({ products: 0 })),
+    db.payment.count({ where: { saleId: { not: null }, receivedAt: { gte: monthStart }, kind: "PAYMENT" } }).catch(() => 0),
   ]);
-  const kpiTodayTotal = kpiTodayAgg._sum.totalAmount ?? 0;
-  const kpiMonthTotal = kpiMonthAgg._sum.totalAmount ?? 0;
+  const kpiTodayTotal = kpiTodayCollections.products ?? 0;
+  const kpiMonthTotal = kpiMonthCollections.products ?? 0;
   const kpiAvgSale = kpiMonthCount > 0 ? kpiMonthTotal / kpiMonthCount : 0;
 
   let dbNeedsFix = false;

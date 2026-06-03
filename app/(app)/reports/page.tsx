@@ -9,6 +9,7 @@ import { MobileActivityFeed } from "@/components/reports/MobileActivityFeed";
 import { getClientBill, getExternalTechBill, resolveTechCost } from "@/lib/billing";
 import { formatMoneyCompact, toBaseAmount } from "@/lib/currency";
 import { formatEATMonthLabel } from "@/lib/date-eat";
+import { loadBilledTotals, loadCashCollectionsByChannel } from "@/lib/finance/reconciliation";
 import { UI_JOB_STATUSES, JobStatus, normalizeJobStatus } from "@/lib/job-status";
 import { filterSupportedJobStatuses } from "@/lib/job-status-server";
 import { can } from "@/lib/permissions";
@@ -146,7 +147,7 @@ export default async function ReportsPage({
     techPerfJobsRaw,
     approvalDelayJobs,
     salesByPeriod,
-    invoicesByPeriod,
+    _invoicesByPeriod,
     salesTargetsForPeriod,
     staffJobRevenue,
     leadFunnel,
@@ -333,6 +334,11 @@ export default async function ReportsPage({
     })
     .catch(() => [] as Array<{ amount: number; currency: string | null; exchangeRateToBase: number | null }>);
 
+  const [collectionsByChannel, billedByChannel] = await Promise.all([
+    loadCashCollectionsByChannel({ orgId, baseCurrency: org.baseCurrency, range: selectedRange }).catch(() => ({ repairs: 0, products: 0, corporate: 0, unallocated: 0, total: 0 })),
+    loadBilledTotals({ orgId, range: selectedRange }).catch(() => ({ repairs: 0, products: 0, corporate: 0, total: 0 })),
+  ]);
+
   // ─── COMPUTE ────────────────────────────────────────────────────────────────
 
   const currentYear = new Date().getFullYear();
@@ -450,9 +456,11 @@ export default async function ReportsPage({
     .sort((a, b) => b.total - a.total);
 
   // Revenue channels
-  const posSalesTotal = salesByPeriod.reduce((s, r) => s + r.totalAmount, 0);
-  const invoicesPaidTotal = invoicesByPeriod.reduce((s, i) => s + i.totalAmount, 0);
-  const totalAllChannels = revenueSelected + posSalesTotal + invoicesPaidTotal;
+  const repairCollectionsTotal = collectionsByChannel.repairs;
+  const posSalesTotal = collectionsByChannel.products;
+  const invoicesPaidTotal = collectionsByChannel.corporate + collectionsByChannel.unallocated;
+  const totalAllChannels = collectionsByChannel.total;
+  const totalBilledAllChannels = billedByChannel.total;
   const expensesTotal = expensesMtd.reduce((s, e) => s + e.amount, 0);
 
   // Staff revenue
@@ -635,7 +643,7 @@ export default async function ReportsPage({
           {([
             { label: "Revenue",   value: formatMoneyCompact(revenueSelected, currency),     tone: "text-emerald-600", bg: "bg-emerald-500/10" },
             { label: "Completed", value: String(completedSelected.length),                   tone: "text-[var(--ink)]", bg: "bg-sky-500/10" },
-            { label: "Total Billed", value: formatMoneyCompact(totalAllChannels, currency), tone: "text-[var(--accent)]", bg: "bg-[var(--accent)]/10" },
+            { label: "Total Billed", value: formatMoneyCompact(totalBilledAllChannels, currency), tone: "text-[var(--accent)]", bg: "bg-[var(--accent)]/10" },
             { label: "Expenses",  value: formatMoneyCompact(expensesTotal, currency),        tone: expensesTotal > 0 ? "text-amber-600" : "text-[var(--ink-muted)]", bg: "bg-amber-500/10" },
           ] as { label: string; value: string; tone: string; bg: string }[]).map(({ label, value, tone, bg }) => (
             <div key={label} className={`rounded-2xl border border-[var(--line)] ${bg} px-4 py-3`}>
@@ -934,9 +942,9 @@ export default async function ReportsPage({
             <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
               <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Repairs</p>
               <p className="mt-1.5 text-2xl font-bold text-[var(--ink)]">
-                {formatMoneyCompact(revenueSelected, currency)}
+                {formatMoneyCompact(repairCollectionsTotal, currency)}
               </p>
-              <p className="mt-1 text-xs text-[var(--ink-muted)]">{completedSelected.length} jobs</p>
+              <p className="mt-1 text-xs text-[var(--ink-muted)]">cash collected</p>
             </div>
             <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
               <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">POS / Products</p>

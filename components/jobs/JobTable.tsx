@@ -67,6 +67,7 @@ export type JobRow = {
   updatedAt?: Date;
   externalTechBill?: number | null;
   clientBill?: number | null;
+  clientPaid?: boolean | null;
   repairTimeline?: string | null;
   workflowReason?: WorkflowReason | null;
 };
@@ -90,6 +91,47 @@ const workflowReasonConfig: Record<HighlightReason, { badge: string; label: stri
   CUSTOMER_CANCELLED:   { badge: "border border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]",    label: "Cancelled" },
   OTHER:                { badge: "border border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]",    label: "Other" },
 };
+
+type JobListFlag = { badge: string; label: string };
+
+function getJobListFlag(job: JobRow, canManagePricing: boolean): JobListFlag | null {
+  const billed = typeof job.clientBill === "number" ? job.clientBill : null;
+  const billableTerminal = invoiceStatuses.has(job.status);
+
+  if (canManagePricing && billableTerminal && billed !== null && billed > 0 && job.clientPaid !== true) {
+    return {
+      badge: "bg-red-500/10 text-red-700 border border-red-400/30 dark:text-red-400",
+      label: `Unpaid ${formatMoney(billed)}`,
+    };
+  }
+
+  if (job.workflowReason && job.workflowReason !== "NONE") {
+    return workflowReasonConfig[job.workflowReason as HighlightReason];
+  }
+
+  if (canManagePricing && billed === 0 && ["COMPLETED", "CLOSED"].includes(job.status)) {
+    return {
+      badge: "border border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]",
+      label: "No charge",
+    };
+  }
+
+  if (canManagePricing && typeof job.clientBill !== "number" && ["AWAITING_APPROVAL", "IN_REPAIR", "READY_FOR_PICKUP"].includes(job.status)) {
+    return {
+      badge: "border border-amber-400/30 bg-amber-500/10 text-amber-700 dark:text-amber-400",
+      label: "Needs pricing",
+    };
+  }
+
+  if (canManagePricing && typeof job.clientBill === "number") {
+    return {
+      badge: "bg-[var(--accent)]/10 text-[#7A5F00]",
+      label: "Priced",
+    };
+  }
+
+  return null;
+}
 
 const deviceLabel: Record<string, string> = {
   PHONE_ANDROID: "Android",
@@ -251,8 +293,7 @@ export function JobTable({
       {/* ── Mobile list — borderless card stack ── */}
       <div className="overflow-hidden rounded-2xl border border-[var(--line)]/60 bg-[var(--panel)] lg:hidden">
         {jobs.map((job) => {
-            const hasFlag = job.workflowReason && job.workflowReason !== "NONE";
-            const flagCfg = hasFlag ? workflowReasonConfig[job.workflowReason as HighlightReason] : null;
+            const flagCfg = getJobListFlag(job, canManagePricing);
 
             // Compute cost value once
             const costValue = canSeeCost
@@ -439,8 +480,7 @@ export function JobTable({
           <tbody className="divide-y divide-[var(--line)]">
             {jobs.map((job) => {
               const strip = statusStripClass(job.status);
-              const hasFlag = job.workflowReason && job.workflowReason !== "NONE";
-              const flagCfg = hasFlag ? workflowReasonConfig[job.workflowReason as HighlightReason] : null;
+              const flagCfg = getJobListFlag(job, canManagePricing);
               const canDownloadQuotation = canUseQuotations && quotationStatuses.has(job.status);
               const canDownloadInvoice = canUseInvoices && invoiceStatuses.has(job.status);
               return (
@@ -511,22 +551,7 @@ export function JobTable({
                           {flagCfg.label}
                         </span>
                       )}
-                      {canManagePricing && (
-                        <span className={`rounded-md px-1.5 py-0.5 text-[12px] font-semibold ${
-                          typeof job.clientBill === "number"
-                            ? "bg-[var(--accent)]/10 text-[#7A5F00]"
-                            : ["AWAITING_APPROVAL", "IN_REPAIR", "READY_FOR_PICKUP"].includes(job.status)
-                              ? "border border-amber-400/30 bg-amber-500/10 text-amber-700 dark:text-amber-400"
-                              : "hidden"
-                        }`}>
-                          {typeof job.clientBill === "number"
-                            ? "Priced"
-                            : ["AWAITING_APPROVAL", "IN_REPAIR", "READY_FOR_PICKUP"].includes(job.status)
-                              ? "Needs pricing"
-                              : null}
-                        </span>
-                      )}
-                      {!flagCfg && !canManagePricing && <span className="text-[var(--ink-muted)]">—</span>}
+                      {!flagCfg && <span className="text-[var(--ink-muted)]">—</span>}
                     </div>
                   </td>
 

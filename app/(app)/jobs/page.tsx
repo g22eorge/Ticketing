@@ -351,6 +351,7 @@ export default async function JobsPage({
       receivedAt: job.receivedAt,
       externalTechBill: getExternalTechBill(job),
       clientBill: getClientBill(job),
+      clientPaid: (job as { clientPaid?: boolean | null }).clientPaid ?? null,
       workflowReason: (job as { workflowReason?: JobRow["workflowReason"] }).workflowReason ?? null,
     }));
   }
@@ -422,6 +423,7 @@ export default async function JobsPage({
       updatedAt: job.updatedAt,
       externalTechBill: getExternalTechBill(job),
       clientBill: getClientBill(job),
+      clientPaid: (job as { clientPaid?: boolean | null }).clientPaid ?? null,
       repairTimeline: (job as typeof job & { repairTimeline?: string | null }).repairTimeline ?? null,
       workflowReason: withWorkflow.workflowReason ?? null,
     };

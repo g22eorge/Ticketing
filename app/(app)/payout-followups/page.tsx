@@ -4,6 +4,7 @@ import { Prisma, JobStatus, InvoiceStatus, SupplierBillStatus } from "@prisma/cl
 
 import { resolveTechCost } from "@/lib/billing";
 import { formatMoneyCompact, getAppCurrency } from "@/lib/currency";
+import { filterSupportedJobStatuses } from "@/lib/job-status-server";
 import { can } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { requireOrgSession } from "@/lib/org-context";
@@ -16,7 +17,7 @@ type SearchParams = {
 };
 
 const PAGE_SIZE = 20;
-const TERMINAL = ["READY_FOR_PICKUP", "COMPLETED", "DELIVERED"] as JobStatus[];
+const TERMINAL = filterSupportedJobStatuses(["READY_FOR_PICKUP", "COMPLETED", "DELIVERED"]) as JobStatus[];
 const UNPAID_BILL_STATUSES = ["POSTED", "PART_PAID"] as SupplierBillStatus[];
 const UNPAID_INV_STATUSES = ["ISSUED"] as InvoiceStatus[];
 
@@ -78,29 +79,52 @@ async function markExternalTechPaid(formData: FormData) {
   });
   if (!job) return;
 
-  await prisma.job.update({
-    where: { id: jobId },
-    data: {
-      externalPaid: true,
-      externalPaidAt: new Date(),
-      externalPaidById: user.id,
-    },
-  });
+  const payoutDue = resolveTechCost(job.externalTechFee, job.externalTechBill);
+  const existingPayouts = await prisma.technicianPayout
+    .findMany({ where: { orgId, jobId: job.id }, select: { amount: true } })
+    .catch(() => []);
+  const alreadyPaid = existingPayouts.reduce((sum, payout) => sum + payout.amount, 0);
+  const remaining = Math.max(0, payoutDue - alreadyPaid);
 
-  // Audit log
-  await prisma.auditLog.create({
-    data: {
-      orgId,
-      jobId,
-      userId: user.id,
-      action: "EXTERNAL_TECH_PAYOUT_MARKED",
-      detail: JSON.stringify({ markedAt: new Date().toISOString() }),
-    },
-  }).catch(() => {});
+  await prisma.$transaction(async (tx) => {
+    if (remaining > 0) {
+      await tx.technicianPayout.create({
+        data: {
+          orgId,
+          jobId: job.id,
+          amount: remaining,
+          method: "CASH",
+          note: "Marked paid from finance payout follow-up",
+          recordedById: user.id,
+        },
+      }).catch(() => null);
+    }
+
+    await tx.job.updateMany({
+      where: { id: jobId, orgId },
+      data: {
+        externalPaid: true,
+        externalPaidAt: new Date(),
+        externalPaidById: user.id,
+      },
+    });
+
+    await tx.auditLog.create({
+      data: {
+        orgId,
+        jobId,
+        userId: user.id,
+        action: "EXTERNAL_TECH_PAYOUT_MARKED",
+        detail: JSON.stringify({ markedAt: new Date().toISOString(), amount: remaining, payoutDue, alreadyPaid }),
+      },
+    }).catch(() => {});
+  });
 
   const { revalidatePath } = await import("next/cache");
   revalidatePath("/payout-followups");
   revalidatePath(`/jobs/${jobId}`);
+  revalidatePath("/technicians/payouts");
+  revalidatePath("/dashboard");
 }
 
 export default async function PayoutFollowupsPage({

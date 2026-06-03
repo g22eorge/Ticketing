@@ -200,7 +200,9 @@ void basePrisma.$connect().catch(() => {/* errors will surface on first query */
 const ORG_SCOPED_MODELS = new Set([
   "Client", "Job", "Part", "Supplier", "Department",
   "Complaint", "Campaign", "Lead", "Quotation", "Sale",
-  "Invoice", "Expense", "JournalEntry", "ChartOfAccount", "BankAccount",
+  "Invoice", "InvoiceLine", "Payment", "PaymentAllocation", "Receipt",
+  "Refund", "CreditNote", "DeliveryNote",
+  "TechnicianPayout", "Expense", "JournalEntry", "ChartOfAccount", "BankAccount",
   "CommunicationTemplate", "CommunicationPolicy", "DocumentBrandingSettings",
   "StockLocation", "PurchaseOrder", "PurchaseRequest",
   "GoodsReceived", "SupplierBill", "RecurringInvoice",

@@ -528,7 +528,17 @@ export async function updateJobAction(formData: FormData) {
       data.approvalDate = new Date();
     }
     data.completedAt = payload.nextStatus === JobStatus.COMPLETED ? new Date() : undefined;
-    if (payload.nextStatus === JobStatus.COMPLETED) {
+    const isUnresolvedNoChargeClose =
+      payload.nextStatus === JobStatus.CLOSED && payload.workflowReason === "UNREPAIRABLE";
+
+    if (isUnresolvedNoChargeClose) {
+      data.clientBill = 0;
+      data.clientPaid = true;
+      data.clientPaidAt = new Date();
+      data.clientPaidById = session.user.id;
+    }
+
+    if (payload.nextStatus === JobStatus.COMPLETED || payload.nextStatus === JobStatus.CLOSED) {
       // Determine the bill that will be in effect after this update.
       const incomingBill = typeof data.clientBill === "number" ? data.clientBill : undefined;
       const priorBill =
@@ -944,6 +954,7 @@ export async function recordTechnicianPayoutAction(formData: FormData) {
 
   revalidatePath(`/jobs/${job.id}`);
   revalidatePath("/technicians/payouts");
+  revalidatePath("/payout-followups");
   revalidatePath("/reports");
   revalidatePath("/dashboard");
   return { ok: true };
