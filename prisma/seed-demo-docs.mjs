@@ -5,13 +5,14 @@
  *   - Invoices (ISSUED + PAID)
  *   - Payments / Receipts (CASH, MOBILE_MONEY, CARD)
  *   - Delivery Notes
+ *   - Credit Notes / Refunds
  *   - POS Sales with items and payments
  *   - Parts inventory
  *
- * Run:  node prisma/seed-demo-docs.mjs
+ * Run:  bun prisma/seed-demo-docs.mjs
  */
 
-import Database from "better-sqlite3";
+import { Database } from "bun:sqlite";
 import { randomBytes } from "crypto";
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
@@ -19,6 +20,15 @@ import { fileURLToPath } from "url";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DB_PATH = resolve(__dirname, "../prisma/dev.db");
 const db = new Database(DB_PATH);
+
+function prepare(sql) {
+  const stmt = db.query(sql);
+  return {
+    get: (...params) => stmt.get(...params),
+    all: (...params) => stmt.all(...params),
+    run: (...params) => stmt.run(...params),
+  };
+}
 
 function cuid() {
   return "c" + randomBytes(11).toString("hex");
@@ -33,9 +43,9 @@ function daysAgo(n) {
 }
 
 // ── IDs for Local Org ─────────────────────────────────────────────────────────
-const ORG_ID  = "cmoy4xrgv00002lwnhahpyyb3";
-const ADMIN   = "cmoy4xrh400042lwnpc2gn2it";
-const OPS     = "cmoy4xrjo00082lwnrlcu6zs9";
+const ORG_ID  = process.env.SEED_ORG_ID ?? "org_eis_01";
+const ADMIN   = process.env.SEED_ADMIN_ID ?? "cmpjmedf400012ljfrwg8hihf";
+const OPS     = process.env.SEED_OPS_ID ?? "cmpjmedf500052ljf7fuj9371";
 
 // ── Existing jobs ─────────────────────────────────────────────────────────────
 const JOBS = {
@@ -46,15 +56,15 @@ const JOBS = {
 
 // ── Clients ───────────────────────────────────────────────────────────────────
 const CLIENTS = {};
-const clientRows = db.prepare("SELECT id, fullName FROM Client WHERE orgId = ?").all(ORG_ID);
+const clientRows = prepare("SELECT id, fullName FROM Client WHERE orgId = ?").all(ORG_ID);
 for (const c of clientRows) CLIENTS[c.fullName] = c.id;
 
 function ensureClient(fullName, phone, email) {
   if (CLIENTS[fullName]) return CLIENTS[fullName];
-  const existing = db.prepare("SELECT id FROM Client WHERE phone = ? AND orgId = ?").get(phone, ORG_ID);
+  const existing = prepare("SELECT id FROM Client WHERE phone = ? AND orgId = ?").get(phone, ORG_ID);
   if (existing) { CLIENTS[fullName] = existing.id; return existing.id; }
   const id = cuid();
-  db.prepare("INSERT INTO Client (id, orgId, fullName, phone, email, createdAt, updatedAt) VALUES (?,?,?,?,?,?,?)")
+  prepare("INSERT INTO Client (id, orgId, fullName, phone, email, createdAt, updatedAt) VALUES (?,?,?,?,?,?,?)")
     .run(id, ORG_ID, fullName, phone, email ?? null, now(), now());
   CLIENTS[fullName] = id;
   return id;
@@ -68,7 +78,7 @@ const billUpdates = [
   { jobNumber: "LO-2025-0013", finalCost: 95000,  costEstimate: 0 },
 ];
 for (const u of billUpdates) {
-  db.prepare("UPDATE Job SET finalCost = ?, updatedAt = ? WHERE jobNumber = ? AND orgId = ?")
+  prepare("UPDATE Job SET finalCost = ?, updatedAt = ? WHERE jobNumber = ? AND orgId = ?")
     .run(u.finalCost, now(), u.jobNumber, ORG_ID);
 }
 
@@ -76,14 +86,14 @@ for (const u of billUpdates) {
 console.log("Creating invoices...");
 
 function upsertInvoice(jobId, invoiceNumber, totalAmount, status, issuedAt, paidAmount, paidAt) {
-  const existing = db.prepare("SELECT id FROM Invoice WHERE jobId = ?").get(jobId);
+  const existing = prepare("SELECT id FROM Invoice WHERE jobId = ?").get(jobId);
   if (existing) return existing.id;
   const id = cuid();
-  db.prepare(`
+  prepare(`
     INSERT INTO Invoice (id, orgId, jobId, invoiceNumber, currency, status, issuedAt, totalAmount, paidAmount, paidAt, createdAt, updatedAt)
     VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
   `).run(id, ORG_ID, jobId, invoiceNumber, "UGX", status, issuedAt, totalAmount, paidAmount, paidAt ?? null, now(), now());
-  db.prepare("UPDATE Job SET invoiceNumber = ?, invoiceIssuedAt = ?, updatedAt = ? WHERE id = ?")
+  prepare("UPDATE Job SET invoiceNumber = ?, invoiceIssuedAt = ?, updatedAt = ? WHERE id = ?")
     .run(invoiceNumber, issuedAt, now(), jobId);
   return id;
 }
@@ -97,11 +107,11 @@ console.log("Creating payments...");
 
 function upsertPayment(invoiceId, saleId, amount, method, reference, receivedAt) {
   const existing = invoiceId
-    ? db.prepare("SELECT id FROM Payment WHERE invoiceId = ? AND orgId = ?").get(invoiceId, ORG_ID)
+    ? prepare("SELECT id FROM Payment WHERE invoiceId = ? AND orgId = ?").get(invoiceId, ORG_ID)
     : null;
   if (existing) return existing.id;
   const id = cuid();
-  db.prepare(`
+  prepare(`
     INSERT INTO Payment (id, orgId, invoiceId, saleId, currency, amount, method, reference, receivedAt, createdById, createdAt)
     VALUES (?,?,?,?,?,?,?,?,?,?,?)
   `).run(id, ORG_ID, invoiceId ?? null, saleId ?? null, "UGX", amount, method, reference ?? null, receivedAt, ADMIN, now());
@@ -115,10 +125,10 @@ const _pay3Id = upsertPayment(inv3Id, null, 95000,  "CASH",         "CASH-REF-00
 console.log("Creating delivery notes...");
 
 function upsertDeliveryNote(invoiceId, number, deliveredByName, receivedByName, method, deliveredAt) {
-  const existing = db.prepare("SELECT id FROM DeliveryNote WHERE deliveryNoteNumber = ?").get(number);
+  const existing = prepare("SELECT id FROM DeliveryNote WHERE deliveryNoteNumber = ?").get(number);
   if (existing) return existing.id;
   const id = cuid();
-  db.prepare(`
+  prepare(`
     INSERT INTO DeliveryNote (id, orgId, invoiceId, deliveryNoteNumber, deliveredAt, deliveryMethod, deliveredByName, receivedByName, createdById, createdAt)
     VALUES (?,?,?,?,?,?,?,?,?,?)
   `).run(id, ORG_ID, invoiceId, number, deliveredAt, method, deliveredByName, receivedByName, ADMIN, now());
@@ -146,13 +156,13 @@ const PARTS = [
 
 const partIds = {};
 for (const p of PARTS) {
-  const existing = db.prepare("SELECT id FROM Part WHERE sku = ? AND orgId = ?").get(p.sku, ORG_ID);
+  const existing = prepare("SELECT id FROM Part WHERE sku = ? AND orgId = ?").get(p.sku, ORG_ID);
   if (existing) {
     partIds[p.sku] = existing.id;
     continue;
   }
   const id = cuid();
-  db.prepare(`
+  prepare(`
     INSERT INTO Part (id, orgId, sku, name, unitCost, qtyOnHand, reorderLevel, isActive, createdAt, updatedAt)
     VALUES (?,?,?,?,?,?,?,1,?,?)
   `).run(id, ORG_ID, p.sku, p.name, p.unitCost, p.qtyOnHand, p.reorderLevel, now(), now());
@@ -171,7 +181,7 @@ const POS_CLIENTS = [
 ];
 
 function createSale({ saleNumber, clientId, status: _status, items, paymentAmount, paymentMethod, paymentRef, createdAt, paidAt }) {
-  const existing = db.prepare("SELECT id FROM Sale WHERE saleNumber = ? AND orgId = ?").get(saleNumber, ORG_ID);
+  const existing = prepare("SELECT id FROM Sale WHERE saleNumber = ? AND orgId = ?").get(saleNumber, ORG_ID);
   if (existing) return existing.id;
 
   const saleId = cuid();
@@ -179,7 +189,7 @@ function createSale({ saleNumber, clientId, status: _status, items, paymentAmoun
   const vatAmount = Math.round(subtotal * 0.18);
   const totalAmount = subtotal + vatAmount;
   const paidAmt = paymentAmount ?? 0;
-  db.prepare(`
+  prepare(`
     INSERT INTO Sale (id, orgId, clientId, saleNumber, status, billingMode, currency,
       subtotal, discountAmount, vatAmount, totalAmount, paidAmount, paidAt,
       createdById, createdAt, updatedAt)
@@ -192,7 +202,7 @@ function createSale({ saleNumber, clientId, status: _status, items, paymentAmoun
   for (const item of items) {
     const itemId = cuid();
     const lineTotal = item.qty * item.price;
-    db.prepare(`
+    prepare(`
       INSERT INTO SaleItem (id, saleId, partId, description, quantity, unitPrice, lineTotal, createdAt)
       VALUES (?,?,?,?,?,?,?,?)
     `).run(itemId, saleId, item.partId ?? null, item.desc, item.qty, item.price, lineTotal, now());
@@ -200,7 +210,7 @@ function createSale({ saleNumber, clientId, status: _status, items, paymentAmoun
 
   if (paymentAmount && paymentAmount > 0) {
     const payId = cuid();
-    db.prepare(`
+    prepare(`
       INSERT INTO Payment (id, orgId, saleId, currency, amount, method, reference, receivedAt, createdById, createdAt)
       VALUES (?,?,?,?,?,?,?,?,?,?)
     `).run(payId, ORG_ID, saleId, "UGX", paymentAmount, paymentMethod ?? "CASH",
@@ -211,7 +221,7 @@ function createSale({ saleNumber, clientId, status: _status, items, paymentAmoun
 }
 
 const _sale1 = createSale({
-  saleNumber: "S-202505-0001",
+  saleNumber: "DEMO-S-2026-0001",
   clientId: POS_CLIENTS[0],
   items: [
     { desc: "Samsung A53 Battery Replacement", qty: 1, price: 75000, partId: partIds["BATT-SS-A53"] },
@@ -222,7 +232,7 @@ const _sale1 = createSale({
 });
 
 const _sale2 = createSale({
-  saleNumber: "S-202505-0002",
+  saleNumber: "DEMO-S-2026-0002",
   clientId: POS_CLIENTS[1],
   items: [
     { desc: "USB-C Charging Port (65W)",  qty: 1, price: 18000, partId: partIds["CHRG-USB-C-65"] },
@@ -233,7 +243,7 @@ const _sale2 = createSale({
 });
 
 const _sale3 = createSale({
-  saleNumber: "S-202505-0003",
+  saleNumber: "DEMO-S-2026-0003",
   clientId: POS_CLIENTS[2],
   items: [
     { desc: "DDR4 8GB RAM Upgrade",          qty: 1, price: 68000, partId: partIds["RAM-DDR4-8GB"] },
@@ -246,7 +256,7 @@ const _sale3 = createSale({
 
 // Partial payment — still outstanding
 const _sale4 = createSale({
-  saleNumber: "S-202505-0004",
+  saleNumber: "DEMO-S-2026-0004",
   clientId: POS_CLIENTS[3],
   items: [
     { desc: "iPhone 13 Screen Replacement", qty: 1, price: 180000, partId: partIds["SCRN-IP13-BLK"] },
@@ -258,7 +268,7 @@ const _sale4 = createSale({
 
 // Open sale — no payment yet
 const _sale5 = createSale({
-  saleNumber: "S-202505-0005",
+  saleNumber: "DEMO-S-2026-0005",
   clientId: POS_CLIENTS[4],
   items: [
     { desc: "HP ProBook Keyboard",   qty: 1, price: 55000, partId: partIds["KEYB-HP-G5"] },
@@ -273,26 +283,151 @@ console.log("Creating additional repair receipts...");
 
 // Partial advance on invoice 2 (LO-2025-0012, still ISSUED/outstanding)
 const _pay2aId = (() => {
-  const existing = db.prepare(
+  const existing = prepare(
     "SELECT id FROM Payment WHERE invoiceId = ? AND method = 'MOBILE_MONEY' AND orgId = ?"
   ).get(inv2Id, ORG_ID);
   if (existing) return existing.id;
   const id = cuid();
-  db.prepare(`
+  prepare(`
     INSERT INTO Payment (id, orgId, invoiceId, currency, amount, method, reference, receivedAt, createdById, createdAt)
     VALUES (?,?,?,?,?,?,?,?,?,?)
   `).run(id, ORG_ID, inv2Id, "UGX", 100000, "MOBILE_MONEY", "MTN-558812", daysAgo(5), OPS, now());
-  db.prepare("UPDATE Invoice SET paidAmount = 100000, updatedAt = ? WHERE id = ?").run(now(), inv2Id);
+  prepare("UPDATE Invoice SET paidAmount = 100000, updatedAt = ? WHERE id = ?").run(now(), inv2Id);
   return id;
 })();
 
+// ── Step 8: Credit Notes and Refunds ─────────────────────────────────────────
+console.log("Creating credit notes and refunds...");
+
+function upsertCreditNote({ saleId, creditNoteNumber, reason, items, totalAmount, issuedAt, itemsReceivedBackAt, itemsReceivedBackNote }) {
+  const existing = prepare("SELECT id FROM CreditNote WHERE creditNoteNumber = ?").get(creditNoteNumber);
+  if (existing) return existing.id;
+
+  const id = cuid();
+  prepare(`
+    INSERT INTO CreditNote (
+      id, orgId, saleId, creditNoteNumber, currency, totalAmount, issuedAt, reason,
+      itemsReceivedBackAt, itemsReceivedBackById, itemsReceivedBackNote, createdById, createdAt
+    )
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
+  `).run(
+    id,
+    ORG_ID,
+    saleId,
+    creditNoteNumber,
+    "UGX",
+    totalAmount,
+    issuedAt,
+    reason,
+    itemsReceivedBackAt ?? null,
+    itemsReceivedBackAt ? OPS : null,
+    itemsReceivedBackNote ?? null,
+    ADMIN,
+    now(),
+  );
+
+  for (const item of items) {
+    prepare(`
+      INSERT INTO CreditNoteItem (id, creditNoteId, partId, description, quantity, unitPrice, lineTotal, createdAt)
+      VALUES (?,?,?,?,?,?,?,?)
+    `).run(
+      cuid(),
+      id,
+      item.partId ?? null,
+      item.description,
+      item.quantity,
+      item.unitPrice,
+      item.quantity * item.unitPrice,
+      now(),
+    );
+  }
+
+  return id;
+}
+
+function upsertRefund({ saleId, creditNoteId, amount, method, reference, note, refundedAt }) {
+  const existing = prepare("SELECT id FROM Refund WHERE creditNoteId = ? AND reference = ? AND orgId = ?").get(creditNoteId, reference, ORG_ID);
+  if (existing) return existing.id;
+
+  const id = cuid();
+  prepare(`
+    INSERT INTO Refund (
+      id, orgId, saleId, creditNoteId, currency, amount, method, reference,
+      refundedAt, createdById, note, createdAt
+    )
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
+  `).run(
+    id,
+    ORG_ID,
+    saleId,
+    creditNoteId,
+    "UGX",
+    amount,
+    method,
+    reference,
+    refundedAt,
+    ADMIN,
+    note ?? null,
+    now(),
+  );
+  return id;
+}
+
+const creditNote1Id = upsertCreditNote({
+  saleId: _sale1,
+  creditNoteNumber: "DEMO-CN-2026-0001",
+  reason: "Battery replacement returned under counter sale warranty",
+  totalAmount: 75000,
+  issuedAt: daysAgo(6),
+  itemsReceivedBackAt: daysAgo(6),
+  itemsReceivedBackNote: "Battery pack returned and inspected by ops.",
+  items: [
+    { description: "Samsung A53 Battery Replacement", quantity: 1, unitPrice: 75000, partId: partIds["BATT-SS-A53"] },
+  ],
+});
+
+upsertRefund({
+  saleId: _sale1,
+  creditNoteId: creditNote1Id,
+  amount: 75000,
+  method: "MOBILE_MONEY",
+  reference: "RF-MTN-2025-0001",
+  note: "Customer refunded after warranty return.",
+  refundedAt: daysAgo(5),
+});
+
+const creditNote2Id = upsertCreditNote({
+  saleId: _sale3,
+  creditNoteNumber: "DEMO-CN-2026-0002",
+  reason: "RAM upgrade cancelled after compatibility issue",
+  totalAmount: 68000,
+  issuedAt: daysAgo(4),
+  itemsReceivedBackAt: null,
+  itemsReceivedBackNote: null,
+  items: [
+    { description: "DDR4 8GB RAM Upgrade", quantity: 1, unitPrice: 68000, partId: partIds["RAM-DDR4-8GB"] },
+  ],
+});
+
+upsertRefund({
+  saleId: _sale3,
+  creditNoteId: creditNote2Id,
+  amount: 30000,
+  method: "CASH",
+  reference: "RF-CASH-2025-0002",
+  note: "Partial refund issued; balance remains on credit note.",
+  refundedAt: daysAgo(3),
+});
+
 // ── Done ──────────────────────────────────────────────────────────────────────
 console.log("\n✓ Seed complete. Summary:");
-console.log(`  Invoices:       ${db.prepare("SELECT COUNT(*) as c FROM Invoice WHERE orgId = ?").get(ORG_ID).c}`);
-console.log(`  Payments:       ${db.prepare("SELECT COUNT(*) as c FROM Payment WHERE orgId = ?").get(ORG_ID).c}`);
-console.log(`  Delivery Notes: ${db.prepare("SELECT COUNT(*) as c FROM DeliveryNote WHERE orgId = ?").get(ORG_ID).c}`);
-console.log(`  Sales:          ${db.prepare("SELECT COUNT(*) as c FROM Sale WHERE orgId = ?").get(ORG_ID).c}`);
-console.log(`  Parts:          ${db.prepare("SELECT COUNT(*) as c FROM Part WHERE orgId = ?").get(ORG_ID).c}`);
-console.log(`  Jobs:           ${db.prepare("SELECT COUNT(*) as c FROM Job WHERE orgId = ?").get(ORG_ID).c}`);
+console.log(`  Invoices:       ${prepare("SELECT COUNT(*) as c FROM Invoice WHERE orgId = ?").get(ORG_ID).c}`);
+console.log(`  Payments:       ${prepare("SELECT COUNT(*) as c FROM Payment WHERE orgId = ?").get(ORG_ID).c}`);
+console.log(`  Delivery Notes: ${prepare("SELECT COUNT(*) as c FROM DeliveryNote WHERE orgId = ?").get(ORG_ID).c}`);
+console.log(`  Credit Notes:   ${prepare("SELECT COUNT(*) as c FROM CreditNote WHERE orgId = ?").get(ORG_ID).c}`);
+console.log(`  Refunds:        ${prepare("SELECT COUNT(*) as c FROM Refund WHERE orgId = ?").get(ORG_ID).c}`);
+console.log(`  Sales:          ${prepare("SELECT COUNT(*) as c FROM Sale WHERE orgId = ?").get(ORG_ID).c}`);
+console.log(`  Parts:          ${prepare("SELECT COUNT(*) as c FROM Part WHERE orgId = ?").get(ORG_ID).c}`);
+console.log(`  Jobs:           ${prepare("SELECT COUNT(*) as c FROM Job WHERE orgId = ?").get(ORG_ID).c}`);
 
 db.close();
