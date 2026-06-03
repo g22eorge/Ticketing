@@ -169,6 +169,12 @@ export default async function MorePage() {
                 <NavRow href="/documents/delivery-notes" label="Delivery Notes" iconBg="bg-sky-500/15"
                   icon={<ItemIcon d={["M1 3h15v13H1z","M16 8h4l3 3v5h-7V8z"]} color="text-sky-500" />}
                 />
+                <NavRow href="/documents/credit-notes" label="Credit Notes" iconBg="bg-rose-500/15"
+                  icon={<ItemIcon d={["M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z","M14 2v6h6","M8 13h8","M8 17h5","M8 9h2"]} color="text-rose-500" />}
+                />
+                <NavRow href="/documents/refunds" label="Refunds" iconBg="bg-red-500/15"
+                  icon={<ItemIcon d={["M12 2v20","M17 5H9.5a3.5 3.5 0 0 0 0 7H14a3.5 3.5 0 0 1 0 7H6","M6 12h12"]} color="text-red-500" />}
+                />
               </>
             )}
 
