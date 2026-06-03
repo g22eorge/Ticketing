@@ -32,6 +32,7 @@ import { generateInvoiceBuffer } from "@/lib/pdf/generate-invoice";
 import { generateJobCardBuffer } from "@/lib/pdf/generate-job-card";
 import { getDocumentBrandingSettings } from "@/lib/document-branding";
 import { formatQuotationNumber } from "@/lib/documents";
+import { nextAvailableInvoiceNumber } from "@/lib/commercial/document-workflow";
 import { isSupportedCurrency, normalizeCurrency, toBaseAmount } from "@/lib/currency";
 
 const workflowReasonValues = [
@@ -785,26 +786,49 @@ export async function recordClientPaymentAction(formData: FormData) {
 
   try {
     const result = await prisma.$transaction(async (tx) => {
-      const invoice = await tx.invoice.upsert({
-        where: { jobId: job.id },
-        create: {
-          orgId,
-          jobId: job.id,
-          invoiceNumber,
-          issuedAt,
-          currency: baseCurrency,
-          totalAmount,
-          paidAmount: 0,
-          status: "ISSUED",
-        },
-        update: {
-          invoiceNumber,
-          issuedAt,
-          currency: baseCurrency,
-          totalAmount,
-        },
-        select: { id: true, totalAmount: true },
+      const existingInvoice = await tx.invoice.findFirst({
+        where: { orgId, jobId: job.id },
+        select: { id: true, invoiceNumber: true },
       });
+      const safeInvoiceNumber = await nextAvailableInvoiceNumber(
+        tx,
+        existingInvoice?.invoiceNumber ?? invoiceNumber,
+        existingInvoice?.id,
+      );
+      const invoice = existingInvoice
+        ? await tx.invoice.update({
+            where: { id: existingInvoice.id },
+            data: {
+              invoiceNumber: safeInvoiceNumber,
+              issuedAt,
+              currency: baseCurrency,
+              totalAmount,
+            },
+            select: { id: true, totalAmount: true },
+          })
+        : await tx.invoice.create({
+            data: {
+              orgId,
+              jobId: job.id,
+              invoiceNumber: safeInvoiceNumber,
+              issuedAt,
+              currency: baseCurrency,
+              totalAmount,
+              paidAmount: 0,
+              status: "ISSUED",
+            },
+            select: { id: true, totalAmount: true },
+          });
+
+      if (job.invoiceNumber !== safeInvoiceNumber || !job.invoiceIssuedAt) {
+        await tx.job.updateMany({
+          where: { id: job.id, orgId },
+          data: {
+            invoiceNumber: safeInvoiceNumber,
+            invoiceIssuedAt: issuedAt,
+          },
+        });
+      }
 
       const existingPayments = await tx.payment.findMany({
         where: { orgId, invoiceId: invoice.id },

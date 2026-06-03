@@ -20,7 +20,7 @@ import { can } from "@/lib/permissions";
 import { orgDb, prisma } from "@/lib/prisma";
 import { ConfirmSubmitButton } from "@/components/shared/ConfirmSubmitButton";
 import { RowActionsMenu, MenuSection, MenuDestructiveRow, MenuActionLink, MenuActionButton } from "@/components/shared/RowActionsMenu";
-import { createReceiptForPayment, nextDocumentNumber } from "@/lib/commercial/document-workflow";
+import { createReceiptForPayment, nextAvailableInvoiceNumber } from "@/lib/commercial/document-workflow";
 import { writeSystemAuditEvent } from "@/lib/commercial/audit";
 import { sendInvoiceViaWhatsAppAction } from "@/app/(app)/jobs/[id]/actions";
 
@@ -89,7 +89,7 @@ export default async function InvoicesPage({
     const dueDate = dueDateRaw ? new Date(dueDateRaw) : null;
 
     const invoice = await prisma.$transaction(async (tx) => {
-      const invoiceNumber = await nextDocumentNumber(tx, "INV", "invoice");
+      const invoiceNumber = await nextAvailableInvoiceNumber(tx);
       return tx.invoice.create({
         data: {
           orgId,
@@ -252,7 +252,7 @@ export default async function InvoicesPage({
 
     // Create the invoice record
     const invoice = await prisma.$transaction(async (tx) => {
-      const invoiceNumber = await nextDocumentNumber(tx, "INV", "invoice");
+      const invoiceNumber = await nextAvailableInvoiceNumber(tx);
       const inv = await tx.invoice.create({
         data: {
           orgId,

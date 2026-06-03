@@ -30,6 +30,32 @@ export async function nextDocumentNumber(tx: Tx, prefix: string, countModel: "qu
   return `${startsWith}${String(max + 1).padStart(4, "0")}`;
 }
 
+export async function nextAvailableInvoiceNumber(tx: Tx, preferred?: string | null, excludeInvoiceId?: string | null) {
+  const preferredNumber = preferred?.trim();
+  if (preferredNumber) {
+    const existing = await tx.invoice.findUnique({
+      where: { invoiceNumber: preferredNumber },
+      select: { id: true },
+    });
+    if (!existing || existing.id === excludeInvoiceId) {
+      return preferredNumber;
+    }
+  }
+
+  for (let attempts = 0; attempts < 20; attempts += 1) {
+    const candidate = await nextDocumentNumber(tx, "INV", "invoice");
+    const existing = await tx.invoice.findUnique({
+      where: { invoiceNumber: candidate },
+      select: { id: true },
+    });
+    if (!existing || existing.id === excludeInvoiceId) {
+      return candidate;
+    }
+  }
+
+  throw new Error("Could not allocate a unique invoice number.");
+}
+
 function repairDescription(job: {
   jobNumber: string;
   brand: string;
@@ -117,7 +143,7 @@ export async function ensureInvoiceFromQuotation(tx: Tx, params: { orgId: string
     }
   }
 
-  const invoiceNumber = await nextDocumentNumber(tx, "INV", "invoice");
+  const invoiceNumber = await nextAvailableInvoiceNumber(tx);
   const totalAmount = quotation.totalAmount;
   const invoice = await tx.invoice.create({
     data: {

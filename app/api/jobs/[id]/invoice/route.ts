@@ -9,6 +9,7 @@ import { formatMoney, normalizeCurrency } from "@/lib/currency";
 import { getDocumentBrandingSettings } from "@/lib/document-branding";
 import { canGenerateInvoiceForStatus, formatQuotationNumber } from "@/lib/documents";
 import { can } from "@/lib/permissions";
+import { nextAvailableInvoiceNumber } from "@/lib/commercial/document-workflow";
 import { InvoiceTemplateComponent, resolveTemplateKey } from "@/lib/pdf/templates";
 import { prisma } from "@/lib/prisma";
 import { requireOrgSession } from "@/lib/org-context";
@@ -220,7 +221,8 @@ export async function GET(
     branding.quoteFormat,
     branding.sequencePadLength,
   );
-  const invoiceNumber = job.invoiceNumber?.trim() || `INV-${quotationNumber.replace(/\s+/g, "-")}`;
+  const preferredInvoiceNumber = job.invoiceNumber?.trim() || `INV-${quotationNumber.replace(/\s+/g, "-")}`;
+  let invoiceNumber = preferredInvoiceNumber;
 
   const invoiceTotal = clientBill;
 
@@ -231,31 +233,49 @@ export async function GET(
       const message = error instanceof Error ? error.message : "Workspace is read-only.";
       return NextResponse.json({ error: message }, { status: 403 });
     }
-    await prisma.job.update({
-      where: { id: job.id },
-      data: {
-        invoiceIssuedAt: issuedAtDate,
-        invoiceNumber,
-      },
-    });
+    invoiceNumber = await prisma.$transaction(async (tx) => {
+      const existingInvoice = await tx.invoice.findFirst({
+        where: { orgId, jobId: job.id },
+        select: { id: true, invoiceNumber: true },
+      });
+      const safeInvoiceNumber = await nextAvailableInvoiceNumber(
+        tx,
+        existingInvoice?.invoiceNumber ?? preferredInvoiceNumber,
+        existingInvoice?.id,
+      );
 
-    // Create/update invoice record for partial payments.
-    await prisma.invoice.upsert({
-      where: { jobId: job.id },
-      update: {
-        invoiceNumber,
-        issuedAt: issuedAtDate,
-        totalAmount: invoiceTotal,
-        status: invoiceTotal <= 0 ? "PAID" : "ISSUED",
-      },
-      create: {
-        orgId,
-        jobId: job.id,
-        invoiceNumber,
-        issuedAt: issuedAtDate,
-        totalAmount: invoiceTotal,
-        status: invoiceTotal <= 0 ? "PAID" : "ISSUED",
-      },
+      if (existingInvoice) {
+        await tx.invoice.update({
+          where: { id: existingInvoice.id },
+          data: {
+            invoiceNumber: safeInvoiceNumber,
+            issuedAt: issuedAtDate,
+            totalAmount: invoiceTotal,
+            status: invoiceTotal <= 0 ? "PAID" : "ISSUED",
+          },
+        });
+      } else {
+        await tx.invoice.create({
+          data: {
+            orgId,
+            jobId: job.id,
+            invoiceNumber: safeInvoiceNumber,
+            issuedAt: issuedAtDate,
+            totalAmount: invoiceTotal,
+            status: invoiceTotal <= 0 ? "PAID" : "ISSUED",
+          },
+        });
+      }
+
+      await tx.job.update({
+        where: { id: job.id },
+        data: {
+          invoiceIssuedAt: issuedAtDate,
+          invoiceNumber: safeInvoiceNumber,
+        },
+      });
+
+      return safeInvoiceNumber;
     });
 
     await prisma.auditLog.create({
