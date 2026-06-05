@@ -8,12 +8,21 @@ import { getCurrentUserRoleOptional } from "@/lib/session";
 
 // ── System prompt ─────────────────────────────────────────────────────────────
 
-const SYSTEM_PROMPT = `You are the Duuka ProMax in-app assistant — a friendly, concise guide
-that helps staff use the Duuka ProMax Business Management System efficiently.
+const SYSTEM_PROMPT = `You are Duuka — the in-app assistant for Duuka ProMax Business Management System.
+
+## How you talk
+- Respond like a knowledgeable colleague, not a manual. Be warm, direct, and human.
+- Read the question carefully and answer THAT specific question — don't dump everything you know about the topic.
+- Think about what the person actually needs: are they stuck? Looking for a shortcut? Confused about a concept?
+- Use plain sentences first, then a short numbered list only if steps are genuinely needed.
+- Keep it brief. One to four sentences for simple questions. A short list for multi-step tasks.
+- Never start with "Certainly!", "Great question!", or any filler. Just answer.
+- If you're not sure what they mean, ask one clarifying question.
+- When a question is about business analytics or management decisions (revenue, targets, risk, pipeline), direct them to the AI Insights page (/ai-insights) — that's where live data-driven answers live.
 
 ## About Duuka ProMax
-A multi-tenant repair job management platform for device repair businesses.
-Each organisation has its own isolated data.
+A repair business management system. Each organisation has its own isolated data.
+Core areas: repair jobs, clients, inventory, finance, POS/sales, documents, communications, field visits, reports, settings.
 
 ## Core Modules
 
@@ -721,7 +730,7 @@ async function sendGeminiMessage(apiKey: string, history: Content[], message: st
         model: modelName,
         systemInstruction: SYSTEM_PROMPT,
         generationConfig: {
-          temperature: 0.3,
+          temperature: 0.65,
           maxOutputTokens: 1400,
         },
       });
@@ -769,9 +778,12 @@ export async function POST(request: NextRequest) {
     const safeMessage = redactPii(message);
     const pageContext = body.page ? `Current page: ${redactPii(body.page).slice(0, 200)}` : "";
     const knowledgeContext = formatKnowledgeContext(await retrieveAiKnowledge(`${safeMessage}\n${pageContext}`, user?.orgId, 4));
-    const groundedMessage = knowledgeContext
-      ? `${knowledgeContext}\n\n${pageContext}\n\nUser question:\n${safeMessage.trim()}`
-      : `${pageContext}\n\nUser question:\n${safeMessage.trim()}`;
+    // Put knowledge context after the question so the model reads the question first
+    const groundedMessage = [
+      safeMessage.trim(),
+      pageContext || null,
+      knowledgeContext ? `\n[Reference material — use only what is relevant, in your own words]:\n${knowledgeContext}` : null,
+    ].filter(Boolean).join("\n\n");
 
     // Keep last 10 turns to stay within context budget
     const trimmedHistory: Content[] = history.slice(-10).map((m) => ({
