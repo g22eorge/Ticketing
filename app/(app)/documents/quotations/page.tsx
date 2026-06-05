@@ -24,7 +24,7 @@ import { ensureInvoiceFromQuotation, ensureQuotationFromJob } from "@/lib/commer
 import { sendQuotationViaWhatsAppAction } from "@/app/(app)/jobs/[id]/actions";
 import { enqueueEmailMessage } from "@/lib/notifications/whatsapp-outbox";
 
-type SearchParams = { q?: string; approval?: string };
+type SearchParams = { q?: string; approval?: string; period?: string };
 
 export default async function QuotationsPage({
   searchParams,
@@ -37,7 +37,11 @@ export default async function QuotationsPage({
   }
   await requireModule(OrgModule.INVOICING);
 
-  const { q, approval: approvalFilter } = await searchParams;
+  const { q, approval: approvalFilter, period: periodFilter = "all" } = await searchParams;
+  const now = new Date();
+  const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
   const currency = getAppCurrency();
 
   // ── Server action: mark quotation as sent (sets quotedAt = now) ──────────
@@ -291,19 +295,26 @@ export default async function QuotationsPage({
     getDocumentBrandingSettings(),
   ]);
 
-  // Sort: AWAITING_APPROVAL first, then by updatedAt desc
-  const sorted = [...jobs].sort((a, b) => {
-    const aAw = a.status === "AWAITING_APPROVAL" ? 0 : 1;
-    const bAw = b.status === "AWAITING_APPROVAL" ? 0 : 1;
-    if (aAw !== bAw) return aAw - bAw;
-    return b.updatedAt.getTime() - a.updatedAt.getTime();
-  });
-
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
   const pendingCount = jobs.filter(
     (j) => j.status === "AWAITING_APPROVAL" && j.clientApproved === null,
   ).length;
+
+  // Period filter applied client-side (jobs are already fetched)
+  const periodFilteredJobs = jobs.filter((j) => {
+    if (periodFilter === "this_month") return j.updatedAt >= thisMonthStart;
+    if (periodFilter === "last_month") return j.updatedAt >= lastMonthStart && j.updatedAt <= lastMonthEnd;
+    return true;
+  });
+
+  // Sort: AWAITING_APPROVAL first, then by updatedAt desc
+  const sorted = [...periodFilteredJobs].sort((a, b) => {
+    const aAw = a.status === "AWAITING_APPROVAL" ? 0 : 1;
+    const bAw = b.status === "AWAITING_APPROVAL" ? 0 : 1;
+    if (aAw !== bAw) return aAw - bAw;
+    return b.updatedAt.getTime() - a.updatedAt.getTime();
+  });
   const nowMs = Date.now();
 
   return (
@@ -381,6 +392,21 @@ export default async function QuotationsPage({
           </Link>
         )}
       </form>
+
+      {/* Period chips */}
+      <div className="flex gap-2">
+        {([
+          { label: "All time", value: "all" },
+          { label: "This month", value: "this_month" },
+          { label: "Last month", value: "last_month" },
+        ] as const).map(({ label, value }) => (
+          <Link key={value}
+            href={`/documents/quotations?${new URLSearchParams({ ...(q ? { q } : {}), ...(approvalFilter ? { approval: approvalFilter } : {}), period: value === "all" ? "" : value }).toString()}`}
+            className={`rounded-full border px-3 py-1.5 text-[12px] font-semibold transition ${(periodFilter ?? "all") === value ? "border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]" : "border-[var(--line)] text-[var(--ink-muted)] hover:border-[var(--accent)]/40 hover:text-[var(--ink)]"}`}>
+            {label}
+          </Link>
+        ))}
+      </div>
 
       {/* Table */}
       <div className="doc-list overflow-x-auto rounded-xl border border-[var(--line)]">

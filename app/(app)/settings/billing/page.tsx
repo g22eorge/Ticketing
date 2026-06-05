@@ -167,7 +167,7 @@ export default async function BillingPage({
       : "Your 2-month free trial has expired. Choose a plan below to continue using your workspace.";
 
     return (
-      <div className="space-y-6">
+      <div className="space-y-4">
         {paymentNotice ? (
           <div className={`rounded-xl border px-5 py-4 text-sm ${
             paymentNotice.tone === "success"
@@ -388,7 +388,7 @@ export default async function BillingPage({
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {paymentNotice ? (
         <div className={`rounded-xl border px-5 py-4 text-sm ${
           paymentNotice.tone === "success"

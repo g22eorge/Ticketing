@@ -221,7 +221,7 @@ export default async function AiInsightsPage() {
   ].filter((item): item is string => Boolean(item));
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="text-[12px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">AI · Analytics</p>

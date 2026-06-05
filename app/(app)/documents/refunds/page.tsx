@@ -21,7 +21,7 @@ export const dynamic = "force-dynamic";
 export default async function RefundsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; method?: string; type?: string; new?: string }>;
+  searchParams: Promise<{ q?: string; method?: string; type?: string; new?: string; period?: string }>;
 }) {
   await requireModule(OrgModule.INVOICING);
   const { user, orgId, org } = await requireOrgSession();
@@ -33,6 +33,11 @@ export default async function RefundsPage({
   const q = (params.q ?? "").trim();
   const methodFilter = params.method ?? "all";
   const typeFilter = params.type ?? "all";
+  const periodFilter = params.period ?? "all";
+  const now2 = new Date();
+  const thisMonthStart = new Date(now2.getFullYear(), now2.getMonth(), 1);
+  const lastMonthStart = new Date(now2.getFullYear(), now2.getMonth() - 1, 1);
+  const lastMonthEnd = new Date(now2.getFullYear(), now2.getMonth(), 0, 23, 59, 59);
   const showNewRefundForm = params.new === "1";
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
@@ -212,20 +217,23 @@ export default async function RefundsPage({
     }).catch(() => ({ _sum: { amount: null } })),
   ]);
 
-  const filtered = q
-    ? refunds.filter((r) => {
-        const search = q.toLowerCase();
-        return (
-          r.invoice?.invoiceNumber?.toLowerCase().includes(search) ||
-          r.sale?.saleNumber?.toLowerCase().includes(search) ||
-          r.creditNote?.creditNoteNumber?.toLowerCase().includes(search) ||
-          r.invoice?.job?.client?.fullName?.toLowerCase().includes(search) ||
-          r.sale?.client?.fullName?.toLowerCase().includes(search) ||
-          r.reference?.toLowerCase().includes(search) ||
-          r.note?.toLowerCase().includes(search)
-        );
-      })
-    : refunds;
+  const filtered = refunds.filter((r) => {
+    if (q) {
+      const search = q.toLowerCase();
+      if (!(
+        r.invoice?.invoiceNumber?.toLowerCase().includes(search) ||
+        r.sale?.saleNumber?.toLowerCase().includes(search) ||
+        r.creditNote?.creditNoteNumber?.toLowerCase().includes(search) ||
+        r.invoice?.job?.client?.fullName?.toLowerCase().includes(search) ||
+        r.sale?.client?.fullName?.toLowerCase().includes(search) ||
+        r.reference?.toLowerCase().includes(search) ||
+        r.note?.toLowerCase().includes(search)
+      )) return false;
+    }
+    if (periodFilter === "this_month") return r.refundedAt >= thisMonthStart;
+    if (periodFilter === "last_month") return r.refundedAt >= lastMonthStart && r.refundedAt <= lastMonthEnd;
+    return true;
+  });
 
   const currency = org.baseCurrency;
   const totalRefunds = kpiData._count.id ?? 0;
@@ -368,8 +376,23 @@ export default async function RefundsPage({
         </div>
       )}
 
+      {/* Period chips */}
+      <div className="flex gap-2">
+        {([
+          { label: "All time", value: "all" },
+          { label: "This month", value: "this_month" },
+          { label: "Last month", value: "last_month" },
+        ] as const).map(({ label, value }) => (
+          <a key={value} href={`/documents/refunds?${new URLSearchParams({ ...(q ? { q } : {}), method: methodFilter, type: typeFilter, period: value }).toString()}`}
+            className={`rounded-full border px-3 py-1.5 text-[12px] font-semibold transition ${periodFilter === value ? "border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]" : "border-[var(--line)] text-[var(--ink-muted)] hover:border-[var(--accent)]/40 hover:text-[var(--ink)]"}`}>
+            {label}
+          </a>
+        ))}
+      </div>
+
       {/* Filters */}
       <form method="GET" className="hidden lg:flex flex-wrap gap-2">
+        <input type="hidden" name="period" value={periodFilter} />
         <input
           name="q"
           defaultValue={q}

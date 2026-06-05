@@ -16,8 +16,16 @@ import { enqueueEmailMessage, enqueueWhatsAppMessage } from "@/lib/notifications
 
 const DELIVERY_METHODS: DeliveryMethod[] = ["PICKUP", "DELIVERY", "COURIER"];
 
-export default async function DeliveryNotesPage() {
+export default async function DeliveryNotesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string; period?: string; method?: string }>;
+}) {
   const { user, orgId } = await requireOrgSession();
+  const sp = await searchParams;
+  const q = sp.q?.trim() ?? "";
+  const periodFilter = sp.period ?? "all";
+  const methodFilter = sp.method ?? "all";
   if (!(can.viewFinancials(user) || ["ADMIN", "OPS", "FRONT_DESK"].includes(user.role))) {
     redirect("/dashboard");
   }
@@ -257,8 +265,22 @@ export default async function DeliveryNotesPage() {
 
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
   const thisMonth = notes.filter((n) => n.deliveredAt >= monthStart).length;
   const uniqueSources = new Set(notes.map((n) => n.invoice?.id ?? n.sale?.id).filter(Boolean)).size;
+
+  const filteredNotes = notes.filter((n) => {
+    if (q) {
+      const search = q.toLowerCase();
+      const label = n.deliveryNoteNumber + " " + (n.invoice?.invoiceNumber ?? "") + " " + (n.sale?.saleNumber ?? "") + " " + (n.invoice?.client?.fullName ?? n.sale?.client?.fullName ?? "");
+      if (!label.toLowerCase().includes(search)) return false;
+    }
+    if (methodFilter !== "all" && n.deliveryMethod !== methodFilter) return false;
+    if (periodFilter === "this_month") return n.deliveredAt >= monthStart;
+    if (periodFilter === "last_month") return n.deliveredAt >= lastMonthStart && n.deliveredAt <= lastMonthEnd;
+    return true;
+  });
   const invoiceOptions = await prisma.invoice.findMany({
     where: { orgId, status: { not: "VOID" } },
     orderBy: { issuedAt: "desc" },
@@ -316,6 +338,37 @@ export default async function DeliveryNotesPage() {
         </details>
       ) : null}
 
+      {/* Filter chips + search */}
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="flex gap-1">
+          {([
+            { label: "All time", value: "all" },
+            { label: "This month", value: "this_month" },
+            { label: "Last month", value: "last_month" },
+          ] as const).map(({ label, value }) => (
+            <a key={value} href={`/documents/delivery-notes?period=${value}&method=${methodFilter}${q ? `&q=${encodeURIComponent(q)}` : ""}`}
+              className={`rounded-full border px-3 py-1.5 text-[12px] font-semibold transition ${periodFilter === value ? "border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]" : "border-[var(--line)] text-[var(--ink-muted)] hover:border-[var(--accent)]/40 hover:text-[var(--ink)]"}`}>
+              {label}
+            </a>
+          ))}
+        </div>
+        <div className="flex gap-1">
+          {(["all", "PICKUP", "DELIVERY", "COURIER"] as const).map((m) => (
+            <a key={m} href={`/documents/delivery-notes?period=${periodFilter}&method=${m}${q ? `&q=${encodeURIComponent(q)}` : ""}`}
+              className={`rounded-full border px-3 py-1.5 text-[12px] font-semibold transition ${methodFilter === m ? "border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]" : "border-[var(--line)] text-[var(--ink-muted)] hover:border-[var(--accent)]/40 hover:text-[var(--ink)]"}`}>
+              {m === "all" ? "All methods" : m.charAt(0) + m.slice(1).toLowerCase()}
+            </a>
+          ))}
+        </div>
+        <form method="GET" className="flex gap-2 flex-1 min-w-[180px]">
+          <input type="hidden" name="period" value={periodFilter} />
+          <input type="hidden" name="method" value={methodFilter} />
+          <input name="q" defaultValue={q} placeholder="Search note #, client…"
+            className="h-8 flex-1 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 text-[12px] text-[var(--ink)] outline-none focus:border-[var(--accent)]/50" />
+          <button type="submit" className="h-8 rounded-lg border border-[var(--line)] px-3 text-[12px] font-medium hover:bg-[var(--panel-strong)]">Search</button>
+        </form>
+      </div>
+
       <div className="doc-list overflow-x-auto rounded-xl border border-[var(--line)]">
         <table className="w-full text-left text-sm">
           <thead className="bg-[var(--panel-strong)] text-[12px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
@@ -329,7 +382,7 @@ export default async function DeliveryNotesPage() {
             </tr>
           </thead>
           <tbody>
-            {notes.map((n) => {
+            {filteredNotes.map((n) => {
               const recipientPhone = n.invoice?.job?.client.phone ?? n.invoice?.client?.phone ?? n.sale?.client?.phone ?? null;
               const recipientEmail = n.invoice?.job?.client.email ?? n.invoice?.client?.email ?? n.sale?.client?.email ?? null;
               const deliveryUrl = `${appUrl}/api/delivery-notes/${n.id}`;
@@ -427,7 +480,7 @@ export default async function DeliveryNotesPage() {
               </tr>
               );
             })}
-            {notes.length === 0 ? (
+            {filteredNotes.length === 0 ? (
               <tr className="border-t border-[var(--line)]">
                 <td className="px-3 py-8 text-sm text-[var(--ink-muted)]" colSpan={6}>
                   No delivery notes yet. Generate one from a paid invoice where delivery or handover proof is needed.

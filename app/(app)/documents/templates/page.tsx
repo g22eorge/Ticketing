@@ -144,7 +144,7 @@ export default async function DocumentTemplatesPage() {
   // ── Render ──────────────────────────────────────────────────────────────────
 
   return (
-    <div className="min-w-0 space-y-6">
+    <div className="min-w-0 space-y-4">
       {/* Page header */}
       <div>
         <h1 className="text-xl font-bold text-[var(--ink)]">Document Templates</h1>
