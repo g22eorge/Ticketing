@@ -119,6 +119,7 @@ export default async function InventoryPage({
     });
 
     revalidatePath("/inventory");
+    redirect("/inventory");
   }
 
   async function togglePartActiveAction(formData: FormData) {
@@ -131,6 +132,7 @@ export default async function InventoryPage({
 
     await prisma.part.update({ where: { id: partId, orgId: toggleOrgId }, data: { isActive: next === "1" } });
     revalidatePath("/inventory");
+    redirect("/inventory");
   }
 
   async function updatePartAction(formData: FormData) {
@@ -159,6 +161,7 @@ export default async function InventoryPage({
       },
     });
     revalidatePath("/inventory");
+    redirect("/inventory");
   }
 
   const [parts, reservationStats, reservedByPart] = await Promise.all([
