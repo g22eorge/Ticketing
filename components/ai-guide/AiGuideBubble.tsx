@@ -174,9 +174,8 @@ export function AiGuideBubble() {
   const onPtrUp = useCallback(() => {
     if (!drag.current) return;
     drag.current = null;
-    if (!didDrag.current) {
-      setOpen(true); setMinimised(false);
-    } else {
+    // Only save position on drag; open/close is handled by onClick
+    if (didDrag.current) {
       try { localStorage.setItem(STORAGE_KEY, JSON.stringify(pos)); } catch { /**/ }
     }
   }, [pos]);
