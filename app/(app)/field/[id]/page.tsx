@@ -106,7 +106,7 @@ export default async function FieldVisitDetailPage({
       </div>
 
       {visit.job && (
-        <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+        <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
           <p className="mb-3 text-xs font-bold uppercase tracking-wide text-[var(--ink-muted)]">Linked Job</p>
           <dl className="divide-y divide-[var(--line)]">
             <DetailRow
@@ -125,7 +125,7 @@ export default async function FieldVisitDetailPage({
         </div>
       )}
 
-      <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+      <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
         <p className="mb-3 text-xs font-bold uppercase tracking-wide text-[var(--ink-muted)]">Visit Details</p>
         <dl className="divide-y divide-[var(--line)]">
           <DetailRow label="Type" value={TYPE_LABELS[visit.type] ?? visit.type} />
@@ -141,7 +141,7 @@ export default async function FieldVisitDetailPage({
         </dl>
       </div>
 
-      <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+      <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
         <p className="mb-3 text-xs font-bold uppercase tracking-wide text-[var(--ink-muted)]">Location & Contact</p>
         <dl className="divide-y divide-[var(--line)]">
           <DetailRow label="Address" value={visit.address} />
@@ -166,7 +166,7 @@ export default async function FieldVisitDetailPage({
       </div>
 
       {(visit.notes || visit.outcomeNotes || visit.signoffName) && (
-        <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+        <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
           <p className="mb-3 text-xs font-bold uppercase tracking-wide text-[var(--ink-muted)]">Notes & Sign-off</p>
           <dl className="divide-y divide-[var(--line)]">
             {visit.notes && <DetailRow label="Notes" value={visit.notes} />}
@@ -178,7 +178,7 @@ export default async function FieldVisitDetailPage({
       )}
 
       {canAct && !["COMPLETED", "FAILED", "CANCELLED"].includes(visit.status) && (
-        <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+        <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
           <p className="mb-4 text-xs font-bold uppercase tracking-wide text-[var(--ink-muted)]">Actions</p>
           <VisitActions
             visitId={visit.id}

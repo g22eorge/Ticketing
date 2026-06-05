@@ -192,7 +192,7 @@ export default async function ChartOfAccountsPage() {
       {/* ── DEFAULT ACCOUNTS BANNER ─────────────────────────────────────── */}
       {accounts.length === 0 ? (
         <div className="flex flex-col items-center gap-4 rounded-xl border border-dashed border-[var(--accent)]/40 bg-[var(--accent)]/5 px-6 py-8 text-center">
-          <div className="text-3xl">📒</div>
+          <div className="text-xl">📒</div>
           <div>
             <p className="text-sm font-semibold text-[var(--ink)]">No accounts yet</p>
             <p className="mt-1 text-xs text-[var(--ink-muted)]">

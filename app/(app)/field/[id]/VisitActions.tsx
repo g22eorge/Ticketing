@@ -95,7 +95,7 @@ export function VisitActions({ visitId, status, isManager, isFieldTech }: Props)
       )}
 
       {status === "ARRIVED" && showSignoffForm && (
-        <form onSubmit={handleSignoffSubmit} className="space-y-4 rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+        <form onSubmit={handleSignoffSubmit} className="space-y-4 rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
           <h3 className="text-sm font-semibold text-[var(--ink)]">Record Sign-off</h3>
           <div className="space-y-1.5">
             <label className="block text-sm font-medium text-[var(--ink)]">

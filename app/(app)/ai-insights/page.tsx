@@ -64,9 +64,9 @@ function statusLabel(status: string) {
 function KpiCard({ title, value, caption, tone = "neutral" }: { title: string; value: string; caption: string; tone?: "neutral" | "good" | "risk" }) {
   const toneClass = tone === "good" ? "text-emerald-600" : tone === "risk" ? "text-amber-600" : "text-[var(--accent-text)]";
   return (
-    <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+    <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
       <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">{title}</p>
-      <p className={`mt-2 text-2xl font-bold tracking-tight ${toneClass}`}>{value}</p>
+      <p className={`mt-1 text-lg font-bold tracking-tight ${toneClass}`}>{value}</p>
       <p className="mt-1 text-xs text-[var(--ink-muted)]">{caption}</p>
     </section>
   );
@@ -74,7 +74,7 @@ function KpiCard({ title, value, caption, tone = "neutral" }: { title: string; v
 
 function InsightCard({ title, items, empty }: { title: string; items: string[]; empty: string }) {
   return (
-    <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+    <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
       <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">{title}</p>
       {items.length ? (
         <div className="mt-3 space-y-2">
@@ -248,7 +248,7 @@ export default async function AiInsightsPage() {
       </div>
 
       <section className="grid gap-4 xl:grid-cols-4">
-        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
           <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Repairs</p>
           <dl className="mt-3 space-y-2 text-sm">
             <div className="flex justify-between gap-3"><dt className="text-[var(--ink-muted)]">New jobs</dt><dd className="font-semibold text-[var(--ink)]">{jobsThisMonth} <span className="text-[12px] font-medium text-[var(--ink-muted)]">({trendLabel(jobsThisMonth, jobsPrevMonth)})</span></dd></div>
@@ -258,7 +258,7 @@ export default async function AiInsightsPage() {
           </dl>
         </div>
 
-        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
           <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Sales</p>
           <dl className="mt-3 space-y-2 text-sm">
             <div className="flex justify-between gap-3"><dt className="text-[var(--ink-muted)]">POS sales</dt><dd className="font-semibold text-[var(--ink)]">{formatMoneyCompact(salesRevenue, currency)}</dd></div>
@@ -269,7 +269,7 @@ export default async function AiInsightsPage() {
           </dl>
         </div>
 
-        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
           <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Finance</p>
           <dl className="mt-3 space-y-2 text-sm">
             <div className="flex justify-between gap-3"><dt className="text-[var(--ink-muted)]">Expenses</dt><dd className="font-semibold text-[var(--ink)]">{formatMoneyCompact(expenses, currency)}</dd></div>
@@ -279,7 +279,7 @@ export default async function AiInsightsPage() {
           </dl>
         </div>
 
-        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
           <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Inventory</p>
           <dl className="mt-3 space-y-2 text-sm">
             <div className="flex justify-between gap-3"><dt className="text-[var(--ink-muted)]">Active parts</dt><dd className="font-semibold text-[var(--ink)]">{parts.length}</dd></div>
@@ -291,7 +291,7 @@ export default async function AiInsightsPage() {
       </section>
 
       <section className="grid gap-4 lg:grid-cols-2">
-        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
           <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Job Status Distribution</p>
           <div className="mt-3 space-y-2">
             {jobsByStatus.map((item) => (
@@ -303,7 +303,7 @@ export default async function AiInsightsPage() {
           </div>
         </div>
 
-        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
           <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Top Low-Stock Parts</p>
           <div className="mt-3 space-y-2">
             {lowStockParts.slice(0, 8).map((part) => (

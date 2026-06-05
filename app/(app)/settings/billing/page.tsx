@@ -263,7 +263,7 @@ export default async function BillingPage({
                       </span>
                     )}
                   </div>
-                  <p className="mt-1 text-2xl font-bold text-[var(--ink)]">
+                  <p className="mt-1 text-lg font-bold text-[var(--ink)]">
                     <span className="text-base font-normal text-[var(--ink-muted)]">UGX </span>
                     {formatMoney(PLAN_PRICES[key])}
                     <span className="text-sm font-normal text-[var(--ink-muted)]"> / mo</span>
@@ -432,7 +432,7 @@ export default async function BillingPage({
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Current plan</p>
-            <p className="mt-1 text-2xl font-bold text-[var(--ink)]">{PLAN_LABELS[org.plan]}</p>
+            <p className="mt-1 text-lg font-bold text-[var(--ink)]">{PLAN_LABELS[org.plan]}</p>
           </div>
           <span className={`rounded-full px-3 py-1 text-xs font-semibold ${
              org.billingStatus === "ACTIVE"    ? "border border-emerald-400/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" :
@@ -536,7 +536,7 @@ export default async function BillingPage({
                     </span>
                   )}
                 </div>
-                <p className="mt-1 text-2xl font-bold text-[var(--ink)]">
+                <p className="mt-1 text-lg font-bold text-[var(--ink)]">
                   {price === null ? (
                     <span>Free</span>
                   ) : (

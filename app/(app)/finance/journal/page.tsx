@@ -256,11 +256,11 @@ export default async function JournalPage({
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
 
         {/* Posted this month */}
-        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
           <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">
             Posted This Month
           </p>
-          <p className="mt-1.5 text-2xl font-bold tabular-nums text-[var(--ink)]">
+          <p className="mt-1 text-lg font-bold tabular-nums text-[var(--ink)]">
             {formatMoneyCompact(thisMonthAmt, currency)}
           </p>
           <p className="mt-1 text-[13px] text-[var(--ink-muted)]">
@@ -274,11 +274,11 @@ export default async function JournalPage({
         </div>
 
         {/* YTD posted */}
-        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
           <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">
             YTD Posted
           </p>
-          <p className="mt-1.5 text-2xl font-bold tabular-nums text-[var(--ink)]">
+          <p className="mt-1 text-lg font-bold tabular-nums text-[var(--ink)]">
             {formatMoneyCompact(ytdAmt, currency)}
           </p>
           <p className="mt-1 text-[13px] text-[var(--ink-muted)]">
@@ -287,12 +287,12 @@ export default async function JournalPage({
         </div>
 
         {/* Drafts pending */}
-        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
           <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">
             Drafts Pending
           </p>
           <p
-            className={`mt-1.5 text-2xl font-bold tabular-nums ${
+            className={`mt-1 text-lg font-bold tabular-nums ${
               draftCount > 0 ? "text-amber-600" : "text-[var(--ink)]"
             }`}
           >
@@ -304,11 +304,11 @@ export default async function JournalPage({
         </div>
 
         {/* Average entry */}
-        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
           <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">
             Avg Entry (YTD)
           </p>
-          <p className="mt-1.5 text-2xl font-bold tabular-nums text-[var(--ink)]">
+          <p className="mt-1 text-lg font-bold tabular-nums text-[var(--ink)]">
             {formatMoneyCompact(avgEntryAmt, currency)}
           </p>
           <p className="mt-1 text-[13px] text-[var(--ink-muted)]">

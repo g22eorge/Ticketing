@@ -296,7 +296,7 @@ export default async function CreditNotesPage({
                 <summary className="btn-premium cursor-pointer list-none rounded-lg px-3 py-1.5 text-[12px]">
                   + New Credit Note
                 </summary>
-                <div className="absolute right-0 top-full z-20 mt-1 w-80 rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 shadow-lg">
+                <div className="absolute right-0 top-full z-20 mt-1 w-80 rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5 shadow-lg">
                   <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-[var(--ink-muted)]">Issue Credit Note</p>
                   <form action={createCreditNoteAction} className="space-y-3">
                     <select name="saleId" required className="w-full rounded-lg border border-[var(--line)] bg-[var(--bg)] px-3 py-2 text-sm text-[var(--ink)]">

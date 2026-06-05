@@ -243,9 +243,9 @@ export default async function PLPage({
       {hasData && (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {/* Revenue */}
-          <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+          <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
             <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Revenue</p>
-            <p className="mt-1.5 text-2xl font-bold text-emerald-600 tabular-nums">
+            <p className="mt-1 text-lg font-bold text-emerald-600 tabular-nums">
               {formatMoneyCompact(totalRevenue, currency)}
             </p>
             {priorRevenue > 0 && (
@@ -260,9 +260,9 @@ export default async function PLPage({
           </div>
 
           {/* Expenses */}
-          <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+          <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
             <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Expenses</p>
-            <p className="mt-1.5 text-2xl font-bold text-red-500 tabular-nums">
+            <p className="mt-1 text-lg font-bold text-red-500 tabular-nums">
               {formatMoneyCompact(totalExpense, currency)}
             </p>
             {priorExpense > 0 && (
@@ -277,12 +277,12 @@ export default async function PLPage({
           </div>
 
           {/* Net Income */}
-          <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+          <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
             <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">
               Net {netIncome >= 0 ? "Income" : "Loss"}
             </p>
             <p
-              className={`mt-1.5 text-2xl font-bold tabular-nums ${
+              className={`mt-1 text-lg font-bold tabular-nums ${
                 netIncome >= 0 ? "text-emerald-600" : "text-red-500"
               }`}
             >
@@ -300,10 +300,10 @@ export default async function PLPage({
           </div>
 
           {/* Net Margin */}
-          <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+          <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
             <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Net Margin</p>
             <p
-              className={`mt-1.5 text-2xl font-bold tabular-nums ${
+              className={`mt-1 text-lg font-bold tabular-nums ${
                 netMargin >= 0 ? "text-emerald-600" : "text-red-500"
               }`}
             >
@@ -497,7 +497,7 @@ export default async function PLPage({
 
           {/* ── 6-MONTH TREND ────────────────────────────────────────────────── */}
           {hasTrend && (
-            <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+            <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
               <div className="mb-3 flex items-center justify-between">
                 <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">
                   6-Month Trend

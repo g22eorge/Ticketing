@@ -233,7 +233,7 @@ export default async function FieldPage({
         <div className="grid gap-4 lg:grid-cols-3">
 
           {/* Visit type breakdown */}
-          <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+          <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
             <p className="text-[12px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Visit Types — This Month</p>
             {typeBreakdown.length === 0 ? (
               <p className="mt-3 text-sm text-[var(--ink-muted)]">No visits this month.</p>

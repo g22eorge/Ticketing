@@ -714,7 +714,7 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
         </div>
       </div>
 
-      <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 sm:p-5">
+      <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5 sm:p-5">
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div>
             <p className="text-[12px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">POS · Sale</p>
@@ -792,7 +792,7 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
         </form>
       </section>
 
-      <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+      <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
         <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Items</p>
 
         {sale.status === "OPEN" ? (
@@ -935,7 +935,7 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
         </div>
       </section>
 
-      <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+      <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
         <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Payments</p>
 
         {sale.status !== "VOID" && balance > 0 ? (
@@ -995,7 +995,7 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
         </div>
       </section>
 
-      <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+      <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
         <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Delivery Notes</p>
         <p className="mt-1 text-xs text-[var(--ink-muted)]">
           POS quick sales do not generate delivery notes. Legacy notes remain available for audit/download only.
@@ -1033,7 +1033,7 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
         </div>
       </section>
 
-      <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+      <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
         <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Returns & Refunds</p>
         <p className="mt-1 text-xs text-[var(--ink-muted)]">
           Credit notes and refunds are only available for paid sales. Stock is only returned when you mark items received back.

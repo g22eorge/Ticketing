@@ -376,7 +376,7 @@ export default async function PayoutFollowupsPage({
   return (
     <div className="space-y-6">
       {/* Page header */}
-      <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+      <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <p className="text-[12px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Finance</p>

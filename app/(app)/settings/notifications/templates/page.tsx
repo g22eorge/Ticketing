@@ -110,7 +110,7 @@ export default async function NotificationTemplatesPage({
 
   if (!supportsCommsTemplates()) {
     return (
-      <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+      <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
         <p className="text-[13px] font-bold text-[var(--ink)]">Templates</p>
         <p className="mt-2 text-sm text-[var(--ink-muted)]">
           Templates are not available in this runtime (older database/client). Deploy the latest schema to enable them.
@@ -514,7 +514,7 @@ export default async function NotificationTemplatesPage({
   return (
     <div className="space-y-4">
       {topNav}
-      <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+      <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
         <p className="text-[13px] font-bold text-[var(--ink)]">Templates</p>
         <p className="mt-1 text-sm text-[var(--ink-muted)]">
           Use <code>{"{customerName}"}</code> and <code>{"{jobNumber}"}</code>.
@@ -544,7 +544,7 @@ export default async function NotificationTemplatesPage({
         ) : null}
       </section>
 
-      <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+      <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
         <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Create Template</p>
         <form action={createTemplate} className="mt-3 grid gap-2 md:grid-cols-2 xl:grid-cols-6">
           <div className="xl:col-span-2">
@@ -599,7 +599,7 @@ export default async function NotificationTemplatesPage({
         </form>
       </section>
 
-      <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+      <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
         <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Templates</p>
         {templates.length === 0 ? (
           <p className="mt-3 text-sm text-[var(--ink-muted)]">No templates yet.</p>
@@ -741,7 +741,7 @@ export default async function NotificationTemplatesPage({
         )}
       </section>
 
-      <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+      <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
         <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Status Policy</p>
         <p className="mt-1 text-xs text-[var(--ink-muted)]">
           Controls which channels are enabled per job status and which template key is used. Nudges are in hours.

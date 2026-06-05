@@ -342,7 +342,7 @@ export default async function QuotationDetailPage({
       ) : null}
 
       {canEditDraft ? (
-        <details className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+        <details className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
           <summary className="cursor-pointer list-none text-[13px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)] [&::-webkit-details-marker]:hidden">
             Edit Quote
           </summary>

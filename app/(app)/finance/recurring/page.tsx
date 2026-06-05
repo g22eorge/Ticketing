@@ -266,7 +266,7 @@ export default async function RecurringInvoicesPage() {
           <summary className="btn-premium cursor-pointer list-none rounded-lg px-3 py-1.5 text-[12px]">
             + New Template
           </summary>
-          <div className="absolute right-0 top-full z-20 mt-2 w-[420px] rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 shadow-xl">
+          <div className="absolute right-0 top-full z-20 mt-2 w-[420px] rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5 shadow-xl">
             <p className="mb-3 text-[12px] font-bold text-[var(--ink)]">New Recurring Invoice</p>
             <form action={createRecurringAction} className="space-y-3">
               <div>

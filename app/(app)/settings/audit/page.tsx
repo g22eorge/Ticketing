@@ -70,7 +70,7 @@ export default async function SettingsAuditPage({
         </div>
       </div>
 
-      <form className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+      <form className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
         <div className="grid gap-3 md:grid-cols-[1fr_auto]">
           <select name="action" defaultValue={action} className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm text-[var(--ink)]">
             <option value="">All actions</option>

@@ -271,7 +271,7 @@ export default async function RefundsPage({
       </div>
 
       {showNewRefundForm && ["ADMIN", "OPS", "MANAGER", "FINANCE"].includes(user.role) && (
-        <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 shadow-sm">
+        <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5 shadow-sm">
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-[var(--ink-muted)]">Issue New Refund</p>

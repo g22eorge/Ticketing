@@ -871,7 +871,7 @@ export default async function InvoicesPage({
               <p className={`text-[12px] font-bold uppercase tracking-wide ${band.color}`}>
                 {band.label}
               </p>
-              <p className={`mt-1.5 text-2xl font-bold tabular-nums ${band.color}`}>
+              <p className={`mt-1 text-lg font-bold tabular-nums ${band.color}`}>
                 {formatMoneyCompact(bandTotal, "UGX")}
               </p>
               <p className={`mt-1 text-[13px] ${band.color} opacity-80`}>

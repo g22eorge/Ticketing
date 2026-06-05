@@ -192,7 +192,7 @@ export function NewQuotationForm({ leadId, clientId, jobId, currency, canOverrid
         </div>
       </div>
 
-      <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+      <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
         <p className="mb-3 text-[13px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Quotation Details</p>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div>

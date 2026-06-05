@@ -116,7 +116,7 @@ export default async function AiSettingsPage({ searchParams }: { searchParams: P
         </div>
       )}
 
-      <form action={saveSettingsAction} className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+      <form action={saveSettingsAction} className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
         <p className="text-sm font-bold text-[var(--ink)]">AI Governance</p>
         <div className="mt-3 grid gap-3 md:grid-cols-3">
           {[
@@ -137,13 +137,13 @@ export default async function AiSettingsPage({ searchParams }: { searchParams: P
       </form>
 
       <div className="grid gap-3 md:grid-cols-3">
-        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4"><p className="text-xs text-[var(--ink-muted)]">Helpful</p><p className="text-2xl font-bold text-emerald-600">{helpful}</p></div>
-        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4"><p className="text-xs text-[var(--ink-muted)]">Not helpful</p><p className="text-2xl font-bold text-amber-600">{notHelpful}</p></div>
-        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4"><p className="text-xs text-[var(--ink-muted)]">Prompt logs</p><p className="text-2xl font-bold text-[var(--ink)]">{promptLogs.length}</p></div>
+        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5"><p className="text-xs text-[var(--ink-muted)]">Helpful</p><p className="text-lg font-bold text-emerald-600">{helpful}</p></div>
+        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5"><p className="text-xs text-[var(--ink-muted)]">Not helpful</p><p className="text-lg font-bold text-amber-600">{notHelpful}</p></div>
+        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5"><p className="text-xs text-[var(--ink-muted)]">Prompt logs</p><p className="text-lg font-bold text-[var(--ink)]">{promptLogs.length}</p></div>
       </div>
 
       <div className="grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
-        <form action={createArticleAction} className="panel-shadow space-y-3 rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+        <form action={createArticleAction} className="panel-shadow space-y-3 rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
           <p className="text-sm font-bold text-[var(--ink)]">Add Knowledge Article</p>
           <input name="title" required placeholder="Title" className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm text-[var(--ink)] outline-none" />
           <input name="module" placeholder="Module, e.g. JOBS, FINANCE, AI" className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm text-[var(--ink)] outline-none" />
@@ -155,7 +155,7 @@ export default async function AiSettingsPage({ searchParams }: { searchParams: P
           <button type="submit" className="btn-premium rounded-lg px-4 py-2 text-sm">Save Article</button>
         </form>
 
-        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
           <p className="text-sm font-bold text-[var(--ink)]">Recent AI Feedback</p>
           <div className="mt-3 space-y-3">
             {feedback.length === 0 ? <p className="text-sm text-[var(--ink-muted)]">No AI feedback yet.</p> : null}
@@ -174,7 +174,7 @@ export default async function AiSettingsPage({ searchParams }: { searchParams: P
         </div>
       </div>
 
-      <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+      <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
         <p className="text-sm font-bold text-[var(--ink)]">Knowledge Articles</p>
         <div className="mt-3 grid gap-3 md:grid-cols-2">
           {articles.map((article) => (
@@ -198,7 +198,7 @@ export default async function AiSettingsPage({ searchParams }: { searchParams: P
         </div>
       </div>
 
-      <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+      <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
         <p className="text-sm font-bold text-[var(--ink)]">Recent Redacted Prompt Logs</p>
         <div className="mt-3 space-y-2">
           {promptLogs.length === 0 ? <p className="text-sm text-[var(--ink-muted)]">No prompt logs yet.</p> : null}

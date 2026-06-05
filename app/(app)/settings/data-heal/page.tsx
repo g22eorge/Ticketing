@@ -67,7 +67,7 @@ export default async function DataHealPage({
         </div>
       </div>
 
-      <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+      <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
         {feedback.mode ? (
           <div className="mb-3 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-xs text-[var(--ink)]">
             {feedback.mode === "dry" ? "Dry check complete" : "Heal run complete"}: checked {feedback.checked ?? "0"},

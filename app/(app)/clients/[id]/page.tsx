@@ -234,7 +234,7 @@ export default async function ClientDetailPage({
         </div>
       </div>
 
-      <form action={updateClient} className="panel-shadow space-y-4 rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+      <form action={updateClient} className="panel-shadow space-y-4 rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
         <div>
           <p className="text-xs uppercase tracking-[0.16em] text-[var(--ink-muted)]">Client Profile</p>
           <p className="mt-1 text-sm text-[var(--ink-muted)]">Update basic contact details and internal notes.</p>
@@ -285,7 +285,7 @@ export default async function ClientDetailPage({
         {canEdit ? <button type="submit" className="btn-premium rounded-lg px-3 py-2 text-white">Save Client</button> : null}
       </form>
 
-      <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+      <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Job History</p>
           <div className="flex items-center gap-2">

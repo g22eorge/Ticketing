@@ -305,7 +305,7 @@ export default async function ExpensesPage({ searchParams }: Props) {
             <summary className="btn-premium cursor-pointer list-none rounded-lg px-3 py-1.5 text-[12px]">
               + Record Expense
             </summary>
-            <div className="absolute right-0 top-full z-20 mt-2 w-96 rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 shadow-xl">
+            <div className="absolute right-0 top-full z-20 mt-2 w-96 rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5 shadow-xl">
               <p className="mb-3 text-[12px] font-bold text-[var(--ink)]">Record Business Expense</p>
               <form action={createExpenseAction} className="space-y-3">
                 <div>
@@ -424,9 +424,9 @@ export default async function ExpensesPage({ searchParams }: Props) {
 
       {/* ── KPI STRIP ────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
           <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">This Month</p>
-          <p className="mt-1.5 text-2xl font-bold text-[var(--ink)] tabular-nums">
+          <p className="mt-1 text-lg font-bold text-[var(--ink)] tabular-nums">
             {formatMoneyCompact(thisMonthAmount, currency)}
           </p>
           {prevMonthTotal > 0 && (
@@ -441,11 +441,11 @@ export default async function ExpensesPage({ searchParams }: Props) {
           )}
         </div>
 
-        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
           <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">
             YTD {thisYear}
           </p>
-          <p className="mt-1.5 text-2xl font-bold text-[var(--ink)] tabular-nums">
+          <p className="mt-1 text-lg font-bold text-[var(--ink)] tabular-nums">
             {formatMoneyCompact(ytdTotal, currency)}
           </p>
           {prevYtdTotal > 0 && (
@@ -460,9 +460,9 @@ export default async function ExpensesPage({ searchParams }: Props) {
           )}
         </div>
 
-        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
           <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Avg / Month</p>
-          <p className="mt-1.5 text-2xl font-bold text-[var(--ink)] tabular-nums">
+          <p className="mt-1 text-lg font-bold text-[var(--ink)] tabular-nums">
             {trendData.filter((d) => d.amount > 0).length > 0
               ? formatMoneyCompact(
                   trendData.reduce((s, d) => s + d.amount, 0) /
@@ -474,13 +474,13 @@ export default async function ExpensesPage({ searchParams }: Props) {
           <p className="mt-1 text-[13px] text-[var(--ink-muted)]">Last 6 months</p>
         </div>
 
-        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
           <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">
             Top Category
           </p>
           {byCategory.length > 0 ? (
             <>
-              <p className="mt-1.5 text-2xl font-bold text-[var(--ink)] tabular-nums">
+              <p className="mt-1 text-lg font-bold text-[var(--ink)] tabular-nums">
                 {formatMoneyCompact(byCategory.sort((a, b) => b.total - a.total)[0].total, currency)}
               </p>
               <p className="mt-1 text-[13px] text-[var(--ink-muted)]">

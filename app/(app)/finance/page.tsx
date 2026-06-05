@@ -147,7 +147,7 @@ export default async function FinancePage() {
         {STATS.map((s) => (
           <div key={s.label} className="rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-4">
             <p className="text-[13px] text-[var(--ink-muted)]">{s.label}</p>
-            <p className={`mt-1 text-2xl font-black ${s.color}`}>{s.value}</p>
+            <p className={`mt-1 text-lg font-black ${s.color}`}>{s.value}</p>
           </div>
         ))}
       </div>

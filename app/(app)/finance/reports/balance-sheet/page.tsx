@@ -209,22 +209,22 @@ export default async function BalanceSheetPage({
 
           {/* ── FINANCIAL RATIOS STRIP ───────────────────────────────────── */}
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+            <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
               <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">
                 Total Assets
               </p>
-              <p className="mt-1.5 text-2xl font-bold text-blue-600 tabular-nums">
+              <p className="mt-1 text-lg font-bold text-blue-600 tabular-nums">
                 {formatMoneyCompact(totalAssets, currency)}
               </p>
               <p className="mt-1 text-[13px] text-[var(--ink-muted)]">Cumulative to date</p>
             </div>
 
-            <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+            <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
               <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">
                 Working Capital
               </p>
               <p
-                className={`mt-1.5 text-2xl font-bold tabular-nums ${
+                className={`mt-1 text-lg font-bold tabular-nums ${
                   workingCapital >= 0 ? "text-emerald-600" : "text-red-500"
                 }`}
               >
@@ -234,12 +234,12 @@ export default async function BalanceSheetPage({
               <p className="mt-1 text-[13px] text-[var(--ink-muted)]">Assets − Liabilities</p>
             </div>
 
-            <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+            <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
               <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">
                 Debt Ratio
               </p>
               <p
-                className={`mt-1.5 text-2xl font-bold tabular-nums ${
+                className={`mt-1 text-lg font-bold tabular-nums ${
                   Number(debtRatio ?? 0) <= 0.5 ? "text-emerald-600" : "text-amber-500"
                 }`}
               >
@@ -248,12 +248,12 @@ export default async function BalanceSheetPage({
               <p className="mt-1 text-[13px] text-[var(--ink-muted)]">Liabilities / Assets</p>
             </div>
 
-            <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+            <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
               <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">
                 Debt-to-Equity
               </p>
               <p
-                className={`mt-1.5 text-2xl font-bold tabular-nums ${
+                className={`mt-1 text-lg font-bold tabular-nums ${
                   Number(debtToEquity ?? 0) <= 1 ? "text-emerald-600" : "text-amber-500"
                 }`}
               >

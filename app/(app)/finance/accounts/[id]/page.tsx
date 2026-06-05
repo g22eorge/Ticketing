@@ -204,38 +204,38 @@ export default async function AccountLedgerPage({
 
       {/* ── KPI TILES ────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
           <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">
             All-Time Balance
           </p>
-          <p className={`mt-1.5 text-2xl font-bold tabular-nums ${allTimeBalance >= 0 ? "text-[var(--ink)]" : "text-red-500"}`}>
+          <p className={`mt-1 text-lg font-bold tabular-nums ${allTimeBalance >= 0 ? "text-[var(--ink)]" : "text-red-500"}`}>
             {allTimeBalance < 0 ? "−" : ""}
             {formatMoneyCompact(Math.abs(allTimeBalance), currency)}
           </p>
           <p className="mt-1 text-[13px] text-[var(--ink-muted)]">{allLines.length} postings</p>
         </div>
 
-        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
           <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">
             {periodLabel} — Debits
           </p>
-          <p className="mt-1.5 text-2xl font-bold tabular-nums text-[var(--ink)]">
+          <p className="mt-1 text-lg font-bold tabular-nums text-[var(--ink)]">
             {formatMoneyCompact(totalDebit, currency)}
           </p>
         </div>
 
-        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
           <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">
             {periodLabel} — Credits
           </p>
-          <p className="mt-1.5 text-2xl font-bold tabular-nums text-[var(--ink)]">
+          <p className="mt-1 text-lg font-bold tabular-nums text-[var(--ink)]">
             {formatMoneyCompact(totalCredit, currency)}
           </p>
         </div>
 
-        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
           <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Closing Balance</p>
-          <p className={`mt-1.5 text-2xl font-bold tabular-nums ${closingBalance >= 0 ? "text-emerald-600" : "text-red-500"}`}>
+          <p className={`mt-1 text-lg font-bold tabular-nums ${closingBalance >= 0 ? "text-emerald-600" : "text-red-500"}`}>
             {closingBalance < 0 ? "−" : ""}
             {formatMoneyCompact(Math.abs(closingBalance), currency)}
           </p>

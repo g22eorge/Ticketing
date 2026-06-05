@@ -199,7 +199,7 @@ export default async function CashFlowPage({
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
           <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Cash Inflow</p>
-          <p className="mt-1 text-2xl font-bold text-emerald-600">{formatMoneyCompact(totalInflow, currency)}</p>
+          <p className="mt-1 text-lg font-bold text-emerald-600">{formatMoneyCompact(totalInflow, currency)}</p>
           <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">
             {pctChange(totalInflow, priorInflow) ? (
               <span className={totalInflow >= priorInflow ? "text-emerald-600" : "text-red-500"}>{pctChange(totalInflow, priorInflow)} vs {priorLabel}</span>
@@ -208,7 +208,7 @@ export default async function CashFlowPage({
         </div>
         <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
           <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Cash Outflow</p>
-          <p className="mt-1 text-2xl font-bold text-red-500">{formatMoneyCompact(totalOutflow, currency)}</p>
+          <p className="mt-1 text-lg font-bold text-red-500">{formatMoneyCompact(totalOutflow, currency)}</p>
           <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">
             {pctChange(totalOutflow, priorOutflow) ? (
               <span className={totalOutflow <= priorOutflow ? "text-emerald-600" : "text-red-500"}>{pctChange(totalOutflow, priorOutflow)} vs {priorLabel}</span>
@@ -217,14 +217,14 @@ export default async function CashFlowPage({
         </div>
         <div className={`panel-shadow rounded-xl border px-4 py-3 ${netOperating >= 0 ? "border-emerald-400/30 bg-emerald-500/10" : "border-red-400/30 bg-red-500/10"}`}>
           <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Net Cash Flow</p>
-          <p className={`mt-1 text-2xl font-bold ${netOperating >= 0 ? "text-emerald-700" : "text-red-600"}`}>
+          <p className={`mt-1 text-lg font-bold ${netOperating >= 0 ? "text-emerald-700" : "text-red-600"}`}>
             {netOperating >= 0 ? "+" : ""}{formatMoneyCompact(netOperating, currency)}
           </p>
           <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">{operatingMarginPct}% operating margin</p>
         </div>
         <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
           <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Net Bank Activity</p>
-          <p className={`mt-1 text-2xl font-bold ${netBank >= 0 ? "text-emerald-600" : "text-amber-600"}`}>
+          <p className={`mt-1 text-lg font-bold ${netBank >= 0 ? "text-emerald-600" : "text-amber-600"}`}>
             {netBank >= 0 ? "+" : ""}{formatMoneyCompact(netBank, currency)}
           </p>
           <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">{bankAccountsCount} bank account{bankAccountsCount !== 1 ? "s" : ""}</p>

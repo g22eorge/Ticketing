@@ -201,7 +201,7 @@ export default async function GroupsPage({ searchParams }: { searchParams: Promi
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[360px_1fr]">
-        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
           <div className="flex items-center justify-between gap-2">
             <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Groups</p>
             <Link
@@ -241,7 +241,7 @@ export default async function GroupsPage({ searchParams }: { searchParams: Promi
         <div className="space-y-4">
           {selected ? (
             <>
-              <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+              <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
                 <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Group</p>
                 <div className="mt-3 grid gap-2 md:grid-cols-2">
                   <form action={updateGroupAction} className="md:col-span-2 grid gap-2 md:grid-cols-2">
@@ -261,7 +261,7 @@ export default async function GroupsPage({ searchParams }: { searchParams: Promi
                 </div>
               </div>
 
-              <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+              <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
                 <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Members</p>
                 <form action={addMemberAction} className="mt-3 flex flex-wrap items-center gap-2">
                   <input type="hidden" name="id" value={selected.id} />
@@ -307,7 +307,7 @@ export default async function GroupsPage({ searchParams }: { searchParams: Promi
                 </div>
               </div>
 
-              <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+              <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
                 <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Permissions</p>
                 <form action={saveGroupPermissionsAction} className="mt-3 space-y-2">
                   <input type="hidden" name="id" value={selected.id} />

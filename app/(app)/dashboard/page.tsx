@@ -156,7 +156,7 @@ function RevenueMarginTrendSection({
   emptyMessage?: string;
 }) {
   return (
-    <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+    <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <div>
           <p className="text-sm font-semibold text-[var(--ink)]">{label}</p>
@@ -461,24 +461,24 @@ export default async function DashboardPage({
         />
 
         <div className="hidden gap-3 2xl:grid 2xl:grid-cols-4">
-          <Link href="/technicians" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px] sm:p-5">
+          <Link href="/technicians" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5 transition hover:-translate-y-[2px] sm:p-5">
             <p className="text-[12px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Assigned Jobs ({selectedPeriodLabel})</p>
-            <p className="mt-2 text-3xl font-semibold sm:text-4xl">{jobs.length}</p>
+            <p className="mt-1 text-xl font-semibold">{jobs.length}</p>
             <p className="mt-3 text-xs font-medium text-[var(--accent)]">Open queue →</p>
           </Link>
-          <Link href="/technicians?ready=1" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px] sm:p-5">
+          <Link href="/technicians?ready=1" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5 transition hover:-translate-y-[2px] sm:p-5">
             <p className="text-[12px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Open Jobs ({selectedPeriodLabel})</p>
-            <p className="mt-2 text-3xl font-semibold text-[var(--accent)] sm:text-4xl">{openCount}</p>
+            <p className="mt-1 text-xl font-semibold text-[var(--accent)]">{openCount}</p>
             <p className="mt-3 text-xs font-medium text-[var(--accent)]">Jobs needing action →</p>
           </Link>
-          <Link href="/jobs?status=COMPLETED" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px] sm:p-5">
+          <Link href="/jobs?status=COMPLETED" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5 transition hover:-translate-y-[2px] sm:p-5">
             <p className="text-[12px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Completed ({selectedPeriodLabel})</p>
-            <p className="mt-2 text-3xl font-semibold text-[var(--accent)] sm:text-4xl">{completedCount}</p>
+            <p className="mt-1 text-xl font-semibold text-[var(--accent)]">{completedCount}</p>
             <p className="mt-3 text-xs font-medium text-[var(--accent)]">Completed jobs →</p>
           </Link>
-          <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 sm:p-5">
+          <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5 sm:p-5">
             <p className="text-[12px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Payout Outstanding</p>
-            <p className="mt-2 text-3xl font-semibold text-[var(--accent)]">{formatMoneyCompact(outstandingTotal, currency)}</p>
+            <p className="mt-1 text-xl font-semibold text-[var(--accent)]">{formatMoneyCompact(outstandingTotal, currency)}</p>
             <p className="mt-2 text-xs text-[var(--ink-muted)]">Paid to date: {formatMoneyCompact(paidTotal, currency)}</p>
             <p className="mt-3 text-xs font-medium text-[var(--accent)]">
               <Link href="/technicians/payouts">View payout breakdown →</Link>
@@ -673,29 +673,29 @@ export default async function DashboardPage({
         </PersistedDisclosure>
 
         <div className="hidden gap-3 2xl:grid 2xl:grid-cols-4">
-          <Link href="/jobs" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px] sm:p-5">
+          <Link href="/jobs" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5 transition hover:-translate-y-[2px] sm:p-5">
             <p className="text-[12px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Assigned ({selectedPeriodLabel})</p>
-            <p className="mt-2 text-3xl font-semibold sm:text-4xl">{assignedJobs.length}</p>
+            <p className="mt-1 text-xl font-semibold">{assignedJobs.length}</p>
             <p className="mt-3 text-xs font-medium text-[var(--accent)]">View my jobs →</p>
           </Link>
-          <Link href="/jobs?status=DIAGNOSING" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px] sm:p-5">
+          <Link href="/jobs?status=DIAGNOSING" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5 transition hover:-translate-y-[2px] sm:p-5">
             <p className="text-[12px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Diagnosing ({selectedPeriodLabel})</p>
-            <p className="mt-2 text-3xl font-semibold text-[var(--accent)] sm:text-4xl">{diagnosing}</p>
+            <p className="mt-1 text-xl font-semibold text-[var(--accent)]">{diagnosing}</p>
             <p className="mt-3 text-xs font-medium text-[var(--accent)]">Needs diagnosis work →</p>
           </Link>
-          <Link href="/jobs?status=IN_REPAIR" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px] sm:p-5">
+          <Link href="/jobs?status=IN_REPAIR" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5 transition hover:-translate-y-[2px] sm:p-5">
             <p className="text-[12px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">In Repair ({selectedPeriodLabel})</p>
-            <p className="mt-2 text-3xl font-semibold text-[var(--accent)] sm:text-4xl">{inRepair}</p>
+            <p className="mt-1 text-xl font-semibold text-[var(--accent)]">{inRepair}</p>
             <p className="mt-3 text-xs font-medium text-[var(--accent)]">Active repairs →</p>
           </Link>
-          <Link href="/jobs?status=COMPLETED" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px] sm:p-5">
+          <Link href="/jobs?status=COMPLETED" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5 transition hover:-translate-y-[2px] sm:p-5">
             <p className="text-[12px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Completed ({selectedPeriodLabel})</p>
-            <p className="mt-2 text-3xl font-semibold text-[var(--accent)] sm:text-4xl">{completed}</p>
+            <p className="mt-1 text-xl font-semibold text-[var(--accent)]">{completed}</p>
             <p className="mt-3 text-xs font-medium text-[var(--accent)]">Completed repairs →</p>
           </Link>
         </div>
 
-        <div className="panel-shadow hidden rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 2xl:block">
+        <div className="panel-shadow hidden rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5 2xl:block">
           <p className="mb-2 text-sm font-semibold">Recent Assigned Jobs</p>
           {assignedJobs.length === 0 ? (
             <p className="text-sm text-[var(--ink-muted)]">No assigned jobs yet.</p>
@@ -833,7 +833,7 @@ export default async function DashboardPage({
             { label: "Overdue (3d+)", val: String(overdueWithDays.length), sub: `${unassignedCount} unassigned`, href: "/jobs", color: overdueWithDays.length > 0 ? "text-amber-600" : "text-[var(--ink-muted)]" },
             { label: "Parts Used MTD", val: String(partsConsumed), sub: "units consumed", href: "/inventory", color: "text-[var(--ink)]" },
           ].map(t => (
-            <Link key={t.label} href={t.href} className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px]">
+            <Link key={t.label} href={t.href} className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5 transition hover:-translate-y-[2px]">
               <p className="text-[12px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">{t.label}</p>
               <p className={`mt-1 text-[15px] font-black leading-tight ${t.color}`}>{t.val}</p>
               <p className="mt-1 text-[12px] text-[var(--ink-muted)]">{t.sub}</p>
@@ -854,7 +854,7 @@ export default async function DashboardPage({
 
         <div className="grid gap-3 lg:grid-cols-2">
           {/* Technician completions leaderboard */}
-          <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+          <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
             <p className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Completions This Month</p>
             {topTechs.length === 0 ? (
               <p className="text-sm text-[var(--ink-muted)]">No completed jobs this month.</p>
@@ -877,7 +877,7 @@ export default async function DashboardPage({
           </section>
 
           {/* Active workload */}
-          <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4" id="tech-workload">
+          <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5" id="tech-workload">
             <div className="mb-3 flex items-center justify-between">
               <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Active Workload</p>
               {unassignedCount > 0 && <Link href="/jobs?assignedToId=unassigned" className="rounded-full border border-amber-500/30 bg-amber-500/15 px-2 py-0.5 text-[12px] font-bold text-amber-600">{unassignedCount} unassigned</Link>}
@@ -1192,11 +1192,11 @@ export default async function DashboardPage({
               { label: "Client Balances Due",value: formatMoneyCompact(outstandingValue, currency),   sub: `Unpaid jobs: ${completedUnpaidCount}`,                             href: "/documents/invoices?status=ISSUED",   tone: outstandingValue > 0 ? "text-amber-600" : "text-[var(--ink)]", iconBg: "bg-amber-500/15",   iconColor: "text-amber-600",  icon: "◎" },
             ] as const).map((item) => (
               <Link key={item.label} href={item.href}
-                className="panel-shadow flex items-start gap-3 rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px]">
+                className="panel-shadow flex items-start gap-3 rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5 transition hover:-translate-y-[2px]">
                 <div className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-base font-bold ${item.iconBg} ${item.iconColor}`}>{item.icon}</div>
                 <div className="min-w-0">
                   <p className="text-[12px] font-bold uppercase tracking-[0.1em] text-[var(--ink-muted)]">{item.label}</p>
-                  <p className={`mt-1 text-2xl font-black leading-none ${item.tone}`}>{item.value}</p>
+                  <p className={`mt-1 text-lg font-black leading-none ${item.tone}`}>{item.value}</p>
                   <p className="mt-1 text-[12px] text-[var(--ink-muted)]">{item.sub}</p>
                 </div>
               </Link>
@@ -1289,7 +1289,7 @@ export default async function DashboardPage({
           </section>
 
           {/* Quick Actions */}
-          <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+          <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
             <p className="mb-3 text-sm font-semibold text-[var(--ink)]">Quick actions</p>
             <div className="grid grid-cols-2 gap-2">
               {([
@@ -1680,7 +1680,7 @@ export default async function DashboardPage({
         />
 
         <div className="grid gap-3 lg:grid-cols-2">
-          <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+          <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Billing Queue</p>
             <div className="mt-3 space-y-2">
               <Link href="/jobs?status=IN_REPAIR,READY_FOR_PICKUP,AWAITING_APPROVAL" className="flex items-center justify-between rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm hover:border-[var(--accent)]/30">
@@ -1693,7 +1693,7 @@ export default async function DashboardPage({
               </Link>
             </div>
           </section>
-          <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+          <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Cash Exposure</p>
             <div className="mt-3 space-y-2">
               <div className="flex items-center justify-between rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm">
@@ -1897,7 +1897,7 @@ export default async function DashboardPage({
             { label: "In Pipeline", val: String((statusCount.get("DIAGNOSING") ?? 0) + (statusCount.get("IN_REPAIR") ?? 0) + (statusCount.get("AWAITING_APPROVAL") ?? 0)), href: "/jobs?status=DIAGNOSING,IN_REPAIR,AWAITING_APPROVAL", color: "text-[var(--ink)]" },
             { label: "Ready Pickup", val: String(statusCount.get("READY_FOR_PICKUP") ?? 0), href: "/jobs?status=READY_FOR_PICKUP", color: "text-[var(--accent)]" },
           ].map(t => (
-            <Link key={t.label} href={t.href} className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px]">
+            <Link key={t.label} href={t.href} className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5 transition hover:-translate-y-[2px]">
               <p className="text-[12px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">{t.label}</p>
               <p className={`mt-1 text-[15px] font-black leading-tight ${t.color}`}>{t.val}</p>
             </Link>
@@ -1907,7 +1907,7 @@ export default async function DashboardPage({
         <RevenueMarginTrendSection trendMonths={trendMonths} revenueTrend={revenueTrend} currency={currency} label="Total Revenue & Margin (Repairs + Sales)" emptyMessage="No revenue recorded yet for this period." />
 
         <div className="grid gap-3 lg:grid-cols-2">
-          <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+          <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
             <p className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Live Pipeline</p>
             <div className="space-y-1.5">
               {UI_JOB_STATUSES.filter(s => s !== "CLOSED" && s !== "COMPLETED").map(s => {
@@ -1921,7 +1921,7 @@ export default async function DashboardPage({
               })}
             </div>
           </section>
-          <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+          <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
             <div className="mb-3 flex items-center justify-between">
               <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Staff Workload</p>
               {unassignedCount > 0 && <Link href="/jobs?assignedToId=unassigned" className="rounded-full border border-amber-500/30 bg-amber-500/15 px-2 py-0.5 text-[12px] font-bold text-amber-600">{unassignedCount} unassigned</Link>}
@@ -2020,7 +2020,7 @@ export default async function DashboardPage({
             { label: "Outstanding",    val: formatMoneyCompact(totalOutstanding, currency), href: "/documents/invoices?status=ISSUED", color: totalOutstanding > 0 ? "text-[var(--accent)]" : "text-emerald-600" },
             { label: "Overdue (30d+)", val: String(overdueCount), href: "/documents/invoices", color: overdueCount > 0 ? "text-red-400" : "text-[var(--ink-muted)]" },
           ].map(t => (
-            <Link key={t.label} href={t.href} className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px]">
+            <Link key={t.label} href={t.href} className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5 transition hover:-translate-y-[2px]">
               <p className="text-[12px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">{t.label}</p>
               <p className={`mt-1 text-[15px] font-black leading-tight ${t.color}`}>{t.val}</p>
             </Link>
@@ -2028,7 +2028,7 @@ export default async function DashboardPage({
         </div>
 
         <div className="grid gap-3 lg:grid-cols-2">
-          <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+          <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
             <p className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Invoice Ageing</p>
             <div className="space-y-2">
               {[
@@ -2048,7 +2048,7 @@ export default async function DashboardPage({
             </div>
           </section>
 
-          <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+          <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
             <p className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">MTD Cash In — {mtdLabel}</p>
             <div className="space-y-1.5">
               <div className="flex items-center justify-between rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2.5">
@@ -2073,7 +2073,7 @@ export default async function DashboardPage({
           </section>
         </div>
 
-        <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+        <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
           <div className="mb-3 flex items-center justify-between">
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Unpaid Invoices</p>
             <Link href="/documents/invoices" className="text-[13px] font-semibold text-[var(--accent)] hover:underline">View all →</Link>
@@ -2270,7 +2270,7 @@ export default async function DashboardPage({
             { label: "POS + Invoices",     val: formatMoneyCompact(posRevenueMtd + invoiceRevenueMtd, currency), sub: `${paidSalesMtd.length} sales · ${paidInvoicesMtd.length} invoices`,                                          href: "/documents/invoices",                           color: "text-violet-600" },
             { label: "Conversion Rate",    val: `${conversionRate}%`,                            sub: `${wonMtd} won vs ${prevMonthJobCount} last month`,                                                                             href: "/jobs?status=COMPLETED,READY_FOR_PICKUP",       color: conversionRate >= 50 ? "text-emerald-600" : "text-amber-600" },
           ].map(t => (
-            <Link key={t.label} href={t.href} className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px]">
+            <Link key={t.label} href={t.href} className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5 transition hover:-translate-y-[2px]">
               <p className="text-[12px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">{t.label}</p>
               <p className={`mt-1 text-[15px] font-black leading-tight ${t.color}`}>{t.val}</p>
               <p className="mt-1 text-[12px] text-[var(--ink-muted)]">{t.sub}</p>
@@ -2280,7 +2280,7 @@ export default async function DashboardPage({
 
         <div className="grid gap-3 lg:grid-cols-2">
           {/* ── Individual staff performance ── */}
-          <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+          <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
             <div className="mb-3 flex items-center justify-between">
               <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Staff Performance — {period}</p>
               <Link href="/reports" className="text-[13px] font-semibold text-[var(--accent)] hover:underline">Full report →</Link>
@@ -2337,7 +2337,7 @@ export default async function DashboardPage({
           {/* ── Pending approvals + channel breakdown ── */}
           <div className="space-y-3">
             {/* Revenue by channel */}
-            <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+            <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
               <p className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Revenue by Channel MTD</p>
               {[
                 { label: "Repair Jobs",       amount: repairRevenueMtd,                    color: "bg-sky-500",    textColor: "text-sky-600",    count: `${wonMtd} completed` },
@@ -2363,7 +2363,7 @@ export default async function DashboardPage({
             </section>
 
             {/* Pending approvals */}
-            <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+            <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
               <div className="mb-2 flex items-center justify-between">
                 <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Pending Approvals</p>
                 <Link href="/jobs?status=AWAITING_APPROVAL" className="text-[13px] font-semibold text-[var(--accent)] hover:underline">All →</Link>
@@ -2451,24 +2451,24 @@ export default async function DashboardPage({
         />
 
         <div className="grid gap-3 lg:grid-cols-2">
-          <Link href="/sales" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px] sm:p-5">
+          <Link href="/sales" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5 transition hover:-translate-y-[2px] sm:p-5">
             <p className="text-[12px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Open Leads</p>
-            <p className="mt-2 text-3xl font-semibold text-[var(--accent)]">{leadsOpen}</p>
+            <p className="mt-1 text-xl font-semibold text-[var(--accent)]">{leadsOpen}</p>
             <p className="mt-2 text-xs font-medium text-[var(--accent)]">View pipeline →</p>
           </Link>
-          <Link href="/sales?tab=leads&status=WON" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px] sm:p-5">
+          <Link href="/sales?tab=leads&status=WON" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5 transition hover:-translate-y-[2px] sm:p-5">
             <p className="text-[12px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Won Leads</p>
-            <p className="mt-2 text-3xl font-semibold text-[var(--accent)]">{leadsWon}</p>
+            <p className="mt-1 text-xl font-semibold text-[var(--accent)]">{leadsWon}</p>
             <p className="mt-2 text-xs font-medium text-[var(--accent)]">View won leads →</p>
           </Link>
-          <Link href="/sales?tab=quotations" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px] sm:p-5">
+          <Link href="/sales?tab=quotations" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5 transition hover:-translate-y-[2px] sm:p-5">
             <p className="text-[12px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Quotations Pending</p>
-            <p className="mt-2 text-3xl font-semibold text-[var(--accent)]">{quotationsPending}</p>
+            <p className="mt-1 text-xl font-semibold text-[var(--accent)]">{quotationsPending}</p>
             <p className="mt-2 text-xs font-medium text-[var(--accent)]">Review quotations →</p>
           </Link>
-          <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 sm:p-5">
+          <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5 sm:p-5">
             <p className="text-[12px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Revenue This Month</p>
-            <p className="mt-2 text-3xl font-semibold text-[var(--ink)]">{formatMoney(salesThisMonth, currency)}</p>
+            <p className="mt-1 text-xl font-semibold text-[var(--ink)]">{formatMoney(salesThisMonth, currency)}</p>
             <p className="mt-2 text-xs text-[var(--ink-muted)]">Paid sales</p>
           </div>
         </div>
@@ -2519,24 +2519,24 @@ export default async function DashboardPage({
         />
 
         <div className="grid gap-3 lg:grid-cols-4">
-          <Link href="/sales?tab=quotations" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px] sm:p-5">
+          <Link href="/sales?tab=quotations" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5 transition hover:-translate-y-[2px] sm:p-5">
             <p className="text-[12px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Draft Quotations</p>
-            <p className="mt-2 text-3xl font-semibold text-[var(--accent)]">{myQuotationsDraft}</p>
+            <p className="mt-1 text-xl font-semibold text-[var(--accent)]">{myQuotationsDraft}</p>
             <p className="mt-2 text-xs font-medium text-[var(--accent)]">Open drafts →</p>
           </Link>
-          <Link href="/sales?tab=quotations" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px] sm:p-5">
+          <Link href="/sales?tab=quotations" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5 transition hover:-translate-y-[2px] sm:p-5">
             <p className="text-[12px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Sent Quotations</p>
-            <p className="mt-2 text-3xl font-semibold text-[var(--accent)]">{myQuotationsSent}</p>
+            <p className="mt-1 text-xl font-semibold text-[var(--accent)]">{myQuotationsSent}</p>
             <p className="mt-2 text-xs font-medium text-[var(--accent)]">Track sent →</p>
           </Link>
-          <Link href="/sales" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px] sm:p-5">
+          <Link href="/sales" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5 transition hover:-translate-y-[2px] sm:p-5">
             <p className="text-[12px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Active Leads</p>
-            <p className="mt-2 text-3xl font-semibold text-[var(--accent)]">{myLeads}</p>
+            <p className="mt-1 text-xl font-semibold text-[var(--accent)]">{myLeads}</p>
             <p className="mt-2 text-xs font-medium text-[var(--accent)]">View my leads →</p>
           </Link>
-          <Link href="/documents/invoices" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px] sm:p-5">
+          <Link href="/documents/invoices" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5 transition hover:-translate-y-[2px] sm:p-5">
             <p className="text-[12px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Open Invoices</p>
-            <p className="mt-2 text-3xl font-semibold text-[var(--accent)]">{openInvoices}</p>
+            <p className="mt-1 text-xl font-semibold text-[var(--accent)]">{openInvoices}</p>
             <p className="mt-2 text-xs font-medium text-[var(--accent)]">Open invoices →</p>
           </Link>
         </div>
@@ -2587,19 +2587,19 @@ export default async function DashboardPage({
         />
 
         <div className="grid gap-3 lg:grid-cols-3">
-          <Link href="/sales" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px] sm:p-5">
+          <Link href="/sales" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5 transition hover:-translate-y-[2px] sm:p-5">
             <p className="text-[12px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">My Leads</p>
-            <p className="mt-2 text-3xl font-semibold text-[var(--accent)]">{myLeads}</p>
+            <p className="mt-1 text-xl font-semibold text-[var(--accent)]">{myLeads}</p>
             <p className="mt-2 text-xs font-medium text-[var(--accent)]">View leads →</p>
           </Link>
-          <Link href="/sales?tab=quotations" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px] sm:p-5">
+          <Link href="/sales?tab=quotations" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5 transition hover:-translate-y-[2px] sm:p-5">
             <p className="text-[12px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">My Quotations</p>
-            <p className="mt-2 text-3xl font-semibold text-[var(--accent)]">{myQuotations}</p>
+            <p className="mt-1 text-xl font-semibold text-[var(--accent)]">{myQuotations}</p>
             <p className="mt-2 text-xs font-medium text-[var(--accent)]">View quotations →</p>
           </Link>
-          <Link href="/pos" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px] sm:p-5">
+          <Link href="/pos" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5 transition hover:-translate-y-[2px] sm:p-5">
             <p className="text-[12px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Active POS</p>
-            <p className="mt-2 text-3xl font-semibold text-[var(--accent)]">{posOpen}</p>
+            <p className="mt-1 text-xl font-semibold text-[var(--accent)]">{posOpen}</p>
             <p className="mt-2 text-xs font-medium text-[var(--accent)]">Open POS →</p>
           </Link>
         </div>
@@ -2644,7 +2644,7 @@ export default async function DashboardPage({
         />
 
         {openSession ? (
-          <Link href="/pos" className="panel-shadow block rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px] sm:p-5">
+          <Link href="/pos" className="panel-shadow block rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5 transition hover:-translate-y-[2px] sm:p-5">
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Active Session</p>
             <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
               <div>
@@ -2665,7 +2665,7 @@ export default async function DashboardPage({
             <p className="mt-3 text-xs font-medium text-[var(--accent)]">Continue session →</p>
           </Link>
         ) : (
-          <Link href="/pos" className="panel-shadow block rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px] sm:p-5">
+          <Link href="/pos" className="panel-shadow block rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5 transition hover:-translate-y-[2px] sm:p-5">
             <p className="text-[12px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">No Active Session</p>
             <p className="mt-2 text-sm text-[var(--ink-muted)]">Open a new POS session to start recording sales.</p>
             <p className="mt-3 text-xs font-medium text-[var(--accent)]">Open session →</p>
@@ -2713,14 +2713,14 @@ export default async function DashboardPage({
         />
 
         <div className="grid gap-3 grid-cols-2">
-          <Link href="/jobs" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px] sm:p-5">
+          <Link href="/jobs" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5 transition hover:-translate-y-[2px] sm:p-5">
             <p className="text-[12px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Assigned Jobs</p>
-            <p className="mt-2 text-3xl font-semibold text-[var(--accent)]">{assignedJobs}</p>
+            <p className="mt-1 text-xl font-semibold text-[var(--accent)]">{assignedJobs}</p>
             <p className="mt-2 text-xs font-medium text-[var(--accent)]">View queue →</p>
           </Link>
-          <Link href="/jobs?status=COMPLETED" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:-translate-y-[2px] sm:p-5">
+          <Link href="/jobs?status=COMPLETED" className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5 transition hover:-translate-y-[2px] sm:p-5">
             <p className="text-[12px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Completed Today</p>
-            <p className="mt-2 text-3xl font-semibold text-[var(--accent)]">{completedToday}</p>
+            <p className="mt-1 text-xl font-semibold text-[var(--accent)]">{completedToday}</p>
             <p className="mt-2 text-xs font-medium text-[var(--accent)]">View completed →</p>
           </Link>
         </div>

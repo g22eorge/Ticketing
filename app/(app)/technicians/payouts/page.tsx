@@ -119,11 +119,11 @@ export default async function TechnicianPayoutsPage({
       <div className="grid grid-cols-2 gap-2 lg:hidden">
         <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-3 text-center">
           <p className="text-[12px] uppercase tracking-[0.12em] text-[var(--ink-muted)]">Total</p>
-          <p className="mt-1 text-2xl font-semibold">{formatMoney(total, currency)}</p>
+          <p className="mt-1 text-lg font-semibold">{formatMoney(total, currency)}</p>
         </div>
         <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-3 text-center">
           <p className="text-[12px] uppercase tracking-[0.12em] text-[var(--ink-muted)]">Outstanding</p>
-          <p className="mt-1 text-2xl font-semibold text-[var(--accent)]">{formatMoney(unpaid, currency)}</p>
+          <p className="mt-1 text-lg font-semibold text-[var(--accent)]">{formatMoney(unpaid, currency)}</p>
         </div>
       </div>
 
@@ -180,15 +180,15 @@ export default async function TechnicianPayoutsPage({
       <div className="hidden gap-3 lg:grid lg:grid-cols-3">
         <div className="rounded-lg border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
           <p className="text-xs text-[var(--ink-muted)]">Total in view</p>
-          <p className="text-2xl font-semibold">{formatMoney(total, currency)}</p>
+          <p className="text-lg font-semibold">{formatMoney(total, currency)}</p>
         </div>
         <div className="rounded-lg border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
           <p className="text-xs text-[var(--ink-muted)]">Paid</p>
-          <p className="text-2xl font-semibold text-[var(--accent)]">{formatMoney(paid, currency)}</p>
+          <p className="text-lg font-semibold text-[var(--accent)]">{formatMoney(paid, currency)}</p>
         </div>
         <div className="rounded-lg border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
           <p className="text-xs text-[var(--ink-muted)]">Outstanding</p>
-          <p className="text-2xl font-semibold text-[var(--accent)]">{formatMoney(unpaid, currency)}</p>
+          <p className="text-lg font-semibold text-[var(--accent)]">{formatMoney(unpaid, currency)}</p>
         </div>
       </div>
 

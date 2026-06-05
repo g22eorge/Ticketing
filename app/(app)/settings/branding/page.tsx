@@ -376,7 +376,7 @@ export default async function BrandingPage({
         </div>
       </form>
 
-      <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+      <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
         <p className="mb-2 text-sm font-semibold">Invoice Logo</p>
         <p className="text-xs text-[var(--ink-muted)]">Accepted: PNG, JPEG, WEBP (max 5MB). Recommended wide aspect ratio.</p>
 

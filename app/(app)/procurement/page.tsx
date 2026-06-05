@@ -56,7 +56,7 @@ export default async function ProcurementPage() {
           <Link
             key={workflow.href}
             href={workflow.href}
-            className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:border-[var(--accent)]/50 hover:shadow-md"
+            className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5 transition hover:border-[var(--accent)]/50 hover:shadow-md"
           >
             <p className="text-sm font-bold text-[var(--ink)]">{workflow.title}</p>
             <p className="mt-2 text-xs leading-5 text-[var(--ink-muted)]">{workflow.description}</p>

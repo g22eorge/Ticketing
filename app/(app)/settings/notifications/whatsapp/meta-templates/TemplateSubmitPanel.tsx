@@ -112,7 +112,7 @@ export function TemplateSubmitPanel({ templates }: { templates: TemplateDefiniti
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
             WhatsApp Settings
           </Link>
-          <h1 className="mt-2 text-xl font-bold text-[var(--ink)]">Meta Template Submissions</h1>
+          <h1 className="mt-1 text-xl font-bold text-[var(--ink)]">Meta Template Submissions</h1>
           <p className="mt-1 text-sm text-[var(--ink-muted)]">
             Submit all {templates.length} templates to your Meta WABA — examples use real data from your system.
           </p>
