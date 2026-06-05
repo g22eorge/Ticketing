@@ -131,7 +131,7 @@ export default async function AccountLedgerPage({
   const availableYears = [now.getFullYear() - 1, now.getFullYear()];
 
   return (
-    <div className="space-y-5 p-4 lg:p-6">
+    <div className="space-y-4">
       {/* ── HEADER ───────────────────────────────────────────────────────── */}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>

@@ -34,7 +34,7 @@ export const dynamic = "force-dynamic";
 export default async function InvoicesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ type?: string; status?: string; q?: string; aging?: string; create?: string; collect?: string; pay?: string }>;
+  searchParams: Promise<{ type?: string; status?: string; q?: string; aging?: string; create?: string; collect?: string; pay?: string; error?: string }>;
 }) {
   const { user } = await getCurrentUserRole();
   const db = orgDb(user.orgId);
@@ -58,6 +58,7 @@ export default async function InvoicesPage({
   const statusFilter = params.status ?? "all";
   const agingFilter = params.aging ?? "all";
   const q = (params.q ?? "").trim();
+  const errorParam = params.error ?? "";
 
   let dbNeedsFix = false;
 
@@ -591,6 +592,16 @@ export default async function InvoicesPage({
 
   return (
     <section className="space-y-4">
+      {/* Error banner */}
+      {errorParam && (
+        <div className="flex items-center gap-2 rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-2.5">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-red-500" aria-hidden><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <p className="text-[13px] font-medium text-red-700 dark:text-red-400">
+            {errorParam === "missing-fields" ? "Please fill in all required fields." : errorParam === "client-not-found" ? "Client not found. Please select a valid client." : "Something went wrong — please try again."}
+          </p>
+        </div>
+      )}
+
       {/* ══════════════════════════════════════════════════════════════════════
           MOBILE ONLY — premium dark header + context-aware action panel
           Hidden on desktop (lg:hidden). Desktop panel below takes over.

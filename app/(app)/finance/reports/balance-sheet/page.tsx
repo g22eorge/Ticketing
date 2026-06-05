@@ -139,7 +139,7 @@ export default async function BalanceSheetPage({
   const hasData = lines.length > 0;
 
   return (
-    <div className="space-y-5 p-4 lg:p-6">
+    <div className="space-y-4">
       {/* ── HEADER ───────────────────────────────────────────────────────── */}
       <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
         <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
