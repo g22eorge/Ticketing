@@ -445,36 +445,6 @@ export default async function ReceiptsPage({
         </details>
       ) : null}
 
-      {/* Method Breakdown */}
-      {methodBreakdown.length > 0 && (
-        <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
-          <div className="border-b border-[var(--line)] bg-[var(--panel-strong)]/60 px-4 py-2">
-            <p className="text-[13px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">
-              Payment Method Breakdown
-              <span className="ml-2 font-normal text-[var(--ink-muted)]/60">{PERIOD_LABELS[period] ?? period}</span>
-            </p>
-          </div>
-          <div className="divide-y divide-[var(--line)]">
-            {methodBreakdown.map((m) => (
-              <div key={m.method} className="flex items-center gap-3 px-4 py-2">
-                <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[13px] font-semibold ${methodBadge(m.method)}`}>
-                  {m.method.replaceAll("_", " ")}
-                </span>
-                <div className="flex-1 min-w-0">
-                  <div className="h-1.5 overflow-hidden rounded-full bg-[var(--line)]">
-                    <div
-                      className="h-1.5 rounded-full bg-[var(--accent)] transition-all"
-                      style={{ width: `${m.pct}%` }}
-                    />
-                  </div>
-                </div>
-                <span className="shrink-0 text-[13px] tabular-nums text-[var(--ink-muted)]">{m.pct}% · {m.count}</span>
-                <span className="shrink-0 text-[13px] font-semibold tabular-nums text-[var(--ink)]">{formatMoney(m.amount, baseCurrency)}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
       <div className="space-y-3 md:hidden">
         {payments.map((p) => {
