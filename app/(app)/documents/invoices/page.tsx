@@ -823,21 +823,6 @@ export default async function InvoicesPage({
           </div>
         </div>
 
-        {/* Collection progress bar */}
-        {totalBilled > 0 && (
-          <div className="border-t border-[var(--line)] px-4 py-2.5">
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-[12px] text-[var(--ink-muted)]">Collection progress</span>
-              <span className="text-[12px] font-semibold text-[var(--ink)]">{collectionRate}%</span>
-            </div>
-            <div className="h-1.5 w-full overflow-hidden rounded-full bg-[var(--panel-strong)]">
-              <div
-                className="h-full rounded-full bg-emerald-500 transition-all"
-                style={{ width: `${collectionRate}%` }}
-              />
-            </div>
-          </div>
-        )}
 
         {/* By-type breakdown */}
         {byType.length > 0 && (

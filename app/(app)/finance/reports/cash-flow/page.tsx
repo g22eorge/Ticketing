@@ -151,7 +151,6 @@ export default async function CashFlowPage({
   const topExpenseCategories = Object.entries(expenseByCategory)
     .sort(([, a], [, b]) => b - a)
     .slice(0, 8);
-  const expMax = topExpenseCategories[0]?.[1] ?? 1;
 
   // ── Period label ────────────────────────────────────────────────────────────
   const periodLabel = mode === "ytd"
@@ -360,20 +359,12 @@ export default async function CashFlowPage({
           </div>
           <div className="divide-y divide-[var(--line)]">
             {topExpenseCategories.map(([cat, amount]) => {
-              const pct = expMax > 0 ? Math.round((amount / expMax) * 100) : 0;
               return (
                 <div key={cat} className="flex items-center gap-3 px-4 py-2.5">
                   <span className="w-[130px] shrink-0 text-xs font-medium text-[var(--ink)]">
                     {EXPENSE_CATEGORY_LABELS[cat] ?? cat}
                   </span>
-                  <div className="flex-1 min-w-0">
-                    <div className="h-1.5 overflow-hidden rounded-full bg-[var(--line)]">
-                      <div
-                        className="h-1.5 rounded-full bg-red-400 transition-all"
-                        style={{ width: `${pct}%` }}
-                      />
-                    </div>
-                  </div>
+                  <span className="flex-1" />
                   <span className="w-[90px] shrink-0 text-right text-[13px] font-semibold tabular-nums text-[var(--ink)]">
                     {formatMoney(amount, currency)}
                   </span>

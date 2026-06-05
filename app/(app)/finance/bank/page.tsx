@@ -358,18 +358,6 @@ export default async function BankPage({
                         {allTransactions.length} reconciled
                       </p>
                     </div>
-                    <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-[var(--panel-strong)]">
-                      <div
-                        className="h-full rounded-full bg-emerald-500 transition-all"
-                        style={{
-                          width: `${Math.round(
-                            (allTransactions.filter((t) => t.reconciledAt).length /
-                              allTransactions.length) *
-                              100,
-                          )}%`,
-                        }}
-                      />
-                    </div>
                     {unreconciledTx.length > 0 && (
                       <p className="mt-1.5 text-[13px] text-amber-600">
                         {unreconciledTx.length} unreconciled ·{" "}

@@ -12,7 +12,6 @@ import { writeSystemAuditEvent } from "@/lib/commercial/audit";
 import { formatMoneyCompact } from "@/lib/currency";
 import { ConfirmSubmitButton } from "@/components/shared/ConfirmSubmitButton";
 import { RowActionsMenu, MenuDestructiveRow } from "@/components/shared/RowActionsMenu";
-import { ExpenseMonthlyChart, ExpenseCategoryPie } from "@/components/reports/FinanceCharts";
 
 export const dynamic = "force-dynamic";
 
@@ -172,9 +171,6 @@ export default async function ExpensesPage({ searchParams }: Props) {
     };
   }).filter((x) => x.count > 0);
 
-  const pieData = byCategory
-    .map((x) => ({ name: CATEGORY_LABELS[x.cat], amount: x.total }))
-    .sort((a, b) => b.amount - a.amount);
 
   async function createExpenseAction(formData: FormData) {
     "use server";
@@ -495,72 +491,6 @@ export default async function ExpensesPage({ searchParams }: Props) {
         </div>
       </div>
 
-      {/* ── TREND + CATEGORY BREAKDOWN ───────────────────────────────────── */}
-      <div className="grid gap-4 lg:grid-cols-2">
-        {/* Monthly trend chart */}
-        <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-          <p className="mb-3 text-[12px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">
-            Monthly Spend — Last 6 Months
-          </p>
-          <ExpenseMonthlyChart data={trendData} currency={currency} />
-          <div className="mt-3 flex items-center justify-between border-t border-[var(--line)] pt-2">
-            <p className="text-[13px] text-[var(--ink-muted)]">All categories</p>
-            <p className="text-[13px] font-semibold tabular-nums text-[var(--ink)]">
-              Total: {formatMoneyCompact(trendData.reduce((s, d) => s + d.amount, 0), currency)}
-            </p>
-          </div>
-        </section>
-
-        {/* Category breakdown */}
-        <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-          <p className="mb-3 text-[12px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">
-            Spend by Category
-          </p>
-          {byCategory.length === 0 ? (
-            <p className="mt-4 text-center text-sm text-[var(--ink-muted)]">No expense data</p>
-          ) : (
-            <div className="flex gap-4">
-              <div className="flex-1 space-y-2">
-                {[...byCategory]
-                  .sort((a, b) => b.total - a.total)
-                  .map(({ cat, total, count }) => {
-                    const pct = totalAmount > 0 ? Math.round((total / totalAmount) * 100) : 0;
-                    return (
-                      <Link
-                        key={cat}
-                        href={filterUrl({ category: catFilter === cat ? "" : cat })}
-                        className="block"
-                      >
-                        <div className="flex items-center justify-between text-[12px]">
-                          <span
-                            className={`font-semibold ${catFilter === cat ? "text-[var(--accent)]" : "text-[var(--ink)]"}`}
-                          >
-                            {CATEGORY_LABELS[cat]}
-                          </span>
-                          <span className="tabular-nums text-[var(--ink-muted)]">
-                            {formatMoneyCompact(total, currency)} · {pct}%
-                          </span>
-                        </div>
-                        <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-[var(--panel-strong)]">
-                          <div
-                            className="h-full rounded-full bg-[var(--accent)]"
-                            style={{ width: `${pct}%` }}
-                          />
-                        </div>
-                        <p className="text-[12px] text-[var(--ink-muted)]">{count} record{count !== 1 ? "s" : ""}</p>
-                      </Link>
-                    );
-                  })}
-              </div>
-              {pieData.length > 1 && (
-                <div className="hidden sm:block">
-                  <ExpenseCategoryPie data={pieData} currency={currency} />
-                </div>
-              )}
-            </div>
-          )}
-        </section>
-      </div>
 
       {/* ── FILTER BAR ───────────────────────────────────────────────────── */}
       <div className="panel-shadow flex flex-wrap items-center gap-2 rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-2.5">
