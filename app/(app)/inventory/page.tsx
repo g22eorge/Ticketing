@@ -234,27 +234,6 @@ export default async function InventoryPage({
       </div>
       </div>
 
-      {/* Filter chips */}
-      <div className="flex gap-2">
-        {([
-          { label: `All  ·  ${parts.length}`, value: "all" },
-          { label: `Low Stock  ·  ${lowStock.length}`, value: "low" },
-          { label: `Out of Stock  ·  ${outOfStock.length}`, value: "out" },
-        ] as const).map(({ label, value }) => (
-          <Link
-            key={value}
-            href={`/inventory?stock=${value}`}
-            className={`rounded-full border px-3 py-1.5 text-[12px] font-semibold transition ${
-              stockFilter === value
-                ? "border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]"
-                : "border-[var(--line)] text-[var(--ink-muted)] hover:border-[var(--accent)]/40 hover:text-[var(--ink)]"
-            } ${value === "low" && lowStock.length > 0 ? "border-amber-400/50 text-amber-600" : ""} ${value === "out" && outOfStock.length > 0 && stockFilter !== "out" ? "border-red-400/50 text-red-600" : ""}`}
-          >
-            {label}
-          </Link>
-        ))}
-      </div>
-
       {/* KPI strip */}
       <div className="panel-shadow grid grid-cols-2 overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)] divide-x divide-y divide-[var(--line)] sm:grid-cols-4 sm:divide-y-0">
         <div className="flex items-center gap-3 px-4 py-2">
@@ -283,6 +262,27 @@ export default async function InventoryPage({
             <p className="text-[15px] font-black tabular-nums leading-tight text-[var(--ink)]">{formatMoney(totalValue)}</p>
           </div>
         </div>
+      </div>
+
+      {/* Filter chips */}
+      <div className="flex gap-2">
+        {([
+          { label: `All  ·  ${parts.length}`, value: "all" },
+          { label: `Low Stock  ·  ${lowStock.length}`, value: "low" },
+          { label: `Out of Stock  ·  ${outOfStock.length}`, value: "out" },
+        ] as const).map(({ label, value }) => (
+          <Link
+            key={value}
+            href={`/inventory?stock=${value}`}
+            className={`rounded-full border px-3 py-1.5 text-[12px] font-semibold transition ${
+              stockFilter === value
+                ? "border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]"
+                : "border-[var(--line)] text-[var(--ink-muted)] hover:border-[var(--accent)]/40 hover:text-[var(--ink)]"
+            } ${value === "low" && lowStock.length > 0 && stockFilter !== "low" ? "border-amber-400/50 text-amber-600" : ""} ${value === "out" && outOfStock.length > 0 && stockFilter !== "out" ? "border-red-400/50 text-red-600" : ""}`}
+          >
+            {label}
+          </Link>
+        ))}
       </div>
 
       {error ? (

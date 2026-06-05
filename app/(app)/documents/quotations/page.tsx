@@ -375,8 +375,24 @@ export default async function QuotationsPage({
         ))}
       </div>
 
+      {/* Period chips */}
+      <div className="flex gap-2">
+        {([
+          { label: "All time", value: "all" },
+          { label: "This month", value: "this_month" },
+          { label: "Last month", value: "last_month" },
+        ] as const).map(({ label, value }) => (
+          <Link key={value}
+            href={`/documents/quotations?${new URLSearchParams({ ...(q ? { q } : {}), ...(approvalFilter ? { approval: approvalFilter } : {}), period: value === "all" ? "" : value }).toString()}`}
+            className={`rounded-full border px-3 py-1.5 text-[12px] font-semibold transition ${(periodFilter ?? "all") === value ? "border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]" : "border-[var(--line)] text-[var(--ink-muted)] hover:border-[var(--accent)]/40 hover:text-[var(--ink)]"}`}>
+            {label}
+          </Link>
+        ))}
+      </div>
+
       {/* Search + filter */}
       <form method="GET" className="hidden lg:flex flex-wrap gap-2">
+        <input type="hidden" name="period" value={periodFilter === "all" ? "" : periodFilter} />
         <input
           name="q"
           defaultValue={q ?? ""}
@@ -408,21 +424,6 @@ export default async function QuotationsPage({
           </Link>
         )}
       </form>
-
-      {/* Period chips */}
-      <div className="flex gap-2">
-        {([
-          { label: "All time", value: "all" },
-          { label: "This month", value: "this_month" },
-          { label: "Last month", value: "last_month" },
-        ] as const).map(({ label, value }) => (
-          <Link key={value}
-            href={`/documents/quotations?${new URLSearchParams({ ...(q ? { q } : {}), ...(approvalFilter ? { approval: approvalFilter } : {}), period: value === "all" ? "" : value }).toString()}`}
-            className={`rounded-full border px-3 py-1.5 text-[12px] font-semibold transition ${(periodFilter ?? "all") === value ? "border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]" : "border-[var(--line)] text-[var(--ink-muted)] hover:border-[var(--accent)]/40 hover:text-[var(--ink)]"}`}>
-            {label}
-          </Link>
-        ))}
-      </div>
 
       {/* Table */}
       <div className="doc-list overflow-x-auto rounded-xl border border-[var(--line)]">
