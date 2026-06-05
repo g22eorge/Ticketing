@@ -73,7 +73,7 @@ export default async function FinanceReportsPage() {
   ];
 
   return (
-    <div className="space-y-5 p-4 md:p-5">
+    <div className="space-y-4">
       <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
         <div className="px-4 py-3">
           <p className="text-[12px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Finance</p>

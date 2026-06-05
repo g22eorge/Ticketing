@@ -193,7 +193,7 @@ export default async function CampaignsPage({ searchParams }: { searchParams: Pr
   const _overallResponseRate = totalSent > 0 ? Math.round((totalResponded / totalSent) * 100) : 0;
 
   return (
-    <div className="mx-auto max-w-5xl space-y-5 p-4 lg:p-6">
+    <div className="mx-auto max-w-5xl space-y-4">
       <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
         <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
           <div>

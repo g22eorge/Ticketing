@@ -225,7 +225,7 @@ export default async function JournalPage({
   const filteredTotal  = filteredPosted.reduce((s, e) => s + e.totalAmount, 0);
 
   return (
-    <div className="space-y-5 p-4 lg:p-6">
+    <div className="space-y-4">
 
       {/* ── HEADER ─────────────────────────────────────────────────────────── */}
       <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">

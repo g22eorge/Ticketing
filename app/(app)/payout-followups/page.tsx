@@ -374,7 +374,7 @@ export default async function PayoutFollowupsPage({
   const tdClass = "px-4 py-2.5";
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Page header */}
       <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
         <div className="flex flex-wrap items-start justify-between gap-4">

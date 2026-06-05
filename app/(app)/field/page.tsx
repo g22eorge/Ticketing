@@ -169,7 +169,7 @@ export default async function FieldPage({
   }).catch(() => []);
 
   return (
-    <div className="space-y-5 p-4 md:p-5">
+    <div className="space-y-4">
 
       {/* ── Header ── */}
       <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">

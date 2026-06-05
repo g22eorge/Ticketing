@@ -165,7 +165,7 @@ export default async function CashFlowPage({
   const monthOptions = MONTHS_SHORT.map((m, i) => ({ label: m, value: i + 1 }));
 
   return (
-    <div className="space-y-5 p-4 md:p-5">
+    <div className="space-y-4">
       {/* ── Header ────────────────────────────────────────────────────────── */}
       <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
         <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">

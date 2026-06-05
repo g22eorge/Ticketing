@@ -170,7 +170,7 @@ export default async function ChartOfAccountsPage() {
   for (const t of ACCOUNT_TYPES) totals[t] = accounts.filter((a) => a.type === t).length;
 
   return (
-    <div className="space-y-5 p-4 lg:p-6">
+    <div className="space-y-4">
       <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
         <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
           <div>
