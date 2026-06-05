@@ -214,24 +214,10 @@ export function AiGuideBubble() {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ message: q, history: messages.map((m) => ({ role: m.role, text: m.text })) }),
       });
-      if (!res.body) throw new Error("No stream");
-      const reader = res.body.getReader();
-      const dec    = new TextDecoder();
-      let   full   = "";
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        const chunk = dec.decode(value);
-        for (const line of chunk.split("\n")) {
-          if (line.startsWith("data: ")) {
-            try {
-              const d = JSON.parse(line.slice(6));
-              if (d.text) { full += d.text; setMessages((p) => p.map((m) => m.id === aiMsg.id ? { ...m, text: full, streaming: true } : m)); }
-            } catch { /**/ }
-          }
-        }
-      }
-      setMessages((p) => p.map((m) => m.id === aiMsg.id ? { ...m, text: full, streaming: false } : m));
+      // API streams plain text chunks (not SSE) — read directly
+      const text = await res.text();
+      if (!res.ok) throw new Error(text || "AI guide failed");
+      setMessages((p) => p.map((m) => m.id === aiMsg.id ? { ...m, text, streaming: false } : m));
     } catch {
       setMessages((p) => p.map((m) => m.id === aiMsg.id ? { ...m, text: "Sorry, something went wrong. Please try again.", streaming: false } : m));
     } finally {
