@@ -260,7 +260,7 @@ If a question is outside Duuka ProMax, politely say you can only help with the s
 
 export const runtime = "nodejs";
 
-type ChatMessage = { role: "user" | "model"; parts: [{ text: string }] };
+type ChatMessage = { role: "user" | "model"; text?: string; parts?: [{ text: string }] };
 
 type GuideIntent = {
   any: string[];
@@ -792,7 +792,7 @@ export async function POST(request: NextRequest) {
       .slice(-10)
       .map((m) => ({
         role: m.role as "user" | "model",
-        parts: [{ text: String(m.text ?? "") }],
+        parts: [{ text: String(m.text ?? m.parts?.[0]?.text ?? "") }],
       }))
       // Gemini requires history to start with a user turn
       .filter((_, i, arr) => i > 0 || arr[0]?.role === "user");
