@@ -48,7 +48,7 @@ export function SpeedDialFAB({
   return (
     <div
       ref={ref}
-      className="speed-dial-fab fixed bottom-[calc(var(--bottom-nav-h,64px)+12px)] right-4 z-50 flex flex-col items-end gap-3 md:hidden"
+      className="speed-dial-fab fixed bottom-[calc(var(--bottom-nav-h,64px)+12px)] right-4 z-50 flex flex-col items-end gap-3 lg:hidden"
     >
       {/* Action items — slide up when open */}
       {open && (

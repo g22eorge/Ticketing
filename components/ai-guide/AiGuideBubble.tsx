@@ -166,7 +166,8 @@ export function AiGuideBubble() {
     if (!drag.current) return;
     const dx = e.clientX - drag.current.sx;
     const dy = e.clientY - drag.current.sy;
-    if (Math.abs(dx) > 4 || Math.abs(dy) > 4) didDrag.current = true;
+    // Raise threshold so minor touch jitter doesn't block open
+    if (Math.abs(dx) > 8 || Math.abs(dy) > 8) didDrag.current = true;
     setPos(clamp(drag.current.ox + dx, drag.current.oy + dy));
   }, []);
 
@@ -267,7 +268,7 @@ export function AiGuideBubble() {
         onPointerDown={onPtrDown}
         onPointerMove={onPtrMove}
         onPointerUp={onPtrUp}
-        onClick={open ? () => setOpen(false) : undefined}
+        onClick={() => { if (!didDrag.current) setOpen((v) => !v); }}
         aria-label={open ? "Close AI Guide" : "Open AI Guide"}
         aria-expanded={open}
         className="touch-none select-none fixed z-[60] flex h-[52px] w-[52px] items-center justify-center rounded-full shadow-[0_0_0_6px_rgba(212,175,55,0.12),0_12px_32px_rgba(0,0,0,0.4)] transition-transform duration-150 active:scale-95"
