@@ -737,7 +737,12 @@ export default async function InvoicesPage({
                   return (
                     <div key={job.id} className="flex items-center gap-3 border-b border-emerald-500/10 px-4 py-3 last:border-0">
                       <div className="flex-1 min-w-0">
-                        <p className="truncate text-[13px] font-semibold text-[var(--ink)]">{job.client?.fullName ?? "Client"}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="truncate text-[13px] font-semibold text-[var(--ink)]">{job.client?.fullName ?? "Client"}</p>
+                          <Link href={`/jobs/${job.id}`} className="shrink-0 font-mono text-[12px] font-semibold text-[var(--accent)] hover:underline">
+                            {job.jobNumber}
+                          </Link>
+                        </div>
                         <p className="text-[12px] text-[var(--ink-muted)]">
                           {[job.brand, job.model].filter(Boolean).join(" ")} · {ageDays === 0 ? "today" : `${ageDays}d ago`}
                         </p>
@@ -1094,12 +1099,15 @@ export default async function InvoicesPage({
                 <div key={job.id} className="flex items-center gap-3 px-4 py-3">
                   {/* Client + device */}
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-[13px] font-semibold text-[var(--ink)]">
-                      {job.client?.fullName ?? "Client"}
-                    </p>
-                    <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">
-                      {device} · {job.jobNumber}
-                    </p>
+                    <div className="flex items-center gap-2">
+                      <p className="truncate text-[13px] font-semibold text-[var(--ink)]">
+                        {job.client?.fullName ?? "Client"}
+                      </p>
+                      <Link href={`/jobs/${job.id}`} className="shrink-0 font-mono text-[12px] font-semibold text-[var(--accent)] hover:underline">
+                        {job.jobNumber}
+                      </Link>
+                    </div>
+                    <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">{device}</p>
                   </div>
 
                   {/* Age indicator */}
