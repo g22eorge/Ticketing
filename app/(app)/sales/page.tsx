@@ -371,33 +371,23 @@ export default async function SalesPage({
       </div>
 
       {/* ── KPI TILES ──────────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
 
         {/* Active pipeline */}
-        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-          <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">
-            Active Pipeline
-          </p>
-          <p className="mt-1.5 text-2xl font-bold tabular-nums text-[var(--ink)]">
-            {formatMoneyCompact(pipelineValue, currency)}
-          </p>
-          <p className="mt-1 text-[13px] text-[var(--ink-muted)]">
-            {activePipeline} open lead{activePipeline !== 1 ? "s" : ""} with value
-          </p>
+        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
+          <p className="text-[11px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Active Pipeline</p>
+          <p className="mt-1 text-lg font-bold tabular-nums text-[var(--ink)]">{formatMoneyCompact(pipelineValue, currency)}</p>
+          <p className="mt-0.5 text-[12px] text-[var(--ink-muted)]">{activePipeline} open lead{activePipeline !== 1 ? "s" : ""}</p>
         </div>
 
         {/* Won this month */}
-        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-          <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">
-            Won This Month
-          </p>
-          <p className="mt-1.5 text-2xl font-bold tabular-nums text-emerald-600">
-            {wonThisMonth}
-          </p>
-          <p className="mt-1 text-[13px] text-[var(--ink-muted)]">
-            {conversionRate}% all-time conversion
+        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
+          <p className="text-[11px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Won This Month</p>
+          <p className="mt-1 text-lg font-bold tabular-nums text-emerald-600">{wonThisMonth}</p>
+          <p className="mt-0.5 text-[12px] text-[var(--ink-muted)]">
+            {conversionRate}% conversion
             {wonMomChange !== null && (
-              <span className={`ml-1.5 font-semibold ${wonMomChange >= 0 ? "text-emerald-600" : "text-red-500"}`}>
+              <span className={`ml-1 font-semibold ${wonMomChange >= 0 ? "text-emerald-600" : "text-red-500"}`}>
                 {wonMomChange >= 0 ? "+" : ""}{wonMomChange.toFixed(0)}% MoM
               </span>
             )}
@@ -405,37 +395,19 @@ export default async function SalesPage({
         </div>
 
         {/* Quotations */}
-        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-          <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">
-            Quotations (Total)
-          </p>
-          <p className="mt-1.5 text-2xl font-bold tabular-nums text-[var(--ink)]">
-            {formatMoneyCompact(quoteTotal, currency)}
-          </p>
-          <p className="mt-1 text-[13px] text-[var(--ink-muted)]">
-            {acceptanceRate}% acceptance ·{" "}
-            <span className="text-emerald-600 font-semibold">
-              {formatMoneyCompact(acceptedTotal, currency)}
-            </span>{" "}
-            accepted
+        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
+          <p className="text-[11px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Quotations</p>
+          <p className="mt-1 text-lg font-bold tabular-nums text-[var(--ink)]">{formatMoneyCompact(quoteTotal, currency)}</p>
+          <p className="mt-0.5 text-[12px] text-[var(--ink-muted)]">
+            {acceptanceRate}% accepted · <span className="text-emerald-600 font-semibold">{formatMoneyCompact(acceptedTotal, currency)}</span>
           </p>
         </div>
 
         {/* Follow-ups due */}
-        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-          <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">
-            Follow-ups Due
-          </p>
-          <p
-            className={`mt-1.5 text-2xl font-bold tabular-nums ${
-              followupsDue > 0 ? "text-amber-600" : "text-[var(--ink)]"
-            }`}
-          >
-            {followupsDue}
-          </p>
-          <p className="mt-1 text-[13px] text-[var(--ink-muted)]">
-            {followupsDue > 0 ? "overdue or due today" : "all follow-ups clear"}
-          </p>
+        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
+          <p className="text-[11px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Follow-ups Due</p>
+          <p className={`mt-1 text-lg font-bold tabular-nums ${followupsDue > 0 ? "text-amber-600" : "text-[var(--ink)]"}`}>{followupsDue}</p>
+          <p className="mt-0.5 text-[12px] text-[var(--ink-muted)]">{followupsDue > 0 ? "overdue or due today" : "all clear"}</p>
         </div>
       </div>
 
@@ -473,20 +445,19 @@ export default async function SalesPage({
                 const barWidth = Math.max(4, Math.round((data.count / maxCount) * 100));
                 return (
                   <Link key={s} href={`/sales?tab=leads&status=${s}`}
-                    className="group flex min-w-[88px] flex-1 flex-col gap-1.5 p-3 transition hover:bg-[var(--panel-strong)]">
+                    className="group flex min-w-[80px] flex-1 flex-col gap-1 p-2.5 transition hover:bg-[var(--panel-strong)]">
                     <div className="flex items-baseline justify-between gap-1">
-                      <p className="text-lg font-black text-[var(--ink)]">{data.count}</p>
+                      <p className="text-base font-black text-[var(--ink)]">{data.count}</p>
                       {dropOff !== null && dropOff > 0 && (
                         <span className="whitespace-nowrap text-[11px] font-bold text-red-500">-{dropOff}%</span>
                       )}
                     </div>
-                    {/* Bar */}
-                    <div className="h-1.5 w-full rounded-full bg-[var(--panel-strong)]">
+                    <div className="h-1 w-full rounded-full bg-[var(--panel-strong)]">
                       <div className={`h-full rounded-full ${stageColors[s]} transition-all`} style={{ width: `${barWidth}%` }} />
                     </div>
-                    <p className="text-[12px] font-medium text-[var(--ink-muted)]">{stageLabels[s]}</p>
+                    <p className="text-[11px] font-medium text-[var(--ink-muted)]">{stageLabels[s]}</p>
                     {data.value > 0 && (
-                      <p className="whitespace-nowrap text-[12px] font-semibold text-[var(--accent)]">{formatMoneyCompact(data.value, currency)}</p>
+                      <p className="whitespace-nowrap text-[11px] font-semibold text-[var(--accent)]">{formatMoneyCompact(data.value, currency)}</p>
                     )}
                   </Link>
                 );
@@ -502,8 +473,8 @@ export default async function SalesPage({
             const label = s === "WON" ? "Won" : s === "LOST" ? "Lost" : "Stale";
             return (
               <Link key={s} href={`/sales?tab=leads&status=${s}`}
-                className="flex flex-1 items-center justify-center gap-2 py-2 text-center transition hover:bg-[var(--panel-strong)]">
-                <p className={`text-sm font-black ${color}`}>{data.count}</p>
+                className="flex flex-1 items-center justify-center gap-1.5 py-1.5 text-center transition hover:bg-[var(--panel-strong)]">
+                <p className={`text-[13px] font-black ${color}`}>{data.count}</p>
                 <p className="text-[12px] text-[var(--ink-muted)]">{label}</p>
               </Link>
             );
@@ -558,16 +529,12 @@ export default async function SalesPage({
             </div>
             <div className="divide-y divide-[var(--line)]">
               {sourceWinRates.map(({ source, total, won, rate }) => (
-                <div key={source} className="flex items-center gap-3 px-4 py-2.5">
+                <div key={source} className="flex items-center gap-3 px-4 py-2">
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-baseline justify-between gap-2">
+                    <div className="flex items-center justify-between gap-2">
                       <p className="text-[12px] font-semibold text-[var(--ink)] capitalize">{source.toLowerCase().replace("_", " ")}</p>
-                      <span className={`text-[13px] font-black ${rate >= 50 ? "text-emerald-600" : rate >= 25 ? "text-amber-600" : "text-[var(--ink-muted)]"}`}>{rate}%</span>
+                      <span className={`text-[12px] font-black ${rate >= 50 ? "text-emerald-600" : rate >= 25 ? "text-amber-600" : "text-[var(--ink-muted)]"}`}>{rate}% · {won}/{total}</span>
                     </div>
-                    <div className="mt-1 h-1 w-full rounded-full bg-[var(--panel-strong)]">
-                      <div className={`h-full rounded-full ${rate >= 50 ? "bg-emerald-500" : rate >= 25 ? "bg-amber-500" : "bg-[var(--line)]"}`} style={{ width: `${rate}%` }} />
-                    </div>
-                    <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">{won} won / {total} total</p>
                   </div>
                 </div>
               ))}
