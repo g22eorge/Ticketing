@@ -476,7 +476,7 @@ export default async function JobsPage({
       ) : null}
 
       {/* ═══ MOBILE header + chips ═══════════════════════════════════════ */}
-      <div className="sm:hidden -mx-4 px-4">
+      <div className="lg:hidden -mx-4 px-4">
 
         {/* Row 1: title + count */}
         <div className="flex items-center gap-2 pb-3">
