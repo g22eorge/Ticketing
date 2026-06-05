@@ -112,31 +112,31 @@ export default async function PurchaseOrderDetailPage({
           <table className="w-full text-sm">
             <thead className="bg-[var(--panel-strong)] text-[12px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
               <tr className="border-b border-[var(--line)]">
-                <th className="px-4 py-2 text-left">Description</th>
-                <th className="px-4 py-2 text-left hidden sm:table-cell">Part</th>
-                <th className="px-4 py-2 text-right">Ordered</th>
-                <th className="px-4 py-2 text-right">Received</th>
-                <th className="px-4 py-2 text-right">Unit Cost</th>
-                <th className="px-4 py-2 text-right">Total</th>
+                <th className="px-3 py-2.5 text-left">Description</th>
+                <th className="px-3 py-2.5 text-left hidden sm:table-cell">Part</th>
+                <th className="px-3 py-2.5 text-right">Ordered</th>
+                <th className="px-3 py-2.5 text-right">Received</th>
+                <th className="px-3 py-2.5 text-right">Unit Cost</th>
+                <th className="px-3 py-2.5 text-right">Total</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--line)]">
               {po.items.map((item) => (
                 <tr key={item.id} className={item.qtyReceived >= item.qtyOrdered ? "bg-green-50/40" : ""}>
-                  <td className="px-4 py-2 text-[var(--ink)]">{item.description}</td>
-                  <td className="px-4 py-2 text-xs text-[var(--ink-muted)] hidden sm:table-cell font-mono">
+                  <td className="px-3 py-2.5 text-[var(--ink)]">{item.description}</td>
+                  <td className="px-3 py-2.5 text-xs text-[var(--ink-muted)] hidden sm:table-cell font-mono">
                     {item.part ? `${item.part.sku}` : "—"}
                   </td>
-                  <td className="px-4 py-2 text-right tabular-nums text-[var(--ink-muted)]">{item.qtyOrdered}</td>
-                  <td className="px-4 py-2 text-right tabular-nums">
+                  <td className="px-3 py-2.5 text-right tabular-nums text-[var(--ink-muted)]">{item.qtyOrdered}</td>
+                  <td className="px-3 py-2.5 text-right tabular-nums">
                     <span className={item.qtyReceived >= item.qtyOrdered ? "text-green-600 font-semibold" : "text-amber-600"}>
                       {item.qtyReceived}
                     </span>
                   </td>
-                  <td className="px-4 py-2 text-right tabular-nums text-[var(--ink-muted)]">
+                  <td className="px-3 py-2.5 text-right tabular-nums text-[var(--ink-muted)]">
                     {item.unitCost.toLocaleString()}
                   </td>
-                  <td className="px-4 py-2 text-right tabular-nums font-medium text-[var(--ink)]">
+                  <td className="px-3 py-2.5 text-right tabular-nums font-medium text-[var(--ink)]">
                     {(item.qtyOrdered * item.unitCost).toLocaleString()}
                   </td>
                 </tr>
@@ -144,8 +144,8 @@ export default async function PurchaseOrderDetailPage({
             </tbody>
             <tfoot>
               <tr className="border-t border-[var(--line)] bg-[var(--gold)]/5">
-                <td colSpan={5} className="px-4 py-2 text-right text-xs font-semibold text-[var(--ink-muted)]">Total Order Value</td>
-                <td className="px-4 py-2 text-right text-sm font-bold text-[var(--ink)] tabular-nums">
+                <td colSpan={5} className="px-3 py-2.5 text-right text-xs font-semibold text-[var(--ink-muted)]">Total Order Value</td>
+                <td className="px-3 py-2.5 text-right text-sm font-bold text-[var(--ink)] tabular-nums">
                   {totalOrdered.toLocaleString()}
                 </td>
               </tr>

@@ -1339,13 +1339,13 @@ export default async function InvoicesPage({
         <table className="w-full text-left text-sm">
           <thead className="bg-[var(--panel-strong)] text-[12px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
             <tr>
-              <th className="px-4 py-3">Invoice</th>
-              <th className="hidden px-4 py-3 md:table-cell">Client · Source</th>
-              <th className="px-4 py-3">Status</th>
-              <th className="px-4 py-3">Total</th>
-              <th className="hidden px-4 py-3 lg:table-cell">Balance</th>
-              <th className="hidden px-4 py-3 lg:table-cell">Overdue</th>
-              <th className="px-4 py-3 text-right">Actions</th>
+              <th className="px-3 py-2.5">Invoice</th>
+              <th className="hidden px-3 py-2.5 md:table-cell">Client · Source</th>
+              <th className="px-3 py-2.5">Status</th>
+              <th className="px-3 py-2.5">Total</th>
+              <th className="hidden px-3 py-2.5 lg:table-cell">Balance</th>
+              <th className="hidden px-3 py-2.5 lg:table-cell">Overdue</th>
+              <th className="px-3 py-2.5 text-right">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -1378,7 +1378,7 @@ export default async function InvoicesPage({
                   key={inv.id}
                   className="border-t border-[var(--line)] align-middle hover:bg-[var(--panel-strong)]/40"
                 >
-                  <td className="px-4 py-3">
+                  <td className="px-3 py-2.5">
                     <p className="mono text-sm font-bold text-[var(--ink)]">{inv.invoiceNumber}</p>
                     <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">
                       {inv.issuedAt.toLocaleDateString()}
@@ -1394,7 +1394,7 @@ export default async function InvoicesPage({
                       <p className="mt-1 text-[12px] font-medium text-[var(--ink)] md:hidden">{clientName}</p>
                     )}
                   </td>
-                  <td className="doc-list-hide hidden px-4 py-3 md:table-cell">
+                  <td className="doc-list-hide hidden px-3 py-2.5 md:table-cell">
                     <p className="font-medium text-[var(--ink)]">{clientName}</p>
                     {isRepair && inv.job ? (
                       <Link
@@ -1407,12 +1407,12 @@ export default async function InvoicesPage({
                       <p className="text-[13px] text-[var(--ink-muted)]">{inv.subject}</p>
                     ) : null}
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-3 py-2.5">
                     <span className={`rounded-full border px-2.5 py-0.5 text-[13px] font-semibold ${statusCls}`}>
                       {statusLabel}
                     </span>
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-3 py-2.5">
                     <p className="font-bold text-[var(--ink)]">
                       {formatMoney(inv.totalAmount, invoiceCurrency)}
                     </p>
@@ -1422,7 +1422,7 @@ export default async function InvoicesPage({
                       </p>
                     ) : null}
                   </td>
-                  <td className="doc-list-hide hidden px-4 py-3 lg:table-cell">
+                  <td className="doc-list-hide hidden px-3 py-2.5 lg:table-cell">
                     {inv.isPaid ? (
                       <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-[13px] font-semibold text-emerald-700">
                         Cleared
@@ -1435,7 +1435,7 @@ export default async function InvoicesPage({
                       <span className="text-[var(--ink-muted)]">—</span>
                     )}
                   </td>
-                  <td className="doc-list-hide hidden px-4 py-3 lg:table-cell">
+                  <td className="doc-list-hide hidden px-3 py-2.5 lg:table-cell">
                     {isOverdue ? (
                       <span
                         className={`rounded-full px-2 py-0.5 text-[12px] font-bold ${
@@ -1454,7 +1454,7 @@ export default async function InvoicesPage({
                       <span className="text-[13px] text-emerald-600">On time</span>
                     )}
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-3 py-2.5">
                     <div className="flex items-center justify-end gap-1.5">
                       {(isRepair && inv.job) || inv.payments[0]?.id || inv.deliveryNotes[0]?.id || canManageInvoicePayments || "ADMIN" === user.role ? (
                         <RowActionsMenu label={`Invoice actions for ${inv.invoiceNumber}`}>
