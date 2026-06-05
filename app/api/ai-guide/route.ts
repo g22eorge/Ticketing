@@ -760,18 +760,6 @@ export async function POST(request: NextRequest) {
     return new Response("Message is too long (max 2000 characters).", { status: 400 });
   }
 
-  const knownIntent = intentAnswer(message);
-  if (knownIntent) {
-    return new Response(knownIntent, {
-      headers: {
-        "content-type": "text/plain; charset=utf-8",
-        "x-content-type-options": "nosniff",
-        "cache-control": "no-store",
-        "x-ai-guide-mode": "intent",
-      },
-    });
-  }
-
   try {
     const settings = await getAiSettings(user?.orgId);
     if (!settings.aiEnabled || !settings.guideEnabled) {
