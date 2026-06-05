@@ -359,6 +359,22 @@ export default async function QuotationsPage({
         </Link>
       </div>
 
+      {/* KPI strip */}
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        {[
+          { label: "Total Quotes", value: jobs.length, sub: "all time" },
+          { label: "Awaiting Client", value: pendingCount, sub: "need decision", tone: pendingCount > 0 ? "text-amber-600" : "text-[var(--ink)]" },
+          { label: "Approved", value: jobs.filter(j => j.clientApproved === true).length, sub: "accepted", tone: "text-emerald-600" },
+          { label: "Declined", value: jobs.filter(j => j.clientApproved === false).length, sub: "rejected", tone: "text-red-500" },
+        ].map(({ label, value, sub, tone = "text-[var(--ink)]" }) => (
+          <div key={label} className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
+            <p className="text-[11px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">{label}</p>
+            <p className={`mt-1 text-lg font-bold tabular-nums ${tone}`}>{value}</p>
+            <p className="mt-0.5 text-[12px] text-[var(--ink-muted)]">{sub}</p>
+          </div>
+        ))}
+      </div>
+
       {/* Search + filter */}
       <form method="GET" className="hidden lg:flex flex-wrap gap-2">
         <input

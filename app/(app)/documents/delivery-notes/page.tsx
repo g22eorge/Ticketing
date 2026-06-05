@@ -298,20 +298,22 @@ export default async function DeliveryNotesPage({
           </div>
           <Link href="/documents/invoices" className="btn-premium rounded-lg px-3 py-1.5 text-[12px]">Create Delivery Note</Link>
         </div>
-        <div className="grid grid-cols-2 divide-x divide-y divide-[var(--line)] sm:grid-cols-3 sm:divide-y-0">
-          <div className="px-4 py-2">
-            <p className="text-[13px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">Total Notes</p>
-            <p className="text-[15px] font-black tabular-nums leading-tight text-[var(--ink)]">{notes.length}</p>
+      </div>
+
+      {/* KPI strip */}
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        {[
+          { label: "Total Notes", value: notes.length, sub: "all time" },
+          { label: "This Month", value: thisMonth, sub: "delivered" },
+          { label: "Unique Sources", value: uniqueSources, sub: "invoices & sales" },
+          { label: "Filtered", value: filteredNotes.length, sub: "matching filters" },
+        ].map(({ label, value, sub }) => (
+          <div key={label} className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
+            <p className="text-[11px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">{label}</p>
+            <p className="mt-1 text-lg font-bold tabular-nums text-[var(--ink)]">{value}</p>
+            <p className="mt-0.5 text-[12px] text-[var(--ink-muted)]">{sub}</p>
           </div>
-          <div className="px-4 py-2">
-            <p className="text-[13px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">This Month</p>
-            <p className="text-[15px] font-black tabular-nums leading-tight text-[var(--ink)]">{thisMonth}</p>
-          </div>
-          <div className="px-4 py-2">
-            <p className="text-[13px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">Unique Sources</p>
-            <p className="text-[15px] font-black tabular-nums leading-tight text-[var(--ink)]">{uniqueSources}</p>
-          </div>
-        </div>
+        ))}
       </div>
 
       {invoiceOptions.length > 0 ? (

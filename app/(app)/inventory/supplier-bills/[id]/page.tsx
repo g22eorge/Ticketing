@@ -60,7 +60,7 @@ export default async function SupplierBillDetailPage({ params }: { params: Promi
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead><tr className="border-b border-[var(--line)] text-xs font-semibold uppercase tracking-wide text-[var(--ink-muted)]"><th className="px-4 py-2 text-left">Description</th><th className="px-4 py-2 text-right">Qty</th><th className="px-4 py-2 text-right">Unit Cost</th><th className="px-4 py-2 text-right">Total</th></tr></thead>
+            <thead><tr className="border-b border-[var(--line)] text-xs font-semibold uppercase tracking-wide text-[var(--ink-muted)]"><th className="px-4 py-2.5 text-left">Description</th><th className="px-4 py-2.5 text-right">Qty</th><th className="px-4 py-2.5 text-right">Unit Cost</th><th className="px-4 py-2.5 text-right">Total</th></tr></thead>
             <tbody className="divide-y divide-[var(--line)]">{bill.items.map((item) => <tr key={item.id}><td className="px-4 py-2 text-[var(--ink)]">{item.description}</td><td className="px-4 py-2 text-right tabular-nums text-[var(--ink-muted)]">{item.quantity}</td><td className="px-4 py-2 text-right tabular-nums text-[var(--ink-muted)]">{item.unitCost.toLocaleString()}</td><td className="px-4 py-2 text-right tabular-nums font-semibold text-[var(--ink)]">{item.lineTotal.toLocaleString()}</td></tr>)}</tbody>
             <tfoot><tr className="border-t border-[var(--line)] bg-[var(--gold)]/5"><td colSpan={3} className="px-4 py-2 text-right text-xs font-semibold text-[var(--ink-muted)]">Subtotal</td><td className="px-4 py-2 text-right font-bold text-[var(--ink)] tabular-nums">{bill.subtotal.toLocaleString()}</td></tr><tr><td colSpan={3} className="px-4 py-2 text-right text-xs font-semibold text-[var(--ink-muted)]">Tax</td><td className="px-4 py-2 text-right font-bold text-[var(--ink)] tabular-nums">{bill.taxAmount.toLocaleString()}</td></tr></tfoot>
           </table>
@@ -97,10 +97,10 @@ export default async function SupplierBillDetailPage({ params }: { params: Promi
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-[var(--line)] text-xs font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
-                <th className="px-4 py-2 text-left">Date</th>
-                <th className="px-4 py-2 text-left">Method</th>
-                <th className="px-4 py-2 text-left hidden sm:table-cell">Reference</th>
-                <th className="px-4 py-2 text-right">Amount</th>
+                <th className="px-4 py-2.5 text-left">Date</th>
+                <th className="px-4 py-2.5 text-left">Method</th>
+                <th className="px-4 py-2.5 text-left hidden sm:table-cell">Reference</th>
+                <th className="px-4 py-2.5 text-right">Amount</th>
                 <th className="px-4 py-2" />
               </tr>
             </thead>

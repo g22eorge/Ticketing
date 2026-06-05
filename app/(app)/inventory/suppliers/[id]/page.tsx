@@ -97,11 +97,11 @@ export default async function SupplierDetailPage({
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-[var(--line)] text-xs font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
-                <th className="px-4 py-2 text-left">Item</th>
-                <th className="px-4 py-2 text-right">Unit Cost</th>
-                <th className="hidden px-4 py-2 text-right sm:table-cell">MOQ</th>
-                <th className="hidden px-4 py-2 text-right sm:table-cell">Lead</th>
-                <th className="px-4 py-2 text-right">Actions</th>
+                <th className="px-4 py-2.5 text-left">Item</th>
+                <th className="px-4 py-2.5 text-right">Unit Cost</th>
+                <th className="hidden px-4 py-2.5 text-right sm:table-cell">MOQ</th>
+                <th className="hidden px-4 py-2.5 text-right sm:table-cell">Lead</th>
+                <th className="px-4 py-2.5 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--line)]">
@@ -169,10 +169,10 @@ export default async function SupplierDetailPage({
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-[var(--line)] text-xs font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
-                <th className="px-4 py-2 text-left">Bill</th>
-                <th className="px-4 py-2 text-left">Status</th>
-                <th className="px-4 py-2 text-right">Total</th>
-                <th className="px-4 py-2 text-right hidden sm:table-cell">Balance</th>
+                <th className="px-4 py-2.5 text-left">Bill</th>
+                <th className="px-4 py-2.5 text-left">Status</th>
+                <th className="px-4 py-2.5 text-right">Total</th>
+                <th className="px-4 py-2.5 text-right hidden sm:table-cell">Balance</th>
                 <th className="px-4 py-2" />
               </tr>
             </thead>
@@ -212,11 +212,11 @@ export default async function SupplierDetailPage({
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-[var(--line)] text-xs font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
-                <th className="px-4 py-2 text-left">Reference</th>
-                <th className="px-4 py-2 text-left">Status</th>
-                <th className="px-4 py-2 text-left hidden sm:table-cell">Ordered</th>
-                <th className="px-4 py-2 text-left hidden sm:table-cell">Expected</th>
-                <th className="px-4 py-2 text-center">Items</th>
+                <th className="px-4 py-2.5 text-left">Reference</th>
+                <th className="px-4 py-2.5 text-left">Status</th>
+                <th className="px-4 py-2.5 text-left hidden sm:table-cell">Ordered</th>
+                <th className="px-4 py-2.5 text-left hidden sm:table-cell">Expected</th>
+                <th className="px-4 py-2.5 text-center">Items</th>
                 <th className="px-4 py-2" />
               </tr>
             </thead>

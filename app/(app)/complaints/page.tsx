@@ -63,11 +63,19 @@ export default async function ComplaintsPage({
     revalidatePath("/complaints");
   }
 
+  const qSearch = params.q?.trim() ?? "";
   const [complaints, counts] = await Promise.all([
     prisma.complaint.findMany({
       where: {
         orgId,
         ...(filterStatus ? { status: filterStatus } : {}),
+        ...(qSearch ? {
+          OR: [
+            { clientName: { contains: qSearch } },
+            { description: { contains: qSearch } },
+            { complaintNumber: { contains: qSearch } },
+          ],
+        } : {}),
       },
       orderBy: { createdAt: "desc" },
       take: 100,
@@ -143,8 +151,8 @@ export default async function ComplaintsPage({
         </div>
       </div>
 
-      {/* Status filter chips */}
-      <div className="panel-shadow flex flex-wrap items-center gap-1.5 rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
+      {/* Status filter chips + search */}
+      <div className="panel-shadow flex flex-wrap items-center gap-2 rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
         {[
           { label: "All", key: "" },
           ...STATUSES.map((s) => ({ label: COMPLAINT_STATUS_LABELS[s], key: s })),
@@ -165,6 +173,12 @@ export default async function ComplaintsPage({
             </Link>
           );
         })}
+        <form method="GET" className="ml-auto flex gap-1.5">
+          {filterStatus && <input type="hidden" name="status" value={filterStatus} />}
+          <input name="q" defaultValue={params.q ?? ""} placeholder="Search client, description…"
+            className="h-7 min-w-[160px] rounded-full border border-[var(--line)] bg-[var(--panel-strong)] px-3 text-[12px] text-[var(--ink)] outline-none focus:border-[var(--accent)]/50" />
+          <button type="submit" className="h-7 rounded-full border border-[var(--line)] px-3 text-[12px] font-medium hover:bg-[var(--panel-strong)]">Search</button>
+        </form>
       </div>
 
       {/* Table */}

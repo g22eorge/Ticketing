@@ -70,11 +70,11 @@ export default async function GoodsReceivedDetailPage({ params }: { params: Prom
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-[var(--line)] text-xs font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
-                <th className="px-4 py-2 text-left">Description</th>
-                <th className="px-4 py-2 text-left hidden sm:table-cell">Part</th>
-                <th className="px-4 py-2 text-right">Qty</th>
-                <th className="px-4 py-2 text-right">Unit Cost</th>
-                <th className="px-4 py-2 text-right">Total</th>
+                <th className="px-4 py-2.5 text-left">Description</th>
+                <th className="px-4 py-2.5 text-left hidden sm:table-cell">Part</th>
+                <th className="px-4 py-2.5 text-right">Qty</th>
+                <th className="px-4 py-2.5 text-right">Unit Cost</th>
+                <th className="px-4 py-2.5 text-right">Total</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--line)]">

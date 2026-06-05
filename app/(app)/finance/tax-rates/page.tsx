@@ -10,7 +10,13 @@ import { RowActionsMenu, MenuSection, MenuDestructiveRow } from "@/components/sh
 
 export const dynamic = "force-dynamic";
 
-export default async function TaxRatesPage() {
+export default async function TaxRatesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string }>;
+}) {
+  const sp = await searchParams;
+  const q = sp.q?.toLowerCase().trim() ?? "";
   const { user, orgId } = await requireOrgSession();
   if (!["ADMIN", "MANAGER"].includes(user.role)) redirect("/dashboard");
 
@@ -18,6 +24,9 @@ export default async function TaxRatesPage() {
     where: { orgId },
     orderBy: [{ isDefault: "desc" }, { code: "asc" }],
   });
+  const filteredTaxRates = q
+    ? taxRates.filter((r) => r.name.toLowerCase().includes(q) || r.code.toLowerCase().includes(q))
+    : taxRates;
 
   async function createTaxRateAction(formData: FormData) {
     "use server";
@@ -166,6 +175,14 @@ export default async function TaxRatesPage() {
         </details>
       </div>
 
+      {/* Search */}
+      <form method="GET" className="flex gap-2">
+        <input name="q" defaultValue={q} placeholder="Search name, code…"
+          className="h-8 flex-1 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 text-[12px] text-[var(--ink)] outline-none focus:border-[var(--accent)]/50" />
+        <button type="submit" className="h-8 rounded-lg border border-[var(--line)] px-3 text-[12px] font-medium hover:bg-[var(--panel-strong)]">Search</button>
+        {q && <a href="/finance/tax-rates" className="flex h-8 items-center rounded-lg border border-[var(--line)] px-3 text-[12px] text-[var(--ink-muted)] hover:text-[var(--ink)]">Clear</a>}
+      </form>
+
       {/* Tax rate table */}
       <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
         <div className="doc-list overflow-x-auto">
@@ -182,7 +199,7 @@ export default async function TaxRatesPage() {
               </tr>
             </thead>
             <tbody>
-              {taxRates.map((rate) => (
+              {filteredTaxRates.map((rate) => (
                 <tr key={rate.id} className="border-t border-[var(--line)] align-middle hover:bg-[var(--panel-strong)]/40">
                   <td className="px-4 py-3">
                     <span className="mono rounded-md bg-[var(--panel-strong)] px-2 py-1 text-[12px] font-bold text-[var(--ink)]">
@@ -259,7 +276,7 @@ export default async function TaxRatesPage() {
                   </td>
                 </tr>
               ))}
-              {taxRates.length === 0 && (
+              {filteredTaxRates.length === 0 && (
                 <tr>
                   <td colSpan={7} className="px-4 py-10 text-center text-sm text-[var(--ink-muted)]">
                     No tax rates configured. Add VAT, WHT, or other rates above.

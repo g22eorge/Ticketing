@@ -46,7 +46,13 @@ function nextDueDateFromFrequency(from: Date, freq: Frequency): Date {
   return d;
 }
 
-export default async function RecurringInvoicesPage() {
+export default async function RecurringInvoicesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string }>;
+}) {
+  const sp = await searchParams;
+  const q = sp.q?.toLowerCase().trim() ?? "";
   const { user, orgId, org } = await requireOrgSession();
   if (!can.viewFinancials(user)) redirect("/dashboard");
 
@@ -245,6 +251,9 @@ export default async function RecurringInvoicesPage() {
 
   const activeCount = recurringInvoices.filter((r) => r.isActive).length;
   const dueNow = recurringInvoices.filter((r) => r.isActive && r.nextDueAt <= now).length;
+  const filteredRecurring = q
+    ? recurringInvoices.filter((r) => r.subject.toLowerCase().includes(q) || r.client?.fullName?.toLowerCase().includes(q))
+    : recurringInvoices;
 
   return (
     <div className="space-y-4">
@@ -343,6 +352,14 @@ export default async function RecurringInvoicesPage() {
         </details>
       </div>
 
+      {/* Search */}
+      <form method="GET" className="flex gap-2">
+        <input name="q" defaultValue={q} placeholder="Search subject, client…"
+          className="h-8 flex-1 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 text-[12px] text-[var(--ink)] outline-none focus:border-[var(--accent)]/50" />
+        <button type="submit" className="h-8 rounded-lg border border-[var(--line)] px-3 text-[12px] font-medium hover:bg-[var(--panel-strong)]">Search</button>
+        {q && <a href="/finance/recurring" className="flex h-8 items-center rounded-lg border border-[var(--line)] px-3 text-[12px] text-[var(--ink-muted)] hover:text-[var(--ink)]">Clear</a>}
+      </form>
+
       {/* List */}
       <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
         <div className="doc-list overflow-x-auto">
@@ -360,7 +377,7 @@ export default async function RecurringInvoicesPage() {
               </tr>
             </thead>
             <tbody>
-              {recurringInvoices.map((rec) => {
+              {filteredRecurring.map((rec) => {
                 const total = rec.items.reduce((s, i) => s + i.lineTotal, 0);
                 const isDue = rec.isActive && rec.nextDueAt <= now;
                 return (
@@ -428,7 +445,7 @@ export default async function RecurringInvoicesPage() {
                   </tr>
                 );
               })}
-              {recurringInvoices.length === 0 && (
+              {filteredRecurring.length === 0 && (
                 <tr>
                   <td colSpan={8} className="px-4 py-10 text-center text-sm text-[var(--ink-muted)]">
                     No recurring invoice templates yet.

@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { OutboundMessageType, type PaymentMethod } from "@prisma/client";
 
-import { formatMoney } from "@/lib/currency";
+import { formatMoney, formatMoneyCompact } from "@/lib/currency";
 import { can } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { requireOrgSession } from "@/lib/org-context";
@@ -338,6 +338,22 @@ export default async function CreditNotesPage({
             <p className="text-[15px] font-black tabular-nums leading-tight text-[var(--accent)]">{formatMoney(totalRefunded, currency)}</p>
           </div>
         </div>
+      </div>
+
+      {/* KPI strip */}
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        {[
+          { label: "Total", value: creditNotes.length, sub: "credit notes" },
+          { label: "Total Value", value: formatMoneyCompact(totalValue, currency), sub: "issued" },
+          { label: "Pending Return", value: pendingReturn, sub: "items not received back", tone: pendingReturn > 0 ? "text-amber-600" : "text-[var(--ink)]" },
+          { label: "Settled", value: creditNotes.length - pendingReturn, sub: "items returned", tone: "text-emerald-600" },
+        ].map(({ label, value, sub, tone = "text-[var(--ink)]" }) => (
+          <div key={label} className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
+            <p className="text-[11px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">{label}</p>
+            <p className={`mt-1 text-lg font-bold tabular-nums ${tone}`}>{value}</p>
+            <p className="mt-0.5 text-[12px] text-[var(--ink-muted)]">{sub}</p>
+          </div>
+        ))}
       </div>
 
       {/* Filters */}

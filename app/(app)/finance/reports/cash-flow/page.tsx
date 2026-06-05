@@ -243,10 +243,10 @@ export default async function CashFlowPage({
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-[var(--line)] bg-[var(--panel-strong)]/40">
-              <th className="px-4 py-2 text-left text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Line Item</th>
-              <th className="px-4 py-2 text-right text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">{periodLabel}</th>
-              <th className="hidden px-4 py-2 text-right text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)] md:table-cell">{priorLabel}</th>
-              <th className="hidden px-4 py-2 text-right text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)] md:table-cell">Change</th>
+              <th className="px-4 py-2.5 text-left text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Line Item</th>
+              <th className="px-4 py-2.5 text-right text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">{periodLabel}</th>
+              <th className="hidden px-4 py-2.5 text-right text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)] md:table-cell">{priorLabel}</th>
+              <th className="hidden px-4 py-2.5 text-right text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)] md:table-cell">Change</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[var(--line)]">

@@ -97,9 +97,9 @@ export default async function DataHealPage({
             <table className="min-w-full text-sm">
               <thead className="bg-[var(--panel-strong)] text-xs uppercase tracking-[0.08em] text-[var(--ink-muted)]">
                 <tr>
-                  <th className="px-4 py-2 text-left font-medium">Job #</th>
-                  <th className="px-4 py-2 text-left font-medium">From</th>
-                  <th className="px-4 py-2 text-left font-medium">To</th>
+                  <th className="px-4 py-2.5 text-left font-medium">Job #</th>
+                  <th className="px-4 py-2.5 text-left font-medium">From</th>
+                  <th className="px-4 py-2.5 text-left font-medium">To</th>
                 </tr>
               </thead>
               <tbody>

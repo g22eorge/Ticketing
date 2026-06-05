@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { OutboundMessageType, type PaymentMethod } from "@prisma/client";
 import { Prisma } from "@prisma/client";
 
-import { formatMoney, normalizeCurrency } from "@/lib/currency";
+import { formatMoney, formatMoneyCompact, normalizeCurrency } from "@/lib/currency";
 import { can } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { requireOrgSession } from "@/lib/org-context";
@@ -257,25 +257,22 @@ export default async function RefundsPage({
             </Link>
           )}
         </div>
-        <div className="grid grid-cols-2 divide-x divide-y divide-[var(--line)] sm:grid-cols-4 sm:divide-y-0">
-          <div className="px-4 py-2.5">
-            <p className="text-[13px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">Total Refunds</p>
-            <p className="text-[15px] font-black tabular-nums leading-tight text-[var(--ink)]">{totalRefunds}</p>
-            <p className="text-[12px] text-[var(--ink-muted)]">all time</p>
+      </div>
+
+      {/* KPI strip */}
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        {[
+          { label: "Total Refunds", value: totalRefunds, sub: "all time" },
+          { label: "Total Refunded", value: formatMoneyCompact(totalAmount, currency), sub: "amount returned" },
+          { label: "Invoice Refunds", value: formatMoneyCompact(invoiceAmount, currency), sub: "from invoices" },
+          { label: "Sale Refunds", value: formatMoneyCompact(saleAmount, currency), sub: "from sales" },
+        ].map(({ label, value, sub }) => (
+          <div key={label} className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
+            <p className="text-[11px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">{label}</p>
+            <p className="mt-1 text-lg font-bold tabular-nums text-[var(--ink)]">{value}</p>
+            <p className="mt-0.5 text-[12px] text-[var(--ink-muted)]">{sub}</p>
           </div>
-          <div className="px-4 py-2.5">
-            <p className="text-[13px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">Total Refunded</p>
-            <p className="text-[15px] font-black tabular-nums leading-tight text-[var(--ink)]">{formatMoney(totalAmount, currency)}</p>
-          </div>
-          <div className="px-4 py-2.5">
-            <p className="text-[13px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">Invoice Refunds</p>
-            <p className="text-[15px] font-black tabular-nums leading-tight text-[var(--ink)]">{formatMoney(invoiceAmount, currency)}</p>
-          </div>
-          <div className="px-4 py-2.5">
-            <p className="text-[13px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">Sale Refunds</p>
-            <p className="text-[15px] font-black tabular-nums leading-tight text-[var(--accent)]">{formatMoney(saleAmount, currency)}</p>
-          </div>
-        </div>
+        ))}
       </div>
 
       {showNewRefundForm && ["ADMIN", "OPS", "MANAGER", "FINANCE"].includes(user.role) && (
