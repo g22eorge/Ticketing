@@ -1,4 +1,4 @@
-// @ts-nocheck
+// @ts-nocheck — TODO: resolve underlying type issues and remove this pragma
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import type { CampaignType, CampaignStatus, CampaignContactStatus } from "@prisma/client";

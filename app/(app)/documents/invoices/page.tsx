@@ -1,4 +1,4 @@
-// @ts-nocheck
+// @ts-nocheck — TODO: resolve underlying type issues and remove this pragma
 import Link from "next/link";
 import { getCurrentUserRole } from "@/lib/session";
 import { redirect } from "next/navigation";

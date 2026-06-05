@@ -1,4 +1,4 @@
-// @ts-nocheck
+// @ts-nocheck — TODO: resolve underlying type issues and remove this pragma
 export const dynamic = "force-dynamic";
 
 import Link from "next/link";

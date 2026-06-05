@@ -183,7 +183,7 @@ export default async function GroupsPage({ searchParams }: { searchParams: Promi
           select: { id: true, user: { select: { id: true, name: true, email: true } } },
         }).catch(() => []),
         prisma.userGroupPermission.findMany({ where: { groupId: selected.id }, select: { permission: true } }).catch(() => []),
-        prisma.user.findMany({ where: { orgId, isActive: true }, orderBy: { name: "asc" }, select: { id: true, name: true, email: true } }),
+        prisma.user.findMany({ where: { orgId, isActive: true }, orderBy: { name: "asc" }, select: { id: true, name: true, email: true }, take: 300 }),
       ])
     : [[], [], []];
 

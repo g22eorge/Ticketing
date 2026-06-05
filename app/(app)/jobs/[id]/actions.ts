@@ -682,7 +682,8 @@ export async function updateJobAction(formData: FormData) {
         });
 
   if (!job) {
-    return { success: true };
+    console.error("[updateJobAction] job fetch after update returned null — notifications skipped", { jobId: existing.id });
+    return { success: true, warn: "Job updated but post-update fetch failed — notifications may not have fired." };
   }
 
   // Notifications must compare against the pre-update snapshot.
@@ -978,7 +979,7 @@ export async function recordTechnicianPayoutAction(formData: FormData) {
           action: "TECHNICIAN_PAYOUT_RECORDED",
           detail: JSON.stringify({ amount: payload.amount, method: safeMethod, technicianCost, paidTotal }),
         },
-      }).catch(() => {});
+      }).catch((err) => console.error("[recordTechnicianPayout] audit log failed:", err));
     });
 
     revalidatePath(`/jobs/${job.id}`);

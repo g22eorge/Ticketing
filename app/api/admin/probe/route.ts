@@ -115,7 +115,7 @@ export async function GET() {
     ] = await Promise.all([
       prisma.job.groupBy({ by: ["status"], _count: { status: true } }),
       prisma.job.groupBy({ by: ["deviceType"], _count: { deviceType: true } }),
-      prisma.job.findMany({ where: { status: "COMPLETED", completedAt: { gte: start, lte: end } } }),
+      prisma.job.findMany({ where: { status: "COMPLETED", completedAt: { gte: start, lte: end } }, take: 500 }),
       prisma.job.count({ where: { receivedAt: { gte: start, lte: end } } }),
       prisma.job.count({ where: { status: "CLOSED", closedAt: { gte: start, lte: end } } }),
       prisma.job.count({ where: { repairPath: "EXTERNAL", receivedAt: { gte: start, lte: end } } }),
@@ -123,6 +123,7 @@ export async function GET() {
       prisma.job.findMany({
         where: { repairPath: "EXTERNAL", status: "COMPLETED" },
         select: { id: true, externalTechBill: true },
+        take: 1000,
       }),
     ]);
 

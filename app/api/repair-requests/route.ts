@@ -7,15 +7,20 @@ import { deliverOutboundMessage, enqueueEmailMessage, enqueueWhatsAppMessage } f
 
 const EIS_ORG_ID = "org_eis_01";
 
-const ALLOWED_ORIGINS = [
+const ALLOWED_ORIGINS = new Set([
   process.env.ALLOWED_ORIGIN_1 || "https://app.eagleinfosolutions.com",
-  process.env.ALLOWED_ORIGIN_2 || "https://app.eagleinfosolutions.com",
-].filter(Boolean);
+  process.env.ALLOWED_ORIGIN_2 || "https://www.eagleinfosolutions.com",
+  "https://eagleinfosolutions.com",
+  "https://care.eagleinfosolutions.com",
+  "https://app.eagleinfosolutions.com",
+  "https://www.eagleinfosolutions.com",
+].filter(Boolean));
 
 function getCorsHeaders(origin: string | null) {
-  // Allow any same-site origin — public company pages are served from the same deployment.
+  // Exact-match allowlist — no subdomain wildcard to prevent rogue-subdomain abuse.
+  const isDev = process.env.NODE_ENV !== "production" && origin?.startsWith("http://localhost");
   const allowedOrigin =
-    origin && (ALLOWED_ORIGINS.includes(origin) || origin.includes("eagleinfosolutions.com") || origin.startsWith("http://localhost"))
+    origin && (ALLOWED_ORIGINS.has(origin) || isDev)
       ? origin
       : "https://app.eagleinfosolutions.com";
 
