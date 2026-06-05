@@ -967,3 +967,19 @@ tr:has(details[open]) {
     padding: 0 !important;
   }
 }
+
+/* Native <dialog> base reset */
+dialog {
+  position: fixed;
+  inset: 0;
+  margin: auto;
+  padding: 0;
+  color: inherit;
+  background: transparent;
+  border: none;
+  max-height: 90dvh;
+  overflow-y: auto;
+}
+dialog::backdrop {
+  background: rgb(0 0 0 / 0.5);
+}

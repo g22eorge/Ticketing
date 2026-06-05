@@ -14,6 +14,7 @@ import { writeSystemAuditEvent } from "@/lib/commercial/audit";
 import { RowActionsMenu, MenuSection, MenuDestructiveRow, MenuActionLink, MenuActionButton } from "@/components/shared/RowActionsMenu";
 import { createReceiptForPayment } from "@/lib/commercial/document-workflow";
 import { enqueueEmailMessage, enqueueWhatsAppMessage } from "@/lib/notifications/whatsapp-outbox";
+import { CreateReceiptDialog } from "./CreateReceiptDialog";
 
 const PAYMENT_METHODS: PaymentMethod[] = ["CASH", "MOBILE_MONEY", "BANK_TRANSFER", "CARD", "OTHER"];
 
@@ -34,7 +35,7 @@ export default async function ReceiptsPage({
   const period = params.period ?? "all";
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
-  async function createReceiptAction(formData: FormData) {
+  async function createReceiptAction(_prev: null, formData: FormData): Promise<null> {
     "use server";
     const { user, orgId, org } = await requireOrgSession();
     const db = orgDb(orgId);
@@ -46,11 +47,11 @@ export default async function ReceiptsPage({
     const methodRaw = String(formData.get("method") ?? "CASH").trim();
     const reference = String(formData.get("reference") ?? "").trim();
     const currency = normalizeCurrency(formData.get("currency"), baseCurrency);
-    if (!invoiceId || !Number.isFinite(amount) || amount <= 0) return;
+    if (!invoiceId || !Number.isFinite(amount) || amount <= 0) return null;
 
     const method = PAYMENT_METHODS.includes(methodRaw as PaymentMethod) ? (methodRaw as PaymentMethod) : "OTHER" as PaymentMethod;
     const invoice = await db.invoice.findFirst({ where: { id: invoiceId, status: { not: "VOID" } }, select: { id: true, totalAmount: true, paidAmount: true, clientId: true, jobId: true } });
-    if (!invoice || invoice.paidAmount + amount > invoice.totalAmount) return;
+    if (!invoice || invoice.paidAmount + amount > invoice.totalAmount) return null;
 
     await prisma.$transaction(async (tx) => {
       const payment = await tx.payment.create({ data: { orgId, invoiceId: invoice.id, amount, method, reference: reference || null, currency, createdById: user.id } });
@@ -64,6 +65,7 @@ export default async function ReceiptsPage({
     await writeSystemAuditEvent({ orgId, actorUserId: user.id, entityType: "Invoice", entityId: invoice.id, action: "RECEIPT_CREATED", summary: "Receipt generated from invoice" });
     revalidatePath("/documents/receipts");
     revalidatePath("/documents/invoices");
+    return null;
   }
 
   async function updateReceiptAction(formData: FormData) {
@@ -373,7 +375,20 @@ export default async function ReceiptsPage({
             <p className="text-[12px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Documents</p>
             <p className="text-[13px] font-bold text-[var(--ink)]">Receipts</p>
           </div>
-          <Link href="/documents/invoices" className="btn-premium rounded-lg px-3 py-1.5 text-[12px]">Create Receipt</Link>
+          {invoiceOptions.length > 0 ? (
+            <CreateReceiptDialog
+              invoiceOptions={invoiceOptions.map((inv) => ({
+                id: inv.id,
+                invoiceNumber: inv.invoiceNumber,
+                label: `${inv.invoiceNumber} — ${inv.job?.jobNumber ?? inv.client?.fullName ?? "Invoice"} — due ${formatMoney(inv.totalAmount - inv.paidAmount, normalizeCurrency(inv.currency, baseCurrency))}`,
+              }))}
+              baseCurrency={baseCurrency}
+              paymentMethods={PAYMENT_METHODS as string[]}
+              action={createReceiptAction}
+            />
+          ) : (
+            <Link href="/documents/invoices" className="btn-premium rounded-lg px-3 py-1.5 text-[12px]">Create Invoice</Link>
+          )}
         </div>
         <div className="grid grid-cols-2 divide-x divide-y divide-[var(--line)] sm:grid-cols-4 sm:divide-y-0">
           <div className="px-4 py-2">
@@ -422,28 +437,6 @@ export default async function ReceiptsPage({
         )}
       </form>
 
-      {invoiceOptions.length > 0 ? (
-        <details className="group rounded-xl border border-[var(--line)] bg-[var(--panel)]">
-          <summary className="cursor-pointer select-none px-4 py-2.5 text-[12px] font-semibold text-[var(--ink)] group-open:border-b group-open:border-[var(--line)]">
-            Create Receipt from invoice
-          </summary>
-          <form action={createReceiptAction} className="grid grid-cols-1 gap-3 p-4 sm:grid-cols-2 lg:grid-cols-3">
-            <select name="invoiceId" required className="h-9 rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 text-sm sm:col-span-2">
-              <option value="">Select invoice...</option>
-              {invoiceOptions.map((invoice) => (
-                <option key={invoice.id} value={invoice.id}>{invoice.invoiceNumber} - {invoice.job?.jobNumber ?? invoice.client?.fullName ?? "Invoice"} - due {formatMoney(invoice.totalAmount - invoice.paidAmount, normalizeCurrency(invoice.currency, baseCurrency))}</option>
-              ))}
-            </select>
-            <input name="amount" required inputMode="decimal" placeholder="Amount" className="h-9 rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 text-sm" />
-            <input type="hidden" name="currency" value={baseCurrency} />
-            <select name="method" defaultValue="CASH" className="h-9 rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 text-sm">
-              {PAYMENT_METHODS.map((method) => <option key={method} value={method}>{method.replaceAll("_", " ")}</option>)}
-            </select>
-            <input name="reference" placeholder="Reference" className="h-9 rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 text-sm" />
-            <button type="submit" className="btn-premium h-9 rounded-lg px-5 text-sm font-semibold">Create Receipt</button>
-          </form>
-        </details>
-      ) : null}
 
 
       <div className="space-y-3 md:hidden">
