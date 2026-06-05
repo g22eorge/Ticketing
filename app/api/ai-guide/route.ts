@@ -785,11 +785,17 @@ export async function POST(request: NextRequest) {
       knowledgeContext ? `\n[Reference material — use only what is relevant, in your own words]:\n${knowledgeContext}` : null,
     ].filter(Boolean).join("\n\n");
 
-    // Keep last 10 turns to stay within context budget
-    const trimmedHistory: Content[] = history.slice(-10).map((m) => ({
-      role: m.role,
-      parts: m.parts,
-    }));
+    // Keep last 10 turns; convert { role, text } → Gemini Content format
+    // Exclude model-only welcome messages so history always starts with a user turn
+    const trimmedHistory: Content[] = history
+      .filter((m) => m.role === "user" || m.role === "model")
+      .slice(-10)
+      .map((m) => ({
+        role: m.role as "user" | "model",
+        parts: [{ text: String(m.text ?? "") }],
+      }))
+      // Gemini requires history to start with a user turn
+      .filter((_, i, arr) => i > 0 || arr[0]?.role === "user");
 
     if (!apiKey) {
       await logAiPrompt({ orgId: user?.orgId, userId: user?.id, feature: "AI_GUIDE", question: message, contextSummary: knowledgeContext, mode: "fallback" });
