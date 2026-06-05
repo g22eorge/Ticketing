@@ -55,6 +55,7 @@ export default async function CreditNotesPage({
       data: { itemsReceivedBackAt: new Date(), itemsReceivedBackById: actor.id, itemsReceivedBackNote: note || null },
     });
     revalidatePath("/documents/credit-notes");
+    redirect("/documents/credit-notes");
   }
 
   async function issueRefundFromCreditNoteAction(formData: FormData) {
@@ -97,6 +98,7 @@ export default async function CreditNotesPage({
     });
     revalidatePath("/documents/credit-notes");
     revalidatePath("/documents/refunds");
+    redirect("/documents/credit-notes");
   }
 
   async function shareCreditNoteWhatsAppAction(formData: FormData) {
@@ -127,6 +129,7 @@ export default async function CreditNotesPage({
       body: `Hi ${recipient.fullName}, your credit note ${creditNote.creditNoteNumber} for ${creditNote.sale.saleNumber} is ready.\n\nAmount: ${formatMoney(creditNote.totalAmount, creditNote.currency)}\nDownload PDF: ${pdfUrl}`,
     });
     revalidatePath("/documents/credit-notes");
+    redirect("/documents/credit-notes");
   }
 
   async function shareCreditNoteEmailAction(formData: FormData) {
@@ -158,6 +161,7 @@ export default async function CreditNotesPage({
       type: OutboundMessageType.JOB_STATUS_UPDATE,
     });
     revalidatePath("/documents/credit-notes");
+    redirect("/documents/credit-notes");
   }
 
   async function createCreditNoteAction(formData: FormData) {
@@ -206,6 +210,7 @@ export default async function CreditNotesPage({
       });
     });
     revalidatePath("/documents/credit-notes");
+    redirect("/documents/credit-notes");
   }
 
   async function deleteCreditNoteAction(formData: FormData) {
@@ -224,6 +229,7 @@ export default async function CreditNotesPage({
 
     await prisma.creditNote.delete({ where: { id } });
     revalidatePath("/documents/credit-notes");
+    redirect("/documents/credit-notes");
   }
 
   // ── Data ─────────────────────────────────────────────────────────────────────

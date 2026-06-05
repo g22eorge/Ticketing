@@ -67,6 +67,7 @@ export default async function DeliveryNotesPage() {
     await writeSystemAuditEvent({ orgId, actorUserId: user.id, entityType: "DeliveryNote", entityId: noteRecord.id, action: "DELIVERY_NOTE_CREATED", summary: `${noteRecord.deliveryNoteNumber} generated from ${invoice.invoiceNumber}` });
     revalidatePath("/documents/delivery-notes");
     revalidatePath("/documents/invoices");
+    redirect("/documents/delivery-notes");
   }
 
   async function updateDeliveryNoteAction(formData: FormData) {
@@ -97,6 +98,7 @@ export default async function DeliveryNotesPage() {
     await writeSystemAuditEvent({ orgId, actorUserId: user.id, entityType: "DeliveryNote", entityId: deliveryNoteId, action: "DELIVERY_NOTE_UPDATED", summary: "Delivery note updated" });
 
     revalidatePath("/documents/delivery-notes");
+    redirect("/documents/delivery-notes");
   }
 
   async function deleteDeliveryNoteAction(formData: FormData) {
@@ -111,6 +113,7 @@ export default async function DeliveryNotesPage() {
     await prisma.deliveryNote.deleteMany({ where: { id: deliveryNoteId, orgId } });
     await writeSystemAuditEvent({ orgId, actorUserId: user.id, entityType: "DeliveryNote", entityId: deliveryNoteId, action: "DELIVERY_NOTE_DELETED", summary: "Delivery note deleted" });
     revalidatePath("/documents/delivery-notes");
+    redirect("/documents/delivery-notes");
   }
 
   async function shareDeliveryNoteWhatsAppAction(formData: FormData) {
@@ -141,6 +144,7 @@ export default async function DeliveryNotesPage() {
       body: `Hi ${recipient.fullName}, your delivery note ${note.deliveryNoteNumber} for ${source} is ready.\n\nDownload PDF: ${pdfUrl}`,
     });
     revalidatePath("/documents/delivery-notes");
+    redirect("/documents/delivery-notes");
   }
 
   async function shareDeliveryNoteEmailAction(formData: FormData) {
@@ -173,6 +177,7 @@ export default async function DeliveryNotesPage() {
       type: OutboundMessageType.JOB_STATUS_UPDATE,
     });
     revalidatePath("/documents/delivery-notes");
+    redirect("/documents/delivery-notes");
   }
 
   type DeliveryNoteRow = {
