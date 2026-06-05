@@ -436,7 +436,14 @@ export async function POST(request: NextRequest) {
       headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "no-store" },
     });
   } catch (error) {
-    console.error("[ai-business-copilot] Gemini error:", error instanceof Error ? error.message : String(error));
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error("[ai-business-copilot] Gemini error:", msg);
+    const isQuota = msg.includes("429") || msg.toLowerCase().includes("quota");
+    if (isQuota) {
+      return new Response("The AI Copilot has hit its request limit. Please try again in a minute, or check the Gemini API quota at aistudio.google.com.", {
+        headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "no-store", "x-ai-mode": "quota" },
+      });
+    }
     return new Response(fallbackAnswer(question, dataPack), {
       headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "no-store", "x-ai-mode": "fallback" },
     });

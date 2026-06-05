@@ -836,7 +836,11 @@ export async function POST(request: NextRequest) {
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error("[ai-guide] Gemini error:", msg);
-    return new Response(`⚠️ AI Guide error: ${msg}. Check that GEMINI_API_KEY is valid and the model is accessible.`, {
+    const isQuota = msg.includes("429") || msg.toLowerCase().includes("quota");
+    const userMsg = isQuota
+      ? "The AI Guide has hit its request limit for now. Please try again in a minute, or ask your admin to check the Gemini API quota at aistudio.google.com."
+      : "The AI Guide is temporarily unavailable. Please try again shortly.";
+    return new Response(userMsg, {
       headers: {
         "content-type": "text/plain; charset=utf-8",
         "cache-control": "no-store",
