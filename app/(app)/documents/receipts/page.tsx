@@ -333,22 +333,6 @@ export default async function ReceiptsPage({
     select: { id: true, invoiceNumber: true, totalAmount: true, paidAmount: true, currency: true, job: { select: { jobNumber: true } }, client: { select: { fullName: true } } },
   }).then((rows: InvoiceOption[]) => rows.filter((invoice) => invoice.paidAmount < invoice.totalAmount));
 
-  const methodBreakdown = PAYMENT_METHODS.map((method) => {
-    const mp = payments.filter((p) => p.method === method);
-    const count = mp.length;
-    const amount = mp.reduce(
-      (sum, p) =>
-        sum + toBaseAmount({
-          amount: p.amount,
-          currency: normalizeCurrency(p.currency, baseCurrency),
-          baseCurrency,
-          exchangeRateToBase: p.exchangeRateToBase,
-        }),
-      0,
-    );
-    const pct = receiptsTotal > 0 ? Math.round((count / receiptsTotal) * 100) : 0;
-    return { method, count, amount, pct };
-  }).filter((m) => m.count > 0);
 
   const PERIOD_LABELS: Record<string, string> = {
     all: "All Time",

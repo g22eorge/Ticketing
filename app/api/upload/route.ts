@@ -110,7 +110,7 @@ export async function POST(req: NextRequest) {
         action: "PHOTO_UPLOADED",
         detail: JSON.stringify({ photoId: photo.id, label }),
       },
-    }).catch(() => {});
+    }).catch((err) => console.error("[upload] audit log (PHOTO_UPLOADED) failed:", err));
     created.push(photo);
   }
 
@@ -158,7 +158,7 @@ export async function DELETE(req: NextRequest) {
       action: "PHOTO_DELETED",
       detail: JSON.stringify({ photoId: id }),
     },
-  }).catch(() => {});
+  }).catch((err) => console.error("[upload] audit log (PHOTO_DELETED) failed:", err));
 
   if (safeToUnlink) {
     try {

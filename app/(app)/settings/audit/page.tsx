@@ -41,7 +41,6 @@ export default async function SettingsAuditPage({
         entityId: true,
         action: true,
         summary: true,
-        beforeJson: true,
         afterJson: true,
         createdAt: true,
       },

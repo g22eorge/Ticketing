@@ -547,7 +547,7 @@ function intentAnswer(message: string) {
   return null;
 }
 
-function fallbackAnswer(message: string) {
+function _fallbackAnswer(message: string) {
   const text = message.toLowerCase();
 
   const knownIntent = intentAnswer(message);

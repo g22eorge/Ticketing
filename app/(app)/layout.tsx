@@ -146,6 +146,7 @@ export default async function AppLayout({
           where: { orgId },
           select: { id: true, name: true, email: true, role: true, isActive: true },
           orderBy: [{ isActive: "desc" }, { name: "asc" }],
+          take: 300,
         })
       : Promise.resolve([]),
   ]);

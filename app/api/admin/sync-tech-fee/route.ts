@@ -17,18 +17,19 @@ export async function GET() {
       select: { id: true, jobNumber: true, externalTechBill: true, externalTechFee: true },
     });
 
-    let updated = 0;
-    const results = [];
+    const toUpdate = jobsWithBill.filter((job) => job.externalTechBill !== job.externalTechFee);
+    const results = toUpdate.map((job) => ({ jobNumber: job.jobNumber, old: job.externalTechFee, new: job.externalTechBill }));
 
-    for (const job of jobsWithBill) {
-      if (job.externalTechBill === job.externalTechFee) continue;
-      await prisma.job.update({
-        where: { id: job.id },
-        data: { externalTechFee: job.externalTechBill },
-      });
-      updated += 1;
-      results.push({ jobNumber: job.jobNumber, old: job.externalTechFee, new: job.externalTechBill });
+    // Batch all updates in a single transaction instead of one-by-one N+1
+    if (toUpdate.length > 0) {
+      await prisma.$transaction(
+        toUpdate.map((job) =>
+          prisma.job.update({ where: { id: job.id }, data: { externalTechFee: job.externalTechBill } })
+        )
+      );
     }
+
+    const updated = toUpdate.length;
 
     return NextResponse.json({
       message: "Sync complete",

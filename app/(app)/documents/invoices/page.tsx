@@ -68,7 +68,7 @@ export default async function InvoicesPage({
     const { user } = await getCurrentUserRole();
     const orgId = user.orgId;
     const db = orgDb(orgId);
-    if (!can.createInvoices(user)) return;
+    if (!can.createInvoices(user)) redirect("/dashboard");
 
     const clientId = String(formData.get("clientId") ?? "").trim();
     const subject = String(formData.get("subject") ?? "").trim();
@@ -78,10 +78,12 @@ export default async function InvoicesPage({
     const dueDateRaw = String(formData.get("dueDate") ?? "").trim();
     const notes = String(formData.get("notes") ?? "").trim();
 
-    if (!clientId || !subject || !Number.isFinite(totalAmountRaw) || totalAmountRaw < 0) return;
+    if (!clientId || !subject || !Number.isFinite(totalAmountRaw) || totalAmountRaw < 0) {
+      redirect("/documents/invoices?error=missing-fields");
+    }
 
     const client = await db.client.findFirst({ where: { id: clientId }, select: { id: true } });
-    if (!client) return;
+    if (!client) redirect("/documents/invoices?error=client-not-found");
 
     const invoiceType = INVOICE_TYPES.includes(invoiceTypeRaw as InvoiceType)
       ? (invoiceTypeRaw as InvoiceType)
@@ -429,7 +431,7 @@ export default async function InvoicesPage({
     const raw = await db.invoice.findMany({
       where,
       orderBy: { issuedAt: "desc" },
-      take: 300,
+      take: 150,
       select: {
         id: true,
         invoiceNumber: true,
@@ -451,7 +453,7 @@ export default async function InvoicesPage({
           },
         },
         client: { select: { id: true, fullName: true } },
-        payments: { select: { id: true }, orderBy: { receivedAt: "desc" }, take: 1 },
+        payments: { select: { id: true }, take: 1 },
         deliveryNotes: { select: { id: true }, take: 1 },
       },
     });
