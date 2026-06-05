@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Prisma, JobStatus, InvoiceStatus, SupplierBillStatus } from "@prisma/client";
+import { revalidatePath } from "next/cache";
+import { Prisma, JobStatus, InvoiceStatus, SupplierBillStatus, type PaymentMethod } from "@prisma/client";
 
 import { resolveTechCost } from "@/lib/billing";
 import { formatMoneyCompact, getAppCurrency } from "@/lib/currency";
@@ -8,6 +9,9 @@ import { filterSupportedJobStatuses } from "@/lib/job-status-server";
 import { can } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { requireOrgSession } from "@/lib/org-context";
+import { createReceiptForPayment } from "@/lib/commercial/document-workflow";
+
+const PAYMENT_METHODS: PaymentMethod[] = ["CASH", "MOBILE_MONEY", "BANK_TRANSFER", "CARD", "OTHER"];
 
 type SearchParams = {
   q?: string;
@@ -125,6 +129,58 @@ async function markExternalTechPaid(formData: FormData) {
   revalidatePath(`/jobs/${jobId}`);
   revalidatePath("/technicians/payouts");
   revalidatePath("/dashboard");
+}
+
+// ── Server action: receive client payment against an invoice ──────────────────
+
+async function receiveInvoicePaymentAction(formData: FormData) {
+  "use server";
+  const { user, orgId, org } = await requireOrgSession();
+  if (!(can.viewFinancials({ role: user.role, permissions: user.permissions ?? [] }) || ["ADMIN", "OPS"].includes(user.role))) return;
+
+  const { assertOrgCanMutate } = await import("@/lib/org-write");
+  assertOrgCanMutate({ access: org.access, userRole: user.role, userAccessMode: user.accessMode, kind: "GENERAL" });
+
+  const invoiceId = String(formData.get("invoiceId") ?? "").trim();
+  const amountRaw = Number(String(formData.get("amount") ?? "").trim());
+  const methodRaw = String(formData.get("method") ?? "CASH").trim();
+  const reference = String(formData.get("reference") ?? "").trim();
+
+  if (!invoiceId || !Number.isFinite(amountRaw) || amountRaw <= 0) return;
+  const method: PaymentMethod = PAYMENT_METHODS.includes(methodRaw as PaymentMethod) ? (methodRaw as PaymentMethod) : "OTHER";
+
+  const invoice = await prisma.invoice.findFirst({
+    where: { id: invoiceId, orgId },
+    select: { id: true, totalAmount: true, paidAmount: true, jobId: true, clientId: true, status: true },
+  });
+  if (!invoice || invoice.status === "VOID") return;
+  if ((invoice.paidAmount ?? 0) + amountRaw > invoice.totalAmount) return;
+
+  const currency = getAppCurrency();
+
+  await prisma.$transaction(async (tx) => {
+    const payment = await tx.payment.create({
+      data: { invoiceId: invoice.id, currency, amount: amountRaw, method, reference: reference || null, createdById: user.id, orgId },
+    });
+    await createReceiptForPayment(tx, { orgId, paymentId: payment.id, invoiceId: invoice.id, clientId: invoice.clientId, amount: amountRaw, currency, issuedById: user.id });
+    const payments = await tx.payment.findMany({ where: { invoiceId: invoice.id }, select: { amount: true } });
+    const paidAmount = payments.reduce((s, p) => s + p.amount, 0);
+    const isPaid = invoice.totalAmount > 0 && paidAmount >= invoice.totalAmount;
+    await tx.invoice.update({
+      where: { id: invoice.id },
+      data: { paidAmount, paidAt: isPaid ? new Date() : null, status: isPaid ? "PAID" : "ISSUED" },
+    });
+    if (invoice.jobId) {
+      await tx.job.update({
+        where: { id: invoice.jobId },
+        data: { clientPaid: isPaid, clientPaidAt: isPaid ? new Date() : null, clientPaidById: isPaid ? user.id : null, clientPaymentRef: reference || null },
+      });
+    }
+  });
+
+  revalidatePath("/payout-followups");
+  revalidatePath("/documents/invoices");
+  redirect("/payout-followups");
 }
 
 export default async function PayoutFollowupsPage({
@@ -324,9 +380,9 @@ export default async function PayoutFollowupsPage({
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <p className="text-[12px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Finance</p>
-            <p className="text-base font-semibold text-[var(--ink)]">Business Finance Hub</p>
+            <p className="text-base font-semibold text-[var(--ink)]">Collections &amp; Payouts</p>
             <p className="mt-0.5 text-xs text-[var(--ink-muted)]">
-              Receivables, payables, and tech payouts across all revenue streams.
+              Collect client payments inline · pay external techs · track supplier bills.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -403,7 +459,7 @@ export default async function PayoutFollowupsPage({
         <section className="space-y-2">
           <div className="flex items-center gap-2">
             <span className="inline-block h-2.5 w-2.5 rounded-full bg-violet-400" />
-            <p className="text-sm font-semibold text-[var(--ink)]">Invoice Receivables — Outstanding</p>
+            <p className="text-sm font-semibold text-[var(--ink)]">Invoice Collections — Outstanding</p>
             <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[12px] font-semibold text-violet-700 dark:bg-violet-950/40 dark:text-violet-400">
               {invoiceTotal}
             </span>
@@ -430,6 +486,15 @@ export default async function PayoutFollowupsPage({
                         <span className="font-semibold text-violet-700 dark:text-violet-400">{formatMoneyCompact(balance, currency)} due</span>
                         <span className="text-[var(--ink-muted)]">{inv.dueDate ? new Date(inv.dueDate).toLocaleDateString() : "No due date"}</span>
                       </div>
+                      {/* Inline payment form */}
+                      <form action={receiveInvoicePaymentAction} className="mt-2 flex items-center gap-2">
+                        <input type="hidden" name="invoiceId" value={inv.id} />
+                        <input name="amount" required inputMode="decimal" defaultValue={String(balance)} placeholder="Amount" className="h-8 w-24 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-2 text-[12px] text-[var(--ink)] outline-none focus:border-[var(--accent)]/50" />
+                        <select name="method" defaultValue="CASH" className="h-8 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-2 text-[12px] text-[var(--ink)] outline-none">
+                          {PAYMENT_METHODS.map(m => <option key={m} value={m}>{m.replaceAll("_", " ")}</option>)}
+                        </select>
+                        <button type="submit" className="h-8 rounded-lg bg-emerald-600 px-3 text-[12px] font-bold text-white transition hover:bg-emerald-700">Collect</button>
+                      </form>
                     </div>
                   );
                 })}
@@ -455,7 +520,19 @@ export default async function PayoutFollowupsPage({
                           <td className={`${tdClass} font-semibold text-violet-700 dark:text-violet-400`}>{formatMoneyCompact(balance, currency)}</td>
                           <td className={`${tdClass} text-xs text-[var(--ink-muted)]`}>{inv.dueDate ? new Date(inv.dueDate).toLocaleDateString() : "—"}</td>
                           <td className={tdClass}>{overdueDays != null ? <span className="inline-block rounded-full bg-rose-100 px-2 py-0.5 text-[12px] font-semibold text-rose-700 dark:bg-rose-950/40 dark:text-rose-400">{overdueDays}d overdue</span> : <span className="text-[var(--ink-muted)] text-xs">On time</span>}</td>
-                          <td className={tdClass}><Link href={`/documents/invoices/${inv.id}`} className="btn-premium-secondary rounded-lg px-3 py-1.5 text-sm">Open</Link></td>
+                          <td className={tdClass}>
+                            <div className="flex items-center gap-1.5">
+                              <form action={receiveInvoicePaymentAction} className="flex items-center gap-1.5">
+                                <input type="hidden" name="invoiceId" value={inv.id} />
+                                <input name="amount" required inputMode="decimal" defaultValue={String(balance)} placeholder="Amt" className="h-8 w-20 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-2 text-[12px] text-[var(--ink)] outline-none focus:border-emerald-500/50" />
+                                <select name="method" defaultValue="CASH" className="h-8 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-2 text-[12px] text-[var(--ink)] outline-none">
+                                  {PAYMENT_METHODS.map(m => <option key={m} value={m}>{m.replaceAll("_", " ")}</option>)}
+                                </select>
+                                <button type="submit" className="h-8 rounded-lg bg-emerald-600 px-2.5 text-[12px] font-bold text-white transition hover:bg-emerald-700">Collect</button>
+                              </form>
+                              <Link href={`/documents/invoices/${inv.id}`} className="h-8 inline-flex items-center rounded-lg border border-[var(--line)] px-2 text-[12px] text-[var(--ink-muted)] hover:text-[var(--ink)]">View</Link>
+                            </div>
+                          </td>
                         </tr>
                       );
                     })}

@@ -41,7 +41,7 @@ function pageMeta(pathname: string, role: Role) {
   if (pathname === "/reports") return { title: "Reports", description: "Operational and financial insights for repair performance." };
   if (pathname === "/ai-insights") return { title: "AI Insights", description: "Decision support across repairs, sales, finance, inventory, and operational risk." };
   if (pathname === "/inventory") return { title: "Inventory", description: "Track parts stock, reservations, and reorder risk." };
-  if (pathname === "/payout-followups") return { title: "Payment Follow-up", description: "Collected external jobs pending technician payout." };
+  if (pathname === "/payout-followups") return { title: "Collections & Payouts", description: "Collect client payments, pay external techs, track supplier bills." };
   if (pathname === "/technicians") return { title: "Technician Portal", description: "Prioritized queue for assigned repair work." };
   if (pathname === "/technicians/payouts") return { title: "Technician Payouts", description: "Track paid and unpaid fees across your external assignments." };
   if (pathname === "/settings/users") return { title: "User Management", description: "Create users, assign roles, and manage active access." };

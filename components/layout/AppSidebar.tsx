@@ -62,7 +62,7 @@ const nav = [
   { href: "/targets",             label: "Targets",          group: "finance" as NavGroup, roles: ["ADMIN", "MANAGER", "OPS", "SALES_MANAGER", "TECH_MANAGER", "FINANCE"] as const },
   { href: "/reports",             label: "Reports",          group: "finance" as NavGroup, roles: ["ADMIN", "MANAGER", "OPS", "FINANCE", "SALES_MANAGER"] as const },
   { href: "/ai-insights",         label: "AI Insights",      group: "finance" as NavGroup, roles: ["ADMIN", "MANAGER", "OPS", "FINANCE", "SALES_MANAGER"] as const },
-  { href: "/payout-followups",    label: "Payment Tracker",  group: "finance" as NavGroup, roles: ["ADMIN", "MANAGER", "OPS", "FINANCE", "TECH_MANAGER", "SALES_MANAGER"] as const },
+  { href: "/payout-followups",    label: "Collections & Payouts",  group: "finance" as NavGroup, roles: ["ADMIN", "MANAGER", "OPS", "FINANCE", "TECH_MANAGER", "SALES_MANAGER"] as const },
   { href: "/technicians/payouts", label: "My Payouts",       group: "finance" as NavGroup, roles: ["TECHNICIAN_EXTERNAL"] as const },
 
   // Account
