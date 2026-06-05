@@ -432,6 +432,30 @@ export default async function PayoutFollowupsPage({
         </Link>
       </div>
 
+      {/* Section nav chips */}
+      <div className="flex flex-wrap gap-2">
+        {canSeeInvoices && (
+          <a href="#invoices" className="rounded-full border border-violet-400/40 bg-violet-500/8 px-3 py-1.5 text-[12px] font-semibold text-violet-700 dark:text-violet-400 hover:bg-violet-500/15 transition">
+            Invoice Collections · {invoiceTotal}
+          </a>
+        )}
+        {canSeeRepairs && (
+          <a href="#repairs" className="rounded-full border border-amber-400/40 bg-amber-500/8 px-3 py-1.5 text-[12px] font-semibold text-amber-700 dark:text-amber-400 hover:bg-amber-500/15 transition">
+            Repair Collections · {clientTotal}
+          </a>
+        )}
+        {canSeeRepairs && (
+          <a href="#tech" className="rounded-full border border-[var(--line)] px-3 py-1.5 text-[12px] font-semibold text-[var(--ink-muted)] hover:border-[var(--accent)]/40 hover:text-[var(--ink)] transition">
+            Tech Payouts · {techTotal}
+          </a>
+        )}
+        {canSeeBills && (
+          <a href="#bills" className="rounded-full border border-rose-400/40 bg-rose-500/8 px-3 py-1.5 text-[12px] font-semibold text-rose-700 dark:text-rose-400 hover:bg-rose-500/15 transition">
+            Supplier Bills · {billTotal}
+          </a>
+        )}
+      </div>
+
       {/* Filters */}
       <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-3">
         <form className="flex flex-wrap items-center gap-2">
@@ -454,9 +478,9 @@ export default async function PayoutFollowupsPage({
         </form>
       </section>
 
-      {/* ── Section 1: Invoice Receivables ─────────────────────────────────── */}
+      {/* ── Section 1: Invoice Collections ─────────────────────────────────── */}
       {canSeeInvoices && (
-        <section className="space-y-2">
+        <section id="invoices" className="space-y-2">
           <div className="flex items-center gap-2">
             <span className="inline-block h-2.5 w-2.5 rounded-full bg-violet-400" />
             <p className="text-sm font-semibold text-[var(--ink)]">Invoice Collections — Outstanding</p>
@@ -547,7 +571,7 @@ export default async function PayoutFollowupsPage({
 
       {/* ── Section 2: Repair Client Collections ───────────────────────────── */}
       {canSeeRepairs && (
-        <section className="space-y-2">
+        <section id="repairs" className="space-y-2">
           <div className="flex items-center gap-2">
             <span className="inline-block h-2.5 w-2.5 rounded-full bg-amber-400" />
             <p className="text-sm font-semibold text-[var(--ink)]">Repair Client Payments — Outstanding</p>
@@ -611,7 +635,7 @@ export default async function PayoutFollowupsPage({
 
       {/* ── Section 3: Supplier Bills Payable ──────────────────────────────── */}
       {canSeeBills && (
-        <section className="space-y-2">
+        <section id="bills" className="space-y-2">
           <div className="flex items-center gap-2">
             <span className="inline-block h-2.5 w-2.5 rounded-full bg-rose-400" />
             <p className="text-sm font-semibold text-[var(--ink)]">Supplier Bills — Payable</p>
@@ -712,7 +736,7 @@ export default async function PayoutFollowupsPage({
 
       {/* ── Section 4: External Tech Payouts ───────────────────────────────── */}
       {canSeeRepairs && (
-        <section className="space-y-2">
+        <section id="tech" className="space-y-2">
           <div className="flex items-center gap-2">
             <span className="inline-block h-2.5 w-2.5 rounded-full bg-blue-400" />
             <p className="text-sm font-semibold text-[var(--ink)]">External Tech Payouts — Pending</p>

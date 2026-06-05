@@ -193,7 +193,7 @@ export default async function TargetsPage({ searchParams }: { searchParams: Sear
   const periodLabel = PERIOD_OPTIONS.find((o) => o.value === period)?.label ?? period;
 
   return (
-    <div className="space-y-8 p-4 md:p-6">
+    <div className="space-y-4">
       <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
         <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
           <div>

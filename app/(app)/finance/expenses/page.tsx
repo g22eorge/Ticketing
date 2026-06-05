@@ -66,6 +66,7 @@ export default async function ExpensesPage({ searchParams }: Props) {
     ? (sp.category as ExpenseCategory)
     : undefined;
   const q = sp.q?.trim() ?? "";
+  const periodFilter = (sp.period ?? "all") as "all" | "this_month" | "last_month" | "ytd";
 
   const now = new Date();
   const thisYear = now.getFullYear();
@@ -496,8 +497,23 @@ export default async function ExpensesPage({ searchParams }: Props) {
 
       {/* ── FILTER BAR ───────────────────────────────────────────────────── */}
       <div className="panel-shadow flex flex-wrap items-center gap-2 rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-2.5">
+        {/* Period chips */}
+        <div className="flex gap-1">
+          {([
+            { label: "All time", value: "all" },
+            { label: "This month", value: "this_month" },
+            { label: "Last month", value: "last_month" },
+            { label: "YTD", value: "ytd" },
+          ] as const).map(({ label, value }) => (
+            <Link key={value} href={filterUrl({ period: value === "all" ? "" : value })}
+              className={`rounded-full border px-2.5 py-1 text-[12px] font-semibold transition ${periodFilter === value ? "border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]" : "border-[var(--line)] text-[var(--ink-muted)] hover:border-[var(--accent)]/40 hover:text-[var(--ink)]"}`}>
+              {label}
+            </Link>
+          ))}
+        </div>
         <form method="GET" action="/finance/expenses" className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
           {catFilter && <input type="hidden" name="category" value={catFilter} />}
+          {periodFilter !== "all" && <input type="hidden" name="period" value={periodFilter} />}
           <input
             name="q"
             defaultValue={q}

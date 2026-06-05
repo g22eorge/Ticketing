@@ -25,11 +25,14 @@ export default async function BankPage({
   const sp = await searchParams;
   const selectedAccountId = sp.account ?? null;
   const q = sp.q?.trim() ?? "";
+  const txperiod = sp.txperiod ?? "";
   const currency = "UGX";
 
   const now = new Date();
   const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
   const thisMonthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+  const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
 
   async function createBankAccount(fd: FormData) {
     "use server";
@@ -129,14 +132,13 @@ export default async function BankPage({
       })
     : [];
 
-  // Apply search filter
-  const transactions = q
-    ? allTransactions.filter(
-        (t) =>
-          t.description.toLowerCase().includes(q.toLowerCase()) ||
-          t.reference?.toLowerCase().includes(q.toLowerCase()),
-      )
-    : allTransactions;
+  // Apply search + period filter
+  const transactions = allTransactions.filter((t) => {
+    if (q && !t.description.toLowerCase().includes(q.toLowerCase()) && !t.reference?.toLowerCase().includes(q.toLowerCase())) return false;
+    if (txperiod === "month") return t.date >= thisMonthStart && t.date <= thisMonthEnd;
+    if (txperiod === "last") return t.date >= lastMonthStart && t.date <= lastMonthEnd;
+    return true;
+  });
 
   // Compute running balance for each transaction (from oldest to newest)
   const openingBalance = activeAccount?.openingBalance ?? 0;
@@ -442,29 +444,29 @@ export default async function BankPage({
                 </details>
 
                 {/* ── SEARCH BAR ──────────────────────────────────────── */}
-                <form method="GET" className="flex gap-2">
-                  <input type="hidden" name="account" value={activeAccount.id} />
-                  <input
-                    name="q"
-                    defaultValue={q}
-                    placeholder="Search description, reference…"
-                    className="h-8 min-w-[180px] flex-1 rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 text-sm outline-none"
-                  />
-                  <button
-                    type="submit"
-                    className="h-8 rounded-lg border border-[var(--line)] px-3 text-sm font-medium hover:bg-[var(--panel-strong)]"
-                  >
-                    Search
-                  </button>
-                  {q && (
-                    <a
-                      href={`/finance/bank?account=${activeAccount.id}`}
-                      className="h-8 rounded-lg border border-[var(--line)] px-3 text-sm font-medium leading-8 hover:bg-[var(--panel-strong)]"
-                    >
-                      Clear
-                    </a>
-                  )}
-                </form>
+                <div className="flex flex-wrap items-center gap-2">
+                  {/* Period chips */}
+                  <div className="flex gap-1">
+                    {(["All", "This month", "Last month"] as const).map((label) => {
+                      const val = label === "All" ? "" : label === "This month" ? "month" : "last";
+                      const active = (sp.txperiod ?? "") === val;
+                      return (
+                        <a key={label} href={`/finance/bank?account=${activeAccount.id}&txperiod=${val}`}
+                          className={`rounded-full border px-2.5 py-1 text-[12px] font-semibold transition ${active ? "border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]" : "border-[var(--line)] text-[var(--ink-muted)] hover:border-[var(--accent)]/40 hover:text-[var(--ink)]"}`}>
+                          {label}
+                        </a>
+                      );
+                    })}
+                  </div>
+                  <form method="GET" className="flex gap-2 flex-1 min-w-0">
+                    <input type="hidden" name="account" value={activeAccount.id} />
+                    {sp.txperiod && <input type="hidden" name="txperiod" value={sp.txperiod} />}
+                    <input name="q" defaultValue={q} placeholder="Search…"
+                      className="h-8 min-w-0 flex-1 rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 text-sm outline-none" />
+                    <button type="submit" className="h-8 rounded-lg border border-[var(--line)] px-3 text-sm font-medium hover:bg-[var(--panel-strong)]">Search</button>
+                    {q && <a href={`/finance/bank?account=${activeAccount.id}`} className="h-8 rounded-lg border border-[var(--line)] px-3 text-sm font-medium leading-8 hover:bg-[var(--panel-strong)]">Clear</a>}
+                  </form>
+                </div>
 
                 {/* ── TRANSACTION TABLE ───────────────────────────────── */}
                 {transactions.length === 0 ? (

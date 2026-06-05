@@ -37,6 +37,7 @@ export default async function InventoryPage({
   const created = String(params.created ?? "") === "1";
   const error = typeof params.error === "string" ? params.error : "";
   const showAdd = String(params.add ?? "") === "1";
+  const stockFilter = (params.stock ?? "all") as "all" | "low" | "out";
 
   const canManage = can.manageInventory(user);
 
@@ -200,8 +201,10 @@ export default async function InventoryPage({
   );
 
   const lowStock = parts.filter((part) => part.qtyOnHand <= part.reorderLevel && part.reorderLevel > 0);
+  const outOfStock = parts.filter((part) => part.qtyOnHand === 0);
   const totalValue = parts.reduce((sum, part) => sum + (part.unitCost ?? 0) * part.qtyOnHand, 0);
   const reservedCount = reservationStats.find((row) => row.status === "RESERVED")?._count.status ?? 0;
+  const filteredParts = stockFilter === "low" ? lowStock : stockFilter === "out" ? outOfStock : parts;
 
   return (
     <div className="space-y-4">
@@ -210,7 +213,7 @@ export default async function InventoryPage({
       <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
         <div>
           <p className="text-[12px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Warehouse</p>
-          <p className="text-[13px] font-bold text-[var(--ink)]">Inventory <span className="font-normal text-[var(--ink-muted)]">· {parts.length} parts</span></p>
+          <p className="text-[13px] font-bold text-[var(--ink)]">Inventory <span className="font-normal text-[var(--ink-muted)]">· {filteredParts.length} parts</span></p>
         </div>
         {canManage && (
             <div className="flex flex-wrap items-center gap-2">
@@ -229,6 +232,27 @@ export default async function InventoryPage({
           </div>
         )}
       </div>
+      </div>
+
+      {/* Filter chips */}
+      <div className="flex gap-2">
+        {([
+          { label: `All  ·  ${parts.length}`, value: "all" },
+          { label: `Low Stock  ·  ${lowStock.length}`, value: "low" },
+          { label: `Out of Stock  ·  ${outOfStock.length}`, value: "out" },
+        ] as const).map(({ label, value }) => (
+          <Link
+            key={value}
+            href={`/inventory?stock=${value}`}
+            className={`rounded-full border px-3 py-1.5 text-[12px] font-semibold transition ${
+              stockFilter === value
+                ? "border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]"
+                : "border-[var(--line)] text-[var(--ink-muted)] hover:border-[var(--accent)]/40 hover:text-[var(--ink)]"
+            } ${value === "low" && lowStock.length > 0 ? "border-amber-400/50 text-amber-600" : ""} ${value === "out" && outOfStock.length > 0 && stockFilter !== "out" ? "border-red-400/50 text-red-600" : ""}`}
+          >
+            {label}
+          </Link>
+        ))}
       </div>
 
       {/* KPI strip */}
@@ -303,9 +327,9 @@ export default async function InventoryPage({
           ) : null}
         </div>
 
-        {parts.length === 0 ? (
+        {filteredParts.length === 0 ? (
           <div className="px-4 py-12 text-center text-sm text-[var(--ink-muted)]">
-            No parts yet.{canManage ? <> <Link href="#add-part" className="text-[var(--accent)] hover:underline">Add your first part</Link> above.</> : null}
+            {stockFilter === "low" ? "No low-stock parts." : stockFilter === "out" ? "No out-of-stock parts." : <>No parts yet.{canManage ? <> <Link href="#add-part" className="text-[var(--accent)] hover:underline">Add your first part</Link> above.</> : null}</>}
           </div>
         ) : (
           <div className="doc-list overflow-x-auto">
@@ -325,7 +349,7 @@ export default async function InventoryPage({
                 </tr>
               </thead>
               <tbody>
-                {parts.map((part) => {
+                {filteredParts.map((part) => {
                   const isLow = part.reorderLevel > 0 && part.qtyOnHand <= part.reorderLevel;
                   const reserved = reservedMap.get(part.id) ?? 0;
                   const available = part.qtyOnHand - reserved;
