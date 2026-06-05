@@ -51,6 +51,7 @@ async function saveSettingsAction(formData: FormData) {
     },
   });
   revalidatePath("/settings/ai");
+  redirect("/settings/ai?saved=1");
 }
 
 async function toggleArticleAction(formData: FormData) {
@@ -69,8 +70,10 @@ async function toggleArticleAction(formData: FormData) {
   revalidatePath("/settings/ai");
 }
 
-export default async function AiSettingsPage() {
+export default async function AiSettingsPage({ searchParams }: { searchParams: Promise<{ saved?: string }> }) {
   const { user, orgId } = await requireOrgSession();
+  const params = await searchParams;
+  const saved = params.saved === "1";
   if (!can.manageUsers(user)) redirect("/dashboard");
 
   await ensureDefaultAiKnowledge();
@@ -105,6 +108,13 @@ export default async function AiSettingsPage() {
           Improve the AI guide without training on customer data. Add help articles and review feedback.
         </p>
       </div>
+
+      {saved && (
+        <div className="flex items-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-2.5">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-emerald-600" aria-hidden><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>
+          <p className="text-[13px] font-medium text-emerald-700 dark:text-emerald-400">AI settings saved.</p>
+        </div>
+      )}
 
       <form action={saveSettingsAction} className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
         <p className="text-sm font-bold text-[var(--ink)]">AI Governance</p>
