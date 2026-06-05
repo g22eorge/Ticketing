@@ -55,7 +55,7 @@ const TAB_OPTIONS = [
 export default async function FieldPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string }>;
+  searchParams: Promise<{ status?: string; q?: string }>;
 }) {
   const { user } = await getCurrentUserRole();
   const db = orgDb(user.orgId);
@@ -65,8 +65,9 @@ export default async function FieldPage({
 
   if (!isManager && !isFieldTech) redirect("/");
 
-  const { status: statusParam } = await searchParams;
+  const { status: statusParam, q: qParam } = await searchParams;
   const activeTab = statusParam ?? "upcoming";
+  const q = qParam?.trim() ?? "";
 
   const now           = new Date();
   const monthStart    = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -158,6 +159,14 @@ export default async function FieldPage({
     where: {
       ...(statusFilter ? { status: { in: statusFilter } } : {}),
       ...(!isManager ? { assignedToId: user.id } : {}),
+      ...(q ? {
+        OR: [
+          { visitNumber: { contains: q } },
+          { job: { jobNumber: { contains: q } } },
+          { job: { client: { fullName: { contains: q } } } },
+          { assignedTo: { name: { contains: q } } },
+        ],
+      } : {}),
     },
     include: {
       assignedTo:  { select: { id: true, name: true } },
@@ -327,12 +336,22 @@ export default async function FieldPage({
         </div>
       )}
 
-      {/* ── Tab bar ── */}
+      {/* ── Search + tab bar ── */}
+      <div className="flex flex-wrap items-center gap-2">
+        <form method="GET" className="flex gap-2 flex-1 min-w-[200px]">
+          {statusParam && <input type="hidden" name="status" value={statusParam} />}
+          <input name="q" defaultValue={q} placeholder="Search visit #, job, client, technician…"
+            className="h-8 flex-1 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 text-[12px] text-[var(--ink)] outline-none focus:border-[var(--accent)]/50" />
+          <button type="submit" className="h-8 rounded-lg border border-[var(--line)] px-3 text-[12px] font-medium hover:bg-[var(--panel-strong)]">Search</button>
+          {q && <a href={`/field${statusParam ? `?status=${statusParam}` : ""}`} className="flex h-8 items-center rounded-lg border border-[var(--line)] px-3 text-[12px] text-[var(--ink-muted)] hover:text-[var(--ink)]">Clear</a>}
+        </form>
+      </div>
+
       <div className="flex gap-1 border-b border-[var(--line)]">
         {TAB_OPTIONS.map((tab) => (
           <Link
             key={tab.key}
-            href={`/field?status=${tab.key}`}
+            href={`/field?status=${tab.key}${q ? `&q=${encodeURIComponent(q)}` : ""}`}
             className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors -mb-px ${
               activeTab === tab.key
                 ? "border-[var(--accent)] text-[var(--ink)]"
