@@ -469,9 +469,9 @@ export default async function CreditNotesPage({
         </div>
         {/* Desktop table */}
         <div className="hidden overflow-x-auto lg:block">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-[var(--line)] text-left text-[12px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">
+          <table className="w-full text-left text-sm">
+            <thead className="bg-[var(--panel-strong)] text-[12px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
+              <tr className="border-b border-[var(--line)]">
                 <th className="px-4 py-3">Credit Note #</th>
                 <th className="px-4 py-3">Sale</th>
                 <th className="px-4 py-3">Client</th>
@@ -483,7 +483,7 @@ export default async function CreditNotesPage({
                 <th className="px-4 py-3">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[var(--line)]">
+            <tbody>
               {creditNotes.map((cn) => {
                 const refundedTotal = cn.refunds.reduce((s, r) => s + r.amount, 0);
                 const outstanding = cn.totalAmount - refundedTotal;
@@ -493,7 +493,7 @@ export default async function CreditNotesPage({
                 const creditNoteShareText = encodeURIComponent(`Your credit note is ready.\n\n${cn.creditNoteNumber}\nSale: ${cn.sale?.saleNumber ?? "-"}\nAmount: ${formatMoney(cn.totalAmount, cn.currency)}\nPDF: ${creditNoteUrl}`);
                 const creditNoteWaPhone = recipientPhone?.replace(/\D/g, "").replace(/^0/, "256");
                 return (
-                  <tr key={cn.id} className="hover:bg-[var(--gold)]/5">
+                  <tr key={cn.id} className="border-t border-[var(--line)] align-middle hover:bg-[var(--panel-strong)]/40">
                     <td className="px-4 py-3 font-mono text-xs font-semibold text-[var(--ink)]">{cn.creditNoteNumber}</td>
                     <td className="px-4 py-3 text-[var(--ink-muted)]">{cn.sale?.saleNumber ?? "—"}</td>
                     <td className="px-4 py-3 text-[var(--ink)]">{cn.sale?.client?.fullName ?? <span className="text-[var(--ink-muted)]">Walk-in</span>}</td>

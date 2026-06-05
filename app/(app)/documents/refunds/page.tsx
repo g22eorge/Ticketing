@@ -234,7 +234,7 @@ export default async function RefundsPage({
   const saleAmount = saleRefundTotal._sum.amount ?? 0;
 
   return (
-    <div className="space-y-4 p-4 md:p-6">
+    <div className="space-y-4">
       {/* Header + KPI panel */}
       <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--line)] px-4 py-2.5">
@@ -289,7 +289,7 @@ export default async function RefundsPage({
               <input
                 name="invoiceId"
                 placeholder="Invoice ID"
-                className="h-9 w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 text-sm outline-none focus:ring-2 focus:ring-[var(--accent)]"
+                className="h-9 w-full rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 text-sm outline-none focus:ring-2 focus:ring-[var(--accent)]"
               />
             </div>
             <div className="space-y-1">
@@ -299,7 +299,7 @@ export default async function RefundsPage({
               <input
                 name="saleId"
                 placeholder="Sale ID"
-                className="h-9 w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 text-sm outline-none focus:ring-2 focus:ring-[var(--accent)]"
+                className="h-9 w-full rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 text-sm outline-none focus:ring-2 focus:ring-[var(--accent)]"
               />
             </div>
             <div className="space-y-1">
@@ -309,7 +309,7 @@ export default async function RefundsPage({
               <input
                 name="creditNoteId"
                 placeholder="Optional"
-                className="h-9 w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 text-sm outline-none focus:ring-2 focus:ring-[var(--accent)]"
+                className="h-9 w-full rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 text-sm outline-none focus:ring-2 focus:ring-[var(--accent)]"
               />
             </div>
             <div className="space-y-1">
@@ -323,7 +323,7 @@ export default async function RefundsPage({
                 step="0.01"
                 placeholder="0.00"
                 required
-                className="h-9 w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 text-sm outline-none focus:ring-2 focus:ring-[var(--accent)]"
+                className="h-9 w-full rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 text-sm outline-none focus:ring-2 focus:ring-[var(--accent)]"
               />
             </div>
             <div className="space-y-1">
@@ -332,7 +332,7 @@ export default async function RefundsPage({
               </label>
               <select
                 name="method"
-                className="h-9 w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 text-sm"
+                className="h-9 w-full rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 text-sm"
               >
                 {PAYMENT_METHODS.map((m) => (
                   <option key={m} value={m}>{m.replace(/_/g, " ")}</option>
@@ -346,7 +346,7 @@ export default async function RefundsPage({
               <input
                 name="reference"
                 placeholder="Optional"
-                className="h-9 w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 text-sm outline-none focus:ring-2 focus:ring-[var(--accent)]"
+                className="h-9 w-full rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 text-sm outline-none focus:ring-2 focus:ring-[var(--accent)]"
               />
             </div>
             <div className="space-y-1 sm:col-span-2 lg:col-span-3">
@@ -356,7 +356,7 @@ export default async function RefundsPage({
               <input
                 name="note"
                 placeholder="Optional reason for refund"
-                className="h-9 w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 text-sm outline-none focus:ring-2 focus:ring-[var(--accent)]"
+                className="h-9 w-full rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 text-sm outline-none focus:ring-2 focus:ring-[var(--accent)]"
               />
             </div>
             <div className="flex justify-end gap-2 sm:col-span-2 lg:col-span-3">
@@ -374,12 +374,12 @@ export default async function RefundsPage({
           name="q"
           defaultValue={q}
           placeholder="Search invoice, sale, client, reference…"
-          className="h-8 flex-1 min-w-[160px] rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 text-sm outline-none focus:ring-2 focus:ring-[var(--accent)]"
+          className="h-8 flex-1 min-w-[160px] rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 text-sm outline-none focus:ring-2 focus:ring-[var(--accent)]"
         />
         <select
           name="type"
           defaultValue={typeFilter}
-          className="h-8 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-2 text-sm"
+          className="h-8 rounded-lg border border-[var(--line)] bg-[var(--panel)] px-2 text-sm"
         >
           <option value="all">All Types</option>
           <option value="invoice">Invoice Refunds</option>
@@ -388,7 +388,7 @@ export default async function RefundsPage({
         <select
           name="method"
           defaultValue={methodFilter}
-          className="h-8 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-2 text-sm"
+          className="h-8 rounded-lg border border-[var(--line)] bg-[var(--panel)] px-2 text-sm"
         >
           <option value="all">All Methods</option>
           {PAYMENT_METHODS.map((m) => (
@@ -402,14 +402,14 @@ export default async function RefundsPage({
           Filter
         </button>
         {(q || methodFilter !== "all" || typeFilter !== "all") && (
-          <Link href="/documents/refunds" className="flex h-8 items-center rounded-lg border border-[var(--border)] px-3 text-sm text-[var(--ink-muted)]">
+          <Link href="/documents/refunds" className="flex h-8 items-center rounded-lg border border-[var(--line)] px-3 text-sm text-[var(--ink-muted)]">
             Clear
           </Link>
         )}
       </form>
 
       {/* Table */}
-      <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)]">
+      <div className="overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
         {filtered.length === 0 ? (
           <div className="py-16 text-center text-sm text-[var(--ink-muted)]">No refunds found</div>
         ) : (
@@ -499,8 +499,8 @@ export default async function RefundsPage({
             {/* Desktop table */}
             <div className="hidden overflow-x-auto lg:block">
               <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-[var(--border)] text-[13px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
+                <thead className="bg-[var(--panel-strong)] text-[12px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
+                  <tr className="border-b border-[var(--line)]">
                     <th className="px-4 py-3 text-left">Date</th>
                     <th className="px-4 py-3 text-left">Source</th>
                     <th className="px-4 py-3 text-left">Client</th>
@@ -550,7 +550,7 @@ export default async function RefundsPage({
                   const refundWaPhone = recipientPhone?.replace(/\D/g, "").replace(/^0/, "256");
 
                   return (
-                    <tr key={r.id} className="border-b border-[var(--border)] last:border-0 hover:bg-[var(--surface-raised)]">
+                    <tr key={r.id} className="border-t border-[var(--line)] align-middle hover:bg-[var(--panel-strong)]/40">
                       <td className="whitespace-nowrap px-4 py-3 text-[var(--ink-muted)]">
                         {r.refundedAt.toLocaleDateString()}
                       </td>

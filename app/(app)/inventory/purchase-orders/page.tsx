@@ -48,45 +48,45 @@ export default async function PurchaseOrdersPage() {
 
   return (
     <div className="space-y-4">
-      {/* Header */}
-      <div className="panel-shadow flex items-center justify-between gap-2 rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-2.5">
-        <div>
-          <p className="text-[12px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Inventory</p>
-          <p className="text-[13px] font-bold text-[var(--ink)]">
-            Purchase Orders <span className="font-normal text-[var(--ink-muted)]">· {orders.length}</span>
-          </p>
+      {/* Header + KPI panel */}
+      <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
+        <div className="flex items-center justify-between gap-2 border-b border-[var(--line)] px-4 py-2.5">
+          <div>
+            <p className="text-[12px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Inventory</p>
+            <p className="text-[13px] font-bold text-[var(--ink)]">
+              Purchase Orders <span className="font-normal text-[var(--ink-muted)]">· {orders.length}</span>
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Link href="/inventory" className="inline-flex items-center rounded-lg border border-[var(--line)] px-3 py-1.5 text-xs font-semibold text-[var(--ink)] transition hover:border-[var(--accent)]/50 hover:text-[var(--accent)]">
+              ← Inventory
+            </Link>
+            <Link href="/inventory/purchase-orders/new" className="btn-premium rounded-lg px-3 py-1.5 text-[12px]">
+              New PO
+            </Link>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Link href="/inventory" className="inline-flex items-center rounded-lg border border-[var(--line)] px-3 py-1.5 text-xs font-semibold text-[var(--ink)] transition hover:border-[var(--accent)]/50 hover:text-[var(--accent)]">
-            ← Inventory
-          </Link>
-          <Link href="/inventory/purchase-orders/new" className="btn-premium rounded-lg px-3 py-1.5 text-[12px]">
-            New PO
-          </Link>
-        </div>
-      </div>
-
-      {/* KPI tiles */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
-          <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Total Orders</p>
-          <p className="mt-1 text-xl font-bold tabular-nums text-[var(--ink)]">{orders.length}</p>
-          <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">all time</p>
-        </div>
-        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
-          <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Pending</p>
-          <p className="mt-1 text-xl font-bold tabular-nums text-amber-600">{pendingCount}</p>
-          <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">draft, ordered, partial</p>
-        </div>
-        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
-          <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">This Month</p>
-          <p className="mt-1 text-xl font-bold tabular-nums text-[var(--ink)]">{thisMonthCount}</p>
-          <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">raised this month</p>
-        </div>
-        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
-          <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Total Value Pending</p>
-          <p className="mt-1 text-xl font-bold tabular-nums text-[var(--ink)]">{formatMoney(pendingValue)}</p>
-          <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">open order value</p>
+        <div className="grid grid-cols-2 divide-x divide-y divide-[var(--line)] sm:grid-cols-4 sm:divide-y-0">
+          <div className="px-4 py-3">
+            <p className="text-[13px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">Total Orders</p>
+            <p className="text-[15px] font-black tabular-nums leading-tight text-[var(--ink)]">{orders.length}</p>
+            <p className="text-[12px] text-[var(--ink-muted)]">all time</p>
+          </div>
+          <div className="px-4 py-3">
+            <p className="text-[13px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">Pending</p>
+            <p className="text-[15px] font-black tabular-nums leading-tight text-amber-600">{pendingCount}</p>
+            <p className="text-[12px] text-[var(--ink-muted)]">draft, ordered, partial</p>
+          </div>
+          <div className="px-4 py-3">
+            <p className="text-[13px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">This Month</p>
+            <p className="text-[15px] font-black tabular-nums leading-tight text-[var(--ink)]">{thisMonthCount}</p>
+            <p className="text-[12px] text-[var(--ink-muted)]">raised this month</p>
+          </div>
+          <div className="px-4 py-3">
+            <p className="text-[13px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">Value Pending</p>
+            <p className="text-[15px] font-black tabular-nums leading-tight text-[var(--ink)]">{formatMoney(pendingValue)}</p>
+            <p className="text-[12px] text-[var(--ink-muted)]">open order value</p>
+          </div>
         </div>
       </div>
 

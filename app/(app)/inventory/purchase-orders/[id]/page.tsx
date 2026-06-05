@@ -57,39 +57,45 @@ export default async function PurchaseOrderDetailPage({
   });
 
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="mx-auto max-w-3xl space-y-4">
       {/* Header */}
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <p className="text-[12px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Inventory · Purchase Order</p>
-          <p className="mt-0.5 font-mono text-[13px] font-bold text-[var(--ink)]">
-            {po.reference ?? `PO-${po.id.slice(-6).toUpperCase()}`}
-          </p>
-          <p className="mt-0.5 text-sm text-[var(--ink-muted)]">
-            Supplier:{" "}
-            <Link href={`/inventory/suppliers/${po.supplier.id}`} className="text-[var(--gold)] hover:underline">
-              {po.supplier.name}
-            </Link>
-          </p>
+      <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="text-[12px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Inventory · Purchase Order</p>
+            <p className="font-mono text-[13px] font-bold text-[var(--ink)]">
+              {po.reference ?? `PO-${po.id.slice(-6).toUpperCase()}`}
+            </p>
+            <div className="mt-1 flex flex-wrap items-center gap-2 text-[12px] text-[var(--ink-muted)]">
+              <span>Supplier:{" "}
+                <Link href={`/inventory/suppliers/${po.supplier.id}`} className="text-[var(--accent)] hover:underline">
+                  {po.supplier.name}
+                </Link>
+              </span>
+            </div>
+          </div>
+          <span className={`inline-flex items-center rounded-full px-3 py-1 text-[13px] font-semibold ${STATUS_COLORS[po.status] ?? ""}`}>
+            {po.status}
+          </span>
         </div>
-        <span className={`mt-1 rounded-full px-3 py-1 text-xs font-semibold ${STATUS_COLORS[po.status] ?? ""}`}>
-          {po.status}
-        </span>
       </div>
 
       {/* Meta info */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {[
-          { label: "Ordered", value: fmt(po.orderedAt) },
-          { label: "Expected", value: fmt(po.expectedAt) },
-          { label: "Received", value: fmt(po.receivedAt) },
-          { label: "Created", value: fmt(po.createdAt) },
-        ].map(({ label, value }) => (
-          <div key={label} className="rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 py-2">
-            <p className="text-[12px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">{label}</p>
-            <p className="mt-0.5 text-sm font-semibold text-[var(--ink)]">{value}</p>
-          </div>
-        ))}
+      <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-4">
+        <p className="mb-3 text-[13px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Details</p>
+        <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-[12px] sm:grid-cols-4">
+          {[
+            { label: "Ordered", value: fmt(po.orderedAt) },
+            { label: "Expected", value: fmt(po.expectedAt) },
+            { label: "Received", value: fmt(po.receivedAt) },
+            { label: "Created", value: fmt(po.createdAt) },
+          ].map(({ label, value }) => (
+            <div key={label}>
+              <dt className="text-[var(--ink-muted)]">{label}</dt>
+              <dd className="font-medium text-[var(--ink)]">{value}</dd>
+            </div>
+          ))}
+        </dl>
       </div>
 
       {/* Edit meta */}
@@ -99,15 +105,13 @@ export default async function PurchaseOrderDetailPage({
 
       {/* Items table */}
       <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] overflow-hidden">
-        <div className="px-5 py-3 border-b border-[var(--line)]">
-          <p className="text-[12px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]">
-            Line Items ({po.items.length})
-          </p>
+        <div className="border-b border-[var(--line)] px-4 py-3">
+          <p className="text-[13px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Line Items</p>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-[var(--line)] text-xs font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
+            <thead className="bg-[var(--panel-strong)] text-[12px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
+              <tr className="border-b border-[var(--line)]">
                 <th className="px-4 py-2 text-left">Description</th>
                 <th className="px-4 py-2 text-left hidden sm:table-cell">Part</th>
                 <th className="px-4 py-2 text-right">Ordered</th>
@@ -152,16 +156,16 @@ export default async function PurchaseOrderDetailPage({
 
       {/* Notes */}
       {po.notes && (
-        <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] px-5 py-4">
-          <p className="text-[12px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)] mb-1">Notes</p>
-          <p className="text-sm text-[var(--ink)] whitespace-pre-wrap">{po.notes}</p>
+        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-4">
+          <p className="mb-1 text-[13px] font-semibold text-[var(--ink-muted)]">Notes</p>
+          <p className="whitespace-pre-wrap text-[12px] text-[var(--ink)]">{po.notes}</p>
         </div>
       )}
 
       {po.goodsReceivedNotes.length > 0 && (
         <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] overflow-hidden">
-          <div className="px-5 py-3 border-b border-[var(--line)] flex items-center justify-between gap-2">
-            <p className="text-[12px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Goods Received</p>
+          <div className="border-b border-[var(--line)] px-4 py-3 flex items-center justify-between gap-2">
+            <p className="text-[13px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Goods Received</p>
             <Link href="/inventory/goods-received" className="text-xs font-semibold text-[var(--gold)] hover:underline">
               View all
             </Link>
@@ -170,7 +174,7 @@ export default async function PurchaseOrderDetailPage({
             {po.goodsReceivedNotes.map((grn) => {
               const total = grn.items.reduce((sum, item) => sum + item.quantity * item.unitCost, 0);
               return (
-                <Link key={grn.id} href={`/inventory/goods-received/${grn.id}`} className="flex items-center justify-between gap-3 px-5 py-3 text-sm hover:bg-[var(--bg)]">
+                <Link key={grn.id} href={`/inventory/goods-received/${grn.id}`} className="flex items-center justify-between gap-3 px-4 py-3 text-sm hover:bg-[var(--panel-strong)]/40">
                   <div>
                     <p className="font-semibold text-[var(--ink)]">{grn.grnNumber}</p>
                     <p className="text-xs text-[var(--ink-muted)]">
