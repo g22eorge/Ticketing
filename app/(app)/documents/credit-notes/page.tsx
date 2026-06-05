@@ -21,7 +21,7 @@ export const dynamic = "force-dynamic";
 export default async function CreditNotesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; filter?: string }>;
+  searchParams: Promise<{ q?: string; filter?: string; period?: string }>;
 }) {
   await requireModule(OrgModule.INVOICING);
   const { user, orgId, org } = await requireOrgSession();
@@ -32,6 +32,11 @@ export default async function CreditNotesPage({
   const params = await searchParams;
   const q = (params.q ?? "").trim();
   const filter = params.filter ?? "all";
+  const periodFilter = params.period ?? "all";
+  const nowCN = new Date();
+  const cnThisMonthStart = new Date(nowCN.getFullYear(), nowCN.getMonth(), 1);
+  const cnLastMonthStart = new Date(nowCN.getFullYear(), nowCN.getMonth() - 1, 1);
+  const cnLastMonthEnd = new Date(nowCN.getFullYear(), nowCN.getMonth(), 0, 23, 59, 59);
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
   // ── Server actions ───────────────────────────────────────────────────────────
@@ -240,6 +245,8 @@ export default async function CreditNotesPage({
         orgId,
         ...(filter === "pending" ? { itemsReceivedBackAt: null } : {}),
         ...(filter === "received" ? { itemsReceivedBackAt: { not: null } } : {}),
+        ...(periodFilter === "this_month" ? { issuedAt: { gte: cnThisMonthStart } } : {}),
+        ...(periodFilter === "last_month" ? { issuedAt: { gte: cnLastMonthStart, lte: cnLastMonthEnd } } : {}),
         ...(q
           ? {
               OR: [
@@ -356,16 +363,32 @@ export default async function CreditNotesPage({
         ))}
       </div>
 
+      {/* Period chips */}
+      <div className="flex gap-2">
+        {([
+          { label: "All time", value: "all" },
+          { label: "This month", value: "this_month" },
+          { label: "Last month", value: "last_month" },
+        ] as const).map(({ label, value }) => (
+          <Link key={value}
+            href={`/documents/credit-notes?${new URLSearchParams({ ...(q ? { q } : {}), filter, period: value === "all" ? "" : value }).toString()}`}
+            className={`rounded-full border px-3 py-1.5 text-[12px] font-semibold transition ${periodFilter === value ? "border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]" : "border-[var(--line)] text-[var(--ink-muted)] hover:border-[var(--accent)]/40 hover:text-[var(--ink)]"}`}>
+            {label}
+          </Link>
+        ))}
+      </div>
+
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-2">
         <form className="flex-1">
           <input name="q" defaultValue={q} placeholder="Search credit note, sale, reason…" className="w-full max-w-xs rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-sm text-[var(--ink)]" />
           {filter !== "all" && <input type="hidden" name="filter" value={filter} />}
+          {periodFilter !== "all" && <input type="hidden" name="period" value={periodFilter} />}
         </form>
         {(["all", "pending", "received"] as const).map((f) => (
           <Link
             key={f}
-            href={`?filter=${f}${q ? `&q=${q}` : ""}`}
+            href={`?filter=${f}${q ? `&q=${q}` : ""}${periodFilter !== "all" ? `&period=${periodFilter}` : ""}`}
             className={`rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${filter === f ? "border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]" : "border-[var(--line)] text-[var(--ink-muted)] hover:text-[var(--ink)]"}`}
           >
             {f === "all" ? "All" : f === "pending" ? "Awaiting Return" : "Items Received"}

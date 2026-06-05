@@ -52,7 +52,7 @@ function DeviceIcon({ type }: { type: string }) {
   }
 }
 
-type SearchParams = { q?: string; status?: string };
+type SearchParams = { q?: string; status?: string; period?: string };
 
 export default async function JobCardsPage({
   searchParams,
@@ -63,7 +63,11 @@ export default async function JobCardsPage({
   if (!can.generateJobCards(user)) redirect("/dashboard");
   await requireModule(OrgModule.JOBS);
 
-  const { q, status: statusFilter } = await searchParams;
+  const { q, status: statusFilter, period: periodFilter = "all" } = await searchParams;
+  const now = new Date();
+  const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
 
   async function convertJobCardToQuotationAction(formData: FormData) {
     "use server";
@@ -90,6 +94,8 @@ export default async function JobCardsPage({
     where: {
       orgId,
       ...(statusFilter ? { status: statusFilter as never } : {}),
+      ...(periodFilter === "this_month" ? { receivedAt: { gte: thisMonthStart } } : {}),
+      ...(periodFilter === "last_month" ? { receivedAt: { gte: lastMonthStart, lte: lastMonthEnd } } : {}),
       ...(q
         ? {
             OR: [
@@ -153,8 +159,40 @@ export default async function JobCardsPage({
         </Link>
       </div>
 
+      {/* KPI strip */}
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        {[
+          { label: "Showing", value: jobs.length, sub: "job cards" },
+          { label: "In Repair", value: jobs.filter(j => j.status === "IN_REPAIR").length, sub: "active repairs" },
+          { label: "Ready Pickup", value: jobs.filter(j => j.status === "READY_FOR_PICKUP").length, sub: "awaiting collection", tone: jobs.filter(j => j.status === "READY_FOR_PICKUP").length > 0 ? "text-emerald-600" : "text-[var(--ink)]" },
+          { label: "Awaiting Approval", value: jobs.filter(j => j.status === "AWAITING_APPROVAL").length, sub: "need decision", tone: jobs.filter(j => j.status === "AWAITING_APPROVAL").length > 0 ? "text-amber-600" : "text-[var(--ink)]" },
+        ].map(({ label, value, sub, tone = "text-[var(--ink)]" }) => (
+          <div key={label} className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
+            <p className="text-[11px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">{label}</p>
+            <p className={`mt-1 text-lg font-bold tabular-nums ${tone}`}>{value}</p>
+            <p className="mt-0.5 text-[12px] text-[var(--ink-muted)]">{sub}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Period chips */}
+      <div className="flex gap-2">
+        {([
+          { label: "All time", value: "all" },
+          { label: "This month", value: "this_month" },
+          { label: "Last month", value: "last_month" },
+        ] as const).map(({ label, value }) => (
+          <Link key={value}
+            href={`/documents/job-cards?${new URLSearchParams({ ...(q ? { q } : {}), ...(statusFilter ? { status: statusFilter } : {}), period: value === "all" ? "" : value }).toString()}`}
+            className={`rounded-full border px-3 py-1.5 text-[12px] font-semibold transition ${periodFilter === value ? "border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]" : "border-[var(--line)] text-[var(--ink-muted)] hover:border-[var(--accent)]/40 hover:text-[var(--ink)]"}`}>
+            {label}
+          </Link>
+        ))}
+      </div>
+
       {/* Search + filter */}
       <form method="GET" className="flex flex-wrap gap-2">
+        <input type="hidden" name="period" value={periodFilter === "all" ? "" : periodFilter} />
         <input
           name="q"
           defaultValue={q ?? ""}
