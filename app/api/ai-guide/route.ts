@@ -793,12 +793,11 @@ export async function POST(request: NextRequest) {
 
     if (!apiKey) {
       await logAiPrompt({ orgId: user?.orgId, userId: user?.id, feature: "AI_GUIDE", question: message, contextSummary: knowledgeContext, mode: "fallback" });
-      return new Response(fallbackAnswer(safeMessage), {
+      return new Response("⚠️ AI Guide is running in offline mode — GEMINI_API_KEY is not configured in this environment. Ask your admin to add it in Vercel → Settings → Environment Variables.", {
         headers: {
           "content-type": "text/plain; charset=utf-8",
-          "x-content-type-options": "nosniff",
           "cache-control": "no-store",
-          "x-ai-guide-mode": "fallback",
+          "x-ai-guide-mode": "no-key",
         },
       });
     }
@@ -831,12 +830,11 @@ export async function POST(request: NextRequest) {
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error("[ai-guide] Gemini error:", msg);
-    return new Response(fallbackAnswer(message), {
+    return new Response(`⚠️ AI Guide error: ${msg}. Check that GEMINI_API_KEY is valid and the model is accessible.`, {
       headers: {
         "content-type": "text/plain; charset=utf-8",
-        "x-content-type-options": "nosniff",
         "cache-control": "no-store",
-        "x-ai-guide-mode": "fallback",
+        "x-ai-guide-mode": "error",
       },
     });
   }
