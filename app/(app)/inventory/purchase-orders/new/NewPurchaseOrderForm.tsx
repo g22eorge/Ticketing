@@ -83,8 +83,8 @@ export function NewPurchaseOrderForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
       {/* Header */}
-      <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] p-5 space-y-4">
-        <p className="text-[12px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Order Details</p>
+      <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-5 space-y-4">
+        <p className="text-sm font-semibold text-[var(--ink)]">Order Details</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-xs font-semibold text-[var(--ink-muted)] mb-1">
@@ -94,7 +94,7 @@ export function NewPurchaseOrderForm({
               name="supplierId"
               required
               defaultValue={defaultSupplierId ?? ""}
-              className="w-full rounded-lg border border-[var(--line)] bg-[var(--bg)] px-3 py-2 text-sm text-[var(--ink)] focus:outline-none focus:ring-2 focus:ring-[var(--gold)]/40"
+              className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm text-[var(--ink)] outline-none transition focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/15"
             >
               <option value="">Select supplier…</option>
               {suppliers.map((s) => (
@@ -108,7 +108,7 @@ export function NewPurchaseOrderForm({
               name="reference"
               type="text"
               placeholder="e.g. PO-2026-001"
-              className="w-full rounded-lg border border-[var(--line)] bg-[var(--bg)] px-3 py-2 text-sm text-[var(--ink)] focus:outline-none focus:ring-2 focus:ring-[var(--gold)]/40"
+              className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm text-[var(--ink)] outline-none transition focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/15"
             />
           </div>
           <div>
@@ -117,7 +117,7 @@ export function NewPurchaseOrderForm({
               name="orderedAt"
               type="date"
               defaultValue={new Date().toISOString().slice(0, 10)}
-              className="w-full rounded-lg border border-[var(--line)] bg-[var(--bg)] px-3 py-2 text-sm text-[var(--ink)] focus:outline-none focus:ring-2 focus:ring-[var(--gold)]/40"
+              className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm text-[var(--ink)] outline-none transition focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/15"
             />
           </div>
           <div>
@@ -125,7 +125,7 @@ export function NewPurchaseOrderForm({
             <input
               name="expectedAt"
               type="date"
-              className="w-full rounded-lg border border-[var(--line)] bg-[var(--bg)] px-3 py-2 text-sm text-[var(--ink)] focus:outline-none focus:ring-2 focus:ring-[var(--gold)]/40"
+              className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm text-[var(--ink)] outline-none transition focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/15"
             />
           </div>
         </div>
@@ -134,19 +134,19 @@ export function NewPurchaseOrderForm({
           <textarea
             name="notes"
             rows={2}
-            className="w-full rounded-lg border border-[var(--line)] bg-[var(--bg)] px-3 py-2 text-sm text-[var(--ink)] focus:outline-none focus:ring-2 focus:ring-[var(--gold)]/40 resize-none"
+            className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm text-[var(--ink)] outline-none transition focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/15 resize-none"
           />
         </div>
       </div>
 
       {/* Line items */}
-      <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] overflow-hidden">
+      <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] overflow-hidden">
         <div className="flex items-center justify-between px-5 py-3 border-b border-[var(--line)]">
-          <p className="text-[12px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Items</p>
+          <p className="text-sm font-semibold text-[var(--ink)]">Items</p>
           <button
             type="button"
             onClick={addLine}
-            className="rounded-md bg-[var(--gold)]/15 px-3 py-1 text-xs font-semibold text-[var(--gold)] hover:bg-[var(--gold)]/25"
+            className="rounded-md bg-[var(--accent)]/15 px-3 py-1 text-xs font-semibold text-[var(--accent)] hover:bg-[var(--accent)]/25"
           >
             + Add Line
           </button>
@@ -155,7 +155,7 @@ export function NewPurchaseOrderForm({
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-[var(--line)] text-xs font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
+              <tr className="bg-[var(--panel-strong)] text-[12px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
                 <th className="px-3 py-2 text-left w-48">Part (optional)</th>
                 <th className="px-3 py-2 text-left">Description</th>
                 <th className="px-3 py-2 text-right w-20">Qty</th>
@@ -171,7 +171,7 @@ export function NewPurchaseOrderForm({
                     <select
                       value={line.partId}
                       onChange={(e) => onPartSelect(line.key, e.target.value)}
-                      className="w-full rounded-md border border-[var(--line)] bg-[var(--bg)] px-2 py-1.5 text-xs text-[var(--ink)] focus:outline-none focus:ring-2 focus:ring-[var(--gold)]/40"
+                      className="w-full rounded-md border border-[var(--line)] bg-[var(--bg)] px-2 py-1.5 text-xs text-[var(--ink)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/40"
                     >
                       <option value="">— custom —</option>
                       {parts.map((p) => (
@@ -185,7 +185,7 @@ export function NewPurchaseOrderForm({
                       onChange={(e) => updateLine(line.key, { description: e.target.value })}
                       placeholder="Item description"
                       required
-                      className="w-full rounded-md border border-[var(--line)] bg-[var(--bg)] px-2 py-1.5 text-xs text-[var(--ink)] focus:outline-none focus:ring-2 focus:ring-[var(--gold)]/40"
+                      className="w-full rounded-md border border-[var(--line)] bg-[var(--bg)] px-2 py-1.5 text-xs text-[var(--ink)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/40"
                     />
                   </td>
                   <td className="px-3 py-2">
@@ -194,7 +194,7 @@ export function NewPurchaseOrderForm({
                       min={1}
                       value={line.qtyOrdered}
                       onChange={(e) => updateLine(line.key, { qtyOrdered: parseInt(e.target.value, 10) || 1 })}
-                      className="w-full rounded-md border border-[var(--line)] bg-[var(--bg)] px-2 py-1.5 text-xs text-right text-[var(--ink)] focus:outline-none focus:ring-2 focus:ring-[var(--gold)]/40"
+                      className="w-full rounded-md border border-[var(--line)] bg-[var(--bg)] px-2 py-1.5 text-xs text-right text-[var(--ink)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/40"
                     />
                   </td>
                   <td className="px-3 py-2">
@@ -204,7 +204,7 @@ export function NewPurchaseOrderForm({
                       step={0.01}
                       value={line.unitCost}
                       onChange={(e) => updateLine(line.key, { unitCost: parseFloat(e.target.value) || 0 })}
-                      className="w-full rounded-md border border-[var(--line)] bg-[var(--bg)] px-2 py-1.5 text-xs text-right text-[var(--ink)] focus:outline-none focus:ring-2 focus:ring-[var(--gold)]/40"
+                      className="w-full rounded-md border border-[var(--line)] bg-[var(--bg)] px-2 py-1.5 text-xs text-right text-[var(--ink)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/40"
                     />
                   </td>
                   <td className="px-3 py-2 text-right text-xs text-[var(--ink-muted)] tabular-nums">
@@ -226,7 +226,7 @@ export function NewPurchaseOrderForm({
               ))}
             </tbody>
             <tfoot>
-              <tr className="border-t border-[var(--line)] bg-[var(--gold)]/5">
+              <tr className="border-t border-[var(--line)] bg-[var(--panel-strong)]">
                 <td colSpan={4} className="px-3 py-2 text-right text-xs font-semibold text-[var(--ink-muted)]">Total</td>
                 <td className="px-3 py-2 text-right text-sm font-bold text-[var(--ink)] tabular-nums">
                   {total.toLocaleString()}
@@ -250,7 +250,7 @@ export function NewPurchaseOrderForm({
         </button>
         <Link
           href="/inventory/purchase-orders"
-          className="rounded-lg border border-[var(--line)] px-4 py-2 text-sm font-semibold text-[var(--ink-muted)] hover:bg-[var(--gold)]/5"
+          className="rounded-lg border border-[var(--line)] px-4 py-2 text-sm font-semibold text-[var(--ink-muted)] hover:bg-[var(--panel-strong)]"
         >
           Cancel
         </Link>
