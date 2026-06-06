@@ -219,7 +219,7 @@ export default async function QuotationDetailPage({
   }
   return (
     <div className="mx-auto max-w-3xl space-y-4">
-      <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
+      <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <p className="text-[12px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Sales · Quotation</p>
@@ -242,7 +242,7 @@ export default async function QuotationDetailPage({
         </div>
       </div>
 
-      <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
+      <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
         <p className="mb-3 text-[13px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Document Actions</p>
         <div className="flex flex-wrap items-center gap-2">
           <a

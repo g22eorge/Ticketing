@@ -205,32 +205,32 @@ export default async function FieldPage({
       </div>
 
       {/* ── KPI tiles ── */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
-        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
           <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Today&apos;s Visits</p>
           <p className="mt-1 text-xl font-bold tabular-nums text-[var(--ink)]">{kpiToday}</p>
           <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">scheduled today</p>
         </div>
-        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
+        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
           <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Pending</p>
           <p className="mt-1 text-xl font-bold tabular-nums text-[var(--ink)]">{kpiPending}</p>
           <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">scheduled · en route · arrived</p>
         </div>
-        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
+        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
           <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Completed This Month</p>
           <p className="mt-1 text-xl font-bold tabular-nums text-emerald-700">{kpiCompletedMonth}</p>
           <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">
             {completionRate !== null ? `${completionRate}% success rate` : "this month"}
           </p>
         </div>
-        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
+        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
           <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Failed This Month</p>
           <p className={`mt-1 text-xl font-bold tabular-nums ${kpiFailedMonth > 0 ? "text-red-600" : "text-[var(--ink)]"}`}>{kpiFailedMonth}</p>
           <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">
             {terminalMonth > 0 ? `${100 - (completionRate ?? 100)}% failure rate` : "this month"}
           </p>
         </div>
-        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
+        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
           <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Total Visits</p>
           <p className="mt-1 text-xl font-bold tabular-nums text-[var(--ink)]">{kpiTotal}</p>
           <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">all time</p>

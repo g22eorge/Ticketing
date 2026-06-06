@@ -871,7 +871,7 @@ export default async function InvoicesPage({
       </div>
 
       {/* ── AGING ANALYSIS (desktop only — mobile uses status chips above) ── */}
-      <div className="hidden lg:grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="hidden lg:grid grid-cols-2 gap-2 sm:grid-cols-4">
         {agingBands.map((band) => {
           const bandTotal = band.items.reduce((s, i) => s + i.balance, 0);
           const isActive = agingFilter === band.key;

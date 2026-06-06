@@ -224,7 +224,7 @@ export default async function ChartOfAccountsPage() {
       )}
 
       {/* ── ACCOUNT TYPE KPI STRIP ───────────────────────────────────────── */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
         {(
           [
             { type: "ASSET" as AccountType, label: "Total Assets", colorVal: "text-blue-600", borderClass: "border-blue-500/20" },

@@ -294,7 +294,7 @@ export default async function InventoryPage({
 
       {/* Add Part — shown only when ?add=1 */}
       {canManage && showAdd ? (
-        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
+        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
           <p className="mb-2.5 text-[12px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Add Part</p>
           <form action={createPartAction}>
             <div className="grid gap-2 md:grid-cols-[0.8fr_1.4fr_1fr_0.7fr_0.7fr_auto]">

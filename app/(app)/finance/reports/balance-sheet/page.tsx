@@ -209,7 +209,7 @@ export default async function BalanceSheetPage({
           )}
 
           {/* ── FINANCIAL RATIOS STRIP ───────────────────────────────────── */}
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
             <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
               <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">
                 Total Assets
@@ -371,7 +371,7 @@ export default async function BalanceSheetPage({
                   : currentRatio >= 1 ? "text-amber-600"
                   : "text-red-500";
                 return (
-                  <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
+                  <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
                     <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Current Ratio</p>
                     <p className={`mt-1 text-xl font-bold tabular-nums ${color}`}>
                       {currentRatio !== null ? currentRatio.toFixed(2) : "—"}
@@ -392,7 +392,7 @@ export default async function BalanceSheetPage({
                   : dte < 2 ? "text-amber-600"
                   : "text-red-500";
                 return (
-                  <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
+                  <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
                     <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Debt-to-Equity</p>
                     <p className={`mt-1 text-xl font-bold tabular-nums ${color}`}>
                       {dte !== null ? dte.toFixed(2) : "—"}
@@ -402,7 +402,7 @@ export default async function BalanceSheetPage({
                 );
               })()}
               {/* Working Capital */}
-              <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
+              <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
                 <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Working Capital</p>
                 <p className={`mt-1 text-xl font-bold tabular-nums ${workingCapital >= 0 ? "text-emerald-600" : "text-red-500"}`}>
                   {workingCapital < 0 ? "−" : ""}{formatMoneyCompact(Math.abs(workingCapital), currency)}

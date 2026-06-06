@@ -741,7 +741,7 @@ export default async function ReportsPage({
       {tab === "repairs" && (
         <>
           {/* KPI strip */}
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
             {/* Completed */}
             <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
               <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Completed</p>
@@ -938,7 +938,7 @@ export default async function ReportsPage({
       {tab === "revenue" && (
         <>
           {/* Revenue streams */}
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
             <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
               <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Repairs</p>
               <p className="mt-1 text-lg font-bold text-[var(--ink)]">
@@ -976,7 +976,7 @@ export default async function ReportsPage({
           </div>
 
           {/* Cash flow row */}
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
             <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
               <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Cash In</p>
               <p className="mt-1 text-lg font-bold text-emerald-500">
@@ -1128,7 +1128,7 @@ export default async function ReportsPage({
       {tab === "inventory" && (
         <>
           {/* KPI strip */}
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
             <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
               <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">
                 Active Parts

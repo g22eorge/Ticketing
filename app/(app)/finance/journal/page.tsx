@@ -254,7 +254,7 @@ export default async function JournalPage({
       </div>
 
       {/* ── KPI TILES ──────────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
 
         {/* Posted this month */}
         <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">

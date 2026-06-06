@@ -205,23 +205,23 @@ export default async function CampaignsPage({ searchParams }: { searchParams: Pr
       </div>
 
       {/* KPI */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
           <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Total Campaigns</p>
           <p className="mt-1 text-xl font-bold tabular-nums text-[var(--ink)]">{campaigns.length}</p>
           <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">all time</p>
         </div>
-        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
+        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
           <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Active</p>
           <p className="mt-1 text-xl font-bold tabular-nums text-green-600">{totalActive}</p>
           <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">currently running</p>
         </div>
-        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
+        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
           <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Contacts Reached</p>
           <p className="mt-1 text-xl font-bold tabular-nums text-[var(--ink)]">{totalSent}</p>
           <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">of {totalContacts} total</p>
         </div>
-        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
+        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
           <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Avg Contacts / Campaign</p>
           <p className="mt-1 text-xl font-bold tabular-nums text-[var(--ink)]">
             {campaigns.length > 0 ? Math.round(totalContacts / campaigns.length) : 0}

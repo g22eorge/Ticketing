@@ -151,6 +151,22 @@ export default async function ComplaintsPage({
         </div>
       </div>
 
+      {/* KPI strip */}
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        {[
+          { label: "Total", value: complaints.length + (complaints.length < 100 ? "" : "+"), sub: "loaded" },
+          { label: "Open", value: totalOpen, sub: "active cases", tone: totalOpen > 0 ? "text-amber-600" : "text-[var(--ink)]" },
+          { label: "Resolved", value: (byStatus["RESOLVED"] ?? 0) + (byStatus["CLOSED"] ?? 0), sub: "resolved + closed", tone: "text-emerald-600" },
+          { label: "Acknowledged", value: byStatus["ACKNOWLEDGED"] ?? 0, sub: "in progress" },
+        ].map(({ label, value, sub, tone = "text-[var(--ink)]" }) => (
+          <div key={label} className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
+            <p className="text-[11px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">{label}</p>
+            <p className={`mt-1 text-lg font-bold tabular-nums ${tone}`}>{value}</p>
+            <p className="mt-0.5 text-[12px] text-[var(--ink-muted)]">{sub}</p>
+          </div>
+        ))}
+      </div>
+
       {/* Status filter chips + search */}
       <div className="panel-shadow flex flex-wrap items-center gap-2 rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
         {[

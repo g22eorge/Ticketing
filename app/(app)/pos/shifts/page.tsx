@@ -144,23 +144,23 @@ export default async function CashierShiftsPage({
       </div>
 
       {/* ── KPI tiles ── */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
           <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Total Shifts</p>
           <p className="mt-1 text-xl font-bold tabular-nums text-[var(--ink)]">{totalShifts}</p>
           <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">all time</p>
         </div>
-        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
+        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
           <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Open Shifts</p>
           <p className="mt-1 text-xl font-bold tabular-nums text-[var(--ink)]">{openCount}</p>
           <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">currently open</p>
         </div>
-        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
+        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
           <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Closed This Month</p>
           <p className="mt-1 text-xl font-bold tabular-nums text-[var(--ink)]">{closedThisMonth}</p>
           <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">this month</p>
         </div>
-        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
+        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
           <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Cash Collected This Month</p>
           <p className="mt-1 text-xl font-bold tabular-nums text-[var(--ink)]">{formatMoney(cashCollectedThisMonth, currency)}</p>
           <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">closing cash, this month</p>

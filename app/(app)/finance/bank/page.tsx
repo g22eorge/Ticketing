@@ -188,29 +188,29 @@ export default async function BankPage({
       </div>
 
       {/* ── SUMMARY STRIP ────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
           <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Total Accounts</p>
           <p className="mt-1 text-xl font-bold tabular-nums text-[var(--ink)]">
             {bankAccounts.filter((a) => a.isActive).length}
           </p>
           <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">active bank accounts</p>
         </div>
-        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
+        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
           <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Net Bank Position</p>
           <p className={`mt-1 text-xl font-bold tabular-nums ${totalBalance >= 0 ? "text-[var(--ink)]" : "text-red-500"}`}>
             {totalBalance < 0 ? "−" : ""}{formatMoneyCompact(Math.abs(totalBalance), currency)}
           </p>
           <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">across all accounts</p>
         </div>
-        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
+        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
           <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Credits This Month</p>
           <p className="mt-1 text-xl font-bold tabular-nums text-emerald-600">
             {formatMoneyCompact(globalCreditsThisMonth, currency)}
           </p>
           <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">all accounts</p>
         </div>
-        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
+        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
           <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Debits This Month</p>
           <p className="mt-1 text-xl font-bold tabular-nums text-red-500">
             {formatMoneyCompact(globalDebitsThisMonth, currency)}

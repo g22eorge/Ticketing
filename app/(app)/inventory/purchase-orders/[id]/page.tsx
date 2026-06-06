@@ -59,7 +59,7 @@ export default async function PurchaseOrderDetailPage({
   return (
     <div className="mx-auto max-w-3xl space-y-4">
       {/* Header */}
-      <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
+      <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <p className="text-[12px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Inventory · Purchase Order</p>

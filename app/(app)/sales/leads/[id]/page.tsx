@@ -143,7 +143,7 @@ export default async function LeadDetailPage({
 
   return (
     <div className="space-y-4">
-      <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
+      <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
             <p className="text-[12px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Sales · Lead</p>
@@ -349,7 +349,7 @@ export default async function LeadDetailPage({
             )}
           </div>
 
-          <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
+          <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
             <p className="mb-2 text-[13px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Details</p>
             <dl className="space-y-1 text-[12px]">
               <div className="flex justify-between gap-2">

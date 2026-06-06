@@ -38,7 +38,7 @@ export default async function NewQuotationPage({
 
   return (
     <div className="mx-auto max-w-3xl space-y-4">
-      <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
+      <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
         <p className="text-[12px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Sales</p>
         <p className="text-[13px] font-bold text-[var(--ink)]">New Quotation</p>
         {leadName ? <p className="mt-0.5 text-[12px] text-[var(--ink-muted)]">Lead: {leadName}</p> : null}
