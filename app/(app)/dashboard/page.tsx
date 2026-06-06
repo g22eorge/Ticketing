@@ -963,8 +963,6 @@ export default async function DashboardPage({
       failedOutboxCount,
       // Inventory: out-of-stock
       outOfStockCount,
-      // Recent jobs
-      recentJobs,
     ] = await Promise.all([
       prisma.job.groupBy({ by: ["status"], where: orgFilter, _count: { status: true } }),
 
@@ -1028,13 +1026,6 @@ export default async function DashboardPage({
       prisma.outboundMessage.count({ where: { ...(orgFilter.orgId ? { orgId: orgFilter.orgId } : {}), status: { in: ["FAILED", "DEAD"] as never[] } } }).catch(() => 0),
       // Out-of-stock active parts
       prisma.part.count({ where: { ...orgFilter, isActive: true, qtyOnHand: { lte: 0 } } }).catch(() => 0),
-      // Recent jobs for sidebar
-      prisma.job.findMany({
-        where: orgFilter,
-        orderBy: { updatedAt: "desc" },
-        take: 8,
-        select: { id: true, jobNumber: true, brand: true, model: true, status: true, updatedAt: true, client: { select: { fullName: true } } },
-      }).catch(() => [] as { id: string; jobNumber: string; brand: string; model: string; status: string; updatedAt: Date; client: { fullName: string } | null }[]),
     ]);
 
     const [
@@ -1608,119 +1599,126 @@ export default async function DashboardPage({
               );
             })()}
 
-            {/* Inventory + Comms health side-by-side */}
-            <div className="grid grid-cols-2 gap-3">
-
-              {/* Inventory */}
-              <section className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
-                <div className="flex items-center justify-between border-b border-[var(--line)] px-3 py-2">
-                  <p className="text-[12px] font-semibold text-[var(--ink)]">Inventory</p>
-                  <Link href="/inventory" className="text-[11px] font-semibold text-[var(--accent)]">View →</Link>
-                </div>
-                <div className="divide-y divide-[var(--line)]">
-                  {([
-                    { dot: "bg-sky-500",   label: "Tracked",       value: lowStockParts.length, tone: "text-[var(--ink)]",                                        href: "/inventory" },
-                    { dot: "bg-amber-500", label: "Low stock",     value: lowStockItems.length, tone: lowStockItems.length > 0 ? "text-amber-500" : "text-[var(--ink-muted)]", href: "/inventory?filter=low" },
-                    { dot: "bg-red-500",   label: "Out of stock",  value: outOfStockCount,      tone: outOfStockCount > 0 ? "text-red-500" : "text-[var(--ink-muted)]",         href: "/inventory?filter=out" },
-                  ] as const).map((r) => (
-                    <Link key={r.label} href={r.href} className="flex items-center justify-between px-3 py-2 transition hover:bg-[var(--panel-strong)]">
-                      <div className="flex items-center gap-1.5">
-                        <span className={`h-1.5 w-1.5 rounded-full ${r.dot}`} />
-                        <p className="text-[11px] text-[var(--ink-muted)]">{r.label}</p>
-                      </div>
-                      <p className={`text-[12px] font-bold ${r.tone}`}>{r.value}</p>
-                    </Link>
-                  ))}
-                </div>
-              </section>
-
-              {/* Comms */}
-              <section className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
-                <div className="flex items-center justify-between border-b border-[var(--line)] px-3 py-2">
-                  <p className="text-[12px] font-semibold text-[var(--ink)]">Comms</p>
-                  <Link href="/settings/notifications/outbox" className="text-[11px] font-semibold text-[var(--accent)]">Outbox →</Link>
-                </div>
-                <div className="divide-y divide-[var(--line)]">
-                  <div className="flex items-center justify-between px-3 py-2">
-                    <div className="flex items-center gap-1.5">
-                      <span className={`h-1.5 w-1.5 rounded-full ${failedOutboxCount > 0 ? "bg-rose-500" : "bg-emerald-500"}`} />
-                      <p className="text-[11px] text-[var(--ink-muted)]">{failedOutboxCount > 0 ? "Failed" : "Healthy"}</p>
+            {/* Inventory — full width, expanded */}
+            <section className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
+              <div className="flex items-center justify-between border-b border-[var(--line)] px-4 py-2.5">
+                <p className="text-sm font-semibold text-[var(--ink)]">Inventory</p>
+                <Link href="/inventory" className="text-[12px] font-semibold text-[var(--accent)]">View all →</Link>
+              </div>
+              {/* 3-stat summary row */}
+              <div className="grid grid-cols-3 divide-x divide-[var(--line)] border-b border-[var(--line)]">
+                {([
+                  { label: "Tracked",  value: lowStockParts.length, tone: "text-[var(--ink)]",   dot: "bg-sky-500" },
+                  { label: "Low",      value: lowStockItems.length, tone: lowStockItems.length > 0 ? "text-amber-500" : "text-[var(--ink-muted)]", dot: "bg-amber-500" },
+                  { label: "Out",      value: outOfStockCount,      tone: outOfStockCount > 0 ? "text-red-500" : "text-[var(--ink-muted)]",        dot: "bg-red-500" },
+                ] as const).map((s) => (
+                  <div key={s.label} className="flex flex-col items-center py-2.5 gap-0.5">
+                    <p className={`text-[20px] font-black tabular-nums leading-none ${s.tone}`}>{s.value}</p>
+                    <div className="flex items-center gap-1">
+                      <span className={`h-1.5 w-1.5 rounded-full ${s.dot}`} />
+                      <p className="text-[10px] text-[var(--ink-muted)]">{s.label}</p>
                     </div>
-                    {failedOutboxCount > 0
-                      ? <p className="text-[12px] font-bold text-rose-500">{failedOutboxCount}</p>
-                      : <p className="text-[12px] font-bold text-emerald-600">✓</p>
-                    }
                   </div>
-                  <Link href="/settings/notifications/whatsapp" className="flex items-center justify-between px-3 py-2 transition hover:bg-[var(--panel-strong)]">
-                    <div className="flex items-center gap-1.5">
-                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                      <p className="text-[11px] text-[var(--ink-muted)]">WhatsApp</p>
-                    </div>
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--ink-muted)]/30"><path d="m9 18 6-6-6-6"/></svg>
-                  </Link>
-                  <Link href="/settings/notifications/outbox" className="flex items-center justify-between px-3 py-2 transition hover:bg-[var(--panel-strong)]">
-                    <div className="flex items-center gap-1.5">
-                      <span className="h-1.5 w-1.5 rounded-full bg-sky-500" />
-                      <p className="text-[11px] text-[var(--ink-muted)]">Outbox</p>
-                    </div>
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--ink-muted)]/30"><path d="m9 18 6-6-6-6"/></svg>
-                  </Link>
-                </div>
-              </section>
-
-            </div>
-
-            {/* Recent Jobs — last 8 updated, fills remaining right-column height */}
-            {recentJobs.length > 0 && (() => {
-              const STATUS_CHIP: Record<string, { label: string; cls: string }> = {
-                RECEIVED:          { label: "Received",   cls: "bg-sky-500/12 text-sky-600" },
-                DIAGNOSING:        { label: "Diagnosing", cls: "bg-blue-500/12 text-blue-600" },
-                AWAITING_APPROVAL: { label: "Awaiting",   cls: "bg-[var(--accent)]/12 text-[var(--accent)]" },
-                IN_REPAIR:         { label: "In repair",  cls: "bg-violet-500/12 text-violet-600" },
-                READY_FOR_PICKUP:  { label: "Ready",      cls: "bg-emerald-500/12 text-emerald-600" },
-                COMPLETED:         { label: "Completed",  cls: "bg-emerald-500/12 text-emerald-600" },
-                REFERRED:          { label: "Referred",   cls: "bg-amber-500/12 text-amber-600" },
-                IN_EXTERNAL_REPAIR:{ label: "External",   cls: "bg-orange-500/12 text-orange-600" },
-                DELIVERED:         { label: "Delivered",  cls: "bg-teal-500/12 text-teal-600" },
-                CLOSED:            { label: "Closed",     cls: "bg-[var(--line)] text-[var(--ink-muted)]" },
-                CUSTOMER_CANCELLED:{ label: "Cancelled",  cls: "bg-red-500/12 text-red-500" },
-              };
-              const timeAgo = (d: Date) => {
-                const mins = Math.floor((Date.now() - d.getTime()) / 60000);
-                if (mins < 60) return `${mins}m ago`;
-                if (mins < 1440) return `${Math.floor(mins / 60)}h ago`;
-                return `${Math.floor(mins / 1440)}d ago`;
-              };
-              return (
-                <section className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
-                  <div className="flex items-center justify-between border-b border-[var(--line)] px-4 py-2.5">
-                    <p className="text-sm font-semibold text-[var(--ink)]">Recent jobs</p>
-                    <Link href="/jobs" className="text-[12px] font-semibold text-[var(--accent)]">All jobs →</Link>
-                  </div>
-                  <div className="divide-y divide-[var(--line)]">
-                    {recentJobs.map((job) => {
-                      const chip = STATUS_CHIP[job.status] ?? { label: job.status, cls: "bg-[var(--line)] text-[var(--ink-muted)]" };
-                      return (
-                        <Link key={job.id} href={`/jobs/${job.id}`}
-                          className="flex items-center gap-2.5 px-4 py-2 transition hover:bg-[var(--panel-strong)]">
-                          {/* Job number */}
-                          <p className="w-10 shrink-0 text-[10px] font-bold text-[var(--ink-muted)]">#{job.jobNumber}</p>
-                          {/* Device + client */}
-                          <div className="min-w-0 flex-1">
-                            <p className="truncate text-[12px] font-semibold text-[var(--ink)]">{job.brand} {job.model}</p>
-                            <p className="truncate text-[10px] text-[var(--ink-muted)]">{job.client?.fullName ?? "No client"}</p>
+                ))}
+              </div>
+              {/* Low-stock items list */}
+              {lowStockItems.length > 0 ? (
+                <div className="divide-y divide-[var(--line)]">
+                  {lowStockItems.slice(0, 6).map((part) => {
+                    const pct = part.reorderLevel > 0 ? Math.min(100, Math.round((part.qtyOnHand / part.reorderLevel) * 100)) : 0;
+                    const isEmpty = part.qtyOnHand <= 0;
+                    return (
+                      <Link key={part.id} href="/inventory" className="flex items-center gap-3 px-4 py-2.5 transition hover:bg-[var(--panel-strong)]">
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-[12px] font-semibold text-[var(--ink)]">{part.name}</p>
+                          <div className="mt-1 h-[3px] overflow-hidden rounded-full bg-[var(--panel-strong)]">
+                            <div className={`h-full rounded-full ${isEmpty ? "bg-red-500" : "bg-amber-500"}`} style={{ width: `${Math.max(2, pct)}%` }} />
                           </div>
-                          {/* Status chip */}
-                          <span className={`shrink-0 rounded-full px-2 py-[2px] text-[9.5px] font-bold ${chip.cls}`}>{chip.label}</span>
-                          {/* Time ago */}
-                          <p className="w-10 shrink-0 text-right text-[10px] text-[var(--ink-muted)]">{timeAgo(job.updatedAt)}</p>
-                        </Link>
-                      );
-                    })}
+                        </div>
+                        <div className="shrink-0 text-right">
+                          <p className={`text-[12px] font-black tabular-nums ${isEmpty ? "text-red-500" : "text-amber-500"}`}>{part.qtyOnHand}</p>
+                          <p className="text-[9px] text-[var(--ink-muted)]">min {part.reorderLevel}</p>
+                        </div>
+                      </Link>
+                    );
+                  })}
+                  {lowStockItems.length > 6 && (
+                    <Link href="/inventory" className="block px-4 py-2 text-center text-[11px] font-semibold text-[var(--accent)] transition hover:bg-[var(--panel-strong)]">
+                      +{lowStockItems.length - 6} more items →
+                    </Link>
+                  )}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center gap-1 py-5">
+                  <p className="text-[13px] font-semibold text-emerald-600">All stock healthy</p>
+                  <p className="text-[11px] text-[var(--ink-muted)]">No items below reorder level</p>
+                </div>
+              )}
+              {/* Footer: quick links */}
+              <div className="grid grid-cols-2 divide-x divide-[var(--line)] border-t border-[var(--line)]">
+                <Link href="/inventory/purchase-orders" className="flex items-center justify-center gap-1.5 py-2 text-[11px] font-semibold text-[var(--ink-muted)] transition hover:bg-[var(--panel-strong)] hover:text-[var(--accent)]">
+                  Purchase orders
+                </Link>
+                <Link href="/inventory/suppliers" className="flex items-center justify-center gap-1.5 py-2 text-[11px] font-semibold text-[var(--ink-muted)] transition hover:bg-[var(--panel-strong)] hover:text-[var(--accent)]">
+                  Suppliers
+                </Link>
+              </div>
+            </section>
+
+            {/* Comms — full width, expanded */}
+            <section className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
+              <div className="flex items-center justify-between border-b border-[var(--line)] px-4 py-2.5">
+                <p className="text-sm font-semibold text-[var(--ink)]">Communications</p>
+                <Link href="/settings/notifications/outbox" className="text-[12px] font-semibold text-[var(--accent)]">Outbox →</Link>
+              </div>
+              {/* Outbox health — big status */}
+              <div className={`flex items-center gap-3 border-b border-[var(--line)] px-4 py-3 ${failedOutboxCount > 0 ? "bg-rose-500/5" : "bg-emerald-500/5"}`}>
+                <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${failedOutboxCount > 0 ? "bg-rose-500/15" : "bg-emerald-500/15"}`}>
+                  {failedOutboxCount > 0 ? (
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-rose-500"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+                  ) : (
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-500"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>
+                  )}
+                </span>
+                <div className="flex-1">
+                  <p className={`text-[13px] font-bold ${failedOutboxCount > 0 ? "text-rose-600" : "text-emerald-600"}`}>
+                    {failedOutboxCount > 0 ? `${failedOutboxCount} message${failedOutboxCount > 1 ? "s" : ""} failed` : "All messages delivered"}
+                  </p>
+                  <p className="text-[11px] text-[var(--ink-muted)]">{failedOutboxCount > 0 ? "Check outbox for errors" : "Outbox healthy"}</p>
+                </div>
+                {failedOutboxCount > 0 && (
+                  <Link href="/settings/notifications/outbox" className="shrink-0 rounded-lg bg-rose-500/10 px-2.5 py-1 text-[11px] font-bold text-rose-600 transition hover:bg-rose-500/20">Fix</Link>
+                )}
+              </div>
+              {/* Channel rows */}
+              <div className="divide-y divide-[var(--line)]">
+                {([
+                  { dot: "bg-emerald-500", label: "WhatsApp",         sub: "Provider config",        href: "/settings/notifications/whatsapp" },
+                  { dot: "bg-sky-500",     label: "Outbox",           sub: "Message queue & retries", href: "/settings/notifications/outbox" },
+                  { dot: "bg-violet-500",  label: "Templates",        sub: "Status message templates", href: "/settings/notifications" },
+                  { dot: "bg-amber-500",   label: "Policies",         sub: "Auto-send rules",         href: "/settings/notifications" },
+                ] as const).map((row) => (
+                  <Link key={row.label} href={row.href} className="flex items-center gap-3 px-4 py-2.5 transition hover:bg-[var(--panel-strong)]">
+                    <span className={`h-2 w-2 shrink-0 rounded-full ${row.dot}`} />
+                    <div className="flex-1">
+                      <p className="text-[12px] font-semibold text-[var(--ink)]">{row.label}</p>
+                      <p className="text-[10px] text-[var(--ink-muted)]">{row.sub}</p>
+                    </div>
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-[var(--ink-muted)]/30"><path d="m9 18 6-6-6-6"/></svg>
+                  </Link>
+                ))}
+              </div>
+              {/* Intake alert if pending */}
+              {intakePendingCount > 0 && (
+                <Link href="/intake" className="flex items-center justify-between border-t border-[var(--line)] bg-orange-500/5 px-4 py-2.5 transition hover:bg-orange-500/10">
+                  <div className="flex items-center gap-2">
+                    <span className="h-2 w-2 rounded-full bg-orange-500" />
+                    <p className="text-[12px] font-semibold text-orange-600">{intakePendingCount} repair request{intakePendingCount > 1 ? "s" : ""} awaiting intake</p>
                   </div>
-                </section>
-              );
-            })()}
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-orange-400"><path d="m9 18 6-6-6-6"/></svg>
+                </Link>
+              )}
+            </section>
 
           </div>{/* end right column */}
 
