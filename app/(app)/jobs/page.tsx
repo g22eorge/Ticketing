@@ -675,7 +675,7 @@ export default async function JobsPage({
           <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto [scrollbar-width:none]">
             <Link
               href={statusChipHref("")}
-              className={`shrink-0 rounded-full border px-3 py-1 text-[13px] font-semibold transition ${
+              className={`shrink-0 rounded-full border px-3 py-1.5 text-[13px] font-semibold transition ${
                 statusValue ? "border-[var(--line)] bg-[var(--panel)] text-[var(--ink-muted)] hover:border-[var(--accent)]/30" : "border-[var(--accent)] bg-[var(--accent)] text-black"
               }`}
             >
@@ -685,7 +685,7 @@ export default async function JobsPage({
               <Link
                 key={s}
                 href={statusChipHref(s)}
-                className={`shrink-0 rounded-full border px-3 py-1 text-[13px] font-semibold transition ${
+                className={`shrink-0 rounded-full border px-3 py-1.5 text-[13px] font-semibold transition ${
                   statusValue === s ? "border-[var(--accent)] bg-[var(--accent)] text-white" : "border-[var(--line)] bg-[var(--panel)] text-[var(--ink-muted)] hover:border-[var(--accent)]/30"
                 }`}
               >
@@ -695,7 +695,7 @@ export default async function JobsPage({
             <div className="mx-1 h-4 w-px shrink-0 bg-[var(--line)]" aria-hidden="true" />
             <Link
               href={overdueChipHref}
-              className={`shrink-0 rounded-full border px-3 py-1 text-[13px] font-semibold transition ${
+              className={`shrink-0 rounded-full border px-3 py-1.5 text-[13px] font-semibold transition ${
                 filters.overdue === "1"
                   ? "border-red-500 bg-red-500/10 text-red-700 dark:border-red-400 dark:bg-red-950/30 dark:text-red-400"
                   : "border-[var(--line)] bg-[var(--panel)] text-[var(--ink-muted)] hover:border-red-400/50 hover:text-red-600"

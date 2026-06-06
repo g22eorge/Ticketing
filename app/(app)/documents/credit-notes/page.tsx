@@ -389,7 +389,7 @@ export default async function CreditNotesPage({
           <Link
             key={f}
             href={`?filter=${f}${q ? `&q=${q}` : ""}${periodFilter !== "all" ? `&period=${periodFilter}` : ""}`}
-            className={`rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${filter === f ? "border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]" : "border-[var(--line)] text-[var(--ink-muted)] hover:text-[var(--ink)]"}`}
+            className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${filter === f ? "border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]" : "border-[var(--line)] text-[var(--ink-muted)] hover:text-[var(--ink)]"}`}
           >
             {f === "all" ? "All" : f === "pending" ? "Awaiting Return" : "Items Received"}
           </Link>

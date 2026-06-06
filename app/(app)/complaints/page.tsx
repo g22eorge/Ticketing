@@ -162,7 +162,7 @@ export default async function ComplaintsPage({
             <Link
               key={key || "all"}
               href={key ? `/complaints?status=${key}` : "/complaints"}
-              className={`shrink-0 rounded-full border px-3 py-1 text-[13px] font-semibold transition ${
+              className={`shrink-0 rounded-full border px-3 py-1.5 text-[13px] font-semibold transition ${
                 active
                   ? "border-[var(--accent)] bg-[var(--accent)] text-white"
                   : "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)] hover:border-[var(--accent)]/30"

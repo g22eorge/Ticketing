@@ -645,7 +645,7 @@ export default async function SalesPage({
             <div className="flex items-center gap-2 overflow-x-auto px-4 py-2.5 [scrollbar-width:none]">
               <Link
                 href={`/sales?tab=leads${searchQ ? `&q=${encodeURIComponent(searchQ)}` : ""}`}
-                className={`rounded-full border px-3 py-1 text-[13px] font-semibold transition-colors ${
+                className={`rounded-full border px-3 py-1.5 text-[13px] font-semibold transition-colors ${
                   !statusFilter
                     ? "border-[var(--accent)] bg-[var(--accent)] text-white"
                     : "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)] hover:border-[var(--accent)]/40"
@@ -660,7 +660,7 @@ export default async function SalesPage({
                 <Link
                   key={s}
                   href={`/sales?tab=leads&status=${s}${searchQ ? `&q=${encodeURIComponent(searchQ)}` : ""}`}
-                  className={`rounded-full border px-3 py-1 text-[13px] font-semibold transition-colors ${
+                  className={`rounded-full border px-3 py-1.5 text-[13px] font-semibold transition-colors ${
                     statusFilter === s
                       ? "border-[var(--accent)] bg-[var(--accent)] text-white"
                       : "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)] hover:border-[var(--accent)]/40"

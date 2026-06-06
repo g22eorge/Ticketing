@@ -179,7 +179,7 @@ export default async function SalesTargetsPage({
             <input type="hidden" name="period" value={p} />
             <button
               type="submit"
-              className={`rounded-full border px-3 py-1 text-[12px] font-medium transition ${
+              className={`rounded-full border px-3 py-1.5 text-[12px] font-medium transition ${
                 p === activePeriod
                   ? "border-[var(--accent)]/50 bg-[var(--accent)]/10 text-[var(--accent)]"
                   : "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)] hover:text-[var(--ink)]"

@@ -329,7 +329,7 @@ export default async function ClientsPage({
             { seg: "high", label: `${withManyJobs} high activity`   },
           ] as const).map(({ seg, label }) => (
             <Link key={seg} href={segmentHref(seg)}
-              className={`rounded-full border px-3 py-1 text-[13px] font-semibold transition-colors ${
+              className={`rounded-full border px-3 py-1.5 text-[13px] font-semibold transition-colors ${
                 segment === seg
                   ? "border-[var(--accent)] bg-[var(--accent)] text-black"
                   : "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)] hover:border-[var(--accent)]/40"
