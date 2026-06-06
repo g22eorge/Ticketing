@@ -1387,18 +1387,78 @@ export default async function DashboardPage({
               })()}
             </section>
 
-            {/* YTD Revenue Trend — capped height, full width of centre col */}
-            {revenueTrend.some((m) => m.revenue > 0) && (
-              <section className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
-                <div className="flex items-center justify-between border-b border-[var(--line)] px-4 py-2">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--ink-muted)]">YTD Revenue trend</p>
-                  <Link href="/reports" className="text-[12px] font-semibold text-[var(--accent)]">Reports →</Link>
-                </div>
-                <div className="px-1 pb-1 pt-2 [&>*]:!max-h-44">
-                  <RevenueLineChart data={revenueTrend} currency={currency} />
-                </div>
-              </section>
-            )}
+            {/* YTD Revenue Trend — pure SVG area sparkline, server-rendered, no flash */}
+            {revenueTrend.some((m) => m.revenue > 0) && (() => {
+              const W = 560; const H = 110; const PAD = { t: 12, r: 16, b: 28, l: 8 };
+              const cW = W - PAD.l - PAD.r; const cH = H - PAD.t - PAD.b;
+              const maxRev = Math.max(...revenueTrend.map(m => m.revenue), 1);
+              const pts = revenueTrend.map((m, i) => ({
+                x: PAD.l + (i / Math.max(revenueTrend.length - 1, 1)) * cW,
+                y: PAD.t + cH - (m.revenue / maxRev) * cH,
+                ym: PAD.t + cH - (m.margin / maxRev) * cH,
+                rev: m.revenue, mar: m.margin,
+                label: m.key.replace(/^\d{4}-/, ""),
+              }));
+              const linePts = pts.map(p => `${p.x},${p.y}`).join(" ");
+              const areaPath = `M ${pts[0].x},${PAD.t + cH} L ${pts.map(p => `${p.x},${p.y}`).join(" L ")} L ${pts[pts.length-1].x},${PAD.t + cH} Z`;
+              const marPts = pts.filter(p => p.mar > 0).map(p => `${p.x},${p.ym}`).join(" ");
+              // peak point
+              const peakIdx = pts.reduce((best, p, i) => p.rev > pts[best].rev ? i : best, 0);
+              const peak = pts[peakIdx];
+              return (
+                <section className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
+                  <div className="flex items-center justify-between border-b border-[var(--line)] px-4 py-2">
+                    <div className="flex items-center gap-3">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--ink-muted)]">YTD Trend</p>
+                      <div className="flex items-center gap-2">
+                        <span className="flex items-center gap-1"><span className="inline-block h-[2px] w-4 rounded-full bg-[var(--accent)]"/><span className="text-[10px] text-[var(--ink-muted)]">Revenue</span></span>
+                        {pts.some(p => p.mar > 0) && <span className="flex items-center gap-1"><span className="inline-block h-[2px] w-4 rounded-full bg-emerald-500 opacity-70" style={{backgroundImage:"repeating-linear-gradient(90deg,#10b981 0,#10b981 4px,transparent 4px,transparent 7px)"}}/><span className="text-[10px] text-[var(--ink-muted)]">Margin</span></span>}
+                      </div>
+                    </div>
+                    <Link href="/reports" className="text-[12px] font-semibold text-[var(--accent)]">Full report →</Link>
+                  </div>
+                  <div className="px-3 pb-2 pt-3">
+                    <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ height: 110 }} aria-hidden="true">
+                      <defs>
+                        <linearGradient id="trendFill" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.22"/>
+                          <stop offset="100%" stopColor="var(--accent)" stopOpacity="0.01"/>
+                        </linearGradient>
+                      </defs>
+                      {/* Subtle horizontal grid lines */}
+                      {[0.25, 0.5, 0.75, 1].map(f => (
+                        <line key={f}
+                          x1={PAD.l} y1={PAD.t + cH - f * cH} x2={W - PAD.r} y2={PAD.t + cH - f * cH}
+                          stroke="var(--line)" strokeWidth="1" strokeDasharray="3 4" strokeOpacity="0.6" />
+                      ))}
+                      {/* Area fill */}
+                      <path d={areaPath} fill="url(#trendFill)" />
+                      {/* Revenue line */}
+                      <polyline points={linePts} fill="none" stroke="var(--accent)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                      {/* Margin dashed line */}
+                      {marPts && <polyline points={marPts} fill="none" stroke="#10b981" strokeWidth="1.8" strokeDasharray="4 3" strokeOpacity="0.8" strokeLinecap="round" />}
+                      {/* Dots — only on months with data */}
+                      {pts.filter(p => p.rev > 0).map((p, i) => (
+                        <circle key={i} cx={p.x} cy={p.y} r="3.5" fill="var(--accent)" stroke="var(--panel)" strokeWidth="2" />
+                      ))}
+                      {/* Peak label */}
+                      {peak.rev > 0 && (
+                        <>
+                          <rect x={peak.x - 26} y={peak.y - 22} width="52" height="15" rx="4" fill="var(--accent)" opacity="0.9" />
+                          <text x={peak.x} y={peak.y - 11} textAnchor="middle" fill="white" fontSize="9" fontWeight="700">
+                            {formatMoneyCompact(peak.rev, currency)}
+                          </text>
+                        </>
+                      )}
+                      {/* Month labels */}
+                      {pts.map((p, i) => (
+                        <text key={i} x={p.x} y={H - 4} textAnchor="middle" fill="var(--ink-muted)" fontSize="9.5" opacity="0.7">{p.label}</text>
+                      ))}
+                    </svg>
+                  </div>
+                </section>
+              );
+            })()}
 
           </div>{/* end centre column */}
 
