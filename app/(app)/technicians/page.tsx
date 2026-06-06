@@ -308,53 +308,29 @@ export default async function TechniciansPage({
             </div>
           );
         })()}
-        {/* Auto-hide search after applying */}
-        <details className="group border-b border-[var(--line)]" open={!filters.q}>
-          <summary className="flex cursor-pointer list-none items-center justify-between px-3 py-2.5 text-[13px] font-semibold text-[var(--ink-muted)] hover:bg-[var(--panel-strong)]/30 [&::-webkit-details-marker]:hidden">
-            <span className="truncate">
-              Search
-              {filters.q ? (
-                <span className="ml-2 rounded-full border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-0.5 text-[12px] font-semibold text-[var(--ink)]">
-                  {filters.q}
-                </span>
-              ) : null}
-            </span>
-            <span className="text-[var(--accent)] group-open:hidden">Show</span>
-            <span className="hidden text-[var(--accent)] group-open:inline">Hide</span>
-          </summary>
-          <form>
-            <div className="space-y-2 px-3 pb-3">
-              <input
-                name="q"
-                defaultValue={filters.q}
-                placeholder="Search job # or device"
-                className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2.5 text-sm outline-none transition focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/20"
-              />
-              <div className="flex items-center gap-2">
-                <button className="btn-premium-secondary shrink-0 rounded-lg px-3 py-2.5 text-sm">Apply</button>
-                <Link href="/technicians" className="btn-premium-secondary shrink-0 rounded-lg px-3 py-2.5 text-sm">Reset</Link>
-              </div>
-            </div>
+        {/* Search + quick chips + action — single compact row */}
+        <div className="flex flex-wrap items-center gap-2 border-t border-[var(--line)] px-3 py-2">
+          <form className="flex min-w-0 flex-1 gap-1.5">
+            {filters.status && <input type="hidden" name="status" value={filters.status} />}
+            <input
+              name="q"
+              defaultValue={filters.q}
+              placeholder="Search job # or device…"
+              className="h-8 flex-1 min-w-[140px] rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 text-[12px] text-[var(--ink)] outline-none focus:border-[var(--accent)]/50"
+            />
+            <button type="submit" className="h-8 rounded-lg border border-[var(--line)] px-3 text-[12px] font-medium hover:bg-[var(--panel-strong)]">Search</button>
+            {filters.q && <Link href="/technicians" className="flex h-8 items-center rounded-lg border border-[var(--line)] px-3 text-[12px] text-[var(--ink-muted)] hover:text-[var(--ink)]">Clear</Link>}
           </form>
-        </details>
-
-        {/* Quick filter chips + secondary action */}
-        <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2">
           <div className="flex flex-wrap gap-1.5">
             {quickActions.map((action) => (
               <Link
                 key={action.label}
                 href={action.href}
-                className={`rounded-full border px-3 py-2 text-[13px] font-semibold transition ${action.active ? "border-[var(--accent)] bg-[var(--accent)] text-white" : "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink)] hover:border-[var(--accent)]/30"}`}
+                className={`rounded-full border px-3 py-1.5 text-[12px] font-semibold transition ${action.active ? "border-[var(--accent)] bg-[var(--accent)] text-white" : "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink)] hover:border-[var(--accent)]/30"}`}
               >
                 {action.label} <span className={action.active ? "opacity-80" : "text-[var(--ink-muted)]"}>({action.count})</span>
               </Link>
             ))}
-            {hasActiveFilters ? (
-              <Link href="/technicians" className="rounded-full border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-[13px] font-semibold text-[var(--ink-muted)] hover:border-red-400/30 hover:text-red-600 dark:hover:text-red-400">
-                Clear filters
-              </Link>
-            ) : null}
           </div>
           <Link
             href={user.role === "TECHNICIAN_EXTERNAL" ? "/technicians/payouts" : `/jobs?status=IN_REPAIR&returnTo=${encodeURIComponent(boardReturnTo)}`}
