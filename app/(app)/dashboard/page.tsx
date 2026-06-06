@@ -1222,7 +1222,7 @@ export default async function DashboardPage({
         {/* ══════════════════════════════════════════════════════════
              MAIN 3-COLUMN GRID — Left: Revenue+Finance  |  Centre: Action+Pipeline  |  Right: Actions+Sales+Ops
              ══════════════════════════════════════════════════════════ */}
-        <div className="grid gap-3 lg:grid-cols-3 lg:items-start">
+        <div className="grid gap-3 lg:grid-cols-3 lg:items-stretch">
 
           {/* ── LEFT COLUMN: Revenue + Financial Position ── */}
           <div className="flex flex-col gap-3">
@@ -1301,7 +1301,7 @@ export default async function DashboardPage({
             {bankAccounts.length > 0 && (() => {
               const totalCash = bankAccounts.reduce((s, a) => s + a.currentBalance, 0);
               return (
-                <section className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
+                <section className="panel-shadow flex flex-1 flex-col overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
                   <div className="flex items-center justify-between border-b border-[var(--line)] px-4 py-2.5">
                     <p className="text-sm font-semibold text-[var(--ink)]">Bank accounts</p>
                     <Link href="/finance/bank" className="text-[12px] font-semibold text-[var(--accent)]">View →</Link>
@@ -1446,7 +1446,7 @@ export default async function DashboardPage({
               const peakIdx   = full12.reduce((b, m, i) => m.revenue > full12[b].revenue ? i : b, 0);
               if (ytdTotal === 0) return null;
               return (
-                <section className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
+                <section className="panel-shadow flex flex-1 flex-col overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
                   {/* YTD summary header */}
                   <div className="grid grid-cols-2 divide-x divide-[var(--line)] border-b border-[var(--line)]">
                     <div className="px-3 py-2">
@@ -1665,8 +1665,8 @@ export default async function DashboardPage({
               </div>
             </section>
 
-            {/* Comms — full width, expanded */}
-            <section className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
+            {/* Comms — full width, expanded, flex-1 to reach column bottom */}
+            <section className="panel-shadow flex flex-1 flex-col overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
               <div className="flex items-center justify-between border-b border-[var(--line)] px-4 py-2.5">
                 <p className="text-sm font-semibold text-[var(--ink)]">Communications</p>
                 <Link href="/settings/notifications/outbox" className="text-[12px] font-semibold text-[var(--accent)]">Outbox →</Link>
