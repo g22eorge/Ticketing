@@ -329,7 +329,7 @@ export default async function JournalPage({
         </div>
       ) : (
         <details className="rounded-xl border border-[var(--line)] bg-[var(--panel)]">
-          <summary className="cursor-pointer list-none px-5 py-3.5 text-sm font-semibold text-[var(--ink)] hover:bg-[var(--panel-strong)]/40 rounded-xl">
+          <summary className="cursor-pointer list-none px-4 py-2.5 text-[13px] font-semibold text-[var(--ink)] hover:bg-[var(--panel-strong)]/40 group-open:border-b group-open:border-[var(--line)]">
             + New Journal Entry
           </summary>
           <NewJournalEntryForm accounts={accounts} createEntry={createEntry} />

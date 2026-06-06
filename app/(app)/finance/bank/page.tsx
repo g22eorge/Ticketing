@@ -221,7 +221,7 @@ export default async function BankPage({
 
       {/* ── ADD BANK ACCOUNT ─────────────────────────────────────────────── */}
       <details className="rounded-xl border border-[var(--line)] bg-[var(--panel)]">
-        <summary className="cursor-pointer px-5 py-3 text-sm font-semibold">
+        <summary className="cursor-pointer list-none px-4 py-2.5 text-[13px] font-semibold text-[var(--ink)] hover:bg-[var(--panel-strong)]/40 group-open:border-b group-open:border-[var(--line)]">
           + Add Bank Account
         </summary>
         <form
@@ -376,7 +376,7 @@ export default async function BankPage({
 
                 {/* ── ADD TRANSACTION ─────────────────────────────────── */}
                 <details className="rounded-xl border border-[var(--line)] bg-[var(--panel)]">
-                  <summary className="cursor-pointer px-4 py-2.5 text-sm font-semibold">
+                  <summary className="cursor-pointer list-none px-4 py-2.5 text-[13px] font-semibold text-[var(--ink)] hover:bg-[var(--panel-strong)]/40 group-open:border-b group-open:border-[var(--line)]">
                     + Add Transaction
                   </summary>
                   <form
