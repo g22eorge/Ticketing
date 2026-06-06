@@ -1485,7 +1485,7 @@ export default async function DashboardPage({
                     <span className="text-right text-[8.5px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Mg%</span>
                   </div>
                   {/* 12 rows — fixed height, scroll within the panel space */}
-                  <div className="flex-1 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                  <div className="flex-1 min-h-0 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                     {full12.map((m, i) => {
                       const isPeak  = i === peakIdx;
                       const barPct  = Math.round((m.revenue / maxRev) * 100);
