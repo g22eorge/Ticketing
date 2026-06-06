@@ -1387,63 +1387,75 @@ export default async function DashboardPage({
               })()}
             </section>
 
-            {/* YTD Monthly Breakdown — row-per-month, revenue + margin + bar */}
-            {revenueTrend.some((m) => m.revenue > 0) && (() => {
-              const maxRev = Math.max(...revenueTrend.map(m => m.revenue), 1);
-              const ytdTotal  = revenueTrend.reduce((s, m) => s + m.revenue, 0);
-              const ytdMargin = revenueTrend.reduce((s, m) => s + m.margin,  0);
-              const peakIdx   = revenueTrend.reduce((b, m, i) => m.revenue > revenueTrend[b].revenue ? i : b, 0);
+            {/* YTD — always all 12 months, fixed-height rows, no scroll */}
+            {(() => {
+              // Build a full Jan-Dec array regardless of how many months have data
+              const year = today.getFullYear();
               const MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+              const full12 = MON.map((label, idx) => {
+                const key = `${year}-${String(idx + 1).padStart(2, "0")}`;
+                const found = revenueTrend.find(m => m.key === key);
+                return { label, key, revenue: found?.revenue ?? 0, margin: found?.margin ?? 0, future: !found };
+              });
+              const maxRev    = Math.max(...full12.map(m => m.revenue), 1);
+              const ytdTotal  = full12.reduce((s, m) => s + m.revenue, 0);
+              const ytdMargin = full12.reduce((s, m) => s + m.margin,  0);
+              const peakIdx   = full12.reduce((b, m, i) => m.revenue > full12[b].revenue ? i : b, 0);
+              if (ytdTotal === 0) return null;
               return (
                 <section className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
-                  {/* Summary header */}
+                  {/* YTD summary header */}
                   <div className="grid grid-cols-2 divide-x divide-[var(--line)] border-b border-[var(--line)]">
                     <div className="px-3 py-2">
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[var(--ink-muted)]">YTD Revenue</p>
-                      <p className="text-[15px] font-black tabular-nums text-[var(--accent)] leading-snug">{formatMoneyCompact(ytdTotal, currency)}</p>
+                      <p className="text-[9px] font-bold uppercase tracking-[0.1em] text-[var(--ink-muted)]">YTD Revenue</p>
+                      <p className="text-[14px] font-black tabular-nums leading-tight text-[var(--accent)]">{formatMoneyCompact(ytdTotal, currency)}</p>
                     </div>
                     <div className="px-3 py-2">
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[var(--ink-muted)]">YTD Margin</p>
-                      <p className={`text-[15px] font-black tabular-nums leading-snug ${ytdMargin >= 0 ? "text-emerald-600" : "text-red-500"}`}>{formatMoneyCompact(ytdMargin, currency)}</p>
+                      <p className="text-[9px] font-bold uppercase tracking-[0.1em] text-[var(--ink-muted)]">YTD Margin</p>
+                      <p className={`text-[14px] font-black tabular-nums leading-tight ${ytdMargin >= 0 ? "text-emerald-600" : "text-red-500"}`}>{formatMoneyCompact(ytdMargin, currency)}</p>
                     </div>
                   </div>
-                  {/* Column headers */}
-                  <div className="grid grid-cols-[2rem_1fr_1fr_2.5rem] gap-x-2 border-b border-[var(--line)] px-3 py-1">
-                    <p className="text-[9px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Mo</p>
-                    <p className="text-[9px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Revenue</p>
-                    <p className="text-[9px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Margin</p>
-                    <p className="text-[9px] font-bold uppercase tracking-wide text-[var(--ink-muted)] text-right">%</p>
+                  {/* Col headings */}
+                  <div className="grid grid-cols-[1.8rem_1fr_2.5rem] items-center border-b border-[var(--line)] px-3 py-[3px]">
+                    <span className="text-[8.5px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Mo</span>
+                    <span className="text-[8.5px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Rev · Margin</span>
+                    <span className="text-right text-[8.5px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Mg%</span>
                   </div>
-                  {/* Month rows */}
-                  <div className="divide-y divide-[var(--line)]">
-                    {revenueTrend.map((m, i) => {
-                      const mon     = MON[(parseInt(m.key.slice(5)) - 1) % 12];
+                  {/* 12 fixed rows */}
+                  <div>
+                    {full12.map((m, i) => {
                       const isPeak  = i === peakIdx;
-                      const hasData = m.revenue > 0;
                       const barPct  = Math.round((m.revenue / maxRev) * 100);
                       const mrgPct  = m.revenue > 0 ? Math.round((m.margin / m.revenue) * 100) : null;
                       return (
                         <div key={m.key}
-                          className={`grid grid-cols-[2rem_1fr_1fr_2.5rem] items-center gap-x-2 px-3 py-[5px] ${isPeak ? "bg-[var(--accent)]/5" : !hasData ? "opacity-35" : ""}`}>
+                          className={`grid grid-cols-[1.8rem_1fr_2.5rem] items-center gap-x-2 px-3 py-[4px] ${i < 11 ? "border-b border-[var(--line)]" : ""} ${isPeak ? "bg-[var(--accent)]/6" : ""}`}>
                           {/* Month */}
-                          <p className={`text-[11px] font-bold ${isPeak ? "text-[var(--accent)]" : "text-[var(--ink-muted)]"}`}>{mon}</p>
-                          {/* Revenue with inline bar */}
-                          <div className="flex flex-col gap-[2px]">
-                            <p className={`text-[11px] font-black tabular-nums leading-none ${isPeak ? "text-[var(--accent)]" : hasData ? "text-[var(--ink)]" : "text-[var(--ink-muted)]"}`}>
-                              {hasData ? formatMoneyCompact(m.revenue, currency) : "—"}
-                            </p>
-                            <div className="h-[3px] overflow-hidden rounded-full bg-[var(--panel-strong)]">
-                              <div className={`h-full rounded-full ${isPeak ? "bg-[var(--accent)]" : "bg-[var(--accent)]/40"}`} style={{ width: `${barPct}%` }} />
+                          <span className={`text-[10px] font-bold ${isPeak ? "text-[var(--accent)]" : m.future ? "text-[var(--ink-muted)]/35" : "text-[var(--ink-muted)]"}`}>{m.label}</span>
+                          {/* Revenue + bar + margin inline */}
+                          <div className="flex min-w-0 flex-col gap-[2px]">
+                            <div className="flex items-baseline gap-1.5">
+                              <span className={`text-[11px] font-black tabular-nums leading-none ${isPeak ? "text-[var(--accent)]" : m.future ? "text-[var(--ink-muted)]/30" : "text-[var(--ink)]"}`}>
+                                {m.revenue > 0 ? formatMoneyCompact(m.revenue, currency) : "—"}
+                              </span>
+                              {m.margin !== 0 && (
+                                <span className={`text-[9.5px] tabular-nums leading-none ${m.margin >= 0 ? "text-emerald-600" : "text-red-500"}`}>
+                                  {formatMoneyCompact(m.margin, currency)}
+                                </span>
+                              )}
+                            </div>
+                            {/* Dual stacked bar: revenue (accent) + margin (emerald) overlay */}
+                            <div className="relative h-[2.5px] overflow-hidden rounded-full bg-[var(--panel-strong)]">
+                              <div className={`absolute inset-y-0 left-0 rounded-full ${isPeak ? "bg-[var(--accent)]" : "bg-[var(--accent)]/35"}`} style={{ width: `${barPct}%` }} />
+                              {m.revenue > 0 && m.margin > 0 && (
+                                <div className="absolute inset-y-0 left-0 rounded-full bg-emerald-500/60" style={{ width: `${Math.round((m.margin / maxRev) * 100)}%` }} />
+                              )}
                             </div>
                           </div>
-                          {/* Margin */}
-                          <p className={`text-[11px] tabular-nums leading-none ${!hasData ? "text-[var(--ink-muted)]" : m.margin >= 0 ? "text-emerald-600" : "text-red-500"}`}>
-                            {hasData ? formatMoneyCompact(m.margin, currency) : "—"}
-                          </p>
                           {/* Margin % */}
-                          <p className={`text-right text-[10px] font-semibold tabular-nums ${mrgPct !== null && mrgPct >= 0 ? "text-emerald-600" : "text-red-400"}`}>
-                            {mrgPct !== null ? `${mrgPct}%` : ""}
-                          </p>
+                          <span className={`text-right text-[10px] font-semibold tabular-nums ${mrgPct === null ? "text-[var(--ink-muted)]/20" : mrgPct >= 0 ? "text-emerald-600" : "text-red-400"}`}>
+                            {mrgPct !== null ? `${mrgPct}%` : "—"}
+                          </span>
                         </div>
                       );
                     })}
