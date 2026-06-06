@@ -88,6 +88,14 @@ export default async function LeadDetailPage({
   const canEdit = can.createLeads(user);
   const currency = getAppCurrency();
 
+  const orgUsers = can.viewAllSales(user)
+    ? await prisma.user.findMany({
+        where: { orgId, isActive: true },
+        select: { id: true, name: true },
+        orderBy: { name: "asc" },
+      }).catch(() => [])
+    : [];
+
   async function updateStatusAction(formData: FormData) {
     "use server";
     const status = String(formData.get("status") ?? "") as LeadStatus;
@@ -117,6 +125,7 @@ export default async function LeadDetailPage({
         notes: String(formData.get("notes") ?? ""),
         estimatedValue: Number(formData.get("estimatedValue") || 0) || undefined,
         followUpAt: String(formData.get("followUpAt") ?? ""),
+        assignedToId: String(formData.get("assignedToId") ?? "") || undefined,
       });
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Failed to update lead";
@@ -225,6 +234,17 @@ export default async function LeadDetailPage({
                   Follow-up
                   <input name="followUpAt" type="date" defaultValue={lead.followUpAt ? lead.followUpAt.toISOString().slice(0, 10) : ""} className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm font-normal text-[var(--ink)] outline-none focus:border-[var(--accent)]/50" />
                 </label>
+                {orgUsers.length > 0 ? (
+                  <label className="space-y-1 text-[12px] font-semibold text-[var(--ink-muted)]">
+                    Assigned To
+                    <select name="assignedToId" defaultValue={lead.assignedToId ?? ""} className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm font-normal text-[var(--ink)] outline-none focus:border-[var(--accent)]/50">
+                      <option value="">Unassigned</option>
+                      {orgUsers.map((u) => (
+                        <option key={u.id} value={u.id}>{u.name}</option>
+                      ))}
+                    </select>
+                  </label>
+                ) : null}
                 <label className="space-y-1 text-[12px] font-semibold text-[var(--ink-muted)] md:col-span-2">
                   Interest
                   <input name="interest" defaultValue={lead.interest ?? ""} className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm font-normal text-[var(--ink)] outline-none focus:border-[var(--accent)]/50" />

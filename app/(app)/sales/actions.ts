@@ -22,6 +22,7 @@ const createLeadSchema = z.object({
   notes: z.string().optional(),
   assignedToId: z.string().optional(),
   estimatedValue: z.coerce.number().optional(),
+  followUpAt: z.string().optional(),
 });
 
 const updateLeadDetailsSchema = z.object({
@@ -34,6 +35,7 @@ const updateLeadDetailsSchema = z.object({
   notes: z.string().optional(),
   estimatedValue: z.coerce.number().optional(),
   followUpAt: z.string().optional(),
+  assignedToId: z.string().optional(),
 });
 
 export async function createLead(data: {
@@ -46,6 +48,7 @@ export async function createLead(data: {
   notes?: string;
   assignedToId?: string;
   estimatedValue?: number;
+  followUpAt?: string;
 }) {
   const { user, orgId } = await requireOrgSession();
   if (!can.createLeads(user)) {
@@ -73,6 +76,7 @@ export async function createLead(data: {
       notes: sanitizeOptionalText(parsed.data.notes),
       assignedToId: parsed.data.assignedToId || null,
       estimatedValue: parsed.data.estimatedValue ?? null,
+      followUpAt: parsed.data.followUpAt ? new Date(parsed.data.followUpAt) : null,
       createdById: user.id,
     },
   });
@@ -152,6 +156,7 @@ export async function updateLeadDetails(
     notes?: string;
     estimatedValue?: number;
     followUpAt?: string;
+    assignedToId?: string;
   },
 ) {
   const { user, orgId } = await requireOrgSession();
@@ -173,6 +178,11 @@ export async function updateLeadDetails(
   const existing = await prisma.lead.findFirst({ where: leadAccessWhere, select: { id: true } });
   if (!existing) throw new Error("Lead not found");
 
+  if (parsed.data.assignedToId) {
+    const assignee = await prisma.user.findFirst({ where: { id: parsed.data.assignedToId, orgId }, select: { id: true } });
+    if (!assignee) throw new Error("Assigned user not found");
+  }
+
   const validSources: LeadSource[] = ["WALK_IN", "REFERRAL", "PHONE", "SOCIAL_MEDIA", "WEBSITE", "OTHER"];
   const source = validSources.includes(parsed.data.source as LeadSource)
     ? parsed.data.source as LeadSource
@@ -191,6 +201,7 @@ export async function updateLeadDetails(
       notes: sanitizeOptionalText(parsed.data.notes),
       estimatedValue: parsed.data.estimatedValue ?? null,
       followUpAt: followUpAt && !Number.isNaN(followUpAt.getTime()) ? followUpAt : null,
+      assignedToId: parsed.data.assignedToId ?? undefined,
     },
   });
 

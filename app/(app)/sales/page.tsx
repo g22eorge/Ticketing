@@ -309,11 +309,21 @@ export default async function SalesPage({
 
   const showNewLead = filters.newLead === "1" || Boolean(filters.createError);
 
+  // Org users for assign-to dropdown (admins + sales roles)
+  const orgUsers = can.viewAllSales(user)
+    ? await prisma.user.findMany({
+        where: { orgId: user.orgId, isActive: true },
+        select: { id: true, name: true },
+        orderBy: { name: "asc" },
+      }).catch(() => [])
+    : [];
+
   async function createLeadAction(formData: FormData) {
     "use server";
     const rawSource = String(formData.get("source") ?? "WALK_IN");
     const validSources: LeadSource[] = ["WALK_IN", "REFERRAL", "PHONE", "SOCIAL_MEDIA", "WEBSITE", "OTHER"];
     const source = validSources.includes(rawSource as LeadSource) ? (rawSource as LeadSource) : "WALK_IN";
+    const followUpRaw = String(formData.get("followUpAt") ?? "");
     try {
       await createLead({
         fullName:       String(formData.get("fullName") ?? ""),
@@ -324,6 +334,8 @@ export default async function SalesPage({
         source,
         notes:          String(formData.get("notes") ?? "") || undefined,
         estimatedValue: formData.get("estimatedValue") ? Number(formData.get("estimatedValue")) : undefined,
+        assignedToId:   String(formData.get("assignedToId") ?? "") || undefined,
+        followUpAt:     followUpRaw || undefined,
       });
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Failed to create lead";
@@ -734,6 +746,23 @@ export default async function SalesPage({
                       <option value="WEBSITE">Website</option>
                       <option value="OTHER">Other</option>
                     </select>
+                    {orgUsers.length > 0 ? (
+                      <select
+                        name="assignedToId"
+                        className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm outline-none focus:border-[var(--accent)]/50"
+                      >
+                        <option value="">Assign to…</option>
+                        {orgUsers.map((u) => (
+                          <option key={u.id} value={u.id}>{u.name}</option>
+                        ))}
+                      </select>
+                    ) : null}
+                    <input
+                      name="followUpAt"
+                      type="date"
+                      title="Follow-up date"
+                      className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/15"
+                    />
                     <textarea
                       name="notes"
                       placeholder="Notes"
@@ -788,6 +817,10 @@ export default async function SalesPage({
                           <div className="flex items-center gap-2 text-[13px] text-[var(--ink-muted)]">
                             <span>{lead.phone}</span>
                             {lead.organization ? <><span className="opacity-40">·</span><span className="truncate">{lead.organization}</span></> : null}
+                          </div>
+                          <div className="mt-0.5 flex items-center gap-2 text-[12px] text-[var(--ink-muted)]">
+                            {lead.assignedTo ? <span>👤 {lead.assignedTo.name}</span> : <span className="opacity-40">Unassigned</span>}
+                            {lead.createdBy ? <><span className="opacity-30">·</span><span>by {lead.createdBy.name}</span></> : null}
                           </div>
                           {(lead.estimatedValue != null || lead.followUpAt) && (
                             <div className="mt-1.5 flex items-center gap-3 text-[13px]">
@@ -849,6 +882,7 @@ export default async function SalesPage({
                         <th className="px-4 py-2.5">Source</th>
                         <th className="px-4 py-2.5">Status</th>
                         <th className="px-4 py-2.5">Assigned To</th>
+                        <th className="px-4 py-2.5">Created By</th>
                         <th className="px-4 py-2.5">Est. Value</th>
                         <th className="px-4 py-2.5">Follow-up</th>
                         <th className="px-4 py-2.5 text-right">Actions</th>
@@ -871,6 +905,7 @@ export default async function SalesPage({
                               </span>
                             </td>
                             <td className="px-4 py-3 text-[var(--ink-muted)]">{lead.assignedTo?.name ?? <span className="opacity-40">—</span>}</td>
+                            <td className="px-4 py-3 text-[var(--ink-muted)]">{lead.createdBy?.name ?? <span className="opacity-40">—</span>}</td>
                             <td className="px-4 py-3 font-medium text-[var(--ink)]">
                               {lead.estimatedValue != null ? formatMoney(lead.estimatedValue, currency) : <span className="opacity-40 font-normal">—</span>}
                             </td>
