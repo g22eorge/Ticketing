@@ -1484,15 +1484,15 @@ export default async function DashboardPage({
                     <span className="text-[8.5px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Rev · Margin</span>
                     <span className="text-right text-[8.5px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Mg%</span>
                   </div>
-                  {/* 12 fixed rows — flex-1 container stretches to fill remaining panel height */}
-                  <div className="flex flex-1 flex-col">
+                  {/* 12 rows — fixed height, scroll within the panel space */}
+                  <div className="flex-1 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                     {full12.map((m, i) => {
                       const isPeak  = i === peakIdx;
                       const barPct  = Math.round((m.revenue / maxRev) * 100);
                       const mrgPct  = m.revenue > 0 ? Math.round((m.margin / m.revenue) * 100) : null;
                       return (
                         <div key={m.key}
-                          className={`flex-1 grid grid-cols-[1.8rem_1fr_2.5rem] items-center gap-x-2 px-3 ${i < 11 ? "border-b border-[var(--line)]" : ""} ${isPeak ? "bg-[var(--accent)]/6" : ""}`}>
+                          className={`grid grid-cols-[1.8rem_1fr_2.5rem] items-center gap-x-2 px-3 py-[5px] ${i < 11 ? "border-b border-[var(--line)]" : ""} ${isPeak ? "bg-[var(--accent)]/6" : ""}`}>
                           {/* Month */}
                           <span className={`text-[10px] font-bold ${isPeak ? "text-[var(--accent)]" : m.future ? "text-[var(--ink-muted)]/35" : "text-[var(--ink-muted)]"}`}>{m.label}</span>
                           {/* Revenue + bar + margin inline */}
