@@ -223,26 +223,26 @@ export default async function TechniciansPage({
       </div>
 
       {/* ── Technician KPI tiles ── */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
           <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Total Technicians</p>
-          <p className="mt-1 text-xl font-bold tabular-nums text-[var(--ink)]">{totalTechs}</p>
-          <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">internal + external</p>
+          <p className="mt-1 text-lg font-bold tabular-nums text-[var(--ink)]">{totalTechs}</p>
+          <p className="mt-0.5 text-[12px] text-[var(--ink-muted)]">internal + external</p>
         </div>
-        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
+        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
           <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Internal</p>
-          <p className="mt-1 text-xl font-bold tabular-nums text-[var(--ink)]">{internalCount}</p>
-          <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">in-house staff</p>
+          <p className="mt-1 text-lg font-bold tabular-nums text-[var(--ink)]">{internalCount}</p>
+          <p className="mt-0.5 text-[12px] text-[var(--ink-muted)]">in-house staff</p>
         </div>
-        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
+        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
           <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">External</p>
-          <p className="mt-1 text-xl font-bold tabular-nums text-[var(--ink)]">{externalCount}</p>
-          <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">contractors</p>
+          <p className="mt-1 text-lg font-bold tabular-nums text-[var(--ink)]">{externalCount}</p>
+          <p className="mt-0.5 text-[12px] text-[var(--ink-muted)]">contractors</p>
         </div>
-        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
+        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
           <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Jobs Assigned This Month</p>
-          <p className="mt-1 text-xl font-bold tabular-nums text-[var(--ink)]">{assignedThisMonth}</p>
-          <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">this month</p>
+          <p className="mt-1 text-lg font-bold tabular-nums text-[var(--ink)]">{assignedThisMonth}</p>
+          <p className="mt-0.5 text-[12px] text-[var(--ink-muted)]">this month</p>
         </div>
       </div>
 

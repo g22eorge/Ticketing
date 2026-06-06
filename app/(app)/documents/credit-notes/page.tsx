@@ -326,25 +326,6 @@ export default async function CreditNotesPage({
             )}
           </div>
         </div>
-        {/* KPI tiles */}
-        <div className="grid grid-cols-2 divide-x divide-y divide-[var(--line)] sm:grid-cols-4 sm:divide-y-0">
-          <div className="px-4 py-2.5">
-            <p className="text-[13px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">Total</p>
-            <p className="text-[15px] font-black tabular-nums leading-tight text-[var(--ink)]">{creditNotes.length}</p>
-          </div>
-          <div className={`px-4 py-2.5 ${pendingReturn > 0 ? "bg-amber-50/50 dark:bg-amber-950/20" : ""}`}>
-            <p className="text-[13px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">Pending Return</p>
-            <p className={`text-[15px] font-black tabular-nums leading-tight ${pendingReturn > 0 ? "text-amber-600" : "text-[var(--ink)]"}`}>{pendingReturn}</p>
-          </div>
-          <div className="px-4 py-2.5">
-            <p className="text-[13px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">Total Value</p>
-            <p className="text-[15px] font-black tabular-nums leading-tight text-[var(--ink)]">{formatMoney(totalValue, currency)}</p>
-          </div>
-          <div className="px-4 py-2.5">
-            <p className="text-[13px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">Total Refunded</p>
-            <p className="text-[15px] font-black tabular-nums leading-tight text-[var(--accent)]">{formatMoney(totalRefunded, currency)}</p>
-          </div>
-        </div>
       </div>
 
       {/* KPI strip */}
