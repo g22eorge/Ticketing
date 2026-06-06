@@ -1315,8 +1315,8 @@ export default async function DashboardPage({
               </div>
             </section>
 
-            {/* Bank Accounts — fills remaining left-column height */}
-            {bankAccounts.length > 0 && (() => {
+            {/* Bank Accounts — always rendered with flex-1 to fill remaining left-column height */}
+            {(() => {
               const totalCash = bankAccounts.reduce((s, a) => s + a.currentBalance, 0);
               return (
                 <section className="panel-shadow flex flex-1 flex-col overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
@@ -1324,35 +1324,45 @@ export default async function DashboardPage({
                     <p className="text-sm font-semibold text-[var(--ink)]">Bank accounts</p>
                     <Link href="/finance/bank" className="text-[12px] font-semibold text-[var(--accent)]">View →</Link>
                   </div>
-                  <div className="divide-y divide-[var(--line)]">
-                    {bankAccounts.map((acct) => {
-                      const pct = totalCash > 0 ? Math.round((acct.currentBalance / totalCash) * 100) : 0;
-                      const isPositive = acct.currentBalance >= 0;
-                      return (
-                        <Link key={acct.name} href="/finance/bank"
-                          className="flex flex-col gap-1.5 px-4 py-2.5 transition hover:bg-[var(--panel-strong)]">
-                          <div className="flex items-center justify-between">
-                            <p className="text-[12px] font-medium text-[var(--ink)] truncate max-w-[55%]">{acct.name}</p>
-                            <p className={`text-[13px] font-black tabular-nums ${isPositive ? "text-[var(--ink)]" : "text-red-500"}`}>
-                              {formatMoneyCompact(acct.currentBalance, currency)}
-                            </p>
-                          </div>
-                          {/* Share-of-total bar */}
-                          <div className="flex items-center gap-2">
-                            <div className="h-[3px] flex-1 overflow-hidden rounded-full bg-[var(--panel-strong)]">
-                              <div className={`h-full rounded-full ${isPositive ? "bg-sky-500" : "bg-red-400"}`} style={{ width: `${Math.max(2, pct)}%` }} />
-                            </div>
-                            <span className="shrink-0 text-[10px] text-[var(--ink-muted)]">{pct}%</span>
-                          </div>
-                        </Link>
-                      );
-                    })}
-                  </div>
-                  {/* Total cash row */}
-                  <div className="flex items-center justify-between border-t border-[var(--line)] bg-[var(--panel-strong)] px-4 py-2">
-                    <p className="text-[11px] font-semibold text-[var(--ink-muted)]">Total cash</p>
-                    <p className={`text-[13px] font-black tabular-nums ${totalCash >= 0 ? "text-sky-600" : "text-red-500"}`}>{formatMoneyCompact(totalCash, currency)}</p>
-                  </div>
+                  {bankAccounts.length === 0 ? (
+                    <div className="flex flex-1 flex-col items-center justify-center gap-2 px-4 py-6 text-center">
+                      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--ink-muted)]/40"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18"/><path d="M7 15h2"/><path d="M12 15h5"/></svg>
+                      <p className="text-[12px] text-[var(--ink-muted)]">No bank accounts linked</p>
+                      <Link href="/finance/bank" className="text-[11px] font-semibold text-[var(--accent)] hover:underline">Add account →</Link>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="divide-y divide-[var(--line)]">
+                        {bankAccounts.map((acct) => {
+                          const pct = totalCash > 0 ? Math.round((acct.currentBalance / totalCash) * 100) : 0;
+                          const isPositive = acct.currentBalance >= 0;
+                          return (
+                            <Link key={acct.name} href="/finance/bank"
+                              className="flex flex-col gap-1.5 px-4 py-2.5 transition hover:bg-[var(--panel-strong)]">
+                              <div className="flex items-center justify-between">
+                                <p className="text-[12px] font-medium text-[var(--ink)] truncate max-w-[55%]">{acct.name}</p>
+                                <p className={`text-[13px] font-black tabular-nums ${isPositive ? "text-[var(--ink)]" : "text-red-500"}`}>
+                                  {formatMoneyCompact(acct.currentBalance, currency)}
+                                </p>
+                              </div>
+                              {/* Share-of-total bar */}
+                              <div className="flex items-center gap-2">
+                                <div className="h-[3px] flex-1 overflow-hidden rounded-full bg-[var(--panel-strong)]">
+                                  <div className={`h-full rounded-full ${isPositive ? "bg-sky-500" : "bg-red-400"}`} style={{ width: `${Math.max(2, pct)}%` }} />
+                                </div>
+                                <span className="shrink-0 text-[10px] text-[var(--ink-muted)]">{pct}%</span>
+                              </div>
+                            </Link>
+                          );
+                        })}
+                      </div>
+                      {/* Total cash row */}
+                      <div className="flex items-center justify-between border-t border-[var(--line)] bg-[var(--panel-strong)] px-4 py-2">
+                        <p className="text-[11px] font-semibold text-[var(--ink-muted)]">Total cash</p>
+                        <p className={`text-[13px] font-black tabular-nums ${totalCash >= 0 ? "text-sky-600" : "text-red-500"}`}>{formatMoneyCompact(totalCash, currency)}</p>
+                      </div>
+                    </>
+                  )}
                 </section>
               );
             })()}
