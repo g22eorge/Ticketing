@@ -1464,15 +1464,15 @@ export default async function DashboardPage({
                     <span className="text-[8.5px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Rev · Margin</span>
                     <span className="text-right text-[8.5px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Mg%</span>
                   </div>
-                  {/* 12 fixed rows */}
-                  <div>
+                  {/* 12 fixed rows — flex-1 container stretches to fill remaining panel height */}
+                  <div className="flex flex-1 flex-col">
                     {full12.map((m, i) => {
                       const isPeak  = i === peakIdx;
                       const barPct  = Math.round((m.revenue / maxRev) * 100);
                       const mrgPct  = m.revenue > 0 ? Math.round((m.margin / m.revenue) * 100) : null;
                       return (
                         <div key={m.key}
-                          className={`grid grid-cols-[1.8rem_1fr_2.5rem] items-center gap-x-2 px-3 py-[4px] ${i < 11 ? "border-b border-[var(--line)]" : ""} ${isPeak ? "bg-[var(--accent)]/6" : ""}`}>
+                          className={`flex-1 grid grid-cols-[1.8rem_1fr_2.5rem] items-center gap-x-2 px-3 ${i < 11 ? "border-b border-[var(--line)]" : ""} ${isPeak ? "bg-[var(--accent)]/6" : ""}`}>
                           {/* Month */}
                           <span className={`text-[10px] font-bold ${isPeak ? "text-[var(--accent)]" : m.future ? "text-[var(--ink-muted)]/35" : "text-[var(--ink-muted)]"}`}>{m.label}</span>
                           {/* Revenue + bar + margin inline */}
@@ -1608,112 +1608,80 @@ export default async function DashboardPage({
               {/* 3-stat summary row */}
               <div className="grid grid-cols-3 divide-x divide-[var(--line)] border-b border-[var(--line)]">
                 {([
-                  { label: "Tracked",  value: lowStockParts.length, tone: "text-[var(--ink)]",   dot: "bg-sky-500" },
-                  { label: "Low",      value: lowStockItems.length, tone: lowStockItems.length > 0 ? "text-amber-500" : "text-[var(--ink-muted)]", dot: "bg-amber-500" },
-                  { label: "Out",      value: outOfStockCount,      tone: outOfStockCount > 0 ? "text-red-500" : "text-[var(--ink-muted)]",        dot: "bg-red-500" },
+                  { label: "Tracked", value: lowStockParts.length, tone: "text-[var(--ink)]",   dot: "bg-sky-500",   href: "/inventory" },
+                  { label: "Low",     value: lowStockItems.length, tone: lowStockItems.length > 0 ? "text-amber-500" : "text-[var(--ink-muted)]", dot: "bg-amber-500", href: "/inventory?filter=low" },
+                  { label: "Out",     value: outOfStockCount,      tone: outOfStockCount > 0 ? "text-red-500" : "text-[var(--ink-muted)]",        dot: "bg-red-500",   href: "/inventory?filter=out" },
                 ] as const).map((s) => (
-                  <div key={s.label} className="flex flex-col items-center py-2.5 gap-0.5">
-                    <p className={`text-[20px] font-black tabular-nums leading-none ${s.tone}`}>{s.value}</p>
+                  <Link key={s.label} href={s.href} className="flex flex-col items-center gap-0.5 py-3 transition hover:bg-[var(--panel-strong)]">
+                    <p className={`text-[22px] font-black tabular-nums leading-none ${s.tone}`}>{s.value}</p>
                     <div className="flex items-center gap-1">
                       <span className={`h-1.5 w-1.5 rounded-full ${s.dot}`} />
                       <p className="text-[10px] text-[var(--ink-muted)]">{s.label}</p>
                     </div>
-                  </div>
+                  </Link>
                 ))}
               </div>
-              {/* Low-stock items list */}
-              {lowStockItems.length > 0 ? (
-                <div className="divide-y divide-[var(--line)]">
-                  {lowStockItems.slice(0, 6).map((part) => {
-                    const pct = part.reorderLevel > 0 ? Math.min(100, Math.round((part.qtyOnHand / part.reorderLevel) * 100)) : 0;
-                    const isEmpty = part.qtyOnHand <= 0;
-                    return (
-                      <Link key={part.id} href="/inventory" className="flex items-center gap-3 px-4 py-2.5 transition hover:bg-[var(--panel-strong)]">
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-[12px] font-semibold text-[var(--ink)]">{part.name}</p>
-                          <div className="mt-1 h-[3px] overflow-hidden rounded-full bg-[var(--panel-strong)]">
-                            <div className={`h-full rounded-full ${isEmpty ? "bg-red-500" : "bg-amber-500"}`} style={{ width: `${Math.max(2, pct)}%` }} />
-                          </div>
-                        </div>
-                        <div className="shrink-0 text-right">
-                          <p className={`text-[12px] font-black tabular-nums ${isEmpty ? "text-red-500" : "text-amber-500"}`}>{part.qtyOnHand}</p>
-                          <p className="text-[9px] text-[var(--ink-muted)]">min {part.reorderLevel}</p>
-                        </div>
-                      </Link>
-                    );
-                  })}
-                  {lowStockItems.length > 6 && (
-                    <Link href="/inventory" className="block px-4 py-2 text-center text-[11px] font-semibold text-[var(--accent)] transition hover:bg-[var(--panel-strong)]">
-                      +{lowStockItems.length - 6} more items →
-                    </Link>
-                  )}
-                </div>
-              ) : (
-                <div className="flex flex-col items-center gap-1 py-5">
-                  <p className="text-[13px] font-semibold text-emerald-600">All stock healthy</p>
-                  <p className="text-[11px] text-[var(--ink-muted)]">No items below reorder level</p>
-                </div>
+              {/* Low-stock alert rows — up to 3 items, compact */}
+              {lowStockItems.slice(0, 3).map((part) => {
+                const isEmpty = part.qtyOnHand <= 0;
+                const pct = part.reorderLevel > 0 ? Math.min(100, Math.round((part.qtyOnHand / part.reorderLevel) * 100)) : 0;
+                return (
+                  <Link key={part.id} href="/inventory"
+                    className="flex items-center gap-2.5 border-t border-[var(--line)] px-4 py-2 transition hover:bg-[var(--panel-strong)]">
+                    <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${isEmpty ? "bg-red-500" : "bg-amber-500"}`} />
+                    <p className="min-w-0 flex-1 truncate text-[11px] text-[var(--ink)]">{part.name}</p>
+                    <div className="w-12 shrink-0">
+                      <div className="h-[2px] overflow-hidden rounded-full bg-[var(--panel-strong)]">
+                        <div className={`h-full rounded-full ${isEmpty ? "bg-red-500" : "bg-amber-500"}`} style={{ width: `${Math.max(2, pct)}%` }} />
+                      </div>
+                    </div>
+                    <p className={`w-6 shrink-0 text-right text-[11px] font-bold tabular-nums ${isEmpty ? "text-red-500" : "text-amber-500"}`}>{part.qtyOnHand}</p>
+                  </Link>
+                );
+              })}
+              {lowStockItems.length > 3 && (
+                <Link href="/inventory" className="block border-t border-[var(--line)] px-4 py-1.5 text-center text-[10px] font-semibold text-[var(--accent)] transition hover:bg-[var(--panel-strong)]">
+                  +{lowStockItems.length - 3} more →
+                </Link>
               )}
-              {/* Footer: quick links */}
-              <div className="grid grid-cols-2 divide-x divide-[var(--line)] border-t border-[var(--line)]">
-                <Link href="/inventory/purchase-orders" className="flex items-center justify-center gap-1.5 py-2 text-[11px] font-semibold text-[var(--ink-muted)] transition hover:bg-[var(--panel-strong)] hover:text-[var(--accent)]">
-                  Purchase orders
-                </Link>
-                <Link href="/inventory/suppliers" className="flex items-center justify-center gap-1.5 py-2 text-[11px] font-semibold text-[var(--ink-muted)] transition hover:bg-[var(--panel-strong)] hover:text-[var(--accent)]">
-                  Suppliers
-                </Link>
-              </div>
             </section>
 
-            {/* Comms — full width, expanded, flex-1 to reach column bottom */}
+            {/* Comms — trimmed, flex-1 to reach column bottom */}
             <section className="panel-shadow flex flex-1 flex-col overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
               <div className="flex items-center justify-between border-b border-[var(--line)] px-4 py-2.5">
                 <p className="text-sm font-semibold text-[var(--ink)]">Communications</p>
                 <Link href="/settings/notifications/outbox" className="text-[12px] font-semibold text-[var(--accent)]">Outbox →</Link>
               </div>
-              {/* Outbox health — big status */}
-              <div className={`flex items-center gap-3 border-b border-[var(--line)] px-4 py-3 ${failedOutboxCount > 0 ? "bg-rose-500/5" : "bg-emerald-500/5"}`}>
-                <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${failedOutboxCount > 0 ? "bg-rose-500/15" : "bg-emerald-500/15"}`}>
-                  {failedOutboxCount > 0 ? (
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-rose-500"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
-                  ) : (
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-500"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>
-                  )}
-                </span>
-                <div className="flex-1">
-                  <p className={`text-[13px] font-bold ${failedOutboxCount > 0 ? "text-rose-600" : "text-emerald-600"}`}>
-                    {failedOutboxCount > 0 ? `${failedOutboxCount} message${failedOutboxCount > 1 ? "s" : ""} failed` : "All messages delivered"}
-                  </p>
-                  <p className="text-[11px] text-[var(--ink-muted)]">{failedOutboxCount > 0 ? "Check outbox for errors" : "Outbox healthy"}</p>
-                </div>
+              {/* Outbox health status */}
+              <div className={`flex items-center gap-2.5 border-b border-[var(--line)] px-4 py-2.5 ${failedOutboxCount > 0 ? "bg-rose-500/5" : "bg-emerald-500/5"}`}>
+                <span className={`h-2 w-2 shrink-0 rounded-full ${failedOutboxCount > 0 ? "bg-rose-500" : "bg-emerald-500"}`} />
+                <p className={`flex-1 text-[12px] font-semibold ${failedOutboxCount > 0 ? "text-rose-600" : "text-emerald-600"}`}>
+                  {failedOutboxCount > 0 ? `${failedOutboxCount} message${failedOutboxCount > 1 ? "s" : ""} failed` : "Outbox healthy"}
+                </p>
                 {failedOutboxCount > 0 && (
-                  <Link href="/settings/notifications/outbox" className="shrink-0 rounded-lg bg-rose-500/10 px-2.5 py-1 text-[11px] font-bold text-rose-600 transition hover:bg-rose-500/20">Fix</Link>
+                  <Link href="/settings/notifications/outbox" className="shrink-0 rounded-md bg-rose-500/12 px-2 py-0.5 text-[10px] font-bold text-rose-600 transition hover:bg-rose-500/20">Fix</Link>
                 )}
               </div>
-              {/* Channel rows */}
+              {/* Compact channel links */}
               <div className="divide-y divide-[var(--line)]">
                 {([
-                  { dot: "bg-emerald-500", label: "WhatsApp",         sub: "Provider config",        href: "/settings/notifications/whatsapp" },
-                  { dot: "bg-sky-500",     label: "Outbox",           sub: "Message queue & retries", href: "/settings/notifications/outbox" },
-                  { dot: "bg-violet-500",  label: "Templates",        sub: "Status message templates", href: "/settings/notifications" },
-                  { dot: "bg-amber-500",   label: "Policies",         sub: "Auto-send rules",         href: "/settings/notifications" },
+                  { dot: "bg-emerald-500", label: "WhatsApp",  href: "/settings/notifications/whatsapp" },
+                  { dot: "bg-sky-500",     label: "Outbox",    href: "/settings/notifications/outbox" },
+                  { dot: "bg-violet-500",  label: "Templates", href: "/settings/notifications" },
+                  { dot: "bg-amber-500",   label: "Policies",  href: "/settings/notifications" },
                 ] as const).map((row) => (
-                  <Link key={row.label} href={row.href} className="flex items-center gap-3 px-4 py-2.5 transition hover:bg-[var(--panel-strong)]">
-                    <span className={`h-2 w-2 shrink-0 rounded-full ${row.dot}`} />
-                    <div className="flex-1">
-                      <p className="text-[12px] font-semibold text-[var(--ink)]">{row.label}</p>
-                      <p className="text-[10px] text-[var(--ink-muted)]">{row.sub}</p>
-                    </div>
+                  <Link key={row.label} href={row.href} className="flex items-center gap-2.5 px-4 py-2.5 transition hover:bg-[var(--panel-strong)]">
+                    <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${row.dot}`} />
+                    <p className="flex-1 text-[12px] font-medium text-[var(--ink)]">{row.label}</p>
                     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-[var(--ink-muted)]/30"><path d="m9 18 6-6-6-6"/></svg>
                   </Link>
                 ))}
               </div>
-              {/* Intake alert if pending */}
               {intakePendingCount > 0 && (
-                <Link href="/intake" className="flex items-center justify-between border-t border-[var(--line)] bg-orange-500/5 px-4 py-2.5 transition hover:bg-orange-500/10">
+                <Link href="/intake" className="flex items-center justify-between border-t border-[var(--line)] bg-orange-500/5 px-4 py-2 transition hover:bg-orange-500/10">
                   <div className="flex items-center gap-2">
-                    <span className="h-2 w-2 rounded-full bg-orange-500" />
-                    <p className="text-[12px] font-semibold text-orange-600">{intakePendingCount} repair request{intakePendingCount > 1 ? "s" : ""} awaiting intake</p>
+                    <span className="h-1.5 w-1.5 rounded-full bg-orange-500" />
+                    <p className="text-[11px] font-semibold text-orange-600">{intakePendingCount} awaiting intake</p>
                   </div>
                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-orange-400"><path d="m9 18 6-6-6-6"/></svg>
                 </Link>
