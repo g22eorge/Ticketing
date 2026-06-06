@@ -15,12 +15,10 @@ const nav = [
   // Overview
   { href: "/dashboard",   label: "Dashboard",      group: "overview"   as NavGroup, roles: "all" as const },
 
-  // Service
-  { href: "/jobs",        label: "Jobs",            group: "service"    as NavGroup, roles: "all" as const },
-  { href: "/intake",      label: "Intake",          group: "service"    as NavGroup, roles: ["ADMIN", "MANAGER", "TECH_MANAGER", "OPS", "FRONT_DESK", "TECHNICIAN_INTERNAL", "SALES_MANAGER"] as const },
-  { href: "/field",       label: "Field Visits",    group: "service"    as NavGroup, roles: ["ADMIN", "MANAGER", "TECH_MANAGER", "OPS", "TECH_FIELD"] as const },
-  { href: "/technicians", label: "Technicians",     group: "service"    as NavGroup, roles: ["ADMIN", "MANAGER", "TECH_MANAGER", "OPS", "TECHNICIAN_INTERNAL", "TECHNICIAN_EXTERNAL", "FRONT_DESK", "SALES_MANAGER", "FINANCE"] as const },
-  { href: "/complaints",  label: "Complaints",      group: "service"    as NavGroup, roles: ["ADMIN", "MANAGER", "TECH_MANAGER", "OPS"] as const },
+  // Service — daily items + hub for management
+  { href: "/jobs",    label: "Jobs",   group: "service" as NavGroup, roles: "all" as const },
+  { href: "/intake",  label: "Intake", group: "service" as NavGroup, roles: ["ADMIN", "MANAGER", "TECH_MANAGER", "OPS", "FRONT_DESK", "TECHNICIAN_INTERNAL", "SALES_MANAGER"] as const },
+  { href: "/service", label: "Service Hub", group: "service" as NavGroup, roles: ["ADMIN", "MANAGER", "TECH_MANAGER", "OPS", "FRONT_DESK"] as const },
 
   // Stock & Supply — daily items + ops hub for less-frequent tasks
   { href: "/inventory",                   label: "Parts & Stock",     group: "stock" as NavGroup, roles: ["ADMIN", "MANAGER", "TECH_MANAGER", "OPS", "TECHNICIAN_INTERNAL"] as const },
