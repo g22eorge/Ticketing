@@ -963,6 +963,8 @@ export default async function DashboardPage({
       failedOutboxCount,
       // Inventory: out-of-stock
       outOfStockCount,
+      // Recent jobs
+      recentJobs,
     ] = await Promise.all([
       prisma.job.groupBy({ by: ["status"], where: orgFilter, _count: { status: true } }),
 
@@ -973,8 +975,9 @@ export default async function DashboardPage({
 
       prisma.bankAccount.findMany({
         where: { ...orgFilter, isActive: true },
-        select: { currentBalance: true },
-      }).catch(() => [] as { currentBalance: number }[]),
+        select: { name: true, currentBalance: true },
+        orderBy: { currentBalance: "desc" },
+      }).catch(() => [] as { name: string; currentBalance: number }[]),
 
       prisma.expense.findMany({
         where: { orgId: orgFilter.orgId ?? undefined, paidAt: { gte: mtdStart, lte: today } },
@@ -1025,6 +1028,13 @@ export default async function DashboardPage({
       prisma.outboundMessage.count({ where: { ...(orgFilter.orgId ? { orgId: orgFilter.orgId } : {}), status: { in: ["FAILED", "DEAD"] as never[] } } }).catch(() => 0),
       // Out-of-stock active parts
       prisma.part.count({ where: { ...orgFilter, isActive: true, qtyOnHand: { lte: 0 } } }).catch(() => 0),
+      // Recent jobs for sidebar
+      prisma.job.findMany({
+        where: orgFilter,
+        orderBy: { updatedAt: "desc" },
+        take: 8,
+        select: { id: true, jobNumber: true, brand: true, model: true, status: true, updatedAt: true, client: { select: { fullName: true } } },
+      }).catch(() => [] as { id: string; jobNumber: string; brand: string; model: string; status: string; updatedAt: Date; client: { fullName: string } | null }[]),
     ]);
 
     const [
@@ -1295,6 +1305,48 @@ export default async function DashboardPage({
                 ))}
               </div>
             </section>
+
+            {/* Bank Accounts — fills remaining left-column height */}
+            {bankAccounts.length > 0 && (() => {
+              const totalCash = bankAccounts.reduce((s, a) => s + a.currentBalance, 0);
+              return (
+                <section className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
+                  <div className="flex items-center justify-between border-b border-[var(--line)] px-4 py-2.5">
+                    <p className="text-sm font-semibold text-[var(--ink)]">Bank accounts</p>
+                    <Link href="/finance/bank" className="text-[12px] font-semibold text-[var(--accent)]">View →</Link>
+                  </div>
+                  <div className="divide-y divide-[var(--line)]">
+                    {bankAccounts.map((acct) => {
+                      const pct = totalCash > 0 ? Math.round((acct.currentBalance / totalCash) * 100) : 0;
+                      const isPositive = acct.currentBalance >= 0;
+                      return (
+                        <Link key={acct.name} href="/finance/bank"
+                          className="flex flex-col gap-1.5 px-4 py-2.5 transition hover:bg-[var(--panel-strong)]">
+                          <div className="flex items-center justify-between">
+                            <p className="text-[12px] font-medium text-[var(--ink)] truncate max-w-[55%]">{acct.name}</p>
+                            <p className={`text-[13px] font-black tabular-nums ${isPositive ? "text-[var(--ink)]" : "text-red-500"}`}>
+                              {formatMoneyCompact(acct.currentBalance, currency)}
+                            </p>
+                          </div>
+                          {/* Share-of-total bar */}
+                          <div className="flex items-center gap-2">
+                            <div className="h-[3px] flex-1 overflow-hidden rounded-full bg-[var(--panel-strong)]">
+                              <div className={`h-full rounded-full ${isPositive ? "bg-sky-500" : "bg-red-400"}`} style={{ width: `${Math.max(2, pct)}%` }} />
+                            </div>
+                            <span className="shrink-0 text-[10px] text-[var(--ink-muted)]">{pct}%</span>
+                          </div>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                  {/* Total cash row */}
+                  <div className="flex items-center justify-between border-t border-[var(--line)] bg-[var(--panel-strong)] px-4 py-2">
+                    <p className="text-[11px] font-semibold text-[var(--ink-muted)]">Total cash</p>
+                    <p className={`text-[13px] font-black tabular-nums ${totalCash >= 0 ? "text-sky-600" : "text-red-500"}`}>{formatMoneyCompact(totalCash, currency)}</p>
+                  </div>
+                </section>
+              );
+            })()}
 
           </div>{/* end left column */}
 
@@ -1617,6 +1669,58 @@ export default async function DashboardPage({
               </section>
 
             </div>
+
+            {/* Recent Jobs — last 8 updated, fills remaining right-column height */}
+            {recentJobs.length > 0 && (() => {
+              const STATUS_CHIP: Record<string, { label: string; cls: string }> = {
+                RECEIVED:          { label: "Received",   cls: "bg-sky-500/12 text-sky-600" },
+                DIAGNOSING:        { label: "Diagnosing", cls: "bg-blue-500/12 text-blue-600" },
+                AWAITING_APPROVAL: { label: "Awaiting",   cls: "bg-[var(--accent)]/12 text-[var(--accent)]" },
+                IN_REPAIR:         { label: "In repair",  cls: "bg-violet-500/12 text-violet-600" },
+                READY_FOR_PICKUP:  { label: "Ready",      cls: "bg-emerald-500/12 text-emerald-600" },
+                COMPLETED:         { label: "Completed",  cls: "bg-emerald-500/12 text-emerald-600" },
+                REFERRED:          { label: "Referred",   cls: "bg-amber-500/12 text-amber-600" },
+                IN_EXTERNAL_REPAIR:{ label: "External",   cls: "bg-orange-500/12 text-orange-600" },
+                DELIVERED:         { label: "Delivered",  cls: "bg-teal-500/12 text-teal-600" },
+                CLOSED:            { label: "Closed",     cls: "bg-[var(--line)] text-[var(--ink-muted)]" },
+                CUSTOMER_CANCELLED:{ label: "Cancelled",  cls: "bg-red-500/12 text-red-500" },
+              };
+              const timeAgo = (d: Date) => {
+                const mins = Math.floor((Date.now() - d.getTime()) / 60000);
+                if (mins < 60) return `${mins}m ago`;
+                if (mins < 1440) return `${Math.floor(mins / 60)}h ago`;
+                return `${Math.floor(mins / 1440)}d ago`;
+              };
+              return (
+                <section className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
+                  <div className="flex items-center justify-between border-b border-[var(--line)] px-4 py-2.5">
+                    <p className="text-sm font-semibold text-[var(--ink)]">Recent jobs</p>
+                    <Link href="/jobs" className="text-[12px] font-semibold text-[var(--accent)]">All jobs →</Link>
+                  </div>
+                  <div className="divide-y divide-[var(--line)]">
+                    {recentJobs.map((job) => {
+                      const chip = STATUS_CHIP[job.status] ?? { label: job.status, cls: "bg-[var(--line)] text-[var(--ink-muted)]" };
+                      return (
+                        <Link key={job.id} href={`/jobs/${job.id}`}
+                          className="flex items-center gap-2.5 px-4 py-2 transition hover:bg-[var(--panel-strong)]">
+                          {/* Job number */}
+                          <p className="w-10 shrink-0 text-[10px] font-bold text-[var(--ink-muted)]">#{job.jobNumber}</p>
+                          {/* Device + client */}
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-[12px] font-semibold text-[var(--ink)]">{job.brand} {job.model}</p>
+                            <p className="truncate text-[10px] text-[var(--ink-muted)]">{job.client?.fullName ?? "No client"}</p>
+                          </div>
+                          {/* Status chip */}
+                          <span className={`shrink-0 rounded-full px-2 py-[2px] text-[9.5px] font-bold ${chip.cls}`}>{chip.label}</span>
+                          {/* Time ago */}
+                          <p className="w-10 shrink-0 text-right text-[10px] text-[var(--ink-muted)]">{timeAgo(job.updatedAt)}</p>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </section>
+              );
+            })()}
 
           </div>{/* end right column */}
 
