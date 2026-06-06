@@ -1466,7 +1466,7 @@ export default async function DashboardPage({
               const peakIdx   = full12.reduce((b, m, i) => m.revenue > full12[b].revenue ? i : b, 0);
               if (ytdTotal === 0) return null;
               return (
-                <section className="panel-shadow relative flex flex-1 flex-col overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
+                <section className="panel-shadow flex flex-1 flex-col overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
                   {/* YTD summary header */}
                   <div className="grid grid-cols-2 divide-x divide-[var(--line)] border-b border-[var(--line)]">
                     <div className="px-3 py-2">
@@ -1478,31 +1478,27 @@ export default async function DashboardPage({
                       <p className={`text-[14px] font-black tabular-nums leading-tight ${ytdMargin >= 0 ? "text-emerald-600" : "text-red-500"}`}>{formatMoneyCompact(ytdMargin, currency)}</p>
                     </div>
                   </div>
-                  {/* Col headings — sticky so they stay visible while scrolling */}
-                  <div className="sticky top-0 z-10 grid grid-cols-[1.8rem_1fr_2.5rem] items-center border-b border-[var(--line)] bg-[var(--panel)] px-3 py-[3px]">
+                  {/* Col headings */}
+                  <div className="grid grid-cols-[1.8rem_1fr_2.5rem] items-center border-b border-[var(--line)] px-3 py-[3px]">
                     <span className="text-[8.5px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Mo</span>
                     <span className="text-[8.5px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Rev · Margin</span>
                     <span className="text-right text-[8.5px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Mg%</span>
                   </div>
-                  {/* Scrollable drum — shows ~7 rows, scroll to reach future months */}
-                  <div className="flex-1 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-                    style={{ scrollSnapType: "y mandatory" }}>
+                  {/* 12 fixed rows — flex-1 container stretches to fill remaining panel height */}
+                  <div className="flex flex-1 flex-col">
                     {full12.map((m, i) => {
                       const isPeak  = i === peakIdx;
                       const barPct  = Math.round((m.revenue / maxRev) * 100);
                       const mrgPct  = m.revenue > 0 ? Math.round((m.margin / m.revenue) * 100) : null;
-                      const isCurrent = !m.future && (i === full12.filter(x => !x.future).length - 1);
                       return (
                         <div key={m.key}
-                          id={isCurrent ? "ytd-current-month" : undefined}
-                          style={{ scrollSnapAlign: "start" }}
-                          className={`grid grid-cols-[1.8rem_1fr_2.5rem] items-center gap-x-2 px-3 py-[5px] ${i < 11 ? "border-b border-[var(--line)]" : ""} ${isPeak ? "bg-[var(--accent)]/6" : ""} ${isCurrent ? "bg-[var(--panel-strong)]" : ""}`}>
+                          className={`flex-1 grid grid-cols-[1.8rem_1fr_2.5rem] items-center gap-x-2 px-3 ${i < 11 ? "border-b border-[var(--line)]" : ""} ${isPeak ? "bg-[var(--accent)]/6" : ""}`}>
                           {/* Month */}
-                          <span className={`text-[10px] font-bold ${isPeak ? "text-[var(--accent)]" : m.future ? "text-[var(--ink-muted)]/30" : "text-[var(--ink-muted)]"}`}>{m.label}</span>
+                          <span className={`text-[10px] font-bold ${isPeak ? "text-[var(--accent)]" : m.future ? "text-[var(--ink-muted)]/35" : "text-[var(--ink-muted)]"}`}>{m.label}</span>
                           {/* Revenue + bar + margin inline */}
                           <div className="flex min-w-0 flex-col gap-[2px]">
                             <div className="flex items-baseline gap-1.5">
-                              <span className={`text-[11px] font-black tabular-nums leading-none ${isPeak ? "text-[var(--accent)]" : m.future ? "text-[var(--ink-muted)]/25" : "text-[var(--ink)]"}`}>
+                              <span className={`text-[11px] font-black tabular-nums leading-none ${isPeak ? "text-[var(--accent)]" : m.future ? "text-[var(--ink-muted)]/30" : "text-[var(--ink)]"}`}>
                                 {m.revenue > 0 ? formatMoneyCompact(m.revenue, currency) : "—"}
                               </span>
                               {m.margin !== 0 && (
@@ -1511,8 +1507,9 @@ export default async function DashboardPage({
                                 </span>
                               )}
                             </div>
+                            {/* Dual stacked bar: revenue (accent) + margin (emerald) overlay */}
                             <div className="relative h-[2.5px] overflow-hidden rounded-full bg-[var(--panel-strong)]">
-                              <div className={`absolute inset-y-0 left-0 rounded-full ${isPeak ? "bg-[var(--accent)]" : m.future ? "bg-[var(--line)]" : "bg-[var(--accent)]/35"}`} style={{ width: `${barPct}%` }} />
+                              <div className={`absolute inset-y-0 left-0 rounded-full ${isPeak ? "bg-[var(--accent)]" : "bg-[var(--accent)]/35"}`} style={{ width: `${barPct}%` }} />
                               {m.revenue > 0 && m.margin > 0 && (
                                 <div className="absolute inset-y-0 left-0 rounded-full bg-emerald-500/60" style={{ width: `${Math.round((m.margin / maxRev) * 100)}%` }} />
                               )}
@@ -1526,10 +1523,6 @@ export default async function DashboardPage({
                       );
                     })}
                   </div>
-                  {/* Fade hint at bottom when there are future months below the fold */}
-                  {full12.some(m => m.future) && (
-                    <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-6 rounded-b-xl bg-gradient-to-t from-[var(--panel)] to-transparent" />
-                  )}
                 </section>
               );
             })()}
