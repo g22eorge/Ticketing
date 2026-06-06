@@ -11,7 +11,7 @@ import { RevenueLineChart } from "@/components/reports/ReportsCharts";
 import { getClientBill, resolveTechCost } from "@/lib/billing";
 import { formatMoney, formatMoneyCompact, getAppCurrency, toBaseAmount } from "@/lib/currency";
 import { formatEATMonthLabel } from "@/lib/date-eat";
-import { loadCashCollectionsByChannel, loadReceivablesTotal } from "@/lib/finance/reconciliation";
+import { loadCashCollectionsByChannelWide, loadReceivablesTotal } from "@/lib/finance/reconciliation";
 import { UI_JOB_STATUSES, JobStatus, isOpenJobStatus, normalizeJobStatus } from "@/lib/job-status";
 import { filterSupportedJobStatuses } from "@/lib/job-status-server";
 import { can } from "@/lib/permissions";
@@ -91,22 +91,21 @@ function trendMonthsForYear(year: number, endMonth: number) {
 
 /** Repair revenue only — job clientBill on COMPLETED jobs (used by TECH_MANAGER) */
 async function loadRepairRevenueTrend(trendMonths: { key: string; start: Date; end: Date }[], orgId?: string | null) {
+  // Single query — externalTechFee (admin override) and externalTechBill both selected directly,
+  // eliminating the second getJobPayoutsByIds round-trip
   const completed = await prisma.job.findMany({
     where: {
       ...(orgId ? { orgId } : {}),
       status: "COMPLETED",
       completedAt: { gte: trendMonths[0].start, lte: trendMonths[trendMonths.length - 1].end },
     },
-    select: { id: true, clientBill: true, externalTechBill: true, completedAt: true },
+    select: { id: true, clientBill: true, externalTechFee: true, externalTechBill: true, completedAt: true },
   });
-
-  // Load admin-overridden payout fees so margin uses the actual amount paid out, not just what the tech billed
-  const payoutMap = await getJobPayoutsByIds(completed.map((j) => j.id)).catch(() => new Map());
 
   return trendMonths.map((m) => {
     const monthJobs = completed.filter((j) => j.completedAt && j.completedAt >= m.start && j.completedAt <= m.end);
     const revenue = monthJobs.reduce((sum, j) => sum + (getClientBill(j) ?? 0), 0);
-    const cost = monthJobs.reduce((sum, j) => sum + resolveTechCost(payoutMap.get(j.id)?.externalTechFee, j.externalTechBill), 0);
+    const cost = monthJobs.reduce((sum, j) => sum + resolveTechCost(j.externalTechFee, j.externalTechBill), 0);
     return { key: m.key, revenue, margin: revenue - cost };
   });
 }
@@ -973,10 +972,8 @@ export default async function DashboardPage({
       failedOutboxCount,
       // Inventory: out-of-stock
       outOfStockCount,
-      // Cash collections (MTD, today, yesterday) + receivables — merged from former serial block
-      collectionsMtd,
-      collectionsToday,
-      collectionsYesterday,
+      // Cash collections — single wide MTD fetch, sliced in memory (2 queries not 6)
+      collectionsWide,
       receivables,
       // YTD revenue trend — merged from former serial await
       revenueTrend,
@@ -1032,10 +1029,12 @@ export default async function DashboardPage({
         select: { assignedToId: true, assignedTo: { select: { name: true } }, clientBill: true, receivedAt: true, completedAt: true },
       }).catch(() => [] as { assignedToId: string | null; assignedTo: { name: string } | null; clientBill: number | null; receivedAt: Date; completedAt: Date | null }[]),
 
-      prisma.job.findMany({
+      // Tech pending jobs — groupBy to get counts without loading every job row
+      prisma.job.groupBy({
+        by: ["assignedToId"],
         where: { ...orgFilter, status: { in: filterSupportedJobStatuses(["RECEIVED", "DIAGNOSING", "REFERRED", "IN_EXTERNAL_REPAIR", "AWAITING_APPROVAL", "IN_REPAIR", "READY_FOR_PICKUP"]) as JobStatus[] }, assignedToId: { not: null } },
-        select: { assignedToId: true },
-      }).catch(() => [] as { assignedToId: string | null }[]),
+        _count: { assignedToId: true },
+      }).catch(() => [] as { assignedToId: string | null; _count: { assignedToId: number } }[]),
 
       prisma.job.count({ where: { ...orgFilter, receivedAt: { gte: yesterdayStart, lte: yesterdayEnd } } }).catch(() => 0),
       prisma.job.count({ where: { ...orgFilter, completedAt: { gte: yesterdayStart, lte: yesterdayEnd } } }).catch(() => 0),
@@ -1047,16 +1046,10 @@ export default async function DashboardPage({
       prisma.outboundMessage.count({ where: { ...(orgFilter.orgId ? { orgId: orgFilter.orgId } : {}), status: { in: ["FAILED", "DEAD"] as never[] } } }).catch(() => 0),
       // Out-of-stock active parts
       prisma.part.count({ where: { ...orgFilter, isActive: true, qtyOnHand: { lte: 0 } } }).catch(() => 0),
-      // Cash collections — now parallel with everything else
+      // Cash collections — single wide MTD fetch, sliced into today/yesterday/MTD in memory (2 queries not 6)
       user.orgId
-        ? loadCashCollectionsByChannel({ orgId: user.orgId, baseCurrency: currency, range: { start: mtdStart, end: today } })
-        : Promise.resolve({ repairs: 0, products: 0, corporate: 0, unallocated: 0, total: 0 }),
-      user.orgId
-        ? loadCashCollectionsByChannel({ orgId: user.orgId, baseCurrency: currency, range: { start: todayStart } })
-        : Promise.resolve({ repairs: 0, products: 0, corporate: 0, unallocated: 0, total: 0 }),
-      user.orgId
-        ? loadCashCollectionsByChannel({ orgId: user.orgId, baseCurrency: currency, range: { start: yesterdayStart, end: yesterdayEnd } })
-        : Promise.resolve({ repairs: 0, products: 0, corporate: 0, unallocated: 0, total: 0 }),
+        ? loadCashCollectionsByChannelWide({ orgId: user.orgId, baseCurrency: currency, mtdStart, todayStart, yesterdayStart, yesterdayEnd })
+        : Promise.resolve({ mtd: { repairs: 0, products: 0, corporate: 0, unallocated: 0, total: 0 }, today: { repairs: 0, products: 0, corporate: 0, unallocated: 0, total: 0 }, yesterday: { repairs: 0, products: 0, corporate: 0, unallocated: 0, total: 0 } }),
       user.orgId
         ? loadReceivablesTotal(user.orgId)
         : Promise.resolve({ invoiceBalance: 0, saleBalance: 0, total: 0, invoiceCount: 0, saleCount: 0 }),
@@ -1073,6 +1066,11 @@ export default async function DashboardPage({
         ? prisma.organization.findUnique({ where: { id: user.orgId }, select: { name: true } }).then(o => o?.name ?? null).catch(() => null)
         : Promise.resolve(null as string | null),
     ]);
+
+    // Unpack wide collections result
+    const collectionsMtd       = collectionsWide.mtd;
+    const collectionsToday     = collectionsWide.today;
+    const collectionsYesterday = collectionsWide.yesterday;
 
     // Revenue stream totals
     const repairsMtd   = collectionsMtd.repairs;
@@ -1133,11 +1131,11 @@ export default async function DashboardPage({
       },
     ].filter(Boolean) as React.ComponentProps<typeof MobileHomeDashboard>["quickActions"];
 
-    // Tech leaderboard
+    // Tech leaderboard — techPendingJobs is now a groupBy result (one row per tech)
     const techPendingMap = new Map<string, number>();
-    for (const j of techPendingJobs) {
-      if (!j.assignedToId) continue;
-      techPendingMap.set(j.assignedToId, (techPendingMap.get(j.assignedToId) ?? 0) + 1);
+    for (const row of techPendingJobs) {
+      if (!row.assignedToId) continue;
+      techPendingMap.set(row.assignedToId, row._count.assignedToId);
     }
     const techMap = new Map<string, { name: string; count: number; pending: number; revenue: number; totalDays: number; payoutDue: number }>();
     for (const j of techCompletedMtd) {
