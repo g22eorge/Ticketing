@@ -1329,7 +1329,7 @@ model DocumentBrandingSettings {
   vatRatePercent        Float         @default(18)
   vatLabel              String        @default("VAT")
   termsText             String        @default("Quotation valid for 30 days from date issued.\nRepair work begins only after approval is recorded.\nParts availability may affect final timeline.\nHidden pre-existing faults may affect final outcome.\nUncollected devices may attract storage fees after notice.")
-  footerText            String        @default("System built by Almeida @ 2026 all rights reserved.")
+  footerText            String        @default("Powered by Duuka Pro Max — Eagle Info's repair & business management platform. care.eagleinfosolutions.com")
   signatureCompanyLabel String        @default("Signed by: Eagle Info Solutions")
   signatureClientLabel  String        @default("Signed by: Client")
   primaryColor          String        @default("#000000")
