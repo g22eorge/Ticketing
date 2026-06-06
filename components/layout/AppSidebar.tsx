@@ -24,7 +24,7 @@ const nav = [
   { href: "/inventory",                   label: "Parts & Stock",     group: "stock" as NavGroup, roles: ["ADMIN", "MANAGER", "TECH_MANAGER", "OPS", "TECHNICIAN_INTERNAL"] as const },
   { href: "/inventory/purchase-requests", label: "Purchase Requests", group: "stock" as NavGroup, roles: ["ADMIN", "MANAGER", "TECH_MANAGER", "OPS"] as const },
   { href: "/inventory/purchase-orders",   label: "Purchase Orders",   group: "stock" as NavGroup, roles: ["ADMIN", "MANAGER", "OPS"] as const },
-  { href: "/inventory/ops",               label: "Stock Operations",  group: "stock" as NavGroup, roles: ["ADMIN", "MANAGER", "TECH_MANAGER", "OPS"] as const },
+  { href: "/inventory/ops",               label: "Stock Hub",         group: "stock" as NavGroup, roles: ["ADMIN", "MANAGER", "TECH_MANAGER", "OPS"] as const },
 
   // Customers
   { href: "/clients",          label: "Clients",         group: "customers"  as NavGroup, roles: ["ADMIN", "MANAGER", "OPS", "FRONT_DESK", "SALES", "SALES_MANAGER", "SALES_CORPORATE", "SALES_RETAIL", "FINANCE"] as const },
@@ -37,7 +37,7 @@ const nav = [
   { href: "/documents/quotations", label: "Quotations",  group: "documents" as NavGroup, roles: ["ADMIN", "MANAGER", "TECH_MANAGER", "OPS", "SALES", "TECHNICIAN_INTERNAL", "SALES_MANAGER", "SALES_CORPORATE", "SALES_RETAIL"] as const },
   { href: "/documents/invoices",   label: "Invoices",    group: "documents" as NavGroup, roles: ["ADMIN", "MANAGER", "OPS", "FINANCE", "SALES_MANAGER", "SALES_CORPORATE", "TECH_MANAGER"] as const },
   { href: "/documents/receipts",   label: "Receipts",    group: "documents" as NavGroup, roles: ["ADMIN", "MANAGER", "OPS", "FRONT_DESK", "SALES", "SALES_MANAGER", "SALES_RETAIL"] as const },
-  { href: "/documents",            label: "All Documents",group: "documents" as NavGroup, roles: ["ADMIN", "MANAGER", "TECH_MANAGER", "OPS", "FRONT_DESK", "SALES", "SALES_MANAGER", "SALES_CORPORATE", "SALES_RETAIL", "FINANCE", "TECHNICIAN_INTERNAL"] as const },
+  { href: "/documents",            label: "Documents Hub", group: "documents" as NavGroup, roles: ["ADMIN", "MANAGER", "TECH_MANAGER", "OPS", "FRONT_DESK", "SALES", "SALES_MANAGER", "SALES_CORPORATE", "SALES_RETAIL", "FINANCE", "TECHNICIAN_INTERNAL"] as const },
 
   // Finance
   { href: "/finance",               label: "Finance Hub", group: "finance" as NavGroup, roles: ["ADMIN", "MANAGER", "OPS", "FINANCE"] as const },
@@ -355,6 +355,13 @@ function navIcon(href: string) {
     case "/settings":
       return <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fillRule="evenodd" d="M7.84 1.804A1 1 0 0 1 8.82 1h2.36a1 1 0 0 1 .98.804l.331 1.652a6.993 6.993 0 0 1 1.929 1.115l1.598-.54a1 1 0 0 1 1.186.447l1.18 2.044a1 1 0 0 1-.205 1.251l-1.267 1.113a7.047 7.047 0 0 1 0 2.228l1.267 1.113a1 1 0 0 1 .206 1.25l-1.18 2.045a1 1 0 0 1-1.187.447l-1.598-.54a6.993 6.993 0 0 1-1.929 1.115l-.33 1.652a1 1 0 0 1-.98.804H8.82a1 1 0 0 1-.98-.804l-.331-1.652a6.993 6.993 0 0 1-1.929-1.115l-1.598.54a1 1 0 0 1-1.186-.447l-1.18-2.044a1 1 0 0 1 .205-1.251l1.267-1.114a7.05 7.05 0 0 1 0-2.227L1.821 7.773a1 1 0 0 1-.206-1.25l1.18-2.045a1 1 0 0 1 1.187-.447l1.598.54A6.993 6.993 0 0 1 7.51 3.456l.33-1.652ZM10 13a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" clipRule="evenodd" /></svg>;
 
+    // Hub pages — grid/squares icon
+    case "/service":
+    case "/inventory/ops":
+    case "/documents":
+    case "/finance":
+      return <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fillRule="evenodd" d="M4.25 2A2.25 2.25 0 0 0 2 4.25v2.5A2.25 2.25 0 0 0 4.25 9h2.5A2.25 2.25 0 0 0 9 6.75v-2.5A2.25 2.25 0 0 0 6.75 2h-2.5Zm0 9A2.25 2.25 0 0 0 2 13.25v2.5A2.25 2.25 0 0 0 4.25 18h2.5A2.25 2.25 0 0 0 9 15.75v-2.5A2.25 2.25 0 0 0 6.75 11h-2.5Zm6.5-9A2.25 2.25 0 0 0 8.5 4.25v2.5A2.25 2.25 0 0 0 10.75 9h2.5A2.25 2.25 0 0 0 15.5 6.75v-2.5A2.25 2.25 0 0 0 13.25 2h-2.5Zm0 9A2.25 2.25 0 0 0 8.5 13.25v2.5A2.25 2.25 0 0 0 10.75 18h2.5A2.25 2.25 0 0 0 15.5 15.75v-2.5A2.25 2.25 0 0 0 13.25 11h-2.5Z" clipRule="evenodd" /></svg>;
+
     default:
       return <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fillRule="evenodd" d="M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Zm-5.5-2.5a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0ZM10 12a5.99 5.99 0 0 0-4.793 2.39A6.483 6.483 0 0 0 10 16.5a6.483 6.483 0 0 0 4.793-2.11A5.99 5.99 0 0 0 10 12Z" clipRule="evenodd" /></svg>;
   }
@@ -433,7 +440,7 @@ export function AppSidebar({
               <span className="flex h-3.5 w-3.5 shrink-0 items-center justify-center text-[var(--ink-muted)]/40 [&_svg]:h-2.5 [&_svg]:w-2.5">
                 {groupIcon(section.group)}
               </span>
-              <p className="text-[13px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]" aria-hidden="true">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]/60" aria-hidden="true">
                 {section.label}
               </p>
               <div className="ml-1 h-px flex-1 bg-[var(--line)]/60" />
@@ -447,7 +454,6 @@ export function AppSidebar({
                   item.href === "/jobs"               ? badges?.jobs
                   : item.href === "/inventory"        ? badges?.inventory
                   : item.href === "/intake"           ? badges?.pendingRequests
-                  : item.href === "/complaints"       ? badges?.complaints
                   : undefined;
                 const newBadge = item.href === "/jobs" ? badges?.receivedJobs : undefined;
 
