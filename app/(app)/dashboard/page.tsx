@@ -1243,7 +1243,7 @@ export default async function DashboardPage({
         <div className="grid gap-3 lg:grid-cols-3 lg:items-stretch">
 
           {/* ── LEFT COLUMN: Revenue + Financial Position ── */}
-          <div className="flex flex-col gap-3">
+          <div className="flex h-full flex-col gap-3">
 
             {/* Revenue MTD */}
             <section className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
@@ -1370,7 +1370,7 @@ export default async function DashboardPage({
           </div>{/* end left column */}
 
           {/* ── CENTRE COLUMN: Needs Action + Repair Pipeline ── */}
-          <div className="flex flex-col gap-3">
+          <div className="flex h-full flex-col gap-3">
 
             {/* Needs Action */}
             <section className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
@@ -1538,7 +1538,7 @@ export default async function DashboardPage({
           </div>{/* end centre column */}
 
           {/* ── RIGHT COLUMN: Quick Actions + Sales Funnel + Inventory + Comms ── */}
-          <div className="flex flex-col gap-3">
+          <div className="flex h-full flex-col gap-3">
 
             {/* Quick Actions — 2×3 grid */}
             <section className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)] p-3">
