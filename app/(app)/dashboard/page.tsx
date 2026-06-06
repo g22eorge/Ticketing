@@ -1396,7 +1396,7 @@ export default async function DashboardPage({
 
         </section>
 
-        {/* ── Financial Position + Repair Pipeline — side-by-side on desktop ── */}
+        {/* ── Financial Position | Repair Pipeline + Sales Funnel ── */}
         <div className="grid gap-3 lg:grid-cols-2">
 
           {/* Financial Position */}
@@ -1428,41 +1428,114 @@ export default async function DashboardPage({
             </div>
           </section>
 
-          {/* Repair Pipeline */}
-          <section className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
-            <div className="border-b border-[var(--line)] px-4 py-2.5 flex items-center justify-between">
-              <p className="text-sm font-semibold text-[var(--ink)]">
-                Repair pipeline
-                {conversionRate > 0 && <span className="ml-2 font-normal text-[var(--ink-muted)]">· {conversionRate}% conversion</span>}
-              </p>
-              <Link href="/jobs" className="text-[12px] font-semibold text-[var(--accent)]">All jobs →</Link>
-            </div>
+          {/* Right column: Repair Pipeline + Sales Funnel */}
+          <div className="flex flex-col gap-3">
+
+            {/* Repair Pipeline */}
+            <section className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
+              <div className="border-b border-[var(--line)] px-4 py-2.5 flex items-center justify-between">
+                <p className="text-sm font-semibold text-[var(--ink)]">
+                  Repair pipeline
+                  {conversionRate > 0 && <span className="ml-2 font-normal text-[var(--ink-muted)]">· {conversionRate}% conversion</span>}
+                </p>
+                <Link href="/jobs" className="text-[12px] font-semibold text-[var(--accent)]">All jobs →</Link>
+              </div>
+              {(() => {
+                const GRID_STAGES = [
+                  { key: "RECEIVED",          name: "Received",   tone: (v: number) => v > 0 ? "text-sky-600"           : "text-[var(--ink-muted)]/40" },
+                  { key: "DIAGNOSING",        name: "Diagnosing", tone: (v: number) => v > 0 ? "text-blue-600"          : "text-[var(--ink-muted)]/40" },
+                  { key: "AWAITING_APPROVAL", name: "Awaiting",   tone: (v: number) => v > 0 ? "text-[var(--accent)]"   : "text-[var(--ink-muted)]/40" },
+                  { key: "IN_REPAIR",         name: "In repair",  tone: (v: number) => v > 0 ? "text-violet-600"        : "text-[var(--ink-muted)]/40" },
+                  { key: "READY_FOR_PICKUP",  name: "Ready",      tone: (v: number) => v > 0 ? "text-emerald-600"       : "text-[var(--ink-muted)]/40" },
+                  { key: "COMPLETED",         name: "Completed",  tone: (v: number) => v > 0 ? "text-emerald-600"       : "text-[var(--ink-muted)]/40" },
+                ] as const;
+                const countFor = (key: string) => statusData.find(s => s.key === key)?.value ?? 0;
+                return (
+                  <div className="grid grid-cols-3 divide-x divide-y divide-[var(--line)]">
+                    {GRID_STAGES.map(({ key, name, tone }) => {
+                      const count = countFor(key);
+                      return (
+                        <Link key={key} href={`/jobs?status=${key}`}
+                          className="flex flex-col items-center gap-0.5 py-5 transition hover:bg-[var(--panel-strong)] active:bg-[var(--panel-strong)]">
+                          <p className={`text-[28px] font-black leading-none tabular-nums ${tone(count)}`}>{count}</p>
+                          <p className="text-[12px] text-[var(--ink-muted)]">{name}</p>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
+            </section>
+
+            {/* Sales Funnel — compact 2×2 grid + outcome row */}
             {(() => {
-              const GRID_STAGES = [
-                { key: "RECEIVED",          name: "Received",   tone: (v: number) => v > 0 ? "text-sky-600"           : "text-[var(--ink-muted)]/40" },
-                { key: "DIAGNOSING",        name: "Diagnosing", tone: (v: number) => v > 0 ? "text-blue-600"          : "text-[var(--ink-muted)]/40" },
-                { key: "AWAITING_APPROVAL", name: "Awaiting",   tone: (v: number) => v > 0 ? "text-[var(--accent)]"   : "text-[var(--ink-muted)]/40" },
-                { key: "IN_REPAIR",         name: "In repair",  tone: (v: number) => v > 0 ? "text-violet-600"        : "text-[var(--ink-muted)]/40" },
-                { key: "READY_FOR_PICKUP",  name: "Ready",      tone: (v: number) => v > 0 ? "text-emerald-600"       : "text-[var(--ink-muted)]/40" },
-                { key: "COMPLETED",         name: "Completed",  tone: (v: number) => v > 0 ? "text-emerald-600"       : "text-[var(--ink-muted)]/40" },
-              ] as const;
-              const countFor = (key: string) => statusData.find(s => s.key === key)?.value ?? 0;
+              const ACTIVE = ["NEW","CONTACTED","QUALIFIED","PROPOSAL_SENT"] as const;
+              const STAGE_META: Record<string, { label: string; dot: string; num: string; href: string }> = {
+                NEW:           { label: "New",           dot: "bg-sky-500",    num: "text-sky-500",    href: "/sales/leads?status=NEW" },
+                CONTACTED:     { label: "Contacted",     dot: "bg-violet-500", num: "text-violet-500", href: "/sales/leads?status=CONTACTED" },
+                QUALIFIED:     { label: "Qualified",     dot: "bg-amber-500",  num: "text-amber-500",  href: "/sales/leads?status=QUALIFIED" },
+                PROPOSAL_SENT: { label: "Proposal Sent", dot: "bg-orange-500", num: "text-orange-500", href: "/sales/leads?status=PROPOSAL_SENT" },
+              };
+              const maxCount = Math.max(1, ...ACTIVE.map(s => leadCountMap.get(s) ?? 0));
+              const totalValue = ACTIVE.reduce((sum, s) => {
+                const row = (leadFunnel as Array<{ status: string; _sum?: { estimatedValue: number | null } }>).find(r => r.status === s);
+                return sum + (row?._sum?.estimatedValue ?? 0);
+              }, 0);
+              const wonCount  = leadCountMap.get("WON")  ?? 0;
+              const lostCount = leadCountMap.get("LOST") ?? 0;
               return (
-                <div className="grid grid-cols-3 divide-x divide-y divide-[var(--line)]">
-                  {GRID_STAGES.map(({ key, name, tone }) => {
-                    const count = countFor(key);
-                    return (
-                      <Link key={key} href={`/jobs?status=${key}`}
-                        className="flex flex-col items-center gap-0.5 py-5 transition hover:bg-[var(--panel-strong)] active:bg-[var(--panel-strong)]">
-                        <p className={`text-[28px] font-black leading-none tabular-nums ${tone(count)}`}>{count}</p>
-                        <p className="text-[12px] text-[var(--ink-muted)]">{name}</p>
-                      </Link>
-                    );
-                  })}
-                </div>
+                <section className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
+                  <div className="border-b border-[var(--line)] px-4 py-2 flex items-center justify-between">
+                    <p className="text-sm font-semibold text-[var(--ink)]">Sales funnel</p>
+                    <Link href="/sales/leads" className="text-[12px] font-semibold text-[var(--accent)]">All leads →</Link>
+                  </div>
+                  {/* 2×2 stage tiles */}
+                  <div className="grid grid-cols-2 divide-x divide-y divide-[var(--line)]">
+                    {ACTIVE.map((s) => {
+                      const count = leadCountMap.get(s) ?? 0;
+                      const meta  = STAGE_META[s];
+                      const barW  = Math.max(4, Math.round((count / maxCount) * 100));
+                      return (
+                        <Link key={s} href={meta.href}
+                          className="flex flex-col gap-1.5 px-3 py-2.5 transition hover:bg-[var(--panel-strong)]">
+                          <div className="flex items-center gap-1.5">
+                            <span className={`h-1.5 w-1.5 rounded-full ${meta.dot}`} />
+                            <p className="text-[11px] text-[var(--ink-muted)]">{meta.label}</p>
+                          </div>
+                          <p className={`text-[22px] font-black leading-none tabular-nums ${count === 0 ? "text-[var(--ink-muted)]/30" : meta.num}`}>{count}</p>
+                          <div className="h-[3px] w-full overflow-hidden rounded-full bg-[var(--panel-strong)]">
+                            <div className={`h-full rounded-full ${meta.dot} opacity-70`} style={{ width: `${barW}%` }} />
+                          </div>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                  {/* Outcome row */}
+                  <div className="border-t border-[var(--line)] flex items-center divide-x divide-[var(--line)]">
+                    <Link href="/sales/leads?status=WON"
+                      className="flex flex-1 items-center justify-center gap-1.5 py-2 transition hover:bg-[var(--panel-strong)]">
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                      <p className={`text-[13px] font-black ${wonCount > 0 ? "text-emerald-600" : "text-[var(--ink-muted)]"}`}>{wonCount}</p>
+                      <p className="text-[11px] text-[var(--ink-muted)]">Won</p>
+                    </Link>
+                    <Link href="/sales/leads?status=LOST"
+                      className="flex flex-1 items-center justify-center gap-1.5 py-2 transition hover:bg-[var(--panel-strong)]">
+                      <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
+                      <p className={`text-[13px] font-black ${lostCount > 0 ? "text-red-500" : "text-[var(--ink-muted)]"}`}>{lostCount}</p>
+                      <p className="text-[11px] text-[var(--ink-muted)]">Lost</p>
+                    </Link>
+                    {totalValue > 0 && (
+                      <div className="flex flex-1 items-center justify-center gap-1 py-2">
+                        <p className="text-[11px] text-[var(--ink-muted)]">Pipeline</p>
+                        <p className="text-[13px] font-black text-[var(--accent)]">{formatMoneyCompact(totalValue, currency)}</p>
+                      </div>
+                    )}
+                  </div>
+                </section>
               );
             })()}
-          </section>
+
+          </div>{/* end right column */}
 
         </div>
 
@@ -1478,80 +1551,6 @@ export default async function DashboardPage({
             <Link href="/inventory" className="ml-auto text-[13px] font-semibold text-[var(--accent)]">View →</Link>
           </div>
         )}
-
-        {/* ── Sales Funnel ── */}
-        <section className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
-          <div className="border-b border-[var(--line)] px-3 py-2.5 flex items-center justify-between gap-2">
-            <p className="text-sm font-semibold text-[var(--ink)]">Sales funnel</p>
-            <Link href="/sales/leads" className="text-[13px] font-semibold text-[var(--accent)] hover:underline">All leads →</Link>
-          </div>
-          {/* Active stages with bars + drop-off */}
-          {(() => {
-            const ACTIVE = ["NEW","CONTACTED","QUALIFIED","PROPOSAL_SENT"] as const;
-            const stageBarColor: Record<string, string> = {
-              NEW: "bg-sky-500", CONTACTED: "bg-violet-500",
-              QUALIFIED: "bg-amber-500", PROPOSAL_SENT: "bg-orange-500",
-            };
-            const maxCount = Math.max(1, ...ACTIVE.map(s => leadCountMap.get(s) ?? 0));
-            const totalValue = ACTIVE.reduce((sum, s) => {
-              const row = (leadFunnel as Array<{ status: string; _sum?: { estimatedValue: number | null } }>).find(r => r.status === s);
-              return sum + (row?._sum?.estimatedValue ?? 0);
-            }, 0);
-            return (
-              <>
-                <div className="relative">
-                <div className="flex divide-x divide-[var(--line)] overflow-x-auto [scrollbar-width:none]">
-                  {ACTIVE.map((s, i) => {
-                    const count = leadCountMap.get(s) ?? 0;
-                    const next = ACTIVE[i + 1];
-                    const nextCount = next ? (leadCountMap.get(next) ?? 0) : 0;
-                    const dropOff = count > 0 && i < ACTIVE.length - 1
-                      ? Math.round(((count - nextCount) / count) * 100) : null;
-                    const barW = Math.max(4, Math.round((count / maxCount) * 100));
-                    const row = (leadFunnel as Array<{ status: string; _sum?: { estimatedValue: number | null } }>).find(r => r.status === s);
-                    const val = row?._sum?.estimatedValue ?? 0;
-                    const stage = LEAD_STAGES.find(st => st.key === s)!;
-                    return (
-                      <Link key={s} href={stage.href} className="flex min-w-[70px] flex-1 flex-col gap-1 p-2.5 transition hover:bg-[var(--panel-strong)]">
-                        <div className="flex items-baseline justify-between gap-1">
-                          <p className={`text-[18px] font-black leading-none ${count === 0 ? "text-[var(--ink-muted)]" : stage.color}`}>{count}</p>
-                          {dropOff !== null && dropOff > 0 && <span className="whitespace-nowrap text-[11px] font-bold text-red-500">-{dropOff}%</span>}
-                        </div>
-                        <div className="h-1 w-full rounded-full bg-[var(--panel-strong)]">
-                          <div className={`h-full rounded-full ${stageBarColor[s]}`} style={{ width: `${barW}%` }} />
-                        </div>
-                        <p className="text-[12px] leading-tight text-[var(--ink-muted)]">{stage.name}</p>
-                        {val > 0 && <p className="whitespace-nowrap text-[12px] font-semibold text-[var(--accent)]">{formatMoneyCompact(val, currency)}</p>}
-                      </Link>
-                    );
-                  })}
-                </div>
-                <div className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-[var(--panel)] to-transparent" />
-                </div>
-                {/* Won / Lost row + total pipeline */}
-                <div className="border-t border-[var(--line)] flex divide-x divide-[var(--line)]">
-                  {(["WON","LOST"] as const).map(s => {
-                    const count = leadCountMap.get(s) ?? 0;
-                    const color = s === "WON" ? "text-emerald-600" : "text-red-500";
-                    const stage = LEAD_STAGES.find(st => st.key === s)!;
-                    return (
-                      <Link key={s} href={stage.href} className="flex flex-1 items-center justify-center gap-1.5 py-2 transition hover:bg-[var(--panel-strong)]">
-                        <p className={`text-sm font-black ${count === 0 ? "text-[var(--ink-muted)]" : color}`}>{count}</p>
-                        <p className="text-[12px] text-[var(--ink-muted)]">{stage.name}</p>
-                      </Link>
-                    );
-                  })}
-                  {totalValue > 0 && (
-                    <div className="flex flex-1 items-center justify-center gap-1 py-2">
-                      <p className="text-[12px] text-[var(--ink-muted)]">Pipeline</p>
-                      <p className="text-[13px] font-black text-[var(--accent)]">{formatMoneyCompact(totalValue, currency)}</p>
-                    </div>
-                  )}
-                </div>
-              </>
-            );
-          })()}
-        </section>
 
         {/* ── Technician Leaderboard (full width — Recent Activity removed) ── */}
         <div>
