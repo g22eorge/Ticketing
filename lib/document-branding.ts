@@ -193,10 +193,12 @@ export async function saveDocumentBrandingSettings(orgId: string, data: Branding
       };
     }).documentBrandingSettings;
 
+    // Strip id so Prisma generates a cuid on create — avoids conflict with legacy singleton row
+    const { id: _unusedId, ...dataWithoutId } = data;
     await delegate.upsert({
       where: { orgId },
-      create: { ...data, orgId },
-      update: data,
+      create: { ...(dataWithoutId as BrandingSettings), orgId },
+      update: dataWithoutId as BrandingSettings,
     });
     return;
   }
