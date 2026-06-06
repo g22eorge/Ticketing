@@ -1064,6 +1064,12 @@ export default async function DashboardPage({
       techPayoutDueMap.set(j.assignedToId, (techPayoutDueMap.get(j.assignedToId) ?? 0) + resolveTechCost(j.externalTechFee, j.externalTechBill));
     }
 
+    // Revenue trend (YTD months)
+    const trendMonths = trendMonthsSinceStartOfYear(today);
+    const revenueTrend = user.orgId
+      ? await loadTotalRevenueTrend(trendMonths, user.orgId, currency).catch(() => trendMonths.map((m) => ({ key: m.key, revenue: 0, margin: 0 })))
+      : trendMonths.map((m) => ({ key: m.key, revenue: 0, margin: 0 }));
+
     // Low stock
     const lowStockItems = lowStockParts.filter((p) => p.qtyOnHand <= p.reorderLevel);
     const enabledModules = user.orgId ? await getOrgModules(user.orgId) : new Set(["JOBS", "INVOICING", "POS"]);
@@ -1185,15 +1191,19 @@ export default async function DashboardPage({
           <p className="mb-2 text-[12px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Today at a Glance</p>
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
             {([
-              { label: "Jobs Received",      value: String(receivedToday),                   sub: `Yesterday: ${receivedYesterday}`,                                          href: "/jobs?status=RECEIVED",               tone: "text-[var(--ink)]",                                           iconBg: "bg-sky-500/15",     iconColor: "text-sky-600",    icon: "↙" },
-              { label: "Jobs Completed",     value: String(completedToday),                  sub: `Yesterday: ${completedYesterday}`,                                         href: "/jobs?status=COMPLETED",              tone: "text-emerald-600",                                            iconBg: "bg-emerald-500/15", iconColor: "text-emerald-600", icon: "✓" },
-              { label: "Cash Collected",     value: formatMoneyCompact(cashTodayValue, currency),     sub: `Yesterday: ${formatMoneyCompact(cashYesterdayValue, currency)}`,   href: "/documents/receipts",                 tone: "text-emerald-600",                                            iconBg: "bg-violet-500/15",  iconColor: "text-violet-600", icon: "$" },
-              { label: "Expenses Today",     value: formatMoneyCompact(expensesTodayValue, currency), sub: `Yesterday: ${formatMoneyCompact(expensesYesterdayValue, currency)}`, href: "/finance/expenses",                tone: "text-red-500",                                                iconBg: "bg-red-500/15",     iconColor: "text-red-600",    icon: "↑" },
-              { label: "Client Balances Due",value: formatMoneyCompact(outstandingValue, currency),   sub: `Unpaid jobs: ${completedUnpaidCount}`,                             href: "/documents/invoices?status=ISSUED",   tone: outstandingValue > 0 ? "text-amber-600" : "text-[var(--ink)]", iconBg: "bg-amber-500/15",   iconColor: "text-amber-600",  icon: "◎" },
+              { label: "Jobs Received",      value: String(receivedToday),                   sub: `Yesterday: ${receivedYesterday}`,                                          href: "/jobs?status=RECEIVED",               tone: "text-[var(--ink)]",                                           iconBg: "bg-sky-500/15",     iconColor: "text-sky-600",    iconPath: "M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7|M12 3l7 7|M12 3v7h7" },
+              { label: "Jobs Completed",     value: String(completedToday),                  sub: `Yesterday: ${completedYesterday}`,                                         href: "/jobs?status=COMPLETED",              tone: "text-emerald-600",                                            iconBg: "bg-emerald-500/15", iconColor: "text-emerald-600", iconPath: "M20 6 9 17l-5-5" },
+              { label: "Cash Collected",     value: formatMoneyCompact(cashTodayValue, currency),     sub: `Yesterday: ${formatMoneyCompact(cashYesterdayValue, currency)}`,   href: "/documents/receipts",                 tone: "text-emerald-600",                                            iconBg: "bg-violet-500/15",  iconColor: "text-violet-600", iconPath: "M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" },
+              { label: "Expenses Today",     value: formatMoneyCompact(expensesTodayValue, currency), sub: `Yesterday: ${formatMoneyCompact(expensesYesterdayValue, currency)}`, href: "/finance/expenses",                tone: "text-red-500",                                                iconBg: "bg-red-500/15",     iconColor: "text-red-600",    iconPath: "M12 19V5|M5 12l7-7 7 7" },
+              { label: "Client Balances Due",value: formatMoneyCompact(outstandingValue, currency),   sub: `Unpaid jobs: ${completedUnpaidCount}`,                             href: "/documents/invoices?status=ISSUED",   tone: outstandingValue > 0 ? "text-amber-600" : "text-[var(--ink)]", iconBg: "bg-amber-500/15",   iconColor: "text-amber-600",  iconPath: "M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z|M12 8v4|M12 16h.01" },
             ] as const).map((item) => (
               <Link key={item.label} href={item.href}
                 className="panel-shadow flex items-start gap-3 rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5 transition hover:-translate-y-[2px]">
-                <div className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-base font-bold ${item.iconBg} ${item.iconColor}`}>{item.icon}</div>
+                <div className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${item.iconBg}`}>
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={item.iconColor} aria-hidden="true">
+                    {item.iconPath.split("|").map((p, i) => <path key={i} d={p} />)}
+                  </svg>
+                </div>
                 <div className="min-w-0">
                   <p className="text-[12px] font-bold uppercase tracking-[0.1em] text-[var(--ink-muted)]">{item.label}</p>
                   <p className={`mt-1 text-lg font-black leading-none ${item.tone}`}>{item.value}</p>
@@ -1283,6 +1293,29 @@ export default async function DashboardPage({
                       )}
                     </div>
                   )}
+                  {/* Pipeline status bar */}
+                  <div className="border-t border-[var(--line)] px-4 py-3">
+                    <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Active pipeline</p>
+                    <div className="flex flex-wrap gap-x-4 gap-y-1.5">
+                      {([
+                        { key: "RECEIVED",         label: "Received",    color: "bg-sky-500" },
+                        { key: "DIAGNOSING",        label: "Diagnosing",  color: "bg-violet-500" },
+                        { key: "IN_REPAIR",         label: "In Repair",   color: "bg-amber-500" },
+                        { key: "READY_FOR_PICKUP",  label: "Ready",       color: "bg-emerald-500" },
+                        { key: "AWAITING_APPROVAL", label: "Approval",    color: "bg-[var(--accent)]" },
+                      ] as const).map((stage) => {
+                        const count = statusCount.get(stage.key) ?? 0;
+                        return (
+                          <Link key={stage.key} href={`/jobs?status=${stage.key}`}
+                            className="flex items-center gap-1.5 transition hover:opacity-80">
+                            <span className={`h-2 w-2 rounded-full ${stage.color}`} />
+                            <span className="text-[12px] font-semibold tabular-nums text-[var(--ink)]">{count}</span>
+                            <span className="text-[12px] text-[var(--ink-muted)]">{stage.label}</span>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  </div>
                 </>
               );
             })()}
@@ -1293,16 +1326,20 @@ export default async function DashboardPage({
             <p className="mb-3 text-sm font-semibold text-[var(--ink)]">Quick actions</p>
             <div className="grid grid-cols-2 gap-2">
               {([
-                { href: "/jobs/new",                        label: "New Repair Job",        icon: "🔧", bg: "bg-sky-500/10",    color: "text-sky-600" },
-                { href: "/documents/receipts",               label: "Record Payment",        icon: "💳", bg: "bg-emerald-500/10",color: "text-emerald-600" },
-                { href: "/pos",                             label: "Add Product Sale",      icon: "🛍️", bg: "bg-violet-500/10", color: "text-violet-600" },
-                { href: "/finance/expenses",                label: "Add Expense",           icon: "📤", bg: "bg-red-500/10",    color: "text-red-600" },
-                { href: "/inventory/purchase-orders/new",   label: "Purchase Order",        icon: "📦", bg: "bg-amber-500/10",  color: "text-amber-600" },
-                { href: "/inventory?filter=low",            label: "Check Low Stock",       icon: "📊", bg: "bg-orange-500/10", color: "text-orange-600" },
+                { href: "/jobs/new",                      label: "New Repair Job",   bg: "bg-sky-500/10",    color: "text-sky-600",    path: "M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" },
+                { href: "/documents/receipts",            label: "Record Payment",   bg: "bg-emerald-500/10",color: "text-emerald-600", path: "M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" },
+                { href: "/pos",                           label: "Add Product Sale", bg: "bg-violet-500/10", color: "text-violet-600",  path: "M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4zM3 6h18|M16 10a4 4 0 0 1-8 0" },
+                { href: "/finance/expenses",              label: "Add Expense",      bg: "bg-red-500/10",    color: "text-red-600",     path: "M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm-8 2a2 2 0 1 1-4 0 2 2 0 0 1 4 0Z" },
+                { href: "/inventory/purchase-orders/new", label: "Purchase Order",   bg: "bg-amber-500/10",  color: "text-amber-600",   path: "M21 10V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l2-1.14|M16.5 9.4 7.55 4.24|M3.29 7 12 12l8.71-5|M12 22V12" },
+                { href: "/inventory?filter=low",          label: "Check Low Stock",  bg: "bg-orange-500/10", color: "text-orange-600",  path: "M3 3v18h18|M7 16l4-8 4 4 4-6" },
               ] as const).map((action) => (
                 <Link key={action.href} href={action.href}
                   className="flex flex-col items-center gap-2 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-3.5 text-center transition hover:border-[var(--accent)]/40 hover:bg-[var(--accent)]/5">
-                  <span className={`flex h-9 w-9 items-center justify-center rounded-lg text-lg ${action.bg} ${action.color}`}>{action.icon}</span>
+                  <span className={`flex h-9 w-9 items-center justify-center rounded-lg ${action.bg}`}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={action.color} aria-hidden="true">
+                      {action.path.split("|").map((p, i) => <path key={i} d={p} />)}
+                    </svg>
+                  </span>
                   <p className="text-[12px] font-semibold leading-tight text-[var(--ink)]">{action.label}</p>
                 </Link>
               ))}
@@ -1348,6 +1385,14 @@ export default async function DashboardPage({
             <p className="text-[13px] font-semibold text-[var(--ink)]">Total this month</p>
             <p className="text-[18px] font-black tabular-nums text-[var(--accent)]">{formatMoneyCompact(totalMtd, currency)}</p>
           </Link>
+
+          {/* Revenue trend chart */}
+          {revenueTrend.some((m) => m.revenue > 0) && (
+            <div className="border-t border-[var(--line)] px-2 pb-2 pt-3">
+              <p className="mb-1 px-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--ink-muted)]">YTD trend</p>
+              <RevenueLineChart data={revenueTrend} currency={currency} />
+            </div>
+          )}
 
         </section>
 
