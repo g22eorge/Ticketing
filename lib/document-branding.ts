@@ -124,19 +124,28 @@ async function ensureRawTable() {
   // Allowlist guards against accidental SQL injection if call sites ever change.
   const ADDABLE_COLUMNS: ReadonlySet<string> = new Set([
     "invoiceTemplateKey", "quotationTemplateKey", "jobCardTemplateKey", "receiptTemplateKey",
+    "primaryColor", "secondaryColor", "accentColor", "backgroundColor", "surfaceColor", "borderColor",
+    "orgId",
   ]);
   const addColumn = async (name: string, dflt: string) => {
     if (!ADDABLE_COLUMNS.has(name)) return;
     if (colSet.has(name)) return;
     await prisma.$executeRawUnsafe(
       `ALTER TABLE "DocumentBrandingSettings" ADD COLUMN "${name}" TEXT DEFAULT ${dflt}`,
-    );
+    ).catch(() => {/* ignore if already exists in concurrent request */});
     colSet.add(name);
   };
   await addColumn("invoiceTemplateKey", "'invoice_classic'");
   await addColumn("quotationTemplateKey", "'quote_classic'");
   await addColumn("jobCardTemplateKey", "'job_card_classic'");
   await addColumn("receiptTemplateKey", "'receipt_classic'");
+  await addColumn("primaryColor",   "'#000000'");
+  await addColumn("secondaryColor", "'#D4AF37'");
+  await addColumn("accentColor",    "'#D4AF37'");
+  await addColumn("backgroundColor","'#FFFFFF'");
+  await addColumn("surfaceColor",   "'#F5F5F5'");
+  await addColumn("borderColor",    "'#E5E5E5'");
+  await addColumn("orgId",          "NULL");
 
   rawTableEnsured = true;
 }
@@ -192,6 +201,9 @@ export async function saveDocumentBrandingSettings(orgId: string, data: Branding
         }) => Promise<unknown>;
       };
     }).documentBrandingSettings;
+
+    // Ensure all columns exist in Turso before writing (handles schema drift)
+    await ensureRawTable().catch(() => {/* non-fatal; upsert will surface real errors */});
 
     // Strip id so Prisma generates a cuid on create — avoids conflict with legacy singleton row
     const { id: _unusedId, ...dataWithoutId } = data;
