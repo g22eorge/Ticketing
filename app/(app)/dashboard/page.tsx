@@ -957,6 +957,12 @@ export default async function DashboardPage({
       expensesYesterdayRaw,
       // Per-tech payout due
       techPayoutByTech,
+      // Intake queue
+      intakePendingCount,
+      // Comms health
+      failedOutboxCount,
+      // Inventory: out-of-stock
+      outOfStockCount,
     ] = await Promise.all([
       prisma.job.groupBy({ by: ["status"], where: orgFilter, _count: { status: true } }),
 
@@ -1013,6 +1019,12 @@ export default async function DashboardPage({
       prisma.job.count({ where: { ...orgFilter, completedAt: { gte: yesterdayStart, lte: yesterdayEnd } } }).catch(() => 0),
       prisma.expense.findMany({ where: { orgId: orgFilter.orgId ?? undefined, paidAt: { gte: yesterdayStart, lte: yesterdayEnd } }, select: { amount: true } }).catch(() => [] as { amount: number }[]),
       prisma.job.findMany({ where: { ...orgFilter, repairPath: "EXTERNAL", status: { in: filterSupportedJobStatuses(["COMPLETED", "DELIVERED"]) as JobStatus[] }, externalPaid: false, assignedToId: { not: null } }, select: { assignedToId: true, externalTechFee: true, externalTechBill: true } }).catch(() => [] as { assignedToId: string | null; externalTechFee: number | null; externalTechBill: number | null }[]),
+      // Intake pending
+      prisma.repairRequest.count({ where: { ...(orgFilter.orgId ? { orgId: orgFilter.orgId } : {}), requestStatus: { in: ["PENDING_INTAKE", "PENDING_FRONT_DESK"] as never[] } } }).catch(() => 0),
+      // Failed / dead outbox messages
+      prisma.outboundMessage.count({ where: { ...(orgFilter.orgId ? { orgId: orgFilter.orgId } : {}), status: { in: ["FAILED", "DEAD"] as never[] } } }).catch(() => 0),
+      // Out-of-stock active parts
+      prisma.part.count({ where: { ...orgFilter, isActive: true, qtyOnHand: { lte: 0 } } }).catch(() => 0),
     ]);
 
     const [
@@ -1189,13 +1201,14 @@ export default async function DashboardPage({
         {/* ── Today at a Glance (desktop only — mobile sees MobileHomeDashboard above) ── */}
         <section className="hidden lg:block">
           <p className="mb-2 text-[12px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Today at a Glance</p>
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+          <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-6">
             {([
               { label: "Jobs Received",      value: String(receivedToday),                   sub: `Yesterday: ${receivedYesterday}`,                                          href: "/jobs?status=RECEIVED",               tone: "text-[var(--ink)]",                                           iconBg: "bg-sky-500/15",     iconColor: "text-sky-600",    iconPath: "M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7|M12 3l7 7|M12 3v7h7" },
               { label: "Jobs Completed",     value: String(completedToday),                  sub: `Yesterday: ${completedYesterday}`,                                         href: "/jobs?status=COMPLETED",              tone: "text-emerald-600",                                            iconBg: "bg-emerald-500/15", iconColor: "text-emerald-600", iconPath: "M20 6 9 17l-5-5" },
+              { label: "Intake Pending",     value: String(intakePendingCount),              sub: intakePendingCount > 0 ? "Needs front-desk" : "Queue clear",                href: "/intake",                             tone: intakePendingCount > 0 ? "text-orange-500" : "text-[var(--ink-muted)]", iconBg: "bg-orange-500/15", iconColor: "text-orange-500", iconPath: "M9 12h6|M9 16h4|M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z|M14 2v6h6" },
               { label: "Cash Collected",     value: formatMoneyCompact(cashTodayValue, currency),     sub: `Yesterday: ${formatMoneyCompact(cashYesterdayValue, currency)}`,   href: "/documents/receipts",                 tone: "text-emerald-600",                                            iconBg: "bg-violet-500/15",  iconColor: "text-violet-600", iconPath: "M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" },
               { label: "Expenses Today",     value: formatMoneyCompact(expensesTodayValue, currency), sub: `Yesterday: ${formatMoneyCompact(expensesYesterdayValue, currency)}`, href: "/finance/expenses",                tone: "text-red-500",                                                iconBg: "bg-red-500/15",     iconColor: "text-red-600",    iconPath: "M12 19V5|M5 12l7-7 7 7" },
-              { label: "Client Balances Due",value: formatMoneyCompact(outstandingValue, currency),   sub: `Unpaid jobs: ${completedUnpaidCount}`,                             href: "/documents/invoices?status=ISSUED",   tone: outstandingValue > 0 ? "text-amber-600" : "text-[var(--ink)]", iconBg: "bg-amber-500/15",   iconColor: "text-amber-600",  iconPath: "M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z|M12 8v4|M12 16h.01" },
+              { label: "Balances Due",       value: formatMoneyCompact(outstandingValue, currency),   sub: `${completedUnpaidCount} unpaid job${completedUnpaidCount !== 1 ? "s" : ""}`, href: "/documents/invoices?status=ISSUED", tone: outstandingValue > 0 ? "text-amber-600" : "text-[var(--ink)]", iconBg: "bg-amber-500/15", iconColor: "text-amber-600", iconPath: "M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z|M12 8v4|M12 16h.01" },
             ] as const).map((item) => (
               <Link key={item.label} href={item.href}
                 className="panel-shadow flex items-start gap-3 rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5 transition hover:-translate-y-[2px]">
@@ -1271,51 +1284,46 @@ export default async function DashboardPage({
                     <p className="px-4 py-3 text-center text-sm text-[var(--ink-muted)]">All clear ✓</p>
                   )}
                   {/* Secondary alerts row */}
-                  {(completedUnpaidCount > 0 || jobsNoClientUpdateCount > 0) && (
-                    <div className="flex divide-x divide-[var(--line)] border-t border-[var(--line)]">
+                  {(completedUnpaidCount > 0 || jobsNoClientUpdateCount > 0 || intakePendingCount > 0 || failedOutboxCount > 0) && (
+                    <div className="divide-y divide-[var(--line)] border-t border-[var(--line)]">
+                      {intakePendingCount > 0 && (
+                        <Link href="/intake"
+                          className="flex items-center justify-between px-4 py-2.5 transition hover:bg-[var(--panel-strong)]">
+                          <p className="text-[13px] text-[var(--ink-muted)]">
+                            <span className="font-bold text-orange-500">{intakePendingCount}</span> repair request{intakePendingCount !== 1 ? "s" : ""} awaiting intake
+                          </p>
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--ink-muted)]/40"><path d="m9 18 6-6-6-6"/></svg>
+                        </Link>
+                      )}
                       {completedUnpaidCount > 0 && (
                         <Link href="/jobs?status=COMPLETED"
-                          className="flex flex-1 items-center justify-between px-4 py-2.5 transition hover:bg-[var(--panel-strong)]">
+                          className="flex items-center justify-between px-4 py-2.5 transition hover:bg-[var(--panel-strong)]">
                           <p className="text-[13px] text-[var(--ink-muted)]">
-                            <span className="font-bold text-red-500">{completedUnpaidCount}</span> completed unpaid
+                            <span className="font-bold text-red-500">{completedUnpaidCount}</span> completed job{completedUnpaidCount !== 1 ? "s" : ""} unpaid
                           </p>
                           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--ink-muted)]/40"><path d="m9 18 6-6-6-6"/></svg>
                         </Link>
                       )}
                       {jobsNoClientUpdateCount > 0 && (
                         <Link href="/jobs"
-                          className="flex flex-1 items-center justify-between px-4 py-2.5 transition hover:bg-[var(--panel-strong)]">
+                          className="flex items-center justify-between px-4 py-2.5 transition hover:bg-[var(--panel-strong)]">
                           <p className="text-[13px] text-[var(--ink-muted)]">
-                            <span className="font-bold text-amber-700 dark:text-amber-500">{jobsNoClientUpdateCount}</span> no client update
+                            <span className="font-bold text-amber-600 dark:text-amber-400">{jobsNoClientUpdateCount}</span> job{jobsNoClientUpdateCount !== 1 ? "s" : ""} with no client update
+                          </p>
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--ink-muted)]/40"><path d="m9 18 6-6-6-6"/></svg>
+                        </Link>
+                      )}
+                      {failedOutboxCount > 0 && (
+                        <Link href="/settings/notifications/outbox"
+                          className="flex items-center justify-between px-4 py-2.5 transition hover:bg-[var(--panel-strong)]">
+                          <p className="text-[13px] text-[var(--ink-muted)]">
+                            <span className="font-bold text-rose-500">{failedOutboxCount}</span> message{failedOutboxCount !== 1 ? "s" : ""} failed to send
                           </p>
                           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--ink-muted)]/40"><path d="m9 18 6-6-6-6"/></svg>
                         </Link>
                       )}
                     </div>
                   )}
-                  {/* Pipeline status bar */}
-                  <div className="border-t border-[var(--line)] px-4 py-3">
-                    <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Active pipeline</p>
-                    <div className="flex flex-wrap gap-x-4 gap-y-1.5">
-                      {([
-                        { key: "RECEIVED",         label: "Received",    color: "bg-sky-500" },
-                        { key: "DIAGNOSING",        label: "Diagnosing",  color: "bg-violet-500" },
-                        { key: "IN_REPAIR",         label: "In Repair",   color: "bg-amber-500" },
-                        { key: "READY_FOR_PICKUP",  label: "Ready",       color: "bg-emerald-500" },
-                        { key: "AWAITING_APPROVAL", label: "Approval",    color: "bg-[var(--accent)]" },
-                      ] as const).map((stage) => {
-                        const count = statusCount.get(stage.key) ?? 0;
-                        return (
-                          <Link key={stage.key} href={`/jobs?status=${stage.key}`}
-                            className="flex items-center gap-1.5 transition hover:opacity-80">
-                            <span className={`h-2 w-2 rounded-full ${stage.color}`} />
-                            <span className="text-[12px] font-semibold tabular-nums text-[var(--ink)]">{count}</span>
-                            <span className="text-[12px] text-[var(--ink-muted)]">{stage.label}</span>
-                          </Link>
-                        );
-                      })}
-                    </div>
-                  </div>
                 </>
               );
             })()}
@@ -1348,53 +1356,113 @@ export default async function DashboardPage({
 
         </div>
 
-        {/* ── Revenue Summary ── */}
-        <section className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
-          {/* Header — single line, no ALL CAPS */}
-          <div className="flex items-center justify-between border-b border-[var(--line)] px-4 py-2.5">
-            <p className="text-sm font-semibold text-[var(--ink)]">
-              Revenue <span className="font-normal text-[var(--ink-muted)]">· {monthLabel(today.getFullYear(), today.getMonth() + 1)}</span>
-            </p>
-            <Link href="/reports" className="text-[12px] font-semibold text-[var(--accent)]">Reports →</Link>
-          </div>
+        {/* ── Revenue + Operational Health ── */}
+        <div className="grid gap-3 lg:grid-cols-3">
 
-          {/* 3 channel tiles — compact, no wrapping */}
-          <div className="grid grid-cols-3 divide-x divide-[var(--line)]">
-            {([
-              { label: "Repairs",   value: repairsMtd,   pct: totalMtd > 0 ? Math.round(repairsMtd / totalMtd * 100) : 0,   dot: "bg-sky-500",     num: "text-sky-700 dark:text-sky-400",      href: "/jobs?status=COMPLETED" },
-              { label: "Products",  value: productsMtd,  pct: totalMtd > 0 ? Math.round(productsMtd / totalMtd * 100) : 0,  dot: "bg-violet-500",  num: "text-violet-700 dark:text-violet-400", href: "/pos" },
-              { label: "Corporate", value: corporateMtd, pct: totalMtd > 0 ? Math.round(corporateMtd / totalMtd * 100) : 0, dot: "bg-emerald-500", num: "text-emerald-700 dark:text-emerald-400", href: "/documents/invoices" },
-            ] as const).map((s) => (
-              <Link key={s.label} href={s.href}
-                className="flex flex-col gap-1 px-3 py-3 transition hover:bg-[var(--panel-strong)]">
-                <div className="flex items-center gap-1.5">
-                  <span className={`h-2 w-2 rounded-full ${s.dot}`} />
-                  <p className="text-[12px] text-[var(--ink-muted)]">{s.label}</p>
-                </div>
-                <p className={`text-[15px] font-black tabular-nums ${s.num}`}>
-                  {formatMoneyCompact(s.value, currency)}
-                </p>
-                <p className="text-[11px] font-semibold text-[var(--ink-muted)]">{s.pct}%</p>
-              </Link>
-            ))}
-          </div>
-
-          {/* Total MTD — full-width highlight row */}
-          <Link href="/reports"
-            className="flex items-center justify-between border-t border-[var(--line)] bg-[var(--accent)]/6 px-4 py-3 transition hover:bg-[var(--accent)]/10">
-            <p className="text-[13px] font-semibold text-[var(--ink)]">Total this month</p>
-            <p className="text-[18px] font-black tabular-nums text-[var(--accent)]">{formatMoneyCompact(totalMtd, currency)}</p>
-          </Link>
-
-          {/* Revenue trend chart */}
-          {revenueTrend.some((m) => m.revenue > 0) && (
-            <div className="border-t border-[var(--line)] px-2 pb-2 pt-3">
-              <p className="mb-1 px-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--ink-muted)]">YTD trend</p>
-              <RevenueLineChart data={revenueTrend} currency={currency} />
+          {/* Revenue — 2/3 width on desktop */}
+          <section className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)] lg:col-span-2">
+            <div className="flex items-center justify-between border-b border-[var(--line)] px-4 py-2.5">
+              <p className="text-sm font-semibold text-[var(--ink)]">
+                Revenue <span className="font-normal text-[var(--ink-muted)]">· {monthLabel(today.getFullYear(), today.getMonth() + 1)}</span>
+              </p>
+              <Link href="/reports" className="text-[12px] font-semibold text-[var(--accent)]">Reports →</Link>
             </div>
-          )}
+            {/* 3 channel tiles */}
+            <div className="grid grid-cols-3 divide-x divide-[var(--line)]">
+              {([
+                { label: "Repairs",   value: repairsMtd,   pct: totalMtd > 0 ? Math.round(repairsMtd / totalMtd * 100) : 0,   dot: "bg-sky-500",     num: "text-sky-600 dark:text-sky-400",      href: "/jobs?status=COMPLETED" },
+                { label: "Products",  value: productsMtd,  pct: totalMtd > 0 ? Math.round(productsMtd / totalMtd * 100) : 0,  dot: "bg-violet-500",  num: "text-violet-600 dark:text-violet-400", href: "/pos" },
+                { label: "Corporate", value: corporateMtd, pct: totalMtd > 0 ? Math.round(corporateMtd / totalMtd * 100) : 0, dot: "bg-emerald-500", num: "text-emerald-600 dark:text-emerald-400", href: "/documents/invoices" },
+              ] as const).map((s) => (
+                <Link key={s.label} href={s.href}
+                  className="flex flex-col gap-1 px-3 py-3 transition hover:bg-[var(--panel-strong)]">
+                  <div className="flex items-center gap-1.5">
+                    <span className={`h-2 w-2 rounded-full ${s.dot}`} />
+                    <p className="text-[12px] text-[var(--ink-muted)]">{s.label}</p>
+                  </div>
+                  <p className={`text-[15px] font-black tabular-nums ${s.num}`}>{formatMoneyCompact(s.value, currency)}</p>
+                  <p className="text-[11px] font-semibold text-[var(--ink-muted)]">{s.pct}%</p>
+                </Link>
+              ))}
+            </div>
+            {/* Total MTD */}
+            <Link href="/reports"
+              className="flex items-center justify-between border-t border-[var(--line)] bg-[var(--accent)]/6 px-4 py-3 transition hover:bg-[var(--accent)]/10">
+              <p className="text-[13px] font-semibold text-[var(--ink)]">Total this month</p>
+              <p className="text-[18px] font-black tabular-nums text-[var(--accent)]">{formatMoneyCompact(totalMtd, currency)}</p>
+            </Link>
+            {/* YTD trend chart */}
+            {revenueTrend.some((m) => m.revenue > 0) && (
+              <div className="border-t border-[var(--line)] px-2 pb-2 pt-3">
+                <p className="mb-1 px-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--ink-muted)]">YTD trend</p>
+                <RevenueLineChart data={revenueTrend} currency={currency} />
+              </div>
+            )}
+          </section>
 
-        </section>
+          {/* Operational Health sidebar — 1/3 width */}
+          <div className="flex flex-col gap-3">
+
+            {/* Inventory health */}
+            <section className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
+              <div className="flex items-center justify-between border-b border-[var(--line)] px-4 py-2.5">
+                <p className="text-sm font-semibold text-[var(--ink)]">Inventory</p>
+                <Link href="/inventory" className="text-[12px] font-semibold text-[var(--accent)]">View →</Link>
+              </div>
+              <div className="divide-y divide-[var(--line)]">
+                <Link href="/inventory" className="flex items-center justify-between px-4 py-2.5 transition hover:bg-[var(--panel-strong)]">
+                  <div className="flex items-center gap-2">
+                    <span className="h-2 w-2 rounded-full bg-sky-500" />
+                    <p className="text-[13px] text-[var(--ink)]">Active parts</p>
+                  </div>
+                  <p className="text-[13px] font-bold tabular-nums text-[var(--ink)]">{lowStockParts.length + (outOfStockCount > 0 ? 0 : 0)}</p>
+                </Link>
+                <Link href="/inventory?filter=low" className="flex items-center justify-between px-4 py-2.5 transition hover:bg-[var(--panel-strong)]">
+                  <div className="flex items-center gap-2">
+                    <span className="h-2 w-2 rounded-full bg-amber-500" />
+                    <p className="text-[13px] text-[var(--ink)]">Low stock</p>
+                  </div>
+                  <p className={`text-[13px] font-bold tabular-nums ${lowStockItems.length > 0 ? "text-amber-500" : "text-[var(--ink-muted)]"}`}>{lowStockItems.length}</p>
+                </Link>
+                <Link href="/inventory?filter=out" className="flex items-center justify-between px-4 py-2.5 transition hover:bg-[var(--panel-strong)]">
+                  <div className="flex items-center gap-2">
+                    <span className="h-2 w-2 rounded-full bg-red-500" />
+                    <p className="text-[13px] text-[var(--ink)]">Out of stock</p>
+                  </div>
+                  <p className={`text-[13px] font-bold tabular-nums ${outOfStockCount > 0 ? "text-red-500" : "text-[var(--ink-muted)]"}`}>{outOfStockCount}</p>
+                </Link>
+              </div>
+            </section>
+
+            {/* Comms health */}
+            <section className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
+              <div className="flex items-center justify-between border-b border-[var(--line)] px-4 py-2.5">
+                <p className="text-sm font-semibold text-[var(--ink)]">Comms</p>
+                <Link href="/settings/notifications/outbox" className="text-[12px] font-semibold text-[var(--accent)]">Outbox →</Link>
+              </div>
+              <div className="divide-y divide-[var(--line)]">
+                <div className="flex items-center justify-between px-4 py-2.5">
+                  <div className="flex items-center gap-2">
+                    <span className={`h-2 w-2 rounded-full ${failedOutboxCount > 0 ? "bg-rose-500" : "bg-emerald-500"}`} />
+                    <p className="text-[13px] text-[var(--ink)]">{failedOutboxCount > 0 ? "Messages failed" : "All messages OK"}</p>
+                  </div>
+                  {failedOutboxCount > 0
+                    ? <Link href="/settings/notifications/outbox" className={`text-[13px] font-bold tabular-nums text-rose-500`}>{failedOutboxCount}</Link>
+                    : <p className="text-[12px] font-semibold text-emerald-600">✓</p>
+                  }
+                </div>
+                <Link href="/settings/notifications/whatsapp" className="flex items-center justify-between px-4 py-2.5 transition hover:bg-[var(--panel-strong)]">
+                  <div className="flex items-center gap-2">
+                    <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                    <p className="text-[13px] text-[var(--ink)]">WhatsApp config</p>
+                  </div>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--ink-muted)]/40"><path d="m9 18 6-6-6-6"/></svg>
+                </Link>
+              </div>
+            </section>
+
+          </div>
+        </div>
 
         {/* ── Financial Position | Repair Pipeline + Sales Funnel ── */}
         <div className="grid gap-3 lg:grid-cols-2">
