@@ -50,6 +50,7 @@ const nav = [
   { href: "/documents/templates",      label: "Templates",      group: "documents" as NavGroup, roles: ["ADMIN", "MANAGER", "OPS"] as const },
 
   // Finance
+  { href: "/finance",                    label: "Finance Hub",      group: "finance" as NavGroup, roles: ["ADMIN", "MANAGER", "OPS", "FINANCE"] as const },
   { href: "/finance/expenses",             label: "Expenses",         group: "finance" as NavGroup, roles: ["ADMIN", "MANAGER", "OPS", "FINANCE"] as const },
   { href: "/finance/tax-rates",            label: "Tax Rates",        group: "finance" as NavGroup, roles: ["ADMIN", "MANAGER"] as const },
   { href: "/finance/recurring",            label: "Recurring",        group: "finance" as NavGroup, roles: ["ADMIN", "MANAGER", "OPS", "FINANCE"] as const },
