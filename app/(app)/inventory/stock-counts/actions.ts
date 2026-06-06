@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { requireOrgSession } from "@/lib/org-context";
 import { can } from "@/lib/permissions";
 import { assertOrgCanMutate } from "@/lib/org-write";
+import { notifyStockCountApproved } from "@/lib/notifications";
 
 async function requireInventoryManager() {
   const ctx = await requireOrgSession();
@@ -132,4 +133,19 @@ export async function approveStockCountAction(formData: FormData): Promise<void>
   revalidatePath("/inventory/stock-counts");
   revalidatePath(`/inventory/stock-counts/${id}`);
   revalidatePath("/inventory");
+  // Fetch count details for notification (after transaction)
+  const count = await prisma.stockCount.findUnique({
+    where: { id },
+    select: { countNumber: true, items: { select: { varianceQty: true } } },
+  });
+  if (count) {
+    const varianceCount = count.items.filter((i) => i.varianceQty !== 0).length;
+    const actor = await prisma.user.findUnique({ where: { id: session.user.id }, select: { name: true, email: true } });
+    notifyStockCountApproved({
+      orgId,
+      countNumber: count.countNumber,
+      varianceCount,
+      actorName: actor?.name ?? actor?.email ?? "Unknown",
+    }).catch(() => {});
+  }
 }

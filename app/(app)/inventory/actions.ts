@@ -2,54 +2,14 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import type { Prisma } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
 import { requireOrgSession } from "@/lib/org-context";
 import { can } from "@/lib/permissions";
 import { checkPartLimit } from "@/lib/plan-limits";
+import { notifyStockAlert } from "@/lib/notifications";
 
 type StockTxnType = "IN" | "OUT" | "ADJUST";
-type Tx = Prisma.TransactionClient;
-
-async function getDefaultStockLocation(tx: Tx, orgId: string) {
-  return tx.stockLocation.upsert({
-    where: { orgId_code: { orgId, code: "MAIN" } },
-    create: { orgId, code: "MAIN", name: "Main Stock", isActive: true },
-    update: { isActive: true },
-    select: { id: true },
-  });
-}
-
-async function syncPartAggregate(tx: Tx, partId: string) {
-  const aggregate = await tx.partLocationStock.aggregate({
-    where: { partId },
-    _sum: { qtyOnHand: true },
-  });
-  await tx.part.update({
-    where: { id: partId },
-    data: { qtyOnHand: aggregate._sum.qtyOnHand ?? 0 },
-  });
-}
-
-async function prepareManualStockAdjustment(tx: Tx, orgId: string, partId: string, aggregateQty: number) {
-  const location = await getDefaultStockLocation(tx, orgId);
-  const locationRows = await tx.partLocationStock.count({ where: { partId } });
-
-  if (locationRows === 0 && aggregateQty !== 0) {
-    await tx.partLocationStock.create({
-      data: {
-        orgId,
-        partId,
-        locationId: location.id,
-        qtyOnHand: aggregateQty,
-        qtyReserved: 0,
-      },
-    });
-  }
-
-  return location.id;
-}
 
 export async function createPartAction(formData: FormData) {
   const { user, orgId } = await requireOrgSession();
@@ -126,8 +86,21 @@ export async function adjustStockAction(formData: FormData) {
   const reason = String(formData.get("reason") ?? "").trim();
 
   if (!partId) redirect("/inventory?error=Part+is+required");
-  if (!(["IN", "OUT", "ADJUST"] as const).includes(type)) redirect("/inventory?error=Invalid+stock+action");
-  if (!Number.isFinite(qty) || qty === 0) redirect("/inventory?error=Quantity+must+be+a+non-zero+integer");
+  if (!(["IN", "OUT", "ADJUST"] as const).includes(type))
+    redirect(`/inventory/${partId}?error=Invalid+stock+action`);
+
+  // ADJUST supports a "correctTo" (set exact count) instead of a delta.
+  const correctToRaw = String(formData.get("correctTo") ?? "").trim();
+  const isCorrection = type === "ADJUST" && correctToRaw !== "";
+  const correctTo = isCorrection ? Math.floor(Number(correctToRaw)) : null;
+
+  if (isCorrection) {
+    if (!Number.isFinite(correctTo!) || correctTo! < 0)
+      redirect(`/inventory/${partId}?error=Enter+a+valid+target+quantity+%280+or+more%29`);
+  } else {
+    if (!Number.isFinite(qty) || qty === 0)
+      redirect(`/inventory/${partId}?error=Enter+a+non-zero+quantity`);
+  }
 
   try {
     await prisma.$transaction(async (tx) => {
@@ -137,44 +110,67 @@ export async function adjustStockAction(formData: FormData) {
       });
       if (!part) throw new Error("Part not found");
 
-      const delta =
-        type === "IN" ? Math.abs(qty)
-        : type === "OUT" ? -Math.abs(qty)
-        : qty;
-      const nextQty = part.qtyOnHand + delta;
+      let delta: number;
+      let logQty: number;
+      let logReason: string | null;
 
-      if (nextQty < 0) throw new Error("Stock cannot go below zero");
+      if (isCorrection) {
+        delta = correctTo! - part.qtyOnHand;
+        logQty = Math.abs(delta);
+        logReason = reason || `Qty correction: ${part.qtyOnHand} → ${correctTo}`;
+        if (delta === 0) redirect(`/inventory/${partId}?error=Quantity+is+already+${correctTo}`);
+      } else {
+        delta = type === "IN" ? Math.abs(qty) : type === "OUT" ? -Math.abs(qty) : qty;
+        logQty = Math.abs(qty);
+        logReason = reason || null;
+        const nextQty = part.qtyOnHand + delta;
+        if (nextQty < 0)
+          throw new Error(`Cannot remove ${Math.abs(qty)} — only ${part.qtyOnHand} on hand`);
+      }
 
-      const locationId = await prepareManualStockAdjustment(tx, orgId, part.id, part.qtyOnHand);
-      await tx.partLocationStock.upsert({
-        where: { partId_locationId: { partId: part.id, locationId } },
-        create: {
-          orgId,
-          partId: part.id,
-          locationId,
-          qtyOnHand: delta,
-          qtyReserved: 0,
-        },
-        update: { qtyOnHand: { increment: delta } },
+      await tx.part.update({
+        where: { id: part.id },
+        data: { qtyOnHand: { increment: delta } },
       });
       await tx.partStockTransaction.create({
         data: {
           partId: part.id,
           type,
-          quantity: type === "IN" ? Math.abs(qty) : type === "OUT" ? Math.abs(qty) : qty,
-          reason: reason || null,
+          quantity: logQty,
+          reason: logReason,
           createdById: session.user.id,
         },
       });
-      await syncPartAggregate(tx, part.id);
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Failed to adjust stock";
-    redirect(`/inventory?error=${encodeURIComponent(message)}`);
+    redirect(`/inventory/${partId}?error=${encodeURIComponent(message)}`);
   }
 
+  // Fire stock alert (out-of-stock or low-stock) if threshold crossed.
+  // Runs after the transaction — non-blocking, failures don't affect the user action.
+  try {
+    const updated = await prisma.part.findFirst({
+      where: { id: partId, orgId },
+      select: { name: true, qtyOnHand: true, reorderLevel: true },
+    });
+    if (updated) {
+      await notifyStockAlert({
+        orgId,
+        partId,
+        partName: updated.name,
+        qtyOnHand: updated.qtyOnHand,
+        reorderLevel: updated.reorderLevel,
+        actorName: user.name ?? user.email ?? "Unknown",
+      });
+    }
+  } catch {
+    // Notification failure must never block the stock action
+  }
+
+  revalidatePath(`/inventory/${partId}`);
   revalidatePath("/inventory");
-  redirect("/inventory");
+  redirect(`/inventory/${partId}?saved=1`);
 }
 
 export async function togglePartActiveAction(formData: FormData) {
@@ -186,8 +182,9 @@ export async function togglePartActiveAction(formData: FormData) {
   if (!partId) redirect("/inventory?error=Part+is+required");
 
   await prisma.part.updateMany({ where: { id: partId, orgId }, data: { isActive: next === "1" } });
+  revalidatePath(`/inventory/${partId}`);
   revalidatePath("/inventory");
-  redirect(next === "1" ? "/inventory?status=active" : "/inventory?status=inactive");
+  redirect(`/inventory/${partId}`);
 }
 
 export async function updatePartAction(formData: FormData) {
@@ -200,7 +197,7 @@ export async function updatePartAction(formData: FormData) {
   const manufacturer = String(formData.get("manufacturer") ?? "").trim();
   const unitCostRaw = String(formData.get("unitCost") ?? "").trim();
   const reorderRaw = String(formData.get("reorderLevel") ?? "").trim();
-  if (!partId || !sku || !name) redirect("/inventory?error=Part%2C+SKU%2C+and+name+are+required");
+  if (!partId || !sku || !name) redirect(`/inventory/${partId}?error=SKU+and+name+are+required`);
 
   const unitCost = unitCostRaw ? Number(unitCostRaw) : null;
   const reorderLevel = reorderRaw ? Math.max(0, Math.floor(Number(reorderRaw))) : 0;
@@ -208,7 +205,7 @@ export async function updatePartAction(formData: FormData) {
     where: { orgId, sku, id: { not: partId } },
     select: { id: true },
   });
-  if (conflictingSku) redirect(`/inventory?error=${encodeURIComponent("Another part already uses that SKU")}`);
+  if (conflictingSku) redirect(`/inventory/${partId}?error=${encodeURIComponent("Another part already uses that SKU")}`);
 
   try {
     const updated = await prisma.part.updateMany({
@@ -224,9 +221,10 @@ export async function updatePartAction(formData: FormData) {
     if (updated.count !== 1) throw new Error("Part not found");
   } catch (err) {
     const message = err instanceof Error ? err.message : "Failed to update part";
-    redirect(`/inventory?error=${encodeURIComponent(message)}`);
+    redirect(`/inventory/${partId}?error=${encodeURIComponent(message)}`);
   }
 
+  revalidatePath(`/inventory/${partId}`);
   revalidatePath("/inventory");
-  redirect("/inventory");
+  redirect(`/inventory/${partId}`);
 }

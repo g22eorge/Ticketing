@@ -977,6 +977,7 @@ model Part {
   manufacturer String?
   unitCost     Float?
   qtyOnHand    Int           @default(0)
+  qtyReserved  Int           @default(0)
   reorderLevel Int           @default(0)
   isActive     Boolean       @default(true)
   orgId        String?
@@ -1105,6 +1106,22 @@ enum NotificationType {
   PAYOUT_GENERATED
   TIMELINE_UPDATED
   DELAY_NOTE_ADDED
+  STOCK_LOW
+  STOCK_OUT
+  JOB_CREATED
+  REPAIR_REQUEST_RECEIVED
+  QUOTATION_ACCEPTED
+  QUOTATION_REJECTED
+  LEAD_WON
+  LEAD_LOST
+  PURCHASE_REQUEST_SUBMITTED
+  PURCHASE_REQUEST_APPROVED
+  STOCK_RECEIVED
+  STOCK_TRANSFER_UPDATED
+  STOCK_COUNT_APPROVED
+  FIELD_VISIT_COMPLETED
+  CREDIT_NOTE_ISSUED
+  REFUND_ISSUED
 }
 
 enum NotificationChannel {
@@ -1235,6 +1252,15 @@ model NotificationPreferences {
   notifyPayoutGenerated   Boolean @default(true)
   notifyTimelineUpdated   Boolean @default(true)
   notifyDelayNote         Boolean @default(true)
+  notifyStockAlert        Boolean @default(true)
+  notifyJobCreated        Boolean @default(true)
+  notifyRepairRequest     Boolean @default(true)
+  notifyQuotationStatus   Boolean @default(true)
+  notifyLeadStatus        Boolean @default(true)
+  notifyPurchaseRequest   Boolean @default(true)
+  notifyStockMovement     Boolean @default(true)
+  notifyFieldVisit        Boolean @default(true)
+  notifyCreditNote        Boolean @default(true)
 
   whatsappEnabled Boolean @default(true)
   emailEnabled    Boolean @default(false)

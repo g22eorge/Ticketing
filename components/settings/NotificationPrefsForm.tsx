@@ -18,6 +18,15 @@ type Prefs = {
   notifyPayoutGenerated: boolean;
   notifyTimelineUpdated: boolean;
   notifyDelayNote: boolean;
+  notifyStockAlert: boolean;
+  notifyJobCreated: boolean;
+  notifyRepairRequest: boolean;
+  notifyQuotationStatus: boolean;
+  notifyLeadStatus: boolean;
+  notifyPurchaseRequest: boolean;
+  notifyStockMovement: boolean;
+  notifyFieldVisit: boolean;
+  notifyCreditNote: boolean;
 };
 
 function Toggle({ name, label, hint, defaultChecked }: { name: keyof Prefs; label: string; hint: string; defaultChecked: boolean }) {
@@ -69,15 +78,41 @@ export function NotificationPrefsForm({ prefs }: { prefs: Prefs }) {
         />
       </div>
 
+      {/* Jobs & Repairs */}
+      <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Jobs &amp; Repairs</p>
       <div className="grid gap-2 md:grid-cols-2">
-        <Toggle name="notifyStatusChange" label="Status Changes" hint="When a job moves to a new stage." defaultChecked={prefs.notifyStatusChange} />
-        <Toggle name="notifyApprovalNeeded" label="Approval Needed" hint="When a job requires client approval." defaultChecked={prefs.notifyApprovalNeeded} />
-        <Toggle name="notifyJobAssigned" label="Job Assigned" hint="When a job is assigned to you." defaultChecked={prefs.notifyJobAssigned} />
-        <Toggle name="notifyEstimateSubmitted" label="Estimate Submitted" hint="When external tech submits an estimate." defaultChecked={prefs.notifyEstimateSubmitted} />
-        <Toggle name="notifyTimelineUpdated" label="Timeline Updated" hint="When ETA or timeline changes." defaultChecked={prefs.notifyTimelineUpdated} />
-        <Toggle name="notifyDelayNote" label="Delay Notes" hint="When a delay note is added/updated." defaultChecked={prefs.notifyDelayNote} />
-        <Toggle name="notifyPaymentReceived" label="Payment Received" hint="When payment is recorded." defaultChecked={prefs.notifyPaymentReceived} />
-        <Toggle name="notifyPayoutGenerated" label="Payout Generated" hint="When external payout is generated." defaultChecked={prefs.notifyPayoutGenerated} />
+        <Toggle name="notifyJobCreated"     label="Job Created"         hint="When a new job is opened."                    defaultChecked={prefs.notifyJobCreated} />
+        <Toggle name="notifyRepairRequest"  label="Repair Requests"     hint="When a new online repair request arrives."    defaultChecked={prefs.notifyRepairRequest} />
+        <Toggle name="notifyStatusChange"   label="Status Changes"      hint="When a job moves to a new stage."             defaultChecked={prefs.notifyStatusChange} />
+        <Toggle name="notifyApprovalNeeded" label="Approval Needed"     hint="When a job requires client approval."         defaultChecked={prefs.notifyApprovalNeeded} />
+        <Toggle name="notifyJobAssigned"    label="Job Assigned"        hint="When a job is assigned to you."               defaultChecked={prefs.notifyJobAssigned} />
+        <Toggle name="notifyEstimateSubmitted" label="Estimate Submitted" hint="When a tech submits an estimate."           defaultChecked={prefs.notifyEstimateSubmitted} />
+        <Toggle name="notifyTimelineUpdated" label="Timeline Updated"   hint="When ETA or timeline changes."                defaultChecked={prefs.notifyTimelineUpdated} />
+        <Toggle name="notifyDelayNote"      label="Delay Notes"         hint="When a delay note is added."                  defaultChecked={prefs.notifyDelayNote} />
+        <Toggle name="notifyFieldVisit"     label="Field Visits"        hint="When a field visit is completed."             defaultChecked={prefs.notifyFieldVisit} />
+      </div>
+
+      {/* Finance */}
+      <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Finance</p>
+      <div className="grid gap-2 md:grid-cols-2">
+        <Toggle name="notifyPaymentReceived"  label="Payment Received"   hint="When a client payment is recorded."          defaultChecked={prefs.notifyPaymentReceived} />
+        <Toggle name="notifyPayoutGenerated"  label="Payout Generated"   hint="When a technician payout is recorded."       defaultChecked={prefs.notifyPayoutGenerated} />
+        <Toggle name="notifyQuotationStatus"  label="Quotation Accepted / Rejected" hint="When a quotation changes status." defaultChecked={prefs.notifyQuotationStatus} />
+        <Toggle name="notifyCreditNote"       label="Credit Notes &amp; Refunds"    hint="When a credit note or refund is issued." defaultChecked={prefs.notifyCreditNote} />
+      </div>
+
+      {/* Sales */}
+      <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Sales &amp; CRM</p>
+      <div className="grid gap-2 md:grid-cols-2">
+        <Toggle name="notifyLeadStatus" label="Lead Won / Lost" hint="When a lead is marked won or lost." defaultChecked={prefs.notifyLeadStatus} />
+      </div>
+
+      {/* Inventory */}
+      <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Inventory</p>
+      <div className="grid gap-2 md:grid-cols-2">
+        <Toggle name="notifyStockAlert"     label="Low / Out of Stock"    hint="When a part hits the reorder level or runs out." defaultChecked={prefs.notifyStockAlert} />
+        <Toggle name="notifyStockMovement"  label="Stock Received / Transfers / Counts" hint="When goods are received, transfers complete, or stock counts are approved." defaultChecked={prefs.notifyStockMovement} />
+        <Toggle name="notifyPurchaseRequest" label="Purchase Requests"    hint="When a purchase request is submitted or approved." defaultChecked={prefs.notifyPurchaseRequest} />
       </div>
 
       {state.error ? <p className="text-sm text-[var(--ink)]">{state.error}</p> : null}

@@ -176,6 +176,15 @@ export async function updateUserPreferences(
     notifyDelayNote?: boolean;
     whatsappEnabled?: boolean;
     emailEnabled?: boolean;
+    notifyStockAlert?: boolean;
+    notifyJobCreated?: boolean;
+    notifyRepairRequest?: boolean;
+    notifyQuotationStatus?: boolean;
+    notifyLeadStatus?: boolean;
+    notifyPurchaseRequest?: boolean;
+    notifyStockMovement?: boolean;
+    notifyFieldVisit?: boolean;
+    notifyCreditNote?: boolean;
   }
 ) {
   return prisma.notificationPreferences.upsert({
@@ -762,4 +771,315 @@ export async function notifyDelayNote(
       })),
     });
   }
+}
+
+// ---------------------------------------------------------------------------
+// Stock level alerts — STOCK_LOW and STOCK_OUT
+// Fires when qty crosses a threshold. Suppresses duplicates: won't re-fire
+// the same level while stock hasn't recovered above it since the last alert.
+// ---------------------------------------------------------------------------
+
+export async function notifyStockAlert({
+  orgId,
+  partId,
+  partName,
+  qtyOnHand,
+  reorderLevel,
+  actorName,
+}: {
+  orgId: string;
+  partId: string;
+  partName: string;
+  qtyOnHand: number;
+  reorderLevel: number;
+  actorName: string;
+}) {
+  const isOut = qtyOnHand === 0;
+  const isLow = !isOut && reorderLevel > 0 && qtyOnHand <= reorderLevel;
+  if (!isOut && !isLow) return;
+
+  const alertType = isOut ? NotificationType.STOCK_OUT : NotificationType.STOCK_LOW;
+
+  // Suppress duplicate: skip if the most recent stock alert for this part
+  // is already the same type (stock hasn't recovered since last alert)
+  const lastAlert = await prisma.notification.findFirst({
+    where: {
+      orgId,
+      type: { in: [NotificationType.STOCK_OUT, NotificationType.STOCK_LOW] },
+      message: { contains: partId },
+    },
+    orderBy: { createdAt: "desc" },
+    select: { type: true },
+  });
+  if (lastAlert?.type === alertType) return;
+
+  // Find ADMIN/MANAGER users whose preferences allow stock alerts
+  const users = await prisma.user.findMany({
+    where: { orgId, role: { in: ["ADMIN", "MANAGER"] }, isActive: true },
+    select: {
+      id: true,
+      notificationPreferences: { select: { notifyStockAlert: true } },
+    },
+  });
+
+  const eligible = users.filter(
+    (u) => u.notificationPreferences?.notifyStockAlert !== false
+  );
+  if (eligible.length === 0) return;
+
+  const title = isOut
+    ? `Out of stock — ${partName}`
+    : `Low stock — ${partName}`;
+  const message = isOut
+    ? `${partName} [${partId}] is now out of stock (0 units). Adjusted by ${actorName}.`
+    : `${partName} [${partId}] is low — ${qtyOnHand} unit${qtyOnHand === 1 ? "" : "s"} remaining (reorder at ${reorderLevel}). Adjusted by ${actorName}.`;
+
+  await prisma.notification.createMany({
+    data: eligible.map((u) => ({
+      type: alertType,
+      title,
+      message,
+      userId: u.id,
+      channel: NotificationChannel.DASHBOARD,
+      orgId,
+    })),
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Shared helper — notify ADMIN + MANAGER users whose pref field is enabled
+// ---------------------------------------------------------------------------
+
+async function notifyAdmins({
+  orgId,
+  type,
+  title,
+  message,
+  prefField,
+}: {
+  orgId: string;
+  type: NotificationType;
+  title: string;
+  message: string;
+  prefField: string;
+}) {
+  const users = await prisma.user.findMany({
+    where: { orgId, role: { in: ["ADMIN", "MANAGER"] }, isActive: true },
+    select: { id: true, notificationPreferences: true },
+  });
+  const eligible = users.filter((u) => {
+    const pref = u.notificationPreferences as Record<string, unknown> | null;
+    return pref == null || pref[prefField] !== false;
+  });
+  if (!eligible.length) return;
+  await prisma.notification.createMany({
+    data: eligible.map((u) => ({
+      type,
+      title,
+      message,
+      userId: u.id,
+      channel: NotificationChannel.DASHBOARD,
+      orgId,
+    })),
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Payment received
+// ---------------------------------------------------------------------------
+export async function notifyPaymentReceived({
+  orgId, jobNumber, amount, currency, actorName,
+}: { orgId: string; jobNumber: string; amount: number; currency: string; actorName: string }) {
+  await notifyAdmins({
+    orgId,
+    type: NotificationType.PAYMENT_RECEIVED,
+    title: `Payment received — ${jobNumber}`,
+    message: `${currency} ${amount.toLocaleString()} recorded on job ${jobNumber} by ${actorName}.`,
+    prefField: "notifyPaymentReceived",
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Technician payout recorded
+// ---------------------------------------------------------------------------
+export async function notifyPayoutGenerated({
+  orgId, jobNumber, techName, amount, actorName,
+}: { orgId: string; jobNumber: string; techName: string; amount: number; actorName: string }) {
+  await notifyAdmins({
+    orgId,
+    type: NotificationType.PAYOUT_GENERATED,
+    title: `Payout recorded — ${jobNumber}`,
+    message: `Payout of ${amount.toLocaleString()} for ${techName} on job ${jobNumber} recorded by ${actorName}.`,
+    prefField: "notifyPayoutGenerated",
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Job created
+// ---------------------------------------------------------------------------
+export async function notifyJobCreated({
+  orgId, jobNumber, clientName, deviceLabel, actorName,
+}: { orgId: string; jobNumber: string; clientName: string; deviceLabel: string; actorName: string }) {
+  await notifyAdmins({
+    orgId,
+    type: NotificationType.JOB_CREATED,
+    title: `New job — ${jobNumber}`,
+    message: `${clientName} · ${deviceLabel} — created by ${actorName}.`,
+    prefField: "notifyJobCreated",
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Repair request received
+// ---------------------------------------------------------------------------
+export async function notifyRepairRequestReceived({
+  orgId, requestNumber, clientName, deviceLabel,
+}: { orgId: string; requestNumber: string; clientName: string; deviceLabel: string }) {
+  await notifyAdmins({
+    orgId,
+    type: NotificationType.REPAIR_REQUEST_RECEIVED,
+    title: `New repair request — ${requestNumber}`,
+    message: `${clientName} submitted a repair request for ${deviceLabel}.`,
+    prefField: "notifyRepairRequest",
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Quotation accepted / rejected
+// ---------------------------------------------------------------------------
+export async function notifyQuotationStatus({
+  orgId, quotationRef, status, clientName, actorName,
+}: { orgId: string; quotationRef: string; status: "ACCEPTED" | "REJECTED"; clientName: string; actorName: string }) {
+  const accepted = status === "ACCEPTED";
+  await notifyAdmins({
+    orgId,
+    type: accepted ? NotificationType.QUOTATION_ACCEPTED : NotificationType.QUOTATION_REJECTED,
+    title: accepted ? `Quotation accepted — ${quotationRef}` : `Quotation rejected — ${quotationRef}`,
+    message: accepted
+      ? `${clientName}'s quotation ${quotationRef} was accepted by ${actorName}.`
+      : `${clientName}'s quotation ${quotationRef} was rejected by ${actorName}.`,
+    prefField: "notifyQuotationStatus",
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Lead won / lost
+// ---------------------------------------------------------------------------
+export async function notifyLeadStatus({
+  orgId, leadTitle, status, actorName,
+}: { orgId: string; leadTitle: string; status: "WON" | "LOST"; actorName: string }) {
+  await notifyAdmins({
+    orgId,
+    type: status === "WON" ? NotificationType.LEAD_WON : NotificationType.LEAD_LOST,
+    title: status === "WON" ? `Lead won — ${leadTitle}` : `Lead lost — ${leadTitle}`,
+    message: status === "WON"
+      ? `Lead "${leadTitle}" marked WON by ${actorName}.`
+      : `Lead "${leadTitle}" marked LOST by ${actorName}.`,
+    prefField: "notifyLeadStatus",
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Purchase request submitted / approved
+// ---------------------------------------------------------------------------
+export async function notifyPurchaseRequest({
+  orgId, requestNumber, status, actorName,
+}: { orgId: string; requestNumber: string; status: "SUBMITTED" | "APPROVED"; actorName: string }) {
+  await notifyAdmins({
+    orgId,
+    type: status === "SUBMITTED" ? NotificationType.PURCHASE_REQUEST_SUBMITTED : NotificationType.PURCHASE_REQUEST_APPROVED,
+    title: status === "SUBMITTED" ? `Purchase request — ${requestNumber}` : `Purchase request approved — ${requestNumber}`,
+    message: status === "SUBMITTED"
+      ? `Purchase request ${requestNumber} submitted by ${actorName} — awaiting review.`
+      : `Purchase request ${requestNumber} approved by ${actorName}.`,
+    prefField: "notifyPurchaseRequest",
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Stock received (goods received against PO)
+// ---------------------------------------------------------------------------
+export async function notifyStockReceived({
+  orgId, grnNumber, poReference, itemCount, actorName,
+}: { orgId: string; grnNumber: string; poReference?: string; itemCount: number; actorName: string }) {
+  await notifyAdmins({
+    orgId,
+    type: NotificationType.STOCK_RECEIVED,
+    title: `Stock received — ${grnNumber}`,
+    message: `${itemCount} line${itemCount === 1 ? "" : "s"} received${poReference ? ` against PO ${poReference}` : ""} by ${actorName}.`,
+    prefField: "notifyStockMovement",
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Stock transfer updated
+// ---------------------------------------------------------------------------
+export async function notifyStockTransferUpdated({
+  orgId, transferNumber, status, actorName,
+}: { orgId: string; transferNumber: string; status: "APPROVED" | "DISPATCHED" | "RECEIVED"; actorName: string }) {
+  const label = status === "APPROVED" ? "approved" : status === "DISPATCHED" ? "dispatched" : "received";
+  await notifyAdmins({
+    orgId,
+    type: NotificationType.STOCK_TRANSFER_UPDATED,
+    title: `Transfer ${label} — ${transferNumber}`,
+    message: `Stock transfer ${transferNumber} was ${label} by ${actorName}.`,
+    prefField: "notifyStockMovement",
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Stock count approved
+// ---------------------------------------------------------------------------
+export async function notifyStockCountApproved({
+  orgId, countNumber, varianceCount, actorName,
+}: { orgId: string; countNumber: string; varianceCount: number; actorName: string }) {
+  await notifyAdmins({
+    orgId,
+    type: NotificationType.STOCK_COUNT_APPROVED,
+    title: `Stock count approved — ${countNumber}`,
+    message: `Stock count ${countNumber} approved by ${actorName}. ${varianceCount} line${varianceCount === 1 ? "" : "s"} with variance reconciled.`,
+    prefField: "notifyStockMovement",
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Field visit completed
+// ---------------------------------------------------------------------------
+export async function notifyFieldVisitCompleted({
+  orgId, clientName, address, techName,
+}: { orgId: string; clientName: string; address: string; techName: string }) {
+  await notifyAdmins({
+    orgId,
+    type: NotificationType.FIELD_VISIT_COMPLETED,
+    title: `Field visit completed`,
+    message: `Visit for ${clientName} at ${address} completed by ${techName}.`,
+    prefField: "notifyFieldVisit",
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Credit note issued / refund issued
+// ---------------------------------------------------------------------------
+export async function notifyCreditNoteIssued({
+  orgId, creditNoteNumber, clientName, amount, actorName,
+}: { orgId: string; creditNoteNumber: string; clientName: string; amount: number; actorName: string }) {
+  await notifyAdmins({
+    orgId,
+    type: NotificationType.CREDIT_NOTE_ISSUED,
+    title: `Credit note issued — ${creditNoteNumber}`,
+    message: `Credit note ${creditNoteNumber} for ${clientName} (${amount.toLocaleString()}) issued by ${actorName}.`,
+    prefField: "notifyCreditNote",
+  });
+}
+
+export async function notifyRefundIssued({
+  orgId, creditNoteNumber, clientName, amount, actorName,
+}: { orgId: string; creditNoteNumber: string; clientName: string; amount: number; actorName: string }) {
+  await notifyAdmins({
+    orgId,
+    type: NotificationType.REFUND_ISSUED,
+    title: `Refund issued — ${creditNoteNumber}`,
+    message: `Refund of ${amount.toLocaleString()} for ${clientName} issued by ${actorName}.`,
+    prefField: "notifyCreditNote",
+  });
 }

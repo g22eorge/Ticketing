@@ -24,6 +24,8 @@ import {
   notifyJobAssigned,
   notifyTimelineUpdate,
   notifyDelayNote,
+  notifyPaymentReceived,
+  notifyPayoutGenerated,
 } from "@/lib/notifications";
 import { deliverOutboundMessage, enqueueWhatsAppMessage } from "@/lib/notifications/whatsapp-outbox";
 import { getWhatsAppConfigForOrg, uploadWhatsAppMedia, sendWhatsAppDocument } from "@/lib/notifications/whatsapp";
@@ -910,6 +912,13 @@ export async function recordClientPaymentAction(formData: FormData) {
     revalidatePath("/documents/invoices");
     revalidatePath("/reports");
     revalidatePath("/dashboard");
+    notifyPaymentReceived({
+      orgId,
+      jobNumber: job.jobNumber,
+      amount: payload.amount,
+      currency: org.baseCurrency,
+      actorName: user.name ?? user.email ?? "Unknown",
+    }).catch(() => {});
     return { ok: true, ...result };
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to record payment";
@@ -930,7 +939,7 @@ export async function recordTechnicianPayoutAction(formData: FormData) {
 
     const job = await prisma.job.findUnique({
       where: { id: payload.jobId, orgId },
-      select: { id: true, externalTechBill: true, externalTechFee: true },
+      select: { id: true, jobNumber: true, externalTechBill: true, externalTechFee: true, assignedToId: true },
     });
     if (!job) return { error: "Job not found" };
 
@@ -987,6 +996,18 @@ export async function recordTechnicianPayoutAction(formData: FormData) {
     revalidatePath("/payout-followups");
     revalidatePath("/reports");
     revalidatePath("/dashboard");
+    // Notify — resolve tech name asynchronously, don't block
+    if (job.assignedToId) {
+      prisma.user.findUnique({ where: { id: job.assignedToId }, select: { name: true } })
+        .then((tech) => notifyPayoutGenerated({
+          orgId,
+          jobNumber: job.jobNumber,
+          techName: tech?.name ?? "Technician",
+          amount: payload.amount,
+          actorName: user.name ?? user.email ?? "Unknown",
+        }))
+        .catch(() => {});
+    }
     return { ok: true };
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to record technician payout";

@@ -9,6 +9,7 @@ import { can } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { sanitizeOptionalText, sanitizeText } from "@/lib/sanitize";
 import { requireOrgSession } from "@/lib/org-context";
+import { notifyLeadStatus, notifyQuotationStatus } from "@/lib/notifications";
 import { nextDocumentNumber } from "@/lib/commercial/document-workflow";
 
 const createLeadSchema = z.object({
@@ -101,7 +102,7 @@ export async function updateLeadStatus(leadId: string, status: LeadStatus, note?
     ...(!can.viewAllSales(user) ? { OR: [{ assignedToId: user.id }, { createdById: user.id }] } : {}),
   };
 
-  const existing = await prisma.lead.findFirst({ where: leadAccessWhere, select: { status: true } });
+  const existing = await prisma.lead.findFirst({ where: leadAccessWhere, select: { status: true, fullName: true } });
   if (!existing) throw new Error("Lead not found");
 
   await prisma.lead.updateMany({
@@ -129,6 +130,14 @@ export async function updateLeadStatus(leadId: string, status: LeadStatus, note?
 
   revalidatePath(`/sales/leads/${leadId}`);
   revalidatePath("/sales");
+  if (status === "WON" || status === "LOST") {
+    notifyLeadStatus({
+      orgId,
+      leadTitle: existing.fullName,
+      status,
+      actorName: user.name ?? user.email ?? "Unknown",
+    }).catch(() => {});
+  }
 }
 
 export async function updateLeadDetails(
@@ -382,7 +391,7 @@ export async function updateQuotationStatus(quotationId: string, status: Quotati
   };
   const quotation = await prisma.quotation.findFirst({
     where: accessWhere,
-    select: { id: true, leadId: true },
+    select: { id: true, leadId: true, quoteNumber: true, lead: { select: { fullName: true } } },
   });
   if (!quotation) throw new Error("Quotation not found");
 
@@ -422,6 +431,15 @@ export async function updateQuotationStatus(quotationId: string, status: Quotati
   revalidatePath(`/sales/quotations/${quotationId}`);
   if (quotation.leadId) revalidatePath(`/sales/leads/${quotation.leadId}`);
   revalidatePath("/sales");
+  if (status === "ACCEPTED" || status === "REJECTED") {
+    notifyQuotationStatus({
+      orgId,
+      quotationRef: quotation.quoteNumber ?? quotationId,
+      status,
+      clientName: quotation.lead?.fullName ?? "Client",
+      actorName: user.name ?? user.email ?? "Unknown",
+    }).catch(() => {});
+  }
 }
 
 export async function addQuotationItem(

@@ -13,6 +13,7 @@ import { ConfirmSubmitButton } from "@/components/shared/ConfirmSubmitButton";
 import { RowActionsMenu, MenuActionButton, MenuActionLink, MenuDestructiveRow, MenuSection } from "@/components/shared/RowActionsMenu";
 import { nextDocumentNumber } from "@/lib/commercial/document-workflow";
 import { enqueueEmailMessage, enqueueWhatsAppMessage } from "@/lib/notifications/whatsapp-outbox";
+import { notifyCreditNoteIssued, notifyRefundIssued } from "@/lib/notifications";
 
 const PAYMENT_METHODS: PaymentMethod[] = ["CASH", "MOBILE_MONEY", "BANK_TRANSFER", "CARD", "OTHER"];
 
@@ -78,7 +79,7 @@ export default async function CreditNotesPage({
 
     const cn = await prisma.creditNote.findFirst({
       where: { id: creditNoteId, orgId },
-      select: { id: true, saleId: true, totalAmount: true, currency: true, refunds: { select: { amount: true } } },
+      select: { id: true, saleId: true, totalAmount: true, currency: true, creditNoteNumber: true, refunds: { select: { amount: true } } },
     });
     if (!cn) return;
 
@@ -101,6 +102,13 @@ export default async function CreditNotesPage({
         refundedAt: new Date(),
       },
     });
+    notifyRefundIssued({
+      orgId,
+      creditNoteNumber: cn.creditNoteNumber,
+      clientName: `CN ${cn.creditNoteNumber}`,
+      amount: amountRaw,
+      actorName: user.name ?? user.email ?? "Unknown",
+    }).catch(() => {});
     revalidatePath("/documents/credit-notes");
     revalidatePath("/documents/refunds");
     redirect("/documents/credit-notes");
@@ -192,8 +200,9 @@ export default async function CreditNotesPage({
 
     const totalAmount = items.reduce((s, i) => s + i.quantity * i.unitPrice, 0);
 
+    let creditNoteNumber = "";
     await prisma.$transaction(async (tx) => {
-      const creditNoteNumber = await nextDocumentNumber(tx, "CN", "creditNote");
+      creditNoteNumber = await nextDocumentNumber(tx, "CN", "creditNote");
       await tx.creditNote.create({
         data: {
           orgId,
@@ -214,6 +223,13 @@ export default async function CreditNotesPage({
         },
       });
     });
+    notifyCreditNoteIssued({
+      orgId,
+      creditNoteNumber,
+      clientName: `Sale ${sale.saleNumber}`,
+      amount: totalAmount,
+      actorName: user.name ?? user.email ?? "Unknown",
+    }).catch(() => {});
     revalidatePath("/documents/credit-notes");
     redirect("/documents/credit-notes");
   }

@@ -6,6 +6,7 @@ import { requireOrgSession } from "@/lib/org-context";
 import { can } from "@/lib/permissions";
 import { redirect } from "next/navigation";
 import { assertOrgCanMutate } from "@/lib/org-write";
+import { notifyStockReceived } from "@/lib/notifications";
 
 async function requireAdmin() {
   const ctx = await requireOrgSession();
@@ -223,5 +224,13 @@ export async function receiveStockAction(
   revalidatePath(`/inventory/purchase-orders/${poId}`);
   revalidatePath("/inventory/goods-received");
   revalidatePath("/inventory");
+  const actor = await prisma.user.findUnique({ where: { id: session.user.id }, select: { name: true, email: true } });
+  notifyStockReceived({
+    orgId,
+    grnNumber,
+    poReference: po.reference ?? undefined,
+    itemCount: updates.length,
+    actorName: actor?.name ?? actor?.email ?? "Unknown",
+  }).catch(() => {});
   return {};
 }

@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { createQuotation } from "../../actions";
+import { FormField, FormTextarea } from "@/components/ui/form-field";
 
 type LineItem = {
   id: number;
@@ -195,23 +196,23 @@ export function NewQuotationForm({ leadId, clientId, jobId, currency, canOverrid
       <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
         <p className="mb-3 text-[13px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Quotation Details</p>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <div>
-            <label className="mb-1 block text-[13px] font-semibold text-[var(--ink-muted)]">Valid Until</label>
-            <input
-              type="date"
-              value={validUntil}
-              onChange={(e) => setValidUntil(e.target.value)}
-              className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/15"
-            />
-          </div>
+          <FormField
+            label="Valid Until"
+            name="validUntil"
+            type="date"
+            size="md"
+            value={validUntil}
+            onChange={(e) => setValidUntil(e.target.value)}
+          />
           <div className="sm:col-span-2">
-            <label className="mb-1 block text-[13px] font-semibold text-[var(--ink-muted)]">Notes</label>
-            <textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
+            <FormTextarea
+              label="Notes"
+              name="notes"
+              size="md"
               rows={3}
               placeholder="Terms, conditions, or other notes…"
-              className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/15"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
             />
           </div>
         </div>

@@ -16,6 +16,7 @@ import {
   sendIntakeRejectionNotification,
   sendJobCreatedNotification,
 } from "@/lib/notifications/whatsapp";
+import { notifyRepairRequestReceived, notifyJobCreated } from "@/lib/notifications";
 
 const listSchema = z.object({
   take: z.coerce.number().int().positive().max(500).optional(),
@@ -220,6 +221,13 @@ export async function setRepairRequestStatusAction(input: { id: string; status: 
     sendJobCreatedNotification(req.phone, req.customerName, job.jobNumber, orgId).catch((err) =>
       console.error("[Intake] WhatsApp notification failed:", err),
     );
+    notifyJobCreated({
+      orgId,
+      jobNumber: job.jobNumber,
+      clientName: req.customerName,
+      deviceLabel: `${req.brand} ${req.model ?? ""}`.trim() || "Device",
+      actorName: user.name ?? user.email ?? "Staff",
+    }).catch(() => {});
 
     revalidatePath("/intake");
     return {

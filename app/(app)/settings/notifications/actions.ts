@@ -17,6 +17,15 @@ const schema = z.object({
   notifyPayoutGenerated: z.enum(["on"]).optional(),
   notifyTimelineUpdated: z.enum(["on"]).optional(),
   notifyDelayNote: z.enum(["on"]).optional(),
+  notifyStockAlert: z.enum(["on"]).optional(),
+  notifyJobCreated: z.enum(["on"]).optional(),
+  notifyRepairRequest: z.enum(["on"]).optional(),
+  notifyQuotationStatus: z.enum(["on"]).optional(),
+  notifyLeadStatus: z.enum(["on"]).optional(),
+  notifyPurchaseRequest: z.enum(["on"]).optional(),
+  notifyStockMovement: z.enum(["on"]).optional(),
+  notifyFieldVisit: z.enum(["on"]).optional(),
+  notifyCreditNote: z.enum(["on"]).optional(),
 });
 
 export type UpdateNotificationPrefsState = {
@@ -50,6 +59,15 @@ export async function updateNotificationPrefsAction(
       notifyPayoutGenerated: asBool(parsed.data.notifyPayoutGenerated),
       notifyTimelineUpdated: asBool(parsed.data.notifyTimelineUpdated),
       notifyDelayNote: asBool(parsed.data.notifyDelayNote),
+      notifyStockAlert: asBool(parsed.data.notifyStockAlert),
+      notifyJobCreated: asBool(parsed.data.notifyJobCreated),
+      notifyRepairRequest: asBool(parsed.data.notifyRepairRequest),
+      notifyQuotationStatus: asBool(parsed.data.notifyQuotationStatus),
+      notifyLeadStatus: asBool(parsed.data.notifyLeadStatus),
+      notifyPurchaseRequest: asBool(parsed.data.notifyPurchaseRequest),
+      notifyStockMovement: asBool(parsed.data.notifyStockMovement),
+      notifyFieldVisit: asBool(parsed.data.notifyFieldVisit),
+      notifyCreditNote: asBool(parsed.data.notifyCreditNote),
     });
   } catch {
     return { error: "Could not save notification preferences" };

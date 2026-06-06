@@ -4,6 +4,7 @@ import { createRepairRequest } from "@/lib/repairs/request";
 import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
 import { orgDb, prisma } from "@/lib/prisma";
 import { deliverOutboundMessage, enqueueEmailMessage, enqueueWhatsAppMessage } from "@/lib/notifications/whatsapp-outbox";
+import { notifyRepairRequestReceived } from "@/lib/notifications";
 
 const EIS_ORG_ID = "org_eis_01";
 
@@ -362,6 +363,16 @@ export async function POST(request: NextRequest) {
       if (emailResult && "outboxId" in emailResult && emailResult.outboxId) {
         await deliverInline(emailResult.outboxId);
       }
+    }
+
+    // ── Bell notifications for ADMIN/MANAGER ────────────────────────────────
+    for (const r of results) {
+      notifyRepairRequestReceived({
+        orgId: resolvedOrgId,
+        requestNumber: r.requestNumber,
+        clientName: String(body.customer_name ?? "Customer"),
+        deviceLabel: `${r.brand} (${r.deviceType.replace(/_/g, " ")})`,
+      }).catch(() => {});
     }
 
     // ── Response ─────────────────────────────────────────────────────────────

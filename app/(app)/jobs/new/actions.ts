@@ -16,6 +16,7 @@ import { assertOrgCanMutate } from "@/lib/org-write";
 import { getUploadsRoot } from "@/lib/storage";
 import { checkJobLimit } from "@/lib/plan-limits";
 import { rateLimit } from "@/lib/rate-limit";
+import { notifyJobCreated } from "@/lib/notifications";
 
 const deviceSchema = z
   .object({
@@ -185,7 +186,7 @@ export async function createJobAction(
       "READY_FOR_PICKUP",
     ]) as JobStatus[];
 
-    const createdJobs: Array<{ id: string }> = [];
+    const createdJobs: Array<{ id: string; jobNumber: string }> = [];
 
     for (let i = 0; i < devices.length; i += 1) {
       const device = devices[i];
@@ -236,7 +237,7 @@ export async function createJobAction(
       }
     }
 
-    let job: { id: string } | null = null;
+    let job: { id: string; jobNumber: string } | null = null;
     let includeSoftwareFields = true;
     for (let attempt = 0; attempt < 5; attempt += 1) {
       const jobNumber = await generateJobNumber(orgId);
@@ -290,7 +291,7 @@ export async function createJobAction(
             ...(includeSoftwareFields ? softwareFields : {}),
             receivedAt,
           },
-          select: { id: true },
+          select: { id: true, jobNumber: true },
         });
         break;
       } catch (error) {
@@ -372,6 +373,17 @@ export async function createJobAction(
       }
     }
 
+    const parsedDevicesForNotify = parseDevices(parsed.data.devicesJson);
+    const firstDevice = parsedDevicesForNotify.ok ? parsedDevicesForNotify.devices[0] : null;
+    for (const j of createdJobs) {
+      notifyJobCreated({
+        orgId,
+        jobNumber: j.jobNumber,
+        clientName: parsed.data.fullName ?? "Client",
+        deviceLabel: firstDevice ? `${firstDevice.brand} ${firstDevice.model ?? ""}`.trim() : "Device",
+        actorName: user.name ?? user.email ?? "Unknown",
+      }).catch(() => {});
+    }
     redirect(createdJobs.length === 1 ? `/jobs/${createdJobs[0]!.id}` : "/jobs");
   } catch (err) {
     // Preserve Next redirect behavior

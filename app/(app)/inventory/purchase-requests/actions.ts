@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { requireOrgSession } from "@/lib/org-context";
 import { can } from "@/lib/permissions";
 import { assertOrgCanMutate } from "@/lib/org-write";
+import { notifyPurchaseRequest } from "@/lib/notifications";
 
 async function requireInventoryManager() {
   const ctx = await requireOrgSession();
@@ -56,10 +57,11 @@ export async function createPurchaseRequestAction(formData: FormData): Promise<{
     if (!supplier) return { error: "Supplier not found" };
   }
 
+  const requestNumber = await generateRequestNumber(orgId);
   const request = await prisma.purchaseRequest.create({
     data: {
       orgId,
-      requestNumber: await generateRequestNumber(orgId),
+      requestNumber,
       status: "SUBMITTED",
       priority: priority as never,
       supplierId,
@@ -79,6 +81,14 @@ export async function createPurchaseRequestAction(formData: FormData): Promise<{
     select: { id: true },
   });
 
+  const actor = await prisma.user.findUnique({ where: { id: session.user.id }, select: { name: true, email: true } });
+  notifyPurchaseRequest({
+    orgId,
+    requestNumber,
+    status: "SUBMITTED",
+    actorName: actor?.name ?? actor?.email ?? "Unknown",
+  }).catch(() => {});
+
   revalidatePath("/inventory/purchase-requests");
   return { id: request.id };
 }
@@ -90,6 +100,11 @@ export async function reviewPurchaseRequestAction(formData: FormData): Promise<v
   const reviewNote = String(formData.get("reviewNote") ?? "").trim() || null;
   if (!id || !["APPROVED", "REJECTED", "CANCELLED"].includes(action)) return;
 
+  const req = await prisma.purchaseRequest.findFirst({
+    where: { id, orgId, status: { in: ["DRAFT", "SUBMITTED", "APPROVED"] } },
+    select: { requestNumber: true },
+  });
+
   await prisma.purchaseRequest.updateMany({
     where: { id, orgId, status: { in: ["DRAFT", "SUBMITTED", "APPROVED"] } },
     data: {
@@ -99,6 +114,16 @@ export async function reviewPurchaseRequestAction(formData: FormData): Promise<v
       reviewNote,
     },
   });
+
+  if (action === "APPROVED" && req) {
+    const actor = await prisma.user.findUnique({ where: { id: session.user.id }, select: { name: true, email: true } });
+    notifyPurchaseRequest({
+      orgId,
+      requestNumber: req.requestNumber,
+      status: "APPROVED",
+      actorName: actor?.name ?? actor?.email ?? "Unknown",
+    }).catch(() => {});
+  }
 
   revalidatePath("/inventory/purchase-requests");
   revalidatePath(`/inventory/purchase-requests/${id}`);

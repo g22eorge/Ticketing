@@ -7,6 +7,7 @@ import { FieldVisitStatus, FieldVisitType } from "@prisma/client";
 
 import { can } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
+import { notifyFieldVisitCompleted } from "@/lib/notifications";
 import { sanitizeOptionalText, sanitizeText } from "@/lib/sanitize";
 import { requireOrgSession } from "@/lib/org-context";
 
@@ -120,6 +121,15 @@ export async function updateVisitStatus(
       signoffAt: extra?.signoffName ? now : undefined,
     },
   });
+
+  if (status === "COMPLETED") {
+    notifyFieldVisitCompleted({
+      orgId,
+      clientName: visit.contactName ?? "Client",
+      address: visit.address,
+      techName: user.name ?? user.email ?? "Technician",
+    }).catch(() => {});
+  }
 
   revalidatePath("/field");
   revalidatePath(`/field/${visitId}`);

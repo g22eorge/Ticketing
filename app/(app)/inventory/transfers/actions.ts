@@ -8,6 +8,7 @@ import { requireOrgSession } from "@/lib/org-context";
 import { can } from "@/lib/permissions";
 import { assertOrgCanMutate } from "@/lib/org-write";
 import type { Prisma } from "@prisma/client";
+import { notifyStockTransferUpdated } from "@/lib/notifications";
 
 async function requireInventoryManager() {
   const ctx = await requireOrgSession();
@@ -76,10 +77,14 @@ export async function approveStockTransferAction(formData: FormData) {
   const { orgId, user } = await requireInventoryManager();
   const id = String(formData.get("id") ?? "").trim();
   if (!id) return;
+  const transfer = await prisma.stockTransfer.findFirst({ where: { id, orgId }, select: { transferNumber: true } });
   await prisma.stockTransfer.updateMany({
     where: { id, orgId, status: "REQUESTED" },
     data: { status: "APPROVED", approvedAt: new Date(), approvedById: user.id },
   });
+  if (transfer) {
+    notifyStockTransferUpdated({ orgId, transferNumber: transfer.transferNumber, status: "APPROVED", actorName: user.name ?? user.email ?? "Unknown" }).catch(() => {});
+  }
   revalidatePath("/inventory/transfers");
 }
 
@@ -134,6 +139,10 @@ export async function dispatchStockTransferAction(formData: FormData) {
     });
   }).catch(() => redirect("/inventory/transfers?error=Insufficient+stock+or+dispatch+failed"));
 
+  const dispatched = await prisma.stockTransfer.findFirst({ where: { id, orgId }, select: { transferNumber: true } });
+  if (dispatched) {
+    notifyStockTransferUpdated({ orgId, transferNumber: dispatched.transferNumber, status: "DISPATCHED", actorName: user.name ?? user.email ?? "Unknown" }).catch(() => {});
+  }
   revalidatePath("/inventory/transfers");
 }
 
@@ -172,5 +181,9 @@ export async function receiveStockTransferAction(formData: FormData) {
     });
   });
 
+  const received = await prisma.stockTransfer.findFirst({ where: { id, orgId }, select: { transferNumber: true } });
+  if (received) {
+    notifyStockTransferUpdated({ orgId, transferNumber: received.transferNumber, status: "RECEIVED", actorName: user.name ?? user.email ?? "Unknown" }).catch(() => {});
+  }
   revalidatePath("/inventory/transfers");
 }
