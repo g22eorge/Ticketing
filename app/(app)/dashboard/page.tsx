@@ -1387,52 +1387,64 @@ export default async function DashboardPage({
               })()}
             </section>
 
-            {/* YTD Monthly Breakdown — numbers-first, bar for scale */}
+            {/* YTD Monthly Breakdown — row-per-month, revenue + margin + bar */}
             {revenueTrend.some((m) => m.revenue > 0) && (() => {
               const maxRev = Math.max(...revenueTrend.map(m => m.revenue), 1);
-              const ytdTotal = revenueTrend.reduce((s, m) => s + m.revenue, 0);
-              const peakIdx = revenueTrend.reduce((best, m, i) => m.revenue > revenueTrend[best].revenue ? i : best, 0);
-              const MONTH_ABBR = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+              const ytdTotal  = revenueTrend.reduce((s, m) => s + m.revenue, 0);
+              const ytdMargin = revenueTrend.reduce((s, m) => s + m.margin,  0);
+              const peakIdx   = revenueTrend.reduce((b, m, i) => m.revenue > revenueTrend[b].revenue ? i : b, 0);
+              const MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
               return (
                 <section className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
-                  {/* Header: YTD total + peak callout */}
-                  <div className="flex items-center justify-between border-b border-[var(--line)] px-4 py-2.5">
-                    <div>
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--ink-muted)]">YTD Revenue</p>
-                      <p className="text-[18px] font-black tabular-nums text-[var(--accent)] leading-tight">{formatMoneyCompact(ytdTotal, currency)}</p>
+                  {/* Summary header */}
+                  <div className="grid grid-cols-2 divide-x divide-[var(--line)] border-b border-[var(--line)]">
+                    <div className="px-3 py-2">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[var(--ink-muted)]">YTD Revenue</p>
+                      <p className="text-[15px] font-black tabular-nums text-[var(--accent)] leading-snug">{formatMoneyCompact(ytdTotal, currency)}</p>
                     </div>
-                    <div className="text-right">
-                      <p className="text-[10px] text-[var(--ink-muted)]">Peak month</p>
-                      <p className="text-[13px] font-black text-[var(--ink)]">
-                        {MONTH_ABBR[(parseInt(revenueTrend[peakIdx].key.slice(5)) - 1) % 12]}
-                        <span className="ml-1 text-[var(--accent)]">{formatMoneyCompact(revenueTrend[peakIdx].revenue, currency)}</span>
-                      </p>
+                    <div className="px-3 py-2">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[var(--ink-muted)]">YTD Margin</p>
+                      <p className={`text-[15px] font-black tabular-nums leading-snug ${ytdMargin >= 0 ? "text-emerald-600" : "text-red-500"}`}>{formatMoneyCompact(ytdMargin, currency)}</p>
                     </div>
                   </div>
-                  {/* Month grid — each col is a month */}
-                  <div className={`grid divide-x divide-[var(--line)]`} style={{ gridTemplateColumns: `repeat(${revenueTrend.length}, 1fr)` }}>
+                  {/* Column headers */}
+                  <div className="grid grid-cols-[2rem_1fr_1fr_2.5rem] gap-x-2 border-b border-[var(--line)] px-3 py-1">
+                    <p className="text-[9px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Mo</p>
+                    <p className="text-[9px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Revenue</p>
+                    <p className="text-[9px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Margin</p>
+                    <p className="text-[9px] font-bold uppercase tracking-wide text-[var(--ink-muted)] text-right">%</p>
+                  </div>
+                  {/* Month rows */}
+                  <div className="divide-y divide-[var(--line)]">
                     {revenueTrend.map((m, i) => {
-                      const barH = m.revenue > 0 ? Math.max(4, Math.round((m.revenue / maxRev) * 40)) : 2;
-                      const isPeak = i === peakIdx;
-                      const mon = MONTH_ABBR[(parseInt(m.key.slice(5)) - 1) % 12];
+                      const mon     = MON[(parseInt(m.key.slice(5)) - 1) % 12];
+                      const isPeak  = i === peakIdx;
                       const hasData = m.revenue > 0;
+                      const barPct  = Math.round((m.revenue / maxRev) * 100);
+                      const mrgPct  = m.revenue > 0 ? Math.round((m.margin / m.revenue) * 100) : null;
                       return (
-                        <Link key={m.key} href="/reports"
-                          className={`flex flex-col items-center gap-1 px-1 pb-2 pt-2.5 transition hover:bg-[var(--panel-strong)] ${isPeak ? "bg-[var(--accent)]/5" : ""}`}>
-                          {/* Bar */}
-                          <div className="flex w-full items-end justify-center" style={{ height: 40 }}>
-                            <div
-                              className={`w-full max-w-[18px] rounded-t-sm transition-all ${isPeak ? "bg-[var(--accent)]" : hasData ? "bg-[var(--accent)]/40" : "bg-[var(--line)]"}`}
-                              style={{ height: barH }}
-                            />
+                        <div key={m.key}
+                          className={`grid grid-cols-[2rem_1fr_1fr_2.5rem] items-center gap-x-2 px-3 py-[5px] ${isPeak ? "bg-[var(--accent)]/5" : !hasData ? "opacity-35" : ""}`}>
+                          {/* Month */}
+                          <p className={`text-[11px] font-bold ${isPeak ? "text-[var(--accent)]" : "text-[var(--ink-muted)]"}`}>{mon}</p>
+                          {/* Revenue with inline bar */}
+                          <div className="flex flex-col gap-[2px]">
+                            <p className={`text-[11px] font-black tabular-nums leading-none ${isPeak ? "text-[var(--accent)]" : hasData ? "text-[var(--ink)]" : "text-[var(--ink-muted)]"}`}>
+                              {hasData ? formatMoneyCompact(m.revenue, currency) : "—"}
+                            </p>
+                            <div className="h-[3px] overflow-hidden rounded-full bg-[var(--panel-strong)]">
+                              <div className={`h-full rounded-full ${isPeak ? "bg-[var(--accent)]" : "bg-[var(--accent)]/40"}`} style={{ width: `${barPct}%` }} />
+                            </div>
                           </div>
-                          {/* Value */}
-                          <p className={`text-[10px] font-black tabular-nums leading-tight ${isPeak ? "text-[var(--accent)]" : hasData ? "text-[var(--ink)]" : "text-[var(--ink-muted)]/30"}`}>
-                            {hasData ? formatMoneyCompact(m.revenue, currency) : "—"}
+                          {/* Margin */}
+                          <p className={`text-[11px] tabular-nums leading-none ${!hasData ? "text-[var(--ink-muted)]" : m.margin >= 0 ? "text-emerald-600" : "text-red-500"}`}>
+                            {hasData ? formatMoneyCompact(m.margin, currency) : "—"}
                           </p>
-                          {/* Month label */}
-                          <p className={`text-[9px] font-semibold uppercase ${isPeak ? "text-[var(--accent)]" : "text-[var(--ink-muted)]"}`}>{mon}</p>
-                        </Link>
+                          {/* Margin % */}
+                          <p className={`text-right text-[10px] font-semibold tabular-nums ${mrgPct !== null && mrgPct >= 0 ? "text-emerald-600" : "text-red-400"}`}>
+                            {mrgPct !== null ? `${mrgPct}%` : ""}
+                          </p>
+                        </div>
                       );
                     })}
                   </div>
