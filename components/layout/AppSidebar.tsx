@@ -450,6 +450,7 @@ export function AppSidebar({
             <div className="space-y-0.5">
               {section.items.map((item) => {
                 const active = activeHref === item.href;
+                const isHub = ["/service", "/inventory/ops", "/documents", "/finance"].includes(item.href);
                 const badge =
                   item.href === "/jobs"               ? badges?.jobs
                   : item.href === "/inventory"        ? badges?.inventory
@@ -462,9 +463,13 @@ export function AppSidebar({
                     key={item.href}
                     href={item.href}
                     className={`group flex items-center gap-2.5 rounded-lg px-3 py-[7px] text-[13px] font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50 focus-visible:ring-offset-1 ${
-                      active
-                        ? "bg-[var(--accent-muted)] text-[var(--ink)]"
-                        : "text-[var(--ink-muted)] hover:bg-[var(--panel-strong)] hover:text-[var(--ink)]"
+                      isHub
+                        ? active
+                          ? "border border-[var(--accent)]/40 bg-[var(--accent-muted)] text-[var(--ink)]"
+                          : "border border-dashed border-[var(--line)] text-[var(--ink-muted)]/70 hover:border-[var(--accent)]/30 hover:bg-[var(--panel-strong)] hover:text-[var(--ink)]"
+                        : active
+                          ? "bg-[var(--accent-muted)] text-[var(--ink)]"
+                          : "text-[var(--ink-muted)] hover:bg-[var(--panel-strong)] hover:text-[var(--ink)]"
                     }`}
                   >
                     <span
@@ -476,12 +481,14 @@ export function AppSidebar({
                       className={`flex h-[1.375rem] w-[1.375rem] shrink-0 items-center justify-center rounded-md transition-colors [&_svg]:h-3.5 [&_svg]:w-3.5 ${
                         active
                           ? "bg-[var(--accent)]/20 text-[var(--accent)]"
-                          : "bg-[var(--panel-strong)] text-[var(--ink-muted)] group-hover:bg-[var(--line)] group-hover:text-[var(--ink)]"
+                          : isHub
+                            ? "bg-transparent text-[var(--ink-muted)]/50 group-hover:bg-[var(--line)] group-hover:text-[var(--ink)]"
+                            : "bg-[var(--panel-strong)] text-[var(--ink-muted)] group-hover:bg-[var(--line)] group-hover:text-[var(--ink)]"
                       }`}
                     >
                       {navIcon(item.href)}
                     </span>
-                    <span className="truncate">{item.label}</span>
+                    <span className={`truncate ${isHub ? "text-[12px]" : ""}`}>{item.label}</span>
                     <span className="ml-auto flex items-center gap-1">
                       {typeof newBadge === "number" && newBadge > 0 && (
                         <span className="rounded-full bg-[var(--accent)] px-1.5 py-0.5 text-[12px] font-bold text-black">
