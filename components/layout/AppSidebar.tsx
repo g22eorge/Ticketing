@@ -50,21 +50,8 @@ const nav = [
   { href: "/documents/templates",      label: "Templates",      group: "documents" as NavGroup, roles: ["ADMIN", "MANAGER", "OPS"] as const },
 
   // Finance
-  { href: "/finance",                    label: "Finance Hub",      group: "finance" as NavGroup, roles: ["ADMIN", "MANAGER", "OPS", "FINANCE"] as const },
-  { href: "/finance/expenses",             label: "Expenses",         group: "finance" as NavGroup, roles: ["ADMIN", "MANAGER", "OPS", "FINANCE"] as const },
-  { href: "/finance/tax-rates",            label: "Tax Rates",        group: "finance" as NavGroup, roles: ["ADMIN", "MANAGER"] as const },
-  { href: "/finance/recurring",            label: "Recurring",        group: "finance" as NavGroup, roles: ["ADMIN", "MANAGER", "OPS", "FINANCE"] as const },
-  { href: "/finance/accounts",             label: "Chart of Accounts",group: "finance" as NavGroup, roles: ["ADMIN", "MANAGER", "FINANCE"] as const },
-  { href: "/finance/journal",              label: "Journal Entries",  group: "finance" as NavGroup, roles: ["ADMIN", "MANAGER", "FINANCE"] as const },
-  { href: "/finance/bank",                 label: "Bank",             group: "finance" as NavGroup, roles: ["ADMIN", "MANAGER", "FINANCE"] as const },
-  { href: "/finance/reports/pl",           label: "P&L",             group: "finance" as NavGroup, roles: ["ADMIN", "MANAGER", "OPS", "FINANCE"] as const },
-  { href: "/finance/reports/balance-sheet",label: "Balance Sheet",    group: "finance" as NavGroup, roles: ["ADMIN", "MANAGER", "OPS", "FINANCE"] as const },
-  { href: "/pos/shifts",          label: "Cashier Shifts",   group: "finance" as NavGroup, roles: ["ADMIN", "MANAGER", "OPS", "FINANCE", "FRONT_DESK"] as const },
-  { href: "/targets",             label: "Targets",          group: "finance" as NavGroup, roles: ["ADMIN", "MANAGER", "OPS", "SALES_MANAGER", "TECH_MANAGER", "FINANCE"] as const },
-  { href: "/reports",             label: "Reports",          group: "finance" as NavGroup, roles: ["ADMIN", "MANAGER", "OPS", "FINANCE", "SALES_MANAGER"] as const },
-  { href: "/ai-insights",         label: "AI Insights",      group: "finance" as NavGroup, roles: ["ADMIN", "MANAGER", "OPS", "FINANCE", "SALES_MANAGER"] as const },
-  { href: "/payout-followups",    label: "Collections & Payouts",  group: "finance" as NavGroup, roles: ["ADMIN", "MANAGER", "OPS", "FINANCE", "TECH_MANAGER", "SALES_MANAGER"] as const },
-  { href: "/technicians/payouts", label: "My Payouts",       group: "finance" as NavGroup, roles: ["TECHNICIAN_EXTERNAL"] as const },
+  { href: "/finance",               label: "Finance Hub", group: "finance" as NavGroup, roles: ["ADMIN", "MANAGER", "OPS", "FINANCE"] as const },
+  { href: "/technicians/payouts",   label: "My Payouts",  group: "finance" as NavGroup, roles: ["TECHNICIAN_EXTERNAL"] as const },
 
   // Account
   { href: "/settings", label: "Settings", group: "personal" as NavGroup, roles: "all" as const },
@@ -469,7 +456,6 @@ export function AppSidebar({
                 const badge =
                   item.href === "/jobs"               ? badges?.jobs
                   : item.href === "/inventory"        ? badges?.inventory
-                  : item.href === "/payout-followups" ? badges?.paymentFollowups
                   : item.href === "/intake"           ? badges?.pendingRequests
                   : item.href === "/complaints"       ? badges?.complaints
                   : undefined;
