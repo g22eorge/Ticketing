@@ -2049,6 +2049,37 @@ async function runDbFix() {
     await addUserCol("specializations", "TEXT");
   }
 
+  // ── Part.qtyReserved ──────────────────────────────────────────────────────
+  {
+    const cols = await tableColumns("Part");
+    if (!cols.has("qtyReserved")) {
+      await prisma.$executeRawUnsafe(`ALTER TABLE "Part" ADD COLUMN "qtyReserved" INTEGER NOT NULL DEFAULT 0`);
+      changes.push({ kind: "alter_table", detail: "Added Part.qtyReserved" });
+    }
+  }
+
+  // ── NotificationPreferences new fields ────────────────────────────────────
+  {
+    const cols = await tableColumns("NotificationPreferences");
+    const boolCols = [
+      "notifyStockAlert",
+      "notifyJobCreated",
+      "notifyRepairRequest",
+      "notifyQuotationStatus",
+      "notifyLeadStatus",
+      "notifyPurchaseRequest",
+      "notifyStockMovement",
+      "notifyFieldVisit",
+      "notifyCreditNote",
+    ];
+    for (const col of boolCols) {
+      if (!cols.has(col)) {
+        await prisma.$executeRawUnsafe(`ALTER TABLE "NotificationPreferences" ADD COLUMN "${col}" INTEGER NOT NULL DEFAULT 1`);
+        changes.push({ kind: "alter_table", detail: `Added NotificationPreferences.${col}` });
+      }
+    }
+  }
+
   // Re-check and report
   const finalCols = await jobColumns();
   return NextResponse.json({
