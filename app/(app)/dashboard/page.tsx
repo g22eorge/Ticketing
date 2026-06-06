@@ -9,7 +9,7 @@ import { StickyKpiRow } from "@/components/mobile/StickyKpiRow";
 import { MonthSelectForm } from "@/components/shared/MonthSelectForm";
 import { RevenueLineChart } from "@/components/reports/ReportsCharts";
 import { getClientBill, resolveTechCost } from "@/lib/billing";
-import { formatMoney, formatMoneyCompact, getAppCurrency } from "@/lib/currency";
+import { formatMoney, formatMoneyCompact, getAppCurrency, toBaseAmount } from "@/lib/currency";
 import { formatEATMonthLabel } from "@/lib/date-eat";
 import { loadCashCollectionsByChannel, loadReceivablesTotal } from "@/lib/finance/reconciliation";
 import { UI_JOB_STATUSES, JobStatus, isOpenJobStatus, normalizeJobStatus } from "@/lib/job-status";
@@ -111,21 +111,29 @@ async function loadRepairRevenueTrend(trendMonths: { key: string; start: Date; e
   });
 }
 
-/** Sales revenue only — POS sales (paidAt) + invoices (paidAt) (used by SALES manager) */
+/** Sales revenue only — single wide-range fetch, bucketed in memory (2 queries total, not N×2) */
 async function loadSalesRevenueTrend(trendMonths: { key: string; start: Date; end: Date }[], orgId?: string | null, currency = getAppCurrency()) {
-  if (!orgId) return trendMonths.map((m) => ({ key: m.key, revenue: 0, margin: 0 }));
-  const rows = await Promise.all(
-    trendMonths.map(async (m) => {
-      const collections = await loadCashCollectionsByChannel({
-        orgId,
-        baseCurrency: currency,
-        range: { start: m.start, end: m.end },
-      });
-      const revenue = collections.products + collections.corporate + collections.unallocated;
-      return { key: m.key, revenue, margin: revenue };
+  if (!orgId || trendMonths.length === 0) return trendMonths.map((m) => ({ key: m.key, revenue: 0, margin: 0 }));
+  const rangeStart = trendMonths[0].start;
+  const rangeEnd   = trendMonths[trendMonths.length - 1].end;
+
+  const [payments] = await Promise.all([
+    prisma.payment.findMany({
+      where: { orgId, kind: "PAYMENT", receivedAt: { gte: rangeStart, lte: rangeEnd } },
+      select: { amount: true, currency: true, exchangeRateToBase: true, saleId: true, receivedAt: true, invoice: { select: { invoiceType: true } } },
     }),
-  );
-  return rows;
+  ]);
+
+  return trendMonths.map((m) => {
+    let revenue = 0;
+    for (const p of payments) {
+      if (!p.receivedAt || p.receivedAt < m.start || p.receivedAt > m.end) continue;
+      const amt = toBaseAmount({ amount: p.amount, currency: p.currency, baseCurrency: currency, exchangeRateToBase: p.exchangeRateToBase });
+      // sales channel = POS sales or non-repair invoices
+      if (p.saleId || (p.invoice && p.invoice.invoiceType !== "REPAIR")) revenue += amt;
+    }
+    return { key: m.key, revenue, margin: revenue };
+  });
 }
 
 /** Total revenue — repairs + POS + invoices combined (used by ADMIN) */
@@ -924,6 +932,8 @@ export default async function DashboardPage({
     const yesterdayEnd = new Date(todayStart.getTime() - 1);
     const mtdStart = new Date(today.getFullYear(), today.getMonth(), 1, 0, 0, 0, 0);
     const orgFilter = user.orgId ? { orgId: user.orgId } : {};
+    // Compute trend months upfront so we can include trend query in the main batch
+    const trendMonths = trendMonthsSinceStartOfYear(today);
 
     const [
       statusGroup,
@@ -963,6 +973,17 @@ export default async function DashboardPage({
       failedOutboxCount,
       // Inventory: out-of-stock
       outOfStockCount,
+      // Cash collections (MTD, today, yesterday) + receivables — merged from former serial block
+      collectionsMtd,
+      collectionsToday,
+      collectionsYesterday,
+      receivables,
+      // YTD revenue trend — merged from former serial await
+      revenueTrend,
+      // Org modules — merged from former serial await
+      enabledModules,
+      // Org name for mobile header — merged from former inline JSX query
+      orgName,
     ] = await Promise.all([
       prisma.job.groupBy({ by: ["status"], where: orgFilter, _count: { status: true } }),
 
@@ -1026,26 +1047,32 @@ export default async function DashboardPage({
       prisma.outboundMessage.count({ where: { ...(orgFilter.orgId ? { orgId: orgFilter.orgId } : {}), status: { in: ["FAILED", "DEAD"] as never[] } } }).catch(() => 0),
       // Out-of-stock active parts
       prisma.part.count({ where: { ...orgFilter, isActive: true, qtyOnHand: { lte: 0 } } }).catch(() => 0),
+      // Cash collections — now parallel with everything else
+      user.orgId
+        ? loadCashCollectionsByChannel({ orgId: user.orgId, baseCurrency: currency, range: { start: mtdStart, end: today } })
+        : Promise.resolve({ repairs: 0, products: 0, corporate: 0, unallocated: 0, total: 0 }),
+      user.orgId
+        ? loadCashCollectionsByChannel({ orgId: user.orgId, baseCurrency: currency, range: { start: todayStart } })
+        : Promise.resolve({ repairs: 0, products: 0, corporate: 0, unallocated: 0, total: 0 }),
+      user.orgId
+        ? loadCashCollectionsByChannel({ orgId: user.orgId, baseCurrency: currency, range: { start: yesterdayStart, end: yesterdayEnd } })
+        : Promise.resolve({ repairs: 0, products: 0, corporate: 0, unallocated: 0, total: 0 }),
+      user.orgId
+        ? loadReceivablesTotal(user.orgId)
+        : Promise.resolve({ invoiceBalance: 0, saleBalance: 0, total: 0, invoiceCount: 0, saleCount: 0 }),
+      // YTD revenue trend — now parallel
+      user.orgId
+        ? loadTotalRevenueTrend(trendMonths, user.orgId, currency).catch(() => trendMonths.map((m) => ({ key: m.key, revenue: 0, margin: 0 })))
+        : Promise.resolve(trendMonths.map((m) => ({ key: m.key, revenue: 0, margin: 0 }))),
+      // Org modules — now parallel
+      user.orgId
+        ? getOrgModules(user.orgId).catch(() => new Set(["JOBS", "INVOICING", "POS"]) as Set<string>)
+        : Promise.resolve(new Set(["JOBS", "INVOICING", "POS"]) as Set<string>),
+      // Org name for mobile header — lifted out of inline JSX
+      user.orgId
+        ? prisma.organization.findUnique({ where: { id: user.orgId }, select: { name: true } }).then(o => o?.name ?? null).catch(() => null)
+        : Promise.resolve(null as string | null),
     ]);
-
-    const [
-      collectionsMtd,
-      collectionsToday,
-      collectionsYesterday,
-      receivables,
-    ] = user.orgId
-      ? await Promise.all([
-          loadCashCollectionsByChannel({ orgId: user.orgId, baseCurrency: currency, range: { start: mtdStart, end: today } }),
-          loadCashCollectionsByChannel({ orgId: user.orgId, baseCurrency: currency, range: { start: todayStart } }),
-          loadCashCollectionsByChannel({ orgId: user.orgId, baseCurrency: currency, range: { start: yesterdayStart, end: yesterdayEnd } }),
-          loadReceivablesTotal(user.orgId),
-        ])
-      : [
-          { repairs: 0, products: 0, corporate: 0, unallocated: 0, total: 0 },
-          { repairs: 0, products: 0, corporate: 0, unallocated: 0, total: 0 },
-          { repairs: 0, products: 0, corporate: 0, unallocated: 0, total: 0 },
-          { invoiceBalance: 0, saleBalance: 0, total: 0, invoiceCount: 0, saleCount: 0 },
-        ];
 
     // Revenue stream totals
     const repairsMtd   = collectionsMtd.repairs;
@@ -1077,15 +1104,8 @@ export default async function DashboardPage({
       techPayoutDueMap.set(j.assignedToId, (techPayoutDueMap.get(j.assignedToId) ?? 0) + resolveTechCost(j.externalTechFee, j.externalTechBill));
     }
 
-    // Revenue trend (YTD months)
-    const trendMonths = trendMonthsSinceStartOfYear(today);
-    const revenueTrend = user.orgId
-      ? await loadTotalRevenueTrend(trendMonths, user.orgId, currency).catch(() => trendMonths.map((m) => ({ key: m.key, revenue: 0, margin: 0 })))
-      : trendMonths.map((m) => ({ key: m.key, revenue: 0, margin: 0 }));
-
     // Low stock
     const lowStockItems = lowStockParts.filter((p) => p.qtyOnHand <= p.reorderLevel);
-    const enabledModules = user.orgId ? await getOrgModules(user.orgId) : new Set(["JOBS", "INVOICING", "POS"]);
     const quickActions = [
       can.createJob(permissionUser) && enabledModules.has("JOBS") && {
         href: "/jobs/new",
@@ -1161,7 +1181,7 @@ export default async function DashboardPage({
         {/* ── Mobile home screen (Airtel Money-inspired, hidden on desktop) ── */}
         <MobileHomeDashboard
           userName={user.name}
-          orgName={(await prisma.organization.findUnique({ where: { id: user.orgId! }, select: { name: true } }).catch(() => null))?.name ?? "Dduuka ProMax"}
+          orgName={orgName ?? "Dduuka ProMax"}
           receivedToday={receivedToday}
           completedToday={completedToday}
           inRepairCount={inRepairCount}
