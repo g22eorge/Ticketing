@@ -10,6 +10,7 @@ interface Rect { top: number; left: number; right: number; bottom: number; width
 interface RowActionsMenuProps {
   children: React.ReactNode;
   label?: string;
+  size?: "default" | "compact";
 }
 
 type MenuIcon =
@@ -51,7 +52,7 @@ function MenuIconSvg({ icon }: { icon: MenuIcon }) {
   );
 }
 
-export function RowActionsMenu({ children, label = "Actions" }: RowActionsMenuProps) {
+export function RowActionsMenu({ children, label = "Actions", size = "default" }: RowActionsMenuProps) {
   const [open, setOpen] = useState(false);
   const [rect, setRect] = useState<Rect | null>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
@@ -108,6 +109,7 @@ export function RowActionsMenu({ children, label = "Actions" }: RowActionsMenuPr
       : rect.top - 6  // will be offset upward via transform
     : 0;
   const popupRight = rect ? Math.max(8, window.innerWidth - rect.right) : 0;
+  const compact = size === "compact";
 
   const popupStyle: React.CSSProperties = rect
     ? {
@@ -117,9 +119,9 @@ export function RowActionsMenu({ children, label = "Actions" }: RowActionsMenuPr
           ? { top: popupTop }
           : { bottom: window.innerHeight - rect.top + 6 }),
         zIndex: 9999,
-        minWidth: 220,
-        maxWidth: 300,
-        maxHeight: Math.max(160, window.innerHeight - 24),
+        minWidth: compact ? 188 : 220,
+        maxWidth: compact ? 236 : 300,
+        maxHeight: compact ? Math.min(360, Math.max(150, window.innerHeight - 24)) : Math.max(160, window.innerHeight - 24),
         overflowY: "auto",
       }
     : {};
