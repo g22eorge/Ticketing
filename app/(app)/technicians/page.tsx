@@ -2,7 +2,6 @@ import { Fragment } from "react";
 import Link from "next/link";
 
 
-import { StickyKpiRow } from "@/components/mobile/StickyKpiRow";
 import { JobStatusBadge, statusStripClass } from "@/components/jobs/JobStatusBadge";
 import { JOB_STATUSES, UI_JOB_STATUSES, JobStatus, normalizeJobStatus } from "@/lib/job-status";
 import { formatEATDate } from "@/lib/date-eat";
@@ -245,17 +244,6 @@ export default async function TechniciansPage({
           <p className="mt-0.5 text-[12px] text-[var(--ink-muted)]">this month</p>
         </div>
       </div>
-
-      {/* KPI Row */}
-      <StickyKpiRow
-        items={[
-          { label: "Assigned", value: String(assignedCount), href: "/technicians", tone: "default" },
-          { label: "Ready", value: String(readyCount), href: "/technicians?ready=1", tone: readyCount > 0 ? "brand" : "default" },
-          { label: "In Repair", value: String(inRepairCount), href: "/technicians?status=IN_REPAIR", tone: "default" },
-          { label: "Overdue", value: String(overdueCount), tone: overdueCount > 0 ? "warning" : "default" },
-        ]}
-        className="lg:grid-cols-4"
-      />
 
       {/* Filter + Quick Actions — unified panel */}
       <section className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
