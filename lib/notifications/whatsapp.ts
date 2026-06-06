@@ -61,6 +61,10 @@ function getConfig(): WhatsAppConfig | null {
   };
 }
 
+function hasUsableWhatsAppConfig(config: Pick<WhatsAppConfig, "businessNumber" | "accessToken" | "phoneNumberId">) {
+  return Boolean(config.businessNumber?.trim() && config.accessToken?.trim() && config.phoneNumberId?.trim());
+}
+
 export function whatsappConfigSummary() {
   const cfg = getConfig();
   return {
@@ -80,13 +84,14 @@ async function getConfigForOrg(orgId?: string): Promise<WhatsAppConfig | null> {
   if (orgId) {
     const orgCfg = await getOrgWhatsAppConfig(orgId);
     if (orgCfg) {
-      return {
+      const config = {
         businessNumber: orgCfg.businessNumber,
         provider: orgCfg.provider || "meta",
         accessToken: orgCfg.accessToken,
         phoneNumberId: orgCfg.phoneNumberId,
         businessAccountId: orgCfg.businessAccountId || undefined,
       };
+      if (hasUsableWhatsAppConfig(config)) return config;
     }
   }
   return getConfig();
@@ -94,6 +99,17 @@ async function getConfigForOrg(orgId?: string): Promise<WhatsAppConfig | null> {
 
 export async function getWhatsAppConfigForOrg(orgId?: string): Promise<WhatsAppConfig | null> {
   return getConfigForOrg(orgId);
+}
+
+export async function whatsappConfigSummaryForOrg(orgId?: string) {
+  const cfg = await getConfigForOrg(orgId);
+  return {
+    configured: Boolean(cfg),
+    provider: cfg?.provider ?? null,
+    businessNumber: cfg?.businessNumber ?? null,
+    phoneNumberId: cfg?.phoneNumberId ?? null,
+    businessAccountId: cfg?.businessAccountId ?? null,
+  };
 }
 
 export async function whatsappIsConfiguredForOrg(orgId?: string): Promise<boolean> {

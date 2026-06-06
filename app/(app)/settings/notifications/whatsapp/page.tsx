@@ -1,18 +1,23 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { getCurrentUserRole } from "@/lib/session";
-import { whatsappConfigSummary, whatsappHealthCheck } from "@/lib/notifications/whatsapp";
+import { requireOrgSession } from "@/lib/org-context";
+import { whatsappConfigSummaryForOrg, whatsappHealthCheckForOrg } from "@/lib/notifications/whatsapp";
+import { getOrgWhatsAppConfig } from "@/lib/org-whatsapp-config";
+import { WhatsAppConfigForm } from "@/components/settings/WhatsAppConfigForm";
 import { WhatsAppTestPanel } from "@/components/settings/WhatsAppTestPanel";
 
 export const dynamic = "force-dynamic";
 
 export default async function WhatsAppSettingsPage() {
-  const { user } = await getCurrentUserRole();
+  const { user, orgId } = await requireOrgSession();
   if (user.role !== "ADMIN") redirect("/settings/notifications");
 
-  const summary = whatsappConfigSummary();
-  const health = summary.configured ? await whatsappHealthCheck() : null;
+  const [currentConfig, summary] = await Promise.all([
+    getOrgWhatsAppConfig(orgId),
+    whatsappConfigSummaryForOrg(orgId),
+  ]);
+  const health = summary.configured ? await whatsappHealthCheckForOrg(orgId) : null;
 
   // Extract the extra fields that whatsappHealthCheck returns alongside { ok, error }
   const healthData = health as (typeof health & {
@@ -120,6 +125,8 @@ export default async function WhatsAppSettingsPage() {
           verifiedName={healthData?.verified_name ?? null}
         />
       ) : null}
+
+      <WhatsAppConfigForm orgId={orgId} current={currentConfig} />
 
       {/* Links */}
       <div className="flex flex-wrap gap-3">

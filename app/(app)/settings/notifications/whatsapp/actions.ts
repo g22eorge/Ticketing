@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { requireOrgSession } from "@/lib/org-context";
-import { sendWhatsAppTemplateMessage } from "@/lib/notifications/whatsapp";
+import { getWhatsAppConfigForOrg, sendWhatsAppTemplateMessage } from "@/lib/notifications/whatsapp";
 import { getOrgWhatsAppConfig, saveOrgWhatsAppConfig, deleteOrgWhatsAppConfig } from "@/lib/org-whatsapp-config";
 import { prisma } from "@/lib/prisma";
 import { assertOrgCanMutate } from "@/lib/org-write";
@@ -20,19 +20,11 @@ export async function sendTestWhatsAppAction(
   if (user.role !== "ADMIN") return { ok: false, error: "Forbidden" };
   assertOrgCanMutate({ access: org.access, userRole: user.role, userAccessMode: user.accessMode, kind: "GENERAL" });
 
-  const orgConfig = await getOrgWhatsAppConfig(orgId);
-  if (!orgConfig) return { ok: false, error: "WhatsApp is not configured for your organisation." };
+  const whatsappCfg = await getWhatsAppConfigForOrg(orgId);
+  if (!whatsappCfg) return { ok: false, error: "WhatsApp is not configured for your organisation." };
 
   const to = (formData.get("to") as string | null)?.trim() ?? "";
   if (!to) return { ok: false, error: "Recipient number is required." };
-
-  const whatsappCfg = {
-    businessNumber: orgConfig.businessNumber,
-    provider: orgConfig.provider,
-    accessToken: orgConfig.accessToken,
-    phoneNumberId: orgConfig.phoneNumberId,
-    businessAccountId: orgConfig.businessAccountId || undefined,
-  };
 
   const result = await sendWhatsAppTemplateMessage(to, "hello_world", "en_US", [], whatsappCfg);
 
@@ -59,7 +51,7 @@ export async function sendTestWhatsAppAction(
   revalidatePath("/settings/notifications/whatsapp");
 
   if (!result.success) return { ok: false, error: result.error ?? "Send failed." };
-  return { ok: true, messageId: result.messageId!, to, from: orgConfig.businessNumber };
+  return { ok: true, messageId: result.messageId!, to, from: whatsappCfg.businessNumber };
 }
 
 export async function saveWhatsAppConfigAction(

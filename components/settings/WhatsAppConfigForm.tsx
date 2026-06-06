@@ -67,7 +67,7 @@ export function WhatsAppConfigForm({ orgId, current }: Props) {
             <input
               name="accessToken"
               type="password"
-              required
+              required={!current}
               placeholder={current ? "Enter new token to update, or leave blank to keep existing" : "EAAxxxxxxxx…"}
               className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm font-mono text-[var(--ink)] placeholder:text-[var(--ink-muted)]/50 focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/40"
             />

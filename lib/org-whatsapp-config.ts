@@ -31,6 +31,13 @@ async function ensureTable() {
     )
   `);
   // Safely add AT columns to existing tables
+  const existingColumns = new Set(
+    (
+      await prisma.$queryRaw<Array<{ name: string }>>`
+        PRAGMA table_info('OrgWhatsAppConfig')
+      `
+    ).map((column) => column.name),
+  );
   const atCols: [string, string][] = [
     ["atApiKey", "TEXT"],
     ["atUsername", "TEXT"],
@@ -38,9 +45,9 @@ async function ensureTable() {
     ["smsFallback", "INTEGER NOT NULL DEFAULT 0"],
   ];
   for (const [col, def] of atCols) {
-    try {
+    if (!existingColumns.has(col)) {
       await prisma.$executeRawUnsafe(`ALTER TABLE "OrgWhatsAppConfig" ADD COLUMN ${col} ${def}`);
-    } catch { /* column already exists */ }
+    }
   }
   tableEnsured = true;
 }

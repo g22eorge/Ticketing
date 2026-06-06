@@ -1,27 +1,14 @@
 /**
  * InventoryService — the ONLY module authorised to mutate stock balances.
  *
- * Architectural invariants:
- *   1. No other module (repairs, jobs, procurement) may call
- *      prisma.part.update({ qtyOnHand: ... }) directly.
- *      Every stock mutation MUST go through this service so that
- *      Part.qtyOnHand, PartLocationStock, and PartStockTransaction
- *      remain consistent at all times.
- *
- *   2. PartLocationStock is the authoritative per-location balance.
- *      It tracks qtyOnHand and qtyReserved at the (part, location) level.
- *      qtyAvailable at a location = qtyOnHand - qtyReserved.
- *
- *   3. Part.qtyOnHand is a denormalised aggregate:
- *        SUM(PartLocationStock.qtyOnHand) WHERE partId = ?
- *      syncPartAggregate() is called inside every mutation transaction
- *      to keep this value current. Never update it directly.
- *
- *   4. Reservations (PartReservation) hold stock logically without removing it
- *      from qtyOnHand. They increment qtyReserved. Consuming a reservation
- *      is when qtyOnHand is actually decremented.
- *
- *   5. Every stock mutation appends a PartStockTransaction record.
+ * Invariants:
+ *   1. Part.qtyOnHand and Part.qtyReserved are the authoritative totals.
+ *      Every mutation updates them directly inside a transaction.
+ *   2. PartLocationStock tracks per-location breakdown for transfers.
+ *      It mirrors Part totals but is not the source of truth.
+ *   3. Reservations increment qtyReserved without touching qtyOnHand.
+ *      Consuming a reservation decrements both.
+ *   4. Every stock mutation appends a PartStockTransaction record.
  */
 
 import { prisma } from "@/lib/prisma";
@@ -59,22 +46,22 @@ type Ctx = {
 // ── Internal helpers ──────────────────────────────────────────────────────────
 
 /**
- * Recomputes Part.qtyOnHand as the sum of all PartLocationStock.qtyOnHand
- * rows for that part. Must be called inside a transaction after every mutation
- * that changes a PartLocationStock.qtyOnHand value.
+ * Recomputes Part.qtyOnHand and Part.qtyReserved from PartLocationStock rows.
+ * Use only for reconciliation; normal mutations update Part directly.
  */
-async function syncPartAggregate(
-  tx: Omit<typeof prisma, "$connect" | "$disconnect" | "$on" | "$transaction" | "$use" | "$extends">,
-  partId: string,
-): Promise<void> {
-  const agg = await tx.partLocationStock.aggregate({
-    where: { partId },
-    _sum: { qtyOnHand: true },
-  });
-  const total = agg._sum.qtyOnHand ?? 0;
-  await tx.part.update({
-    where: { id: partId },
-    data: { qtyOnHand: total },
+export async function reconcilePartTotals(partId: string): Promise<void> {
+  await prisma.$transaction(async (tx) => {
+    const agg = await tx.partLocationStock.aggregate({
+      where: { partId },
+      _sum: { qtyOnHand: true, qtyReserved: true },
+    });
+    await tx.part.update({
+      where: { id: partId },
+      data: {
+        qtyOnHand: agg._sum.qtyOnHand ?? 0,
+        qtyReserved: agg._sum.qtyReserved ?? 0,
+      },
+    });
   });
 }
 
@@ -151,7 +138,10 @@ export async function receiveStock(params: {
       },
     });
 
-    await syncPartAggregate(tx, partId);
+    await tx.part.update({
+      where: { id: partId },
+      data: { qtyOnHand: { increment: quantity } },
+    });
   });
 }
 
@@ -216,7 +206,10 @@ export async function issueStock(params: {
       },
     });
 
-    await syncPartAggregate(tx, partId);
+    await tx.part.update({
+      where: { id: partId },
+      data: { qtyOnHand: { decrement: quantity } },
+    });
   });
 }
 
@@ -283,7 +276,11 @@ export async function reserveForJob(params: {
       },
     });
 
-    // qtyOnHand is unchanged — no syncPartAggregate needed
+    await tx.part.update({
+      where: { id: partId },
+      data: { qtyReserved: { increment: quantity } },
+    });
+
     return reservation.id;
   });
 }
@@ -359,7 +356,13 @@ export async function consumeReservation(params: {
       },
     });
 
-    await syncPartAggregate(tx, reservation.partId);
+    await tx.part.update({
+      where: { id: reservation.partId },
+      data: {
+        qtyOnHand: { decrement: reservation.quantity },
+        qtyReserved: { decrement: reservation.quantity },
+      },
+    });
   });
 }
 
@@ -406,7 +409,6 @@ export async function releaseReservation(params: {
       data: { status: "RELEASED", releasedAt: new Date() },
     });
 
-    // Only qtyReserved changes. Upsert handles missing row as zeros.
     await tx.partLocationStock.upsert({
       where: { partId_locationId: { partId: reservation.partId, locationId } },
       create: {
@@ -421,7 +423,10 @@ export async function releaseReservation(params: {
       },
     });
 
-    // qtyOnHand unchanged — no syncPartAggregate needed
+    await tx.part.update({
+      where: { id: reservation.partId },
+      data: { qtyReserved: { decrement: reservation.quantity } },
+    });
   });
 }
 
@@ -496,7 +501,10 @@ export async function applyAdjustment(params: {
       },
     });
 
-    await syncPartAggregate(tx, partId);
+    await tx.part.update({
+      where: { id: partId },
+      data: { qtyOnHand: { increment: variance } },
+    });
   });
 }
 
