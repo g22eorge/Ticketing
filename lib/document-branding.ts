@@ -150,13 +150,18 @@ async function ensureRawTable() {
   rawTableEnsured = true;
 }
 
-async function getViaRaw() {
+async function getViaRaw(orgId?: string) {
   try {
     await ensureRawTable();
 
-    const rows = await prisma.$queryRaw<Array<Record<string, unknown>>>`
-      SELECT * FROM "DocumentBrandingSettings" WHERE id = 'singleton' LIMIT 1
-    `;
+    // Try org-specific row first (id = orgId), then legacy singleton
+    const rows = orgId
+      ? await prisma.$queryRaw<Array<Record<string, unknown>>>`
+          SELECT * FROM "DocumentBrandingSettings" WHERE id = ${orgId} OR (orgId = ${orgId}) LIMIT 1
+        `
+      : await prisma.$queryRaw<Array<Record<string, unknown>>>`
+          SELECT * FROM "DocumentBrandingSettings" WHERE id = 'singleton' LIMIT 1
+        `;
 
     if (!rows[0]) {
       await prisma.$executeRaw`
@@ -191,43 +196,27 @@ async function getViaRaw() {
 }
 
 export async function saveDocumentBrandingSettings(orgId: string, data: BrandingSettings) {
-  if (hasDelegate()) {
-    const delegate = (prisma as unknown as {
-      documentBrandingSettings: {
-        upsert: (args: {
-          where: { orgId: string } | { id: string };
-          create: BrandingSettings & { orgId?: string };
-          update: BrandingSettings;
-        }) => Promise<unknown>;
-      };
-    }).documentBrandingSettings;
-
-    // Ensure all columns exist in Turso before writing (handles schema drift)
-    await ensureRawTable().catch(() => {/* non-fatal; upsert will surface real errors */});
-
-    // Strip id so Prisma generates a cuid on create — avoids conflict with legacy singleton row
-    const { id: _unusedId, ...dataWithoutId } = data;
-    await delegate.upsert({
-      where: { orgId },
-      create: { ...(dataWithoutId as BrandingSettings), orgId },
-      update: dataWithoutId as BrandingSettings,
-    });
-    return;
-  }
-
+  // Always use raw SQL — handles both SQLite and Turso, and is immune to schema drift
+  // because ensureRawTable() adds any missing columns before we write.
   await ensureRawTable();
+
+  // Use orgId as the row id so each org gets its own row without conflicting with 'singleton'
+  const rowId = orgId;
 
   await prisma.$executeRaw`
     INSERT INTO "DocumentBrandingSettings" (
-      id, companyName, companyTagline, companyAddressLine1, companyAddressLine2,
+      id, orgId,
+      companyName, companyTagline, companyAddressLine1, companyAddressLine2,
       companyContacts, companyEmail, companyWebsite, documentTitle,
       quotePrefix, quoteFormat, quoteValidityDays, sequencePadLength,
       vatDefaultApplicable, vatRatePercent, vatLabel, termsText,
       footerText, signatureCompanyLabel, signatureClientLabel,
+      primaryColor, secondaryColor, accentColor, backgroundColor, surfaceColor, borderColor,
       invoiceTemplateKey, quotationTemplateKey, jobCardTemplateKey, receiptTemplateKey,
       updatedAt
     ) VALUES (
-      ${data.id}, ${data.companyName}, ${data.companyTagline},
+      ${rowId}, ${orgId},
+      ${data.companyName}, ${data.companyTagline},
       ${data.companyAddressLine1}, ${data.companyAddressLine2},
       ${data.companyContacts}, ${data.companyEmail}, ${data.companyWebsite},
       ${data.documentTitle}, ${data.quotePrefix}, ${data.quoteFormat},
@@ -235,10 +224,14 @@ export async function saveDocumentBrandingSettings(orgId: string, data: Branding
       ${data.vatDefaultApplicable}, ${data.vatRatePercent}, ${data.vatLabel},
       ${data.termsText}, ${data.footerText}, ${data.signatureCompanyLabel},
       ${data.signatureClientLabel},
-      ${data.invoiceTemplateKey}, ${data.quotationTemplateKey}, ${data.jobCardTemplateKey}, ${data.receiptTemplateKey},
+      ${data.primaryColor}, ${data.secondaryColor}, ${data.accentColor},
+      ${data.backgroundColor}, ${data.surfaceColor}, ${data.borderColor},
+      ${data.invoiceTemplateKey}, ${data.quotationTemplateKey},
+      ${data.jobCardTemplateKey}, ${data.receiptTemplateKey},
       CURRENT_TIMESTAMP
     )
     ON CONFLICT(id) DO UPDATE SET
+      orgId = excluded.orgId,
       companyName = excluded.companyName,
       companyTagline = excluded.companyTagline,
       companyAddressLine1 = excluded.companyAddressLine1,
@@ -258,6 +251,12 @@ export async function saveDocumentBrandingSettings(orgId: string, data: Branding
       footerText = excluded.footerText,
       signatureCompanyLabel = excluded.signatureCompanyLabel,
       signatureClientLabel = excluded.signatureClientLabel,
+      primaryColor = excluded.primaryColor,
+      secondaryColor = excluded.secondaryColor,
+      accentColor = excluded.accentColor,
+      backgroundColor = excluded.backgroundColor,
+      surfaceColor = excluded.surfaceColor,
+      borderColor = excluded.borderColor,
       invoiceTemplateKey = excluded.invoiceTemplateKey,
       quotationTemplateKey = excluded.quotationTemplateKey,
       jobCardTemplateKey = excluded.jobCardTemplateKey,
@@ -293,5 +292,5 @@ export async function getDocumentBrandingSettings(orgId?: string): Promise<Brand
     return { ...defaultBranding };
   }
 
-  return getViaRaw();
+  return getViaRaw(orgId);
 }
