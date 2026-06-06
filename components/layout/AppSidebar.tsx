@@ -22,16 +22,11 @@ const nav = [
   { href: "/technicians", label: "Technicians",     group: "service"    as NavGroup, roles: ["ADMIN", "MANAGER", "TECH_MANAGER", "OPS", "TECHNICIAN_INTERNAL", "TECHNICIAN_EXTERNAL", "FRONT_DESK", "SALES_MANAGER", "FINANCE"] as const },
   { href: "/complaints",  label: "Complaints",      group: "service"    as NavGroup, roles: ["ADMIN", "MANAGER", "TECH_MANAGER", "OPS"] as const },
 
-  // Stock & Supply (inventory + procurement merged)
-  { href: "/inventory",                    label: "Parts & Stock",     group: "stock" as NavGroup, roles: ["ADMIN", "MANAGER", "TECH_MANAGER", "OPS", "TECHNICIAN_INTERNAL"] as const },
-  { href: "/inventory/locations",          label: "Locations",         group: "stock" as NavGroup, roles: ["ADMIN", "MANAGER", "TECH_MANAGER", "OPS"] as const },
-  { href: "/inventory/transfers",          label: "Transfers",         group: "stock" as NavGroup, roles: ["ADMIN", "MANAGER", "TECH_MANAGER", "OPS"] as const },
-  { href: "/inventory/stock-counts",       label: "Stock Counts",      group: "stock" as NavGroup, roles: ["ADMIN", "MANAGER", "TECH_MANAGER", "OPS"] as const },
-  { href: "/inventory/suppliers",          label: "Suppliers",         group: "stock" as NavGroup, roles: ["ADMIN", "MANAGER", "OPS"] as const },
-  { href: "/inventory/purchase-requests",  label: "Purchase Requests", group: "stock" as NavGroup, roles: ["ADMIN", "MANAGER", "TECH_MANAGER", "OPS"] as const },
-  { href: "/inventory/purchase-orders",    label: "Purchase Orders",   group: "stock" as NavGroup, roles: ["ADMIN", "MANAGER", "OPS"] as const },
-  { href: "/inventory/goods-received",     label: "Goods Received",    group: "stock" as NavGroup, roles: ["ADMIN", "MANAGER", "TECH_MANAGER", "OPS"] as const },
-  { href: "/inventory/supplier-bills",     label: "Supplier Bills",    group: "stock" as NavGroup, roles: ["ADMIN", "MANAGER", "TECH_MANAGER", "OPS"] as const },
+  // Stock & Supply — daily items + ops hub for less-frequent tasks
+  { href: "/inventory",                   label: "Parts & Stock",     group: "stock" as NavGroup, roles: ["ADMIN", "MANAGER", "TECH_MANAGER", "OPS", "TECHNICIAN_INTERNAL"] as const },
+  { href: "/inventory/purchase-requests", label: "Purchase Requests", group: "stock" as NavGroup, roles: ["ADMIN", "MANAGER", "TECH_MANAGER", "OPS"] as const },
+  { href: "/inventory/purchase-orders",   label: "Purchase Orders",   group: "stock" as NavGroup, roles: ["ADMIN", "MANAGER", "OPS"] as const },
+  { href: "/inventory/ops",               label: "Stock Operations",  group: "stock" as NavGroup, roles: ["ADMIN", "MANAGER", "TECH_MANAGER", "OPS"] as const },
 
   // Customers
   { href: "/clients",          label: "Clients",         group: "customers"  as NavGroup, roles: ["ADMIN", "MANAGER", "OPS", "FRONT_DESK", "SALES", "SALES_MANAGER", "SALES_CORPORATE", "SALES_RETAIL", "FINANCE"] as const },
@@ -39,15 +34,12 @@ const nav = [
   { href: "/sales/campaigns",  label: "Campaigns",       group: "customers"  as NavGroup, roles: ["ADMIN", "MANAGER", "OPS", "SALES", "SALES_MANAGER"] as const },
   { href: "/pos",              label: "Point of Sale",   group: "customers"  as NavGroup, roles: ["ADMIN", "MANAGER", "OPS", "FRONT_DESK", "SALES", "SALES_MANAGER", "SALES_RETAIL", "SALES_POS"] as const },
 
-  // Documents
-  { href: "/documents/job-cards",      label: "Job Cards",      group: "documents" as NavGroup, roles: ["ADMIN", "MANAGER", "TECH_MANAGER", "OPS", "FRONT_DESK", "TECHNICIAN_INTERNAL"] as const },
-  { href: "/documents/quotations",     label: "Quotations",     group: "documents" as NavGroup, roles: ["ADMIN", "MANAGER", "TECH_MANAGER", "OPS", "SALES", "TECHNICIAN_INTERNAL", "SALES_MANAGER", "SALES_CORPORATE", "SALES_RETAIL"] as const },
-  { href: "/documents/invoices",       label: "Invoices",       group: "documents" as NavGroup, roles: ["ADMIN", "MANAGER", "OPS", "FINANCE", "SALES_MANAGER", "SALES_CORPORATE", "TECH_MANAGER"] as const },
-  { href: "/documents/receipts",       label: "Receipts",       group: "documents" as NavGroup, roles: ["ADMIN", "MANAGER", "OPS", "FRONT_DESK", "SALES", "SALES_MANAGER", "SALES_RETAIL"] as const },
-  { href: "/documents/delivery-notes", label: "Delivery Notes", group: "documents" as NavGroup, roles: ["ADMIN", "MANAGER", "OPS", "FRONT_DESK"] as const },
-  { href: "/documents/credit-notes",   label: "Credit Notes",   group: "documents" as NavGroup, roles: ["ADMIN", "MANAGER", "OPS", "FINANCE"] as const },
-  { href: "/documents/refunds",        label: "Refunds",        group: "documents" as NavGroup, roles: ["ADMIN", "MANAGER", "OPS", "FINANCE"] as const },
-  { href: "/documents/templates",      label: "Templates",      group: "documents" as NavGroup, roles: ["ADMIN", "MANAGER", "OPS"] as const },
+  // Documents — daily items + hub for post-sale and config
+  { href: "/documents/job-cards",  label: "Job Cards",   group: "documents" as NavGroup, roles: ["ADMIN", "MANAGER", "TECH_MANAGER", "OPS", "FRONT_DESK", "TECHNICIAN_INTERNAL"] as const },
+  { href: "/documents/quotations", label: "Quotations",  group: "documents" as NavGroup, roles: ["ADMIN", "MANAGER", "TECH_MANAGER", "OPS", "SALES", "TECHNICIAN_INTERNAL", "SALES_MANAGER", "SALES_CORPORATE", "SALES_RETAIL"] as const },
+  { href: "/documents/invoices",   label: "Invoices",    group: "documents" as NavGroup, roles: ["ADMIN", "MANAGER", "OPS", "FINANCE", "SALES_MANAGER", "SALES_CORPORATE", "TECH_MANAGER"] as const },
+  { href: "/documents/receipts",   label: "Receipts",    group: "documents" as NavGroup, roles: ["ADMIN", "MANAGER", "OPS", "FRONT_DESK", "SALES", "SALES_MANAGER", "SALES_RETAIL"] as const },
+  { href: "/documents",            label: "All Documents",group: "documents" as NavGroup, roles: ["ADMIN", "MANAGER", "TECH_MANAGER", "OPS", "FRONT_DESK", "SALES", "SALES_MANAGER", "SALES_CORPORATE", "SALES_RETAIL", "FINANCE", "TECHNICIAN_INTERNAL"] as const },
 
   // Finance
   { href: "/finance",               label: "Finance Hub", group: "finance" as NavGroup, roles: ["ADMIN", "MANAGER", "OPS", "FINANCE"] as const },
