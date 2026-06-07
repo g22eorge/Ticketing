@@ -3,10 +3,29 @@ import { redirect } from "next/navigation";
 import { getCurrentUserRole } from "@/lib/session";
 import { revalidatePath } from "next/cache";
 import { Prisma } from "@prisma/client";
+import { scrypt, randomBytes, timingSafeEqual } from "crypto";
+import { promisify } from "util";
 
 import { formatMoney } from "@/lib/currency";
 import { prisma } from "@/lib/prisma";
 import { ConfirmSubmitButton } from "@/components/shared/ConfirmSubmitButton";
+
+const scryptAsync = promisify(scrypt);
+
+async function hashPin(pin: string): Promise<string> {
+  const salt = randomBytes(16).toString("hex");
+  const buf = (await scryptAsync(pin, salt, 32)) as Buffer;
+  return `${salt}:${buf.toString("hex")}`;
+}
+
+async function verifyPin(pin: string, stored: string): Promise<boolean> {
+  const [salt, hash] = stored.split(":");
+  if (!salt || !hash) return false;
+  const buf = (await scryptAsync(pin, salt, 32)) as Buffer;
+  const storedBuf = Buffer.from(hash, "hex");
+  if (buf.length !== storedBuf.length) return false;
+  return timingSafeEqual(buf, storedBuf);
+}
 
 export const dynamic = "force-dynamic";
 
@@ -29,24 +48,31 @@ export default async function CashierShiftsPage({
   async function openShiftAction(formData: FormData) {
     "use server";
     const { user: _u } = await getCurrentUserRole();
-    if (!["ADMIN", "OPS", "FRONT_DESK"].includes(user.role)) return;
+    if (!["ADMIN", "OPS", "FRONT_DESK"].includes(_u.role)) return;
 
     const openingCashRaw = Number(String(formData.get("openingCash") ?? "0").trim());
     const notes = String(formData.get("notes") ?? "").trim();
+    const pinRaw = String(formData.get("shiftPin") ?? "").trim();
     const openingCash = Number.isFinite(openingCashRaw) && openingCashRaw >= 0 ? openingCashRaw : 0;
+
+    // Validate PIN: must be 4–8 digits if provided
+    if (pinRaw && !/^\d{4,8}$/.test(pinRaw)) return;
 
     // Only one open shift per cashier at a time
     const existing = await prisma.cashierShift.findFirst({
-      where: { cashierId: user.id, status: "OPEN" },
+      where: { cashierId: _u.id, status: "OPEN" },
       select: { id: true },
     }).catch(() => null);
     if (existing) return;
 
+    const shiftPin = pinRaw ? await hashPin(pinRaw) : null;
+
     await prisma.cashierShift.create({
       data: {
-        cashierId: user.id,
+        cashierId: _u.id,
         status: "OPEN",
         openingCash,
+        shiftPin,
         notes: notes || null,
       },
     }).catch(() => {});
@@ -56,11 +82,12 @@ export default async function CashierShiftsPage({
   async function closeShiftAction(formData: FormData) {
     "use server";
     const { user: _u } = await getCurrentUserRole();
-    if (!["ADMIN", "OPS", "FRONT_DESK"].includes(user.role)) return;
+    if (!["ADMIN", "OPS", "FRONT_DESK"].includes(_u.role)) return;
 
     const shiftId = String(formData.get("shiftId") ?? "").trim();
     const closingCashRaw = Number(String(formData.get("closingCash") ?? "0").trim());
     const notes = String(formData.get("notes") ?? "").trim();
+    const pinRaw = String(formData.get("shiftPin") ?? "").trim();
     if (!shiftId) return;
 
     const closingCash = Number.isFinite(closingCashRaw) && closingCashRaw >= 0 ? closingCashRaw : 0;
@@ -69,12 +96,18 @@ export default async function CashierShiftsPage({
       where: {
         id: shiftId,
         status: "OPEN",
-        // non-admins can only close their own shift
-        ...( !["ADMIN"].includes(user.role) ? { cashierId: user.id } : {} ),
+        ...( !["ADMIN"].includes(_u.role) ? { cashierId: _u.id } : {} ),
       },
-      select: { id: true },
+      select: { id: true, shiftPin: true },
     }).catch(() => null);
     if (!shift) return;
+
+    // If shift has a PIN and the closer is not ADMIN, verify it
+    if (shift.shiftPin && !["ADMIN"].includes(_u.role)) {
+      if (!pinRaw) return; // PIN required but not provided
+      const ok = await verifyPin(pinRaw, shift.shiftPin);
+      if (!ok) return;
+    }
 
     await prisma.cashierShift.update({
       where: { id: shiftId },
@@ -215,12 +248,26 @@ export default async function CashierShiftsPage({
             </div>
             <div className="space-y-1">
               <label className="text-[13px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
+                Shift PIN <span className="normal-case font-normal text-[var(--ink-muted)]">(4–8 digits, optional)</span>
+              </label>
+              <input
+                name="shiftPin"
+                type="password"
+                inputMode="numeric"
+                placeholder="e.g. 1234"
+                maxLength={8}
+                autoComplete="new-password"
+                className="h-9 w-36 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 text-sm outline-none focus:ring-2 focus:ring-[var(--accent)]"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-[13px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
                 Notes (optional)
               </label>
               <input
                 name="notes"
                 placeholder="Handover note, branch info…"
-                className="h-9 w-64 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 text-sm outline-none focus:ring-2 focus:ring-[var(--accent)]"
+                className="h-9 w-56 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 text-sm outline-none focus:ring-2 focus:ring-[var(--accent)]"
               />
             </div>
             <button
@@ -238,7 +285,13 @@ export default async function CashierShiftsPage({
         <div className="rounded-xl border border-emerald-400/30 bg-emerald-500/10 p-4">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <h2 className="text-sm font-bold text-emerald-700 dark:text-emerald-300">Your Shift is Open</h2>
+              <div className="flex items-center gap-2">
+                <h2 className="text-sm font-bold text-emerald-700 dark:text-emerald-300">Your Shift is Open</h2>
+                {myOpenShift.shiftPin
+                  ? <span className="rounded-full border border-emerald-400/40 bg-emerald-500/20 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-emerald-700 dark:text-emerald-400">🔒 PIN protected</span>
+                  : <span className="rounded-full border border-amber-400/30 bg-amber-500/10 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-amber-600 dark:text-amber-400">No PIN</span>
+                }
+              </div>
               <p className="text-[12px] text-emerald-700 dark:text-emerald-400">
                 Opened {myOpenShift.openedAt.toLocaleString()} · Opening cash: {formatMoney(myOpenShift.openingCash, currency)}
               </p>
@@ -260,6 +313,23 @@ export default async function CashierShiftsPage({
                 className="h-9 w-40 rounded-lg border border-emerald-200 bg-white px-3 text-sm outline-none focus:ring-2 focus:ring-emerald-500"
               />
             </div>
+            {myOpenShift.shiftPin && (
+              <div className="space-y-1">
+                <label className="text-[13px] font-semibold uppercase tracking-wide text-emerald-700">
+                  Shift PIN <span className="text-emerald-600 normal-case font-normal">(required)</span>
+                </label>
+                <input
+                  name="shiftPin"
+                  type="password"
+                  inputMode="numeric"
+                  placeholder="Enter PIN"
+                  maxLength={8}
+                  required
+                  autoComplete="current-password"
+                  className="h-9 w-32 rounded-lg border border-emerald-200 bg-white px-3 text-sm outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+            )}
             <div className="space-y-1">
               <label className="text-[13px] font-semibold uppercase tracking-wide text-emerald-700">
                 Closing Notes
@@ -267,7 +337,7 @@ export default async function CashierShiftsPage({
               <input
                 name="notes"
                 placeholder="End-of-day notes…"
-                className="h-9 w-64 rounded-lg border border-emerald-200 bg-white px-3 text-sm outline-none focus:ring-2 focus:ring-emerald-500"
+                className="h-9 w-56 rounded-lg border border-emerald-200 bg-white px-3 text-sm outline-none focus:ring-2 focus:ring-emerald-500"
               />
             </div>
             <ConfirmSubmitButton
@@ -314,6 +384,7 @@ export default async function CashierShiftsPage({
                     <span className="font-medium text-[var(--ink)]">
                       {cashierMap[shift.cashierId] ?? shift.cashierId.slice(0, 8)}
                       {shift.cashierId === user.id && <span className="ml-1.5 rounded border border-blue-400/30 bg-blue-500/10 px-1 py-0.5 text-[12px] font-semibold text-blue-700 dark:text-blue-400">you</span>}
+                      {shift.shiftPin && <span className="ml-1 text-[12px]" title="PIN protected">🔒</span>}
                     </span>
                     <span className={`rounded px-1.5 py-0.5 text-[13px] font-semibold ${isOpen ? "border border-emerald-400/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" : "border border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]"}`}>{shift.status}</span>
                   </div>
@@ -378,6 +449,7 @@ export default async function CashierShiftsPage({
                       <td className="px-4 py-3 font-medium text-[var(--ink)]">
                         {cashierMap[shift.cashierId] ?? shift.cashierId.slice(0, 8)}
                         {shift.cashierId === user.id && <span className="ml-1.5 rounded border border-blue-400/30 bg-blue-500/10 px-1 py-0.5 text-[12px] font-semibold text-blue-700 dark:text-blue-400">you</span>}
+                        {shift.shiftPin && <span className="ml-1 text-[12px]" title="PIN protected">🔒</span>}
                       </td>
                       <td className="px-4 py-3"><span className={`rounded px-1.5 py-0.5 text-[13px] font-semibold ${isOpen ? "border border-emerald-400/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" : "border border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]"}`}>{shift.status}</span></td>
                       <td className="whitespace-nowrap px-4 py-3 text-[var(--ink-muted)]">{shift.openedAt.toLocaleString()}</td>

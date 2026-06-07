@@ -2380,6 +2380,7 @@ model CashierShift {
   posSessionId String?
   cashierId    String
   status       String    @default("OPEN")
+  shiftPin     String?
   openingCash  Float     @default(0)
   closingCash  Float?
   openedAt     DateTime  @default(now())
