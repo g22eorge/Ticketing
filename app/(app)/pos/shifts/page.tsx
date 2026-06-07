@@ -198,40 +198,24 @@ export default async function CashierShiftsPage({
       <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
         <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
           <div>
-            <p className="text-[13px] font-bold text-[var(--ink)]">Cashier Shifts</p>
-            <p className="text-[13px] text-[var(--ink-muted)]">Open and close shifts, reconcile cash at end of day</p>
+            <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">POS · Cashier Shifts</p>
+            <p className="text-base font-semibold text-[var(--ink)]">Shift Management</p>
+            <p className="text-[13px] text-[var(--ink-muted)]">Open or close your shift to start processing sales</p>
           </div>
+          <a href="/pos" className="btn-premium-secondary rounded-lg px-3 py-1.5 text-[12px]">← Back to Sales</a>
         </div>
       </div>
 
-      {/* ── KPI tiles ── */}
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
-          <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Total Shifts</p>
-          <p className="mt-1 text-xl font-bold tabular-nums text-[var(--ink)]">{totalShifts}</p>
-          <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">all time</p>
-        </div>
-        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
-          <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Open Shifts</p>
-          <p className="mt-1 text-xl font-bold tabular-nums text-[var(--ink)]">{openCount}</p>
-          <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">currently open</p>
-        </div>
-        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
-          <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Closed This Month</p>
-          <p className="mt-1 text-xl font-bold tabular-nums text-[var(--ink)]">{closedThisMonth}</p>
-          <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">this month</p>
-        </div>
-        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
-          <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Cash Collected This Month</p>
-          <p className="mt-1 text-xl font-bold tabular-nums text-[var(--ink)]">{formatMoney(cashCollectedThisMonth, currency)}</p>
-          <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">closing cash, this month</p>
-        </div>
-      </div>
-
-      {/* Open my shift panel */}
-      {!myOpenShift && (
-        <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4">
-          <h2 className="mb-3 text-sm font-bold text-[var(--ink)]">Open Your Shift</h2>
+      {/* ── MY SHIFT — always first ── */}
+      {!myOpenShift ? (
+        <div className="rounded-xl border-2 border-dashed border-[var(--accent)]/30 bg-[var(--accent)]/5 p-5">
+          <div className="mb-4 flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--accent)]/15 text-xl">⏱</div>
+            <div>
+              <h2 className="text-base font-bold text-[var(--ink)]">No shift open — start yours now</h2>
+              <p className="text-[13px] text-[var(--ink-muted)]">You must open a shift before processing any sales.</p>
+            </div>
+          </div>
           <form action={openShiftAction} className="flex flex-wrap items-end gap-3">
             <div className="space-y-1">
               <label className="text-[13px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
@@ -278,10 +262,7 @@ export default async function CashierShiftsPage({
             </button>
           </form>
         </div>
-      )}
-
-      {/* Close my open shift */}
-      {myOpenShift && (
+      ) : (
         <div className="rounded-xl border border-emerald-400/30 bg-emerald-500/10 p-4">
           <div className="flex items-start justify-between gap-4">
             <div>
@@ -348,6 +329,30 @@ export default async function CashierShiftsPage({
           </form>
         </div>
       )}
+
+      {/* ── KPI tiles (below shift panel) ── */}
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
+          <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Total Shifts</p>
+          <p className="mt-1 text-xl font-bold tabular-nums text-[var(--ink)]">{totalShifts}</p>
+          <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">all time</p>
+        </div>
+        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
+          <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Open Shifts</p>
+          <p className="mt-1 text-xl font-bold tabular-nums text-[var(--ink)]">{openCount}</p>
+          <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">currently open</p>
+        </div>
+        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
+          <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Closed This Month</p>
+          <p className="mt-1 text-xl font-bold tabular-nums text-[var(--ink)]">{closedThisMonth}</p>
+          <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">this month</p>
+        </div>
+        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
+          <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Cash Collected MTD</p>
+          <p className="mt-1 text-xl font-bold tabular-nums text-[var(--ink)]">{formatMoney(cashCollectedThisMonth, currency)}</p>
+          <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">closing cash, this month</p>
+        </div>
+      </div>
 
       {/* Filter */}
       <form method="GET" className="flex gap-2">
