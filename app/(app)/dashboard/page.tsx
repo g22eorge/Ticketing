@@ -817,8 +817,8 @@ export default async function DashboardPage({
     const overdueWithDays = overdueJobs.map(j => ({ ...j, ageDays: Math.floor((today.getTime() - new Date(j.receivedAt).getTime()) / 86400000) }));
 
     const trendMonths = trendMonthsSinceStartOfYear(today);
-    const repairTrend = await loadRepairRevenueTrend(trendMonths, user.orgId);
     const currency = getAppCurrency();
+    const repairTrend = await loadRepairRevenueTrend(trendMonths, user.orgId);
 
     return (
       <div className="space-y-4">
@@ -1844,7 +1844,7 @@ export default async function DashboardPage({
 
     const trendMonths = trendMonthsForYear(selectedRange.start.getFullYear(), period === "year" ? 12 : selectedMonth.month);
 
-    const [completedThisMonth, pendingBilling, externalCompleted] = await Promise.all([
+    const [completedThisMonth, pendingBilling, externalCompleted, revenueTrend] = await Promise.all([
       prisma.job.findMany({
         where: { status: "COMPLETED", completedAt: { gte: selectedRange.start, lte: selectedRange.end } },
         select: { id: true, jobNumber: true, completedAt: true, clientBill: true },
@@ -1862,11 +1862,10 @@ export default async function DashboardPage({
         },
         select: { id: true, externalTechBill: true },
       }),
+      loadRepairRevenueTrend(trendMonths, user.orgId),
     ]);
 
     const monthRevenue = completedThisMonth.reduce((sum, job) => sum + (getClientBill(job) ?? 0), 0);
-
-    const revenueTrend = await loadRepairRevenueTrend(trendMonths, user.orgId);
 
     const payoutMap = await getJobPayoutsByIds(externalCompleted.map((job) => job.id)).catch(() => new Map());
     // externalCompleted already pre-filtered to externalPaid=false in the DB query
@@ -2024,7 +2023,7 @@ export default async function DashboardPage({
     const threeDaysAgo = new Date(today.getTime() - 3 * 24 * 60 * 60 * 1000);
     const mtdLabel = monthLabel(today.getFullYear(), today.getMonth() + 1);
 
-    const [statusGroup, completedMtd, overdueJobs, techWorkloadJobs, unassignedCount, receivedToday, completedToday, awaitingApprovalCount] = await Promise.all([
+    const [statusGroup, completedMtd, overdueJobs, techWorkloadJobs, unassignedCount, receivedToday, completedToday, awaitingApprovalCount, revenueTrend] = await Promise.all([
       prisma.job.groupBy({ by: ["status"], _count: { status: true } }),
       prisma.job.findMany({
         where: { status: "COMPLETED", completedAt: { gte: mtdStart } },
@@ -2062,6 +2061,7 @@ export default async function DashboardPage({
       prisma.job.count({ where: { receivedAt: { gte: todayStart } } }),
       prisma.job.count({ where: { completedAt: { gte: todayStart } } }),
       prisma.job.count({ where: { status: "AWAITING_APPROVAL" } }),
+      loadTotalRevenueTrend(trendMonthsSinceStartOfYear(today), user.orgId, currency),
     ]);
 
     const revenueMtd = completedMtd.reduce((sum, j) => sum + (getClientBill(j) ?? 0), 0);
@@ -2079,8 +2079,6 @@ export default async function DashboardPage({
       techMap.set(j.assignedTo.id, e);
     }
     const techRows = [...techMap.values()].sort((a, b) => b.count - a.count).slice(0, 6);
-    const trendMonths = trendMonthsSinceStartOfYear(today);
-    const revenueTrend = await loadTotalRevenueTrend(trendMonths, user.orgId, currency);
 
     return (
       <div className="space-y-4">
@@ -2119,7 +2117,7 @@ export default async function DashboardPage({
           ))}
         </div>
 
-        <RevenueMarginTrendSection trendMonths={trendMonths} revenueTrend={revenueTrend} currency={currency} label="Total Revenue & Margin (Repairs + Sales)" emptyMessage="No revenue recorded yet for this period." />
+        <RevenueMarginTrendSection trendMonths={trendMonthsSinceStartOfYear(today)} revenueTrend={revenueTrend} currency={currency} label="Total Revenue & Margin (Repairs + Sales)" emptyMessage="No revenue recorded yet for this period." />
 
         <div className="grid gap-3 lg:grid-cols-2">
           <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
@@ -2345,6 +2343,7 @@ export default async function DashboardPage({
       jobsMtdByStaff,
       teamTarget,
       myTarget,
+      revenueTrend,
     ] = await Promise.all([
       // Completed jobs MTD for repair revenue
       prisma.job.findMany({
@@ -2388,6 +2387,8 @@ export default async function DashboardPage({
       prisma.salesTarget.findFirst({ where: { ...orgFilter, userId: null, period } }).catch(() => null),
       // My own target
       user.id ? prisma.salesTarget.findFirst({ where: { ...orgFilter, userId: user.id, period } }).catch(() => null) : Promise.resolve(null),
+      // Revenue trend — run in parallel with other queries
+      loadTotalRevenueTrend(trendMonthsSinceStartOfYear(today), user.orgId, currency),
     ]);
 
     // ── Revenue aggregation ─────────────────────────────────────────────────
@@ -2439,9 +2440,6 @@ export default async function DashboardPage({
     const staffRows = [...staffMap.values()].sort((a, b) => b.totalRev - a.totalRev);
     const wonMtd = completedJobsMtd.length;
     const conversionRate = allJobsMtd > 0 ? Math.round((wonMtd / allJobsMtd) * 100) : 0;
-
-    const trendMonths  = trendMonthsSinceStartOfYear(today);
-    const revenueTrend = await loadTotalRevenueTrend(trendMonths, user.orgId, currency);
 
     return (
       <div className="space-y-4">
@@ -2614,7 +2612,7 @@ export default async function DashboardPage({
           </div>
         </div>
 
-        <RevenueMarginTrendSection trendMonths={trendMonths} revenueTrend={revenueTrend} currency={currency} label="Total Revenue Trend (All Channels)" emptyMessage="No revenue recorded yet for this period." />
+        <RevenueMarginTrendSection trendMonths={trendMonthsSinceStartOfYear(today)} revenueTrend={revenueTrend} currency={currency} label="Total Revenue Trend (All Channels)" emptyMessage="No revenue recorded yet for this period." />
       </div>
     );
   }
