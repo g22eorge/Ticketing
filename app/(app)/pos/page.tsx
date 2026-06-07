@@ -1,13 +1,13 @@
 // @ts-nocheck — TODO: resolve underlying type issues and remove this pragma
 import Link from "next/link";
-import { getCurrentUserRole } from "@/lib/session";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 
-import { formatMoneyCompact, normalizeCurrency, getAppCurrency } from "@/lib/currency";
+import { formatMoneyCompact, normalizeCurrency } from "@/lib/currency";
 import { loadCashCollectionsByChannel } from "@/lib/finance/reconciliation";
 import { orgDb, prisma } from "@/lib/prisma";
 import { can } from "@/lib/permissions";
+import { requireOrgSession } from "@/lib/org-context";
 import { ConfirmSubmitButton } from "@/components/shared/ConfirmSubmitButton";
 
 function monthKey(d: Date) {
@@ -28,22 +28,22 @@ async function nextSaleNumber(db: ReturnType<typeof orgDb>) {
 }
 
 export default async function PosPage({ searchParams }: { searchParams: Promise<{ period?: string }> }) {
-  const { user } = await getCurrentUserRole();
-  const db = orgDb(user.orgId);
+  const { user, orgId, org } = await requireOrgSession();
+  const db = orgDb(orgId);
   if (!(can.viewFinancials(user) || ["ADMIN", "OPS", "FRONT_DESK"].includes(user.role))) {
     redirect("/dashboard");
   }
 
   const { period } = await searchParams;
-  const currency = getAppCurrency();
+  const currency = org.baseCurrency;
 
   const now = new Date();
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
   const [kpiTodayCollections, kpiMonthCollections, kpiMonthCount] = await Promise.all([
-    loadCashCollectionsByChannel({ orgId: user.orgId, baseCurrency: currency, range: { start: todayStart } }).catch(() => ({ products: 0 })),
-    loadCashCollectionsByChannel({ orgId: user.orgId, baseCurrency: currency, range: { start: monthStart } }).catch(() => ({ products: 0 })),
+    loadCashCollectionsByChannel({ orgId, baseCurrency: currency, range: { start: todayStart } }).catch(() => ({ products: 0 })),
+    loadCashCollectionsByChannel({ orgId, baseCurrency: currency, range: { start: monthStart } }).catch(() => ({ products: 0 })),
     db.payment.count({ where: { saleId: { not: null }, receivedAt: { gte: monthStart }, kind: "PAYMENT" } }).catch(() => 0),
   ]);
   const kpiTodayTotal = kpiTodayCollections.products ?? 0;
@@ -57,8 +57,8 @@ export default async function PosPage({ searchParams }: { searchParams: Promise<
 
   async function createSaleAction(_formData: FormData) {
     "use server";
-    const { user: _u2 } = await getCurrentUserRole();
-    const db = orgDb(_u2.orgId);
+    const { user: _u2, orgId: _orgId2 } = await requireOrgSession();
+    const db = orgDb(_orgId2);
     if (!(can.viewFinancials(_u2) || ["ADMIN", "OPS", "FRONT_DESK"].includes(_u2.role))) redirect("/dashboard");
 
     const saleNumber = await nextSaleNumber(db);
@@ -78,8 +78,8 @@ export default async function PosPage({ searchParams }: { searchParams: Promise<
 
   async function deleteSaleAction(formData: FormData) {
     "use server";
-    const { user: _u3 } = await getCurrentUserRole();
-    const db = orgDb(_u3.orgId);
+    const { user: _u3, orgId: _orgId3 } = await requireOrgSession();
+    const db = orgDb(_orgId3);
     if (_u3.role !== "ADMIN") redirect("/dashboard");
 
     const saleId = String(formData.get("saleId") ?? "").trim();
@@ -132,7 +132,7 @@ export default async function PosPage({ searchParams }: { searchParams: Promise<
 
   // Open shift check — use prisma directly (CashierShift not in ORG_SCOPED_MODELS)
   const openShift = await prisma.cashierShift.findFirst({
-    where: { orgId: user.orgId!, cashierId: user.id, status: "OPEN" },
+    where: { orgId, cashierId: user.id, status: "OPEN" },
     select: { id: true },
   }).catch(() => null);
   const hasOpenShift = !!openShift;
