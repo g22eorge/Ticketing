@@ -2,7 +2,7 @@
 import Link from "next/link";
 // @ts-nocheck
 import { redirect } from "next/navigation";
-import { getCurrentUserRole } from "@/lib/session";
+import { requireOrgSession } from "@/lib/org-context";
 
 import { prisma } from "@/lib/prisma";
 import { formatMoney, formatMoneyCompact } from "@/lib/currency";
@@ -33,11 +33,11 @@ export default async function PLPage({
 }: {
   searchParams: Promise<Record<string, string>>;
 }) {
-  const { user } = await getCurrentUserRole();
+  const { user, org } = await requireOrgSession();
   if (!can.viewFinancials(user)) redirect("/dashboard");
 
   const sp = await searchParams;
-  const currency = "UGX";
+  const currency = org.baseCurrency;
   const now = new Date();
   const year = parseInt(sp.year ?? String(now.getFullYear()));
   const month = parseInt(sp.month ?? String(now.getMonth() + 1));
@@ -184,6 +184,36 @@ export default async function PLPage({
           </div>
         </div>
       </div>
+
+      {/* ── BOTTOM LINE SUMMARY ─────────────────────────────────────────── */}
+      {hasData && (
+        <div className={`rounded-xl border px-5 py-4 ${netIncome >= 0 ? "border-emerald-500/30 bg-emerald-500/8" : "border-red-500/30 bg-red-500/8"}`}>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Bottom Line — {periodLabel}</p>
+              <p className={`mt-1 text-[28px] font-black leading-none tabular-nums ${netIncome >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-500"}`}>
+                {netIncome < 0 ? "−" : ""}{formatMoney(Math.abs(netIncome), currency)}
+              </p>
+              <p className="mt-1 text-[13px] text-[var(--ink-muted)]">
+                Net margin {netMargin.toFixed(1)}%
+                {priorNetIncome !== 0 && <span className={`ml-2 font-semibold ${netIncome >= priorNetIncome ? "text-emerald-500" : "text-red-400"}`}>
+                  {changePct(netIncome, priorNetIncome)} vs {priorLabel}
+                </span>}
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-4">
+              <div>
+                <p className="text-[11px] uppercase tracking-wide text-[var(--ink-muted)]">Revenue</p>
+                <p className="text-[17px] font-black tabular-nums text-emerald-600 dark:text-emerald-400">{formatMoneyCompact(totalRevenue, currency)}</p>
+              </div>
+              <div>
+                <p className="text-[11px] uppercase tracking-wide text-[var(--ink-muted)]">Expenses</p>
+                <p className="text-[17px] font-black tabular-nums text-rose-500">{formatMoneyCompact(totalExpense, currency)}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── PERIOD SELECTOR ──────────────────────────────────────────────── */}
       <div className="flex flex-wrap items-center gap-3">
@@ -345,7 +375,7 @@ export default async function PLPage({
             {/* Revenue */}
             <div className="border-b border-[var(--line)]">
               <div className="bg-green-500/5 px-5 py-2.5">
-                <p className="text-xs font-bold uppercase tracking-wide text-green-700">Revenue</p>
+                <p className="text-xs font-bold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">Revenue</p>
               </div>
               {revenues.length === 0 ? (
                 <p className="px-5 py-3 text-sm text-[var(--ink-muted)]">No revenue accounts with activity</p>
@@ -376,11 +406,11 @@ export default async function PLPage({
                 ))
               )}
               <div className="grid grid-cols-[1fr_auto_auto_auto] items-center bg-green-500/10 px-5 py-3">
-                <span className="text-sm font-bold text-green-800">Total Revenue</span>
-                <span className="w-28 text-right text-sm font-bold tabular-nums text-green-800">
+                <span className="text-sm font-bold text-emerald-800 dark:text-emerald-200">Total Revenue</span>
+                <span className="w-28 text-right text-sm font-bold tabular-nums text-emerald-800 dark:text-emerald-200">
                   {formatMoney(totalRevenue, currency)}
                 </span>
-                <span className="w-28 text-right text-sm font-semibold tabular-nums text-green-700/70">
+                <span className="w-28 text-right text-sm font-semibold tabular-nums text-emerald-700 dark:text-emerald-300/70">
                   {formatMoney(priorRevenue, currency)}
                 </span>
                 <span
@@ -435,8 +465,8 @@ export default async function PLPage({
                 })
               )}
               <div className="grid grid-cols-[1fr_auto_auto_auto] items-center bg-red-500/10 px-5 py-3">
-                <span className="text-sm font-bold text-red-800">Total Expenses</span>
-                <span className="w-28 text-right text-sm font-bold tabular-nums text-red-800">
+                <span className="text-sm font-bold text-red-700 dark:text-red-300">Total Expenses</span>
+                <span className="w-28 text-right text-sm font-bold tabular-nums text-red-700 dark:text-red-300">
                   {formatMoney(totalExpense, currency)}
                 </span>
                 <span className="w-28 text-right text-sm font-semibold tabular-nums text-red-700/70">
@@ -474,14 +504,14 @@ export default async function PLPage({
               </div>
               <span
                 className={`w-28 text-right text-lg font-bold tabular-nums ${
-                  netIncome >= 0 ? "text-green-700" : "text-red-700"
+                  netIncome >= 0 ? "text-emerald-700 dark:text-emerald-300" : "text-red-700"
                 }`}
               >
                 {formatMoney(Math.abs(netIncome), currency)}
               </span>
               <span
                 className={`w-28 text-right text-sm font-semibold tabular-nums ${
-                  priorNetIncome >= 0 ? "text-green-700/60" : "text-red-700/60"
+                  priorNetIncome >= 0 ? "text-emerald-700 dark:text-emerald-300/60" : "text-red-700/60"
                 }`}
               >
                 {formatMoney(Math.abs(priorNetIncome), currency)}

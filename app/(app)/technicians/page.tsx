@@ -181,6 +181,24 @@ export default async function TechniciansPage({
   const inRepairCount = normalized.filter((job) => job.status === "IN_REPAIR").length;
   const overdueCount = normalized.filter((job) => job.overdue).length;
   const awaitingApprovalCount = normalized.filter((job) => job.status === "AWAITING_APPROVAL").length;
+
+  // Per-tech workload (admin/ops visibility)
+  const isAdmin = user.role === "ADMIN" || user.role === "OPS";
+  const techWorkloadMap = new Map<string, { name: string; active: number; inRepair: number; awaiting: number; overdue: number; ready: number }>();
+  if (isAdmin) {
+    for (const job of normalized) {
+      const techName = job.assignedTo?.name ?? "Unassigned";
+      const key = techName;
+      if (!techWorkloadMap.has(key)) techWorkloadMap.set(key, { name: techName, active: 0, inRepair: 0, awaiting: 0, overdue: 0, ready: 0 });
+      const entry = techWorkloadMap.get(key)!;
+      entry.active++;
+      if (job.status === "IN_REPAIR") entry.inRepair++;
+      if (job.status === "AWAITING_APPROVAL") entry.awaiting++;
+      if (job.overdue) entry.overdue++;
+      if (job.ready) entry.ready++;
+    }
+  }
+  const techWorkload = Array.from(techWorkloadMap.values()).sort((a, b) => b.active - a.active);
   const dismissedSpotlightIds = new Set(
     (filters.dismiss ?? "")
       .split(",")
@@ -226,24 +244,66 @@ export default async function TechniciansPage({
         <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
           <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Total Technicians</p>
           <p className="mt-1 text-lg font-bold tabular-nums text-[var(--ink)]">{totalTechs}</p>
-          <p className="mt-0.5 text-[12px] text-[var(--ink-muted)]">internal + external</p>
+          <p className="mt-0.5 text-[12px] text-[var(--ink-muted)]">{internalCount} internal · {externalCount} external</p>
         </div>
         <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
-          <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Internal</p>
-          <p className="mt-1 text-lg font-bold tabular-nums text-[var(--ink)]">{internalCount}</p>
-          <p className="mt-0.5 text-[12px] text-[var(--ink-muted)]">in-house staff</p>
+          <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Active Jobs</p>
+          <p className="mt-1 text-lg font-bold tabular-nums text-[var(--ink)]">{assignedCount}</p>
+          <p className="mt-0.5 text-[12px] text-[var(--ink-muted)]">in the queue now</p>
         </div>
         <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
-          <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">External</p>
-          <p className="mt-1 text-lg font-bold tabular-nums text-[var(--ink)]">{externalCount}</p>
-          <p className="mt-0.5 text-[12px] text-[var(--ink-muted)]">contractors</p>
+          <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Ready to Complete</p>
+          <p className={`mt-1 text-lg font-bold tabular-nums ${readyCount > 0 ? "text-emerald-600 dark:text-emerald-400" : "text-[var(--ink)]"}`}>{readyCount}</p>
+          <p className="mt-0.5 text-[12px] text-[var(--ink-muted)]">approved, awaiting handover</p>
         </div>
-        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
-          <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Jobs Assigned This Month</p>
-          <p className="mt-1 text-lg font-bold tabular-nums text-[var(--ink)]">{assignedThisMonth}</p>
-          <p className="mt-0.5 text-[12px] text-[var(--ink-muted)]">this month</p>
+        <div className={`panel-shadow rounded-xl border px-3 py-2.5 ${overdueCount > 0 ? "border-red-500/30 bg-red-500/5" : "border-[var(--line)] bg-[var(--panel)]"}`}>
+          <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Overdue</p>
+          <p className={`mt-1 text-lg font-bold tabular-nums ${overdueCount > 0 ? "text-red-500" : "text-[var(--ink)]"}`}>{overdueCount}</p>
+          <p className="mt-0.5 text-[12px] text-[var(--ink-muted)]">{assignedThisMonth} assigned this month</p>
         </div>
       </div>
+
+      {/* ── Per-tech workload (admin/ops only) ── */}
+      {isAdmin && techWorkload.length > 0 && (
+        <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
+          <div className="flex items-center justify-between border-b border-[var(--line)] px-4 py-2.5">
+            <p className="text-[12px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Technician Workload</p>
+            <Link href="/settings/users" className="text-[12px] font-semibold text-[var(--accent)] hover:underline">Manage →</Link>
+          </div>
+          <div className="divide-y divide-[var(--line)]">
+            {techWorkload.map((tech) => (
+              <div key={tech.name} className="flex items-center gap-4 px-4 py-3">
+                {/* Avatar */}
+                <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[12px] font-black ${tech.overdue > 0 ? "bg-red-500/10 text-red-500" : tech.ready > 0 ? "bg-emerald-500/10 text-emerald-600" : "bg-[var(--panel-strong)] text-[var(--ink-muted)]"}`}>
+                  {tech.name[0]?.toUpperCase() ?? "?"}
+                </div>
+                {/* Name + load bar */}
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between">
+                    <p className="text-[13px] font-semibold text-[var(--ink)]">{tech.name}</p>
+                    <p className="text-[12px] font-bold text-[var(--ink)]">{tech.active} active</p>
+                  </div>
+                  <div className="mt-1 flex items-center gap-1">
+                    {/* Load bar */}
+                    <div className="flex h-1.5 flex-1 overflow-hidden rounded-full bg-[var(--panel-strong)]">
+                      {tech.inRepair > 0 && <div className="h-full bg-sky-500" style={{ width: `${Math.round((tech.inRepair / tech.active) * 100)}%` }} />}
+                      {tech.awaiting > 0 && <div className="h-full bg-amber-500" style={{ width: `${Math.round((tech.awaiting / tech.active) * 100)}%` }} />}
+                      {tech.ready > 0 && <div className="h-full bg-emerald-500" style={{ width: `${Math.round((tech.ready / tech.active) * 100)}%` }} />}
+                    </div>
+                  </div>
+                </div>
+                {/* Status badges */}
+                <div className="flex shrink-0 items-center gap-1.5">
+                  {tech.inRepair > 0 && <span className="rounded-full bg-sky-500/10 px-2 py-0.5 text-[11px] font-semibold text-sky-600 dark:text-sky-400">{tech.inRepair} repair</span>}
+                  {tech.awaiting > 0 && <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-[11px] font-semibold text-amber-600 dark:text-amber-400">{tech.awaiting} approval</span>}
+                  {tech.ready > 0 && <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">{tech.ready} ready</span>}
+                  {tech.overdue > 0 && <span className="rounded-full bg-red-500/10 px-2 py-0.5 text-[11px] font-semibold text-red-500">{tech.overdue} overdue</span>}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Filter + Quick Actions — unified panel */}
       <section className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
