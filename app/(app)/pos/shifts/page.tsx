@@ -58,9 +58,9 @@ export default async function CashierShiftsPage({
     // Validate PIN: must be 4–8 digits if provided
     if (pinRaw && !/^\d{4,8}$/.test(pinRaw)) return;
 
-    // Only one open shift per cashier at a time
+    // Only one open shift per cashier at a time (scoped to org)
     const existing = await prisma.cashierShift.findFirst({
-      where: { cashierId: _u.id, status: "OPEN" },
+      where: { orgId: _u.orgId, cashierId: _u.id, status: "OPEN" },
       select: { id: true },
     }).catch(() => null);
     if (existing) return;
@@ -69,6 +69,7 @@ export default async function CashierShiftsPage({
 
     await prisma.cashierShift.create({
       data: {
+        orgId: _u.orgId,
         cashierId: _u.id,
         status: "OPEN",
         openingCash,
@@ -95,6 +96,7 @@ export default async function CashierShiftsPage({
     const shift = await prisma.cashierShift.findFirst({
       where: {
         id: shiftId,
+        orgId: _u.orgId,
         status: "OPEN",
         ...( !["ADMIN"].includes(_u.role) ? { cashierId: _u.id } : {} ),
       },
@@ -130,6 +132,7 @@ export default async function CashierShiftsPage({
     const shift = await prisma.cashierShift.findFirst({
       where: {
         id: shiftId,
+        orgId: _u.orgId,
         status: "OPEN",
         ...(!["ADMIN"].includes(_u.role) ? { cashierId: _u.id } : {}),
       },
@@ -157,13 +160,13 @@ export default async function CashierShiftsPage({
 
     // Only one open shift per cashier — check for existing open shift first
     const shift = await prisma.cashierShift.findFirst({
-      where: { id: shiftId, status: "CLOSED" },
+      where: { id: shiftId, orgId: _u.orgId, status: "CLOSED" },
       select: { id: true, cashierId: true },
     }).catch(() => null);
     if (!shift) return;
 
     const alreadyOpen = await prisma.cashierShift.findFirst({
-      where: { cashierId: shift.cashierId, status: "OPEN" },
+      where: { orgId: _u.orgId, cashierId: shift.cashierId, status: "OPEN" },
       select: { id: true },
     }).catch(() => null);
     if (alreadyOpen) return; // cashier already has an open shift
@@ -178,18 +181,18 @@ export default async function CashierShiftsPage({
   async function deleteShiftAction(formData: FormData) {
     "use server";
     const { user: _u } = await getCurrentUserRole();
-    if (user.role !== "ADMIN") return;
+    if (_u.role !== "ADMIN") return;
 
     const shiftId = String(formData.get("shiftId") ?? "").trim();
     if (!shiftId) return;
 
-    await prisma.cashierShift.delete({ where: { id: shiftId } }).catch(() => {});
+    await prisma.cashierShift.deleteMany({ where: { id: shiftId, orgId: _u.orgId } }).catch(() => {});
     revalidatePath("/pos/shifts");
   }
 
   // ── Data fetching ────────────────────────────────────────────────────────────
 
-  const where: Prisma.CashierShiftWhereInput = {};
+  const where: Prisma.CashierShiftWhereInput = { orgId: user.orgId };
   if (statusFilter === "open") where.status = "OPEN";
   if (statusFilter === "closed") where.status = "CLOSED";
 
@@ -202,10 +205,10 @@ export default async function CashierShiftsPage({
       orderBy: { openedAt: "desc" },
       take: 100,
     }).catch(() => []),
-    prisma.cashierShift.count({ where: { status: "OPEN" } }).catch(() => 0),
-    prisma.cashierShift.count({ where: {} }).catch(() => 0),
-    prisma.cashierShift.count({ where: { status: "CLOSED", closedAt: { gte: monthStart } } }).catch(() => 0),
-    prisma.cashierShift.aggregate({ _sum: { closingCash: true }, where: { status: "CLOSED", closedAt: { gte: monthStart } } }).catch(() => ({ _sum: { closingCash: 0 } })),
+    prisma.cashierShift.count({ where: { orgId: user.orgId, status: "OPEN" } }).catch(() => 0),
+    prisma.cashierShift.count({ where: { orgId: user.orgId } }).catch(() => 0),
+    prisma.cashierShift.count({ where: { orgId: user.orgId, status: "CLOSED", closedAt: { gte: monthStart } } }).catch(() => 0),
+    prisma.cashierShift.aggregate({ _sum: { closingCash: true }, where: { orgId: user.orgId, status: "CLOSED", closedAt: { gte: monthStart } } }).catch(() => ({ _sum: { closingCash: 0 } })),
   ]);
   const cashCollectedThisMonth = cashCollectedAgg._sum.closingCash ?? 0;
 
