@@ -61,6 +61,13 @@ export default async function PosPage({ searchParams }: { searchParams: Promise<
     const db = orgDb(_orgId2);
     if (!(can.viewFinancials(_u2) || ["ADMIN", "OPS", "FRONT_DESK"].includes(_u2.role))) redirect("/dashboard");
 
+    // Enforce open shift for everyone — no sale without an active shift
+    const _shift = await prisma.cashierShift.findFirst({
+      where: { orgId: _orgId2, cashierId: _u2.id, status: "OPEN" },
+      select: { id: true },
+    });
+    if (!_shift) redirect("/pos/shifts?reason=no-shift");
+
     const saleNumber = await nextSaleNumber(db);
     const sale = await db.sale.create({
       data: {
@@ -206,7 +213,7 @@ export default async function PosPage({ searchParams }: { searchParams: Promise<
       </div>
 
       {/* ── No-shift warning ── */}
-      {!hasOpenShift && ["FRONT_DESK", "OPS"].includes(user.role) && (
+      {!hasOpenShift && (
         <div className="flex items-center gap-3 rounded-xl border border-amber-400/30 bg-amber-500/10 px-4 py-3">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5 shrink-0 text-amber-500" aria-hidden><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
           <div className="flex-1">
@@ -251,7 +258,7 @@ export default async function PosPage({ searchParams }: { searchParams: Promise<
             </span>
           )}
         </div>
-        {hasOpenShift || user.role === "ADMIN" ? (
+        {hasOpenShift ? (
           <form action={createSaleAction} className="flex flex-wrap items-center gap-2">
             <select
               name="branchId"
