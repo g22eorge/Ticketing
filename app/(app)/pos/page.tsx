@@ -123,7 +123,6 @@ export default async function PosPage({ searchParams }: { searchParams: Promise<
   }
 
   // Period filter
-  const now = new Date();
   const filterStart =
     period === "today"
       ? new Date(now.getFullYear(), now.getMonth(), now.getDate())
