@@ -131,6 +131,7 @@ export default async function PosPage() {
     paidAmount: number;
     invoicedAt: Date | null;
     createdAt: Date;
+    client: { id: string; name: string } | null;
     _count: { payments: number; creditNotes: number; refunds: number; deliveryNotes: number };
   }> = [];
   try {
@@ -147,6 +148,7 @@ export default async function PosPage() {
         paidAmount: true,
         invoicedAt: true,
         createdAt: true,
+        client: { select: { id: true, name: true } },
         _count: { select: { payments: true, creditNotes: true, refunds: true, deliveryNotes: true } },
       },
     });
@@ -246,10 +248,15 @@ export default async function PosPage() {
                     : "border-amber-400/30 bg-amber-400/15 text-amber-700 dark:text-amber-400";
                 return (
                   <div key={`m-${s.id}`} className="px-4 py-3">
-                    <div className="mb-1.5 flex items-center justify-between gap-2">
+                    <div className="mb-1 flex items-center justify-between gap-2">
                       <span className="mono text-[13px] font-bold text-[var(--ink)]">{s.saleNumber}</span>
                       <span className={`rounded-full border px-2 py-0.5 text-[13px] font-semibold ${statusCls}`}>{s.status}</span>
                     </div>
+                    {s.client ? (
+                      <p className="mb-1 text-[13px] font-medium text-[var(--ink)]">{s.client.name}</p>
+                    ) : (
+                      <p className="mb-1 text-[13px] text-[var(--ink-muted)]">Walk-in</p>
+                    )}
                     <div className="mb-2 flex items-baseline gap-3 text-sm">
                       <span className="font-semibold text-[var(--ink)]">{formatMoneyCompact(s.totalAmount, normalizeCurrency(s.currency, "UGX"))}</span>
                       <span className="text-[13px] text-[var(--ink-muted)]">paid {formatMoneyCompact(s.paidAmount, normalizeCurrency(s.currency, "UGX"))}</span>
@@ -273,7 +280,7 @@ export default async function PosPage() {
                 <thead className="border-b border-[var(--line)]">
                   <tr className="text-[12px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
                     <th className="px-4 py-2.5">Sale</th>
-                    <th className="px-4 py-2.5">Branch</th>
+                    <th className="px-4 py-2.5">Client</th>
                     <th className="px-4 py-2.5">Total</th>
                     <th className="px-4 py-2.5">Paid</th>
                     <th className="px-4 py-2.5">Status</th>
@@ -286,7 +293,12 @@ export default async function PosPage() {
                     return (
                       <tr key={`d-${s.id}`} className="hover:bg-[var(--panel-strong)]/40">
                         <td className="px-4 py-3 mono font-semibold">{s.saleNumber}</td>
-                        <td className="px-4 py-3 text-[var(--ink-muted)]">—</td>
+                        <td className="px-4 py-3">
+                          {s.client
+                            ? <Link href={`/clients/${s.client.id}`} className="font-medium text-[var(--ink)] hover:underline">{s.client.name}</Link>
+                            : <span className="text-[var(--ink-muted)]">Walk-in</span>
+                          }
+                        </td>
                         <td className="px-4 py-3">{formatMoneyCompact(s.totalAmount, normalizeCurrency(s.currency, "UGX"))}</td>
                         <td className="px-4 py-3">{formatMoneyCompact(s.paidAmount, normalizeCurrency(s.currency, "UGX"))}</td>
                         <td className="px-4 py-3">
