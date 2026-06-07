@@ -151,7 +151,7 @@ export default async function PosPage({ searchParams }: { searchParams: Promise<
     paidAmount: number;
     invoicedAt: Date | null;
     createdAt: Date;
-    client: { id: string; name: string } | null;
+    client: { id: string; fullName: string } | null;
     _count: { payments: number; creditNotes: number; refunds: number };
   }> = [];
   try {
@@ -168,7 +168,7 @@ export default async function PosPage({ searchParams }: { searchParams: Promise<
         paidAmount: true,
         invoicedAt: true,
         createdAt: true,
-        client: { select: { id: true, name: true } },
+        client: { select: { id: true, fullName: true } },
         _count: { select: { payments: true, creditNotes: true, refunds: true } },
       },
     });
@@ -293,7 +293,7 @@ export default async function PosPage({ searchParams }: { searchParams: Promise<
                       <span className={`rounded-full border px-2 py-0.5 text-[13px] font-semibold ${statusCls}`}>{s.status}</span>
                     </div>
                     {s.client ? (
-                      <p className="mb-1 text-[13px] font-medium text-[var(--ink)]">{s.client.name}</p>
+                      <p className="mb-1 text-[13px] font-medium text-[var(--ink)]">{s.client.fullName}</p>
                     ) : (
                       <p className="mb-1 text-[13px] text-[var(--ink-muted)]">Walk-in</p>
                     )}
@@ -335,7 +335,7 @@ export default async function PosPage({ searchParams }: { searchParams: Promise<
                         <td className="px-4 py-3 mono font-semibold">{s.saleNumber}</td>
                         <td className="px-4 py-3">
                           {s.client
-                            ? <Link href={`/clients/${s.client.id}`} className="font-medium text-[var(--ink)] hover:underline">{s.client.name}</Link>
+                            ? <Link href={`/clients/${s.client.id}`} className="font-medium text-[var(--ink)] hover:underline">{s.client.fullName}</Link>
                             : <span className="text-[var(--ink-muted)]">Walk-in</span>
                           }
                         </td>
