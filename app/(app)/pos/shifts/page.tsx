@@ -1,6 +1,7 @@
 // @ts-nocheck
 import { redirect } from "next/navigation";
 import { getCurrentUserRole } from "@/lib/session";
+import { requireOrgSession } from "@/lib/org-context";
 import { revalidatePath } from "next/cache";
 import { Prisma } from "@prisma/client";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
@@ -47,7 +48,7 @@ export default async function CashierShiftsPage({
 
   async function openShiftAction(formData: FormData) {
     "use server";
-    const { user: _u } = await getCurrentUserRole();
+    const { user: _u, orgId } = await requireOrgSession();
     if (!["ADMIN", "OPS", "FRONT_DESK"].includes(_u.role)) return;
 
     const openingCashRaw = Number(String(formData.get("openingCash") ?? "0").trim());
@@ -60,7 +61,7 @@ export default async function CashierShiftsPage({
 
     // Only one open shift per cashier at a time (scoped to org)
     const existing = await prisma.cashierShift.findFirst({
-      where: { orgId: _u.orgId, cashierId: _u.id, status: "OPEN" },
+      where: { orgId, cashierId: _u.id, status: "OPEN" },
       select: { id: true },
     }).catch(() => null);
     if (existing) return;
@@ -69,7 +70,7 @@ export default async function CashierShiftsPage({
 
     await prisma.cashierShift.create({
       data: {
-        orgId: _u.orgId,
+        orgId,
         cashierId: _u.id,
         status: "OPEN",
         openingCash,
@@ -82,7 +83,7 @@ export default async function CashierShiftsPage({
 
   async function closeShiftAction(formData: FormData) {
     "use server";
-    const { user: _u } = await getCurrentUserRole();
+    const { user: _u, orgId } = await requireOrgSession();
     if (!["ADMIN", "OPS", "FRONT_DESK"].includes(_u.role)) return;
 
     const shiftId = String(formData.get("shiftId") ?? "").trim();
@@ -96,7 +97,7 @@ export default async function CashierShiftsPage({
     const shift = await prisma.cashierShift.findFirst({
       where: {
         id: shiftId,
-        orgId: _u.orgId,
+        orgId,
         status: "OPEN",
         ...( !["ADMIN"].includes(_u.role) ? { cashierId: _u.id } : {} ),
       },
@@ -120,7 +121,7 @@ export default async function CashierShiftsPage({
 
   async function setShiftPinAction(formData: FormData) {
     "use server";
-    const { user: _u } = await getCurrentUserRole();
+    const { user: _u, orgId } = await requireOrgSession();
     if (!["ADMIN", "OPS", "FRONT_DESK"].includes(_u.role)) return;
 
     const shiftId = String(formData.get("shiftId") ?? "").trim();
@@ -132,7 +133,7 @@ export default async function CashierShiftsPage({
     const shift = await prisma.cashierShift.findFirst({
       where: {
         id: shiftId,
-        orgId: _u.orgId,
+        orgId,
         status: "OPEN",
         ...(!["ADMIN"].includes(_u.role) ? { cashierId: _u.id } : {}),
       },
@@ -152,7 +153,7 @@ export default async function CashierShiftsPage({
 
   async function reopenShiftAction(formData: FormData) {
     "use server";
-    const { user: _u } = await getCurrentUserRole();
+    const { user: _u, orgId } = await requireOrgSession();
     if (_u.role !== "ADMIN") return;
 
     const shiftId = String(formData.get("shiftId") ?? "").trim();
@@ -160,13 +161,13 @@ export default async function CashierShiftsPage({
 
     // Only one open shift per cashier — check for existing open shift first
     const shift = await prisma.cashierShift.findFirst({
-      where: { id: shiftId, orgId: _u.orgId, status: "CLOSED" },
+      where: { id: shiftId, orgId, status: "CLOSED" },
       select: { id: true, cashierId: true },
     }).catch(() => null);
     if (!shift) return;
 
     const alreadyOpen = await prisma.cashierShift.findFirst({
-      where: { orgId: _u.orgId, cashierId: shift.cashierId, status: "OPEN" },
+      where: { orgId, cashierId: shift.cashierId, status: "OPEN" },
       select: { id: true },
     }).catch(() => null);
     if (alreadyOpen) return; // cashier already has an open shift
@@ -180,13 +181,13 @@ export default async function CashierShiftsPage({
 
   async function deleteShiftAction(formData: FormData) {
     "use server";
-    const { user: _u } = await getCurrentUserRole();
+    const { user: _u, orgId } = await requireOrgSession();
     if (_u.role !== "ADMIN") return;
 
     const shiftId = String(formData.get("shiftId") ?? "").trim();
     if (!shiftId) return;
 
-    await prisma.cashierShift.deleteMany({ where: { id: shiftId, orgId: _u.orgId } }).catch(() => {});
+    await prisma.cashierShift.deleteMany({ where: { id: shiftId, orgId } }).catch(() => {});
     revalidatePath("/pos/shifts");
   }
 

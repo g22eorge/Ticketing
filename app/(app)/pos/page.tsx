@@ -256,19 +256,25 @@ export default async function PosPage({ searchParams }: { searchParams: Promise<
             </span>
           )}
         </div>
-        <form action={createSaleAction} className="flex flex-wrap items-center gap-2">
-          <select
-            name="branchId"
-            defaultValue={defaultBranchId ?? ""}
-            className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50"
-          >
-            <option value="">No branch</option>
-            {branches.map((b) => (
-              <option key={b.id} value={b.id}>{b.name}</option>
-            ))}
-          </select>
-          <button type="submit" className="btn-premium rounded-lg px-3 py-1.5 text-[12px]">New Sale</button>
-        </form>
+        {hasOpenShift || user.role === "ADMIN" ? (
+          <form action={createSaleAction} className="flex flex-wrap items-center gap-2">
+            <select
+              name="branchId"
+              defaultValue={defaultBranchId ?? ""}
+              className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50"
+            >
+              <option value="">No branch</option>
+              {branches.map((b) => (
+                <option key={b.id} value={b.id}>{b.name}</option>
+              ))}
+            </select>
+            <button type="submit" className="btn-premium rounded-lg px-3 py-1.5 text-[12px]">New Sale</button>
+          </form>
+        ) : (
+          <Link href="/pos/shifts" className="rounded-lg border border-amber-400/30 bg-amber-500/10 px-3 py-1.5 text-[12px] font-semibold text-amber-700 dark:text-amber-400">
+            Open a shift first →
+          </Link>
+        )}
       </div>
 
       <section className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
