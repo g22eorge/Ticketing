@@ -211,6 +211,40 @@ export default async function InventoryPage({
         <div className="rounded-xl border border-emerald-500/25 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-600">Part added successfully.</div>
       )}
 
+      {/* ── Reorder Alert ── */}
+      {(outOfStock.length > 0 || lowStock.length > 0) && statusFilter === "active" && !q && stockFilter === "all" && (
+        <div className="rounded-xl border border-amber-500/30 bg-amber-500/8 overflow-hidden">
+          <div className="px-4 py-2.5 border-b border-amber-500/15">
+            <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-amber-600 dark:text-amber-400">Reorder Needed</p>
+          </div>
+          {outOfStock.length > 0 && (
+            <Link href="/inventory?stock=out&status=active" className="flex items-center justify-between px-4 py-3 hover:bg-amber-500/5 transition-colors">
+              <div>
+                <p className="text-[13px] font-semibold text-red-500">{outOfStock.length} part{outOfStock.length > 1 ? "s" : ""} out of stock</p>
+                <p className="text-[12px] text-[var(--ink-muted)]">{outOfStock.slice(0, 3).map(p => p.name).join(", ")}{outOfStock.length > 3 ? ` +${outOfStock.length - 3} more` : ""}</p>
+              </div>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-red-400 shrink-0"><path d="M9 18l6-6-6-6"/></svg>
+            </Link>
+          )}
+          {lowStock.filter(p => p.qtyOnHand > 0).length > 0 && (
+            <Link href="/inventory?stock=low&status=active" className="flex items-center justify-between px-4 py-3 border-t border-amber-500/15 hover:bg-amber-500/5 transition-colors">
+              <div>
+                <p className="text-[13px] font-semibold text-amber-600 dark:text-amber-400">{lowStock.filter(p => p.qtyOnHand > 0).length} part{lowStock.filter(p => p.qtyOnHand > 0).length > 1 ? "s" : ""} running low</p>
+                <p className="text-[12px] text-[var(--ink-muted)]">At or below reorder threshold — order before they run out</p>
+              </div>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-amber-400 shrink-0"><path d="M9 18l6-6-6-6"/></svg>
+            </Link>
+          )}
+          {canManage && (
+            <div className="border-t border-amber-500/15 px-4 py-2.5">
+              <Link href="/procurement" className="text-[12px] font-semibold text-amber-600 dark:text-amber-400 hover:underline">
+                Go to Procurement →
+              </Link>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Add Part panel */}
       {canManage && showAdd && (
         <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">

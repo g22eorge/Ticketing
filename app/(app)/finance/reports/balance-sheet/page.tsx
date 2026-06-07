@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { getCurrentUserRole } from "@/lib/session";
+import { requireOrgSession } from "@/lib/org-context";
 
 import { prisma } from "@/lib/prisma";
 import { formatMoney, formatMoneyCompact } from "@/lib/currency";
@@ -80,11 +80,11 @@ export default async function BalanceSheetPage({
 }: {
   searchParams: Promise<Record<string, string>>;
 }) {
-  const { user } = await getCurrentUserRole();
+  const { user, org } = await requireOrgSession();
   if (!can.viewFinancials(user)) redirect("/dashboard");
 
   const sp = await searchParams;
-  const currency = "UGX";
+  const currency = org.baseCurrency;
   const now = new Date();
   const year = parseInt(sp.year ?? String(now.getFullYear()));
   const month = parseInt(sp.month ?? String(now.getMonth() + 1));
@@ -272,8 +272,8 @@ export default async function BalanceSheetPage({
               items={assets}
               total={totalAssets}
               currency={currency}
-              accentClass="bg-blue-500/5 text-blue-800"
-              badgeClass="bg-blue-500/15 text-blue-800"
+              accentClass="bg-blue-500/5 text-blue-700 dark:text-blue-300"
+              badgeClass="bg-blue-500/15 text-blue-700 dark:text-blue-300"
             />
 
             {/* Right: Liabilities + Equity */}
@@ -283,18 +283,18 @@ export default async function BalanceSheetPage({
                 items={liabilities}
                 total={totalLiabilities}
                 currency={currency}
-                accentClass="bg-red-500/5 text-red-800"
-                badgeClass="bg-red-500/15 text-red-800"
+                accentClass="bg-red-500/5 text-red-700 dark:text-red-300"
+                badgeClass="bg-red-500/15 text-red-700 dark:text-red-300"
               />
 
               {/* Equity (including retained earnings) */}
               <div className="overflow-hidden rounded-xl border border-[var(--line)]">
                 <div className="bg-purple-500/5 px-4 py-2.5">
                   <div className="flex items-center justify-between">
-                    <p className="text-xs font-bold uppercase tracking-wide text-purple-800">
+                    <p className="text-xs font-bold uppercase tracking-wide text-purple-700 dark:text-purple-300">
                       Equity
                     </p>
-                    <span className="rounded-full bg-purple-500/15 px-2.5 py-0.5 text-[13px] font-bold tabular-nums text-purple-800">
+                    <span className="rounded-full bg-purple-500/15 px-2.5 py-0.5 text-[13px] font-bold tabular-nums text-purple-700 dark:text-purple-300">
                       {formatMoneyCompact(totalEquityAndRetained, currency)}
                     </span>
                   </div>
@@ -319,7 +319,7 @@ export default async function BalanceSheetPage({
                     {formatMoney(retainedEarnings, currency)}
                   </span>
                 </div>
-                <div className="flex items-center justify-between border-t border-[var(--line)] bg-purple-500/10 px-4 py-2.5 font-bold text-purple-800">
+                <div className="flex items-center justify-between border-t border-[var(--line)] bg-purple-500/10 px-4 py-2.5 font-bold text-purple-700 dark:text-purple-300">
                   <span className="text-sm">Total Equity</span>
                   <span className="text-sm tabular-nums">{formatMoney(totalEquityAndRetained, currency)}</span>
                 </div>
@@ -331,7 +331,7 @@ export default async function BalanceSheetPage({
           <div
             className={`overflow-hidden rounded-xl border px-5 py-4 ${
               balanced
-                ? "border-green-300/40 bg-green-500/10"
+                ? "border-emerald-500/30 bg-emerald-500/8"
                 : "border-red-300/40 bg-red-500/10"
             }`}
           >
@@ -349,8 +349,8 @@ export default async function BalanceSheetPage({
               <span
                 className={`rounded-full px-3 py-1.5 text-sm font-bold ${
                   balanced
-                    ? "bg-green-500/20 text-green-700"
-                    : "bg-red-500/20 text-red-700"
+                    ? "bg-emerald-500/20 text-emerald-700 dark:text-emerald-300"
+                    : "bg-red-500/20 text-red-600 dark:text-red-400"
                 }`}
               >
                 {balanced ? "Balanced" : "Out of balance"}
