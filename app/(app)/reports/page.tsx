@@ -732,6 +732,92 @@ export default async function ReportsPage({
       </div>
       </div>{/* end hidden lg:block tab nav */}
 
+      {/* ── EXECUTIVE SCORECARD ─────────────────────────────────────────────── */}
+      <div className="hidden lg:block">
+      <section className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
+        <div className="flex items-center justify-between border-b border-[var(--line)] px-4 py-2.5">
+          <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">
+            Executive Overview &middot; {period === "year" ? String(selectedYear) : selectedMonthString}
+          </p>
+          {teamTargetPct !== null && (
+            <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${teamTargetPct >= 100 ? "bg-emerald-500/15 text-emerald-600" : teamTargetPct >= 80 ? "bg-amber-500/15 text-amber-600" : "bg-red-500/15 text-red-600"}`}>
+              {teamTargetPct}% of revenue target
+            </span>
+          )}
+        </div>
+        <div className="grid grid-cols-3 divide-x divide-[var(--line)] lg:grid-cols-6">
+          <div className="px-4 py-3">
+            <p className="text-[11px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Revenue</p>
+            <p className="mt-1 text-xl font-black tabular-nums text-[var(--ink)]">{formatMoneyCompact(revenueSelected, currency)}</p>
+            {revenuePrev > 0 ? (
+              <p className={`mt-1 text-[12px] font-semibold ${revenueDelta >= 0 ? "text-emerald-500" : "text-red-500"}`}>
+                {revenueDelta >= 0 ? "▲" : "▼"} {Math.abs(Math.round((revenueDelta / revenuePrev) * 100))}% vs prior
+              </p>
+            ) : (
+              <p className="mt-1 text-[12px] text-[var(--ink-muted)]">repair collections</p>
+            )}
+          </div>
+          <div className="px-4 py-3">
+            <p className="text-[11px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Jobs Completed</p>
+            <p className="mt-1 text-xl font-black tabular-nums text-[var(--ink)]">{completedSelected.length}</p>
+            {completedPrev.length > 0 ? (
+              <p className={`mt-1 text-[12px] font-semibold ${completedSelected.length >= completedPrev.length ? "text-emerald-500" : "text-red-500"}`}>
+                {completedSelected.length >= completedPrev.length ? "▲" : "▼"} {Math.abs(completedSelected.length - completedPrev.length)} vs prior
+              </p>
+            ) : (
+              <p className="mt-1 text-[12px] text-[var(--ink-muted)]">this period</p>
+            )}
+          </div>
+          <div className="px-4 py-3">
+            <p className="text-[11px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Net Cash</p>
+            <p className={`mt-1 text-xl font-black tabular-nums ${cashNet >= 0 ? "text-[var(--ink)]" : "text-red-500"}`}>{formatMoneyCompact(cashNet, currency)}</p>
+            <p className="mt-1 text-[12px] text-[var(--ink-muted)]">in − out − refunds</p>
+          </div>
+          <div className="px-4 py-3">
+            <p className="text-[11px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Gross Margin</p>
+            <p className="mt-1 text-xl font-black tabular-nums text-[var(--ink)]">{revenueSelected > 0 ? `${Math.round((marginSelected / revenueSelected) * 100)}%` : "—"}</p>
+            <p className="mt-1 text-[12px] text-[var(--ink-muted)]">{formatMoneyCompact(marginSelected, currency)} on repairs</p>
+          </div>
+          <div className="px-4 py-3">
+            <p className="text-[11px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Open Pipeline</p>
+            <p className={`mt-1 text-xl font-black tabular-nums ${delayedJobs.length > 0 ? "text-amber-500" : "text-[var(--ink)]"}`}>{openJobs.length}</p>
+            <p className={`mt-1 text-[12px] font-semibold ${delayedJobs.length > 0 ? "text-red-500" : "text-[var(--ink-muted)]"}`}>
+              {delayedJobs.length > 0 ? `${delayedJobs.length} aging 3+ days` : "no aging jobs"}
+            </p>
+          </div>
+          <div className="px-4 py-3">
+            <p className="text-[11px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Lead Conversion</p>
+            <p className="mt-1 text-xl font-black tabular-nums text-[var(--ink)]">{totalLeads > 0 ? `${leadConversion}%` : "—"}</p>
+            <p className="mt-1 text-[12px] text-[var(--ink-muted)]">{wonLeads} won of {totalLeads}</p>
+          </div>
+        </div>
+        {(delayedJobs.length > 0 || approvalDelays.filter((j) => j.daysPending >= 2).length > 0 || lowStockItems.length > 0) && (
+          <div className="border-t border-[var(--line)] bg-[var(--panel-strong)] px-4 py-2">
+            <div className="flex flex-wrap gap-4">
+              {delayedJobs.length > 0 && (
+                <Link href="/reports?tab=repairs" className="inline-flex items-center gap-1.5 text-xs font-semibold text-red-600 hover:underline">
+                  <span className="inline-block h-1.5 w-1.5 rounded-full bg-red-500" />
+                  {delayedJobs.length} aging job{delayedJobs.length !== 1 ? "s" : ""} need attention
+                </Link>
+              )}
+              {approvalDelays.filter((j) => j.daysPending >= 2).length > 0 && (
+                <Link href="/jobs?status=AWAITING_APPROVAL" className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-600 hover:underline">
+                  <span className="inline-block h-1.5 w-1.5 rounded-full bg-amber-500" />
+                  {approvalDelays.filter((j) => j.daysPending >= 2).length} approval{approvalDelays.filter((j) => j.daysPending >= 2).length !== 1 ? "s" : ""} pending 2+ days
+                </Link>
+              )}
+              {lowStockItems.length > 0 && (
+                <Link href="/reports?tab=inventory" className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-600 hover:underline">
+                  <span className="inline-block h-1.5 w-1.5 rounded-full bg-amber-500" />
+                  {lowStockItems.length} part{lowStockItems.length !== 1 ? "s" : ""} low on stock
+                </Link>
+              )}
+            </div>
+          </div>
+        )}
+      </section>
+      </div>
+
       {/* ══════════════════════════════════════════════════════════════════════
           TAB CONTENT: desktop only (mobile has summary above)
       ══════════════════════════════════════════════════════════════════════ */}
@@ -747,8 +833,8 @@ export default async function ReportsPage({
               <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Completed</p>
               <p className="mt-1 text-lg font-bold text-[var(--ink)]">{completedSelected.length}</p>
               {completedPrev.length > 0 && (
-                <p className="mt-1 text-xs text-[var(--ink-muted)]">
-                  vs {completedPrev.length} prior period
+                <p className={`mt-1 text-xs font-semibold ${completedSelected.length >= completedPrev.length ? "text-emerald-500" : "text-red-500"}`}>
+                  {completedSelected.length >= completedPrev.length ? "▲" : "▼"} {Math.abs(completedSelected.length - completedPrev.length)} vs prior
                 </p>
               )}
             </div>
@@ -759,12 +845,9 @@ export default async function ReportsPage({
               <p className="mt-1 text-lg font-bold text-[var(--ink)]">
                 {formatMoneyCompact(revenueSelected, currency)}
               </p>
-              {revenueDelta !== 0 && (
-                <p
-                  className={`mt-1 text-xs font-semibold ${revenueDelta > 0 ? "text-emerald-500" : "text-red-500"}`}
-                >
-                  {revenueDelta > 0 ? "+" : "−"}
-                  {formatMoneyCompact(Math.abs(revenueDelta), currency)}
+              {revenuePrev > 0 && (
+                <p className={`mt-1 text-xs font-semibold ${revenueDelta >= 0 ? "text-emerald-500" : "text-red-500"}`}>
+                  {revenueDelta >= 0 ? "▲" : "▼"} {Math.abs(Math.round((revenueDelta / revenuePrev) * 100))}% vs prior
                 </p>
               )}
             </div>
@@ -782,7 +865,9 @@ export default async function ReportsPage({
             <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
               <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Open Pipeline</p>
               <p className="mt-1 text-lg font-bold text-[var(--ink)]">{openJobs.length}</p>
-              <p className="mt-1 text-xs text-[var(--ink-muted)]">active jobs</p>
+              <p className={`mt-1 text-xs font-semibold ${delayedJobs.length > 0 ? "text-red-500" : "text-[var(--ink-muted)]"}`}>
+                {delayedJobs.length > 0 ? `${delayedJobs.length} aging 3+ days` : "no aging jobs"}
+              </p>
             </div>
 
             {/* In-house / External */}
@@ -799,7 +884,7 @@ export default async function ReportsPage({
           <section className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
             <div className="border-b border-[var(--line)] px-4 py-3">
               <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">
-                Job Pipeline
+                Job Pipeline — Current State
               </p>
             </div>
             <div className="flex overflow-x-auto">
@@ -961,16 +1046,22 @@ export default async function ReportsPage({
               <p className="mt-1 text-xs text-[var(--ink-muted)]">paid this period</p>
             </div>
             <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
-              <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Total</p>
+              <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Total Collected</p>
               <p className="mt-1 text-lg font-bold text-[var(--ink)]">
                 {formatMoneyCompact(totalAllChannels, currency)}
               </p>
               {teamTargetPct !== null && (
-                <p
-                  className={`mt-1 text-xs font-semibold ${teamTargetPct >= 100 ? "text-emerald-500" : "text-amber-500"}`}
-                >
-                  {teamTargetPct}% of target
-                </p>
+                <>
+                  <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-[var(--panel-strong)]">
+                    <div
+                      className={`h-full rounded-full transition-all ${teamTargetPct >= 100 ? "bg-emerald-500" : teamTargetPct >= 80 ? "bg-amber-500" : "bg-red-500"}`}
+                      style={{ width: `${Math.min(teamTargetPct, 100)}%` }}
+                    />
+                  </div>
+                  <p className={`mt-1 text-xs font-semibold ${teamTargetPct >= 100 ? "text-emerald-500" : teamTargetPct >= 80 ? "text-amber-500" : "text-red-500"}`}>
+                    {teamTargetPct}% of target
+                  </p>
+                </>
               )}
             </div>
           </div>
@@ -1055,7 +1146,7 @@ export default async function ReportsPage({
             <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
               <div className="flex items-center justify-between">
                 <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">
-                  Staff Performance
+                  Staff Revenue vs Target
                 </p>
                 {teamTargetRevenue > 0 && (
                   <span className="text-xs text-[var(--ink-muted)]">
@@ -1131,7 +1222,7 @@ export default async function ReportsPage({
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
             <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
               <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">
-                Active Parts
+                Tracked Parts
               </p>
               <p className="mt-1 text-lg font-bold text-[var(--ink)]">{lowStockParts.length}</p>
               <p className="mt-1 text-xs text-[var(--ink-muted)]">with reorder level set</p>
@@ -1173,9 +1264,14 @@ export default async function ReportsPage({
           {lowStockItems.length > 0 && (
             <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
               <div className="flex items-center justify-between">
-                <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">
-                  Low Stock Items
-                </p>
+                <div>
+                  <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">
+                    Supply Risk — Low Stock Items
+                  </p>
+                  <p className="mt-0.5 text-[12px] text-[var(--ink-muted)]">
+                    {lowStockItems.filter((p) => p.qtyOnHand === 0).length} out of stock &middot; {lowStockItems.filter((p) => p.qtyOnHand > 0).length} low — reorder recommended
+                  </p>
+                </div>
                 <Link
                   href="/inventory"
                   className="text-xs text-[var(--ink-muted)] hover:text-[var(--ink)]"
@@ -1269,10 +1365,24 @@ export default async function ReportsPage({
         <>
           {/* Technician Performance */}
           <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
-            <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">
-              Technician Performance
-            </p>
-            <p className="mt-0.5 text-[12px] text-[var(--ink-muted)]">Jobs assigned in selected period</p>
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">
+                  Technician Performance
+                </p>
+                <p className="mt-0.5 text-[12px] text-[var(--ink-muted)]">Jobs assigned in selected period</p>
+              </div>
+              {techPerf.length > 0 && (
+                <div className="text-right">
+                  <p className="text-[11px] text-[var(--ink-muted)]">
+                    Top performer: <span className="font-semibold text-[var(--ink)]">{techPerf[0].name}</span>
+                  </p>
+                  <p className="text-[11px] text-[var(--ink-muted)]">
+                    {techPerf.filter((t) => t.completionRate >= 80).length} of {techPerf.length} at 80%+ completion
+                  </p>
+                </div>
+              )}
+            </div>
 
             {techPerf.length === 0 ? (
               <p className="mt-4 text-center text-xs text-[var(--ink-muted)]">
