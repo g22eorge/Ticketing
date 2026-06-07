@@ -130,17 +130,12 @@ export default async function PosPage({ searchParams }: { searchParams: Promise<
         ? new Date(now.getFullYear(), now.getMonth(), 1)
         : undefined;
 
-  // Open shift check for cashier
-  let hasOpenShift = true;
-  try {
-    const openShift = await db.cashierShift.findFirst({
-      where: { cashierId: user.id, status: "OPEN" },
-      select: { id: true },
-    });
-    hasOpenShift = !!openShift;
-  } catch {
-    hasOpenShift = true; // if table missing, don't block
-  }
+  // Open shift check — use prisma directly (CashierShift not in ORG_SCOPED_MODELS)
+  const openShift = await prisma.cashierShift.findFirst({
+    where: { orgId: user.orgId!, cashierId: user.id, status: "OPEN" },
+    select: { id: true },
+  }).catch(() => null);
+  const hasOpenShift = !!openShift;
 
   let sales: Array<{
     id: string;

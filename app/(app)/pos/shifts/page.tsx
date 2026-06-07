@@ -77,7 +77,7 @@ export default async function CashierShiftsPage({
         shiftPin,
         notes: notes || null,
       },
-    }).catch(() => {});
+    });
     revalidatePath("/pos/shifts");
   }
 
