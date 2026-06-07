@@ -347,6 +347,43 @@ export default async function ReportsPage({
       .catch(() => [] as Array<{ status: string; _count: { status: number } }>),
   ]);
 
+  // YTD range = Jan 1 current year to today
+  const ytdStart = new Date(new Date().getFullYear(), 0, 1, 0, 0, 0, 0);
+  // Last 6 months for sparkline
+  const sparklineStart = new Date(trendNow.getFullYear(), trendNow.getMonth() - 5, 1, 0, 0, 0, 0);
+
+  const [
+    ytdCollections,
+    ytdExpensesRaw,
+    ytdRefundsRaw,
+    ytdExternalPaidJobs,
+    sparklinePaymentsRaw,
+    periodJobClientRows,
+  ] = await Promise.all([
+    loadCashCollectionsByChannel({ orgId, baseCurrency: org.baseCurrency, range: { start: ytdStart } })
+      .catch(() => ({ repairs: 0, products: 0, corporate: 0, unallocated: 0, total: 0 })),
+    prisma.expense.findMany({ where: { orgId, paidAt: { gte: ytdStart } }, select: { amount: true } })
+      .catch(() => [] as Array<{ amount: number }>),
+    prisma.refund.findMany({ where: { orgId, refundedAt: { gte: ytdStart } }, select: { amount: true, currency: true, exchangeRateToBase: true } })
+      .catch(() => [] as Array<{ amount: number; currency: string | null; exchangeRateToBase: number | null }>),
+    prisma.job.findMany({ where: { orgId, externalPaid: true, externalPaidAt: { gte: ytdStart } }, select: { externalTechFee: true, externalTechBill: true } })
+      .catch(() => [] as Array<{ externalTechFee: number | null; externalTechBill: number | null }>),
+    prisma.payment.findMany({ where: { orgId, kind: "PAYMENT", receivedAt: { gte: sparklineStart } }, select: { amount: true, currency: true, exchangeRateToBase: true, receivedAt: true } })
+      .catch(() => [] as Array<{ amount: number; currency: string | null; exchangeRateToBase: number | null; receivedAt: Date | null }>),
+    prisma.job.findMany({ where: { orgId, receivedAt: { gte: selectedRange.start, lte: selectedRange.end }, clientId: { not: undefined } }, select: { clientId: true } })
+      .catch(() => [] as Array<{ clientId: string | null }>),
+  ]);
+
+  // Repeat client rate — needs unique client IDs from period first (sequential)
+  const uniquePeriodClientIds = [...new Set(periodJobClientRows.map((j) => j.clientId).filter(Boolean))] as string[];
+  const returningClientRows = uniquePeriodClientIds.length > 0
+    ? await prisma.job.groupBy({
+        by: ["clientId"],
+        where: { orgId, clientId: { in: uniquePeriodClientIds }, receivedAt: { lt: selectedRange.start } },
+        _count: { clientId: true },
+      }).catch(() => [] as Array<{ clientId: string | null; _count: { clientId: number } }>)
+    : [];
+
   // ─── COMPUTE ────────────────────────────────────────────────────────────────
 
   const currentYear = new Date().getFullYear();
@@ -475,6 +512,36 @@ export default async function ReportsPage({
   const grossProfit = totalAllChannels - cashOutExternal;
   const grossMarginPct = totalAllChannels > 0 ? Math.round((grossProfit / totalAllChannels) * 100) : 0;
   const netProfit = grossProfit - expensesTotal - cashOutRefunds;
+
+  // YTD P&L
+  const ytdRevenue = ytdCollections.total;
+  const ytdExpensesTotal = ytdExpensesRaw.reduce((s, e) => s + e.amount, 0);
+  const ytdCashOutExternal = ytdExternalPaidJobs.reduce((s, j) => s + resolveTechCost(j.externalTechFee, j.externalTechBill), 0);
+  const ytdCashOutRefunds = ytdRefundsRaw.reduce((s, r) => s + toBaseAmount({ amount: r.amount, currency: r.currency, baseCurrency: org.baseCurrency, exchangeRateToBase: r.exchangeRateToBase }), 0);
+  const ytdGrossProfit = ytdRevenue - ytdCashOutExternal;
+  const ytdGrossMarginPct = ytdRevenue > 0 ? Math.round((ytdGrossProfit / ytdRevenue) * 100) : 0;
+  const ytdNetProfit = ytdGrossProfit - ytdExpensesTotal - ytdCashOutRefunds;
+
+  // 6-month revenue sparkline (monthly buckets)
+  const sparklineMonths = Array.from({ length: 6 }, (_, i) => {
+    const d = new Date(trendNow.getFullYear(), trendNow.getMonth() - 5 + i, 1);
+    return {
+      label: d.toLocaleString("default", { month: "short" }),
+      start: new Date(d.getFullYear(), d.getMonth(), 1, 0, 0, 0, 0),
+      end: new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59, 999),
+      revenue: 0,
+    };
+  });
+  for (const p of sparklinePaymentsRaw) {
+    if (!p.receivedAt) continue;
+    const m = sparklineMonths.find((s) => p.receivedAt! >= s.start && p.receivedAt! <= s.end);
+    if (m) m.revenue += toBaseAmount({ amount: p.amount, currency: p.currency, baseCurrency: org.baseCurrency, exchangeRateToBase: p.exchangeRateToBase });
+  }
+
+  // Avg job value + repeat client rate
+  const avgJobValue = completedSelected.length > 0 ? Math.round(revenueSelected / completedSelected.length) : 0;
+  const repeatClientRate = uniquePeriodClientIds.length > 0 ? Math.round((returningClientRows.length / uniquePeriodClientIds.length) * 100) : 0;
+  const uniqueClientsCount = uniquePeriodClientIds.length;
 
   // Quotation pipeline
   const quotationCountMap = new Map<string, number>();
@@ -633,6 +700,23 @@ export default async function ReportsPage({
     return `${Math.floor(hrs / 24)}d ${Math.floor(hrs % 24)}h`;
   };
 
+  const SparkLine = ({ values, positive }: { values: number[]; positive: boolean }) => {
+    const max = Math.max(...values);
+    const min = Math.min(...values);
+    const range = max - min || 1;
+    const W = 72, H = 20;
+    const pts = values
+      .map((v, i) => `${Math.round((i / (values.length - 1)) * W)},${Math.round(H - ((v - min) / range) * (H - 2) - 1)}`)
+      .join(" ");
+    const trend = values[values.length - 1] - values[0];
+    const color = trend >= 0 ? (positive ? "#10b981" : "#ef4444") : (positive ? "#ef4444" : "#10b981");
+    return (
+      <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} className="overflow-visible opacity-70">
+        <polyline points={pts} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    );
+  };
+
   const ExportGrid = ({ items }: { items: { title: string; caption: string; href: string }[] }) => (
     <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
       <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Downloads</p>
@@ -689,7 +773,7 @@ export default async function ReportsPage({
             ))}
           </div>
         )}
-        <Link href="/reports?tab=repairs" className="flex items-center justify-center gap-1 rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-2.5 text-sm font-medium text-[var(--accent)]">
+        <Link href="/reports?tab=business" className="flex items-center justify-center gap-1 rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-2.5 text-sm font-medium text-[var(--accent)]">
           Full reports →
         </Link>
       </div>
@@ -768,17 +852,32 @@ export default async function ReportsPage({
           )}
         </div>
         <div className="grid grid-cols-3 divide-x divide-[var(--line)] lg:grid-cols-6">
+          {/* Revenue + sparkline */}
           <div className="px-4 py-3">
             <p className="text-[11px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Revenue</p>
-            <p className="mt-1 text-xl font-black tabular-nums text-[var(--ink)]">{formatMoneyCompact(revenueSelected, currency)}</p>
+            <div className="mt-1 flex items-end justify-between gap-2">
+              <p className="text-xl font-black tabular-nums text-[var(--ink)]">{formatMoneyCompact(totalAllChannels, currency)}</p>
+              {sparklineMonths.some((m) => m.revenue > 0) && (
+                <SparkLine values={sparklineMonths.map((m) => m.revenue)} positive={true} />
+              )}
+            </div>
             {revenuePrev > 0 ? (
               <p className={`mt-1 text-[12px] font-semibold ${revenueDelta >= 0 ? "text-emerald-500" : "text-red-500"}`}>
                 {revenueDelta >= 0 ? "▲" : "▼"} {Math.abs(Math.round((revenueDelta / revenuePrev) * 100))}% vs prior
               </p>
             ) : (
-              <p className="mt-1 text-[12px] text-[var(--ink-muted)]">repair collections</p>
+              <p className="mt-1 text-[12px] text-[var(--ink-muted)]">6-month trend</p>
             )}
           </div>
+          {/* Net Profit */}
+          <div className="px-4 py-3">
+            <p className="text-[11px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Net Profit</p>
+            <p className={`mt-1 text-xl font-black tabular-nums ${netProfit >= 0 ? "text-[var(--ink)]" : "text-red-500"}`}>{formatMoneyCompact(netProfit, currency)}</p>
+            <p className={`mt-1 text-[12px] font-semibold ${grossMarginPct >= 60 ? "text-emerald-500" : grossMarginPct >= 40 ? "text-amber-500" : "text-red-500"}`}>
+              {grossMarginPct}% gross margin
+            </p>
+          </div>
+          {/* Jobs Completed */}
           <div className="px-4 py-3">
             <p className="text-[11px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Jobs Completed</p>
             <p className="mt-1 text-xl font-black tabular-nums text-[var(--ink)]">{completedSelected.length}</p>
@@ -790,16 +889,13 @@ export default async function ReportsPage({
               <p className="mt-1 text-[12px] text-[var(--ink-muted)]">this period</p>
             )}
           </div>
+          {/* Avg Job Value */}
           <div className="px-4 py-3">
-            <p className="text-[11px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Net Cash</p>
-            <p className={`mt-1 text-xl font-black tabular-nums ${cashNet >= 0 ? "text-[var(--ink)]" : "text-red-500"}`}>{formatMoneyCompact(cashNet, currency)}</p>
-            <p className="mt-1 text-[12px] text-[var(--ink-muted)]">in − out − refunds</p>
+            <p className="text-[11px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Avg Job Value</p>
+            <p className="mt-1 text-xl font-black tabular-nums text-[var(--ink)]">{avgJobValue > 0 ? formatMoneyCompact(avgJobValue, currency) : "—"}</p>
+            <p className="mt-1 text-[12px] text-[var(--ink-muted)]">revenue per repair</p>
           </div>
-          <div className="px-4 py-3">
-            <p className="text-[11px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Gross Margin</p>
-            <p className="mt-1 text-xl font-black tabular-nums text-[var(--ink)]">{revenueSelected > 0 ? `${Math.round((marginSelected / revenueSelected) * 100)}%` : "—"}</p>
-            <p className="mt-1 text-[12px] text-[var(--ink-muted)]">{formatMoneyCompact(marginSelected, currency)} on repairs</p>
-          </div>
+          {/* Open Pipeline */}
           <div className="px-4 py-3">
             <p className="text-[11px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Open Pipeline</p>
             <p className={`mt-1 text-xl font-black tabular-nums ${delayedJobs.length > 0 ? "text-amber-500" : "text-[var(--ink)]"}`}>{openJobs.length}</p>
@@ -807,17 +903,20 @@ export default async function ReportsPage({
               {delayedJobs.length > 0 ? `${delayedJobs.length} aging 3+ days` : "no aging jobs"}
             </p>
           </div>
+          {/* Repeat Client Rate */}
           <div className="px-4 py-3">
-            <p className="text-[11px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Lead Conversion</p>
-            <p className="mt-1 text-xl font-black tabular-nums text-[var(--ink)]">{totalLeads > 0 ? `${leadConversion}%` : "—"}</p>
-            <p className="mt-1 text-[12px] text-[var(--ink-muted)]">{wonLeads} won of {totalLeads}</p>
+            <p className="text-[11px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Repeat Clients</p>
+            <p className={`mt-1 text-xl font-black tabular-nums ${repeatClientRate >= 50 ? "text-emerald-500" : repeatClientRate >= 25 ? "text-[var(--ink)]" : "text-amber-500"}`}>
+              {uniqueClientsCount > 0 ? `${repeatClientRate}%` : "—"}
+            </p>
+            <p className="mt-1 text-[12px] text-[var(--ink-muted)]">{returningClientRows.length} of {uniqueClientsCount} returning</p>
           </div>
         </div>
         {(delayedJobs.length > 0 || approvalDelays.filter((j) => j.daysPending >= 2).length > 0 || lowStockItems.length > 0) && (
           <div className="border-t border-[var(--line)] bg-[var(--panel-strong)] px-4 py-2">
             <div className="flex flex-wrap gap-4">
               {delayedJobs.length > 0 && (
-                <Link href="/reports?tab=repairs" className="inline-flex items-center gap-1.5 text-xs font-semibold text-red-600 hover:underline">
+                <Link href="/reports?tab=operations" className="inline-flex items-center gap-1.5 text-xs font-semibold text-red-600 hover:underline">
                   <span className="inline-block h-1.5 w-1.5 rounded-full bg-red-500" />
                   {delayedJobs.length} aging job{delayedJobs.length !== 1 ? "s" : ""} need attention
                 </Link>
@@ -829,7 +928,7 @@ export default async function ReportsPage({
                 </Link>
               )}
               {lowStockItems.length > 0 && (
-                <Link href="/reports?tab=inventory" className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-600 hover:underline">
+                <Link href="/reports?tab=operations" className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-600 hover:underline">
                   <span className="inline-block h-1.5 w-1.5 rounded-full bg-amber-500" />
                   {lowStockItems.length} part{lowStockItems.length !== 1 ? "s" : ""} low on stock
                 </Link>
@@ -849,68 +948,95 @@ export default async function ReportsPage({
       ══════════════════════════════════════════════════════════════════════ */}
       {tab === "business" && (
         <>
-          {/* P&L Summary */}
+          {/* P&L Summary — Period vs YTD */}
           <section className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
             <div className="flex items-center justify-between border-b border-[var(--line)] px-4 py-3">
               <div>
                 <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">P&amp;L Summary</p>
-                <p className="mt-0.5 text-[12px] text-[var(--ink-muted)]">Cash-basis profit &amp; loss for {period === "year" ? String(selectedYear) : selectedMonthString}</p>
+                <p className="mt-0.5 text-[12px] text-[var(--ink-muted)]">Cash-basis profit &amp; loss — period vs year-to-date</p>
               </div>
               <Link href="/finance/reports/pl" className="text-xs font-semibold text-[var(--accent)] hover:underline">Full P&amp;L →</Link>
             </div>
+            {/* Header row */}
+            <div className="grid grid-cols-[1fr_auto_auto] gap-x-4 border-b border-[var(--line)] bg-[var(--panel-strong)] px-4 py-2">
+              <span />
+              <span className="w-24 text-right text-[11px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">{period === "year" ? String(selectedYear) : selectedMonthString}</span>
+              <span className="w-24 text-right text-[11px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">{new Date().getFullYear()} YTD</span>
+            </div>
             <div className="divide-y divide-[var(--line)]">
-              <div className="flex items-center justify-between px-4 py-3">
+              <div className="grid grid-cols-[1fr_auto_auto] items-center gap-x-4 px-4 py-3">
                 <div>
-                  <p className="text-sm font-semibold text-[var(--ink)]">Total Revenue Collected</p>
-                  <p className="text-xs text-[var(--ink-muted)]">
-                    Repairs {formatMoneyCompact(repairCollectionsTotal, currency)} · POS {formatMoneyCompact(posSalesTotal, currency)} · Invoices {formatMoneyCompact(invoicesPaidTotal, currency)}
-                  </p>
+                  <p className="text-sm font-semibold text-[var(--ink)]">Total Revenue</p>
+                  <p className="text-xs text-[var(--ink-muted)]">Repairs · POS · Invoices</p>
                 </div>
-                <p className="text-base font-bold text-[var(--ink)]">{formatMoneyCompact(totalAllChannels, currency)}</p>
+                <p className="w-24 text-right text-sm font-bold text-[var(--ink)]">{formatMoneyCompact(totalAllChannels, currency)}</p>
+                <p className="w-24 text-right text-sm font-bold text-[var(--ink)]">{formatMoneyCompact(ytdRevenue, currency)}</p>
               </div>
-              {cashOutExternal > 0 && (
-                <div className="flex items-center justify-between px-4 py-3">
-                  <div>
-                    <p className="text-sm font-semibold text-[var(--ink-muted)]">Cost of External Repairs</p>
-                    <p className="text-xs text-[var(--ink-muted)]">External technician payouts this period</p>
-                  </div>
-                  <p className="text-base font-semibold text-red-500">− {formatMoneyCompact(cashOutExternal, currency)}</p>
+              {(cashOutExternal > 0 || ytdCashOutExternal > 0) && (
+                <div className="grid grid-cols-[1fr_auto_auto] items-center gap-x-4 px-4 py-3">
+                  <p className="text-sm text-[var(--ink-muted)]">Cost of External Repairs</p>
+                  <p className="w-24 text-right text-sm text-red-500">− {formatMoneyCompact(cashOutExternal, currency)}</p>
+                  <p className="w-24 text-right text-sm text-red-500">− {formatMoneyCompact(ytdCashOutExternal, currency)}</p>
                 </div>
               )}
-              <div className="flex items-center justify-between bg-[var(--panel-strong)] px-4 py-3">
+              <div className="grid grid-cols-[1fr_auto_auto] items-center gap-x-4 bg-[var(--panel-strong)] px-4 py-3">
                 <div>
                   <p className="text-sm font-bold text-[var(--ink)]">Gross Profit</p>
-                  <p className="text-xs text-[var(--ink-muted)]">{grossMarginPct}% gross margin</p>
+                  <p className="text-xs text-[var(--ink-muted)]">Margin: {grossMarginPct}% period · {ytdGrossMarginPct}% YTD</p>
                 </div>
-                <p className={`text-base font-bold ${grossProfit >= 0 ? "text-emerald-600" : "text-red-500"}`}>{formatMoneyCompact(grossProfit, currency)}</p>
+                <p className={`w-24 text-right text-sm font-bold ${grossProfit >= 0 ? "text-emerald-600" : "text-red-500"}`}>{formatMoneyCompact(grossProfit, currency)}</p>
+                <p className={`w-24 text-right text-sm font-bold ${ytdGrossProfit >= 0 ? "text-emerald-600" : "text-red-500"}`}>{formatMoneyCompact(ytdGrossProfit, currency)}</p>
               </div>
-              {expensesTotal > 0 && (
-                <div className="flex items-center justify-between px-4 py-3">
-                  <div>
-                    <p className="text-sm font-semibold text-[var(--ink-muted)]">Operating Expenses</p>
-                    <p className="text-xs text-[var(--ink-muted)]">Logged expenses for the period</p>
-                  </div>
-                  <p className="text-base font-semibold text-red-500">− {formatMoneyCompact(expensesTotal, currency)}</p>
+              {(expensesTotal > 0 || ytdExpensesTotal > 0) && (
+                <div className="grid grid-cols-[1fr_auto_auto] items-center gap-x-4 px-4 py-3">
+                  <p className="text-sm text-[var(--ink-muted)]">Operating Expenses</p>
+                  <p className="w-24 text-right text-sm text-red-500">− {formatMoneyCompact(expensesTotal, currency)}</p>
+                  <p className="w-24 text-right text-sm text-red-500">− {formatMoneyCompact(ytdExpensesTotal, currency)}</p>
                 </div>
               )}
-              {cashOutRefunds > 0 && (
-                <div className="flex items-center justify-between px-4 py-3">
-                  <div>
-                    <p className="text-sm font-semibold text-[var(--ink-muted)]">Refunds Issued</p>
-                    <p className="text-xs text-[var(--ink-muted)]">Client refunds processed this period</p>
-                  </div>
-                  <p className="text-base font-semibold text-red-500">− {formatMoneyCompact(cashOutRefunds, currency)}</p>
+              {(cashOutRefunds > 0 || ytdCashOutRefunds > 0) && (
+                <div className="grid grid-cols-[1fr_auto_auto] items-center gap-x-4 px-4 py-3">
+                  <p className="text-sm text-[var(--ink-muted)]">Refunds Issued</p>
+                  <p className="w-24 text-right text-sm text-red-500">− {formatMoneyCompact(cashOutRefunds, currency)}</p>
+                  <p className="w-24 text-right text-sm text-red-500">− {formatMoneyCompact(ytdCashOutRefunds, currency)}</p>
                 </div>
               )}
-              <div className="flex items-center justify-between border-t-2 border-[var(--line)] px-4 py-4">
+              <div className="grid grid-cols-[1fr_auto_auto] items-center gap-x-4 border-t-2 border-[var(--line)] px-4 py-4">
                 <div>
                   <p className="text-sm font-bold text-[var(--ink)]">Net Profit</p>
                   <p className="text-xs text-[var(--ink-muted)]">Revenue − costs − expenses − refunds</p>
                 </div>
-                <p className={`text-xl font-black tabular-nums ${netProfit >= 0 ? "text-emerald-600" : "text-red-500"}`}>{formatMoneyCompact(netProfit, currency)}</p>
+                <p className={`w-24 text-right text-lg font-black tabular-nums ${netProfit >= 0 ? "text-emerald-600" : "text-red-500"}`}>{formatMoneyCompact(netProfit, currency)}</p>
+                <p className={`w-24 text-right text-lg font-black tabular-nums ${ytdNetProfit >= 0 ? "text-emerald-600" : "text-red-500"}`}>{formatMoneyCompact(ytdNetProfit, currency)}</p>
               </div>
             </div>
           </section>
+
+          {/* Business KPI strip */}
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
+              <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Avg Job Value</p>
+              <p className="mt-1 text-lg font-bold text-[var(--ink)]">{avgJobValue > 0 ? formatMoneyCompact(avgJobValue, currency) : "—"}</p>
+              <p className="mt-1 text-xs text-[var(--ink-muted)]">revenue per completed repair</p>
+            </div>
+            <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
+              <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Repeat Clients</p>
+              <p className={`mt-1 text-lg font-bold ${repeatClientRate >= 50 ? "text-emerald-500" : repeatClientRate >= 25 ? "text-[var(--ink)]" : "text-amber-500"}`}>
+                {uniqueClientsCount > 0 ? `${repeatClientRate}%` : "—"}
+              </p>
+              <p className="mt-1 text-xs text-[var(--ink-muted)]">{returningClientRows.length} returning of {uniqueClientsCount} clients</p>
+            </div>
+            <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
+              <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">YTD Revenue</p>
+              <p className="mt-1 text-lg font-bold text-[var(--ink)]">{formatMoneyCompact(ytdRevenue, currency)}</p>
+              <p className="mt-1 text-xs text-[var(--ink-muted)]">Jan 1 – today</p>
+            </div>
+            <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
+              <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">YTD Net Profit</p>
+              <p className={`mt-1 text-lg font-bold ${ytdNetProfit >= 0 ? "text-emerald-500" : "text-red-500"}`}>{formatMoneyCompact(ytdNetProfit, currency)}</p>
+              <p className="mt-1 text-xs text-[var(--ink-muted)]">{ytdGrossMarginPct}% gross margin YTD</p>
+            </div>
+          </div>
 
           {/* Cash Flow + Revenue vs Target */}
           <div className="grid gap-3 sm:grid-cols-3">
