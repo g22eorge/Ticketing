@@ -116,6 +116,37 @@ export default async function CashierShiftsPage({
     revalidatePath("/pos/shifts");
   }
 
+  async function setShiftPinAction(formData: FormData) {
+    "use server";
+    const { user: _u } = await getCurrentUserRole();
+    if (!["ADMIN", "OPS", "FRONT_DESK"].includes(_u.role)) return;
+
+    const shiftId = String(formData.get("shiftId") ?? "").trim();
+    const pinRaw  = String(formData.get("newPin") ?? "").trim();
+    const action  = String(formData.get("pinAction") ?? "set").trim(); // "set" | "remove"
+    if (!shiftId) return;
+
+    // Non-admins can only update their own open shift
+    const shift = await prisma.cashierShift.findFirst({
+      where: {
+        id: shiftId,
+        status: "OPEN",
+        ...(!["ADMIN"].includes(_u.role) ? { cashierId: _u.id } : {}),
+      },
+      select: { id: true },
+    }).catch(() => null);
+    if (!shift) return;
+
+    if (action === "remove") {
+      await prisma.cashierShift.update({ where: { id: shiftId }, data: { shiftPin: null } }).catch(() => {});
+    } else {
+      if (!/^\d{4,8}$/.test(pinRaw)) return;
+      const hashed = await hashPin(pinRaw);
+      await prisma.cashierShift.update({ where: { id: shiftId }, data: { shiftPin: hashed } }).catch(() => {});
+    }
+    revalidatePath("/pos/shifts");
+  }
+
   async function reopenShiftAction(formData: FormData) {
     "use server";
     const { user: _u } = await getCurrentUserRole();
@@ -327,6 +358,44 @@ export default async function CashierShiftsPage({
               className="h-9 rounded-lg bg-emerald-700 px-5 text-sm font-semibold text-white hover:opacity-90"
             >Close Shift</ConfirmSubmitButton>
           </form>
+
+          {/* Set / change / remove PIN on the active shift */}
+          <div className="mt-4 border-t border-emerald-500/20 pt-3">
+            <p className="mb-2 text-[12px] font-bold uppercase tracking-[0.14em] text-emerald-700 dark:text-emerald-400">
+              {myOpenShift.shiftPin ? "Change or remove shift PIN" : "Set a shift PIN"}
+            </p>
+            <div className="flex flex-wrap items-end gap-2">
+              <form action={setShiftPinAction} className="flex flex-wrap items-end gap-2">
+                <input type="hidden" name="shiftId" value={myOpenShift.id} />
+                <input type="hidden" name="pinAction" value="set" />
+                <div className="space-y-1">
+                  <label className="text-[12px] font-semibold uppercase tracking-wide text-emerald-700">{myOpenShift.shiftPin ? "New PIN" : "PIN"} (4–8 digits)</label>
+                  <input
+                    name="newPin"
+                    type="password"
+                    inputMode="numeric"
+                    placeholder="e.g. 1234"
+                    maxLength={8}
+                    required
+                    autoComplete="new-password"
+                    className="h-9 w-32 rounded-lg border border-emerald-200 bg-white px-3 text-sm outline-none focus:ring-2 focus:ring-emerald-500"
+                  />
+                </div>
+                <button type="submit" className="h-9 rounded-lg border border-emerald-400/40 bg-emerald-500/20 px-4 text-sm font-semibold text-emerald-700 hover:bg-emerald-500/30 dark:text-emerald-300">
+                  {myOpenShift.shiftPin ? "Update PIN" : "Set PIN"}
+                </button>
+              </form>
+              {myOpenShift.shiftPin && (
+                <form action={setShiftPinAction}>
+                  <input type="hidden" name="shiftId" value={myOpenShift.id} />
+                  <input type="hidden" name="pinAction" value="remove" />
+                  <ConfirmSubmitButton message="Remove the PIN from this shift? Anyone will be able to close it without a PIN." confirmLabel="Remove PIN" className="h-9 rounded-lg border border-red-400/30 bg-red-500/5 px-4 text-sm font-semibold text-red-600 hover:bg-red-500/10 dark:text-red-400">
+                    Remove PIN
+                  </ConfirmSubmitButton>
+                </form>
+              )}
+            </div>
+          </div>
         </div>
       )}
 
