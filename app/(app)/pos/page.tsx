@@ -27,13 +27,14 @@ async function nextSaleNumber(db: ReturnType<typeof orgDb>) {
   return `${prefix}${String(next).padStart(4, "0")}`;
 }
 
-export default async function PosPage() {
+export default async function PosPage({ searchParams }: { searchParams: Promise<{ period?: string }> }) {
   const { user } = await getCurrentUserRole();
   const db = orgDb(user.orgId);
   if (!(can.viewFinancials(user) || ["ADMIN", "OPS", "FRONT_DESK"].includes(user.role))) {
     redirect("/dashboard");
   }
 
+  const { period } = await searchParams;
   const currency = getAppCurrency();
 
   const now = new Date();
@@ -94,10 +95,9 @@ export default async function PosPage() {
         payments: { select: { id: true }, take: 1 },
         creditNotes: { select: { id: true }, take: 1 },
         refunds: { select: { id: true }, take: 1 },
-        deliveryNotes: { select: { id: true }, take: 1 },
       },
     });
-    if (!sale || sale.status !== "OPEN" || sale.invoicedAt || sale.payments.length || sale.creditNotes.length || sale.refunds.length || sale.deliveryNotes.length) return;
+    if (!sale || sale.status !== "OPEN" || sale.invoicedAt || sale.payments.length || sale.creditNotes.length || sale.refunds.length) return;
 
     await prisma.$transaction(async (tx) => {
       for (const item of sale.items) {
@@ -122,6 +122,27 @@ export default async function PosPage() {
     revalidatePath("/pos");
   }
 
+  // Period filter
+  const now = new Date();
+  const filterStart =
+    period === "today"
+      ? new Date(now.getFullYear(), now.getMonth(), now.getDate())
+      : period === "month"
+        ? new Date(now.getFullYear(), now.getMonth(), 1)
+        : undefined;
+
+  // Open shift check for cashier
+  let hasOpenShift = true;
+  try {
+    const openShift = await db.cashierShift.findFirst({
+      where: { cashierId: user.id, status: "OPEN" },
+      select: { id: true },
+    });
+    hasOpenShift = !!openShift;
+  } catch {
+    hasOpenShift = true; // if table missing, don't block
+  }
+
   let sales: Array<{
     id: string;
     saleNumber: string;
@@ -132,13 +153,13 @@ export default async function PosPage() {
     invoicedAt: Date | null;
     createdAt: Date;
     client: { id: string; name: string } | null;
-    _count: { payments: number; creditNotes: number; refunds: number; deliveryNotes: number };
+    _count: { payments: number; creditNotes: number; refunds: number };
   }> = [];
   try {
     sales = await db.sale.findMany({
-      where: {},
+      where: filterStart ? { createdAt: { gte: filterStart } } : {},
       orderBy: { createdAt: "desc" },
-      take: 40,
+      take: 60,
       select: {
         id: true,
         saleNumber: true,
@@ -149,7 +170,7 @@ export default async function PosPage() {
         invoicedAt: true,
         createdAt: true,
         client: { select: { id: true, name: true } },
-        _count: { select: { payments: true, creditNotes: true, refunds: true, deliveryNotes: true } },
+        _count: { select: { payments: true, creditNotes: true, refunds: true } },
       },
     });
   } catch (err) {
@@ -188,32 +209,52 @@ export default async function PosPage() {
         </div>
       </div>
 
-      {/* ── KPI tiles ── */}
+      {/* ── No-shift warning ── */}
+      {!hasOpenShift && ["FRONT_DESK", "OPS"].includes(user.role) && (
+        <div className="flex items-center gap-3 rounded-xl border border-amber-400/30 bg-amber-500/10 px-4 py-3">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5 shrink-0 text-amber-500" aria-hidden><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          <div className="flex-1">
+            <p className="text-[13px] font-semibold text-amber-700 dark:text-amber-400">No open shift</p>
+            <p className="text-[12px] text-amber-600 dark:text-amber-500">You don&apos;t have an active shift. Open one before processing sales.</p>
+          </div>
+          <Link href="/pos/shifts" className="shrink-0 rounded-lg border border-amber-400/40 bg-amber-500/15 px-3 py-1.5 text-[12px] font-semibold text-amber-700 transition hover:bg-amber-500/25 dark:text-amber-400">Open Shift →</Link>
+        </div>
+      )}
+
+      {/* ── KPI tiles (clickable) ── */}
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
+        <Link href="/pos?period=today" className={`panel-shadow rounded-xl border px-3 py-2.5 transition hover:bg-[var(--panel-strong)] ${period === "today" ? "border-[var(--accent)]/40 bg-[var(--accent)]/5" : "border-[var(--line)] bg-[var(--panel)]"}`}>
           <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Today&apos;s Sales</p>
           <p className="mt-1 text-xl font-bold tabular-nums text-[var(--ink)]">{formatMoneyCompact(kpiTodayTotal, currency)}</p>
-          <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">today</p>
-        </div>
-        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
+          <p className="mt-0.5 text-[12px] text-[var(--ink-muted)]">tap to filter ↓</p>
+        </Link>
+        <Link href="/pos?period=month" className={`panel-shadow rounded-xl border px-3 py-2.5 transition hover:bg-[var(--panel-strong)] ${period === "month" ? "border-[var(--accent)]/40 bg-[var(--accent)]/5" : "border-[var(--line)] bg-[var(--panel)]"}`}>
           <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">This Month</p>
           <p className="mt-1 text-xl font-bold tabular-nums text-[var(--ink)]">{formatMoneyCompact(kpiMonthTotal, currency)}</p>
-          <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">this month</p>
-        </div>
+          <p className="mt-0.5 text-[12px] text-[var(--ink-muted)]">tap to filter ↓</p>
+        </Link>
         <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
-          <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Transactions This Month</p>
+          <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Transactions MTD</p>
           <p className="mt-1 text-xl font-bold tabular-nums text-[var(--ink)]">{kpiMonthCount}</p>
-          <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">sales this month</p>
+          <p className="mt-0.5 text-[12px] text-[var(--ink-muted)]">this month</p>
         </div>
         <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
           <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Avg Sale Value</p>
           <p className="mt-1 text-xl font-bold tabular-nums text-[var(--ink)]">{formatMoneyCompact(kpiAvgSale, currency)}</p>
-          <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">per transaction</p>
+          <p className="mt-0.5 text-[12px] text-[var(--ink-muted)]">per transaction</p>
         </div>
       </div>
 
       <div className="panel-shadow flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-2.5">
-        <p className="text-[13px] font-bold text-[var(--ink)]">Sales</p>
+        <div className="flex items-center gap-2">
+          <p className="text-[13px] font-bold text-[var(--ink)]">Sales</p>
+          {period && (
+            <span className="rounded-full border border-[var(--accent)]/30 bg-[var(--accent)]/10 px-2 py-0.5 text-[12px] font-semibold text-[var(--accent)]">
+              {period === "today" ? "Today" : "This month"}
+              <Link href="/pos" className="ml-1.5 opacity-60 hover:opacity-100">×</Link>
+            </span>
+          )}
+        </div>
         <form action={createSaleAction} className="flex flex-wrap items-center gap-2">
           <select
             name="branchId"
@@ -240,7 +281,7 @@ export default async function PosPage() {
             {/* ── Mobile cards ── */}
             <div className="divide-y divide-[var(--line)] lg:hidden">
               {sales.map((s) => {
-                const canDeleteSale = user.role === "ADMIN" && s.status === "OPEN" && !s.invoicedAt && s._count.payments === 0 && s._count.creditNotes === 0 && s._count.refunds === 0 && s._count.deliveryNotes === 0;
+                const canDeleteSale = user.role === "ADMIN" && s.status === "OPEN" && !s.invoicedAt && s._count.payments === 0 && s._count.creditNotes === 0 && s._count.refunds === 0;
                 const statusCls = s.status === "PAID"
                   ? "border-emerald-500/30 bg-emerald-500/15 text-emerald-700 dark:text-emerald-400"
                   : s.status === "VOID"
@@ -289,7 +330,7 @@ export default async function PosPage() {
                 </thead>
                 <tbody className="divide-y divide-[var(--line)]">
                   {sales.map((s) => {
-                    const canDeleteSale = user.role === "ADMIN" && s.status === "OPEN" && !s.invoicedAt && s._count.payments === 0 && s._count.creditNotes === 0 && s._count.refunds === 0 && s._count.deliveryNotes === 0;
+                    const canDeleteSale = user.role === "ADMIN" && s.status === "OPEN" && !s.invoicedAt && s._count.payments === 0 && s._count.creditNotes === 0 && s._count.refunds === 0;
                     return (
                       <tr key={`d-${s.id}`} className="hover:bg-[var(--panel-strong)]/40">
                         <td className="px-4 py-3 mono font-semibold">{s.saleNumber}</td>

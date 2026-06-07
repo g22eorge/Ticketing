@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 
-import type { DeliveryMethod, PaymentMethod } from "@prisma/client";
+import type { PaymentMethod } from "@prisma/client";
 import { Prisma } from "@prisma/client";
 
 import { formatMoney, normalizeCurrency } from "@/lib/currency";
@@ -83,7 +83,7 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
     client: { fullName: string } | null;
     items: Array<{ id: string; partId: string | null; description: string; quantity: number; unitPrice: number; lineTotal: number }>;
     payments: Array<{ id: string; amount: number; method: PaymentMethod; reference: string | null; receivedAt: Date; currency: string | null }>;
-    _count: { payments: number; creditNotes: number; refunds: number; deliveryNotes: number };
+    _count: { payments: number; creditNotes: number; refunds: number };
   } | null = null;
 
   let creditNotes: Array<{
@@ -109,14 +109,7 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
     creditNoteId: string | null;
   }> = [];
 
-  let deliveryNotes: Array<{
-    id: string;
-    deliveryNoteNumber: string;
-    deliveredAt: Date;
-    deliveryMethod: DeliveryMethod | null;
-    deliveredByName: string;
-    receivedByName: string;
-  }> = [];
+  const deliveryNotes: never[] = [];
 
   try {
     sale = await prisma.sale.findFirst({
@@ -142,7 +135,7 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
         client: { select: { fullName: true } },
         items: { select: { id: true, partId: true, description: true, quantity: true, unitPrice: true, lineTotal: true }, orderBy: { createdAt: "asc" } },
         payments: { select: { id: true, amount: true, method: true, reference: true, receivedAt: true, currency: true }, orderBy: { receivedAt: "desc" } },
-        _count: { select: { payments: true, creditNotes: true, refunds: true, deliveryNotes: true } },
+        _count: { select: { payments: true, creditNotes: true, refunds: true } },
       },
     });
   } catch (err) {
@@ -203,24 +196,6 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
     refunds = [];
   }
 
-  // Delivery notes are optional; keep page working if table is missing.
-  try {
-    deliveryNotes = await prisma.deliveryNote.findMany({
-      where: { orgId, saleId: sale.id },
-      orderBy: { deliveredAt: "desc" },
-      select: {
-        id: true,
-        deliveryNoteNumber: true,
-        deliveredAt: true,
-        deliveryMethod: true,
-        deliveredByName: true,
-        receivedByName: true,
-      },
-    });
-  } catch {
-    deliveryNotes = [];
-  }
-
   const parts = await prisma.part.findMany({
     where: { orgId, isActive: true },
     orderBy: [{ name: "asc" }],
@@ -273,10 +248,9 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
         payments: { select: { id: true }, take: 1 },
         creditNotes: { select: { id: true }, take: 1 },
         refunds: { select: { id: true }, take: 1 },
-        deliveryNotes: { select: { id: true }, take: 1 },
       },
     });
-    if (!sale || sale.status !== "OPEN" || sale.invoicedAt || sale.payments.length || sale.creditNotes.length || sale.refunds.length || sale.deliveryNotes.length) return;
+    if (!sale || sale.status !== "OPEN" || sale.invoicedAt || sale.payments.length || sale.creditNotes.length || sale.refunds.length) return;
 
     await prisma.$transaction(async (tx) => {
       for (const item of sale.items) {
@@ -703,7 +677,7 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
   }
 
   const balance = Math.max(0, sale.totalAmount - sale.paidAmount);
-  const canDeleteSale = user.role === "ADMIN" && sale.status === "OPEN" && !sale.invoicedAt && sale._count.payments === 0 && sale._count.creditNotes === 0 && sale._count.refunds === 0 && sale._count.deliveryNotes === 0;
+  const canDeleteSale = user.role === "ADMIN" && sale.status === "OPEN" && !sale.invoicedAt && sale._count.payments === 0 && sale._count.creditNotes === 0 && sale._count.refunds === 0;
 
   return (
     <div className="space-y-4">
@@ -988,44 +962,6 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
               {sale.payments.length === 0 ? (
                 <tr className="border-t border-[var(--line)]">
                   <td className="px-3 py-6 text-sm text-[var(--ink-muted)]" colSpan={4}>No payments yet.</td>
-                </tr>
-              ) : null}
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
-        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Delivery Notes</p>
-        <p className="mt-1 text-xs text-[var(--ink-muted)]">
-          POS quick sales do not generate delivery notes. Legacy notes remain available for audit/download only.
-        </p>
-
-        <div className="mt-4 overflow-x-auto rounded-lg border border-[var(--line)]">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-[var(--panel-strong)] text-[12px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
-              <tr>
-                <th className="px-3 py-2">Delivery Note</th>
-                <th className="hidden px-3 py-2 md:table-cell">Delivered</th>
-                <th className="px-3 py-2">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {deliveryNotes.map((dn) => (
-                <tr key={dn.id} className="border-t border-[var(--line)]">
-                  <td className="px-3 py-2">
-                    <p className="mono font-semibold">{dn.deliveryNoteNumber}</p>
-                    <p className="text-xs text-[var(--ink-muted)]">{dn.deliveredByName} → {dn.receivedByName}</p>
-                  </td>
-                  <td className="hidden px-3 py-2 text-[var(--ink-muted)] md:table-cell">{dn.deliveredAt.toLocaleString()}</td>
-                  <td className="px-3 py-2">
-                    <a href={`/api/delivery-notes/${dn.id}`} target="_blank" rel="noreferrer" className="btn-premium-secondary inline-flex rounded-md px-2.5 py-1.5 text-xs">Download</a>
-                  </td>
-                </tr>
-              ))}
-              {deliveryNotes.length === 0 ? (
-                <tr className="border-t border-[var(--line)]">
-                  <td className="px-3 py-6 text-sm text-[var(--ink-muted)]" colSpan={3}>No delivery notes yet.</td>
                 </tr>
               ) : null}
             </tbody>

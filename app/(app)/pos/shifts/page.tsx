@@ -83,6 +83,34 @@ export default async function CashierShiftsPage({
     revalidatePath("/pos/shifts");
   }
 
+  async function reopenShiftAction(formData: FormData) {
+    "use server";
+    const { user: _u } = await getCurrentUserRole();
+    if (_u.role !== "ADMIN") return;
+
+    const shiftId = String(formData.get("shiftId") ?? "").trim();
+    if (!shiftId) return;
+
+    // Only one open shift per cashier — check for existing open shift first
+    const shift = await prisma.cashierShift.findFirst({
+      where: { id: shiftId, status: "CLOSED" },
+      select: { id: true, cashierId: true },
+    }).catch(() => null);
+    if (!shift) return;
+
+    const alreadyOpen = await prisma.cashierShift.findFirst({
+      where: { cashierId: shift.cashierId, status: "OPEN" },
+      select: { id: true },
+    }).catch(() => null);
+    if (alreadyOpen) return; // cashier already has an open shift
+
+    await prisma.cashierShift.update({
+      where: { id: shiftId },
+      data: { status: "OPEN", closedAt: null, closingCash: null },
+    }).catch(() => {});
+    revalidatePath("/pos/shifts");
+  }
+
   async function deleteShiftAction(formData: FormData) {
     "use server";
     const { user: _u } = await getCurrentUserRole();
@@ -307,7 +335,13 @@ export default async function CashierShiftsPage({
                           <ConfirmSubmitButton message="Force close this shift? Closing cash will be set to 0." confirmLabel="Force Close" className="rounded border border-orange-400/30 px-2 py-0.5 text-[13px] font-semibold text-orange-600 hover:bg-orange-500/10 dark:text-orange-400">Force close</ConfirmSubmitButton>
                         </form>
                       )}
-                      {user.role === "ADMIN" && !isOpen && (
+                      {!isOpen && (
+                        <form action={reopenShiftAction}>
+                          <input type="hidden" name="shiftId" value={shift.id} />
+                          <ConfirmSubmitButton message="Reopen this shift? The cashier will be able to process sales again. Use this to correct an accidental closure." confirmLabel="Reopen" className="rounded border border-sky-400/30 px-2 py-0.5 text-[13px] font-semibold text-sky-600 hover:bg-sky-500/10 dark:text-sky-400">Reopen</ConfirmSubmitButton>
+                        </form>
+                      )}
+                      {!isOpen && (
                         <form action={deleteShiftAction}>
                           <input type="hidden" name="shiftId" value={shift.id} />
                           <ConfirmSubmitButton message="Delete this shift record? This cannot be undone." confirmLabel="Delete" className="rounded border border-red-400/30 px-2 py-0.5 text-[13px] font-semibold text-red-600 hover:bg-red-500/10 dark:text-red-400">Delete</ConfirmSubmitButton>
@@ -358,7 +392,10 @@ export default async function CashierShiftsPage({
                             {isOpen && shift.cashierId !== user.id && (
                               <form action={closeShiftAction}><input type="hidden" name="shiftId" value={shift.id} /><input type="hidden" name="closingCash" value="0" /><ConfirmSubmitButton message="Force close this shift? Closing cash will be set to 0." confirmLabel="Force Close" className="rounded border border-orange-400/30 px-2 py-0.5 text-[13px] font-semibold text-orange-600 hover:bg-orange-500/10 dark:text-orange-400">Force close</ConfirmSubmitButton></form>
                             )}
-                            {user.role === "ADMIN" && !isOpen && (
+                            {!isOpen && (
+                              <form action={reopenShiftAction}><input type="hidden" name="shiftId" value={shift.id} /><ConfirmSubmitButton message="Reopen this shift? The cashier will be able to process sales again. Use this to correct an accidental closure." confirmLabel="Reopen" className="rounded border border-sky-400/30 px-2 py-0.5 text-[13px] font-semibold text-sky-600 hover:bg-sky-500/10 dark:text-sky-400">Reopen</ConfirmSubmitButton></form>
+                            )}
+                            {!isOpen && (
                               <form action={deleteShiftAction}><input type="hidden" name="shiftId" value={shift.id} /><ConfirmSubmitButton message="Delete this shift record? This cannot be undone." confirmLabel="Delete" className="rounded border border-red-400/30 px-2 py-0.5 text-[13px] font-semibold text-red-600 hover:bg-red-500/10 dark:text-red-400">Delete</ConfirmSubmitButton></form>
                             )}
                           </div>
