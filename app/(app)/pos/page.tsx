@@ -152,6 +152,7 @@ export default async function PosPage({ searchParams }: { searchParams: Promise<
     invoicedAt: Date | null;
     createdAt: Date;
     client: { id: string; fullName: string } | null;
+    createdBy: { id: string; name: string } | null;
     _count: { payments: number; creditNotes: number; refunds: number };
   }> = [];
   try {
@@ -169,6 +170,7 @@ export default async function PosPage({ searchParams }: { searchParams: Promise<
         invoicedAt: true,
         createdAt: true,
         client: { select: { id: true, fullName: true } },
+        createdBy: { select: { id: true, name: true } },
         _count: { select: { payments: true, creditNotes: true, refunds: true } },
       },
     });
@@ -292,10 +294,14 @@ export default async function PosPage({ searchParams }: { searchParams: Promise<
                       <span className="mono text-[13px] font-bold text-[var(--ink)]">{s.saleNumber}</span>
                       <span className={`rounded-full border px-2 py-0.5 text-[13px] font-semibold ${statusCls}`}>{s.status}</span>
                     </div>
-                    {s.client ? (
-                      <p className="mb-1 text-[13px] font-medium text-[var(--ink)]">{s.client.fullName}</p>
-                    ) : (
-                      <p className="mb-1 text-[13px] text-[var(--ink-muted)]">Walk-in</p>
+                    <div className="mb-1 flex items-center gap-2">
+                      {s.client
+                        ? <p className="text-[13px] font-medium text-[var(--ink)]">{s.client.fullName}</p>
+                        : <p className="text-[13px] text-[var(--ink-muted)]">Walk-in</p>
+                      }
+                    </div>
+                    {s.createdBy && (
+                      <p className="mb-1 text-[12px] text-[var(--ink-muted)]">by {s.createdBy.name}</p>
                     )}
                     <div className="mb-2 flex items-baseline gap-3 text-sm">
                       <span className="font-semibold text-[var(--ink)]">{formatMoneyCompact(s.totalAmount, normalizeCurrency(s.currency, "UGX"))}</span>
@@ -321,6 +327,7 @@ export default async function PosPage({ searchParams }: { searchParams: Promise<
                   <tr className="text-[12px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
                     <th className="px-4 py-2.5">Sale</th>
                     <th className="px-4 py-2.5">Client</th>
+                    <th className="px-4 py-2.5">Created By</th>
                     <th className="px-4 py-2.5">Total</th>
                     <th className="px-4 py-2.5">Paid</th>
                     <th className="px-4 py-2.5">Status</th>
@@ -339,6 +346,7 @@ export default async function PosPage({ searchParams }: { searchParams: Promise<
                             : <span className="text-[var(--ink-muted)]">Walk-in</span>
                           }
                         </td>
+                        <td className="px-4 py-3 text-[var(--ink-muted)]">{s.createdBy?.name ?? "—"}</td>
                         <td className="px-4 py-3">{formatMoneyCompact(s.totalAmount, normalizeCurrency(s.currency, "UGX"))}</td>
                         <td className="px-4 py-3">{formatMoneyCompact(s.paidAmount, normalizeCurrency(s.currency, "UGX"))}</td>
                         <td className="px-4 py-3">
