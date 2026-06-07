@@ -1151,26 +1151,26 @@ export default async function ReportsPage({
         <>
           {/* Action Required banner */}
           {(delayedJobs.length > 0 || approvalDelays.filter((j) => j.daysPending >= 2).length > 0) && (
-            <section className="overflow-hidden rounded-xl border border-red-200 bg-red-50/60 panel-shadow">
-              <div className="border-b border-red-200 px-4 py-2.5">
-                <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-red-700">Action Required</p>
+            <section className="panel-shadow overflow-hidden rounded-xl border border-red-500/30 bg-red-500/10">
+              <div className="border-b border-red-500/20 px-4 py-2.5">
+                <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-red-500">Action Required</p>
               </div>
-              <div className="divide-y divide-red-100">
+              <div className="divide-y divide-red-500/15">
                 {delayedJobs.length > 0 && (
                   <div className="flex items-center justify-between px-4 py-3">
                     <div>
-                      <p className="text-sm font-semibold text-red-700">{delayedJobs.length} job{delayedJobs.length !== 1 ? "s" : ""} aging 3+ days without resolution</p>
-                      <p className="text-xs text-red-500">Oldest: {delayedJobs[0].jobNumber} — {delayedJobs[0].ageDays} days open</p>
+                      <p className="text-sm font-semibold text-red-500">{delayedJobs.length} job{delayedJobs.length !== 1 ? "s" : ""} aging 3+ days without resolution</p>
+                      <p className="text-xs text-red-400">Oldest: {delayedJobs[0].jobNumber} — {delayedJobs[0].ageDays} days open</p>
                     </div>
-                    <Link href="/jobs" className="text-xs font-semibold text-red-600 hover:underline">View jobs →</Link>
+                    <Link href="/jobs" className="text-xs font-semibold text-red-400 hover:text-red-500 hover:underline">View jobs →</Link>
                   </div>
                 )}
                 {approvalDelays.filter((j) => j.daysPending >= 2).length > 0 && (
                   <div className="flex items-center justify-between px-4 py-3">
-                    <p className="text-sm font-semibold text-amber-700">
+                    <p className="text-sm font-semibold text-amber-500">
                       {approvalDelays.filter((j) => j.daysPending >= 2).length} client approval{approvalDelays.filter((j) => j.daysPending >= 2).length !== 1 ? "s" : ""} waiting 2+ days — follow up needed
                     </p>
-                    <Link href="/jobs?status=AWAITING_APPROVAL" className="text-xs font-semibold text-amber-600 hover:underline">Review →</Link>
+                    <Link href="/jobs?status=AWAITING_APPROVAL" className="text-xs font-semibold text-amber-400 hover:text-amber-500 hover:underline">Review →</Link>
                   </div>
                 )}
               </div>
