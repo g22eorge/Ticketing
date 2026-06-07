@@ -585,21 +585,18 @@ export default async function DashboardPage({
               clientBill: { not: null },
             },
           }),
-          prisma.job.findMany({
+          prisma.job.aggregate({
             where: {
               ...pricingScopeWhere,
               status: { in: ["AWAITING_APPROVAL", "IN_REPAIR", "READY_FOR_PICKUP", "COMPLETED", "CLOSED"] },
               clientBill: { not: null },
             },
-            select: {
-              clientBill: true,
-              externalTechBill: true,
-            },
+            _sum: { clientBill: true, externalTechBill: true },
           }),
         ])
-      : [0, 0, []];
-    const clientBillingTotal = assignedFinancials.reduce((sum, job) => sum + (job.clientBill ?? 0), 0);
-    const externalCostTotal = assignedFinancials.reduce((sum, job) => sum + (job.externalTechBill ?? 0), 0);
+      : [0, 0, { _sum: { clientBill: null, externalTechBill: null } }];
+    const clientBillingTotal = assignedFinancials._sum.clientBill ?? 0;
+    const externalCostTotal = assignedFinancials._sum.externalTechBill ?? 0;
     const marginTotal = clientBillingTotal - externalCostTotal;
 
     return (
@@ -984,21 +981,21 @@ export default async function DashboardPage({
     ] = await Promise.all([
       prisma.job.groupBy({ by: ["status"], where: orgFilter, _count: { status: true } }),
 
-      prisma.job.findMany({
+      prisma.job.count({
         where: { ...orgFilter, status: "COMPLETED", completedAt: { gte: mtdStart, lte: today } },
-        select: { clientBill: true },
       }),
 
       prisma.bankAccount.findMany({
         where: { ...orgFilter, isActive: true },
         select: { name: true, currentBalance: true },
         orderBy: { currentBalance: "desc" },
+        take: 20,
       }).catch(() => [] as { name: string; currentBalance: number }[]),
 
-      prisma.expense.findMany({
+      prisma.expense.aggregate({
         where: { orgId: orgFilter.orgId ?? undefined, paidAt: { gte: mtdStart, lte: today } },
-        select: { amount: true },
-      }).catch(() => [] as { amount: number }[]),
+        _sum: { amount: true },
+      }).catch(() => ({ _sum: { amount: null } })),
 
       prisma.supplierBill.aggregate({
         where: { ...orgFilter, status: { in: ["POSTED", "PART_PAID"] } },
@@ -1011,22 +1008,24 @@ export default async function DashboardPage({
       prisma.job.count({ where: { ...orgFilter, completedAt: { gte: todayStart } } }),
       prisma.job.count({ where: { ...orgFilter, receivedAt: { gte: mtdStart, lte: today } } }),
 
-      prisma.expense.findMany({ where: { orgId: orgFilter.orgId ?? undefined, paidAt: { gte: todayStart } }, select: { amount: true } }).catch(() => [] as { amount: number }[]),
+      prisma.expense.aggregate({ where: { orgId: orgFilter.orgId ?? undefined, paidAt: { gte: todayStart } }, _sum: { amount: true } }).catch(() => ({ _sum: { amount: null } })),
       prisma.job.count({ where: { ...orgFilter, status: { in: filterSupportedJobStatuses(["RECEIVED", "DIAGNOSING", "REFERRED", "IN_EXTERNAL_REPAIR", "AWAITING_APPROVAL", "IN_REPAIR", "READY_FOR_PICKUP"]) as JobStatus[] }, receivedAt: { lt: new Date(today.getTime() - 3 * 86_400_000) } } }).catch(() => 0),
       prisma.job.count({ where: { ...orgFilter, status: { in: filterSupportedJobStatuses(["DIAGNOSING", "REFERRED", "IN_EXTERNAL_REPAIR", "AWAITING_APPROVAL", "IN_REPAIR", "READY_FOR_PICKUP"]) as JobStatus[] }, lastClientContactAt: null } }).catch(() => 0),
       prisma.job.count({ where: { ...orgFilter, status: "COMPLETED", clientBill: { gt: 0 }, clientPaid: false } }).catch(() => 0),
-      prisma.job.findMany({ where: { ...orgFilter, repairPath: "EXTERNAL", status: { in: ["COMPLETED", "DELIVERED"] }, externalPaid: false }, select: { externalTechFee: true, externalTechBill: true } }).catch(() => [] as { externalTechFee: number | null; externalTechBill: number | null }[]),
+      prisma.job.aggregate({ where: { ...orgFilter, repairPath: "EXTERNAL", status: { in: ["COMPLETED", "DELIVERED"] }, externalPaid: false }, _sum: { externalTechFee: true, externalTechBill: true } }).catch(() => ({ _sum: { externalTechFee: null, externalTechBill: null } })),
 
       prisma.lead.groupBy({ by: ["status"], where: orgFilter, _count: { status: true } }).catch(() => [] as { status: string; _count: { status: number } }[]),
 
       prisma.part.findMany({
         where: { ...orgFilter, isActive: true, reorderLevel: { gt: 0 } },
         select: { id: true, name: true, sku: true, qtyOnHand: true, reorderLevel: true },
+        take: 30,
       }).catch(() => [] as { id: string; name: string; sku: string; qtyOnHand: number; reorderLevel: number }[]),
 
       prisma.job.findMany({
         where: { ...orgFilter, status: "COMPLETED", completedAt: { gte: mtdStart }, assignedToId: { not: null } },
         select: { assignedToId: true, assignedTo: { select: { name: true } }, clientBill: true, receivedAt: true, completedAt: true },
+        take: 500,
       }).catch(() => [] as { assignedToId: string | null; assignedTo: { name: string } | null; clientBill: number | null; receivedAt: Date; completedAt: Date | null }[]),
 
       // Tech pending jobs — groupBy to get counts without loading every job row
@@ -1038,8 +1037,8 @@ export default async function DashboardPage({
 
       prisma.job.count({ where: { ...orgFilter, receivedAt: { gte: yesterdayStart, lte: yesterdayEnd } } }).catch(() => 0),
       prisma.job.count({ where: { ...orgFilter, completedAt: { gte: yesterdayStart, lte: yesterdayEnd } } }).catch(() => 0),
-      prisma.expense.findMany({ where: { orgId: orgFilter.orgId ?? undefined, paidAt: { gte: yesterdayStart, lte: yesterdayEnd } }, select: { amount: true } }).catch(() => [] as { amount: number }[]),
-      prisma.job.findMany({ where: { ...orgFilter, repairPath: "EXTERNAL", status: { in: filterSupportedJobStatuses(["COMPLETED", "DELIVERED"]) as JobStatus[] }, externalPaid: false, assignedToId: { not: null } }, select: { assignedToId: true, externalTechFee: true, externalTechBill: true } }).catch(() => [] as { assignedToId: string | null; externalTechFee: number | null; externalTechBill: number | null }[]),
+      prisma.expense.aggregate({ where: { orgId: orgFilter.orgId ?? undefined, paidAt: { gte: yesterdayStart, lte: yesterdayEnd } }, _sum: { amount: true } }).catch(() => ({ _sum: { amount: null } })),
+      prisma.job.findMany({ where: { ...orgFilter, repairPath: "EXTERNAL", status: { in: filterSupportedJobStatuses(["COMPLETED", "DELIVERED"]) as JobStatus[] }, externalPaid: false, assignedToId: { not: null } }, select: { assignedToId: true, externalTechFee: true, externalTechBill: true }, take: 200 }).catch(() => [] as { assignedToId: string | null; externalTechFee: number | null; externalTechBill: number | null }[]),
       // Intake pending
       prisma.repairRequest.count({ where: { ...(orgFilter.orgId ? { orgId: orgFilter.orgId } : {}), requestStatus: { in: ["PENDING_INTAKE", "PENDING_FRONT_DESK"] as never[] } } }).catch(() => 0),
       // Failed / dead outbox messages
@@ -1077,23 +1076,23 @@ export default async function DashboardPage({
     const productsMtd  = collectionsMtd.products;
     const corporateMtd = collectionsMtd.corporate + collectionsMtd.unallocated;
     const totalMtd     = collectionsMtd.total;
-    const conversionRate = receivedMtdCount > 0 ? Math.round(completedMtdJobs.length / receivedMtdCount * 100) : 0;
+    const conversionRate = receivedMtdCount > 0 ? Math.round(completedMtdJobs / receivedMtdCount * 100) : 0;
 
     // Financial position
     const totalBankBalance  = bankAccounts.reduce((s, a) => s + a.currentBalance, 0);
     const outstandingValue  = receivables.total;
     const outstandingCount  = receivables.invoiceCount + receivables.saleCount;
-    const expensesValue     = expensesMtd.reduce((s, e) => s + e.amount, 0);
+    const expensesValue     = expensesMtd._sum.amount ?? 0;
     const cashTodayValue    = collectionsToday.total;
     const salesTodayValue   = collectionsToday.products;
     const revenueTodayValue = collectionsToday.total;
-    const expensesTodayValue = expensesToday.reduce((s, e) => s + e.amount, 0);
+    const expensesTodayValue = expensesToday._sum.amount ?? 0;
     const payablesValue     = (payablesAgg._sum.totalAmount ?? 0) - (payablesAgg._sum.paidAmount ?? 0);
-    const technicianPayoutsDue = payoutDueJobs.reduce((sum, job) => sum + resolveTechCost(job.externalTechFee, job.externalTechBill), 0);
+    const technicianPayoutsDue = resolveTechCost(payoutDueJobs._sum.externalTechFee, payoutDueJobs._sum.externalTechBill);
 
     // Yesterday comparison values
     const cashYesterdayValue = collectionsYesterday.total;
-    const expensesYesterdayValue = expensesYesterdayRaw.reduce((s, e) => s + e.amount, 0);
+    const expensesYesterdayValue = expensesYesterdayRaw._sum.amount ?? 0;
 
     // Per-tech payout due map
     const techPayoutDueMap = new Map<string, number>();
@@ -1300,7 +1299,7 @@ export default async function DashboardPage({
                   { dot: "bg-red-400",     label: "Payables",            sub: "to suppliers",                                                                                                                                     value: payablesValue,             tone: payablesValue > 0 ? "text-red-500" : "text-[var(--ink)]",          href: "/inventory/supplier-bills?status=POSTED" },
                   { dot: "bg-rose-500",    label: "Expenses MTD",        sub: null,                                                                                                                                               value: expensesValue,             tone: "text-red-600",                                                     href: "/finance/expenses" },
                   { dot: "bg-emerald-500", label: "Gross margin",        sub: `${totalMtd > 0 ? Math.round((totalMtd - expensesValue) / totalMtd * 100) : 0}% margin`,                                                          value: totalMtd - expensesValue,  tone: (totalMtd - expensesValue) >= 0 ? "text-emerald-600" : "text-red-500", href: "/reports" },
-                  { dot: "bg-amber-400",   label: "Tech payouts due",    sub: `${payoutDueJobs.length} pending`,                                                                                                                  value: technicianPayoutsDue,      tone: technicianPayoutsDue > 0 ? "text-amber-600" : "text-[var(--ink)]", href: "/jobs?repairPath=EXTERNAL" },
+                  { dot: "bg-amber-400",   label: "Tech payouts due",    sub: technicianPayoutsDue > 0 ? "pending" : "all clear",                                                                                       value: technicianPayoutsDue,      tone: technicianPayoutsDue > 0 ? "text-amber-600" : "text-[var(--ink)]", href: "/jobs?repairPath=EXTERNAL" },
                 ] as const).map((item) => (
                   <Link key={item.label} href={item.href} className="flex items-center gap-2.5 px-4 py-2.5 transition hover:bg-[var(--panel-strong)]">
                     <span className={`h-2 w-2 shrink-0 rounded-full ${item.dot}`} />
@@ -1845,9 +1844,10 @@ export default async function DashboardPage({
     const trendMonths = trendMonthsForYear(selectedRange.start.getFullYear(), period === "year" ? 12 : selectedMonth.month);
 
     const [completedThisMonth, pendingBilling, externalCompleted, revenueTrend] = await Promise.all([
-      prisma.job.findMany({
+      prisma.job.aggregate({
         where: { status: "COMPLETED", completedAt: { gte: selectedRange.start, lte: selectedRange.end } },
-        select: { id: true, jobNumber: true, completedAt: true, clientBill: true },
+        _sum: { clientBill: true },
+        _count: true,
       }),
       prisma.job.count({
         where: {
@@ -1861,11 +1861,12 @@ export default async function DashboardPage({
           status: { in: ["READY_FOR_PICKUP", "COMPLETED", "DELIVERED"] },
         },
         select: { id: true, externalTechBill: true },
+        take: 200,
       }),
       loadRepairRevenueTrend(trendMonths, user.orgId),
     ]);
 
-    const monthRevenue = completedThisMonth.reduce((sum, job) => sum + (getClientBill(job) ?? 0), 0);
+    const monthRevenue = completedThisMonth._sum.clientBill ?? 0;
 
     const payoutMap = await getJobPayoutsByIds(externalCompleted.map((job) => job.id)).catch(() => new Map());
     // externalCompleted already pre-filtered to externalPaid=false in the DB query
@@ -1885,7 +1886,7 @@ export default async function DashboardPage({
 
         <DashboardHero
           title="Operations Overview"
-          summary={`${completedThisMonth.length} completed · ${pendingBilling} pending billing · revenue ${formatMoneyCompact(monthRevenue, currency)} · payouts ${formatMoneyCompact(payoutOutstanding, currency)}`}
+          summary={`${completedThisMonth._count} completed · ${pendingBilling} pending billing · revenue ${formatMoneyCompact(monthRevenue, currency)} · payouts ${formatMoneyCompact(payoutOutstanding, currency)}`}
           primaryHref="/jobs"
           primaryLabel="View Jobs"
           secondaryHref={reportHref}
@@ -1903,7 +1904,7 @@ export default async function DashboardPage({
               </Link>
               <Link href="/jobs?status=COMPLETED" className="flex items-center justify-between rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm hover:border-[var(--accent)]/30">
                 <span>Completed ({selectedPeriodLabel})</span>
-                <span className="font-semibold">{completedThisMonth.length}</span>
+                <span className="font-semibold">{completedThisMonth._count}</span>
               </Link>
             </div>
           </section>
@@ -2025,9 +2026,10 @@ export default async function DashboardPage({
 
     const [statusGroup, completedMtd, overdueJobs, techWorkloadJobs, unassignedCount, receivedToday, completedToday, awaitingApprovalCount, revenueTrend] = await Promise.all([
       prisma.job.groupBy({ by: ["status"], _count: { status: true } }),
-      prisma.job.findMany({
+      prisma.job.aggregate({
         where: { status: "COMPLETED", completedAt: { gte: mtdStart } },
-        select: { clientBill: true },
+        _sum: { clientBill: true },
+        _count: true,
       }),
       prisma.job.findMany({
         where: {
@@ -2064,7 +2066,7 @@ export default async function DashboardPage({
       loadTotalRevenueTrend(trendMonthsSinceStartOfYear(today), user.orgId, currency),
     ]);
 
-    const revenueMtd = completedMtd.reduce((sum, j) => sum + (getClientBill(j) ?? 0), 0);
+    const revenueMtd = completedMtd._sum.clientBill ?? 0;
     const statusCount = new Map<string, number>();
     for (const item of statusGroup) {
       const key = normalizeJobStatus(item.status as JobStatus);
@@ -2106,7 +2108,7 @@ export default async function DashboardPage({
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           {[
             { label: "Revenue MTD", val: formatMoneyCompact(revenueMtd, currency), href: `/reports?period=month&month=${mtdLabel}`, color: "text-[var(--accent)]" },
-            { label: "Completed MTD", val: String(completedMtd.length), href: "/jobs?status=COMPLETED", color: "text-emerald-600" },
+            { label: "Completed MTD", val: String(completedMtd._count ?? 0), href: "/jobs?status=COMPLETED", color: "text-emerald-600" },
             { label: "In Pipeline", val: String((statusCount.get("DIAGNOSING") ?? 0) + (statusCount.get("IN_REPAIR") ?? 0) + (statusCount.get("AWAITING_APPROVAL") ?? 0)), href: "/jobs?status=DIAGNOSING,IN_REPAIR,AWAITING_APPROVAL", color: "text-[var(--ink)]" },
             { label: "Ready Pickup", val: String(statusCount.get("READY_FOR_PICKUP") ?? 0), href: "/jobs?status=READY_FOR_PICKUP", color: "text-[var(--accent)]" },
           ].map(t => (
