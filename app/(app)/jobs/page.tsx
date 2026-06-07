@@ -638,6 +638,65 @@ export default async function JobsPage({
         </div>
       ) : null}
 
+      {/* ── Desktop pipeline bar (hidden on mobile) ── */}
+      {!isExternalTech && (() => {
+        const PIPELINE_STATUSES: Array<{ key: ReturnType<typeof normalizeJobStatus>; label: string; color: string }> = [
+          { key: "RECEIVED",          label: "Received",    color: "bg-slate-400"  },
+          { key: "DIAGNOSING",        label: "Diagnosing",  color: "bg-blue-500"   },
+          { key: "REFERRED",          label: "Referred",    color: "bg-purple-500" },
+          { key: "AWAITING_APPROVAL", label: "Awaiting",    color: "bg-amber-500"  },
+          { key: "IN_REPAIR",         label: "In Repair",   color: "bg-sky-500"    },
+          { key: "READY_FOR_PICKUP",  label: "Ready",       color: "bg-emerald-500"},
+        ];
+        const activeTotal = PIPELINE_STATUSES.reduce((s, p) => s + (uiStatusCountMap.get(p.key) ?? 0), 0);
+        if (activeTotal === 0) return null;
+        const overdueCount = uiStatusCountMap.get("RECEIVED") ?? 0; // rough proxy — overdue already has a filter
+        return (
+          <div className="panel-shadow hidden overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)] lg:block mb-0">
+            <div className="px-4 pt-3 pb-2">
+              <div className="flex items-center justify-between mb-1.5">
+                <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
+                  Active Pipeline — {activeTotal} open job{activeTotal !== 1 ? "s" : ""}
+                </p>
+                <Link href={overdueChipHref} className="text-[11px] font-semibold text-amber-500 hover:underline">
+                  {filters.overdue === "1" ? "← all jobs" : "View overdue →"}
+                </Link>
+              </div>
+              {/* Proportional bar */}
+              <div className="flex h-2 w-full overflow-hidden rounded-full bg-[var(--panel-strong)]">
+                {PIPELINE_STATUSES.map((p) => {
+                  const cnt = uiStatusCountMap.get(p.key) ?? 0;
+                  if (cnt === 0) return null;
+                  return (
+                    <Link
+                      key={p.key}
+                      href={statusChipHref(p.key)}
+                      title={`${p.label}: ${cnt}`}
+                      style={{ width: `${Math.round((cnt / activeTotal) * 100)}%` }}
+                      className={`h-full ${p.color} opacity-80 hover:opacity-100 transition-opacity`}
+                    />
+                  );
+                })}
+              </div>
+              {/* Labels */}
+              <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1">
+                {PIPELINE_STATUSES.map((p) => {
+                  const cnt = uiStatusCountMap.get(p.key) ?? 0;
+                  if (cnt === 0) return null;
+                  return (
+                    <Link key={p.key} href={statusChipHref(p.key)} className="flex items-center gap-1 hover:opacity-80 transition-opacity">
+                      <span className={`h-2 w-2 rounded-full ${p.color}`} />
+                      <span className="text-[11px] text-[var(--ink-muted)]">{p.label}</span>
+                      <span className="text-[11px] font-bold text-[var(--ink)]">{cnt}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
       {/* ── Desktop filter bar (hidden on mobile) ── */}
       <div className="panel-shadow hidden overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)] lg:block">
         {/* Row: view toggle | status chips | actions */}
