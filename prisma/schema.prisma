@@ -669,6 +669,9 @@ model Job {
 
   @@index([orgId])
   @@index([orgId, status])
+  @@index([orgId, completedAt])
+  @@index([orgId, receivedAt])
+  @@index([orgId, repairPath, status])
   @@index([deviceId])
   @@index([clientId])
   @@index([createdById])
@@ -745,6 +748,7 @@ model Payment {
   createdAt DateTime @default(now())
 
   @@index([orgId, receivedAt])
+  @@index([orgId, kind, receivedAt])
   @@index([invoiceId])
   @@index([saleId])
 }

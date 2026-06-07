@@ -34,16 +34,25 @@ type SearchParams = {
   mine?: string;
 };
 
+const jobListSelect = {
+  id: true, jobNumber: true, status: true, repairPath: true,
+  receivedAt: true, updatedAt: true, completedAt: true,
+  clientBill: true, clientPaid: true, externalPaid: true,
+  externalTechFee: true, externalTechBill: true,
+  deviceType: true, brand: true, model: true, serialOrImei: true,
+  clientId: true, deviceId: true, assignedToId: true,
+  issueDescription: true, diagnosisNotes: true,
+  client:     { select: { id: true, fullName: true } },
+  assignedTo: { select: { id: true, name: true } },
+  device:     { select: { id: true, deviceType: true, brand: true, model: true } },
+} as const;
+
 type JobWithClient = Prisma.JobGetPayload<{
-  include: { client: true; assignedTo: true; device: true };
+  select: typeof jobListSelect;
 }> & {
   oneTimeExternalAssignment?: { technicianName: string } | null;
 };
-type JobWithoutClient = Prisma.JobGetPayload<{
-  include: { assignedTo: true; device: true };
-}> & {
-  oneTimeExternalAssignment?: { technicianName: string } | null;
-};
+type JobWithoutClient = JobWithClient;
 
 const supportsOneTimeExternal = Boolean(
   Prisma.dmmf.datamodel.models
@@ -221,17 +230,9 @@ export default async function JobsPage({
             : {}),
         };
 
-  const includeBase =
-    user.role === "TECHNICIAN_EXTERNAL"
-      ? ({ assignedTo: true, device: true } as const)
-      : ({ client: true, assignedTo: true, device: true } as const);
-
-  const includeWithOneTime = supportsOneTimeExternal
-    ? ({
-        ...includeBase,
-        oneTimeExternalAssignment: { select: { technicianName: true } },
-      } as const)
-    : includeBase;
+  const selectWithOneTime = supportsOneTimeExternal
+    ? { ...jobListSelect, oneTimeExternalAssignment: { select: { technicianName: true } } }
+    : jobListSelect;
 
   let jobs: Array<JobWithClient | JobWithoutClient> = [];
   let total = 0;
@@ -239,7 +240,7 @@ export default async function JobsPage({
   try {
     const jobsResult = await prisma.job.findMany({
       where,
-      include: includeWithOneTime,
+      select: selectWithOneTime,
       orderBy,
       skip: (page - 1) * pageSize,
       take: pageSize,
@@ -337,7 +338,7 @@ export default async function JobsPage({
           "IN_EXTERNAL_REPAIR", "WAITING_FOR_PARTS", "RETURNED_FROM_EXTERNAL",
         ]) as JobStatus[]);
     const boardWhere = { ...where, status: { in: boardActiveDbStatuses } };
-    const rawBoard = await prisma.job.findMany({ where: boardWhere, include: includeWithOneTime, orderBy: { receivedAt: "desc" }, take: 200 });
+    const rawBoard = await prisma.job.findMany({ where: boardWhere, select: selectWithOneTime, orderBy: { receivedAt: "desc" }, take: 200 });
     const fallbackFields = (j: (typeof rawBoard)[0]) => j as typeof j & { deviceType?: string; brand?: string | null; model?: string | null };
     boardRows = rawBoard.map((job) => ({
       id: job.id,
