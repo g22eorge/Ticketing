@@ -2024,12 +2024,16 @@ async function runDbFix() {
     }
   }
 
-  // CashierShift — ensure posSessionId column exists
+  // CashierShift — ensure posSessionId + shiftPin columns exist
   if (await tableExists("CashierShift")) {
     const cscols = await tableColumns("CashierShift");
     if (!cscols.has("posSessionId")) {
       await prisma.$executeRawUnsafe(`ALTER TABLE "CashierShift" ADD COLUMN "posSessionId" TEXT`);
       changes.push({ kind: "alter_table", detail: "Added CashierShift.posSessionId" });
+    }
+    if (!cscols.has("shiftPin")) {
+      await prisma.$executeRawUnsafe(`ALTER TABLE "CashierShift" ADD COLUMN "shiftPin" TEXT`);
+      changes.push({ kind: "alter_table", detail: "Added CashierShift.shiftPin" });
     }
   }
 
