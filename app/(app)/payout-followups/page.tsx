@@ -373,42 +373,64 @@ export default async function PayoutFollowupsPage({
   const thClass = "px-4 py-2.5 text-left text-[12px] font-bold uppercase tracking-[0.15em] text-[var(--ink-muted)]";
   const tdClass = "px-4 py-2.5";
 
+  const totalReceivable = repairReceivable + invoiceReceivable;
+  const totalPayable    = billPayable + _techPayoutDue;
+
   return (
     <div className="space-y-4">
-      {/* Page header */}
-      <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <p className="text-[12px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Finance</p>
-            <p className="text-base font-semibold text-[var(--ink)]">Collections &amp; Payouts</p>
-            <p className="mt-0.5 text-xs text-[var(--ink-muted)]">
-              Collect client payments inline · pay external techs · track supplier bills.
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {canSeeRepairs && (
-              <div className="rounded-lg border border-amber-400/30 bg-amber-500/10 px-3 py-1.5 text-xs font-semibold text-amber-700 dark:text-amber-400">
-                {repairSummary._count.id} repair{repairSummary._count.id !== 1 ? "s" : ""} owed · {formatMoneyCompact(repairReceivable, currency)}
-              </div>
-            )}
-            {canSeeInvoices && (
-              <div className="rounded-lg border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-semibold text-violet-700 dark:border-violet-800 dark:bg-violet-950/40 dark:text-violet-400">
-                {invoiceSummary._count.id} invoice{invoiceSummary._count.id !== 1 ? "s" : ""} outstanding · {formatMoneyCompact(invoiceReceivable, currency)}
-              </div>
-            )}
-            {canSeeBills && (
-              <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-700 dark:border-rose-800 dark:bg-rose-950/40 dark:text-rose-400">
-                {billSummary._count.id} bill{billSummary._count.id !== 1 ? "s" : ""} payable · {formatMoneyCompact(billPayable, currency)}
-              </div>
-            )}
-            {canSeeRepairs && (
-              <div className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-400">
-                {techSummary._count.id} tech payout{techSummary._count.id !== 1 ? "s" : ""} pending
-              </div>
-            )}
-          </div>
+      {/* Cash position header */}
+      <div className="overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
+        <div className="px-4 pt-3 pb-1">
+          <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Finance · Collections &amp; Payouts</p>
         </div>
-      </section>
+        {/* KPI strip */}
+        <div className="grid grid-cols-2 divide-x divide-y divide-[var(--line)] sm:grid-cols-4 sm:divide-y-0">
+          {canSeeRepairs && (
+            <div className="px-4 py-3">
+              <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Repair Collections</p>
+              <p className="mt-1 text-[20px] font-black tabular-nums leading-tight text-amber-500">{formatMoneyCompact(repairReceivable, currency)}</p>
+              <p className="mt-0.5 text-[12px] text-[var(--ink-muted)]">{repairSummary._count.id} job{repairSummary._count.id !== 1 ? "s" : ""} pending</p>
+            </div>
+          )}
+          {canSeeInvoices && (
+            <div className="px-4 py-3">
+              <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Invoice Receivables</p>
+              <p className="mt-1 text-[20px] font-black tabular-nums leading-tight text-violet-500">{formatMoneyCompact(invoiceReceivable, currency)}</p>
+              <p className="mt-0.5 text-[12px] text-[var(--ink-muted)]">{invoiceSummary._count.id} invoice{invoiceSummary._count.id !== 1 ? "s" : ""} outstanding</p>
+            </div>
+          )}
+          {canSeeBills && (
+            <div className="px-4 py-3">
+              <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Supplier Bills Due</p>
+              <p className="mt-1 text-[20px] font-black tabular-nums leading-tight text-rose-500">{formatMoneyCompact(billPayable, currency)}</p>
+              <p className="mt-0.5 text-[12px] text-[var(--ink-muted)]">{billSummary._count.id} bill{billSummary._count.id !== 1 ? "s" : ""} payable</p>
+            </div>
+          )}
+          {canSeeRepairs && (
+            <div className="px-4 py-3">
+              <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Tech Payouts Pending</p>
+              <p className="mt-1 text-[20px] font-black tabular-nums leading-tight text-sky-500">{formatMoneyCompact(_techPayoutDue, currency)}</p>
+              <p className="mt-0.5 text-[12px] text-[var(--ink-muted)]">{techSummary._count.id} payout{techSummary._count.id !== 1 ? "s" : ""}</p>
+            </div>
+          )}
+        </div>
+        {/* Net position bar */}
+        {(totalReceivable > 0 || totalPayable > 0) && (
+          <div className="border-t border-[var(--line)] px-4 py-2.5 flex items-center justify-between gap-4 flex-wrap">
+            <div className="flex items-center gap-4">
+              <span className="text-[12px] text-[var(--ink-muted)]">
+                <span className="font-bold text-emerald-500">{formatMoneyCompact(totalReceivable, currency)}</span> owed to you
+              </span>
+              <span className="text-[12px] text-[var(--ink-muted)]">
+                <span className="font-bold text-rose-500">{formatMoneyCompact(totalPayable, currency)}</span> you owe
+              </span>
+            </div>
+            <span className={`text-[12px] font-bold ${totalReceivable >= totalPayable ? "text-emerald-500" : "text-rose-500"}`}>
+              Net {totalReceivable >= totalPayable ? "+" : "−"}{formatMoneyCompact(Math.abs(totalReceivable - totalPayable), currency)}
+            </span>
+          </div>
+        )}
+      </div>
 
       {/* Quick links */}
       <div className="flex flex-wrap gap-2 text-xs">

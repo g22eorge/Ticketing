@@ -240,10 +240,10 @@ export default async function PosPage() {
               {sales.map((s) => {
                 const canDeleteSale = user.role === "ADMIN" && s.status === "OPEN" && !s.invoicedAt && s._count.payments === 0 && s._count.creditNotes === 0 && s._count.refunds === 0 && s._count.deliveryNotes === 0;
                 const statusCls = s.status === "PAID"
-                  ? "border-emerald-500/30 bg-emerald-500/15 text-emerald-700"
+                  ? "border-emerald-500/30 bg-emerald-500/15 text-emerald-700 dark:text-emerald-400"
                   : s.status === "VOID"
-                    ? "border-red-500/20 bg-red-500/10 text-red-600"
-                    : "border-amber-400/30 bg-amber-400/15 text-amber-700";
+                    ? "border-red-500/20 bg-red-500/10 text-red-600 dark:text-red-400"
+                    : "border-amber-400/30 bg-amber-400/15 text-amber-700 dark:text-amber-400";
                 return (
                   <div key={`m-${s.id}`} className="px-4 py-3">
                     <div className="mb-1.5 flex items-center justify-between gap-2">
@@ -292,10 +292,10 @@ export default async function PosPage() {
                         <td className="px-4 py-3">
                           <span className={`rounded-full border px-2 py-0.5 text-[13px] font-semibold ${
                             s.status === "PAID"
-                              ? "border-emerald-500/30 bg-emerald-500/15 text-emerald-700"
+                              ? "border-emerald-500/30 bg-emerald-500/15 text-emerald-700 dark:text-emerald-400"
                               : s.status === "VOID"
-                                ? "border-red-500/20 bg-red-500/10 text-red-600"
-                                : "border-amber-400/30 bg-amber-400/15 text-amber-700"
+                                ? "border-red-500/20 bg-red-500/10 text-red-600 dark:text-red-400"
+                                : "border-amber-400/30 bg-amber-400/15 text-amber-700 dark:text-amber-400"
                           }`}>
                             {s.status}
                           </span>

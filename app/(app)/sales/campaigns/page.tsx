@@ -14,10 +14,10 @@ const CAMPAIGN_STATUSES: CampaignStatus[] = ["DRAFT", "ACTIVE", "PAUSED", "COMPL
 
 const STATUS_STYLE: Record<CampaignStatus, string> = {
   DRAFT:     "bg-[var(--panel-strong)] text-[var(--ink-muted)]",
-  ACTIVE:    "bg-green-500/10 text-green-700",
-  PAUSED:    "bg-amber-500/10 text-amber-700",
-  COMPLETED: "bg-blue-500/10 text-blue-700",
-  CANCELLED: "bg-red-500/10 text-red-700",
+  ACTIVE:    "bg-green-500/10 text-green-700 dark:text-green-400",
+  PAUSED:    "bg-amber-500/10 text-amber-700 dark:text-amber-400",
+  COMPLETED: "bg-blue-500/10 text-blue-700 dark:text-blue-400",
+  CANCELLED: "bg-red-500/10 text-red-700 dark:text-red-400",
 };
 
 function CampaignTypeIcon({ type, className = "h-4 w-4" }: { type: CampaignType; className?: string }) {
@@ -52,10 +52,10 @@ function CampaignTypeIcon({ type, className = "h-4 w-4" }: { type: CampaignType;
 
 const CONTACT_STATUS_STYLE: Record<CampaignContactStatus, string> = {
   PENDING:   "bg-[var(--panel-strong)] text-[var(--ink-muted)]",
-  SENT:      "bg-blue-500/10 text-blue-700",
-  OPENED:    "bg-green-500/10 text-green-700",
-  RESPONDED: "bg-purple-500/10 text-purple-700",
-  OPTED_OUT: "bg-red-500/10 text-red-700",
+  SENT:      "bg-blue-500/10 text-blue-700 dark:text-blue-400",
+  OPENED:    "bg-green-500/10 text-green-700 dark:text-green-400",
+  RESPONDED: "bg-purple-500/10 text-purple-700 dark:text-purple-400",
+  OPTED_OUT: "bg-red-500/10 text-red-700 dark:text-red-400",
 };
 
 export const dynamic = "force-dynamic";
@@ -213,7 +213,7 @@ export default async function CampaignsPage({ searchParams }: { searchParams: Pr
         </div>
         <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
           <p className="text-[12px] font-bold uppercase tracking-wide text-[var(--ink-muted)]">Active</p>
-          <p className="mt-1 text-xl font-bold tabular-nums text-green-600">{totalActive}</p>
+          <p className="mt-1 text-xl font-bold tabular-nums text-green-600 dark:text-green-400">{totalActive}</p>
           <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">currently running</p>
         </div>
         <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
@@ -400,7 +400,7 @@ export default async function CampaignsPage({ searchParams }: { searchParams: Pr
                             <div className="mt-1 flex flex-wrap gap-x-3 text-[13px] text-[var(--ink-muted)]">
                               {cc.sentAt && <span>Sent: {new Date(cc.sentAt).toLocaleDateString("en-GB")}</span>}
                               {cc.openedAt && <span>Opened: {new Date(cc.openedAt).toLocaleDateString("en-GB")}</span>}
-                              {cc.repliedAt && <span className="text-purple-700">Replied: {new Date(cc.repliedAt).toLocaleDateString("en-GB")}</span>}
+                              {cc.repliedAt && <span className="text-purple-700 dark:text-purple-400">Replied: {new Date(cc.repliedAt).toLocaleDateString("en-GB")}</span>}
                             </div>
                             <form action={updateContactStatus} className="mt-2 flex gap-1">
                               <input type="hidden" name="id" value={cc.id} />
@@ -455,7 +455,7 @@ export default async function CampaignsPage({ searchParams }: { searchParams: Pr
                                   {cc.openedAt ? new Date(cc.openedAt).toLocaleString("en-GB", { dateStyle: "short", timeStyle: "short" }) : <span className="text-[var(--line)]">—</span>}
                                 </td>
                                 <td className="px-4 py-2.5 text-xs text-[var(--ink-muted)]">
-                                  {cc.repliedAt ? <span className="font-medium text-purple-700">{new Date(cc.repliedAt).toLocaleString("en-GB", { dateStyle: "short", timeStyle: "short" })}</span> : <span className="text-[var(--line)]">—</span>}
+                                  {cc.repliedAt ? <span className="font-medium text-purple-700 dark:text-purple-400">{new Date(cc.repliedAt).toLocaleString("en-GB", { dateStyle: "short", timeStyle: "short" })}</span> : <span className="text-[var(--line)]">—</span>}
                                 </td>
                                 <td className="px-3 py-2.5">
                                   <form action={updateContactStatus} className="flex gap-1">
