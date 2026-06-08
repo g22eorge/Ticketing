@@ -118,7 +118,6 @@ export default async function PurchaseOrdersPage() {
                   const receivedQty = po.items.reduce((sum, item) => sum + item.qtyReceived, 0);
                   const value = po.items.reduce((sum, item) => sum + item.qtyOrdered * item.unitCost, 0);
                   const isOverdue = ["ORDERED", "PARTIAL"].includes(po.status) && po.expectedAt && po.expectedAt < now;
-                  const canDelete = po.status !== "RECEIVED" && receivedQty === 0 && po._count.goodsReceivedNotes === 0 && po._count.supplierBills === 0 && po._count.purchaseRequests === 0;
                   return (
                     <tr key={po.id} className="hover:bg-[var(--panel-strong)]/40">
                       <td className="px-3 py-2">
@@ -147,14 +146,10 @@ export default async function PurchaseOrdersPage() {
                           ) : null}
                           <Link href={`/api/procurement/documents/purchase-order/${po.id}`} target="_blank" className="rounded-md border border-[var(--line)] px-2 py-1 text-xs font-semibold text-[var(--ink-muted)] hover:text-[var(--accent)]">PDF</Link>
                           <Link href={`/inventory/purchase-orders/${po.id}`} className="rounded-md border border-[var(--line)] px-2 py-1 text-xs font-semibold text-[var(--ink)] hover:text-[var(--accent)]">Open</Link>
-                          {canDelete ? (
-                            <form action={deletePurchaseOrderAction}>
-                              <input type="hidden" name="id" value={po.id} />
-                              <button type="submit" className="rounded-md border border-red-500/25 bg-red-500/10 px-2 py-1 text-xs font-semibold text-red-600">Delete</button>
-                            </form>
-                          ) : (
-                            <span className="rounded-md border border-[var(--line)] px-2 py-1 text-xs font-semibold text-[var(--ink-muted)]">Locked</span>
-                          )}
+                          <form action={deletePurchaseOrderAction}>
+                            <input type="hidden" name="id" value={po.id} />
+                            <button type="submit" className="rounded-md border border-red-500/25 bg-red-500/10 px-2 py-1 text-xs font-semibold text-red-600">Delete</button>
+                          </form>
                         </div>
                       </td>
                     </tr>

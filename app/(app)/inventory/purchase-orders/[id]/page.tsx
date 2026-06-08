@@ -62,7 +62,6 @@ export default async function PurchaseOrderDetailPage({
   const receivedRatio = orderedQty > 0 ? Math.min(100, Math.round((receivedQty / orderedQty) * 100)) : 0;
   const canReceive = ["ORDERED", "PARTIAL"].includes(po.status);
   const canCancel = !["RECEIVED", "CANCELLED"].includes(po.status) && receivedQty === 0;
-  const canDelete = po.status !== "RECEIVED" && receivedQty === 0 && po.goodsReceivedNotes.length === 0 && po._count.supplierBills === 0 && po._count.purchaseRequests === 0;
   const isOverdue = canReceive && po.expectedAt && po.expectedAt < new Date();
 
   const locations = await prisma.stockLocation.findMany({
@@ -101,14 +100,10 @@ export default async function PurchaseOrderDetailPage({
                 <button type="submit" className="rounded-md border border-red-500/25 bg-red-500/10 px-2.5 py-1.5 text-xs font-semibold text-red-600">Cancel</button>
               </form>
             ) : null}
-            {canDelete ? (
-              <form action={deletePurchaseOrderAction}>
-                <input type="hidden" name="id" value={po.id} />
-                <button type="submit" className="rounded-md border border-red-500/25 bg-red-500/10 px-2.5 py-1.5 text-xs font-semibold text-red-600">Delete</button>
-              </form>
-            ) : (
-              <span className="rounded-md border border-[var(--line)] px-2.5 py-1.5 text-xs font-semibold text-[var(--ink-muted)]">Locked</span>
-            )}
+            <form action={deletePurchaseOrderAction}>
+              <input type="hidden" name="id" value={po.id} />
+              <button type="submit" className="rounded-md border border-red-500/25 bg-red-500/10 px-2.5 py-1.5 text-xs font-semibold text-red-600">Delete</button>
+            </form>
           </div>
         </div>
       </div>

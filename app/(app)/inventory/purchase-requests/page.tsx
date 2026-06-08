@@ -72,12 +72,10 @@ export default async function PurchaseRequestsPage() {
                   <td className="px-4 py-3 text-right">
                     <div className="flex justify-end gap-1.5">
                       <Link href={`/inventory/purchase-requests/${request.id}`} className="inline-flex items-center rounded-lg border border-[var(--line)] px-2.5 py-1.5 text-xs font-medium text-[var(--ink)] transition hover:border-[var(--accent)]/50 hover:text-[var(--accent)]">View</Link>
-                      {!request.convertedPo ? (
-                        <form action={deletePurchaseRequestAction}>
-                          <input type="hidden" name="id" value={request.id} />
-                          <button type="submit" className="rounded-lg border border-red-500/25 bg-red-500/10 px-2.5 py-1.5 text-xs font-semibold text-red-600">Delete</button>
-                        </form>
-                      ) : null}
+                      <form action={deletePurchaseRequestAction}>
+                        <input type="hidden" name="id" value={request.id} />
+                        <button type="submit" className="rounded-lg border border-red-500/25 bg-red-500/10 px-2.5 py-1.5 text-xs font-semibold text-red-600">Delete</button>
+                      </form>
                     </div>
                   </td>
                 </tr>

@@ -37,6 +37,13 @@ const GROUPS: { label: string; tiles: Tile[] }[] = [
     label: "Suppliers & Procurement",
     tiles: [
       {
+        label: "Procurement Desk",
+        href: "/procurement",
+        icon: "M9 11l3 3L22 4|M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11",
+        color: "text-yellow-500",
+        description: "Review requests, POs, receiving, and supplier bills",
+      },
+      {
         label: "Suppliers",
         href: "/inventory/suppliers",
         icon: "M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2|M23 21v-2a4 4 0 0 1-3-3.87|M16 3.13a4 4 0 0 1 0 7.75|M9 7m-4 0a4 4 0 1 0 8 0a4 4 0 1 0-8 0",
@@ -92,6 +99,7 @@ export default async function StockOpsPage() {
       <div className="flex flex-wrap gap-2">
         {[
           { label: "← Inventory Items", href: "/inventory" },
+          { label: "Procurement Desk", href: "/procurement" },
           { label: "Purchase Requests", href: "/inventory/purchase-requests" },
           { label: "Purchase Orders",  href: "/inventory/purchase-orders"  },
         ].map((l) => (

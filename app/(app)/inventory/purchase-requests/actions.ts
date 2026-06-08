@@ -138,14 +138,15 @@ export async function deletePurchaseRequestAction(formData: FormData): Promise<v
 
   const request = await prisma.purchaseRequest.findFirst({
     where: { id, orgId },
-    select: { convertedPoId: true, status: true },
+    select: { convertedPoId: true },
   });
-  if (!request || request.convertedPoId || request.status === "CONVERTED") return;
+  if (!request) return;
 
   await prisma.purchaseRequest.delete({ where: { id } });
 
   revalidatePath("/inventory/purchase-requests");
   revalidatePath("/procurement");
+  if (request.convertedPoId) revalidatePath(`/inventory/purchase-orders/${request.convertedPoId}`);
   redirect("/inventory/purchase-requests");
 }
 

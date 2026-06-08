@@ -22,6 +22,7 @@ const nav = [
 
   // Stock & Supply — daily items + ops hub for less-frequent tasks
   { href: "/inventory",                   label: "Inventory Items",     group: "stock" as NavGroup, roles: ["ADMIN", "MANAGER", "TECH_MANAGER", "OPS", "TECHNICIAN_INTERNAL"] as const },
+  { href: "/procurement",                 label: "Procurement Desk",    group: "stock" as NavGroup, roles: ["ADMIN", "MANAGER", "TECH_MANAGER", "OPS"] as const },
   { href: "/inventory/purchase-requests", label: "Purchase Requests", group: "stock" as NavGroup, roles: ["ADMIN", "MANAGER", "TECH_MANAGER", "OPS"] as const },
   { href: "/inventory/purchase-orders",   label: "Purchase Orders",   group: "stock" as NavGroup, roles: ["ADMIN", "MANAGER", "OPS"] as const },
   { href: "/inventory/ops",               label: "Stock Hub",         group: "stock" as NavGroup, roles: ["ADMIN", "MANAGER", "TECH_MANAGER", "OPS"] as const },

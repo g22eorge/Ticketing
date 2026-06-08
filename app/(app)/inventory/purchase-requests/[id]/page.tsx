@@ -30,7 +30,6 @@ export default async function PurchaseRequestDetailPage({ params }: { params: Pr
   const total = request.items.reduce((sum, item) => sum + item.quantity * (item.estimatedUnitCost ?? 0), 0);
   const canReview = ["DRAFT", "SUBMITTED", "APPROVED"].includes(request.status);
   const canConvert = request.status === "APPROVED";
-  const canDelete = !request.convertedPoId && request.status !== "CONVERTED";
 
   return (
     <div className="max-w-4xl space-y-6">
@@ -44,14 +43,12 @@ export default async function PurchaseRequestDetailPage({ params }: { params: Pr
           <Link href={`/api/procurement/documents/purchase-request/${request.id}`} target="_blank" className="rounded-lg border border-[var(--line)] px-3 py-1.5 text-xs font-semibold text-[var(--ink)] transition hover:border-[var(--accent)]/50 hover:text-[var(--accent)]">
             Print / PDF
           </Link>
-          {canDelete ? (
-            <form action={deletePurchaseRequestAction}>
-              <input type="hidden" name="id" value={request.id} />
-              <button type="submit" className="rounded-lg border border-red-500/25 bg-red-500/10 px-3 py-1.5 text-xs font-semibold text-red-600">
-                Delete
-              </button>
-            </form>
-          ) : null}
+          <form action={deletePurchaseRequestAction}>
+            <input type="hidden" name="id" value={request.id} />
+            <button type="submit" className="rounded-lg border border-red-500/25 bg-red-500/10 px-3 py-1.5 text-xs font-semibold text-red-600">
+              Delete
+            </button>
+          </form>
           <span className="rounded-full border border-sky-400/30 bg-sky-500/10 px-3 py-1 text-xs font-semibold text-sky-700 dark:text-sky-400">{request.status}</span>
         </div>
       </div>

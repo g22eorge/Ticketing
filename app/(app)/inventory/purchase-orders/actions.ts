@@ -197,27 +197,17 @@ export async function deletePurchaseOrderAction(formData: FormData): Promise<voi
   const po = await prisma.purchaseOrder.findFirst({
     where: { id, orgId },
     select: {
-      status: true,
-      items: { select: { qtyReceived: true } },
-      _count: {
-        select: {
-          goodsReceivedNotes: true,
-          supplierBills: true,
-          purchaseRequests: true,
-        },
-      },
+      id: true,
     },
   });
   if (!po) return;
-
-  const hasReceivedStock = po.items.some((item) => item.qtyReceived > 0);
-  const hasLinkedDocuments = po._count.goodsReceivedNotes > 0 || po._count.supplierBills > 0 || po._count.purchaseRequests > 0;
-  if (po.status === "RECEIVED" || hasReceivedStock || hasLinkedDocuments) return;
 
   await prisma.purchaseOrder.delete({ where: { id } });
 
   revalidatePath("/procurement");
   revalidatePath("/inventory/purchase-orders");
+  revalidatePath("/inventory/goods-received");
+  revalidatePath("/inventory/supplier-bills");
   redirect("/inventory/purchase-orders");
 }
 
