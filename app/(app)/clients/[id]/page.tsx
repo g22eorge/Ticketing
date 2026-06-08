@@ -17,6 +17,7 @@ const updateClientSchema = z.object({
   fullName: z.string().min(2),
   email: z.string().optional(),
   organization: z.string().optional(),
+  address: z.string().optional(),
   notes: z.string().optional(),
 });
 
@@ -130,6 +131,7 @@ export default async function ClientDetailPage({
       fullName: String(formData.get("fullName") ?? ""),
       email: String(formData.get("email") ?? ""),
       organization: String(formData.get("organization") ?? ""),
+      address: String(formData.get("address") ?? ""),
       notes: String(formData.get("notes") ?? ""),
     });
     if (!parsed.success) return;
@@ -140,6 +142,7 @@ export default async function ClientDetailPage({
         fullName: sanitizeText(parsed.data.fullName),
         email: sanitizeOptionalText(parsed.data.email),
         organization: sanitizeOptionalText(parsed.data.organization),
+        address: sanitizeOptionalText(parsed.data.address),
         notes: sanitizeOptionalText(parsed.data.notes),
       },
     });
@@ -207,6 +210,7 @@ export default async function ClientDetailPage({
               <a href={`tel:${client.phone}`} className="transition hover:text-[var(--accent)]">{client.phone}</a>
               {client.email ? <><span className="opacity-40">·</span><span>{client.email}</span></> : null}
               {client.organization ? <><span className="opacity-40">·</span><span className="truncate">{client.organization}</span></> : null}
+              {client.address ? <><span className="opacity-40">·</span><span className="truncate">{client.address}</span></> : null}
             </div>
             <p className="mt-0.5 text-[12px] text-[var(--ink-muted)]/60">Joined {formatEATDate(client.createdAt)} · last activity {formatEATDateTime(latestActivity)}</p>
           </div>
@@ -237,7 +241,7 @@ export default async function ClientDetailPage({
       <form action={updateClient} className="panel-shadow space-y-4 rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
         <div>
           <p className="text-xs uppercase tracking-[0.16em] text-[var(--ink-muted)]">Client Profile</p>
-          <p className="mt-1 text-sm text-[var(--ink-muted)]">Update basic contact details and internal notes.</p>
+          <p className="mt-1 text-sm text-[var(--ink-muted)]">Update contact details, address, and internal notes.</p>
         </div>
 
         <div className="grid gap-3 md:grid-cols-2">
@@ -267,6 +271,16 @@ export default async function ClientDetailPage({
               disabled={!canEdit}
               name="organization"
               defaultValue={client.organization ?? ""}
+              className={controlClass}
+            />
+          </label>
+
+          <label className="space-y-1 md:col-span-2">
+            <span className="text-xs font-medium text-[var(--ink-muted)]">Address / location</span>
+            <input
+              disabled={!canEdit}
+              name="address"
+              defaultValue={client.address ?? ""}
               className={controlClass}
             />
           </label>

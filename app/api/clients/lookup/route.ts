@@ -24,11 +24,12 @@ export async function GET(req: NextRequest) {
           { phone: { contains: q } },
           { email: { contains: q } },
           { organization: { contains: q } },
+          { address: { contains: q } },
         ],
       },
       orderBy: { updatedAt: "desc" },
       take: 8,
-      select: { id: true, fullName: true, phone: true, email: true, organization: true },
+      select: { id: true, fullName: true, phone: true, email: true, organization: true, address: true },
     });
 
     return NextResponse.json({ clients });

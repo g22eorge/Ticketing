@@ -509,6 +509,7 @@ model Client {
   phone        String
   email        String?
   organization String?
+  address      String?
   notes        String?
   orgId        String?
   org          Organization? @relation(fields: [orgId], references: [id], onDelete: SetNull)
@@ -2722,6 +2723,8 @@ model Quotation {
   subtotal    Float @default(0)
   discountAmount Float @default(0)
   vatAmount      Float @default(0)
+  taxLabel       String?
+  taxRate        Float?
   totalAmount Float @default(0)
   notes       String?
   validUntil  DateTime?

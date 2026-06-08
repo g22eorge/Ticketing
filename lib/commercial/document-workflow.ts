@@ -145,6 +145,7 @@ export async function ensureInvoiceFromQuotation(tx: Tx, params: { orgId: string
 
   const invoiceNumber = await nextAvailableInvoiceNumber(tx);
   const totalAmount = quotation.totalAmount;
+  const taxableSubtotal = quotation.subtotal > 0 ? quotation.subtotal : totalAmount;
   const invoice = await tx.invoice.create({
     data: {
       orgId: params.orgId,
@@ -159,16 +160,22 @@ export async function ensureInvoiceFromQuotation(tx: Tx, params: { orgId: string
       notes: `Converted from quotation ${quotation.quoteNumber}`,
       lines: {
         create: quotation.items.length > 0
-          ? quotation.items.map((item) => ({
-              orgId: params.orgId,
-              sourceType: "QuotationItem",
-              sourceId: item.id,
-              description: item.description,
-              quantity: item.quantity,
-              unitPrice: item.unitPrice,
-              discountAmount: item.discount,
-              lineTotal: item.lineTotal,
-            }))
+          ? quotation.items.map((item) => {
+              const taxAmount = quotation.vatAmount > 0 && taxableSubtotal > 0
+                ? quotation.vatAmount * (item.lineTotal / taxableSubtotal)
+                : 0;
+              return {
+                orgId: params.orgId,
+                sourceType: "QuotationItem",
+                sourceId: item.id,
+                description: item.description,
+                quantity: item.quantity,
+                unitPrice: item.unitPrice,
+                discountAmount: item.discount,
+                taxAmount,
+                lineTotal: item.lineTotal,
+              };
+            })
           : [{
               orgId: params.orgId,
               sourceType: "Quotation",
@@ -176,6 +183,7 @@ export async function ensureInvoiceFromQuotation(tx: Tx, params: { orgId: string
               description: `Quotation ${quotation.quoteNumber}`,
               quantity: 1,
               unitPrice: totalAmount,
+              taxAmount: quotation.vatAmount,
               lineTotal: totalAmount,
             }],
       },

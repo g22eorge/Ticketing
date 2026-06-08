@@ -157,7 +157,11 @@ async function getViaRaw(orgId?: string) {
     // Try org-specific row first (id = orgId), then legacy singleton
     const rows = orgId
       ? await prisma.$queryRaw<Array<Record<string, unknown>>>`
-          SELECT * FROM "DocumentBrandingSettings" WHERE id = ${orgId} OR (orgId = ${orgId}) LIMIT 1
+          SELECT *
+          FROM "DocumentBrandingSettings"
+          WHERE id = ${orgId} OR orgId = ${orgId} OR id = 'singleton'
+          ORDER BY CASE WHEN id = ${orgId} OR orgId = ${orgId} THEN 0 ELSE 1 END
+          LIMIT 1
         `
       : await prisma.$queryRaw<Array<Record<string, unknown>>>`
           SELECT * FROM "DocumentBrandingSettings" WHERE id = 'singleton' LIMIT 1
@@ -185,6 +189,7 @@ async function getViaRaw(orgId?: string) {
           ${defaultBranding.invoiceTemplateKey}, ${defaultBranding.quotationTemplateKey}, ${defaultBranding.jobCardTemplateKey}, ${defaultBranding.receiptTemplateKey},
           CURRENT_TIMESTAMP
         )
+        ON CONFLICT(id) DO NOTHING
       `;
       return defaultBranding;
     }

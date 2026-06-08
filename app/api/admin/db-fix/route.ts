@@ -209,6 +209,50 @@ async function runCriticalPageSchemaRepair(changes: Array<{ kind: string; detail
     await addColumn("SupplierPayment", cols, "currency", "TEXT", "'UGX'");
     await addColumn("SupplierPayment", cols, "createdById", "TEXT");
   }
+
+  if (await tableExists("Client")) {
+    const cols = await tableColumns("Client");
+    await addColumn("Client", cols, "address", "TEXT");
+  }
+
+  if (await tableExists("Quotation")) {
+    const cols = await tableColumns("Quotation");
+    const hadQuotationNumber = cols.has("quotationNumber");
+    const hadQuoteNumber = cols.has("quoteNumber");
+    const hadTaxAmount = cols.has("taxAmount");
+    const hadVatAmount = cols.has("vatAmount");
+    await addColumn("Quotation", cols, "quoteNumber", "TEXT");
+    await addColumn("Quotation", cols, "jobId", "TEXT");
+    await addColumn("Quotation", cols, "approvedById", "TEXT");
+    await addColumn("Quotation", cols, "discountAmount", "REAL", "0");
+    await addColumn("Quotation", cols, "vatAmount", "REAL", "0");
+    await addColumn("Quotation", cols, "taxLabel", "TEXT");
+    await addColumn("Quotation", cols, "taxRate", "REAL");
+    await addColumn("Quotation", cols, "convertedToInvoiceId", "TEXT");
+    if (hadQuotationNumber && !hadQuoteNumber) {
+      await prisma.$executeRawUnsafe('UPDATE "Quotation" SET "quoteNumber" = "quotationNumber" WHERE "quoteNumber" IS NULL OR trim("quoteNumber") = \'\'');
+      changes.push({ kind: "data", detail: "Copied Quotation.quotationNumber to quoteNumber" });
+    }
+    if (hadTaxAmount && !hadVatAmount) {
+      await prisma.$executeRawUnsafe('UPDATE "Quotation" SET "vatAmount" = "taxAmount" WHERE "vatAmount" = 0');
+      changes.push({ kind: "data", detail: "Copied Quotation.taxAmount to vatAmount" });
+    }
+    await prisma.$executeRawUnsafe('UPDATE "Quotation" SET "quoteNumber" = "id" WHERE "quoteNumber" IS NULL OR trim("quoteNumber") = \'\'');
+    try { await prisma.$executeRawUnsafe(`CREATE UNIQUE INDEX IF NOT EXISTS "Quotation_quoteNumber_key" ON "Quotation"("quoteNumber")`); } catch {}
+    try { await prisma.$executeRawUnsafe(`CREATE UNIQUE INDEX IF NOT EXISTS "Quotation_convertedToInvoiceId_key" ON "Quotation"("convertedToInvoiceId") WHERE "convertedToInvoiceId" IS NOT NULL`); } catch {}
+  }
+
+  if (await tableExists("QuotationItem")) {
+    const cols = await tableColumns("QuotationItem");
+    const hadTotalPrice = cols.has("totalPrice");
+    const hadLineTotal = cols.has("lineTotal");
+    await addColumn("QuotationItem", cols, "discount", "REAL", "0");
+    await addColumn("QuotationItem", cols, "lineTotal", "REAL", "0");
+    if (hadTotalPrice && !hadLineTotal) {
+      await prisma.$executeRawUnsafe('UPDATE "QuotationItem" SET "lineTotal" = "totalPrice" WHERE "lineTotal" = 0');
+      changes.push({ kind: "data", detail: "Copied QuotationItem.totalPrice to lineTotal" });
+    }
+  }
 }
 
 async function runDbFix() {
@@ -1224,26 +1268,32 @@ async function runDbFix() {
     await prisma.$executeRawUnsafe(`CREATE TABLE "Quotation" (
       "id" TEXT NOT NULL PRIMARY KEY,
       "orgId" TEXT NOT NULL,
-      "quotationNumber" TEXT NOT NULL,
+      "quoteNumber" TEXT NOT NULL,
       "status" TEXT NOT NULL DEFAULT 'DRAFT',
       "clientId" TEXT,
       "leadId" TEXT,
+      "jobId" TEXT,
       "createdById" TEXT,
+      "approvedById" TEXT,
       "validUntil" DATETIME,
       "sentAt" DATETIME,
       "acceptedAt" DATETIME,
       "rejectedAt" DATETIME,
       "subtotal" REAL NOT NULL DEFAULT 0,
-      "taxAmount" REAL NOT NULL DEFAULT 0,
+      "discountAmount" REAL NOT NULL DEFAULT 0,
+      "vatAmount" REAL NOT NULL DEFAULT 0,
+      "taxLabel" TEXT,
+      "taxRate" REAL,
       "totalAmount" REAL NOT NULL DEFAULT 0,
-      "currency" TEXT NOT NULL DEFAULT 'KES',
+      "currency" TEXT NOT NULL DEFAULT 'UGX',
       "notes" TEXT,
-      "terms" TEXT,
+      "convertedToInvoiceId" TEXT,
       "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
       "updatedAt" DATETIME NOT NULL,
       CONSTRAINT "Quotation_orgId_fkey" FOREIGN KEY ("orgId") REFERENCES "Organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE
     )`);
-    await prisma.$executeRawUnsafe(`CREATE UNIQUE INDEX IF NOT EXISTS "Quotation_quotationNumber_key" ON "Quotation"("quotationNumber")`);
+    await prisma.$executeRawUnsafe(`CREATE UNIQUE INDEX IF NOT EXISTS "Quotation_quoteNumber_key" ON "Quotation"("quoteNumber")`);
+    await prisma.$executeRawUnsafe(`CREATE UNIQUE INDEX IF NOT EXISTS "Quotation_convertedToInvoiceId_key" ON "Quotation"("convertedToInvoiceId") WHERE "convertedToInvoiceId" IS NOT NULL`);
     await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "Quotation_orgId_status_idx" ON "Quotation"("orgId","status")`);
     changes.push({ kind: "create_table", detail: "Created Quotation" });
   }
@@ -1255,10 +1305,9 @@ async function runDbFix() {
       "description" TEXT NOT NULL,
       "quantity" REAL NOT NULL DEFAULT 1,
       "unitPrice" REAL NOT NULL DEFAULT 0,
-      "taxRate" REAL NOT NULL DEFAULT 0,
-      "totalPrice" REAL NOT NULL DEFAULT 0,
+      "discount" REAL NOT NULL DEFAULT 0,
+      "lineTotal" REAL NOT NULL DEFAULT 0,
       "partId" TEXT,
-      "sortOrder" INTEGER NOT NULL DEFAULT 0,
       "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
       CONSTRAINT "QuotationItem_quotationId_fkey" FOREIGN KEY ("quotationId") REFERENCES "Quotation" ("id") ON DELETE CASCADE ON UPDATE CASCADE
     )`);
@@ -2004,13 +2053,46 @@ async function runDbFix() {
     try { await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "Invoice_clientId_idx" ON "Invoice"("clientId")`); } catch {}
   }
 
-  // Quotation — ensure convertedToInvoiceId column exists
+  // Quotation — ensure current document columns exist
   if (await tableExists("Quotation")) {
     const qcols = await tableColumns("Quotation");
-    if (!qcols.has("convertedToInvoiceId")) {
-      await prisma.$executeRawUnsafe(`ALTER TABLE "Quotation" ADD COLUMN "convertedToInvoiceId" TEXT`);
-      try { await prisma.$executeRawUnsafe(`CREATE UNIQUE INDEX IF NOT EXISTS "Quotation_convertedToInvoiceId_key" ON "Quotation"("convertedToInvoiceId") WHERE "convertedToInvoiceId" IS NOT NULL`); } catch {}
-      changes.push({ kind: "alter_table", detail: "Added Quotation.convertedToInvoiceId" });
+    const addQuotationCol = async (name: string, type: string, dflt?: string) => {
+      if (qcols.has(name)) return;
+      const defaultClause = dflt ? ` DEFAULT ${dflt}` : "";
+      await prisma.$executeRawUnsafe(`ALTER TABLE "Quotation" ADD COLUMN "${name}" ${type}${defaultClause}`);
+      qcols.add(name);
+      changes.push({ kind: "alter_table", detail: `Added Quotation.${name}` });
+    };
+    const hadQuotationNumber = qcols.has("quotationNumber");
+    const hadQuoteNumber = qcols.has("quoteNumber");
+    const hadTaxAmount = qcols.has("taxAmount");
+    const hadVatAmount = qcols.has("vatAmount");
+    await addQuotationCol("quoteNumber", "TEXT");
+    await addQuotationCol("jobId", "TEXT");
+    await addQuotationCol("approvedById", "TEXT");
+    await addQuotationCol("discountAmount", "REAL", "0");
+    await addQuotationCol("vatAmount", "REAL", "0");
+    await addQuotationCol("taxLabel", "TEXT");
+    await addQuotationCol("taxRate", "REAL");
+    await addQuotationCol("convertedToInvoiceId", "TEXT");
+    if (hadQuotationNumber && !hadQuoteNumber) {
+      await prisma.$executeRawUnsafe('UPDATE "Quotation" SET "quoteNumber" = "quotationNumber" WHERE "quoteNumber" IS NULL OR trim("quoteNumber") = \'\'');
+      changes.push({ kind: "data", detail: "Copied Quotation.quotationNumber to quoteNumber" });
+    }
+    if (hadTaxAmount && !hadVatAmount) {
+      await prisma.$executeRawUnsafe('UPDATE "Quotation" SET "vatAmount" = "taxAmount" WHERE "vatAmount" = 0');
+      changes.push({ kind: "data", detail: "Copied Quotation.taxAmount to vatAmount" });
+    }
+    await prisma.$executeRawUnsafe('UPDATE "Quotation" SET "quoteNumber" = "id" WHERE "quoteNumber" IS NULL OR trim("quoteNumber") = \'\'');
+    try { await prisma.$executeRawUnsafe(`CREATE UNIQUE INDEX IF NOT EXISTS "Quotation_quoteNumber_key" ON "Quotation"("quoteNumber")`); } catch {}
+    try { await prisma.$executeRawUnsafe(`CREATE UNIQUE INDEX IF NOT EXISTS "Quotation_convertedToInvoiceId_key" ON "Quotation"("convertedToInvoiceId") WHERE "convertedToInvoiceId" IS NOT NULL`); } catch {}
+  }
+
+  if (await tableExists("Client")) {
+    const ccols = await tableColumns("Client");
+    if (!ccols.has("address")) {
+      await prisma.$executeRawUnsafe(`ALTER TABLE "Client" ADD COLUMN "address" TEXT`);
+      changes.push({ kind: "alter_table", detail: "Added Client.address" });
     }
   }
 

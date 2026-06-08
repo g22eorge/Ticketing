@@ -19,6 +19,7 @@ const createClientSchema = z.object({
   phone: z.string().min(3),
   email: z.string().optional(),
   organization: z.string().optional(),
+  address: z.string().optional(),
 });
 
 type SearchParams = {
@@ -53,6 +54,7 @@ export default async function ClientsPage({
             { phone: { contains: filters.q } },
             { email: { contains: filters.q } },
             { organization: { contains: filters.q } },
+            { address: { contains: filters.q } },
           ],
         }
       : {}),
@@ -119,6 +121,7 @@ export default async function ClientsPage({
       phone: String(formData.get("phone") ?? ""),
       email: String(formData.get("email") ?? ""),
       organization: String(formData.get("organization") ?? ""),
+      address: String(formData.get("address") ?? ""),
     });
 
     if (!parsed.success) {
@@ -147,6 +150,7 @@ export default async function ClientsPage({
         phone: normalizedPhone,
         email: sanitizeOptionalText(parsed.data.email),
         organization: sanitizeOptionalText(parsed.data.organization),
+        address: sanitizeOptionalText(parsed.data.address),
       },
     });
 
@@ -283,7 +287,7 @@ export default async function ClientsPage({
             <input
               name="q"
               defaultValue={filters.q}
-              placeholder="Name, phone or email…"
+              placeholder="Name, phone, email or address..."
               className="h-10 w-full rounded-2xl border border-[var(--line)] bg-[var(--panel-strong)] pl-9 pr-4 text-[13px] outline-none placeholder:text-[var(--ink-muted)]/50 focus:border-[var(--accent)]/60 focus:ring-2 focus:ring-[var(--accent)]/14"
             />
             {filters.q && (
@@ -353,7 +357,7 @@ export default async function ClientsPage({
               name="q"
               defaultValue={filters.q}
               aria-label="Search clients"
-              placeholder="Search by name, phone, email…"
+              placeholder="Search by name, phone, email, address..."
               className="min-w-0 flex-1 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-sm outline-none transition placeholder:text-[var(--ink-muted)] focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/15"
             />
             <button type="submit" className="btn-premium-secondary shrink-0 rounded-lg px-3 py-1.5 text-[12px] font-medium">Search</button>
@@ -381,6 +385,7 @@ export default async function ClientsPage({
                 <input name="phone" placeholder="Phone *" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2.5 text-sm outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/15" />
                 <input name="email" placeholder="Email" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2.5 text-sm outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/15" />
                 <input name="organization" placeholder="Organization" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2.5 text-sm outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/15" />
+                <input name="address" placeholder="Address / location" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2.5 text-sm outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/15 sm:col-span-2" />
               </div>
               <div className="mt-2 flex items-center gap-2">
                 <button type="submit" className="btn-premium rounded-lg px-4 py-2.5 text-[13px] font-bold">
@@ -443,6 +448,7 @@ export default async function ClientsPage({
                       <p className="mt-0.5 truncate text-[13px] text-[var(--ink-muted)]">
                         {client.phone}
                         {client.organization ? <> · <span className="opacity-80">{client.organization}</span></> : null}
+                        {client.address ? <> · <span className="opacity-80">{client.address}</span></> : null}
                         {client._count.jobs > 0
                           ? <> · <span className={client._count.jobs >= 3 ? "text-[var(--accent)] font-semibold" : ""}>{client._count.jobs} {client._count.jobs === 1 ? "job" : "jobs"}</span></>
                           : null}
@@ -521,6 +527,7 @@ export default async function ClientsPage({
                           <p className="truncate text-[12px] text-[var(--ink-muted)]">
                             {client.phone}
                             {client.organization ? <> · <span className="opacity-80">{client.organization}</span></> : null}
+                            {client.address ? <> · <span className="opacity-80">{client.address}</span></> : null}
                           </p>
                         </div>
                       </div>

@@ -263,11 +263,20 @@ function quotationLineTotal(item: { quantity: number; unitPrice: number; discoun
 }
 
 async function recalculateQuotationTotals(quotationId: string) {
-  const items = await prisma.quotationItem.findMany({ where: { quotationId } });
+  const [items, quotation] = await Promise.all([
+    prisma.quotationItem.findMany({ where: { quotationId } }),
+    prisma.quotation.findUnique({ where: { id: quotationId }, select: { subtotal: true, vatAmount: true, taxRate: true } }),
+  ]);
   const subtotal = items.reduce((sum, i) => sum + i.lineTotal, 0);
+  const inferredTaxRate = quotation?.taxRate ?? (
+    quotation && quotation.subtotal > 0 && quotation.vatAmount > 0
+      ? (quotation.vatAmount / quotation.subtotal) * 100
+      : 0
+  );
+  const vatAmount = inferredTaxRate > 0 ? subtotal * (inferredTaxRate / 100) : 0;
   await prisma.quotation.update({
     where: { id: quotationId },
-    data: { subtotal, totalAmount: subtotal },
+    data: { subtotal, vatAmount, totalAmount: subtotal + vatAmount },
   });
 }
 

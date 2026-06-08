@@ -117,6 +117,8 @@ if (process.env.NODE_ENV !== "production") {
 
 let paymentKindRepair: Promise<void> | null = null;
 let leadLostReasonRepair: Promise<void> | null = null;
+let clientAddressRepair: Promise<void> | null = null;
+let quotationTaxRepair: Promise<void> | null = null;
 
 function isMissingPaymentKindError(error: unknown) {
   return String(error).includes("no such column: main.Payment.kind")
@@ -127,6 +129,21 @@ function isMissingLeadLostReasonError(error: unknown) {
   return String(error).includes("no such column: main.Lead.lostReason")
     || String(error).includes("no such column: Lead.lostReason")
     || String(error).includes("no such column: lostReason");
+}
+
+function isMissingClientAddressError(error: unknown) {
+  return String(error).includes("no such column: main.Client.address")
+    || String(error).includes("no such column: Client.address")
+    || String(error).includes("no such column: address");
+}
+
+function isMissingQuotationTaxError(error: unknown) {
+  return String(error).includes("no such column: main.Quotation.taxLabel")
+    || String(error).includes("no such column: Quotation.taxLabel")
+    || String(error).includes("no such column: taxLabel")
+    || String(error).includes("no such column: main.Quotation.taxRate")
+    || String(error).includes("no such column: Quotation.taxRate")
+    || String(error).includes("no such column: taxRate");
 }
 
 function isDuplicateColumnError(error: unknown) {
@@ -164,6 +181,41 @@ async function ensureLeadLostReasonColumn() {
   return leadLostReasonRepair;
 }
 
+async function ensureClientAddressColumn() {
+  clientAddressRepair ??= basePrisma.$executeRawUnsafe(
+    `ALTER TABLE "Client" ADD COLUMN "address" TEXT`,
+  ).then(
+    () => undefined,
+    (error) => {
+      if (isDuplicateColumnError(error)) return undefined;
+      clientAddressRepair = null;
+      throw error;
+    },
+  );
+
+  return clientAddressRepair;
+}
+
+async function ensureQuotationTaxColumns() {
+  quotationTaxRepair ??= (async () => {
+    for (const statement of [
+      `ALTER TABLE "Quotation" ADD COLUMN "taxLabel" TEXT`,
+      `ALTER TABLE "Quotation" ADD COLUMN "taxRate" REAL`,
+    ]) {
+      try {
+        await basePrisma.$executeRawUnsafe(statement);
+      } catch (error) {
+        if (!isDuplicateColumnError(error)) throw error;
+      }
+    }
+  })().catch((error) => {
+    quotationTaxRepair = null;
+    throw error;
+  });
+
+  return quotationTaxRepair;
+}
+
 export const prisma = basePrisma.$extends({
   query: {
     payment: {
@@ -184,6 +236,28 @@ export const prisma = basePrisma.$extends({
         } catch (error) {
           if (!isMissingLeadLostReasonError(error)) throw error;
           await ensureLeadLostReasonColumn();
+          return query(args);
+        }
+      },
+    },
+    client: {
+      async $allOperations({ args, query }) {
+        try {
+          return await query(args);
+        } catch (error) {
+          if (!isMissingClientAddressError(error)) throw error;
+          await ensureClientAddressColumn();
+          return query(args);
+        }
+      },
+    },
+    quotation: {
+      async $allOperations({ args, query }) {
+        try {
+          return await query(args);
+        } catch (error) {
+          if (!isMissingQuotationTaxError(error)) throw error;
+          await ensureQuotationTaxColumns();
           return query(args);
         }
       },

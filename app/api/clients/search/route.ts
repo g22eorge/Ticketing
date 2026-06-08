@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
   try {
     const client = await prisma.client.findFirst({
       where: { phone, orgId },
-      select: { id: true, fullName: true, phone: true, email: true, organization: true },
+      select: { id: true, fullName: true, phone: true, email: true, organization: true, address: true },
     });
 
     return NextResponse.json({ client });

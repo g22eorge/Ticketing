@@ -1,15 +1,35 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useState, useTransition, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 
 import { FormTextarea } from "@/components/ui/form-field";
 
-type ClientOption = { id: string; fullName: string; phone: string | null; email: string | null };
-type LeadOption = { id: string; fullName: string; phone: string | null; interest: string | null };
-type JobOption = { id: string; jobNumber: string; brand: string; model: string; client: { fullName: string } | null };
+type ClientOption = {
+  id: string;
+  fullName: string;
+  phone: string | null;
+  email: string | null;
+  organization: string | null;
+  address: string | null;
+};
+type LeadOption = {
+  id: string;
+  fullName: string;
+  phone: string | null;
+  organization: string | null;
+  interest: string | null;
+};
+type JobOption = {
+  id: string;
+  jobNumber: string;
+  brand: string;
+  model: string;
+  client: { fullName: string; phone: string | null; address: string | null } | null;
+};
 type PartOption = { id: string; sku: string; name: string; unitCost: number | null; qtyOnHand: number };
+type TaxRateOption = { id: string; name: string; code: string; rate: number; isDefault: boolean };
 
 type LineItem = {
   id: number;
@@ -18,6 +38,17 @@ type LineItem = {
   quantity: number;
   unitPrice: number;
   discount: number;
+};
+
+type CustomerSource = {
+  key: string;
+  kind: "client" | "lead" | "job";
+  id: string;
+  title: string;
+  badge: string;
+  meta: string;
+  detail: string;
+  searchable: string;
 };
 
 type Props = {
@@ -30,6 +61,10 @@ type Props = {
   leads: LeadOption[];
   jobs: JobOption[];
   parts: PartOption[];
+  taxRates: TaxRateOption[];
+  defaultTaxApplicable: boolean;
+  defaultTaxRate: number;
+  defaultTaxLabel: string;
 };
 
 let nextId = 1;
@@ -44,22 +79,111 @@ export function NewQuotationForm({
   leads,
   jobs,
   parts,
+  taxRates,
+  defaultTaxApplicable,
+  defaultTaxRate,
+  defaultTaxLabel,
 }: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
-  const [selectedClientId, setSelectedClientId] = useState(clientId ?? "");
-  const [selectedLeadId, setSelectedLeadId] = useState(leadId ?? "");
-  const [selectedJobId, setSelectedJobId] = useState(jobId ?? "");
+  const initialSourceKey = jobId ? `job:${jobId}` : clientId ? `client:${clientId}` : leadId ? `lead:${leadId}` : "";
+  const [customerMode, setCustomerMode] = useState<"existing" | "new">("existing");
+  const [sourceQuery, setSourceQuery] = useState("");
+  const [selectedSourceKey, setSelectedSourceKey] = useState(initialSourceKey);
+  const [newClient, setNewClient] = useState({
+    fullName: "",
+    phone: "",
+    email: "",
+    organization: "",
+    address: "",
+  });
   const [items, setItems] = useState<LineItem[]>([
     { id: nextId++, partId: "", description: "", quantity: 1, unitPrice: 0, discount: 0 },
   ]);
   const [validUntil, setValidUntil] = useState("");
   const [notes, setNotes] = useState("");
+  const initialTaxKey = taxRates.find((rate) => rate.isDefault)?.id
+    ? `rate:${taxRates.find((rate) => rate.isDefault)?.id}`
+    : taxRates[0]?.id
+      ? `rate:${taxRates[0].id}`
+      : "branding";
+  const [taxEnabled, setTaxEnabled] = useState(defaultTaxApplicable);
+  const [selectedTaxKey, setSelectedTaxKey] = useState(initialTaxKey);
 
-  const selectedClient = clients.find((client) => client.id === selectedClientId) ?? null;
-  const selectedLead = leads.find((lead) => lead.id === selectedLeadId) ?? null;
-  const selectedJob = jobs.find((job) => job.id === selectedJobId) ?? null;
+  const customerSources = useMemo<CustomerSource[]>(() => {
+    const clientSources = clients.map((client) => {
+      const meta = [client.phone, client.email, client.organization].filter(Boolean).join(" - ");
+      const detail = client.address ?? "Client record";
+      return {
+        key: `client:${client.id}`,
+        kind: "client" as const,
+        id: client.id,
+        title: client.fullName,
+        badge: "Client",
+        meta,
+        detail,
+        searchable: [client.fullName, client.phone, client.email, client.organization, client.address].filter(Boolean).join(" ").toLowerCase(),
+      };
+    });
+    const leadSources = leads.map((lead) => {
+      const meta = [lead.phone, lead.organization].filter(Boolean).join(" - ");
+      const detail = lead.interest ?? "Lead opportunity";
+      return {
+        key: `lead:${lead.id}`,
+        kind: "lead" as const,
+        id: lead.id,
+        title: lead.fullName,
+        badge: "Lead",
+        meta,
+        detail,
+        searchable: [lead.fullName, lead.phone, lead.organization, lead.interest].filter(Boolean).join(" ").toLowerCase(),
+      };
+    });
+    const jobSources = jobs.map((job) => {
+      const device = [job.brand, job.model].filter(Boolean).join(" ");
+      const title = job.client?.fullName ?? job.jobNumber;
+      const meta = [job.jobNumber, job.client?.phone, device].filter(Boolean).join(" - ");
+      const detail = job.client?.address ?? "Repair job";
+      return {
+        key: `job:${job.id}`,
+        kind: "job" as const,
+        id: job.id,
+        title,
+        badge: "Job",
+        meta,
+        detail,
+        searchable: [job.jobNumber, title, job.client?.phone, job.client?.address, device].filter(Boolean).join(" ").toLowerCase(),
+      };
+    });
+    return [...clientSources, ...leadSources, ...jobSources];
+  }, [clients, leads, jobs]);
+
+  const filteredSources = useMemo(() => {
+    const query = sourceQuery.trim().toLowerCase();
+    const sourceList = query
+      ? customerSources.filter((source) => source.searchable.includes(query))
+      : customerSources;
+    return sourceList.slice(0, 24);
+  }, [customerSources, sourceQuery]);
+
+  const selectedSource = customerSources.find((source) => source.key === selectedSourceKey) ?? null;
+  const taxOptions = useMemo(() => {
+    const rateOptions = taxRates.map((rate) => ({
+      key: `rate:${rate.id}`,
+      label: `${rate.code} - ${rate.rate}%`,
+      taxLabel: rate.code,
+      taxRate: rate.rate,
+    }));
+    if (rateOptions.length > 0) return rateOptions;
+    return [{
+      key: "branding",
+      label: `${defaultTaxLabel || "VAT"} - ${Number(defaultTaxRate) || 0}%`,
+      taxLabel: defaultTaxLabel || "VAT",
+      taxRate: Number(defaultTaxRate) || 0,
+    }];
+  }, [taxRates, defaultTaxLabel, defaultTaxRate]);
+  const selectedTax = taxOptions.find((option) => option.key === selectedTaxKey) ?? taxOptions[0];
 
   function updateItem(id: number, patch: Partial<LineItem>) {
     setItems((prev) => prev.map((item) => (item.id === id ? { ...item, ...patch } : item)));
@@ -93,16 +217,23 @@ export function NewQuotationForm({
   );
   const subtotal = items.reduce((sum, item) => sum + calcLineTotal(item), 0);
   const productLines = items.filter((item) => item.partId).length;
+  const taxRate = taxEnabled ? Math.max(0, Number(selectedTax?.taxRate ?? 0)) : 0;
+  const taxAmount = subtotal * (taxRate / 100);
+  const totalAmount = subtotal + taxAmount;
 
   function formatAmount(value: number) {
     const isZeroDecimal = new Set(["UGX", "JPY", "KRW"]).has(currency);
     return `${currency} ${value.toLocaleString("en-US", { minimumFractionDigits: isZeroDecimal ? 0 : 2, maximumFractionDigits: isZeroDecimal ? 0 : 2 })}`;
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    if (!selectedClientId && !selectedLeadId && !selectedJobId) {
-      setError("Choose a client, lead, or repair job for this quotation.");
+    if (customerMode === "existing" && !selectedSource) {
+      setError("Choose a customer source for this quotation.");
+      return;
+    }
+    if (customerMode === "new" && (!newClient.fullName.trim() || !newClient.phone.trim())) {
+      setError("Enter the new client's name and phone number.");
       return;
     }
     if (validItems.length === 0) {
@@ -116,11 +247,15 @@ export function NewQuotationForm({
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({
-            leadId: selectedLeadId || undefined,
-            clientId: selectedClientId || undefined,
-            jobId: selectedJobId || undefined,
+            leadId: customerMode === "existing" && selectedSource?.kind === "lead" ? selectedSource.id : undefined,
+            clientId: customerMode === "existing" && selectedSource?.kind === "client" ? selectedSource.id : undefined,
+            jobId: customerMode === "existing" && selectedSource?.kind === "job" ? selectedSource.id : undefined,
+            newClient: customerMode === "new" ? newClient : undefined,
             validUntil: validUntil || undefined,
             notes: notes || undefined,
+            taxApplicable: taxEnabled,
+            taxRate,
+            taxLabel: taxEnabled ? selectedTax?.taxLabel : undefined,
             items: validItems.map((item) => ({
               partId: item.partId || null,
               description: item.description,
@@ -149,79 +284,155 @@ export function NewQuotationForm({
         <div className="rounded-lg border border-red-400/30 bg-red-500/10 px-3 py-2 text-sm text-red-700 dark:text-red-400">{error}</div>
       ) : null}
 
-      <div className="grid gap-4 xl:grid-cols-[minmax(300px,0.8fr)_minmax(0,1.4fr)]">
-        <div className="space-y-4">
-          <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-            <div className="flex items-center justify-between gap-2 border-b border-[var(--line)] pb-3">
-              <p className="text-[12px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Customer & Source</p>
-              <Link href="/clients" className="text-xs font-semibold text-[var(--gold)] hover:underline">Clients</Link>
+      <div className="grid min-w-0 gap-4 xl:grid-cols-[minmax(280px,0.75fr)_minmax(0,1.55fr)]">
+        <div className="min-w-0 space-y-4">
+          <section className="panel-shadow min-w-0 rounded-xl border border-[var(--line)] bg-[var(--panel)] p-3">
+            <div className="flex items-center justify-between gap-2 border-b border-[var(--line)] pb-2">
+              <p className="text-[12px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Customer</p>
+              <Link href="/clients?create=1" className="text-xs font-semibold text-[var(--gold)] hover:underline">New client</Link>
             </div>
-            <div className="mt-3 grid gap-3">
-              <label className="text-xs font-semibold text-[var(--ink-muted)]">
-                Client
-                <select
-                  value={selectedClientId}
-                  onChange={(event) => setSelectedClientId(event.target.value)}
-                  className="mt-1 w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm text-[var(--ink)] outline-none focus:border-[var(--accent)]/50"
+            <div className="mt-3 grid grid-cols-2 gap-1 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] p-1">
+              {(["existing", "new"] as const).map((mode) => (
+                <button
+                  key={mode}
+                  type="button"
+                  onClick={() => setCustomerMode(mode)}
+                  className={`rounded-md px-3 py-1.5 text-xs font-bold capitalize transition ${
+                    customerMode === mode ? "bg-[var(--accent)] text-black" : "text-[var(--ink-muted)] hover:text-[var(--ink)]"
+                  }`}
                 >
-                  <option value="">No client selected</option>
-                  {clients.map((client) => (
-                    <option key={client.id} value={client.id}>
-                      {client.fullName}{client.phone ? ` - ${client.phone}` : ""}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="text-xs font-semibold text-[var(--ink-muted)]">
-                Lead / Opportunity
-                <select
-                  value={selectedLeadId}
-                  onChange={(event) => setSelectedLeadId(event.target.value)}
-                  className="mt-1 w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm text-[var(--ink)] outline-none focus:border-[var(--accent)]/50"
-                >
-                  <option value="">No lead selected</option>
-                  {leads.map((lead) => (
-                    <option key={lead.id} value={lead.id}>
-                      {lead.fullName}{lead.interest ? ` - ${lead.interest}` : ""}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="text-xs font-semibold text-[var(--ink-muted)]">
-                Repair Job (optional)
-                <select
-                  value={selectedJobId}
-                  onChange={(event) => setSelectedJobId(event.target.value)}
-                  className="mt-1 w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm text-[var(--ink)] outline-none focus:border-[var(--accent)]/50"
-                >
-                  <option value="">No repair job</option>
-                  {jobs.map((job) => (
-                    <option key={job.id} value={job.id}>
-                      {job.jobNumber} - {job.client?.fullName ?? "No client"} - {job.brand} {job.model}
-                    </option>
-                  ))}
-                </select>
-              </label>
+                  {mode}
+                </button>
+              ))}
             </div>
+
+            {customerMode === "existing" ? (
+              <div className="mt-3 space-y-2">
+                <input
+                  value={sourceQuery}
+                  onChange={(event) => setSourceQuery(event.target.value)}
+                  placeholder="Search clients, leads, jobs, phone, address"
+                  className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm text-[var(--ink)] outline-none focus:border-[var(--accent)]/50"
+                />
+                <div className="max-h-72 space-y-1 overflow-y-auto pr-1">
+                  {filteredSources.map((source) => (
+                    <button
+                      key={source.key}
+                      type="button"
+                      onClick={() => setSelectedSourceKey(source.key)}
+                      className={`w-full rounded-lg border px-3 py-2 text-left transition ${
+                        selectedSourceKey === source.key
+                          ? "border-[var(--accent)] bg-[var(--accent)]/10"
+                          : "border-[var(--line)] bg-[var(--panel-strong)] hover:border-[var(--accent)]/35"
+                      }`}
+                    >
+                      <span className="flex items-start justify-between gap-2">
+                        <span className="min-w-0">
+                          <span className="block truncate text-[13px] font-bold text-[var(--ink)]">{source.title}</span>
+                          <span className="block truncate text-[12px] text-[var(--ink-muted)]">{source.meta || source.detail}</span>
+                        </span>
+                        <span className="shrink-0 rounded-full border border-[var(--line)] px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">
+                          {source.badge}
+                        </span>
+                      </span>
+                      {source.detail ? <span className="mt-1 block truncate text-[11px] text-[var(--ink-muted)]/75">{source.detail}</span> : null}
+                    </button>
+                  ))}
+                  {filteredSources.length === 0 ? (
+                    <div className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-4 text-center text-xs text-[var(--ink-muted)]">
+                      No customer source found
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+            ) : (
+              <div className="mt-3 grid grid-cols-1 gap-2">
+                <input
+                  value={newClient.fullName}
+                  onChange={(event) => setNewClient((prev) => ({ ...prev, fullName: event.target.value }))}
+                  placeholder="Client name *"
+                  className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm text-[var(--ink)] outline-none focus:border-[var(--accent)]/50"
+                />
+                <input
+                  value={newClient.phone}
+                  onChange={(event) => setNewClient((prev) => ({ ...prev, phone: event.target.value }))}
+                  placeholder="Phone *"
+                  className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm text-[var(--ink)] outline-none focus:border-[var(--accent)]/50"
+                />
+                <input
+                  value={newClient.email}
+                  onChange={(event) => setNewClient((prev) => ({ ...prev, email: event.target.value }))}
+                  placeholder="Email"
+                  className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm text-[var(--ink)] outline-none focus:border-[var(--accent)]/50"
+                />
+                <input
+                  value={newClient.organization}
+                  onChange={(event) => setNewClient((prev) => ({ ...prev, organization: event.target.value }))}
+                  placeholder="Organization"
+                  className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm text-[var(--ink)] outline-none focus:border-[var(--accent)]/50"
+                />
+                <input
+                  value={newClient.address}
+                  onChange={(event) => setNewClient((prev) => ({ ...prev, address: event.target.value }))}
+                  placeholder="Address / location"
+                  className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm text-[var(--ink)] outline-none focus:border-[var(--accent)]/50"
+                />
+              </div>
+            )}
+
             <div className="mt-3 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-xs text-[var(--ink-muted)]">
-              <p className="font-semibold text-[var(--ink)]">{selectedClient?.fullName ?? selectedLead?.fullName ?? selectedJob?.jobNumber ?? "Recipient not selected"}</p>
-              <p className="mt-0.5">{selectedClient?.phone ?? selectedLead?.phone ?? selectedJob?.client?.fullName ?? "Select a client for product quotations, or link a lead/job when relevant."}</p>
+              {customerMode === "existing" ? (
+                <>
+                  <p className="font-semibold text-[var(--ink)]">{selectedSource?.title ?? "Recipient not selected"}</p>
+                  <p className="mt-0.5 truncate">{selectedSource?.meta || selectedSource?.detail || "Select a customer source."}</p>
+                </>
+              ) : (
+                <>
+                  <p className="font-semibold text-[var(--ink)]">{newClient.fullName.trim() || "New client"}</p>
+                  <p className="mt-0.5 truncate">{[newClient.phone, newClient.address].filter(Boolean).join(" - ") || "Client will be created with this quotation."}</p>
+                </>
+              )}
             </div>
           </section>
 
-          <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-            <p className="text-[12px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Quote Snapshot</p>
+          <section className="panel-shadow min-w-0 rounded-xl border border-[var(--line)] bg-[var(--panel)] p-3">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-[12px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Totals</p>
+              <Link href="/finance/tax-rates" className="text-xs font-semibold text-[var(--gold)] hover:underline">Tax rates</Link>
+            </div>
             <dl className="mt-3 space-y-2 text-sm">
               <div className="flex justify-between gap-3"><dt className="text-[var(--ink-muted)]">Lines ready</dt><dd className="font-bold text-[var(--ink)]">{validItems.length}/{items.length}</dd></div>
               <div className="flex justify-between gap-3"><dt className="text-[var(--ink-muted)]">Product lines</dt><dd className="font-bold text-[var(--ink)]">{productLines}</dd></div>
               <div className="flex justify-between gap-3"><dt className="text-[var(--ink-muted)]">Subtotal</dt><dd className="font-bold tabular-nums text-[var(--ink)]">{formatAmount(subtotal)}</dd></div>
+              <div className="flex justify-between gap-3"><dt className="text-[var(--ink-muted)]">{taxEnabled ? `${selectedTax?.taxLabel ?? "Tax"} (${taxRate}%)` : "Tax"}</dt><dd className="font-bold tabular-nums text-[var(--ink)]">{formatAmount(taxAmount)}</dd></div>
+              <div className="flex justify-between gap-3 border-t border-[var(--line)] pt-2"><dt className="font-semibold text-[var(--ink)]">Total</dt><dd className="text-[15px] font-black tabular-nums text-[var(--ink)]">{formatAmount(totalAmount)}</dd></div>
             </dl>
+            <div className="mt-3 space-y-2 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2">
+              <label className="flex items-center justify-between gap-3 text-xs font-semibold text-[var(--ink)]">
+                <span>Tax applicable</span>
+                <input
+                  type="checkbox"
+                  checked={taxEnabled}
+                  onChange={(event) => setTaxEnabled(event.target.checked)}
+                  className="h-4 w-4 rounded border-[var(--line)]"
+                />
+              </label>
+              {taxEnabled ? (
+                <select
+                  value={selectedTaxKey}
+                  onChange={(event) => setSelectedTaxKey(event.target.value)}
+                  className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 py-2 text-sm text-[var(--ink)] outline-none focus:border-[var(--accent)]/50"
+                >
+                  {taxOptions.map((option) => (
+                    <option key={option.key} value={option.key}>{option.label}</option>
+                  ))}
+                </select>
+              ) : null}
+            </div>
           </section>
 
-          <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
-            <p className="mb-3 text-[13px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Quotation Details</p>
+          <section className="panel-shadow min-w-0 rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
+            <p className="mb-3 text-[13px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Details</p>
             <div className="grid grid-cols-1 gap-3">
               <label className="text-xs font-semibold text-[var(--ink-muted)]">
                 Valid Until
@@ -246,7 +457,7 @@ export function NewQuotationForm({
           </section>
         </div>
 
-        <section className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
+        <section className="panel-shadow min-w-0 overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--line)] px-4 py-3">
             <div>
               <p className="text-[13px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Products & Services</p>
@@ -345,8 +556,20 @@ export function NewQuotationForm({
               </tbody>
               <tfoot>
                 <tr className="border-t border-[var(--line)] bg-[var(--gold)]/5">
-                  <td colSpan={canOverrideDiscount ? 5 : 4} className="px-3 py-3 text-right text-xs font-semibold text-[var(--ink-muted)]">Subtotal</td>
-                  <td className="px-3 py-3 text-right text-sm font-bold tabular-nums text-[var(--ink)]">{formatAmount(subtotal)}</td>
+                  <td colSpan={canOverrideDiscount ? 5 : 4} className="px-3 py-2 text-right text-xs font-semibold text-[var(--ink-muted)]">Subtotal</td>
+                  <td className="px-3 py-2 text-right text-sm font-bold tabular-nums text-[var(--ink)]">{formatAmount(subtotal)}</td>
+                  <td />
+                </tr>
+                {taxEnabled ? (
+                  <tr className="bg-[var(--gold)]/5">
+                    <td colSpan={canOverrideDiscount ? 5 : 4} className="px-3 py-2 text-right text-xs font-semibold text-[var(--ink-muted)]">{selectedTax?.taxLabel ?? "Tax"} ({taxRate}%)</td>
+                    <td className="px-3 py-2 text-right text-sm font-bold tabular-nums text-[var(--ink)]">{formatAmount(taxAmount)}</td>
+                    <td />
+                  </tr>
+                ) : null}
+                <tr className="bg-[var(--panel-strong)]">
+                  <td colSpan={canOverrideDiscount ? 5 : 4} className="px-3 py-3 text-right text-xs font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Total</td>
+                  <td className="px-3 py-3 text-right text-base font-black tabular-nums text-[var(--ink)]">{formatAmount(totalAmount)}</td>
                   <td />
                 </tr>
               </tfoot>

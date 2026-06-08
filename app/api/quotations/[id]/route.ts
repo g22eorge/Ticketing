@@ -33,7 +33,7 @@ export async function GET(
     },
     include: {
       lead: { select: { fullName: true, phone: true, email: true, organization: true, interest: true } },
-      client: { select: { fullName: true, phone: true, email: true, organization: true } },
+      client: { select: { fullName: true, phone: true, email: true, organization: true, address: true } },
       job: { select: { jobNumber: true, brand: true, model: true, issueDescription: true } },
       createdBy: { select: { name: true, role: true } },
       items: { orderBy: { createdAt: "asc" }, include: { part: { select: { sku: true } } } },
@@ -47,6 +47,9 @@ export async function GET(
   const branding = await getDocumentBrandingSettings(orgId);
   const logoUrl = await resolvePdfLogo();
   const recipient = quotation.client ?? quotation.lead;
+  const clientLocation = quotation.client
+    ? [quotation.client.organization, quotation.client.address].filter(Boolean).join("\n") || null
+    : quotation.lead?.organization ?? null;
   const issuedAt = quotation.sentAt ?? quotation.createdAt;
   const validUntil = quotation.validUntil ?? new Date(issuedAt.getTime() + branding.quoteValidityDays * 86400000);
   const currency = quotation.currency;
@@ -67,6 +70,8 @@ export async function GET(
         rate: formatMoney(quotation.totalAmount, currency),
         amount: formatMoney(quotation.totalAmount, currency),
       }];
+  const documentTaxLabel = quotation.taxLabel ?? branding.vatLabel;
+  const documentTaxRate = quotation.taxRate ?? branding.vatRatePercent;
 
   const docElement = createElement(EagleInfoDocument, {
     companyName: branding.companyName,
@@ -82,10 +87,10 @@ export async function GET(
     clientName: recipient?.fullName ?? "Client",
     clientEmail: recipient?.email ?? null,
     clientPhone: recipient?.phone ?? null,
-    clientLocation: recipient?.organization ?? null,
+    clientLocation,
     lineItems,
     subTotal: formatMoney(quotation.subtotal, currency),
-    vatLabel: quotation.vatAmount > 0 ? `${branding.vatLabel} (${branding.vatRatePercent}%)` : null,
+    vatLabel: quotation.vatAmount > 0 ? `${documentTaxLabel} (${documentTaxRate}%)` : null,
     vatAmount: quotation.vatAmount > 0 ? formatMoney(quotation.vatAmount, currency) : null,
     totalLabel: "Total",
     totalAmount: formatMoney(quotation.totalAmount, currency),

@@ -54,7 +54,7 @@ export default async function QuotationDetailPage({
     where: quotationWhere,
     include: {
       lead: { select: { id: true, fullName: true, phone: true, email: true, organization: true } },
-      client: { select: { id: true, fullName: true, phone: true, email: true, organization: true } },
+      client: { select: { id: true, fullName: true, phone: true, email: true, organization: true, address: true } },
       job: { select: { id: true, jobNumber: true } },
       createdBy: { select: { id: true, name: true } },
       approvedBy: { select: { id: true, name: true } },
@@ -72,6 +72,9 @@ export default async function QuotationDetailPage({
   const canConvert = can.createInvoices(user) && quotation.status === "ACCEPTED" && !quotation.convertedToInvoiceId;
   const canOverrideDiscount = can.overrideDiscount(user);
   const recipientName = quotation.client?.fullName ?? quotation.lead?.fullName ?? null;
+  const recipientAddress = quotation.client?.address ?? null;
+  const taxDisplayLabel = quotation.taxLabel ?? "Tax";
+  const taxDisplayRate = quotation.taxRate ?? null;
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
   const pdfHref = `/api/quotations/${quotation.id}`;
   const pdfUrl = `${appUrl}${pdfHref}`;
@@ -230,6 +233,12 @@ export default async function QuotationDetailPage({
                 <>
                   {recipientName ? <span className="opacity-40">·</span> : null}
                   <span>Job: <Link href={`/jobs/${quotation.job.id}`} className="text-[var(--accent)] hover:underline">{quotation.job.jobNumber}</Link></span>
+                </>
+              ) : null}
+              {recipientAddress ? (
+                <>
+                  <span className="opacity-40">·</span>
+                  <span>{recipientAddress}</span>
                 </>
               ) : null}
               <span className="opacity-40">·</span>
@@ -465,7 +474,7 @@ export default async function QuotationDetailPage({
             ) : null}
             {quotation.vatAmount > 0 ? (
               <div className="flex gap-4">
-                <span className="text-[var(--ink-muted)]">VAT</span>
+                <span className="text-[var(--ink-muted)]">{taxDisplayLabel}{taxDisplayRate !== null ? ` (${taxDisplayRate}%)` : ""}</span>
                 <span className="font-medium text-[var(--ink)]">{formatMoney(quotation.vatAmount, currency)}</span>
               </div>
             ) : null}
@@ -526,6 +535,12 @@ export default async function QuotationDetailPage({
                   {quotation.lead.fullName}
                 </Link>
               </dd>
+            </div>
+          ) : null}
+          {recipientAddress ? (
+            <div className="sm:col-span-2">
+              <dt className="text-[var(--ink-muted)]">Client address</dt>
+              <dd className="font-medium text-[var(--ink)]">{recipientAddress}</dd>
             </div>
           ) : null}
         </dl>

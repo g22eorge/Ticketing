@@ -3,6 +3,7 @@ import { can } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { requireOrgSession } from "@/lib/org-context";
 import { getAppCurrency } from "@/lib/currency";
+import { getDocumentBrandingSettings } from "@/lib/document-branding";
 import { NewQuotationForm } from "./NewQuotationForm";
 
 export default async function NewQuotationPage({
@@ -20,7 +21,7 @@ export default async function NewQuotationPage({
   const currency = getAppCurrency();
   const canOverrideDiscount = can.overrideDiscount(user);
 
-  const [leadName, clientName, clients, leads, jobs, parts] = await Promise.all([
+  const [leadName, clientName, clients, leads, jobs, parts, taxRates, branding] = await Promise.all([
     params.leadId
       ? prisma.lead.findFirst({
           where: {
@@ -38,7 +39,7 @@ export default async function NewQuotationPage({
       where: { orgId },
       orderBy: { fullName: "asc" },
       take: 300,
-      select: { id: true, fullName: true, phone: true, email: true },
+      select: { id: true, fullName: true, phone: true, email: true, organization: true, address: true },
     }),
     prisma.lead.findMany({
       where: {
@@ -48,7 +49,7 @@ export default async function NewQuotationPage({
       },
       orderBy: { updatedAt: "desc" },
       take: 150,
-      select: { id: true, fullName: true, phone: true, interest: true },
+      select: { id: true, fullName: true, phone: true, organization: true, interest: true },
     }),
     prisma.job.findMany({
       where: {
@@ -58,7 +59,7 @@ export default async function NewQuotationPage({
       },
       orderBy: { updatedAt: "desc" },
       take: 150,
-      select: { id: true, jobNumber: true, brand: true, model: true, client: { select: { fullName: true } } },
+      select: { id: true, jobNumber: true, brand: true, model: true, client: { select: { fullName: true, phone: true, address: true } } },
     }),
     prisma.part.findMany({
       where: { orgId, isActive: true },
@@ -66,7 +67,15 @@ export default async function NewQuotationPage({
       take: 500,
       select: { id: true, sku: true, name: true, unitCost: true, qtyOnHand: true },
     }),
+    prisma.taxRate.findMany({
+      where: { orgId, isActive: true, appliesToSales: true },
+      orderBy: [{ isDefault: "desc" }, { code: "asc" }],
+      select: { id: true, name: true, code: true, rate: true, isDefault: true },
+    }),
+    getDocumentBrandingSettings(orgId),
   ]);
+
+  const defaultTaxRate = taxRates.find((rate) => rate.isDefault) ?? null;
 
   return (
     <div className="space-y-4">
@@ -96,6 +105,10 @@ export default async function NewQuotationPage({
         leads={leads}
         jobs={jobs}
         parts={parts}
+        taxRates={taxRates}
+        defaultTaxApplicable={branding.vatDefaultApplicable}
+        defaultTaxRate={defaultTaxRate?.rate ?? branding.vatRatePercent}
+        defaultTaxLabel={defaultTaxRate?.code ?? branding.vatLabel}
       />
     </div>
   );
