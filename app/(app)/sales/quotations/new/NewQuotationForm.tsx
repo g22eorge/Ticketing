@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
-import { createQuotation } from "../../actions";
 import { FormTextarea } from "@/components/ui/form-field";
 
 type ClientOption = { id: string; fullName: string; phone: string | null; email: string | null };
@@ -113,22 +112,32 @@ export function NewQuotationForm({
     setError(null);
     startTransition(async () => {
       try {
-        await createQuotation({
-          leadId: selectedLeadId || undefined,
-          clientId: selectedClientId || undefined,
-          jobId: selectedJobId || undefined,
-          validUntil: validUntil || undefined,
-          notes: notes || undefined,
-          items: validItems.map((item) => ({
-            partId: item.partId || null,
-            description: item.description,
-            quantity: item.quantity,
-            unitPrice: item.unitPrice,
-            discount: item.discount,
-          })),
+        const response = await fetch("/api/quotations", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            leadId: selectedLeadId || undefined,
+            clientId: selectedClientId || undefined,
+            jobId: selectedJobId || undefined,
+            validUntil: validUntil || undefined,
+            notes: notes || undefined,
+            items: validItems.map((item) => ({
+              partId: item.partId || null,
+              description: item.description,
+              quantity: item.quantity,
+              unitPrice: item.unitPrice,
+              discount: item.discount,
+            })),
+          }),
         });
+        const result = await response.json().catch(() => null) as { id?: string; href?: string; error?: string } | null;
+        if (!response.ok) {
+          throw new Error(result?.error ?? "Failed to create quotation");
+        }
+        const href = result?.href ?? (result?.id ? `/sales/quotations/${result.id}` : "/documents/quotations");
+        router.push(href);
+        router.refresh();
       } catch (err) {
-        if (err instanceof Error && err.message === "NEXT_REDIRECT") throw err;
         setError(err instanceof Error ? err.message : "Failed to create quotation");
       }
     });
