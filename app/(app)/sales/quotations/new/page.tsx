@@ -20,7 +20,7 @@ export default async function NewQuotationPage({
   const currency = getAppCurrency();
   const canOverrideDiscount = can.overrideDiscount(user);
 
-  const [leadName, clientName] = await Promise.all([
+  const [leadName, clientName, clients, leads, jobs, parts] = await Promise.all([
     params.leadId
       ? prisma.lead.findFirst({
           where: {
@@ -34,15 +34,56 @@ export default async function NewQuotationPage({
     params.clientId
       ? prisma.client.findFirst({ where: { id: params.clientId, orgId }, select: { fullName: true } }).then((c) => c?.fullName ?? null)
       : Promise.resolve(null),
+    prisma.client.findMany({
+      where: { orgId },
+      orderBy: { fullName: "asc" },
+      take: 300,
+      select: { id: true, fullName: true, phone: true, email: true },
+    }),
+    prisma.lead.findMany({
+      where: {
+        orgId,
+        status: { notIn: ["LOST", "STALE"] },
+        ...(!can.viewAllSales(user) ? { OR: [{ assignedToId: user.id }, { createdById: user.id }] } : {}),
+      },
+      orderBy: { updatedAt: "desc" },
+      take: 150,
+      select: { id: true, fullName: true, phone: true, interest: true },
+    }),
+    prisma.job.findMany({
+      where: {
+        orgId,
+        status: { notIn: ["CLOSED"] },
+        ...(!can.viewAllSales(user) ? { OR: [{ assignedToId: user.id }, { createdById: user.id }] } : {}),
+      },
+      orderBy: { updatedAt: "desc" },
+      take: 150,
+      select: { id: true, jobNumber: true, brand: true, model: true, client: { select: { fullName: true } } },
+    }),
+    prisma.part.findMany({
+      where: { orgId, isActive: true },
+      orderBy: [{ name: "asc" }],
+      take: 500,
+      select: { id: true, sku: true, name: true, unitCost: true, qtyOnHand: true },
+    }),
   ]);
 
   return (
-    <div className="mx-auto max-w-3xl space-y-4">
+    <div className="space-y-4">
       <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
-        <p className="text-[12px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Sales</p>
-        <p className="text-[13px] font-bold text-[var(--ink)]">New Quotation</p>
-        {leadName ? <p className="mt-0.5 text-[12px] text-[var(--ink-muted)]">Lead: {leadName}</p> : null}
-        {clientName ? <p className="mt-0.5 text-[12px] text-[var(--ink-muted)]">Client: {clientName}</p> : null}
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="text-[12px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Sales · Documents</p>
+            <p className="text-[13px] font-bold text-[var(--ink)]">New Quotation</p>
+            <p className="mt-0.5 text-[12px] text-[var(--ink-muted)]">Build a quote for products, services, leads, clients, or a repair job.</p>
+            {leadName ? <p className="mt-0.5 text-[12px] text-[var(--ink-muted)]">Lead: {leadName}</p> : null}
+            {clientName ? <p className="mt-0.5 text-[12px] text-[var(--ink-muted)]">Client: {clientName}</p> : null}
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <span className="rounded-lg border border-[var(--line)] px-3 py-1.5 text-xs font-semibold text-[var(--ink-muted)]">{clients.length} clients</span>
+            <span className="rounded-lg border border-[var(--line)] px-3 py-1.5 text-xs font-semibold text-[var(--ink-muted)]">{parts.length} products</span>
+          </div>
+        </div>
       </div>
 
       <NewQuotationForm
@@ -51,6 +92,10 @@ export default async function NewQuotationPage({
         jobId={params.jobId}
         currency={currency}
         canOverrideDiscount={canOverrideDiscount}
+        clients={clients}
+        leads={leads}
+        jobs={jobs}
+        parts={parts}
       />
     </div>
   );

@@ -36,7 +36,7 @@ export async function GET(
       client: { select: { fullName: true, phone: true, email: true, organization: true } },
       job: { select: { jobNumber: true, brand: true, model: true, issueDescription: true } },
       createdBy: { select: { name: true, role: true } },
-      items: { orderBy: { createdAt: "asc" } },
+      items: { orderBy: { createdAt: "asc" }, include: { part: { select: { sku: true } } } },
     },
   });
 
@@ -54,7 +54,7 @@ export async function GET(
   const lineItems: EagleInfoLineItem[] = quotation.items.length > 0
     ? quotation.items.map((item) => ({
         name: item.description,
-        sku: item.partId ?? null,
+        sku: item.part?.sku ?? null,
         quantity: item.quantity,
         rate: formatMoney(item.unitPrice, currency),
         amount: formatMoney(item.lineTotal, currency),

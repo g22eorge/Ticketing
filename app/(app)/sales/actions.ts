@@ -293,6 +293,7 @@ export async function createQuotation(data: {
   validUntil?: string;
   notes?: string;
   items: Array<{
+    partId?: string | null;
     description: string;
     quantity: number;
     unitPrice: number;
@@ -308,6 +309,7 @@ export async function createQuotation(data: {
   }
 
   const items = data.items.map((item) => {
+    const partId = item.partId ? String(item.partId).trim() : null;
     const description = item.description.trim();
     const quantity = Number(item.quantity);
     const unitPrice = Number(item.unitPrice);
@@ -319,11 +321,19 @@ export async function createQuotation(data: {
       throw new Error("Discount must be between 0 and 100");
     }
     const discount = can.overrideDiscount(user) ? requestedDiscount : 0;
-    return { description, quantity, unitPrice, discount, lineTotal: quotationLineTotal({ quantity, unitPrice, discount }) };
+    return { partId, description, quantity, unitPrice, discount, lineTotal: quotationLineTotal({ quantity, unitPrice, discount }) };
   });
 
   const subtotal = items.reduce((sum, item) => sum + item.lineTotal, 0);
   const currency = (process.env.APP_CURRENCY ?? "UGX").toUpperCase().trim() || "UGX";
+  const partIds = [...new Set(items.map((item) => item.partId).filter((partId): partId is string => Boolean(partId)))];
+  if (partIds.length) {
+    const validParts = await prisma.part.findMany({
+      where: { id: { in: partIds }, orgId, isActive: true },
+      select: { id: true },
+    });
+    if (validParts.length !== partIds.length) throw new Error("One or more quoted products are inactive or not found");
+  }
   if (data.leadId) {
     const lead = await prisma.lead.findFirst({
       where: {
@@ -335,8 +345,9 @@ export async function createQuotation(data: {
     });
     if (!lead) throw new Error("Lead not found");
   }
-  if (data.clientId) {
-    const client = await prisma.client.findFirst({ where: { id: data.clientId, orgId }, select: { id: true } });
+  let clientId = data.clientId || null;
+  if (clientId) {
+    const client = await prisma.client.findFirst({ where: { id: clientId, orgId }, select: { id: true } });
     if (!client) throw new Error("Client not found");
   }
   if (data.jobId) {
@@ -346,9 +357,10 @@ export async function createQuotation(data: {
         orgId,
         ...(!can.viewAllSales(user) ? { OR: [{ assignedToId: user.id }, { createdById: user.id }] } : {}),
       },
-      select: { id: true },
+      select: { id: true, clientId: true },
     });
     if (!job) throw new Error("Job not found");
+    clientId = clientId || job.clientId;
   }
 
   const quotation = await prisma.$transaction(async (tx) => {
@@ -358,7 +370,7 @@ export async function createQuotation(data: {
         quoteNumber,
         orgId,
         leadId: data.leadId || null,
-        clientId: data.clientId || null,
+        clientId,
         jobId: data.jobId || null,
         createdById: user.id,
         status: "DRAFT",
@@ -369,6 +381,7 @@ export async function createQuotation(data: {
         notes: data.notes ? sanitizeText(data.notes) : null,
         items: {
           create: items.map((item) => ({
+            partId: item.partId,
             description: sanitizeText(item.description),
             quantity: item.quantity,
             unitPrice: item.unitPrice,
@@ -381,6 +394,7 @@ export async function createQuotation(data: {
   });
 
   revalidatePath("/sales");
+  revalidatePath("/documents/quotations");
   redirect(`/sales/quotations/${quotation.id}`);
 }
 
