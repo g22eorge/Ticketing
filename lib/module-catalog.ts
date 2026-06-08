@@ -30,7 +30,7 @@ export const MODULE_ICONS: Record<OrgModule, string> = {
 
 export const MODULE_DESCRIPTIONS: Record<OrgModule, string> = {
   JOBS: "Track repair jobs end-to-end — intake, diagnosis, status, and completion",
-  INVENTORY: "Manage parts stock, reorder alerts, and supplier items",
+  INVENTORY: "Manage inventory item stock, reorder alerts, and supplier items",
   POS: "Walk-in sales, product checkout, and receipts",
   PURCHASE_ORDERS: "Raise purchase orders to suppliers and manage goods received",
   INVOICING: "Generate invoices, send to clients, and track payments",

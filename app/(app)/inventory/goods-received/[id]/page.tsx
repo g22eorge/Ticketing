@@ -29,7 +29,7 @@ export default async function GoodsReceivedDetailPage({ params }: { params: Prom
   const total = grn.items.reduce((sum, item) => sum + item.quantity * item.unitCost, 0);
 
   return (
-    <div className="max-w-3xl space-y-6">
+    <div className="max-w-4xl space-y-6">
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-[12px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Inventory · GRN</p>
@@ -38,7 +38,12 @@ export default async function GoodsReceivedDetailPage({ params }: { params: Prom
             Supplier: <Link href={`/inventory/suppliers/${grn.supplier.id}`} className="text-[var(--gold)] hover:underline">{grn.supplier.name}</Link>
           </p>
         </div>
-        <span className="mt-1 rounded-full border border-emerald-400/30 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-400">{grn.status}</span>
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <Link href={`/api/procurement/documents/goods-received/${grn.id}`} target="_blank" className="rounded-lg border border-[var(--line)] px-3 py-1.5 text-xs font-semibold text-[var(--ink)] transition hover:border-[var(--accent)]/50 hover:text-[var(--accent)]">
+            Print / PDF
+          </Link>
+          <span className="rounded-full border border-emerald-400/30 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-400">{grn.status}</span>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -71,7 +76,7 @@ export default async function GoodsReceivedDetailPage({ params }: { params: Prom
             <thead>
               <tr className="border-b border-[var(--line)] text-xs font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
                 <th className="px-4 py-2.5 text-left">Description</th>
-                <th className="px-4 py-2.5 text-left hidden sm:table-cell">Part</th>
+                <th className="px-4 py-2.5 text-left hidden sm:table-cell">Item</th>
                 <th className="px-4 py-2.5 text-right">Qty</th>
                 <th className="px-4 py-2.5 text-right">Unit Cost</th>
                 <th className="px-4 py-2.5 text-right">Total</th>

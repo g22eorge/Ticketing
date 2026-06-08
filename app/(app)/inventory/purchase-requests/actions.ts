@@ -90,6 +90,7 @@ export async function createPurchaseRequestAction(formData: FormData): Promise<{
   }).catch(() => {});
 
   revalidatePath("/inventory/purchase-requests");
+  revalidatePath("/procurement");
   return { id: request.id };
 }
 
@@ -126,7 +127,26 @@ export async function reviewPurchaseRequestAction(formData: FormData): Promise<v
   }
 
   revalidatePath("/inventory/purchase-requests");
+  revalidatePath("/procurement");
   revalidatePath(`/inventory/purchase-requests/${id}`);
+}
+
+export async function deletePurchaseRequestAction(formData: FormData): Promise<void> {
+  const { orgId } = await requireInventoryManager();
+  const id = String(formData.get("id") ?? "").trim();
+  if (!id) return;
+
+  const request = await prisma.purchaseRequest.findFirst({
+    where: { id, orgId },
+    select: { convertedPoId: true, status: true },
+  });
+  if (!request || request.convertedPoId || request.status === "CONVERTED") return;
+
+  await prisma.purchaseRequest.delete({ where: { id } });
+
+  revalidatePath("/inventory/purchase-requests");
+  revalidatePath("/procurement");
+  redirect("/inventory/purchase-requests");
 }
 
 export async function convertPurchaseRequestToPoAction(formData: FormData): Promise<void> {
@@ -174,6 +194,7 @@ export async function convertPurchaseRequestToPoAction(formData: FormData): Prom
   });
 
   revalidatePath("/inventory/purchase-requests");
+  revalidatePath("/procurement");
   revalidatePath(`/inventory/purchase-requests/${id}`);
   revalidatePath("/inventory/purchase-orders");
   redirect(`/inventory/purchase-orders/${po.id}`);

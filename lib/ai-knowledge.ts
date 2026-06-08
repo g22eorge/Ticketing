@@ -17,7 +17,7 @@ export const DEFAULT_AI_KNOWLEDGE = [
   {
     title: "Inventory and procurement workflow",
     module: "INVENTORY",
-    content: "Inventory manages parts, quantities, reorder levels, suppliers, purchase requests, purchase orders, goods received, stock counts, transfers, and stock locations. Use Goods Received for supplier stock arrivals instead of manually changing quantities.",
+    content: "Inventory manages items, quantities, reorder levels, suppliers, purchase requests, purchase orders, goods received, stock counts, transfers, and stock locations. Use Goods Received for supplier stock arrivals instead of manually changing quantities.",
   },
   {
     title: "Finance and documents workflow",

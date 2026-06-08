@@ -53,7 +53,7 @@ const MODULES = [
         <path d="m3.3 7 8.7 5 8.7-5M12 22V12" />
       </svg>
     ),
-    items: ["Parts & Stock Levels", "Purchase Orders", "Goods Received", "Supplier Bills", "Stock Counts & Transfers"],
+    items: ["Inventory Item Levels", "Purchase Orders", "Goods Received", "Supplier Bills", "Stock Counts & Transfers"],
   },
   {
     group: "Customers & Sales",

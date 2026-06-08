@@ -673,7 +673,7 @@ export default async function ReportsPage({
     { title: "Device Performance", caption: "Completion, margin and turnaround by device", href: `/api/reports/export?type=device-performance&month=${selectedMonthString}` },
     ...(can.runFinancialReports(user) ? [{ title: "Repair Margin", caption: "Job-level client bill vs tech cost", href: `/api/reports/export?type=revenue-variance&month=${selectedMonthString}` }] : []),
     ...(can.reviewExternalBills(user) ? [{ title: "External Payouts", caption: "Outstanding and paid external tech fees", href: "/api/reports/export?type=external-payouts" }] : []),
-    ...(can.manageInventory(user) ? [{ title: "Stock Levels", caption: "All active parts with qty and stock status", href: "/api/reports/export?type=inventory-stock" }] : []),
+    ...(can.manageInventory(user) ? [{ title: "Stock Levels", caption: "All active inventory items with quantity and stock status", href: "/api/reports/export?type=inventory-stock" }] : []),
   ];
   const commercialExports = [
     ...(can.viewAllSales(user) ? [{ title: "POS Sales", caption: "Paid point-of-sale transactions", href: `/api/reports/export?type=pos-sales&month=${selectedMonthString}` }] : []),
@@ -930,7 +930,7 @@ export default async function ReportsPage({
               {lowStockItems.length > 0 && (
                 <Link href="/reports?tab=operations" className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-600 hover:underline">
                   <span className="inline-block h-1.5 w-1.5 rounded-full bg-amber-500" />
-                  {lowStockItems.length} part{lowStockItems.length !== 1 ? "s" : ""} low on stock
+                  {lowStockItems.length} item{lowStockItems.length !== 1 ? "s" : ""} low on stock
                 </Link>
               )}
             </div>
@@ -1327,12 +1327,12 @@ export default async function ReportsPage({
                 <Link href="/inventory" className="text-xs text-[var(--ink-muted)] hover:text-[var(--ink)]">Manage →</Link>
               </div>
               {lowStockItems.length === 0 ? (
-                <p className="mt-3 text-center text-xs text-[var(--ink-muted)]">All parts stocked above reorder level</p>
+                <p className="mt-3 text-center text-xs text-[var(--ink-muted)]">All inventory items stocked above reorder level</p>
               ) : (
                 <table className="mt-3 w-full text-sm">
                   <thead>
                     <tr className="border-b border-[var(--line)]">
-                      <th className="px-3 py-2 text-left text-xs font-semibold text-[var(--ink-muted)]">Part</th>
+                      <th className="px-3 py-2 text-left text-xs font-semibold text-[var(--ink-muted)]">Item</th>
                       <th className="px-3 py-2 text-right text-xs font-semibold text-[var(--ink-muted)]">On Hand</th>
                       <th className="px-3 py-2 text-right text-xs font-semibold text-[var(--ink-muted)]">Status</th>
                     </tr>
@@ -1357,7 +1357,7 @@ export default async function ReportsPage({
               <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Stock &amp; Payables</p>
               <div className="mt-3 space-y-3">
                 <div className="flex items-center justify-between">
-                  <p className="text-sm text-[var(--ink-muted)]">Stock Value (tracked parts)</p>
+                  <p className="text-sm text-[var(--ink-muted)]">Stock Value (tracked items)</p>
                   <p className="text-sm font-bold text-[var(--ink)]">{formatMoneyCompact(totalStockValue, currency)}</p>
                 </div>
                 <div className="flex items-center justify-between">
@@ -1365,7 +1365,7 @@ export default async function ReportsPage({
                   <p className={`text-sm font-bold ${payablesOutstanding > 0 ? "text-amber-500" : "text-[var(--ink)]"}`}>{formatMoneyCompact(payablesOutstanding, currency)}</p>
                 </div>
                 <div className="flex items-center justify-between">
-                  <p className="text-sm text-[var(--ink-muted)]">Parts at or Below Reorder</p>
+                  <p className="text-sm text-[var(--ink-muted)]">Items at or Below Reorder</p>
                   <p className={`text-sm font-bold ${lowStockItems.length > 0 ? "text-red-500" : "text-emerald-500"}`}>{lowStockItems.length} of {lowStockParts.length}</p>
                 </div>
               </div>

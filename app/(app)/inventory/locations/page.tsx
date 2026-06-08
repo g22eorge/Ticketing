@@ -86,7 +86,7 @@ export default async function StockLocationsPage({
                   <th className="px-4 py-2.5 text-left">Location</th>
                   <th className="px-4 py-2.5 text-left">Code</th>
                   <th className="hidden px-4 py-2.5 text-left md:table-cell">Branch</th>
-                  <th className="px-4 py-2.5 text-right">Parts</th>
+                  <th className="px-4 py-2.5 text-right">Items</th>
                   <th className="px-4 py-2.5 text-right">On Hand</th>
                   <th className="hidden px-4 py-2.5 text-right md:table-cell">Reserved</th>
                   <th className="px-4 py-2.5 text-left">Status</th>

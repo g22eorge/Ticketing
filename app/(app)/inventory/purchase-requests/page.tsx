@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireOrgSession } from "@/lib/org-context";
 import { can } from "@/lib/permissions";
+import { deletePurchaseRequestAction } from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -41,7 +42,10 @@ export default async function PurchaseRequestsPage() {
           <p className="text-[12px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Inventory</p>
           <p className="text-[13px] font-bold text-[var(--ink)]">Purchase Requests <span className="font-normal text-[var(--ink-muted)]">· {requests.length}</span></p>
         </div>
-        <Link href="/inventory/purchase-requests/new" className="btn-premium rounded-lg px-3 py-1.5 text-[12px]">New Request</Link>
+        <div className="flex items-center gap-2">
+          <Link href="/api/procurement/export?type=purchase-requests" className="rounded-lg border border-[var(--line)] px-3 py-1.5 text-[12px] font-semibold text-[var(--ink)] transition hover:border-[var(--accent)]/50 hover:text-[var(--accent)]">Export CSV</Link>
+          <Link href="/inventory/purchase-requests/new" className="btn-premium rounded-lg px-3 py-1.5 text-[12px]">New Request</Link>
+        </div>
       </div>
 
       <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
@@ -65,7 +69,17 @@ export default async function PurchaseRequestsPage() {
                   <td className="px-4 py-3 hidden md:table-cell text-[var(--ink-muted)]">{request.supplier?.name ?? "No preference"}</td>
                   <td className="px-4 py-3 hidden sm:table-cell text-[var(--ink-muted)]">{fmt(request.neededBy)}</td>
                   <td className="px-4 py-3 text-center text-[var(--ink-muted)]">{request._count.items}</td>
-                  <td className="px-4 py-3 text-right"><Link href={`/inventory/purchase-requests/${request.id}`} className="inline-flex items-center rounded-lg border border-[var(--line)] px-2.5 py-1.5 text-xs font-medium text-[var(--ink)] transition hover:border-[var(--accent)]/50 hover:text-[var(--accent)]">View</Link></td>
+                  <td className="px-4 py-3 text-right">
+                    <div className="flex justify-end gap-1.5">
+                      <Link href={`/inventory/purchase-requests/${request.id}`} className="inline-flex items-center rounded-lg border border-[var(--line)] px-2.5 py-1.5 text-xs font-medium text-[var(--ink)] transition hover:border-[var(--accent)]/50 hover:text-[var(--accent)]">View</Link>
+                      {!request.convertedPo ? (
+                        <form action={deletePurchaseRequestAction}>
+                          <input type="hidden" name="id" value={request.id} />
+                          <button type="submit" className="rounded-lg border border-red-500/25 bg-red-500/10 px-2.5 py-1.5 text-xs font-semibold text-red-600">Delete</button>
+                        </form>
+                      ) : null}
+                    </div>
+                  </td>
                 </tr>
               ))}
               {requests.length === 0 ? <tr><td colSpan={6} className="px-4 py-10 text-center text-sm text-[var(--ink-muted)]">No purchase requests yet.</td></tr> : null}

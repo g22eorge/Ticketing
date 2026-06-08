@@ -55,7 +55,7 @@ export async function createStockCountAction(formData: FormData): Promise<{ id?:
 
   const partIds = Array.from(new Set(lines.map((line) => line.partId)));
   const parts = await prisma.part.findMany({ where: { id: { in: partIds }, orgId, isActive: true }, select: { id: true } });
-  if (parts.length !== partIds.length) return { error: "One or more parts are invalid" };
+  if (parts.length !== partIds.length) return { error: "One or more inventory items are invalid" };
 
   const stockCount = await prisma.stockCount.create({
     data: {

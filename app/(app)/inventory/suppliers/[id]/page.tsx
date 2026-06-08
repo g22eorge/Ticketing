@@ -82,7 +82,7 @@ export default async function SupplierDetailPage({
         <form action={createSupplierPriceAction} className="grid gap-2 border-b border-[var(--line)] p-4 md:grid-cols-[1.4fr_1fr_0.7fr_0.6fr_0.7fr_auto]">
           <input type="hidden" name="supplierId" value={supplier.id} />
           <select name="partId" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/60">
-            <option value="">No linked part</option>
+            <option value="">No linked item</option>
             {parts.map((part) => <option key={part.id} value={part.id}>{part.sku} · {part.name}</option>)}
           </select>
           <input name="description" placeholder="Description *" required className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/60" />
@@ -122,7 +122,7 @@ export default async function SupplierDetailPage({
                             <input type="hidden" name="id" value={price.id} />
                             <input type="hidden" name="supplierId" value={supplier.id} />
                             <select name="partId" defaultValue={price.partId ?? ""} className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/60">
-                              <option value="">No linked part</option>
+                              <option value="">No linked item</option>
                               {parts.map((part) => <option key={part.id} value={part.id}>{part.sku} · {part.name}</option>)}
                             </select>
                             <input name="description" defaultValue={price.description} required className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/60" />

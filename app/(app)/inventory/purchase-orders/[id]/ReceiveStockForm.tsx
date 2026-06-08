@@ -33,19 +33,19 @@ export function ReceiveStockForm({ poId, items, locations }: { poId: string; ite
   }
 
   return (
-    <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)]">
-      <div className="px-5 py-3 border-b border-[var(--line)]">
-        <p className="text-[12px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Receive Stock</p>
-        <p className="mt-0.5 text-xs text-[var(--ink-muted)]">Update quantities received. Part inventory will be adjusted automatically.</p>
+    <div className="overflow-hidden rounded-lg border border-[var(--line)] bg-[var(--panel)]">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--line)] px-3 py-2">
+        <p className="text-sm font-bold text-[var(--ink)]">Receive stock</p>
+        <p className="text-xs text-[var(--ink-muted)]">Post GRN quantities</p>
       </div>
-      <form onSubmit={handleSubmit} className="p-5 space-y-3">
-        <label className="block text-xs font-semibold text-[var(--ink)]">
+      <form onSubmit={handleSubmit} className="space-y-3 p-3">
+        <label className="block text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--ink-muted)]">
           Receive into location
           <select
             value={locationId}
             onChange={(e) => setLocationId(e.target.value)}
             required
-            className="mt-1 w-full rounded-md border border-[var(--line)] bg-[var(--bg)] px-3 py-2 text-sm text-[var(--ink)] focus:outline-none focus:ring-2 focus:ring-[var(--gold)]/40"
+            className="mt-1 w-full rounded-md border border-[var(--line)] bg-[var(--bg)] px-2.5 py-1.5 text-sm font-normal normal-case tracking-normal text-[var(--ink)] outline-none focus:ring-2 focus:ring-[var(--accent)]/10"
           >
             {locations.map((location) => (
               <option key={location.id} value={location.id}>
@@ -55,49 +55,54 @@ export function ReceiveStockForm({ poId, items, locations }: { poId: string; ite
           </select>
         </label>
         <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="text-xs font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
-              <th className="text-left pb-2">Item</th>
-              <th className="text-right pb-2 w-24">Ordered</th>
-              <th className="text-right pb-2 w-28">Qty Received</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-[var(--line)]">
-            {items.map((item) => (
-              <tr key={item.id}>
-                <td className="py-2 text-[var(--ink)]">{item.description}</td>
-                <td className="py-2 text-right tabular-nums text-[var(--ink-muted)]">{item.qtyOrdered}</td>
-                <td className="py-2 text-right">
+          <table className="w-full min-w-[560px] text-sm">
+            <thead className="bg-[var(--panel-strong)] text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--ink-muted)]">
+              <tr>
+                <th className="px-2 py-1.5 text-left">Item</th>
+                <th className="w-24 px-2 py-1.5 text-right">Ordered</th>
+                <th className="w-24 px-2 py-1.5 text-right">Current</th>
+                <th className="w-28 px-2 py-1.5 text-right">New</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[var(--line)]">
+              {items.map((item) => {
+                const current = quantities[item.id] ?? item.qtyReceived;
+                return (
+                  <tr key={item.id}>
+                    <td className="px-2 py-1.5 font-medium text-[var(--ink)]">{item.description}</td>
+                    <td className="px-2 py-1.5 text-right tabular-nums text-[var(--ink-muted)]">{item.qtyOrdered}</td>
+                    <td className="px-2 py-1.5 text-right tabular-nums text-[var(--ink-muted)]">{item.qtyReceived}</td>
+                    <td className="px-2 py-1.5 text-right">
                   <input
                     type="number"
                     min={0}
                     max={item.qtyOrdered}
-                    value={quantities[item.id] ?? item.qtyReceived}
+                    value={current}
                     onChange={(e) =>
                       setQuantities((prev) => ({
                         ...prev,
                         [item.id]: Math.min(item.qtyOrdered, parseInt(e.target.value, 10) || 0),
                       }))
                     }
-                    className="w-24 rounded-md border border-[var(--line)] bg-[var(--bg)] px-2 py-1 text-xs text-right text-[var(--ink)] focus:outline-none focus:ring-2 focus:ring-[var(--gold)]/40"
+                    className="w-24 rounded-md border border-[var(--line)] bg-[var(--bg)] px-2 py-1 text-right text-sm tabular-nums text-[var(--ink)] outline-none focus:ring-2 focus:ring-[var(--accent)]/10"
                   />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
 
-        {error && <p className="text-xs text-red-600">{error}</p>}
-        {saved && <p className="text-xs text-green-600">Stock received and inventory updated.</p>}
+        {error && <p className="text-xs font-semibold text-red-600">{error}</p>}
+        {saved && <p className="text-xs font-semibold text-green-600">Stock received and inventory updated.</p>}
 
         <button
           type="submit"
           disabled={pending || !locationId}
-          className="btn-premium rounded-lg px-4 py-2 text-sm font-semibold disabled:opacity-50"
+          className="btn-premium rounded-md px-3 py-1.5 text-sm font-semibold disabled:opacity-50"
         >
-          {pending ? "Saving…" : "Save Received Quantities"}
+          {pending ? "Saving..." : "Post GRN"}
         </button>
       </form>
     </div>

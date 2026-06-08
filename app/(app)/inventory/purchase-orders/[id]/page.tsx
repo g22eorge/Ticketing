@@ -3,18 +3,28 @@ import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireOrgSession } from "@/lib/org-context";
 import { can } from "@/lib/permissions";
+import { formatMoney } from "@/lib/currency";
 import { ReceiveStockForm } from "./ReceiveStockForm";
 import { POMetaForm } from "./POMetaForm";
+import { deletePurchaseOrderAction, setPurchaseOrderStatusAction } from "../actions";
 
 export const dynamic = "force-dynamic";
 
-const STATUS_COLORS: Record<string, string> = {
-  DRAFT:     "border border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]",
-  ORDERED:   "border border-blue-400/30 bg-blue-500/10 text-blue-700 dark:text-blue-400",
-  PARTIAL:   "border border-amber-400/30 bg-amber-500/10 text-amber-700 dark:text-amber-400",
-  RECEIVED:  "border border-green-400/30 bg-green-500/10 text-green-700 dark:text-green-400",
-  CANCELLED: "border border-red-400/30 bg-red-500/10 text-red-700 dark:text-red-400",
+const STATUS_STYLES: Record<string, string> = {
+  DRAFT: "border border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]",
+  ORDERED: "border border-sky-400/30 bg-sky-500/10 text-sky-700",
+  PARTIAL: "border border-amber-400/30 bg-amber-500/10 text-amber-700",
+  RECEIVED: "border border-emerald-400/30 bg-emerald-500/10 text-emerald-700",
+  CANCELLED: "border border-red-400/30 bg-red-500/10 text-red-700",
 };
+
+function fmtDate(d: Date | null) {
+  return d ? d.toLocaleDateString("en-UG", { day: "numeric", month: "short", year: "numeric" }) : "-";
+}
+
+function poNumber(po: { reference: string | null; id: string }) {
+  return po.reference ?? `PO-${po.id.slice(-6).toUpperCase()}`;
+}
 
 export default async function PurchaseOrderDetailPage({
   params,
@@ -23,7 +33,7 @@ export default async function PurchaseOrderDetailPage({
 }) {
   const { id } = await params;
   const { user, orgId } = await requireOrgSession();
-  if (!can.manageUsers(user)) redirect("/inventory");
+  if (!can.manageInventory(user)) redirect("/inventory");
 
   const po = await prisma.purchaseOrder.findUnique({
     where: { id },
@@ -40,16 +50,21 @@ export default async function PurchaseOrderDetailPage({
         include: { part: { select: { id: true, name: true, sku: true } } },
         orderBy: { createdAt: "asc" },
       },
+      _count: { select: { purchaseRequests: true, supplierBills: true } },
     },
   });
 
   if (!po || po.orgId !== orgId) notFound();
 
-  const fmt = (d: Date | null) =>
-    d ? d.toLocaleDateString("en-UG", { day: "numeric", month: "short", year: "numeric" }) : "—";
-
-  const totalOrdered = po.items.reduce((s, i) => s + i.qtyOrdered * i.unitCost, 0);
+  const totalOrdered = po.items.reduce((sum, item) => sum + item.qtyOrdered * item.unitCost, 0);
+  const receivedQty = po.items.reduce((sum, item) => sum + item.qtyReceived, 0);
+  const orderedQty = po.items.reduce((sum, item) => sum + item.qtyOrdered, 0);
+  const receivedRatio = orderedQty > 0 ? Math.min(100, Math.round((receivedQty / orderedQty) * 100)) : 0;
   const canReceive = ["ORDERED", "PARTIAL"].includes(po.status);
+  const canCancel = !["RECEIVED", "CANCELLED"].includes(po.status) && receivedQty === 0;
+  const canDelete = po.status !== "RECEIVED" && receivedQty === 0 && po.goodsReceivedNotes.length === 0 && po._count.supplierBills === 0 && po._count.purchaseRequests === 0;
+  const isOverdue = canReceive && po.expectedAt && po.expectedAt < new Date();
+
   const locations = await prisma.stockLocation.findMany({
     where: { orgId, isActive: true },
     select: { id: true, name: true, code: true },
@@ -57,156 +72,168 @@ export default async function PurchaseOrderDetailPage({
   });
 
   return (
-    <div className="mx-auto max-w-3xl space-y-4">
-      {/* Header */}
-      <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <p className="text-[12px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Inventory · Purchase Order</p>
-            <p className="font-mono text-[13px] font-bold text-[var(--ink)]">
-              {po.reference ?? `PO-${po.id.slice(-6).toUpperCase()}`}
-            </p>
-            <div className="mt-1 flex flex-wrap items-center gap-2 text-[12px] text-[var(--ink-muted)]">
-              <span>Supplier:{" "}
-                <Link href={`/inventory/suppliers/${po.supplier.id}`} className="text-[var(--accent)] hover:underline">
-                  {po.supplier.name}
-                </Link>
-              </span>
+    <div className="space-y-3">
+      <div className="rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 py-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="min-w-0">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Purchase Order</p>
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="font-mono text-base font-bold text-[var(--ink)]">{poNumber(po)}</h1>
+              <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${STATUS_STYLES[po.status] ?? STATUS_STYLES.DRAFT}`}>{po.status}</span>
+              {isOverdue ? <span className="rounded-full border border-red-500/25 bg-red-500/10 px-2 py-0.5 text-[11px] font-semibold text-red-600">Late</span> : null}
             </div>
           </div>
-          <span className={`inline-flex items-center rounded-full px-3 py-1 text-[13px] font-semibold ${STATUS_COLORS[po.status] ?? ""}`}>
-            {po.status}
-          </span>
+          <div className="flex flex-wrap gap-1.5">
+            <Link href="/inventory/purchase-orders" className="rounded-md border border-[var(--line)] px-2.5 py-1.5 text-xs font-semibold text-[var(--ink)] hover:text-[var(--accent)]">Register</Link>
+            <Link href={`/api/procurement/documents/purchase-order/${po.id}`} target="_blank" className="rounded-md border border-[var(--line)] px-2.5 py-1.5 text-xs font-semibold text-[var(--ink)] hover:text-[var(--accent)]">Print / PDF</Link>
+            {po.status === "DRAFT" ? (
+              <form action={setPurchaseOrderStatusAction}>
+                <input type="hidden" name="id" value={po.id} />
+                <input type="hidden" name="status" value="ORDERED" />
+                <button type="submit" className="rounded-md border border-sky-500/30 bg-sky-500/10 px-2.5 py-1.5 text-xs font-semibold text-sky-700">Issue</button>
+              </form>
+            ) : null}
+            {canReceive ? <Link href="#receive" className="rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1.5 text-xs font-semibold text-emerald-700">Receive</Link> : null}
+            {canCancel ? (
+              <form action={setPurchaseOrderStatusAction}>
+                <input type="hidden" name="id" value={po.id} />
+                <input type="hidden" name="status" value="CANCELLED" />
+                <button type="submit" className="rounded-md border border-red-500/25 bg-red-500/10 px-2.5 py-1.5 text-xs font-semibold text-red-600">Cancel</button>
+              </form>
+            ) : null}
+            {canDelete ? (
+              <form action={deletePurchaseOrderAction}>
+                <input type="hidden" name="id" value={po.id} />
+                <button type="submit" className="rounded-md border border-red-500/25 bg-red-500/10 px-2.5 py-1.5 text-xs font-semibold text-red-600">Delete</button>
+              </form>
+            ) : (
+              <span className="rounded-md border border-[var(--line)] px-2.5 py-1.5 text-xs font-semibold text-[var(--ink-muted)]">Locked</span>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Meta info */}
-      <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-4">
-        <p className="mb-3 text-[13px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Details</p>
-        <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-[12px] sm:grid-cols-4">
-          {[
-            { label: "Ordered", value: fmt(po.orderedAt) },
-            { label: "Expected", value: fmt(po.expectedAt) },
-            { label: "Received", value: fmt(po.receivedAt) },
-            { label: "Created", value: fmt(po.createdAt) },
-          ].map(({ label, value }) => (
-            <div key={label}>
-              <dt className="text-[var(--ink-muted)]">{label}</dt>
-              <dd className="font-medium text-[var(--ink)]">{value}</dd>
-            </div>
-          ))}
-        </dl>
+      <div className="grid grid-cols-2 gap-2 md:grid-cols-6">
+        {[
+          ["Supplier", po.supplier.name],
+          ["Ordered", fmtDate(po.orderedAt)],
+          ["Expected", fmtDate(po.expectedAt)],
+          ["Received", `${receivedQty}/${orderedQty}`],
+          ["Progress", `${receivedRatio}%`],
+          ["Value", formatMoney(totalOrdered)],
+        ].map(([label, value]) => (
+          <div key={label} className="rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 py-2">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[var(--ink-muted)]">{label}</p>
+            <p className="mt-1 truncate text-sm font-bold text-[var(--ink)]">{value}</p>
+          </div>
+        ))}
       </div>
 
-      {/* Edit meta */}
-      {po.status !== "RECEIVED" && po.status !== "CANCELLED" && (
-        <POMetaForm po={{ id: po.id, reference: po.reference, orderedAt: po.orderedAt, expectedAt: po.expectedAt, notes: po.notes, status: po.status }} />
-      )}
+      <div className="h-1.5 overflow-hidden rounded-full bg-[var(--panel-strong)]">
+        <div className="h-full rounded-full bg-[var(--accent)]" style={{ width: `${receivedRatio}%` }} />
+      </div>
 
-      {/* Items table */}
-      <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] overflow-hidden">
-        <div className="border-b border-[var(--line)] px-4 py-3">
-          <p className="text-[13px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Line Items</p>
+      {po.status !== "RECEIVED" && po.status !== "CANCELLED" ? (
+        <POMetaForm po={{ id: po.id, reference: po.reference, orderedAt: po.orderedAt, expectedAt: po.expectedAt, notes: po.notes, status: po.status }} />
+      ) : null}
+
+      <div className="overflow-hidden rounded-lg border border-[var(--line)] bg-[var(--panel)]">
+        <div className="flex items-center justify-between gap-2 border-b border-[var(--line)] px-3 py-2">
+          <p className="text-sm font-bold text-[var(--ink)]">Line items</p>
+          <p className="text-xs font-semibold text-[var(--ink-muted)]">{po.items.length} lines</p>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-[var(--panel-strong)] text-[12px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
-              <tr className="border-b border-[var(--line)]">
-                <th className="px-3 py-2.5 text-left">Description</th>
-                <th className="px-3 py-2.5 text-left hidden sm:table-cell">Part</th>
-                <th className="px-3 py-2.5 text-right">Ordered</th>
-                <th className="px-3 py-2.5 text-right">Received</th>
-                <th className="px-3 py-2.5 text-right">Unit Cost</th>
-                <th className="px-3 py-2.5 text-right">Total</th>
+          <table className="w-full min-w-[860px] text-sm">
+            <thead className="bg-[var(--panel-strong)] text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--ink-muted)]">
+              <tr>
+                <th className="px-3 py-2 text-left">Description</th>
+                <th className="px-3 py-2 text-left">Item</th>
+                <th className="px-3 py-2 text-right">Ordered</th>
+                <th className="px-3 py-2 text-right">Received</th>
+                <th className="px-3 py-2 text-right">Balance</th>
+                <th className="px-3 py-2 text-right">Unit cost</th>
+                <th className="px-3 py-2 text-right">Total</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--line)]">
               {po.items.map((item) => (
-                <tr key={item.id} className={item.qtyReceived >= item.qtyOrdered ? "bg-green-50/40" : ""}>
-                  <td className="px-3 py-2.5 text-[var(--ink)]">{item.description}</td>
-                  <td className="px-3 py-2.5 text-xs text-[var(--ink-muted)] hidden sm:table-cell font-mono">
-                    {item.part ? `${item.part.sku}` : "—"}
-                  </td>
-                  <td className="px-3 py-2.5 text-right tabular-nums text-[var(--ink-muted)]">{item.qtyOrdered}</td>
-                  <td className="px-3 py-2.5 text-right tabular-nums">
-                    <span className={item.qtyReceived >= item.qtyOrdered ? "text-green-600 font-semibold" : "text-amber-600"}>
-                      {item.qtyReceived}
-                    </span>
-                  </td>
-                  <td className="px-3 py-2.5 text-right tabular-nums text-[var(--ink-muted)]">
-                    {item.unitCost.toLocaleString()}
-                  </td>
-                  <td className="px-3 py-2.5 text-right tabular-nums font-medium text-[var(--ink)]">
-                    {(item.qtyOrdered * item.unitCost).toLocaleString()}
-                  </td>
+                <tr key={item.id} className="hover:bg-[var(--panel-strong)]/35">
+                  <td className="px-3 py-2 font-medium text-[var(--ink)]">{item.description}</td>
+                  <td className="px-3 py-2 font-mono text-xs text-[var(--ink-muted)]">{item.part ? item.part.sku : "-"}</td>
+                  <td className="px-3 py-2 text-right tabular-nums text-[var(--ink-muted)]">{item.qtyOrdered}</td>
+                  <td className="px-3 py-2 text-right font-semibold tabular-nums text-[var(--ink)]">{item.qtyReceived}</td>
+                  <td className="px-3 py-2 text-right tabular-nums text-[var(--ink-muted)]">{Math.max(0, item.qtyOrdered - item.qtyReceived)}</td>
+                  <td className="px-3 py-2 text-right tabular-nums text-[var(--ink-muted)]">{formatMoney(item.unitCost)}</td>
+                  <td className="px-3 py-2 text-right font-semibold tabular-nums text-[var(--ink)]">{formatMoney(item.qtyOrdered * item.unitCost)}</td>
                 </tr>
               ))}
             </tbody>
-            <tfoot>
-              <tr className="border-t border-[var(--line)] bg-[var(--gold)]/5">
-                <td colSpan={5} className="px-3 py-2.5 text-right text-xs font-semibold text-[var(--ink-muted)]">Total Order Value</td>
-                <td className="px-3 py-2.5 text-right text-sm font-bold text-[var(--ink)] tabular-nums">
-                  {totalOrdered.toLocaleString()}
-                </td>
+            <tfoot className="border-t border-[var(--line)] bg-[var(--panel-strong)]">
+              <tr>
+                <td colSpan={6} className="px-3 py-2 text-right text-xs font-semibold uppercase tracking-[0.1em] text-[var(--ink-muted)]">Total</td>
+                <td className="px-3 py-2 text-right text-sm font-black tabular-nums text-[var(--ink)]">{formatMoney(totalOrdered)}</td>
               </tr>
             </tfoot>
           </table>
         </div>
       </div>
 
-      {/* Notes */}
-      {po.notes && (
-        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-4">
-          <p className="mb-1 text-[13px] font-semibold text-[var(--ink-muted)]">Notes</p>
-          <p className="whitespace-pre-wrap text-[12px] text-[var(--ink)]">{po.notes}</p>
+      <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_340px]">
+        <div className="space-y-3">
+          {canReceive && locations.length > 0 ? (
+            <div id="receive">
+              <ReceiveStockForm
+                poId={po.id}
+                locations={locations}
+                items={po.items.map((item) => ({
+                  id: item.id,
+                  description: item.description,
+                  qtyOrdered: item.qtyOrdered,
+                  qtyReceived: item.qtyReceived,
+                }))}
+              />
+            </div>
+          ) : null}
+          {canReceive && locations.length === 0 ? (
+            <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm font-semibold text-amber-700">
+              Create an active stock location before receiving this purchase order.
+            </div>
+          ) : null}
         </div>
-      )}
 
-      {po.goodsReceivedNotes.length > 0 && (
-        <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] overflow-hidden">
-          <div className="border-b border-[var(--line)] px-4 py-3 flex items-center justify-between gap-2">
-            <p className="text-[13px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Goods Received</p>
-            <Link href="/inventory/goods-received" className="text-xs font-semibold text-[var(--gold)] hover:underline">
-              View all
-            </Link>
-          </div>
-          <div className="divide-y divide-[var(--line)]">
-            {po.goodsReceivedNotes.map((grn) => {
-              const total = grn.items.reduce((sum, item) => sum + item.quantity * item.unitCost, 0);
-              return (
-                <Link key={grn.id} href={`/inventory/goods-received/${grn.id}`} className="flex items-center justify-between gap-3 px-4 py-3 text-sm hover:bg-[var(--panel-strong)]/40">
-                  <div>
-                    <p className="font-semibold text-[var(--ink)]">{grn.grnNumber}</p>
-                    <p className="text-xs text-[var(--ink-muted)]">
-                      {fmt(grn.receivedAt)} · {grn.location.name}{grn.location.code ? ` (${grn.location.code})` : ""}
-                    </p>
-                  </div>
-                  <p className="font-semibold tabular-nums text-[var(--ink)]">{total.toLocaleString()}</p>
-                </Link>
-              );
-            })}
+        <div className="space-y-3">
+          {po.notes ? (
+            <div className="rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 py-2">
+              <p className="text-xs font-semibold uppercase tracking-[0.1em] text-[var(--ink-muted)]">Notes</p>
+              <p className="mt-1 whitespace-pre-wrap text-sm text-[var(--ink)]">{po.notes}</p>
+            </div>
+          ) : null}
+          <div className="overflow-hidden rounded-lg border border-[var(--line)] bg-[var(--panel)]">
+            <div className="flex items-center justify-between border-b border-[var(--line)] px-3 py-2">
+              <p className="text-sm font-bold text-[var(--ink)]">Goods received</p>
+              <Link href="/inventory/goods-received" className="text-xs font-semibold text-[var(--accent)] hover:underline">All GRNs</Link>
+            </div>
+            {po.goodsReceivedNotes.length === 0 ? (
+              <p className="px-3 py-3 text-sm text-[var(--ink-muted)]">No GRNs posted.</p>
+            ) : (
+              <div className="divide-y divide-[var(--line)]">
+                {po.goodsReceivedNotes.map((grn) => {
+                  const total = grn.items.reduce((sum, item) => sum + item.quantity * item.unitCost, 0);
+                  return (
+                    <Link key={grn.id} href={`/inventory/goods-received/${grn.id}`} className="block px-3 py-2 hover:bg-[var(--panel-strong)]/40">
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="text-sm font-semibold text-[var(--ink)]">{grn.grnNumber}</p>
+                        <p className="text-sm font-semibold tabular-nums text-[var(--ink)]">{formatMoney(total)}</p>
+                      </div>
+                      <p className="mt-0.5 text-xs text-[var(--ink-muted)]">{fmtDate(grn.receivedAt)} · {grn.location.name}{grn.location.code ? ` (${grn.location.code})` : ""}</p>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
-      )}
-
-      {/* Receive stock */}
-      {canReceive && locations.length > 0 && (
-        <ReceiveStockForm
-          poId={po.id}
-          locations={locations}
-          items={po.items.map((i) => ({
-            id: i.id,
-            description: i.description,
-            qtyOrdered: i.qtyOrdered,
-            qtyReceived: i.qtyReceived,
-          }))}
-        />
-      )}
-      {canReceive && locations.length === 0 && (
-        <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-5 py-4 text-sm text-amber-700">
-          Create an active stock location before receiving this purchase order.
-        </div>
-      )}
+      </div>
     </div>
   );
 }

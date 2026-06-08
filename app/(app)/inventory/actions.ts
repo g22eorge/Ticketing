@@ -68,7 +68,7 @@ export async function createPartAction(formData: FormData) {
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     const isUnique = message.includes("Unique constraint") || message.includes("P2002") || message.toLowerCase().includes("unique");
-    const qs = new URLSearchParams({ error: isUnique ? "SKU already exists" : "Failed to add part" }).toString();
+    const qs = new URLSearchParams({ error: isUnique ? "SKU already exists" : "Failed to add item" }).toString();
     redirect(`/inventory?${qs}#add-part`);
   }
 
@@ -85,7 +85,7 @@ export async function adjustStockAction(formData: FormData) {
   const qty = Math.floor(Number(String(formData.get("quantity") ?? "0").trim()));
   const reason = String(formData.get("reason") ?? "").trim();
 
-  if (!partId) redirect("/inventory?error=Part+is+required");
+  if (!partId) redirect("/inventory?error=Item+is+required");
   if (!(["IN", "OUT", "ADJUST"] as const).includes(type))
     redirect(`/inventory/${partId}?error=Invalid+stock+action`);
 
@@ -108,7 +108,7 @@ export async function adjustStockAction(formData: FormData) {
         where: { id: partId, orgId },
         select: { id: true, qtyOnHand: true },
       });
-      if (!part) throw new Error("Part not found");
+      if (!part) throw new Error("Inventory item not found");
 
       let delta: number;
       let logQty: number;
@@ -179,7 +179,7 @@ export async function togglePartActiveAction(formData: FormData) {
 
   const partId = String(formData.get("partId") ?? "").trim();
   const next = String(formData.get("next") ?? "").trim();
-  if (!partId) redirect("/inventory?error=Part+is+required");
+  if (!partId) redirect("/inventory?error=Item+is+required");
 
   await prisma.part.updateMany({ where: { id: partId, orgId }, data: { isActive: next === "1" } });
   revalidatePath(`/inventory/${partId}`);
@@ -205,7 +205,7 @@ export async function updatePartAction(formData: FormData) {
     where: { orgId, sku, id: { not: partId } },
     select: { id: true },
   });
-  if (conflictingSku) redirect(`/inventory/${partId}?error=${encodeURIComponent("Another part already uses that SKU")}`);
+  if (conflictingSku) redirect(`/inventory/${partId}?error=${encodeURIComponent("Another inventory item already uses that SKU")}`);
 
   try {
     const updated = await prisma.part.updateMany({
@@ -218,9 +218,9 @@ export async function updatePartAction(formData: FormData) {
         reorderLevel,
       },
     });
-    if (updated.count !== 1) throw new Error("Part not found");
+    if (updated.count !== 1) throw new Error("Inventory item not found");
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Failed to update part";
+    const message = err instanceof Error ? err.message : "Failed to update item";
     redirect(`/inventory/${partId}?error=${encodeURIComponent(message)}`);
   }
 

@@ -46,9 +46,41 @@ export function NewPurchaseRequestForm({ suppliers, parts }: { suppliers: Suppli
   }
 
   const total = lines.reduce((sum, line) => sum + line.quantity * line.estimatedUnitCost, 0);
+  const completedLines = lines.filter((line) => line.description.trim() && line.quantity > 0).length;
+  const linkedLines = lines.filter((line) => line.partId).length;
 
   return (
     <form onSubmit={submit} className="space-y-5">
+      <div className="grid gap-3 lg:grid-cols-[1fr_280px]">
+        <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] p-5">
+          <p className="text-[12px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Procurement Brief</p>
+          <p className="mt-2 text-sm leading-6 text-[var(--ink-muted)]">
+            A purchase request is the internal buying argument. Capture why the business needs the spend, when it is needed, the preferred supplier, and enough line detail for approval or conversion to PO without rework.
+          </p>
+          <div className="mt-4 grid gap-2 sm:grid-cols-4">
+            {[
+              ["1", "Need"],
+              ["2", "Approve"],
+              ["3", "Order"],
+              ["4", "Receive"],
+            ].map(([step, label]) => (
+              <div key={step} className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2">
+                <p className="text-[11px] font-black text-[var(--accent)]">{step}</p>
+                <p className="text-xs font-semibold text-[var(--ink)]">{label}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] p-5">
+          <p className="text-[12px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Approval Snapshot</p>
+          <dl className="mt-3 space-y-2 text-sm">
+            <div className="flex justify-between gap-3"><dt className="text-[var(--ink-muted)]">Lines ready</dt><dd className="font-bold text-[var(--ink)]">{completedLines}/{lines.length}</dd></div>
+            <div className="flex justify-between gap-3"><dt className="text-[var(--ink-muted)]">Catalog linked</dt><dd className="font-bold text-[var(--ink)]">{linkedLines}</dd></div>
+            <div className="flex justify-between gap-3"><dt className="text-[var(--ink-muted)]">Exposure</dt><dd className="font-bold tabular-nums text-[var(--ink)]">{total.toLocaleString()}</dd></div>
+          </dl>
+        </div>
+      </div>
+
       <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] p-5 space-y-4">
         <p className="text-[12px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Request Details</p>
         <div className="grid gap-4 sm:grid-cols-2">
@@ -83,7 +115,7 @@ export function NewPurchaseRequestForm({ suppliers, parts }: { suppliers: Suppli
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead><tr className="border-b border-[var(--line)] text-xs font-semibold uppercase tracking-wide text-[var(--ink-muted)]"><th className="px-3 py-2 text-left w-48">Part</th><th className="px-3 py-2 text-left">Description</th><th className="px-3 py-2 text-right w-20">Qty</th><th className="px-3 py-2 text-right w-32">Est. Cost</th><th className="px-3 py-2 text-right w-32">Total</th><th className="px-3 py-2 w-8" /></tr></thead>
+            <thead><tr className="border-b border-[var(--line)] text-xs font-semibold uppercase tracking-wide text-[var(--ink-muted)]"><th className="px-3 py-2 text-left w-48">Item</th><th className="px-3 py-2 text-left">Description</th><th className="px-3 py-2 text-right w-20">Qty</th><th className="px-3 py-2 text-right w-32">Est. Cost</th><th className="px-3 py-2 text-right w-32">Total</th><th className="px-3 py-2 w-8" /></tr></thead>
             <tbody className="divide-y divide-[var(--line)]">
               {lines.map((line) => (
                 <tr key={line.key}>

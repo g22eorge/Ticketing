@@ -252,7 +252,7 @@ function riskList(data: Awaited<ReturnType<typeof buildBusinessDataPack>>) {
       ? `${data.repairs.waitingForParts} job(s) are waiting for parts. Connect this with low-stock and open purchase orders.`
       : null,
     data.inventory.lowStockParts > 0
-      ? `${data.inventory.lowStockParts} active part(s) are at or below reorder level. Stockouts can delay repairs and sales.`
+      ? `${data.inventory.lowStockParts} active item(s) are at or below reorder level. Stockouts can delay repairs and sales.`
       : null,
     data.finance.overdueInvoices > 0
       ? `${data.finance.overdueInvoices} invoice(s) are overdue. Receivables outstanding: ${formatAmount(data.finance.receivables, data.currency)}.`
@@ -281,7 +281,7 @@ function actionList(data: Awaited<ReturnType<typeof buildBusinessDataPack>>) {
       ? "Assign OPS/front desk to call clients awaiting approval and record approve/decline decisions on the job timeline."
       : null,
     data.repairs.waitingForParts > 0 || data.inventory.lowStockParts > 0
-      ? "Review Stock Alerts and create purchase requests/orders for parts blocking active jobs."
+      ? "Review Stock Alerts and create purchase requests/orders for items blocking active jobs."
       : null,
     data.finance.overdueInvoices > 0
       ? "Prioritise collections by oldest and largest invoices; send reminders and issue receipts immediately after payment."
@@ -296,7 +296,7 @@ function actionList(data: Awaited<ReturnType<typeof buildBusinessDataPack>>) {
       ? "Review sales target gap and run a focused campaign or quote follow-up push this week."
       : null,
     data.finance.overdueSupplierBills > 0
-      ? "Negotiate supplier bill timing where cash is tight, but protect suppliers for critical repair parts."
+      ? "Negotiate supplier bill timing where cash is tight, but protect suppliers for critical repair items."
       : null,
   ].filter((item): item is string => Boolean(item));
 
@@ -316,10 +316,10 @@ function fallbackAnswer(question: string, data: Awaited<ReturnType<typeof buildB
     if (data.inventory.lowStockParts > 0) {
       lines.push(
         "Inventory risk",
-        `${data.inventory.lowStockParts} part(s) are at or below reorder level${data.repairs.waitingForParts > 0 ? `, and ${data.repairs.waitingForParts} job(s) are already waiting for parts — these two lists need cross-referencing urgently` : ""}. Top items: ${data.inventory.topLowStockParts.map((p) => `${p.name} (${p.qtyOnHand} left, reorder at ${p.reorderLevel})`).join("; ")}.`,
+        `${data.inventory.lowStockParts} item(s) are at or below reorder level${data.repairs.waitingForParts > 0 ? `, and ${data.repairs.waitingForParts} job(s) are already waiting for parts — these two lists need cross-referencing urgently` : ""}. Top items: ${data.inventory.topLowStockParts.map((p) => `${p.name} (${p.qtyOnHand} left, reorder at ${p.reorderLevel})`).join("; ")}.`,
       );
     } else {
-      lines.push("Inventory is healthy — all parts are above reorder level.");
+      lines.push("Inventory is healthy - all items are above reorder level.");
     }
   } else if (focus.includes("repair") || focus.includes("job") || focus.includes("technician")) {
     if (data.repairs.overdueJobs > 0 || data.repairs.staleJobs > 0 || data.repairs.awaitingApproval > 0) {

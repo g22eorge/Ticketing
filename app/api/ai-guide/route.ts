@@ -130,7 +130,7 @@ Internal and external technicians.
 - Complaints: Customer complaint tracking and resolution workflow.
 
 ### Inventory Pages
-- Inventory / Parts & Stock: Parts/items catalogue, quantities, cost, reorder levels, and availability.
+- Inventory / Inventory Items: Item catalogue, quantities, cost, reorder levels, and availability.
 - Stock Alerts: Low-stock/reorder warning page.
 - Purchase Requests: Internal purchase requests before raising supplier orders.
 - Purchase Orders: Supplier order creation and tracking.
@@ -228,7 +228,7 @@ Open a job in AWAITING_APPROVAL → click "Record Client Decision" → select Ap
 **Generate an invoice**
 Open a completed job → Documents tab → "Generate Invoice" → PDF downloads or opens.
 
-**Add a part to inventory**
+**Add an inventory item**
 Inventory → New Item → fill in name, SKU, unit cost, reorder level, qty on hand.
 
 **Record an expense**
@@ -290,7 +290,7 @@ const GUIDE_INTENTS: GuideIntent[] = [
       "3. Check Risks AI Should Escalate for overdue jobs, stale jobs, awaiting approvals, low stock, overdue invoices, and overdue supplier bills.",
       "4. Use Recommended Management Actions to decide what to assign today.",
       "5. Ask the AI Business Copilot questions like: What should management focus on today? Which repairs are stuck? What inventory risks should we fix first? Why is cash margin under pressure?",
-      "A good daily management focus is usually: clear stuck repairs, follow up client approvals, collect overdue receivables, reorder critical low-stock parts, and review expenses if cash margin is weak.",
+      "A good daily management focus is usually: clear stuck repairs, follow up client approvals, collect overdue receivables, reorder critical low-stock items, and review expenses if cash margin is weak.",
     ],
   },
   {
@@ -308,13 +308,13 @@ const GUIDE_INTENTS: GuideIntent[] = [
     any: ["part", "parts", "stock item", "inventory item"],
     actionAny: ["add", "create", "new", "register"],
     answer: [
-      "To add parts/items to inventory:",
-      "1. Open Inventory -> Parts & Stock.",
-      "2. Choose Add Part or New Item.",
-      "3. Enter the part name, SKU/code, manufacturer if available, unit cost, quantity on hand, and reorder level.",
-      "4. If your setup uses locations, choose the stock location where the part is stored.",
-      "5. Save the part. It will appear in inventory and can be used for repairs, POS sales, purchase orders, stock counts, and reorder alerts.",
-      "6. If the part is being bought from a supplier, use Inventory -> Purchase Orders, then Inventory -> Goods Received to increase stock cleanly.",
+      "To add inventory items to inventory:",
+      "1. Open Inventory -> Inventory Items.",
+      "2. Choose Add Item.",
+      "3. Enter the item name, SKU/code, manufacturer if available, unit cost, quantity on hand, and reorder level.",
+      "4. If your setup uses locations, choose the stock location where the item is stored.",
+      "5. Save the item. It will appear in inventory and can be used for repairs, POS sales, purchase orders, stock counts, and reorder alerts.",
+      "6. If the item is being bought from a supplier, use Inventory -> Purchase Orders, then Inventory -> Goods Received to increase stock cleanly.",
       "If you cannot see the add button, check that your role has inventory/admin permissions.",
     ],
   },
@@ -337,14 +337,14 @@ const GUIDE_INTENTS: GuideIntent[] = [
       "To create a purchase order:",
       "1. Open Inventory -> Purchase Orders.",
       "2. Choose New Purchase Order.",
-      "3. Select the supplier and add the parts/items, quantities, expected cost, and notes.",
+      "3. Select the supplier and add the inventory items, quantities, expected cost, and notes.",
       "4. Save or submit the PO depending on your workflow.",
       "5. When items arrive, open Inventory -> Goods Received to receive stock against the PO.",
       "6. Record the supplier invoice under Inventory -> Supplier Bills if applicable.",
     ],
   },
   {
-    any: ["goods received", "receive stock", "receive parts", "grn"],
+    any: ["goods received", "receive stock", "receive items", "grn"],
     answer: [
       "To receive stock:",
       "1. Open Inventory -> Goods Received.",
@@ -619,12 +619,12 @@ function _fallbackAnswer(message: string) {
 
   if (text.includes("part") && (text.includes("add") || text.includes("create") || text.includes("new"))) {
     return [
-      "To add parts/items to inventory:",
-      "1. Open Inventory -> Parts & Stock.",
-      "2. Choose Add Part or New Item.",
-      "3. Enter the part name, SKU/code, manufacturer if available, unit cost, quantity on hand, and reorder level.",
-      "4. If your setup uses locations, choose the stock location where the part is stored.",
-      "5. Save the part. It will appear in inventory and can be used for repairs, sales, purchase orders, stock counts, and reorder alerts.",
+      "To add inventory items to inventory:",
+      "1. Open Inventory -> Inventory Items.",
+      "2. Choose Add Item.",
+      "3. Enter the item name, SKU/code, manufacturer if available, unit cost, quantity on hand, and reorder level.",
+      "4. If your setup uses locations, choose the stock location where the item is stored.",
+      "5. Save the item. It will appear in inventory and can be used for repairs, sales, purchase orders, stock counts, and reorder alerts.",
       "6. For supplier purchases, create a Purchase Order, then receive stock through Goods Received instead of manually increasing quantity.",
       "If you cannot see the add button, check that your role has inventory/admin permissions.",
     ].join("\n");
@@ -633,14 +633,14 @@ function _fallbackAnswer(message: string) {
   if (text.includes("inventory") || text.includes("stock") || text.includes("part") || text.includes("supplier") || text.includes("purchase")) {
     return [
       "Inventory and procurement workflow:",
-      "1. Inventory -> Parts & Stock shows items, quantities, costs, and reorder levels.",
+      "1. Inventory -> Inventory Items shows items, quantities, costs, and reorder levels.",
       "2. Inventory -> Purchase Requests captures internal requests before buying.",
       "3. Inventory -> Purchase Orders sends/records orders to suppliers.",
       "4. Inventory -> Goods Received records stock received against a PO.",
       "5. Inventory -> Supplier Bills tracks supplier invoices and payment status.",
       "6. Inventory -> Stock Counts reconciles physical counts with system quantities.",
       "7. Inventory -> Transfers moves stock between locations.",
-      "If stock is wrong, review goods received, stock counts, transfers, sales, and part reservations.",
+      "If stock is wrong, review goods received, stock counts, transfers, sales, and item reservations.",
     ].join("\n");
   }
 
@@ -688,7 +688,7 @@ function _fallbackAnswer(message: string) {
       "4. Clients: customer directory and job history for authorised roles.",
       "5. Technicians: technician assignments, external technician views, and payouts.",
       "6. Field Visits: onsite visit scheduling, assignment, and sign-off.",
-      "7. Inventory: parts, stock alerts, suppliers, purchase requests/orders, goods received, stock counts, and transfers.",
+      "7. Inventory: items, stock alerts, suppliers, purchase requests/orders, goods received, stock counts, and transfers.",
       "8. POS and Sales: counter sales, cashier shifts, leads, campaigns, visits, quotations, and targets.",
       "9. Documents: job cards, invoices, quotations, receipts, delivery notes, credit notes, and refunds.",
       "10. Finance: expenses, bank, recurring billing, accounts, and financial reports.",

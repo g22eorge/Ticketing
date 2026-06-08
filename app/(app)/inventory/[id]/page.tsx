@@ -131,7 +131,7 @@ export default async function PartDetailPage({
                 </span>
               )}
             </div>
-            {/* Part name */}
+            {/* Item name */}
             <h1 className="text-[22px] font-black uppercase tracking-wide text-[var(--ink)]">{part.name}</h1>
             {part.manufacturer && (
               <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">{part.manufacturer}</p>

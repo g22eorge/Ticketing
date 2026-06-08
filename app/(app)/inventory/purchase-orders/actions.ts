@@ -21,6 +21,14 @@ async function generateGrnNumber(orgId: string): Promise<string> {
   return `GRN-${year}-${String(count + 1).padStart(4, "0")}`;
 }
 
+function parseOptionalDate(raw: FormDataEntryValue | null, label: string): { date: Date | null; error?: string } {
+  const value = String(raw ?? "").trim();
+  if (!value) return { date: null };
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return { date: null, error: `${label} is invalid` };
+  return { date };
+}
+
 // ── Create PO ──────────────────────────────────────────────────────────────
 
 export async function createPurchaseOrderAction(
@@ -28,33 +36,56 @@ export async function createPurchaseOrderAction(
 ): Promise<{ id?: string; error?: string }> {
   const { orgId } = await requireAdmin();
 
-  const supplierId = formData.get("supplierId") as string;
+  const supplierId = String(formData.get("supplierId") ?? "").trim();
   if (!supplierId) return { error: "Supplier is required" };
 
-  const supplier = await prisma.supplier.findUnique({
-    where: { id: supplierId },
-    select: { orgId: true },
+  const supplier = await prisma.supplier.findFirst({
+    where: { id: supplierId, orgId, isActive: true },
+    select: { id: true },
   });
-  if (!supplier || supplier.orgId !== orgId) return { error: "Supplier not found" };
+  if (!supplier) return { error: "Supplier not found or inactive" };
 
-  const reference = (formData.get("reference") as string).trim() || null;
-  const orderedAtRaw = formData.get("orderedAt") as string;
-  const expectedAtRaw = formData.get("expectedAt") as string;
-  const notes = (formData.get("notes") as string).trim() || null;
+  const reference = String(formData.get("reference") ?? "").trim() || null;
+  const orderedAtResult = parseOptionalDate(formData.get("orderedAt"), "Order date");
+  const expectedAtResult = parseOptionalDate(formData.get("expectedAt"), "Expected delivery");
+  if (orderedAtResult.error) return { error: orderedAtResult.error };
+  if (expectedAtResult.error) return { error: expectedAtResult.error };
+  const orderedAt = orderedAtResult.date;
+  const expectedAt = expectedAtResult.date;
+  if (orderedAt && expectedAt && expectedAt < orderedAt) return { error: "Expected delivery cannot be before the order date" };
+  const notes = String(formData.get("notes") ?? "").trim() || null;
+  const issueNow = String(formData.get("issueNow") ?? "") === "1";
 
   // items encoded as JSON array of { description, qtyOrdered, unitCost, partId? }
-  let items: Array<{ description: string; qtyOrdered: number; unitCost: number; partId?: string }> = [];
+  let rawItems: Array<{ description: string; qtyOrdered: number; unitCost: number; partId?: string }> = [];
   try {
-    items = JSON.parse(formData.get("items") as string);
+    rawItems = JSON.parse(String(formData.get("items") ?? "[]"));
   } catch {
     return { error: "Invalid items data" };
   }
 
+  const items = rawItems.map((item) => ({
+    description: String(item.description ?? "").trim(),
+    qtyOrdered: Math.floor(Number(item.qtyOrdered)),
+    unitCost: Number(item.unitCost),
+    partId: item.partId ? String(item.partId).trim() : null,
+  }));
+
   if (!items.length) return { error: "Add at least one item" };
   for (const item of items) {
-    if (!item.description?.trim()) return { error: "All items need a description" };
-    if (item.qtyOrdered < 1) return { error: "Quantity must be at least 1" };
-    if (item.unitCost < 0) return { error: "Unit cost cannot be negative" };
+    if (!item.description) return { error: "All items need a description" };
+    if (!Number.isFinite(item.qtyOrdered) || item.qtyOrdered < 1) return { error: "Quantity must be at least 1" };
+    if (!Number.isFinite(item.unitCost) || item.unitCost < 0) return { error: "Unit cost cannot be negative" };
+  }
+  if (issueNow && items.some((item) => item.unitCost <= 0)) return { error: "Issued purchase orders cannot contain zero-cost lines" };
+
+  const partIds = [...new Set(items.map((item) => item.partId).filter((id): id is string => Boolean(id)))];
+  if (partIds.length) {
+    const validParts = await prisma.part.findMany({
+      where: { id: { in: partIds }, orgId, isActive: true },
+      select: { id: true },
+    });
+    if (validParts.length !== partIds.length) return { error: "One or more inventory items are inactive or not found" };
   }
 
   try {
@@ -62,13 +93,14 @@ export async function createPurchaseOrderAction(
       data: {
         orgId,
         supplierId,
+        status: issueNow ? "ORDERED" : "DRAFT",
         reference,
-        orderedAt: orderedAtRaw ? new Date(orderedAtRaw) : null,
-        expectedAt: expectedAtRaw ? new Date(expectedAtRaw) : null,
+        orderedAt: orderedAt ?? (issueNow ? new Date() : null),
+        expectedAt,
         notes,
         items: {
           create: items.map((item) => ({
-            description: item.description.trim(),
+            description: item.description,
             qtyOrdered: item.qtyOrdered,
             unitCost: item.unitCost,
             partId: item.partId || null,
@@ -76,6 +108,8 @@ export async function createPurchaseOrderAction(
         },
       },
     });
+    revalidatePath("/procurement");
+    revalidatePath("/inventory/purchase-orders");
     return { id: po.id };
   } catch {
     return { error: "Failed to create purchase order" };
@@ -90,13 +124,25 @@ export async function updatePurchaseOrderAction(
   const { orgId } = await requireAdmin();
 
   const id = formData.get("id") as string;
-  const po = await prisma.purchaseOrder.findUnique({ where: { id }, select: { orgId: true } });
+  const po = await prisma.purchaseOrder.findUnique({
+    where: { id },
+    select: { orgId: true, status: true, items: { select: { qtyReceived: true } } },
+  });
   if (!po || po.orgId !== orgId) return { error: "Not found" };
 
-  const status = formData.get("status") as string;
+  const requestedStatus = String(formData.get("status") ?? po.status).trim();
+  const status = ["DRAFT", "ORDERED", "PARTIAL", "CANCELLED"].includes(requestedStatus) ? requestedStatus : po.status;
+  if (status === "CANCELLED" && po.items.some((item) => item.qtyReceived > 0)) {
+    return { error: "Cannot cancel a purchase order after receiving stock" };
+  }
   const reference = (formData.get("reference") as string).trim() || null;
-  const orderedAtRaw = formData.get("orderedAt") as string;
-  const expectedAtRaw = formData.get("expectedAt") as string;
+  const orderedAtResult = parseOptionalDate(formData.get("orderedAt"), "Order date");
+  const expectedAtResult = parseOptionalDate(formData.get("expectedAt"), "Expected delivery");
+  if (orderedAtResult.error) return { error: orderedAtResult.error };
+  if (expectedAtResult.error) return { error: expectedAtResult.error };
+  if (orderedAtResult.date && expectedAtResult.date && expectedAtResult.date < orderedAtResult.date) {
+    return { error: "Expected delivery cannot be before the order date" };
+  }
   const notes = (formData.get("notes") as string).trim() || null;
 
   await prisma.purchaseOrder.update({
@@ -104,14 +150,75 @@ export async function updatePurchaseOrderAction(
     data: {
       status: status as never,
       reference,
-      orderedAt: orderedAtRaw ? new Date(orderedAtRaw) : null,
-      expectedAt: expectedAtRaw ? new Date(expectedAtRaw) : null,
+      orderedAt: orderedAtResult.date,
+      expectedAt: expectedAtResult.date,
       notes,
     },
   });
 
   revalidatePath(`/inventory/purchase-orders/${id}`);
   return {};
+}
+
+export async function setPurchaseOrderStatusAction(formData: FormData): Promise<void> {
+  const { orgId } = await requireAdmin();
+  const id = String(formData.get("id") ?? "").trim();
+  const status = String(formData.get("status") ?? "").trim();
+  if (!id || !["DRAFT", "ORDERED", "CANCELLED"].includes(status)) return;
+
+  const po = await prisma.purchaseOrder.findFirst({
+    where: { id, orgId },
+    include: { items: { select: { qtyReceived: true, unitCost: true } } },
+  });
+  if (!po) return;
+  if (po.status === "RECEIVED") return;
+  if (status === "ORDERED" && po.items.some((item) => item.unitCost <= 0)) return;
+  if (po.items.some((item) => item.qtyReceived > 0) && status !== "ORDERED") return;
+
+  await prisma.purchaseOrder.update({
+    where: { id },
+    data: {
+      status: status as never,
+      orderedAt: status === "ORDERED" && !po.orderedAt ? new Date() : po.orderedAt,
+      receivedAt: null,
+    },
+  });
+
+  revalidatePath("/procurement");
+  revalidatePath("/inventory/purchase-orders");
+  revalidatePath(`/inventory/purchase-orders/${id}`);
+}
+
+export async function deletePurchaseOrderAction(formData: FormData): Promise<void> {
+  const { orgId } = await requireAdmin();
+  const id = String(formData.get("id") ?? "").trim();
+  if (!id) return;
+
+  const po = await prisma.purchaseOrder.findFirst({
+    where: { id, orgId },
+    select: {
+      status: true,
+      items: { select: { qtyReceived: true } },
+      _count: {
+        select: {
+          goodsReceivedNotes: true,
+          supplierBills: true,
+          purchaseRequests: true,
+        },
+      },
+    },
+  });
+  if (!po) return;
+
+  const hasReceivedStock = po.items.some((item) => item.qtyReceived > 0);
+  const hasLinkedDocuments = po._count.goodsReceivedNotes > 0 || po._count.supplierBills > 0 || po._count.purchaseRequests > 0;
+  if (po.status === "RECEIVED" || hasReceivedStock || hasLinkedDocuments) return;
+
+  await prisma.purchaseOrder.delete({ where: { id } });
+
+  revalidatePath("/procurement");
+  revalidatePath("/inventory/purchase-orders");
+  redirect("/inventory/purchase-orders");
 }
 
 // ── Receive stock (mark items received, update Part qty) ───────────────────
@@ -222,6 +329,8 @@ export async function receiveStockAction(
   });
 
   revalidatePath(`/inventory/purchase-orders/${poId}`);
+  revalidatePath("/procurement");
+  revalidatePath("/inventory/purchase-orders");
   revalidatePath("/inventory/goods-received");
   revalidatePath("/inventory");
   const actor = await prisma.user.findUnique({ where: { id: session.user.id }, select: { name: true, email: true } });

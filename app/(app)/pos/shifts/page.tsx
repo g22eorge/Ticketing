@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { getCurrentUserRole } from "@/lib/session";
 import { requireOrgSession } from "@/lib/org-context";
 import { revalidatePath } from "next/cache";
@@ -237,7 +238,7 @@ export default async function CashierShiftsPage({
             <p className="text-base font-semibold text-[var(--ink)]">Shift Management</p>
             <p className="text-[13px] text-[var(--ink-muted)]">Open or close your shift to start processing sales</p>
           </div>
-          <a href="/pos" className="btn-premium-secondary rounded-lg px-3 py-1.5 text-[12px]">← Back to Sales</a>
+          <Link href="/pos" className="btn-premium-secondary rounded-lg px-3 py-1.5 text-[12px]">← Back to Sales</Link>
         </div>
       </div>
 

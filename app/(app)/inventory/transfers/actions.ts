@@ -54,7 +54,7 @@ export async function createStockTransferAction(formData: FormData): Promise<voi
       tx.stockLocation.findFirst({ where: { id: toLocationId, orgId, isActive: true }, select: { id: true } }),
       tx.part.findFirst({ where: { id: partId, orgId, isActive: true }, select: { id: true } }),
     ]);
-    if (!from || !to || !part) throw new Error("Invalid transfer source, destination, or part");
+    if (!from || !to || !part) throw new Error("Invalid transfer source, destination, or item");
 
     await tx.stockTransfer.create({
       data: {

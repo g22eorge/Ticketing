@@ -34,9 +34,14 @@ export default async function GoodsReceivedPage() {
             Goods Received <span className="font-normal text-[var(--ink-muted)]">· {notes.length} notes</span>
           </p>
         </div>
-        <Link href="/inventory/purchase-orders" className="inline-flex items-center rounded-lg border border-[var(--line)] px-3 py-1.5 text-xs font-semibold text-[var(--ink)] transition hover:border-[var(--accent)]/50 hover:text-[var(--accent)]">
-          Receive from PO
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link href="/api/procurement/export?type=goods-received" className="inline-flex items-center rounded-lg border border-[var(--line)] px-3 py-1.5 text-xs font-semibold text-[var(--ink)] transition hover:border-[var(--accent)]/50 hover:text-[var(--accent)]">
+            Export CSV
+          </Link>
+          <Link href="/inventory/purchase-orders" className="inline-flex items-center rounded-lg border border-[var(--line)] px-3 py-1.5 text-xs font-semibold text-[var(--ink)] transition hover:border-[var(--accent)]/50 hover:text-[var(--accent)]">
+            Receive from PO
+          </Link>
+        </div>
       </div>
 
       <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">

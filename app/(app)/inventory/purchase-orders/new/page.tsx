@@ -12,7 +12,7 @@ export default async function NewPurchaseOrderPage({
   searchParams: Promise<{ supplierId?: string }>;
 }) {
   const { user, orgId } = await requireOrgSession();
-  if (!can.manageUsers(user)) redirect("/inventory");
+  if (!can.manageInventory(user)) redirect("/inventory");
 
   const { supplierId } = await searchParams;
 
@@ -29,17 +29,15 @@ export default async function NewPurchaseOrderPage({
     }),
   ]);
 
-  if (suppliers.length === 0) {
-    redirect("/inventory/suppliers/new");
-  }
-
   return (
-    <div className="space-y-4 max-w-2xl">
-      <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
-        <div className="px-4 py-3">
-          <p className="text-[12px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Inventory</p>
-          <p className="text-[13px] font-bold text-[var(--ink)]">New Purchase Order</p>
-          <p className="text-[13px] text-[var(--ink-muted)]">Order stock from a supplier.</p>
+    <div className="space-y-3">
+      <div className="rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 py-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Procurement</p>
+            <h1 className="text-base font-bold text-[var(--ink)]">New Purchase Order</h1>
+          </div>
+          <p className="text-xs text-[var(--ink-muted)]">Draft or issue a supplier order.</p>
         </div>
       </div>
       <NewPurchaseOrderForm

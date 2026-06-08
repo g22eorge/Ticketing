@@ -33,14 +33,19 @@ export default async function SupplierBillDetailPage({ params }: { params: Promi
   const balance = bill.totalAmount - bill.paidAmount;
 
   return (
-    <div className="max-w-3xl space-y-6">
+    <div className="max-w-4xl space-y-6">
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-[12px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Inventory · Supplier Bill</p>
           <p className="mt-0.5 font-mono text-[13px] font-bold text-[var(--ink)]">{bill.billNumber}</p>
           <p className="mt-0.5 text-sm text-[var(--ink-muted)]">Supplier: <Link href={`/inventory/suppliers/${bill.supplier.id}`} className="text-[var(--gold)] hover:underline">{bill.supplier.name}</Link></p>
         </div>
-        <span className="mt-1 rounded-full border border-sky-400/30 bg-sky-500/10 px-3 py-1 text-xs font-semibold text-sky-700 dark:text-sky-400">{bill.status}</span>
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <Link href={`/api/procurement/documents/supplier-bill/${bill.id}`} target="_blank" className="rounded-lg border border-[var(--line)] px-3 py-1.5 text-xs font-semibold text-[var(--ink)] transition hover:border-[var(--accent)]/50 hover:text-[var(--accent)]">
+            Print / PDF
+          </Link>
+          <span className="rounded-full border border-sky-400/30 bg-sky-500/10 px-3 py-1 text-xs font-semibold text-sky-700 dark:text-sky-400">{bill.status}</span>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">

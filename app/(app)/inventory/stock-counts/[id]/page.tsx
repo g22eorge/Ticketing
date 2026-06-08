@@ -73,7 +73,7 @@ export default async function StockCountDetailPage({ params }: { params: Promise
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-[var(--line)] text-xs font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
-              <th className="px-4 py-2.5 text-left">Part</th>
+              <th className="px-4 py-2.5 text-left">Item</th>
               <th className="px-4 py-2.5 text-right">System</th>
               <th className="px-4 py-2.5 text-right">Counted</th>
               <th className="px-4 py-2.5 text-right">Variance</th>

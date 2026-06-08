@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 export default async function SuppliersPage() {
   const { user } = await getCurrentUserRole();
   const db = orgDb(user.orgId);
-  if (!can.manageUsers(user)) redirect("/inventory");
+  if (!can.manageInventory(user)) redirect("/inventory");
 
   const now = new Date();
 

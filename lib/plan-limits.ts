@@ -167,7 +167,7 @@ export async function checkJobLimit(orgId: string): Promise<LimitCheckResult> {
   };
 }
 
-/** Can this org add another part SKU to inventory? */
+/** Can this org add another inventory item SKU? */
 export async function checkPartLimit(orgId: string): Promise<LimitCheckResult> {
   const { plan, maxParts } = await getLimitsForOrg(orgId);
   if (maxParts === Infinity) return { allowed: true };
@@ -180,7 +180,7 @@ export async function checkPartLimit(orgId: string): Promise<LimitCheckResult> {
 
   return {
     allowed: false,
-    reason: `Your ${PLAN_LABELS[plan]} plan allows up to ${maxParts} parts in inventory. You've reached the limit.`,
+    reason: `Your ${PLAN_LABELS[plan]} plan allows up to ${maxParts} inventory items. You've reached the limit.`,
     limit: maxParts,
     current,
     upgradeTo: UPGRADE_PLAN[plan] ?? null,

@@ -3,7 +3,6 @@ export const dynamic = "force-dynamic";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { requireOrgSession } from "@/lib/org-context";
-import { can } from "@/lib/permissions";
 
 type Tile = { label: string; href: string; icon: string; color: string; description: string };
 
@@ -92,7 +91,7 @@ export default async function StockOpsPage() {
       {/* Quick links back to daily items */}
       <div className="flex flex-wrap gap-2">
         {[
-          { label: "← Parts & Stock", href: "/inventory" },
+          { label: "← Inventory Items", href: "/inventory" },
           { label: "Purchase Requests", href: "/inventory/purchase-requests" },
           { label: "Purchase Orders",  href: "/inventory/purchase-orders"  },
         ].map((l) => (

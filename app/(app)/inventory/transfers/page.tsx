@@ -79,7 +79,7 @@ export default async function StockTransfersPage({
             {locations.map((location) => <option key={location.id} value={location.id}>{location.name}</option>)}
           </select>
           <select name="partId" required className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/60">
-            <option value="">Part</option>
+            <option value="">Item</option>
             {parts.map((part) => <option key={part.id} value={part.id}>{part.sku} · {part.name}</option>)}
           </select>
           <input name="quantity" placeholder="Qty" inputMode="numeric" required className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/60" />

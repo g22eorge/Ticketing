@@ -17,21 +17,21 @@ const PLANS = [
     label: "Ekyenfuna",
     price: "UGX 0 / mo",
     desc: "Explore the platform — unlimited trial with no time limit.",
-    features: ["1 workspace user", "20 jobs / month", "20 parts", "Basic reports"],
+    features: ["1 workspace user", "20 jobs / month", "20 inventory items", "Basic reports"],
   },
   {
     id: "STARTER",
     label: "Okutandika",
     price: "UGX 35,000 / mo",
     desc: "Small shop just getting started.",
-    features: ["5 users", "100 jobs / month", "100 parts", "Full reports", "WhatsApp notifications"],
+    features: ["5 users", "100 jobs / month", "100 inventory items", "Full reports", "WhatsApp notifications"],
   },
   {
     id: "PROFESSIONAL",
     label: "Enkola",
     price: "UGX 75,000 / mo",
     desc: "Growing team with multi-location needs.",
-    features: ["15 users", "500 jobs / month", "300 parts", "Custom branding", "CRM & campaigns"],
+    features: ["15 users", "500 jobs / month", "300 inventory items", "Custom branding", "CRM & campaigns"],
   },
 ] as const;
 

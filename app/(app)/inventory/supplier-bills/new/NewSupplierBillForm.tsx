@@ -57,9 +57,42 @@ export function NewSupplierBillForm({
   }
 
   const subtotal = lines.reduce((sum, line) => sum + line.quantity * line.unitCost, 0);
+  const readyLines = lines.filter((line) => line.description.trim() && line.quantity > 0).length;
 
   return (
     <form onSubmit={submit} className="space-y-5">
+      <div className="grid gap-3 lg:grid-cols-[1fr_300px]">
+        <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] p-5">
+          <p className="text-[12px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Three-Way Match</p>
+          <p className="mt-2 text-sm leading-6 text-[var(--ink-muted)]">
+            Record supplier invoices against the purchasing trail. Link a PO and GRN whenever possible so finance can compare what was ordered, what arrived, and what the supplier billed.
+          </p>
+          <div className="mt-4 grid gap-2 sm:grid-cols-3">
+            <div className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2">
+              <p className="text-[11px] font-black text-[var(--accent)]">PO</p>
+              <p className="text-xs font-semibold text-[var(--ink)]">Ordered</p>
+            </div>
+            <div className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2">
+              <p className="text-[11px] font-black text-[var(--accent)]">GRN</p>
+              <p className="text-xs font-semibold text-[var(--ink)]">Received</p>
+            </div>
+            <div className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2">
+              <p className="text-[11px] font-black text-[var(--accent)]">Bill</p>
+              <p className="text-xs font-semibold text-[var(--ink)]">Payable</p>
+            </div>
+          </div>
+        </div>
+        <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] p-5">
+          <p className="text-[12px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Posting Check</p>
+          <dl className="mt-3 space-y-2 text-sm">
+            <div className="flex justify-between gap-3"><dt className="text-[var(--ink-muted)]">Lines ready</dt><dd className="font-bold text-[var(--ink)]">{readyLines}/{lines.length}</dd></div>
+            <div className="flex justify-between gap-3"><dt className="text-[var(--ink-muted)]">Supplier POs</dt><dd className="font-bold text-[var(--ink)]">{supplierPOs.length}</dd></div>
+            <div className="flex justify-between gap-3"><dt className="text-[var(--ink-muted)]">Supplier GRNs</dt><dd className="font-bold text-[var(--ink)]">{supplierGRNs.length}</dd></div>
+            <div className="flex justify-between gap-3"><dt className="text-[var(--ink-muted)]">Subtotal</dt><dd className="font-bold tabular-nums text-[var(--ink)]">{subtotal.toLocaleString()}</dd></div>
+          </dl>
+        </div>
+      </div>
+
       <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] p-5 space-y-4">
         <p className="text-[12px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Bill Details</p>
         <div className="grid gap-4 sm:grid-cols-2">
