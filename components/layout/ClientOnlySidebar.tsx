@@ -10,9 +10,11 @@ type SidebarProps = {
   enabledModules?: Set<string>;
   orgName?: string | null;
   badges?: {
-    jobs?: number;
     receivedJobs?: number;
     inventory?: number;
+    procurement?: number;
+    purchaseRequests?: number;
+    purchaseOrders?: number;
     paymentFollowups?: number;
     pendingRequests?: number;
     complaints?: number;

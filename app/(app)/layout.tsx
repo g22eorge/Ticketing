@@ -7,11 +7,10 @@ import { QuickActionFAB } from "@/components/layout/QuickActionFAB";
 import type { FabAction } from "@/components/layout/QuickActionFAB";
 import { SpeedDialFAB } from "@/components/layout/SpeedDialFAB";
 import type { SpeedDialAction } from "@/components/layout/SpeedDialFAB";
-import { JobStatus, Prisma } from "@prisma/client";
+import { JobStatus, Prisma, PurchaseOrderStatus, PurchaseRequestStatus } from "@prisma/client";
 import { can } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { requireOrgSession } from "@/lib/org-context";
-import { filterSupportedJobStatuses } from "@/lib/job-status-server";
 import { sendTrialExpiryWarning } from "@/lib/email";
 import { checkIsPlatformAdmin } from "@/lib/platform-admin";
 import { getOrgModules } from "@/lib/module-access";
@@ -90,22 +89,6 @@ export default async function AppLayout({
   }
   // ─────────────────────────────────────────────────────────────────────────
 
-  const openStatuses = filterSupportedJobStatuses([
-    "RECEIVED",
-    "DIAGNOSING",
-    "REFERRED",
-    "IN_EXTERNAL_REPAIR",
-    "AWAITING_APPROVAL",
-    "IN_REPAIR",
-    "READY_FOR_PICKUP",
-    "WAITING_FOR_PARTS",
-  ]) as JobStatus[];
-
-  const jobsWhere: Prisma.JobWhereInput =
-    user.role === "TECHNICIAN_EXTERNAL" || user.role === "TECHNICIAN_INTERNAL"
-      ? { orgId, status: { in: openStatuses }, assignedToId: session.user.id }
-      : { orgId, status: { in: openStatuses } };
-
   const paymentWhere: Prisma.JobWhereInput = {
     orgId,
     repairPath: "EXTERNAL" as const,
@@ -119,8 +102,31 @@ export default async function AppLayout({
       ? { orgId, status: "RECEIVED" as JobStatus, assignedToId: session.user.id }
       : { orgId, status: "RECEIVED" as JobStatus };
 
-  const [activeJobsCount, partsForReorder, paymentFollowupCount, receivedJobsCount, pendingRequestsCount, openComplaintsCount, enabledModules, orgUsers] = await Promise.all([
-    prisma.job.count({ where: jobsWhere }),
+  const canViewProcurement = ["ADMIN", "MANAGER", "TECH_MANAGER", "OPS"].includes(user.role);
+  const purchaseRequestAttentionWhere: Prisma.PurchaseRequestWhereInput = {
+    orgId,
+    status: PurchaseRequestStatus.SUBMITTED,
+  };
+  const purchaseOrderAttentionWhere: Prisma.PurchaseOrderWhereInput = {
+    orgId,
+    status: { in: [PurchaseOrderStatus.ORDERED, PurchaseOrderStatus.PARTIAL] },
+    OR: [
+      { status: PurchaseOrderStatus.PARTIAL },
+      { expectedAt: { lt: now } },
+    ],
+  };
+
+  const [
+    partsForReorder,
+    paymentFollowupCount,
+    receivedJobsCount,
+    pendingRequestsCount,
+    openComplaintsCount,
+    purchaseRequestAttentionCount,
+    purchaseOrderAttentionCount,
+    enabledModules,
+    orgUsers,
+  ] = await Promise.all([
     prisma.part.findMany({
       where: { orgId, isActive: true, reorderLevel: { gt: 0 } },
       select: { qtyOnHand: true, reorderLevel: true },
@@ -140,6 +146,12 @@ export default async function AppLayout({
         return await model.count({ where: { orgId, status: { in: ["RECEIVED", "ACKNOWLEDGED", "INVESTIGATING"] } } });
       } catch { return 0; }
     })(),
+    canViewProcurement
+      ? prisma.purchaseRequest.count({ where: purchaseRequestAttentionWhere }).catch(() => 0)
+      : Promise.resolve(0),
+    canViewProcurement
+      ? prisma.purchaseOrder.count({ where: purchaseOrderAttentionWhere }).catch(() => 0)
+      : Promise.resolve(0),
     getOrgModules(orgId),
     user.role === "ADMIN"
       ? prisma.user.findMany({
@@ -152,6 +164,7 @@ export default async function AppLayout({
   ]);
 
   const lowStockCount = partsForReorder.filter((part) => part.qtyOnHand <= part.reorderLevel).length;
+  const procurementAttentionCount = purchaseRequestAttentionCount + purchaseOrderAttentionCount;
 
   return (
     <div className="min-h-dvh overflow-x-clip md:flex md:h-screen md:overflow-hidden">
@@ -162,9 +175,11 @@ export default async function AppLayout({
         enabledModules={enabledModules}
         orgName={org?.name}
         badges={{
-          jobs: activeJobsCount,
           receivedJobs: receivedJobsCount,
           inventory: lowStockCount,
+          procurement: procurementAttentionCount,
+          purchaseRequests: purchaseRequestAttentionCount,
+          purchaseOrders: purchaseOrderAttentionCount,
           paymentFollowups: paymentFollowupCount,
           pendingRequests: pendingRequestsCount,
           complaints: openComplaintsCount,
@@ -206,9 +221,11 @@ export default async function AppLayout({
         permissions={user.permissions}
         enabledModules={enabledModules}
         badges={{
-          jobs: activeJobsCount,
           receivedJobs: receivedJobsCount,
           inventory: lowStockCount,
+          procurement: procurementAttentionCount,
+          purchaseRequests: purchaseRequestAttentionCount,
+          purchaseOrders: purchaseOrderAttentionCount,
           paymentFollowups: paymentFollowupCount,
           pendingRequests: pendingRequestsCount,
           complaints: openComplaintsCount,

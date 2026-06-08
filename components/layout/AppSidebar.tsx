@@ -172,6 +172,7 @@ const hrefModule: Record<string, string> = {
   "/complaints":                     "COMPLAINTS",
   "/field":                          "FIELD",
   "/inventory":                      "INVENTORY",
+  "/procurement":                    "PURCHASE_ORDERS",
   "/inventory/locations":            "INVENTORY",
   "/inventory/transfers":            "INVENTORY",
   "/inventory/stock-counts":         "INVENTORY",
@@ -405,9 +406,11 @@ export function AppSidebar({
   enabledModules?: Set<string>;
   orgName?: string | null;
   badges?: {
-    jobs?: number;
     receivedJobs?: number;
     inventory?: number;
+    procurement?: number;
+    purchaseRequests?: number;
+    purchaseOrders?: number;
     paymentFollowups?: number;
     pendingRequests?: number;
     complaints?: number;
@@ -453,8 +456,10 @@ export function AppSidebar({
                 const active = activeHref === item.href;
                 const isHub = ["/service", "/inventory/ops", "/documents", "/finance"].includes(item.href);
                 const badge =
-                  item.href === "/jobs"               ? badges?.jobs
-                  : item.href === "/inventory"        ? badges?.inventory
+                  item.href === "/inventory"          ? badges?.inventory
+                  : item.href === "/procurement"      ? badges?.procurement
+                  : item.href === "/inventory/purchase-requests" ? badges?.purchaseRequests
+                  : item.href === "/inventory/purchase-orders" ? badges?.purchaseOrders
                   : item.href === "/intake"           ? badges?.pendingRequests
                   : undefined;
                 const newBadge = item.href === "/jobs" ? badges?.receivedJobs : undefined;

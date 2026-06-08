@@ -184,9 +184,11 @@ export function BottomNav({
   permissions: string[];
   enabledModules?: Set<string>;
   badges?: {
-    jobs?: number;
     receivedJobs?: number;
     inventory?: number;
+    procurement?: number;
+    purchaseRequests?: number;
+    purchaseOrders?: number;
     paymentFollowups?: number;
     pendingRequests?: number;
     complaints?: number;
@@ -203,7 +205,7 @@ export function BottomNav({
   const anyExtraActive = moreGroups.some((g) => g.items.some((i) => isActive(i.href)));
 
   const getBadge = (href: string): number | undefined => {
-    if (href === "/jobs")     return badges?.receivedJobs ?? badges?.jobs;
+    if (href === "/jobs")     return badges?.receivedJobs;
     if (href === "/intake")   return badges?.pendingRequests;
     return undefined;
   };
