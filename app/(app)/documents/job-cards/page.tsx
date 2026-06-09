@@ -155,7 +155,7 @@ export default async function JobCardsPage({
           </p>
         </div>
         <Link href="/jobs/new" className="btn-premium rounded-lg px-3 py-1.5 text-[12px]">
-          Create Job Card
+          New Repair Job
         </Link>
       </div>
 

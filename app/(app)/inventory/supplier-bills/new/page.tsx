@@ -18,8 +18,33 @@ export default async function NewSupplierBillPage({
 
   const [suppliers, purchaseOrders, goodsReceived] = await Promise.all([
     prisma.supplier.findMany({ where: { orgId, isActive: true }, orderBy: { name: "asc" }, select: { id: true, name: true } }),
-    prisma.purchaseOrder.findMany({ where: { orgId, status: { in: ["ORDERED", "PARTIAL", "RECEIVED"] } }, orderBy: { createdAt: "desc" }, select: { id: true, supplierId: true, reference: true } }).catch(() => []),
-    prisma.goodsReceived.findMany({ where: { orgId, status: "POSTED" }, orderBy: { receivedAt: "desc" }, select: { id: true, supplierId: true, poId: true, grnNumber: true } }).catch(() => []),
+    prisma.purchaseOrder.findMany({
+      where: { orgId, status: { in: ["ORDERED", "PARTIAL", "RECEIVED"] } },
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        supplierId: true,
+        reference: true,
+        items: {
+          orderBy: { createdAt: "asc" },
+          select: { description: true, qtyOrdered: true, unitCost: true },
+        },
+      },
+    }).catch(() => []),
+    prisma.goodsReceived.findMany({
+      where: { orgId, status: "POSTED" },
+      orderBy: { receivedAt: "desc" },
+      select: {
+        id: true,
+        supplierId: true,
+        poId: true,
+        grnNumber: true,
+        items: {
+          orderBy: { createdAt: "asc" },
+          select: { description: true, quantity: true, unitCost: true },
+        },
+      },
+    }).catch(() => []),
   ]);
 
   if (suppliers.length === 0) redirect("/inventory/suppliers/new");

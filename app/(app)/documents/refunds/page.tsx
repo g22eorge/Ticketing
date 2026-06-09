@@ -49,36 +49,64 @@ export default async function RefundsPage({
     if (!["ADMIN", "OPS", "MANAGER", "FINANCE"].includes(user.role)) return;
     assertOrgCanMutate({ access: org.access, userRole: user.role, userAccessMode: user.accessMode, kind: "PAYMENT" });
 
-    const invoiceId = String(formData.get("invoiceId") ?? "").trim() || null;
-    const saleId = String(formData.get("saleId") ?? "").trim() || null;
-    const creditNoteId = String(formData.get("creditNoteId") ?? "").trim() || null;
+    const sourceKey = String(formData.get("sourceKey") ?? "").trim();
     const amountRaw = Number(String(formData.get("amount") ?? "").trim());
     const methodRaw = String(formData.get("method") ?? "CASH").trim();
     const reference = String(formData.get("reference") ?? "").trim();
     const note = String(formData.get("note") ?? "").trim();
 
-    if (!invoiceId && !saleId) return;
+    const [sourceType, sourceId] = sourceKey.split(":", 2);
+    if (!sourceId || !["invoice", "sale", "creditNote"].includes(sourceType)) return;
     if (!Number.isFinite(amountRaw) || amountRaw <= 0) return;
 
     const method = PAYMENT_METHODS.includes(methodRaw as PaymentMethod)
       ? (methodRaw as PaymentMethod)
       : "CASH" as PaymentMethod;
 
-    if (invoiceId) {
-      const inv = await prisma.invoice.findFirst({ where: { id: invoiceId, orgId }, select: { id: true } });
+    let invoiceId: string | null = null;
+    let saleId: string | null = null;
+    let creditNoteId: string | null = null;
+    let currency = org.baseCurrency;
+    let refundableAmount = 0;
+
+    if (sourceType === "invoice") {
+      const inv = await prisma.invoice.findFirst({
+        where: { id: sourceId, orgId, status: { not: "VOID" } },
+        select: { id: true, paidAmount: true, currency: true, refunds: { select: { amount: true } } },
+      });
       if (!inv) return;
-    }
-    if (saleId) {
-      const sale = await prisma.sale.findFirst({ where: { id: saleId, orgId }, select: { id: true } });
+      invoiceId = inv.id;
+      currency = inv.currency;
+      refundableAmount = Math.max(0, inv.paidAmount - inv.refunds.reduce((sum, refund) => sum + refund.amount, 0));
+    } else if (sourceType === "sale") {
+      const sale = await prisma.sale.findFirst({
+        where: { id: sourceId, orgId, status: { not: "VOID" } },
+        select: { id: true, paidAmount: true, currency: true, refunds: { select: { amount: true } } },
+      });
       if (!sale) return;
+      saleId = sale.id;
+      currency = sale.currency;
+      refundableAmount = Math.max(0, sale.paidAmount - sale.refunds.reduce((sum, refund) => sum + refund.amount, 0));
+    } else {
+      const creditNote = await prisma.creditNote.findFirst({
+        where: { id: sourceId, orgId },
+        select: { id: true, saleId: true, totalAmount: true, currency: true, refunds: { select: { amount: true } } },
+      });
+      if (!creditNote) return;
+      creditNoteId = creditNote.id;
+      saleId = creditNote.saleId;
+      currency = creditNote.currency;
+      refundableAmount = Math.max(0, creditNote.totalAmount - creditNote.refunds.reduce((sum, refund) => sum + refund.amount, 0));
     }
+    if (refundableAmount <= 0 || amountRaw > refundableAmount) return;
 
     await prisma.refund.create({
       data: {
         orgId,
-        invoiceId: invoiceId || null,
-        saleId: saleId || null,
-        creditNoteId: creditNoteId || null,
+        invoiceId,
+        saleId,
+        creditNoteId,
+        currency,
         amount: amountRaw,
         method,
         reference: reference || null,
@@ -179,7 +207,7 @@ export default async function RefundsPage({
   if (typeFilter === "invoice") baseWhere.invoiceId = { not: null };
   if (typeFilter === "sale") baseWhere.saleId = { not: null };
 
-  const [refunds, kpiData, invoiceRefundTotal, saleRefundTotal] = await Promise.all([
+  const [refunds, kpiData, invoiceRefundTotal, saleRefundTotal, invoiceRefundSources, saleRefundSources, creditNoteRefundSources] = await Promise.all([
     prisma.refund.findMany({
       where: baseWhere,
       orderBy: { refundedAt: "desc" },
@@ -215,6 +243,46 @@ export default async function RefundsPage({
       where: { orgId, saleId: { not: null } },
       _sum: { amount: true },
     }).catch(() => ({ _sum: { amount: null } })),
+    prisma.invoice.findMany({
+      where: { orgId, status: { not: "VOID" }, paidAmount: { gt: 0 } },
+      orderBy: { issuedAt: "desc" },
+      take: 80,
+      select: {
+        id: true,
+        invoiceNumber: true,
+        paidAmount: true,
+        currency: true,
+        client: { select: { fullName: true } },
+        job: { select: { jobNumber: true, client: { select: { fullName: true } } } },
+        refunds: { select: { amount: true } },
+      },
+    }).catch(() => []),
+    prisma.sale.findMany({
+      where: { orgId, status: { not: "VOID" }, paidAmount: { gt: 0 } },
+      orderBy: { createdAt: "desc" },
+      take: 80,
+      select: {
+        id: true,
+        saleNumber: true,
+        paidAmount: true,
+        currency: true,
+        client: { select: { fullName: true } },
+        refunds: { select: { amount: true } },
+      },
+    }).catch(() => []),
+    prisma.creditNote.findMany({
+      where: { orgId },
+      orderBy: { issuedAt: "desc" },
+      take: 80,
+      select: {
+        id: true,
+        creditNoteNumber: true,
+        totalAmount: true,
+        currency: true,
+        sale: { select: { saleNumber: true, client: { select: { fullName: true } } } },
+        refunds: { select: { amount: true } },
+      },
+    }).catch(() => []),
   ]);
 
   const filtered = refunds.filter((r) => {
@@ -240,6 +308,25 @@ export default async function RefundsPage({
   const totalAmount = kpiData._sum.amount ?? 0;
   const invoiceAmount = invoiceRefundTotal._sum.amount ?? 0;
   const saleAmount = saleRefundTotal._sum.amount ?? 0;
+  const refundableInvoices = invoiceRefundSources
+    .map((invoice) => ({
+      ...invoice,
+      refundableAmount: Math.max(0, invoice.paidAmount - invoice.refunds.reduce((sum, refund) => sum + refund.amount, 0)),
+    }))
+    .filter((invoice) => invoice.refundableAmount > 0);
+  const refundableSales = saleRefundSources
+    .map((sale) => ({
+      ...sale,
+      refundableAmount: Math.max(0, sale.paidAmount - sale.refunds.reduce((sum, refund) => sum + refund.amount, 0)),
+    }))
+    .filter((sale) => sale.refundableAmount > 0);
+  const refundableCreditNotes = creditNoteRefundSources
+    .map((creditNote) => ({
+      ...creditNote,
+      refundableAmount: Math.max(0, creditNote.totalAmount - creditNote.refunds.reduce((sum, refund) => sum + refund.amount, 0)),
+    }))
+    .filter((creditNote) => creditNote.refundableAmount > 0);
+  const hasRefundSources = refundableInvoices.length > 0 || refundableSales.length > 0 || refundableCreditNotes.length > 0;
 
   return (
     <div className="space-y-4">
@@ -286,36 +373,46 @@ export default async function RefundsPage({
               Cancel
             </Link>
           </div>
+          {hasRefundSources ? (
           <form action={createRefundAction} className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            <div className="space-y-1">
+            <div className="space-y-1 sm:col-span-2">
               <label className="text-[13px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
-                Invoice ID
+                Refund Source
               </label>
-              <input
-                name="invoiceId"
-                placeholder="Invoice ID"
-                className="h-9 w-full rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 text-sm outline-none focus:ring-2 focus:ring-[var(--accent)]"
-              />
-            </div>
-            <div className="space-y-1">
-              <label className="text-[13px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
-                Sale ID
-              </label>
-              <input
-                name="saleId"
-                placeholder="Sale ID"
-                className="h-9 w-full rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 text-sm outline-none focus:ring-2 focus:ring-[var(--accent)]"
-              />
-            </div>
-            <div className="space-y-1">
-              <label className="text-[13px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
-                Credit Note ID
-              </label>
-              <input
-                name="creditNoteId"
-                placeholder="Optional"
-                className="h-9 w-full rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 text-sm outline-none focus:ring-2 focus:ring-[var(--accent)]"
-              />
+              <select
+                name="sourceKey"
+                required
+                className="h-9 w-full rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 text-sm"
+              >
+                <option value="">Select invoice, sale, or credit note...</option>
+                {refundableInvoices.length > 0 ? (
+                  <optgroup label="Invoices">
+                    {refundableInvoices.map((invoice) => (
+                      <option key={invoice.id} value={`invoice:${invoice.id}`}>
+                        {invoice.invoiceNumber} - {invoice.job?.jobNumber ?? invoice.job?.client?.fullName ?? invoice.client?.fullName ?? "Invoice"} - refundable {formatMoney(invoice.refundableAmount, invoice.currency)}
+                      </option>
+                    ))}
+                  </optgroup>
+                ) : null}
+                {refundableSales.length > 0 ? (
+                  <optgroup label="POS sales">
+                    {refundableSales.map((sale) => (
+                      <option key={sale.id} value={`sale:${sale.id}`}>
+                        {sale.saleNumber} - {sale.client?.fullName ?? "Walk-in"} - refundable {formatMoney(sale.refundableAmount, sale.currency)}
+                      </option>
+                    ))}
+                  </optgroup>
+                ) : null}
+                {refundableCreditNotes.length > 0 ? (
+                  <optgroup label="Credit notes">
+                    {refundableCreditNotes.map((creditNote) => (
+                      <option key={creditNote.id} value={`creditNote:${creditNote.id}`}>
+                        {creditNote.creditNoteNumber} - {creditNote.sale.saleNumber} - refundable {formatMoney(creditNote.refundableAmount, creditNote.currency)}
+                      </option>
+                    ))}
+                  </optgroup>
+                ) : null}
+              </select>
             </div>
             <div className="space-y-1">
               <label className="text-[13px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
@@ -370,6 +467,11 @@ export default async function RefundsPage({
               </button>
             </div>
           </form>
+          ) : (
+            <div className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-3 text-[13px] text-[var(--ink-muted)]">
+              No paid invoices, sales, or credit notes have refundable balances.
+            </div>
+          )}
         </div>
       )}
 

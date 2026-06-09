@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { OutboundMessageType, type DeliveryMethod } from "@prisma/client";
 
 import { can } from "@/lib/permissions";
+import { formatMoney } from "@/lib/currency";
 import { prisma } from "@/lib/prisma";
 import { requireOrgSession } from "@/lib/org-context";
 import { requireModule, OrgModule } from "@/lib/module-access";
@@ -19,13 +20,14 @@ const DELIVERY_METHODS: DeliveryMethod[] = ["PICKUP", "DELIVERY", "COURIER"];
 export default async function DeliveryNotesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; period?: string; method?: string }>;
+  searchParams: Promise<{ q?: string; period?: string; method?: string; create?: string }>;
 }) {
   const { user, orgId } = await requireOrgSession();
   const sp = await searchParams;
   const q = sp.q?.trim() ?? "";
   const periodFilter = sp.period ?? "all";
   const methodFilter = sp.method ?? "all";
+  const createMode = sp.create === "1";
   if (!(can.viewFinancials(user) || ["ADMIN", "OPS", "FRONT_DESK"].includes(user.role))) {
     redirect("/dashboard");
   }
@@ -38,41 +40,102 @@ export default async function DeliveryNotesPage({
     if (!(can.viewFinancials(user) || ["ADMIN", "OPS"].includes(user.role))) redirect("/dashboard");
     assertOrgCanMutate({ access: org.access, userRole: user.role, userAccessMode: user.accessMode, kind: "GENERAL" });
 
-    const invoiceId = String(formData.get("invoiceId") ?? "").trim();
+    const sourceKey = String(formData.get("sourceKey") ?? "").trim();
+    const legacyInvoiceId = String(formData.get("invoiceId") ?? "").trim();
     const deliveredByName = String(formData.get("deliveredByName") ?? "").trim();
     const receivedByName = String(formData.get("receivedByName") ?? "").trim();
     const methodRaw = String(formData.get("deliveryMethod") ?? "").trim();
     const note = String(formData.get("note") ?? "").trim();
-    if (!invoiceId || !deliveredByName || !receivedByName) return;
+    if ((!sourceKey && !legacyInvoiceId) || !deliveredByName || !receivedByName) return;
 
-    const invoice = await prisma.invoice.findFirst({
-      where: { id: invoiceId, orgId, status: { not: "VOID" } },
-      select: { id: true, invoiceNumber: true, paidAmount: true, totalAmount: true, subject: true, job: { select: { jobNumber: true, brand: true, model: true } } },
-    });
-    if (!invoice || invoice.paidAmount < invoice.totalAmount) return;
+    const [sourceType, sourceId] = sourceKey.includes(":")
+      ? sourceKey.split(":", 2)
+      : ["invoice", legacyInvoiceId];
+    if (!sourceId || !["invoice", "sale"].includes(sourceType)) return;
 
     const deliveryMethod = DELIVERY_METHODS.includes(methodRaw as DeliveryMethod) ? (methodRaw as DeliveryMethod) : null;
-    const description = invoice.job
-      ? `Repair handover for ${invoice.job.jobNumber} (${invoice.job.brand} ${invoice.job.model})`
-      : invoice.subject ?? invoice.invoiceNumber;
 
-    const noteRecord = await prisma.$transaction(async (tx) => {
-      const deliveryNoteNumber = await nextDocumentNumber(tx, "DN", "deliveryNote");
-      return tx.deliveryNote.create({
-        data: {
-          orgId,
-          invoiceId: invoice.id,
-          deliveryNoteNumber,
-          deliveryMethod,
-          deliveredByName,
-          receivedByName,
-          note: note || null,
-          createdById: session.user.id,
-          items: { create: [{ description, quantity: 1 }] },
+    if (sourceType === "invoice") {
+      const invoice = await prisma.invoice.findFirst({
+        where: { id: sourceId, orgId, status: { not: "VOID" } },
+        select: {
+          id: true,
+          invoiceNumber: true,
+          paidAmount: true,
+          totalAmount: true,
+          subject: true,
+          lines: { select: { description: true, quantity: true } },
+          job: { select: { jobNumber: true, brand: true, model: true } },
         },
       });
-    });
-    await writeSystemAuditEvent({ orgId, actorUserId: user.id, entityType: "DeliveryNote", entityId: noteRecord.id, action: "DELIVERY_NOTE_CREATED", summary: `${noteRecord.deliveryNoteNumber} generated from ${invoice.invoiceNumber}` });
+      if (!invoice || invoice.paidAmount < invoice.totalAmount) return;
+
+      const fallbackDescription = invoice.job
+        ? `Repair handover for ${invoice.job.jobNumber} (${invoice.job.brand} ${invoice.job.model})`
+        : invoice.subject ?? invoice.invoiceNumber;
+      const items = invoice.lines.length > 0
+        ? invoice.lines.map((line) => ({
+            description: line.description,
+            quantity: Math.max(1, Math.round(Number(line.quantity) || 1)),
+          }))
+        : [{ description: fallbackDescription, quantity: 1 }];
+
+      const noteRecord = await prisma.$transaction(async (tx) => {
+        const deliveryNoteNumber = await nextDocumentNumber(tx, "DN", "deliveryNote");
+        return tx.deliveryNote.create({
+          data: {
+            orgId,
+            invoiceId: invoice.id,
+            deliveryNoteNumber,
+            deliveryMethod,
+            deliveredByName,
+            receivedByName,
+            note: note || null,
+            createdById: session.user.id,
+            items: { create: items },
+          },
+        });
+      });
+      await writeSystemAuditEvent({ orgId, actorUserId: user.id, entityType: "DeliveryNote", entityId: noteRecord.id, action: "DELIVERY_NOTE_CREATED", summary: `${noteRecord.deliveryNoteNumber} generated from ${invoice.invoiceNumber}` });
+    } else {
+      const sale = await prisma.sale.findFirst({
+        where: { id: sourceId, orgId, status: "PAID" },
+        select: {
+          id: true,
+          saleNumber: true,
+          items: { select: { id: true, partId: true, description: true, quantity: true } },
+        },
+      });
+      if (!sale) return;
+
+      const items = sale.items.length > 0
+        ? sale.items.map((item) => ({
+            saleItemId: item.id,
+            partId: item.partId,
+            description: item.description,
+            quantity: Math.max(1, item.quantity),
+          }))
+        : [{ description: `Sale handover for ${sale.saleNumber}`, quantity: 1 }];
+
+      const noteRecord = await prisma.$transaction(async (tx) => {
+        const deliveryNoteNumber = await nextDocumentNumber(tx, "DN", "deliveryNote");
+        return tx.deliveryNote.create({
+          data: {
+            orgId,
+            saleId: sale.id,
+            deliveryNoteNumber,
+            deliveryMethod,
+            deliveredByName,
+            receivedByName,
+            note: note || null,
+            createdById: session.user.id,
+            items: { create: items },
+          },
+        });
+      });
+      await writeSystemAuditEvent({ orgId, actorUserId: user.id, entityType: "DeliveryNote", entityId: noteRecord.id, action: "DELIVERY_NOTE_CREATED", summary: `${noteRecord.deliveryNoteNumber} generated from ${sale.saleNumber}` });
+    }
+
     revalidatePath("/documents/delivery-notes");
     revalidatePath("/documents/invoices");
     redirect("/documents/delivery-notes");
@@ -281,12 +344,21 @@ export default async function DeliveryNotesPage({
     if (periodFilter === "last_month") return n.deliveredAt >= lastMonthStart && n.deliveredAt <= lastMonthEnd;
     return true;
   });
-  const invoiceOptions = await prisma.invoice.findMany({
-    where: { orgId, status: { not: "VOID" } },
-    orderBy: { issuedAt: "desc" },
-    take: 80,
-    select: { id: true, invoiceNumber: true, totalAmount: true, paidAmount: true, job: { select: { jobNumber: true, client: { select: { fullName: true } } } }, client: { select: { fullName: true } } },
-  }).then((rows) => rows.filter((invoice) => invoice.paidAmount >= invoice.totalAmount));
+  const [invoiceOptions, saleOptions] = await Promise.all([
+    prisma.invoice.findMany({
+      where: { orgId, status: { not: "VOID" } },
+      orderBy: { issuedAt: "desc" },
+      take: 80,
+      select: { id: true, invoiceNumber: true, totalAmount: true, paidAmount: true, job: { select: { jobNumber: true, client: { select: { fullName: true } } } }, client: { select: { fullName: true } } },
+    }).then((rows) => rows.filter((invoice) => invoice.paidAmount >= invoice.totalAmount)),
+    prisma.sale.findMany({
+      where: { orgId, status: "PAID" },
+      orderBy: { createdAt: "desc" },
+      take: 80,
+      select: { id: true, saleNumber: true, totalAmount: true, client: { select: { fullName: true } } },
+    }).catch(() => []),
+  ]);
+  const hasDeliverySources = invoiceOptions.length > 0 || saleOptions.length > 0;
 
   return (
     <section className="space-y-4">
@@ -296,7 +368,7 @@ export default async function DeliveryNotesPage({
             <p className="text-[12px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Documents</p>
             <p className="text-[13px] font-bold text-[var(--ink)]">Delivery Notes</p>
           </div>
-          <Link href="/documents/invoices" className="btn-premium rounded-lg px-3 py-1.5 text-[12px]">Create Delivery Note</Link>
+          <Link href="/documents/delivery-notes?create=1#create-delivery-note" className="btn-premium rounded-lg px-3 py-1.5 text-[12px]">Create Delivery Note</Link>
         </div>
       </div>
 
@@ -316,17 +388,28 @@ export default async function DeliveryNotesPage({
         ))}
       </div>
 
-      {invoiceOptions.length > 0 ? (
-        <details className="group rounded-xl border border-[var(--line)] bg-[var(--panel)]">
+      {hasDeliverySources ? (
+        <details id="create-delivery-note" open={createMode} className="group rounded-xl border border-[var(--line)] bg-[var(--panel)]">
           <summary className="cursor-pointer select-none px-4 py-2.5 text-[12px] font-semibold text-[var(--ink)] group-open:border-b group-open:border-[var(--line)]">
-            Create Delivery Note from paid invoice
+            Create Delivery Note from paid invoice or sale
           </summary>
           <form action={createDeliveryNoteAction} className="grid grid-cols-1 gap-3 p-4 sm:grid-cols-2 lg:grid-cols-3">
-            <select name="invoiceId" required className="h-9 rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 text-sm sm:col-span-2">
-              <option value="">Select paid invoice...</option>
-              {invoiceOptions.map((invoice) => (
-                <option key={invoice.id} value={invoice.id}>{invoice.invoiceNumber} - {invoice.job?.jobNumber ?? invoice.client?.fullName ?? "Invoice"}</option>
-              ))}
+            <select name="sourceKey" required className="h-9 rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 text-sm sm:col-span-2">
+              <option value="">Select paid invoice or sale...</option>
+              {invoiceOptions.length > 0 ? (
+                <optgroup label="Paid invoices">
+                  {invoiceOptions.map((invoice) => (
+                    <option key={invoice.id} value={`invoice:${invoice.id}`}>{invoice.invoiceNumber} - {invoice.job?.jobNumber ?? invoice.client?.fullName ?? "Invoice"}</option>
+                  ))}
+                </optgroup>
+              ) : null}
+              {saleOptions.length > 0 ? (
+                <optgroup label="Paid POS sales">
+                  {saleOptions.map((sale) => (
+                    <option key={sale.id} value={`sale:${sale.id}`}>{sale.saleNumber} - {sale.client?.fullName ?? "Walk-in"} - {formatMoney(sale.totalAmount, "UGX")}</option>
+                  ))}
+                </optgroup>
+              ) : null}
             </select>
             <input name="deliveredByName" required placeholder="Delivered by" className="h-9 rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 text-sm" />
             <input name="receivedByName" required placeholder="Received by" className="h-9 rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 text-sm" />
@@ -338,6 +421,14 @@ export default async function DeliveryNotesPage({
             <button type="submit" className="btn-premium h-9 rounded-lg px-5 text-sm font-semibold">Create Delivery Note</button>
           </form>
         </details>
+      ) : createMode ? (
+        <div id="create-delivery-note" className="rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
+          <p className="text-[13px] font-semibold text-[var(--ink)]">No paid invoices or sales are ready for delivery notes.</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Link href="/documents/invoices?create=1#create-invoice" className="rounded-lg border border-[var(--line)] px-3 py-1.5 text-xs font-semibold text-[var(--ink)] hover:text-[var(--accent)]">Create invoice</Link>
+            <Link href="/pos" className="rounded-lg border border-[var(--line)] px-3 py-1.5 text-xs font-semibold text-[var(--ink)] hover:text-[var(--accent)]">Open POS</Link>
+          </div>
+        </div>
       ) : null}
 
       {/* Filter chips + search */}

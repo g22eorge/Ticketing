@@ -14,6 +14,7 @@ import { RowActionsMenu, MenuActionButton, MenuActionLink, MenuDestructiveRow, M
 import { nextDocumentNumber } from "@/lib/commercial/document-workflow";
 import { enqueueEmailMessage, enqueueWhatsAppMessage } from "@/lib/notifications/whatsapp-outbox";
 import { notifyCreditNoteIssued, notifyRefundIssued } from "@/lib/notifications";
+import { CreateCreditNoteDialog } from "./CreateCreditNoteDialog";
 
 const PAYMENT_METHODS: PaymentMethod[] = ["CASH", "MOBILE_MONEY", "BANK_TRANSFER", "CARD", "OTHER"];
 
@@ -185,18 +186,37 @@ export default async function CreditNotesPage({
 
     const saleId = String(formData.get("saleId") ?? "").trim();
     const reason = String(formData.get("reason") ?? "").trim();
-    const itemsJson = String(formData.get("items") ?? "[]");
+    const itemIds = formData.getAll("itemId").map((value) => String(value)).filter(Boolean);
     if (!saleId || !reason) return;
-
-    let items: Array<{ description: string; quantity: number; unitPrice: number }> = [];
-    try { items = JSON.parse(itemsJson); } catch { return; }
-    if (!items.length) return;
+    if (!itemIds.length) return;
 
     const sale = await prisma.sale.findFirst({
       where: { id: saleId, orgId },
-      select: { id: true, currency: true, saleNumber: true },
+      select: {
+        id: true,
+        currency: true,
+        saleNumber: true,
+        items: {
+          where: { id: { in: itemIds } },
+          select: { id: true, partId: true, description: true, quantity: true, unitPrice: true },
+        },
+      },
     });
-    if (!sale) return;
+    if (!sale || sale.items.length === 0) return;
+
+    const items = sale.items
+      .map((item) => {
+        const requestedQuantity = Number(String(formData.get(`quantity:${item.id}`) ?? item.quantity).trim());
+        const quantity = Math.max(1, Math.min(item.quantity, Math.floor(Number.isFinite(requestedQuantity) ? requestedQuantity : item.quantity)));
+        return {
+          partId: item.partId,
+          description: item.description,
+          quantity,
+          unitPrice: item.unitPrice,
+        };
+      })
+      .filter((item) => item.quantity > 0);
+    if (!items.length) return;
 
     const totalAmount = items.reduce((s, i) => s + i.quantity * i.unitPrice, 0);
 
@@ -214,6 +234,7 @@ export default async function CreditNotesPage({
           createdById: user.id,
           items: {
             create: items.map((i) => ({
+              partId: i.partId,
               description: i.description,
               quantity: i.quantity,
               unitPrice: i.unitPrice,
@@ -284,7 +305,14 @@ export default async function CreditNotesPage({
     }).catch(() => []),
     prisma.sale.findMany({
       where: { orgId, status: "PAID" },
-      select: { id: true, saleNumber: true, totalAmount: true, currency: true, client: { select: { fullName: true } } },
+      select: {
+        id: true,
+        saleNumber: true,
+        totalAmount: true,
+        currency: true,
+        client: { select: { fullName: true } },
+        items: { select: { id: true, description: true, quantity: true, unitPrice: true, lineTotal: true }, orderBy: { createdAt: "asc" } },
+      },
       orderBy: { createdAt: "desc" },
       take: 50,
     }).catch(() => []),
@@ -315,30 +343,7 @@ export default async function CreditNotesPage({
               </span>
             )}
             {["ADMIN", "OPS", "MANAGER"].includes(user.role) && (
-              <details className="group relative">
-                <summary className="btn-premium cursor-pointer list-none rounded-lg px-3 py-1.5 text-[12px]">
-                  + New Credit Note
-                </summary>
-                <div className="absolute right-0 top-full z-20 mt-1 w-80 rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5 shadow-lg">
-                  <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-[var(--ink-muted)]">Issue Credit Note</p>
-                  <form action={createCreditNoteAction} className="space-y-3">
-                    <select name="saleId" required className="w-full rounded-lg border border-[var(--line)] bg-[var(--bg)] px-3 py-2 text-sm text-[var(--ink)]">
-                      <option value="">Select sale…</option>
-                      {eligibleSales.map((s) => (
-                        <option key={s.id} value={s.id}>
-                          {s.saleNumber}{s.client?.fullName ? ` — ${s.client.fullName}` : ""} ({formatMoney(s.totalAmount, s.currency)})
-                        </option>
-                      ))}
-                    </select>
-                    <textarea name="reason" required placeholder="Reason for credit note…" rows={2} className="w-full rounded-lg border border-[var(--line)] bg-[var(--bg)] px-3 py-2 text-sm text-[var(--ink)] resize-none" />
-                    <input type="hidden" name="items" value={JSON.stringify([{ description: "Credit for returned items", quantity: 1, unitPrice: 0 }])} />
-                    <p className="text-[13px] text-[var(--ink-muted)]">Items and amounts can be managed after creation.</p>
-                    <button type="submit" className="w-full rounded-lg bg-[var(--gold)]/20 py-2 text-sm font-semibold text-[var(--gold)] hover:bg-[var(--gold)]/30">
-                      Create Credit Note
-                    </button>
-                  </form>
-                </div>
-              </details>
+              <CreateCreditNoteDialog eligibleSales={eligibleSales} action={createCreditNoteAction} />
             )}
           </div>
         </div>

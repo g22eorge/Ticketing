@@ -21,7 +21,7 @@ const PAYMENT_METHODS: PaymentMethod[] = ["CASH", "MOBILE_MONEY", "BANK_TRANSFER
 export default async function ReceiptsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; period?: string }>;
+  searchParams: Promise<{ q?: string; period?: string; new?: string }>;
 }) {
   const { user, orgId, org } = await requireOrgSession();
   const db = orgDb(orgId);
@@ -33,6 +33,7 @@ export default async function ReceiptsPage({
   const params = await searchParams;
   const q = (params.q ?? "").trim();
   const period = params.period ?? "all";
+  const createMode = params.new === "1";
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
   async function createReceiptAction(_prev: null, formData: FormData): Promise<null> {
@@ -42,27 +43,48 @@ export default async function ReceiptsPage({
     const baseCurrency = org.baseCurrency;
     if (!(can.viewFinancials(user) || ["ADMIN", "OPS"].includes(user.role))) redirect("/dashboard");
 
-    const invoiceId = String(formData.get("invoiceId") ?? "").trim();
-    const amount = Number(String(formData.get("amount") ?? "").trim());
+    const sourceKey = String(formData.get("sourceKey") ?? "").trim();
+    const legacyInvoiceId = String(formData.get("invoiceId") ?? "").trim();
+    const [sourceType, sourceId] = sourceKey.includes(":")
+      ? sourceKey.split(":", 2)
+      : ["invoice", legacyInvoiceId];
+    const amount = Number(String(formData.get("amount") ?? "").replace(/[^\d.]/g, "").trim());
     const methodRaw = String(formData.get("method") ?? "CASH").trim();
     const reference = String(formData.get("reference") ?? "").trim();
     const currency = normalizeCurrency(formData.get("currency"), baseCurrency);
-    if (!invoiceId || !Number.isFinite(amount) || amount <= 0) return null;
+    if (!sourceId || !["invoice", "sale"].includes(sourceType) || !Number.isFinite(amount) || amount <= 0) return null;
 
     const method = PAYMENT_METHODS.includes(methodRaw as PaymentMethod) ? (methodRaw as PaymentMethod) : "OTHER" as PaymentMethod;
-    const invoice = await db.invoice.findFirst({ where: { id: invoiceId, status: { not: "VOID" } }, select: { id: true, totalAmount: true, paidAmount: true, clientId: true, jobId: true } });
-    if (!invoice || invoice.paidAmount + amount > invoice.totalAmount) return null;
+    if (sourceType === "invoice") {
+      const invoice = await db.invoice.findFirst({ where: { id: sourceId, status: { not: "VOID" } }, select: { id: true, totalAmount: true, paidAmount: true, clientId: true, jobId: true } });
+      if (!invoice || invoice.paidAmount + amount > invoice.totalAmount) return null;
 
-    await prisma.$transaction(async (tx) => {
-      const payment = await tx.payment.create({ data: { orgId, invoiceId: invoice.id, amount, method, reference: reference || null, currency, createdById: user.id } });
-      await createReceiptForPayment(tx, { orgId, paymentId: payment.id, invoiceId: invoice.id, clientId: invoice.clientId, amount, currency, issuedById: user.id });
-      const payments = await tx.payment.findMany({ where: { invoiceId: invoice.id, orgId }, select: { amount: true, currency: true, exchangeRateToBase: true } });
-      const paidAmount = payments.reduce((sum, p) => sum + toBaseAmount({ amount: p.amount, currency: p.currency, baseCurrency, exchangeRateToBase: p.exchangeRateToBase }), 0);
-      const isPaid = invoice.totalAmount > 0 && paidAmount >= invoice.totalAmount;
-      await tx.invoice.updateMany({ where: { id: invoice.id, orgId }, data: { paidAmount, paidAt: isPaid ? new Date() : null, status: invoice.totalAmount <= 0 ? "PAID" : isPaid ? "PAID" : "ISSUED" } });
-      if (invoice.jobId) await tx.job.updateMany({ where: { id: invoice.jobId, orgId }, data: { clientPaid: isPaid, clientPaidAt: isPaid ? new Date() : null, clientPaidById: isPaid ? user.id : null } });
-    });
-    await writeSystemAuditEvent({ orgId, actorUserId: user.id, entityType: "Invoice", entityId: invoice.id, action: "RECEIPT_CREATED", summary: "Receipt generated from invoice" });
+      await prisma.$transaction(async (tx) => {
+        const payment = await tx.payment.create({ data: { orgId, invoiceId: invoice.id, amount, method, reference: reference || null, currency, createdById: user.id } });
+        await createReceiptForPayment(tx, { orgId, paymentId: payment.id, invoiceId: invoice.id, clientId: invoice.clientId, amount, currency, issuedById: user.id });
+        const payments = await tx.payment.findMany({ where: { invoiceId: invoice.id, orgId }, select: { amount: true, currency: true, exchangeRateToBase: true } });
+        const paidAmount = payments.reduce((sum, p) => sum + toBaseAmount({ amount: p.amount, currency: p.currency, baseCurrency, exchangeRateToBase: p.exchangeRateToBase }), 0);
+        const isPaid = invoice.totalAmount > 0 && paidAmount >= invoice.totalAmount;
+        await tx.invoice.updateMany({ where: { id: invoice.id, orgId }, data: { paidAmount, paidAt: isPaid ? new Date() : null, status: invoice.totalAmount <= 0 ? "PAID" : isPaid ? "PAID" : "ISSUED" } });
+        if (invoice.jobId) await tx.job.updateMany({ where: { id: invoice.jobId, orgId }, data: { clientPaid: isPaid, clientPaidAt: isPaid ? new Date() : null, clientPaidById: isPaid ? user.id : null } });
+      });
+      await writeSystemAuditEvent({ orgId, actorUserId: user.id, entityType: "Invoice", entityId: invoice.id, action: "RECEIPT_CREATED", summary: "Receipt generated from invoice" });
+    } else {
+      const sale = await prisma.sale.findFirst({ where: { id: sourceId, orgId, status: { not: "VOID" } }, select: { id: true, totalAmount: true, paidAmount: true, currency: true, clientId: true } });
+      if (!sale || sale.paidAmount + amount > sale.totalAmount) return null;
+      const saleCurrency = normalizeCurrency(sale.currency, baseCurrency);
+      if (saleCurrency !== baseCurrency || currency !== baseCurrency) return null;
+
+      await prisma.$transaction(async (tx) => {
+        const payment = await tx.payment.create({ data: { orgId, saleId: sale.id, amount, method, reference: reference || null, currency: saleCurrency, createdById: user.id } });
+        await createReceiptForPayment(tx, { orgId, paymentId: payment.id, saleId: sale.id, clientId: sale.clientId, amount, currency: saleCurrency, issuedById: user.id });
+        const payAgg = await tx.payment.aggregate({ where: { saleId: sale.id, orgId }, _sum: { amount: true } });
+        const paidAmount = payAgg._sum.amount ?? 0;
+        const isPaid = sale.totalAmount > 0 && paidAmount >= sale.totalAmount;
+        await tx.sale.updateMany({ where: { id: sale.id, orgId }, data: { paidAmount, paidAt: isPaid ? new Date() : null, status: isPaid ? "PAID" : "OPEN" } });
+      });
+      await writeSystemAuditEvent({ orgId, actorUserId: user.id, entityType: "Sale", entityId: sale.id, action: "RECEIPT_CREATED", summary: "Receipt generated from sale" });
+    }
     revalidatePath("/documents/receipts");
     revalidatePath("/documents/invoices");
     return null;
@@ -326,12 +348,39 @@ export default async function ReceiptsPage({
     client: { fullName: string } | null;
   };
 
-  const invoiceOptions: InvoiceOption[] = await db.invoice.findMany({
-    where: { status: { not: "VOID" } },
-    orderBy: { issuedAt: "desc" },
-    take: 80,
-    select: { id: true, invoiceNumber: true, totalAmount: true, paidAmount: true, currency: true, job: { select: { jobNumber: true } }, client: { select: { fullName: true } } },
-  }).then((rows: InvoiceOption[]) => rows.filter((invoice) => invoice.paidAmount < invoice.totalAmount));
+  type SaleOption = {
+    id: string;
+    saleNumber: string;
+    totalAmount: number;
+    paidAmount: number;
+    currency: string | null;
+    client: { fullName: string } | null;
+  };
+
+  const [invoiceOptions, saleOptions]: [InvoiceOption[], SaleOption[]] = await Promise.all([
+    db.invoice.findMany({
+      where: { status: { not: "VOID" } },
+      orderBy: { issuedAt: "desc" },
+      take: 80,
+      select: { id: true, invoiceNumber: true, totalAmount: true, paidAmount: true, currency: true, job: { select: { jobNumber: true } }, client: { select: { fullName: true } } },
+    }).then((rows: InvoiceOption[]) => rows.filter((invoice) => invoice.paidAmount < invoice.totalAmount)),
+    prisma.sale.findMany({
+      where: { orgId, status: { not: "VOID" } },
+      orderBy: { createdAt: "desc" },
+      take: 80,
+      select: { id: true, saleNumber: true, totalAmount: true, paidAmount: true, currency: true, client: { select: { fullName: true } } },
+    }).then((rows: SaleOption[]) => rows.filter((sale) => sale.paidAmount < sale.totalAmount)),
+  ]);
+  const paymentSourceOptions = [
+    ...invoiceOptions.map((inv) => ({
+      key: `invoice:${inv.id}`,
+      label: `${inv.invoiceNumber} - ${inv.job?.jobNumber ?? inv.client?.fullName ?? "Invoice"} - due ${formatMoney(inv.totalAmount - inv.paidAmount, normalizeCurrency(inv.currency, baseCurrency))}`,
+    })),
+    ...saleOptions.map((sale) => ({
+      key: `sale:${sale.id}`,
+      label: `${sale.saleNumber} - ${sale.client?.fullName ?? "Walk-in"} - due ${formatMoney(sale.totalAmount - sale.paidAmount, normalizeCurrency(sale.currency, baseCurrency))}`,
+    })),
+  ];
 
 
   const PERIOD_LABELS: Record<string, string> = {
@@ -359,16 +408,13 @@ export default async function ReceiptsPage({
             <p className="text-[12px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Documents</p>
             <p className="text-[13px] font-bold text-[var(--ink)]">Receipts</p>
           </div>
-          {invoiceOptions.length > 0 ? (
+          {paymentSourceOptions.length > 0 ? (
             <CreateReceiptDialog
-              invoiceOptions={invoiceOptions.map((inv) => ({
-                id: inv.id,
-                invoiceNumber: inv.invoiceNumber,
-                label: `${inv.invoiceNumber} — ${inv.job?.jobNumber ?? inv.client?.fullName ?? "Invoice"} — due ${formatMoney(inv.totalAmount - inv.paidAmount, normalizeCurrency(inv.currency, baseCurrency))}`,
-              }))}
+              sourceOptions={paymentSourceOptions}
               baseCurrency={baseCurrency}
               paymentMethods={PAYMENT_METHODS as string[]}
               action={createReceiptAction}
+              initialOpen={createMode}
             />
           ) : (
             <Link href="/documents/invoices" className="btn-premium rounded-lg px-3 py-1.5 text-[12px]">Create Invoice</Link>

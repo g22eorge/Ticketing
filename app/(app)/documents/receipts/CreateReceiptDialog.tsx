@@ -2,32 +2,28 @@
 
 import { useEffect, useRef, useActionState, useState } from "react";
 
-type InvoiceOption = {
-  id: string;
-  invoiceNumber: string;
+type SourceOption = {
+  key: string;
   label: string;
 };
 
 type Props = {
-  invoiceOptions: InvoiceOption[];
+  sourceOptions: SourceOption[];
   baseCurrency: string;
   paymentMethods: string[];
   action: (prev: null, formData: FormData) => Promise<null>;
+  initialOpen?: boolean;
 };
 
-export function CreateReceiptDialog({ invoiceOptions, baseCurrency, paymentMethods, action }: Props) {
-  const [open, setOpen] = useState(false);
+export function CreateReceiptDialog({ sourceOptions, baseCurrency, paymentMethods, action, initialOpen = false }: Props) {
+  const [open, setOpen] = useState(initialOpen);
   const formRef = useRef<HTMLFormElement>(null);
-  const [, formAction, pending] = useActionState(action, null);
-
-  // Close and reset after successful submission
-  useEffect(() => {
-    if (!pending && open) {
-      setOpen(false);
-      formRef.current?.reset();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pending]);
+  const [, formAction, pending] = useActionState(async (prev: null, formData: FormData) => {
+    const result = await action(prev, formData);
+    setOpen(false);
+    formRef.current?.reset();
+    return result;
+  }, null);
 
   // Close on Escape key
   useEffect(() => {
@@ -67,7 +63,7 @@ export function CreateReceiptDialog({ invoiceOptions, baseCurrency, paymentMetho
           <div className="panel-shadow relative z-10 w-full max-w-md overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
             {/* Header */}
             <div className="flex items-center justify-between border-b border-[var(--line)] px-4 py-3">
-              <p className="text-[13px] font-semibold text-[var(--ink)]">Create Receipt from Invoice</p>
+              <p className="text-[13px] font-semibold text-[var(--ink)]">Create Receipt from Invoice or Sale</p>
               <button
                 type="button"
                 onClick={() => setOpen(false)}
@@ -83,13 +79,13 @@ export function CreateReceiptDialog({ invoiceOptions, baseCurrency, paymentMetho
             {/* Form */}
             <form ref={formRef} action={formAction} className="flex flex-col gap-3 p-4">
               <select
-                name="invoiceId"
+                name="sourceKey"
                 required
                 className="h-9 w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 text-sm text-[var(--ink)]"
               >
-                <option value="">Select invoice…</option>
-                {invoiceOptions.map((inv) => (
-                  <option key={inv.id} value={inv.id}>{inv.label}</option>
+                <option value="">Select invoice or sale...</option>
+                {sourceOptions.map((inv) => (
+                  <option key={inv.key} value={inv.key}>{inv.label}</option>
                 ))}
               </select>
 

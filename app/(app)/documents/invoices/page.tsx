@@ -18,11 +18,14 @@ import { canGenerateInvoiceForStatus } from "@/lib/documents";
 import { JobStatus } from "@/lib/job-status";
 import { can } from "@/lib/permissions";
 import { orgDb, prisma } from "@/lib/prisma";
+import { getDocumentBrandingSettings } from "@/lib/document-branding";
+import { sanitizeOptionalText, sanitizeText } from "@/lib/sanitize";
 import { ConfirmSubmitButton } from "@/components/shared/ConfirmSubmitButton";
 import { RowActionsMenu, MenuSection, MenuDestructiveRow, MenuActionLink, MenuActionButton } from "@/components/shared/RowActionsMenu";
 import { createReceiptForPayment, nextAvailableInvoiceNumber } from "@/lib/commercial/document-workflow";
 import { writeSystemAuditEvent } from "@/lib/commercial/audit";
 import { sendInvoiceViaWhatsAppAction } from "@/app/(app)/jobs/[id]/actions";
+import { CreateStandaloneInvoiceForm } from "./CreateStandaloneInvoiceForm";
 
 const PAYMENT_METHODS: PaymentMethod[] = ["CASH", "MOBILE_MONEY", "BANK_TRANSFER", "CARD", "OTHER"];
 const INVOICE_STATUSES: InvoiceStatus[] = ["DRAFT", "ISSUED", "PAID", "VOID"];
@@ -72,44 +75,149 @@ export default async function InvoicesPage({
     if (!can.createInvoices(user)) redirect("/dashboard");
 
     const clientId = String(formData.get("clientId") ?? "").trim();
+    const requestedNewClient = {
+      fullName: sanitizeText(String(formData.get("newClientFullName") ?? "")),
+      phone: sanitizeText(String(formData.get("newClientPhone") ?? "")),
+      email: sanitizeOptionalText(formData.get("newClientEmail")),
+      organization: sanitizeOptionalText(formData.get("newClientOrganization")),
+      address: sanitizeOptionalText(formData.get("newClientAddress")),
+    };
+    const hasNewClient = Boolean(requestedNewClient.fullName || requestedNewClient.phone);
     const subject = String(formData.get("subject") ?? "").trim();
     const invoiceTypeRaw = String(formData.get("invoiceType") ?? "SERVICE").trim();
-    const totalAmountRaw = Number(String(formData.get("totalAmount") ?? "").trim());
-    const currency = normalizeCurrency(formData.get("currency"), "UGX");
+    const currency = normalizeCurrency(formData.get("currency"), orgCurrency);
     const dueDateRaw = String(formData.get("dueDate") ?? "").trim();
     const notes = String(formData.get("notes") ?? "").trim();
+    const taxApplicable = String(formData.get("taxApplicable") ?? "") === "1";
+    const requestedTaxRate = Number(String(formData.get("taxRate") ?? "0").trim());
+    const taxRate = taxApplicable ? Math.min(Math.max(Number.isFinite(requestedTaxRate) ? requestedTaxRate : 0, 0), 100) : 0;
+    const taxLabel = sanitizeText(String(formData.get("taxLabel") ?? "Tax")).slice(0, 32) || "Tax";
 
-    if (!clientId || !subject || !Number.isFinite(totalAmountRaw) || totalAmountRaw < 0) {
+    let rawItems: Array<{ partId?: string | null; description?: string; quantity?: number; unitPrice?: number; discount?: number }> = [];
+    try {
+      const parsed = JSON.parse(String(formData.get("items") ?? "[]"));
+      if (Array.isArray(parsed)) rawItems = parsed;
+    } catch {
+      rawItems = [];
+    }
+
+    const items = rawItems.map((item) => {
+      const partId = item.partId ? String(item.partId).trim() : null;
+      const description = sanitizeText(String(item.description ?? ""));
+      const quantity = Number(item.quantity);
+      const unitPrice = Number(item.unitPrice);
+      const requestedDiscount = Number(item.discount);
+      const discountPercent = can.overrideDiscount(user)
+        ? Math.min(Math.max(Number.isFinite(requestedDiscount) ? requestedDiscount : 0, 0), 100)
+        : 0;
+      const gross = quantity * unitPrice;
+      const discountAmount = gross * (discountPercent / 100);
+      const lineTotal = gross - discountAmount;
+      return { partId, description, quantity, unitPrice, discountAmount, lineTotal };
+    });
+
+    if ((!clientId && !hasNewClient) || !items.length) {
+      redirect("/documents/invoices?error=missing-fields");
+    }
+    if (hasNewClient && (requestedNewClient.fullName.length < 2 || requestedNewClient.phone.length < 3)) {
+      redirect("/documents/invoices?error=missing-fields");
+    }
+    if (items.some((item) => !item.description || !Number.isFinite(item.quantity) || item.quantity <= 0 || !Number.isFinite(item.unitPrice) || item.unitPrice < 0)) {
       redirect("/documents/invoices?error=missing-fields");
     }
 
-    const client = await db.client.findFirst({ where: { id: clientId }, select: { id: true } });
-    if (!client) redirect("/documents/invoices?error=client-not-found");
+    let resolvedClientId = clientId || null;
+    if (resolvedClientId) {
+      const client = await db.client.findFirst({ where: { id: resolvedClientId }, select: { id: true } });
+      if (!client) redirect("/documents/invoices?error=client-not-found");
+    }
+
+    const partIds = [...new Set(items.map((item) => item.partId).filter((partId): partId is string => Boolean(partId)))];
+    if (partIds.length) {
+      const validParts = await prisma.part.findMany({ where: { id: { in: partIds }, orgId, isActive: true }, select: { id: true } });
+      if (validParts.length !== partIds.length) redirect("/documents/invoices?error=missing-fields");
+    }
 
     const invoiceType = INVOICE_TYPES.includes(invoiceTypeRaw as InvoiceType)
       ? (invoiceTypeRaw as InvoiceType)
       : ("SERVICE" as InvoiceType);
     const dueDate = dueDateRaw ? new Date(dueDateRaw) : null;
+    const subtotal = items.reduce((sum, item) => sum + item.lineTotal, 0);
+    const taxAmount = taxRate > 0 ? subtotal * (taxRate / 100) : 0;
+    const totalAmount = subtotal + taxAmount;
+    const invoiceSubject = sanitizeText(subject || items[0]?.description || "Invoice");
 
     const invoice = await prisma.$transaction(async (tx) => {
+      if (hasNewClient) {
+        const existingClient = await tx.client.findFirst({
+          where: { phone: requestedNewClient.phone, orgId },
+          select: { id: true, email: true, organization: true, address: true },
+        });
+        if (existingClient) {
+          resolvedClientId = existingClient.id;
+          const fillMissing: { email?: string | null; organization?: string | null; address?: string | null } = {};
+          if (!existingClient.email && requestedNewClient.email) fillMissing.email = requestedNewClient.email;
+          if (!existingClient.organization && requestedNewClient.organization) fillMissing.organization = requestedNewClient.organization;
+          if (!existingClient.address && requestedNewClient.address) fillMissing.address = requestedNewClient.address;
+          if (Object.keys(fillMissing).length) await tx.client.update({ where: { id: existingClient.id }, data: fillMissing });
+        } else {
+          const createdClient = await tx.client.create({
+            data: {
+              orgId,
+              fullName: requestedNewClient.fullName,
+              phone: requestedNewClient.phone,
+              email: requestedNewClient.email,
+              organization: requestedNewClient.organization,
+              address: requestedNewClient.address,
+            },
+            select: { id: true },
+          });
+          resolvedClientId = createdClient.id;
+        }
+      }
+      if (!resolvedClientId) throw new Error("client-not-found");
       const invoiceNumber = await nextAvailableInvoiceNumber(tx);
       return tx.invoice.create({
         data: {
           orgId,
-          clientId: client.id,
+          clientId: resolvedClientId,
           invoiceType,
-          subject,
+          subject: invoiceSubject,
           invoiceNumber,
           currency,
           status: "ISSUED" as InvoiceStatus,
-          totalAmount: totalAmountRaw,
+          totalAmount,
           dueDate,
-          notes: notes || null,
+          notes: notes ? sanitizeText(notes) : null,
+          lines: {
+            create: items.map((item) => {
+              const lineTax = taxAmount > 0 && subtotal > 0 ? taxAmount * (item.lineTotal / subtotal) : 0;
+              return {
+                orgId,
+                sourceType: item.partId ? "Part" : "Custom",
+                sourceId: item.partId,
+                description: item.description,
+                quantity: item.quantity,
+                unitPrice: item.unitPrice,
+                discountAmount: item.discountAmount,
+                taxAmount: lineTax,
+                lineTotal: item.lineTotal,
+              };
+            }),
+          },
         },
       });
     });
-    await writeSystemAuditEvent({ orgId, actorUserId: user.id, entityType: "Invoice", entityId: invoice.id, action: "INVOICE_CREATED", summary: `${invoice.invoiceNumber} created: ${subject}` });
+    await writeSystemAuditEvent({
+      orgId,
+      actorUserId: user.id,
+      entityType: "Invoice",
+      entityId: invoice.id,
+      action: "INVOICE_CREATED",
+      summary: `${invoice.invoiceNumber} created: ${invoiceSubject}${taxAmount > 0 ? ` with ${taxLabel} ${taxRate}%` : ""}`,
+    });
     revalidatePath("/documents/invoices");
+    redirect(`/documents/invoices?pay=${invoice.id}`);
   }
 
   async function addPaymentAction(formData: FormData) {
@@ -245,12 +353,20 @@ export default async function InvoicesPage({
     });
     if (!job || !job.clientBill || job.clientBill <= 0) return;
 
-    // If invoice already exists, go straight to collect
-    if (job.invoiceIssuedAt && job.invoiceNumber) {
-      const existing = await db.invoice.findFirst({ where: { jobId: job.id }, select: { id: true } });
-      if (existing) {
-        redirect(`/documents/invoices?pay=${existing.id}`);
+    // If invoice already exists, go straight to collect. Some older rows may
+    // have an Invoice without the matching job stamp, so repair that stamp.
+    const existing = await db.invoice.findFirst({
+      where: { jobId: job.id },
+      select: { id: true, invoiceNumber: true, issuedAt: true },
+    });
+    if (existing) {
+      if (!job.invoiceIssuedAt || !job.invoiceNumber) {
+        await db.job.updateMany({
+          where: { id: job.id },
+          data: { invoiceIssuedAt: existing.issuedAt, invoiceNumber: existing.invoiceNumber },
+        });
       }
+      redirect(`/documents/invoices?pay=${existing.id}`);
     }
 
     // Create the invoice record
@@ -524,14 +640,33 @@ export default async function InvoicesPage({
     .catch(() => []);
   const readyJobsTotal = readyJobs.reduce((s, j) => s + (j.clientBill ?? 0), 0);
 
-  const clients = await db.client
-    .findMany({
-      where: {},
-      orderBy: { fullName: "asc" },
-      take: 200,
-      select: { id: true, fullName: true, phone: true },
-    })
-    .catch(() => []);
+  const [clients, invoiceParts, invoiceTaxRates, branding] = await Promise.all([
+    db.client
+      .findMany({
+        where: {},
+        orderBy: { fullName: "asc" },
+        take: 300,
+        select: { id: true, fullName: true, phone: true, email: true, organization: true, address: true },
+      })
+      .catch(() => []),
+    prisma.part.findMany({
+      where: { orgId: user.orgId, isActive: true },
+      orderBy: { name: "asc" },
+      take: 500,
+      select: { id: true, sku: true, name: true, unitCost: true, qtyOnHand: true },
+    }).catch(() => []),
+    prisma.taxRate.findMany({
+      where: { orgId: user.orgId, isActive: true, appliesToSales: true },
+      orderBy: [{ isDefault: "desc" }, { code: "asc" }],
+      select: { id: true, name: true, code: true, rate: true, isDefault: true },
+    }).catch(() => []),
+    getDocumentBrandingSettings(user.orgId).catch(() => ({
+      vatDefaultApplicable: false,
+      vatRatePercent: 18,
+      vatLabel: "VAT",
+    })),
+  ]);
+  const defaultInvoiceTaxRate = invoiceTaxRates.find((rate) => rate.isDefault) ?? null;
 
   // ── Aging analysis ────────────────────────────────────────────────────────
   const outstanding = withAging.filter((i) => !i.isPaid && !i.isVoid);
@@ -987,96 +1122,19 @@ export default async function InvoicesPage({
 
       {/* ── STANDALONE INVOICE CREATION ─────────────────────────────────────── */}
       {/* Desktop: always available. Mobile: only when ?create=1 (from "New Invoice" button) */}
-      {canCreateInvoice && clients.length > 0 && (
-        <details id="create-invoice" open={createMode}
-          className={`group rounded-xl border border-[var(--line)] bg-[var(--panel)] ${createMode ? "" : "hidden lg:block"}`}>
-          <summary className="cursor-pointer select-none px-4 py-2.5 text-[12px] font-semibold text-[var(--ink)] group-open:border-b group-open:border-[var(--line)]">
-            + Create Invoice (Service / Contract / Merchandise)
-          </summary>
-          <form
-            action={createStandaloneInvoiceAction}
-            className="grid grid-cols-1 gap-3 p-4 sm:grid-cols-2 lg:grid-cols-3"
-          >
-            <div className="space-y-1 lg:col-span-2">
-              <label className="text-[13px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">Client</label>
-              <select
-                name="clientId"
-                required
-                className="h-9 w-full rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 text-sm"
-              >
-                <option value="">Select client…</option>
-                {clients.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.fullName}
-                    {c.phone ? ` · ${c.phone}` : ""}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="space-y-1">
-              <label className="text-[13px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">Invoice Type</label>
-              <select
-                name="invoiceType"
-                defaultValue="SERVICE"
-                className="h-9 w-full rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 text-sm"
-              >
-                {INVOICE_TYPES.filter((t) => t !== "REPAIR").map((t) => (
-                  <option key={t} value={t}>
-                    {t.charAt(0) + t.slice(1).toLowerCase()}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="space-y-1 sm:col-span-2">
-              <label className="text-[13px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">Subject / Description</label>
-              <input
-                name="subject"
-                required
-                placeholder="e.g. IT Support — May 2026"
-                className="h-9 w-full rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 text-sm outline-none focus:ring-2 focus:ring-[var(--accent)]"
-              />
-            </div>
-            <div className="space-y-1">
-              <label className="text-[13px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">Amount</label>
-              <div className="flex gap-2">
-                <input
-                  name="totalAmount"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  placeholder="0.00"
-                  required
-                  className="h-9 flex-1 rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 text-sm outline-none focus:ring-2 focus:ring-[var(--accent)]"
-                />
-                <input type="hidden" name="currency" value="UGX" />
-              </div>
-            </div>
-            <div className="space-y-1">
-              <label className="text-[13px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">Due Date</label>
-              <input
-                name="dueDate"
-                type="date"
-                className="h-9 w-full rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 text-sm outline-none focus:ring-2 focus:ring-[var(--accent)]"
-              />
-            </div>
-            <div className="space-y-1">
-              <label className="text-[13px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">Notes</label>
-              <input
-                name="notes"
-                placeholder="Optional notes"
-                className="h-9 w-full rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 text-sm outline-none focus:ring-2 focus:ring-[var(--accent)]"
-              />
-            </div>
-            <div className="flex items-end sm:col-span-2 lg:col-span-3">
-              <button
-                type="submit"
-                className="btn-premium h-9 rounded-lg px-5 text-sm font-semibold"
-              >
-                Create Invoice
-              </button>
-            </div>
-          </form>
-        </details>
+      {canCreateInvoice && (
+        <CreateStandaloneInvoiceForm
+          action={createStandaloneInvoiceAction}
+          createMode={createMode}
+          clients={clients}
+          parts={invoiceParts}
+          taxRates={invoiceTaxRates}
+          currency={orgCurrency}
+          canOverrideDiscount={can.overrideDiscount(user)}
+          defaultTaxApplicable={branding.vatDefaultApplicable}
+          defaultTaxRate={defaultInvoiceTaxRate?.rate ?? branding.vatRatePercent}
+          defaultTaxLabel={defaultInvoiceTaxRate?.code ?? branding.vatLabel}
+        />
       )}
 
       {/* ── COLLECT REVENUE (desktop only — mobile has dynamic version in header) ── */}

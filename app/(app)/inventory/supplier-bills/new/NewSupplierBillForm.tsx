@@ -2,17 +2,37 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 
 import { createSupplierBillAction } from "../actions";
 
 type Supplier = { id: string; name: string };
-type PurchaseOrder = { id: string; supplierId: string; reference: string | null };
-type GoodsReceived = { id: string; supplierId: string; poId: string | null; grnNumber: string };
+type PurchaseOrder = {
+  id: string;
+  supplierId: string;
+  reference: string | null;
+  items: Array<{ description: string; qtyOrdered: number; unitCost: number }>;
+};
+type GoodsReceived = {
+  id: string;
+  supplierId: string;
+  poId: string | null;
+  grnNumber: string;
+  items: Array<{ description: string; quantity: number; unitCost: number }>;
+};
 type LineItem = { key: number; description: string; quantity: number; unitCost: number };
 
 let keyCounter = 0;
 function nextKey() { return ++keyCounter; }
+function blankLine(): LineItem { return { key: nextKey(), description: "", quantity: 1, unitCost: 0 }; }
+function fromSourceLine(line: { description: string; quantity: number; unitCost: number }): LineItem {
+  return {
+    key: nextKey(),
+    description: line.description,
+    quantity: Math.max(1, Math.floor(Number(line.quantity) || 1)),
+    unitCost: Math.max(0, Number(line.unitCost) || 0),
+  };
+}
 
 export function NewSupplierBillForm({
   suppliers,
@@ -34,11 +54,56 @@ export function NewSupplierBillForm({
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
-  const [supplierId, setSupplierId] = useState(defaultSupplierId ?? "");
-  const [lines, setLines] = useState<LineItem[]>([{ key: nextKey(), description: "", quantity: 1, unitCost: 0 }]);
+  const defaultGrn = goodsReceived.find((item) => item.id === (defaultGrnId ?? ""));
+  const defaultPo = purchaseOrders.find((item) => item.id === (defaultPoId ?? defaultGrn?.poId ?? ""));
+  const initialSupplierId = defaultSupplierId ?? defaultGrn?.supplierId ?? defaultPo?.supplierId ?? "";
+  const initialPoId = defaultPoId ?? defaultGrn?.poId ?? "";
+  const [supplierId, setSupplierId] = useState(initialSupplierId);
+  const [selectedPoId, setSelectedPoId] = useState(initialPoId);
+  const [selectedGrnId, setSelectedGrnId] = useState(defaultGrnId ?? "");
+  const sourceLines = useMemo(() => {
+    if (defaultGrn?.items.length) return defaultGrn.items.map(fromSourceLine);
+    if (defaultPo?.items.length) {
+      return defaultPo.items.map((item) => fromSourceLine({ description: item.description, quantity: item.qtyOrdered, unitCost: item.unitCost }));
+    }
+    return [blankLine()];
+  }, [defaultGrn, defaultPo]);
+  const [lines, setLines] = useState<LineItem[]>(sourceLines);
 
   const supplierPOs = purchaseOrders.filter((po) => !supplierId || po.supplierId === supplierId);
-  const supplierGRNs = goodsReceived.filter((grn) => !supplierId || grn.supplierId === supplierId);
+  const supplierGRNs = goodsReceived.filter((grn) =>
+    (!supplierId || grn.supplierId === supplierId) &&
+    (!selectedPoId || !grn.poId || grn.poId === selectedPoId),
+  );
+
+  function setLinesFromGrn(grnId: string) {
+    const grn = goodsReceived.find((item) => item.id === grnId);
+    if (!grn) {
+      setSelectedGrnId("");
+      setLines([blankLine()]);
+      return;
+    }
+    setSelectedGrnId(grn.id);
+    setSupplierId(grn.supplierId);
+    if (grn.poId) setSelectedPoId(grn.poId);
+    setLines(grn.items.length ? grn.items.map(fromSourceLine) : [blankLine()]);
+  }
+
+  function setLinesFromPo(poId: string) {
+    const po = purchaseOrders.find((item) => item.id === poId);
+    setSelectedPoId(poId);
+    setSelectedGrnId("");
+    if (!po) {
+      setLines([blankLine()]);
+      return;
+    }
+    setSupplierId(po.supplierId);
+    setLines(
+      po.items.length
+        ? po.items.map((item) => fromSourceLine({ description: item.description, quantity: item.qtyOrdered, unitCost: item.unitCost }))
+        : [blankLine()],
+    );
+  }
 
   function updateLine(key: number, patch: Partial<LineItem>) {
     setLines((prev) => prev.map((line) => (line.key === key ? { ...line, ...patch } : line)));
@@ -98,7 +163,18 @@ export function NewSupplierBillForm({
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="block text-xs font-semibold text-[var(--ink-muted)]">
             Supplier
-            <select name="supplierId" required value={supplierId} onChange={(e) => setSupplierId(e.target.value)} className="mt-1 w-full rounded-lg border border-[var(--line)] bg-[var(--bg)] px-3 py-2 text-sm text-[var(--ink)]">
+            <select
+              name="supplierId"
+              required
+              value={supplierId}
+              onChange={(e) => {
+                setSupplierId(e.target.value);
+                setSelectedPoId("");
+                setSelectedGrnId("");
+                setLines([blankLine()]);
+              }}
+              className="mt-1 w-full rounded-lg border border-[var(--line)] bg-[var(--bg)] px-3 py-2 text-sm text-[var(--ink)]"
+            >
               <option value="">Select supplier...</option>
               {suppliers.map((supplier) => <option key={supplier.id} value={supplier.id}>{supplier.name}</option>)}
             </select>
@@ -109,16 +185,24 @@ export function NewSupplierBillForm({
           </label>
           <label className="block text-xs font-semibold text-[var(--ink-muted)]">
             Purchase order
-            <select name="poId" defaultValue={defaultPoId ?? ""} className="mt-1 w-full rounded-lg border border-[var(--line)] bg-[var(--bg)] px-3 py-2 text-sm text-[var(--ink)]">
+            <select name="poId" value={selectedPoId} onChange={(e) => setLinesFromPo(e.target.value)} className="mt-1 w-full rounded-lg border border-[var(--line)] bg-[var(--bg)] px-3 py-2 text-sm text-[var(--ink)]">
               <option value="">No linked PO</option>
-              {supplierPOs.map((po) => <option key={po.id} value={po.id}>{po.reference ?? `PO-${po.id.slice(-6).toUpperCase()}`}</option>)}
+              {supplierPOs.map((po) => (
+                <option key={po.id} value={po.id}>
+                  {po.reference ?? `PO-${po.id.slice(-6).toUpperCase()}`} · {po.items.length} line{po.items.length === 1 ? "" : "s"}
+                </option>
+              ))}
             </select>
           </label>
           <label className="block text-xs font-semibold text-[var(--ink-muted)]">
             Goods received
-            <select name="grnId" defaultValue={defaultGrnId ?? ""} className="mt-1 w-full rounded-lg border border-[var(--line)] bg-[var(--bg)] px-3 py-2 text-sm text-[var(--ink)]">
+            <select name="grnId" value={selectedGrnId} onChange={(e) => setLinesFromGrn(e.target.value)} className="mt-1 w-full rounded-lg border border-[var(--line)] bg-[var(--bg)] px-3 py-2 text-sm text-[var(--ink)]">
               <option value="">No linked GRN</option>
-              {supplierGRNs.map((grn) => <option key={grn.id} value={grn.id}>{grn.grnNumber}</option>)}
+              {supplierGRNs.map((grn) => (
+                <option key={grn.id} value={grn.id}>
+                  {grn.grnNumber} · {grn.items.length} line{grn.items.length === 1 ? "" : "s"}
+                </option>
+              ))}
             </select>
           </label>
           <label className="block text-xs font-semibold text-[var(--ink-muted)]">
@@ -143,7 +227,12 @@ export function NewSupplierBillForm({
 
       <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] overflow-hidden">
         <div className="flex items-center justify-between px-5 py-3 border-b border-[var(--line)]">
-          <p className="text-[12px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Line Items</p>
+          <div>
+            <p className="text-[12px] font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]">Line Items</p>
+            <p className="mt-0.5 text-[12px] text-[var(--ink-muted)]">
+              {selectedGrnId ? "Loaded from selected GRN." : selectedPoId ? "Loaded from selected PO." : "Add supplier invoice lines."}
+            </p>
+          </div>
           <button type="button" onClick={() => setLines((prev) => [...prev, { key: nextKey(), description: "", quantity: 1, unitCost: 0 }])} className="rounded-md bg-[var(--gold)]/15 px-3 py-1 text-xs font-semibold text-[var(--gold)] hover:bg-[var(--gold)]/25">+ Add Line</button>
         </div>
         <div className="overflow-x-auto">

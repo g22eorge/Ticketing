@@ -1567,7 +1567,7 @@ export default async function DashboardPage({
               <div className="grid grid-cols-2 gap-2">
                 {([
                   { href: "/jobs/new",                      label: "New Repair Job",   bg: "bg-sky-500/10",    color: "text-sky-600",    path: "M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" },
-                  { href: "/documents/receipts",            label: "Record Payment",   bg: "bg-emerald-500/10",color: "text-emerald-600", path: "M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" },
+                  { href: "/documents/receipts?new=1",      label: "Record Payment",   bg: "bg-emerald-500/10",color: "text-emerald-600", path: "M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" },
                   { href: "/pos",                           label: "Product Sale",     bg: "bg-violet-500/10", color: "text-violet-600",  path: "M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4zM3 6h18|M16 10a4 4 0 0 1-8 0" },
                   { href: "/finance/expenses",              label: "Add Expense",      bg: "bg-red-500/10",    color: "text-red-600",     path: "M12 19V5|M5 12l7-7 7 7" },
                   { href: "/inventory/purchase-orders/new", label: "Purchase Order",   bg: "bg-amber-500/10",  color: "text-amber-600",   path: "M21 10V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l2-1.14|M16.5 9.4 7.55 4.24|M3.29 7 12 12l8.71-5|M12 22V12" },
