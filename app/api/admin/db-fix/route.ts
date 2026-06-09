@@ -558,6 +558,46 @@ async function runDbFix() {
     await prisma.$executeRawUnsafe('CREATE INDEX IF NOT EXISTS "Payment_saleId_idx" ON "Payment"("saleId")');
   }
 
+  const hasTechnicianPayout = await tableExists("TechnicianPayout");
+  if (!hasTechnicianPayout) {
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "TechnicianPayout" (
+        "id" TEXT NOT NULL PRIMARY KEY,
+        "orgId" TEXT NOT NULL,
+        "jobId" TEXT NOT NULL,
+        "amount" REAL NOT NULL,
+        "method" TEXT NOT NULL DEFAULT 'CASH',
+        "reference" TEXT,
+        "note" TEXT,
+        "paidAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        "recordedById" TEXT,
+        "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY ("jobId") REFERENCES "Job"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+        FOREIGN KEY ("recordedById") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE
+      )
+    `);
+    changes.push({ kind: "create_table", detail: "Created TechnicianPayout" });
+  } else {
+    const techPayoutCols = await tableColumns("TechnicianPayout");
+    const addTechPayoutColumn = async (name: string, type: string, dflt?: string) => {
+      if (techPayoutCols.has(name)) return;
+      const defaultClause = dflt ? ` DEFAULT ${dflt}` : "";
+      await prisma.$executeRawUnsafe(`ALTER TABLE "TechnicianPayout" ADD COLUMN "${name}" ${type}${defaultClause}`);
+      changes.push({ kind: "alter_table", detail: `Added TechnicianPayout.${name}` });
+    };
+    await addTechPayoutColumn("orgId", "TEXT");
+    await addTechPayoutColumn("jobId", "TEXT");
+    await addTechPayoutColumn("amount", "REAL", "0");
+    await addTechPayoutColumn("method", "TEXT", "'CASH'");
+    await addTechPayoutColumn("reference", "TEXT");
+    await addTechPayoutColumn("note", "TEXT");
+    await addTechPayoutColumn("paidAt", "DATETIME");
+    await addTechPayoutColumn("recordedById", "TEXT");
+    await addTechPayoutColumn("createdAt", "DATETIME");
+  }
+  await prisma.$executeRawUnsafe('CREATE INDEX IF NOT EXISTS "TechnicianPayout_orgId_paidAt_idx" ON "TechnicianPayout"("orgId", "paidAt")');
+  await prisma.$executeRawUnsafe('CREATE INDEX IF NOT EXISTS "TechnicianPayout_jobId_idx" ON "TechnicianPayout"("jobId")');
+
   // Sales (POS)
   const hasSale = await tableExists("Sale");
   if (!hasSale) {

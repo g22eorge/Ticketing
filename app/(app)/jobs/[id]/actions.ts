@@ -968,7 +968,7 @@ export async function recordTechnicianPayoutAction(formData: FormData) {
           note: sanitizeOptionalText(payload.note) || null,
           recordedById: session.user.id,
         },
-      }).catch(() => null);
+      });
 
       const paidTotal = alreadyPaid + payload.amount;
       const isSettled = technicianCost > 0 && paidTotal >= technicianCost;

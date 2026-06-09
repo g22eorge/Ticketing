@@ -11,6 +11,7 @@ import { JobStatusBadge } from "@/components/jobs/JobStatusBadge";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { AuditTimeline } from "@/components/shared/AuditTimeline";
 import { PhotoUploader } from "@/components/shared/PhotoUploader";
+import { resolveTechCost } from "@/lib/billing";
 import { formatEATDateTime } from "@/lib/date-eat";
 import { canGenerateInvoiceForStatus, canGenerateQuotationForStatus } from "@/lib/documents";
 import { JobStatus, normalizeJobStatus } from "@/lib/job-status";
@@ -618,8 +619,8 @@ export function JobDetailTabs({ role, permissions = [], job, technicians, device
   const statusActions = allowedStatusTransitions[job.status] ?? allowedStatusTransitions[statusKey] ?? [];
   const isTerminal = job.status === "COMPLETED" || job.status === "CLOSED";
   const existingMargin =
-    typeof job.clientBill === "number" && typeof job.externalTechBill === "number"
-      ? job.clientBill - job.externalTechBill
+    typeof job.clientBill === "number"
+      ? job.clientBill - resolveTechCost(job.externalTechFee, job.externalTechBill)
       : null;
   const vatApplicable = job.vatApplicable ?? false;
   const clientBillValue = typeof job.clientBill === "number" ? job.clientBill : 0;
@@ -637,8 +638,9 @@ export function JobDetailTabs({ role, permissions = [], job, technicians, device
             ? "Paid"
             : "Overpaid";
   const technicianPayouts = job.technicianPayouts ?? [];
-  const technicianCost = typeof job.externalTechBill === "number" ? job.externalTechBill : 0;
-  const technicianPaid = technicianPayouts.reduce((sum, payout) => sum + payout.amount, 0);
+  const technicianCost = resolveTechCost(job.externalTechFee, job.externalTechBill);
+  const technicianPaidFromHistory = technicianPayouts.reduce((sum, payout) => sum + payout.amount, 0);
+  const technicianPaid = Math.max(technicianPaidFromHistory, job.externalPaid && technicianCost > 0 ? technicianCost : 0);
   const technicianBalance = technicianCost - technicianPaid;
   const technicianPayoutStatus =
     technicianCost <= 0

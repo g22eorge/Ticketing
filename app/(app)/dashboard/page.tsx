@@ -15,7 +15,7 @@ import { loadCashCollectionsByChannelWide, loadReceivablesTotal } from "@/lib/fi
 import { UI_JOB_STATUSES, JobStatus, isOpenJobStatus, normalizeJobStatus } from "@/lib/job-status";
 import { filterSupportedJobStatuses } from "@/lib/job-status-server";
 import { can } from "@/lib/permissions";
-import { getJobPayoutsByIds } from "@/lib/payouts";
+import { getJobPayoutsByIds, getTechnicianPayoutTotalsByJobIds } from "@/lib/payouts";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserRole } from "@/lib/session";
 import { getOrgModules } from "@/lib/module-access";
@@ -430,21 +430,31 @@ export default async function DashboardPage({
         jobNumber: true,
         status: true,
         repairPath: true,
+        externalTechFee: true,
         externalTechBill: true,
       },
     });
 
     const payouts = await getJobPayoutsByIds(jobs.map((job) => job.id)).catch(() => new Map());
+    const payoutTotals = await getTechnicianPayoutTotalsByJobIds(jobs.map((job) => job.id)).catch(() => new Map());
 
     const currency = getAppCurrency();
     const openCount = jobs.filter((job) => isOpenJobStatus(job.status)).length;
     const completedCount = jobs.filter((job) => job.status === "COMPLETED").length;
-    const paidTotal = jobs
-      .filter((job) => payouts.get(job.id)?.externalPaid)
-      .reduce((sum, job) => sum + resolveTechCost(payouts.get(job.id)?.externalTechFee, job.externalTechBill), 0);
+    const paidForJob = (job: typeof jobs[number]) => {
+      const cost = resolveTechCost(payouts.get(job.id)?.externalTechFee ?? job.externalTechFee, job.externalTechBill);
+      return Math.max(payoutTotals.get(job.id)?.paidAmount ?? 0, payouts.get(job.id)?.externalPaid && cost > 0 ? cost : 0);
+    };
+    const paidTotal = jobs.reduce((sum, job) => {
+      const cost = resolveTechCost(payouts.get(job.id)?.externalTechFee ?? job.externalTechFee, job.externalTechBill);
+      return sum + Math.min(cost, paidForJob(job));
+    }, 0);
     const outstandingTotal = jobs
-      .filter((job) => job.status === "COMPLETED" && !payouts.get(job.id)?.externalPaid)
-      .reduce((sum, job) => sum + resolveTechCost(payouts.get(job.id)?.externalTechFee, job.externalTechBill), 0);
+      .filter((job) => job.status === "COMPLETED")
+      .reduce((sum, job) => {
+        const cost = resolveTechCost(payouts.get(job.id)?.externalTechFee ?? job.externalTechFee, job.externalTechBill);
+        return sum + Math.max(0, cost - paidForJob(job));
+      }, 0);
 
     return (
       <div className="space-y-4">
@@ -513,9 +523,15 @@ export default async function DashboardPage({
                   </div>
                   <div>
                     <p className="text-xs text-[var(--ink-muted)]">Fee</p>
-                    <p className="font-medium">{formatMoney(resolveTechCost(payouts.get(job.id)?.externalTechFee, job.externalTechBill), currency)}</p>
-                    <p className={`text-xs ${payouts.get(job.id)?.externalPaid ? "text-[var(--accent)]" : "text-[var(--accent)]"}`}>
-                      {payouts.get(job.id)?.externalPaid ? "Paid" : "Unpaid"}
+                    <p className="font-medium">{formatMoney(resolveTechCost(payouts.get(job.id)?.externalTechFee ?? job.externalTechFee, job.externalTechBill), currency)}</p>
+                    <p className="text-xs text-[var(--accent)]">
+                      {(() => {
+                        const cost = resolveTechCost(payouts.get(job.id)?.externalTechFee ?? job.externalTechFee, job.externalTechBill);
+                        const paid = paidForJob(job);
+                        if (cost > 0 && paid >= cost) return "Paid";
+                        if (paid > 0) return "Partially paid";
+                        return "Unpaid";
+                      })()}
                     </p>
                   </div>
                 </li>
@@ -1012,7 +1028,7 @@ export default async function DashboardPage({
       prisma.job.count({ where: { ...orgFilter, status: { in: filterSupportedJobStatuses(["RECEIVED", "DIAGNOSING", "REFERRED", "IN_EXTERNAL_REPAIR", "AWAITING_APPROVAL", "IN_REPAIR", "READY_FOR_PICKUP"]) as JobStatus[] }, receivedAt: { lt: new Date(today.getTime() - 3 * 86_400_000) } } }).catch(() => 0),
       prisma.job.count({ where: { ...orgFilter, status: { in: filterSupportedJobStatuses(["DIAGNOSING", "REFERRED", "IN_EXTERNAL_REPAIR", "AWAITING_APPROVAL", "IN_REPAIR", "READY_FOR_PICKUP"]) as JobStatus[] }, lastClientContactAt: null } }).catch(() => 0),
       prisma.job.count({ where: { ...orgFilter, status: "COMPLETED", clientBill: { gt: 0 }, clientPaid: false } }).catch(() => 0),
-      prisma.job.aggregate({ where: { ...orgFilter, repairPath: "EXTERNAL", status: { in: ["COMPLETED", "DELIVERED"] }, externalPaid: false }, _sum: { externalTechFee: true, externalTechBill: true } }).catch(() => ({ _sum: { externalTechFee: null, externalTechBill: null } })),
+      prisma.job.findMany({ where: { ...orgFilter, repairPath: "EXTERNAL", status: { in: ["COMPLETED", "DELIVERED"] }, externalPaid: false }, select: { id: true, externalTechFee: true, externalTechBill: true } }).catch(() => [] as { id: string; externalTechFee: number | null; externalTechBill: number | null }[]),
 
       prisma.lead.groupBy({ by: ["status"], where: orgFilter, _count: { status: true } }).catch(() => [] as { status: string; _count: { status: number } }[]),
 
@@ -1038,7 +1054,7 @@ export default async function DashboardPage({
       prisma.job.count({ where: { ...orgFilter, receivedAt: { gte: yesterdayStart, lte: yesterdayEnd } } }).catch(() => 0),
       prisma.job.count({ where: { ...orgFilter, completedAt: { gte: yesterdayStart, lte: yesterdayEnd } } }).catch(() => 0),
       prisma.expense.aggregate({ where: { orgId: orgFilter.orgId ?? undefined, paidAt: { gte: yesterdayStart, lte: yesterdayEnd } }, _sum: { amount: true } }).catch(() => ({ _sum: { amount: null } })),
-      prisma.job.findMany({ where: { ...orgFilter, repairPath: "EXTERNAL", status: { in: filterSupportedJobStatuses(["COMPLETED", "DELIVERED"]) as JobStatus[] }, externalPaid: false, assignedToId: { not: null } }, select: { assignedToId: true, externalTechFee: true, externalTechBill: true }, take: 200 }).catch(() => [] as { assignedToId: string | null; externalTechFee: number | null; externalTechBill: number | null }[]),
+      prisma.job.findMany({ where: { ...orgFilter, repairPath: "EXTERNAL", status: { in: filterSupportedJobStatuses(["COMPLETED", "DELIVERED"]) as JobStatus[] }, externalPaid: false, assignedToId: { not: null } }, select: { id: true, assignedToId: true, externalTechFee: true, externalTechBill: true }, take: 200 }).catch(() => [] as { id: string; assignedToId: string | null; externalTechFee: number | null; externalTechBill: number | null }[]),
       // Intake pending
       prisma.repairRequest.count({ where: { ...(orgFilter.orgId ? { orgId: orgFilter.orgId } : {}), requestStatus: { in: ["PENDING_INTAKE", "PENDING_FRONT_DESK"] as never[] } } }).catch(() => 0),
       // Failed / dead outbox messages
@@ -1088,17 +1104,23 @@ export default async function DashboardPage({
     const revenueTodayValue = collectionsToday.total;
     const expensesTodayValue = expensesToday._sum.amount ?? 0;
     const payablesValue     = (payablesAgg._sum.totalAmount ?? 0) - (payablesAgg._sum.paidAmount ?? 0);
-    const technicianPayoutsDue = resolveTechCost(payoutDueJobs._sum.externalTechFee, payoutDueJobs._sum.externalTechBill);
+    const payoutDueTotals = await getTechnicianPayoutTotalsByJobIds(payoutDueJobs.map((job) => job.id));
+    const technicianPayoutsDue = payoutDueJobs.reduce((sum, job) => {
+      const paid = payoutDueTotals.get(job.id)?.paidAmount ?? 0;
+      return sum + Math.max(0, resolveTechCost(job.externalTechFee, job.externalTechBill) - paid);
+    }, 0);
 
     // Yesterday comparison values
     const cashYesterdayValue = collectionsYesterday.total;
     const expensesYesterdayValue = expensesYesterdayRaw._sum.amount ?? 0;
 
     // Per-tech payout due map
+    const techPayoutByTechTotals = await getTechnicianPayoutTotalsByJobIds(techPayoutByTech.map((job) => job.id));
     const techPayoutDueMap = new Map<string, number>();
     for (const j of techPayoutByTech) {
       if (!j.assignedToId) continue;
-      techPayoutDueMap.set(j.assignedToId, (techPayoutDueMap.get(j.assignedToId) ?? 0) + resolveTechCost(j.externalTechFee, j.externalTechBill));
+      const paid = techPayoutByTechTotals.get(j.id)?.paidAmount ?? 0;
+      techPayoutDueMap.set(j.assignedToId, (techPayoutDueMap.get(j.assignedToId) ?? 0) + Math.max(0, resolveTechCost(j.externalTechFee, j.externalTechBill) - paid));
     }
 
     // Low stock
@@ -1860,7 +1882,7 @@ export default async function DashboardPage({
           externalPaid: false,
           status: { in: ["READY_FOR_PICKUP", "COMPLETED", "DELIVERED"] },
         },
-        select: { id: true, externalTechBill: true },
+        select: { id: true, externalTechFee: true, externalTechBill: true },
         take: 200,
       }),
       loadRepairRevenueTrend(trendMonths, user.orgId),
@@ -1869,9 +1891,14 @@ export default async function DashboardPage({
     const monthRevenue = completedThisMonth._sum.clientBill ?? 0;
 
     const payoutMap = await getJobPayoutsByIds(externalCompleted.map((job) => job.id)).catch(() => new Map());
+    const payoutTotals = await getTechnicianPayoutTotalsByJobIds(externalCompleted.map((job) => job.id)).catch(() => new Map());
     // externalCompleted already pre-filtered to externalPaid=false in the DB query
     const payoutOutstanding = externalCompleted
-      .reduce((sum, job) => sum + resolveTechCost(payoutMap.get(job.id)?.externalTechFee, job.externalTechBill), 0);
+      .reduce((sum, job) => {
+        const cost = resolveTechCost(payoutMap.get(job.id)?.externalTechFee ?? job.externalTechFee, job.externalTechBill);
+        const paid = payoutTotals.get(job.id)?.paidAmount ?? 0;
+        return sum + Math.max(0, cost - paid);
+      }, 0);
 
     return (
       <div className="space-y-4">
