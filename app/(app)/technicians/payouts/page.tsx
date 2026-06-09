@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 
 import { formatMoney, getAppCurrency } from "@/lib/currency";
 import { formatEATDate } from "@/lib/date-eat";
-import { getJobPayoutsByIds, hasJobPayoutColumns } from "@/lib/payouts";
+import { getJobPayoutsByIds, getTechnicianPayoutTotalsByJobIds, hasJobPayoutColumns } from "@/lib/payouts";
 import { prisma } from "@/lib/prisma";
 import { requireOrgSession } from "@/lib/org-context";
 
@@ -83,6 +83,7 @@ export default async function TechnicianPayoutsPage({
 
   const payoutColumnsReady = await hasJobPayoutColumns();
   const payouts = await getJobPayoutsByIds(jobs.map((job) => job.id));
+  const payoutTotals = await getTechnicianPayoutTotalsByJobIds(jobs.map((job) => job.id));
 
   const currency = getAppCurrency();
 
@@ -93,13 +94,17 @@ export default async function TechnicianPayoutsPage({
     return 0;
   }
 
+  function paidForJob(jobId: string) {
+    return payoutTotals.get(jobId)?.paidAmount ?? 0;
+  }
+
+  function balanceForJob(job: typeof jobs[number]) {
+    return Math.max(0, resolveJobFee(job) - paidForJob(job.id));
+  }
+
   const total = jobs.reduce((sum, job) => sum + resolveJobFee(job), 0);
-  const paid = jobs
-    .filter((job) => payouts.get(job.id)?.externalPaid)
-    .reduce((sum, job) => sum + resolveJobFee(job), 0);
-  const unpaid = jobs
-    .filter((job) => !payouts.get(job.id)?.externalPaid)
-    .reduce((sum, job) => sum + resolveJobFee(job), 0);
+  const paid = jobs.reduce((sum, job) => sum + Math.min(resolveJobFee(job), paidForJob(job.id)), 0);
+  const unpaid = jobs.reduce((sum, job) => sum + balanceForJob(job), 0);
   const hasPayoutFilters = Boolean(filters.q || filters.paid || filters.month);
   const payoutBrief = hasPayoutFilters
     ? "Filtered payout view is active. Use the amount cards below for live totals and reset filters to return to the complete payout queue."
@@ -198,18 +203,23 @@ export default async function TechnicianPayoutsPage({
         ) : (
           jobs.map((job) => {
             const payout = payouts.get(job.id);
-            const isPaid = payout?.externalPaid ?? false;
-            const fee = formatMoney(resolveJobFee(job), currency);
+            const feeAmount = resolveJobFee(job);
+            const paidAmount = paidForJob(job.id);
+            const balance = Math.max(0, feeAmount - paidAmount);
+            const isPaid = (payout?.externalPaid ?? false) || (feeAmount > 0 && balance <= 0);
+            const isPartPaid = !isPaid && paidAmount > 0;
+            const statusLabel = isPaid ? "Paid" : isPartPaid ? "Partially paid" : "Unpaid";
+            const statusClass = isPaid ? "text-emerald-600" : isPartPaid ? "text-blue-600" : "text-amber-600";
             const device = [job.brand, job.model].filter(v => v && v !== "Unknown").join(" ") || "Device";
             return (
               <div key={job.id} className="relative border-b border-[var(--line)] bg-[var(--panel)] last:border-b-0 transition-colors hover:bg-[var(--panel-strong)]/40">
-                <span className={`absolute inset-y-0 left-0 w-[5px] ${isPaid ? "bg-emerald-400" : "bg-amber-400"}`} aria-hidden="true" />
+                <span className={`absolute inset-y-0 left-0 w-[5px] ${isPaid ? "bg-emerald-400" : isPartPaid ? "bg-blue-400" : "bg-amber-400"}`} aria-hidden="true" />
                 <Link href={`/jobs/${job.id}?returnTo=/technicians/payouts&returnLabel=Payouts`} className="absolute inset-0 z-0" aria-label={`Open ${job.jobNumber}`} />
                 <div className="pointer-events-none relative z-10 px-4 py-3 pl-6">
                   <div className="mb-1 flex items-center justify-between gap-2">
                     <span className="mono text-[12px] font-medium tracking-wide text-[var(--ink-muted)]/50">{job.jobNumber}</span>
-                    <span className={`text-[13px] font-semibold ${isPaid ? "text-emerald-600" : "text-amber-600"}`}>
-                      {isPaid ? "Paid" : "Unpaid"}
+                    <span className={`text-[13px] font-semibold ${statusClass}`}>
+                      {statusLabel}
                     </span>
                   </div>
                   <p className="text-[15px] font-bold leading-snug tracking-tight text-[var(--ink)]">{device}</p>
@@ -219,8 +229,15 @@ export default async function TechnicianPayoutsPage({
                       {job.completedAt ? ` · ${formatEATDate(job.completedAt)}` : ""}
                       {payout?.externalPaymentRef ? ` · Ref: ${payout.externalPaymentRef}` : ""}
                     </span>
-                    <span className="text-[13px] font-bold text-[var(--ink)]">{fee}</span>
+                    <span className="text-[13px] font-bold text-[var(--ink)]">
+                      {formatMoney(paidAmount, currency)} / {formatMoney(feeAmount, currency)}
+                    </span>
                   </div>
+                  {!isPaid && paidAmount > 0 ? (
+                    <p className="mt-1 text-right text-[12px] font-semibold text-[var(--ink-muted)]">
+                      Outstanding {formatMoney(balance, currency)}
+                    </p>
+                  ) : null}
                 </div>
               </div>
             );

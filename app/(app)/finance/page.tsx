@@ -11,6 +11,7 @@ import {
   loadExpensesTotal,
   loadReceivablesTotal,
 } from "@/lib/finance/reconciliation";
+import { getTechnicianPayoutTotalsByJobIds } from "@/lib/payouts";
 
 /* ─── nav groups ─────────────────────────────────────────────────────────── */
 
@@ -122,7 +123,7 @@ export default async function FinancePage() {
           { externalTechBill: { gt: 0 } },
         ],
       },
-      select: { externalTechFee: true, externalTechBill: true },
+      select: { id: true, externalTechFee: true, externalTechBill: true },
     }).catch(() => []),
 
     // Tech payouts this month
@@ -143,9 +144,11 @@ export default async function FinancePage() {
   const overdueTotal = overdueInvoices.reduce((s, inv) => s + Math.max(0, inv.totalAmount - inv.paidAmount), 0);
   const overdueCount = overdueInvoices.length;
 
-  const pendingPayoutTotal = pendingPayouts.reduce((s: number, j: { externalTechFee: number | null; externalTechBill: number | null }) => {
+  const pendingPayoutTotals = await getTechnicianPayoutTotalsByJobIds(pendingPayouts.map((job: { id: string }) => job.id));
+  const pendingPayoutTotal = pendingPayouts.reduce((s: number, j: { id: string; externalTechFee: number | null; externalTechBill: number | null }) => {
     const cost = j.externalTechBill ?? j.externalTechFee ?? 0;
-    return s + cost;
+    const paid = pendingPayoutTotals.get(j.id)?.paidAmount ?? 0;
+    return s + Math.max(0, cost - paid);
   }, 0);
   const pendingPayoutCount = pendingPayouts.length;
 

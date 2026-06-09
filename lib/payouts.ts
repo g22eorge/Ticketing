@@ -10,6 +10,11 @@ export type JobPayoutSnapshot = {
   externalPaymentRef: string | null;
 };
 
+export type TechnicianPayoutTotal = {
+  jobId: string;
+  paidAmount: number;
+};
+
 let payoutColumnsPresentCache: boolean | null = null;
 
 export async function hasJobPayoutColumns() {
@@ -67,6 +72,31 @@ export async function getJobPayoutsByIds(jobIds: string[]) {
       externalPaid: Boolean(row.externalPaid),
       externalPaidAt: row.externalPaidAt ? new Date(row.externalPaidAt) : null,
       externalPaymentRef: row.externalPaymentRef,
+    });
+  }
+
+  return map;
+}
+
+export async function getTechnicianPayoutTotalsByJobIds(jobIds: string[]) {
+  if (jobIds.length === 0) {
+    return new Map<string, TechnicianPayoutTotal>();
+  }
+
+  const ids = [...new Set(jobIds)];
+  const rows = await prisma.technicianPayout
+    .groupBy({
+      by: ["jobId"],
+      where: { jobId: { in: ids } },
+      _sum: { amount: true },
+    })
+    .catch(() => []);
+
+  const map = new Map<string, TechnicianPayoutTotal>();
+  for (const row of rows) {
+    map.set(row.jobId, {
+      jobId: row.jobId,
+      paidAmount: row._sum.amount ?? 0,
     });
   }
 

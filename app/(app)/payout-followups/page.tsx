@@ -7,6 +7,7 @@ import { resolveTechCost } from "@/lib/billing";
 import { formatMoneyCompact, getAppCurrency } from "@/lib/currency";
 import { filterSupportedJobStatuses } from "@/lib/job-status-server";
 import { can } from "@/lib/permissions";
+import { getTechnicianPayoutTotalsByJobIds } from "@/lib/payouts";
 import { prisma } from "@/lib/prisma";
 import { requireOrgSession } from "@/lib/org-context";
 import { createReceiptForPayment } from "@/lib/commercial/document-workflow";
@@ -346,14 +347,26 @@ export default async function PayoutFollowupsPage({
 
   // Compute summary values
   const repairReceivable = repairSummary._sum.clientBill ?? 0;
-  const _techPayoutDue = (techSummary._count.id > 0)
-    ? (() => {
-        // We need to compute resolveTechCost across aggregate — approximate via fee sum
-        return (techSummary._sum.externalTechBill ?? techSummary._sum.externalTechFee ?? 0);
-      })()
-    : 0;
+  const techSummaryRows = canSeeRepairs ? await prisma.job.findMany({
+    where: { orgId, repairPath: "EXTERNAL", externalPaid: false, status: { in: TERMINAL } },
+    select: { id: true, externalTechFee: true, externalTechBill: true },
+  }) : [];
+  const techSummaryPayoutTotals = await getTechnicianPayoutTotalsByJobIds(techSummaryRows.map((job) => job.id));
+  const _techPayoutDue = techSummaryRows.reduce((sum, job) => {
+    const paid = techSummaryPayoutTotals.get(job.id)?.paidAmount ?? 0;
+    return sum + Math.max(0, resolveTechCost(job.externalTechFee, job.externalTechBill) - paid);
+  }, 0);
   const invoiceReceivable = (invoiceSummary._sum.totalAmount ?? 0) - (invoiceSummary._sum.paidAmount ?? 0);
   const billPayable = (billSummary._sum.totalAmount ?? 0) - (billSummary._sum.paidAmount ?? 0);
+  const techPayoutTotals = await getTechnicianPayoutTotalsByJobIds(techRows.map((job) => job.id));
+
+  function paidToTechnician(jobId: string) {
+    return techPayoutTotals.get(jobId)?.paidAmount ?? 0;
+  }
+
+  function remainingTechnicianPayout(job: typeof techRows[number]) {
+    return Math.max(0, resolveTechCost(job.externalTechFee, job.externalTechBill) - paidToTechnician(job.id));
+  }
 
   // Pagination (per section, shared page param for simplicity)
   const preserved = Object.fromEntries(
@@ -776,22 +789,27 @@ export default async function PayoutFollowupsPage({
               <div className="divide-y divide-[var(--line)] lg:hidden">
                 {techRows.map((job) => {
                   const payoutDue = resolveTechCost(job.externalTechFee, job.externalTechBill);
+                  const alreadyPaid = paidToTechnician(job.id);
+                  const remaining = remainingTechnicianPayout(job);
                   const doneAt = job.deliveredAt ?? job.completedAt;
                   return (
                     <div key={`m-${job.id}`} className="px-4 py-3">
                       <div className="mb-0.5 flex items-center justify-between gap-2">
                         <Link href={`/jobs/${job.id}?tab=financials&returnTo=/payout-followups&returnLabel=Finance+Hub`} className="font-mono text-[13px] font-bold text-[var(--accent)]">{job.jobNumber}</Link>
-                        <span className="text-[12px] font-semibold text-blue-700 dark:text-blue-400">{formatMoneyCompact(payoutDue, currency)} payout</span>
+                        <span className="text-[12px] font-semibold text-blue-700 dark:text-blue-400">{formatMoneyCompact(remaining, currency)} due</span>
                       </div>
                       <p className="text-[13px] font-medium text-[var(--ink)]">{job.client?.fullName ?? "—"} <span className="text-[13px] font-normal text-[var(--ink-muted)]">{job.client?.phone}</span></p>
-                      <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">{job.assignedTo?.name ?? "Unassigned"}{doneAt ? ` · ${new Date(doneAt).toLocaleDateString()}` : ""}</p>
+                      <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">
+                        {job.assignedTo?.name ?? "Unassigned"}{doneAt ? ` · ${new Date(doneAt).toLocaleDateString()}` : ""}
+                        {alreadyPaid > 0 ? ` · Paid ${formatMoneyCompact(alreadyPaid, currency)} of ${formatMoneyCompact(payoutDue, currency)}` : ""}
+                      </p>
                       {/* Mark Paid action */}
                       <form action={markExternalTechPaid} className="mt-2">
                         <input type="hidden" name="jobId" value={job.id} />
                         <button type="submit"
                           className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 py-1.5 text-[13px] font-bold text-emerald-700 transition hover:bg-emerald-500/20 dark:text-emerald-400">
                           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden><polyline points="20 6 9 17 4 12"/></svg>
-                          Mark Paid — {formatMoneyCompact(payoutDue, currency)}
+                          Mark Paid — {formatMoneyCompact(remaining, currency)}
                         </button>
                       </form>
                     </div>
@@ -807,6 +825,8 @@ export default async function PayoutFollowupsPage({
                   <tbody>
                     {techRows.map((job) => {
                       const payoutDue = resolveTechCost(job.externalTechFee, job.externalTechBill);
+                      const alreadyPaid = paidToTechnician(job.id);
+                      const remaining = remainingTechnicianPayout(job);
                       const doneAt = job.deliveredAt ?? job.completedAt;
                       return (
                         <tr key={`d-${job.id}`} className="border-t border-[var(--line)] transition-colors hover:bg-[var(--panel-strong)]/30">
@@ -815,7 +835,10 @@ export default async function PayoutFollowupsPage({
                           <td className={tdClass}>{job.assignedTo?.name ?? "Unassigned"}</td>
                           <td className={tdClass}>{job.status}</td>
                           <td className={tdClass}>{typeof job.clientBill === "number" ? formatMoneyCompact(job.clientBill, currency) : "—"}</td>
-                          <td className={`${tdClass} font-semibold text-blue-700 dark:text-blue-400`}>{formatMoneyCompact(payoutDue, currency)}</td>
+                          <td className={`${tdClass} font-semibold text-blue-700 dark:text-blue-400`}>
+                            <p>{formatMoneyCompact(remaining, currency)}</p>
+                            {alreadyPaid > 0 ? <p className="text-xs font-medium text-[var(--ink-muted)]">Paid {formatMoneyCompact(alreadyPaid, currency)} / {formatMoneyCompact(payoutDue, currency)}</p> : null}
+                          </td>
                           <td className={`${tdClass} text-xs text-[var(--ink-muted)]`}>{doneAt ? new Date(doneAt).toLocaleDateString() : "—"}</td>
                           <td className={tdClass}>
                             <div className="flex items-center gap-1.5">
