@@ -236,12 +236,12 @@ export default async function PublicStatusPage({
             This page is publicly accessible via your job number only. No personal information is displayed.
           </p>
           <p className="text-xs text-gray-500">
-            Not satisfied with your repair?{" "}
+            Not satisfied?{" "}
             <a
-              href={`/feedback?ref=${jobNumber}`}
+              href="/complaint"
               className="font-medium text-amber-500 underline-offset-2 hover:underline"
             >
-              Submit a complaint →
+              File a complaint →
             </a>
           </p>
         </div>

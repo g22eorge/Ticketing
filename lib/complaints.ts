@@ -13,6 +13,8 @@ export const COMPLAINT_CATEGORY_LABELS: Record<string, string> = {
   STAFF_CONDUCT: "Staff Conduct",
   DAMAGE_CAUSED: "Damage Caused",
   UNRESOLVED_FAULT: "Unresolved Fault",
+  ICT_SUPPORT: "ICT Support Issue",
+  RESPONSE_TIME: "Response Time",
   OTHER: "Other",
 };
 
@@ -53,6 +55,8 @@ export const COMPLAINT_CATEGORIES = [
   "STAFF_CONDUCT",
   "DAMAGE_CAUSED",
   "UNRESOLVED_FAULT",
+  "ICT_SUPPORT",
+  "RESPONSE_TIME",
   "OTHER",
 ] as const;
 

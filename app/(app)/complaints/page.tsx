@@ -141,7 +141,7 @@ export default async function ComplaintsPage({
             </div>
           </div>
           <a
-            href="/feedback"
+            href="/complaint"
             target="_blank"
             rel="noreferrer"
             className="btn-premium-secondary rounded-lg px-3 py-1.5 text-xs"

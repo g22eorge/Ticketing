@@ -102,6 +102,7 @@ model Ticket {
   invoiceId     String?    @unique
   invoice       Invoice?   @relation("TicketInvoice", fields: [invoiceId], references: [id], onDelete: SetNull)
   receipt       Receipt?   @relation("TicketReceipt")
+  complaints    Complaint[]
 
   // Internal
   assignedToId  String?
@@ -2686,6 +2687,8 @@ enum ComplaintCategory {
   STAFF_CONDUCT
   DAMAGE_CAUSED
   UNRESOLVED_FAULT
+  ICT_SUPPORT
+  RESPONSE_TIME
   OTHER
 }
 
@@ -2709,6 +2712,8 @@ model Complaint {
   // Linked reference (one or the other)
   jobId  String?
   job    Job?    @relation(fields: [jobId], references: [id], onDelete: SetNull)
+  ticketId String?
+  ticket   Ticket? @relation(fields: [ticketId], references: [id], onDelete: SetNull)
   saleId String?
 
   // Complainant info
@@ -2743,6 +2748,7 @@ model Complaint {
   @@index([orgId, status, createdAt])
   @@index([orgId, createdAt])
   @@index([jobId])
+  @@index([ticketId])
 }
 
 // ── Sales Targets ───────────────────────────────────────────────────────────
