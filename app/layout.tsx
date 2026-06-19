@@ -80,7 +80,7 @@ export default async function RootLayout({
         {/* Prevent white flash: apply theme class before React hydrates */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){var t=document.cookie.match(/theme=(dark|light)/);if(t){document.documentElement.classList.remove('theme-blackgold','light');if(t[1]==='dark')document.documentElement.classList.add('theme-blackgold');else document.documentElement.classList.add('light');}})();`,
+            __html: `(function(){var m=window.matchMedia('(prefers-color-scheme: dark)');var t=document.cookie.match(/theme=(dark|light)/);var dark=t?t[1]==='dark':m.matches;document.documentElement.classList.remove('theme-blackgold','light');if(dark)document.documentElement.classList.add('theme-blackgold');else document.documentElement.classList.add('light');})();`,
           }}
         />
         <ThemeProvider initialTheme={initialTheme}>
