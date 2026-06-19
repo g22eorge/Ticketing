@@ -75,8 +75,14 @@ export default async function RootLayout({
   const themeClass = stored === "dark" ? "theme-blackgold" : stored === "light" ? "light" : "";
 
   return (
-    <html lang="en" className={`${inter.variable} h-full antialiased${themeClass ? " " + themeClass : ""}`}>
+    <html lang="en" className={`${inter.variable} h-full antialiased${themeClass ? " " + themeClass : ""}`} suppressHydrationWarning>
       <body className="min-h-full bg-[var(--page-bg)] text-[var(--ink)]">
+        {/* Prevent white flash: apply theme class before React hydrates */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){var t=document.cookie.match(/theme=(dark|light)/);if(t){document.documentElement.classList.remove('theme-blackgold','light');if(t[1]==='dark')document.documentElement.classList.add('theme-blackgold');else document.documentElement.classList.add('light');}})();`,
+          }}
+        />
         <ThemeProvider initialTheme={initialTheme}>
           {children}
           <Toaster richColors />
