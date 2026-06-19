@@ -11,7 +11,7 @@ function NeutralLogo({ height = 40, className = "" }: Props) {
   return (
     <span className={`inline-flex items-center gap-2 ${className}`}>
       <span
-        className="inline-flex shrink-0 items-center justify-center rounded-xl bg-[#D4AF37] font-black text-black"
+        className="inline-flex shrink-0 items-center justify-center rounded-xl bg-[#E6C65C] font-black text-black"
         style={{ width: box, height: box, fontSize: Math.max(11, Math.round(box * 0.34)) }}
       >
         OS

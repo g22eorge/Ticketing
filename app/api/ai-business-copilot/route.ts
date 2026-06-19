@@ -1,4 +1,6 @@
-// @ts-nocheck
+// @ts-nocheck — Prisma Promise.all destructuring produces implicit-any on ~30
+// callback parameters; the runtime types are correct. Remove this only when
+// the destructured results are given explicit type annotations.
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextRequest } from "next/server";
 

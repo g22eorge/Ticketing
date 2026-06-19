@@ -82,7 +82,7 @@ export default async function ReceiptsPage({
       subtitle="Payment receipts."
       action={
         <Link
-          href="/documents/invoices"
+          href="/documents/new?type=receipt"
           className="inline-flex items-center gap-1.5 rounded-lg bg-stone-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-stone-800"
         >
           Record Payment
@@ -100,7 +100,7 @@ export default async function ReceiptsPage({
           <EmptyState
             title="No receipts found"
             description="Payments recorded will appear here."
-            action={{ label: "Record Payment", href: "/documents/invoices" }}
+            action={{ label: "Record Payment", href: "/documents/new?type=receipt" }}
           />
         }
         columns={[

@@ -3,6 +3,11 @@ import { sanitizeOptionalText } from "@/lib/sanitize";
 import { requireOrgSession } from "@/lib/org-context";
 import { prisma } from "@/lib/prisma";
 
+const VALID_STATUSES = [
+  "OPEN", "IN_PROGRESS", "WAITING_ON_CUSTOMER", "WAITING_FOR_APPROVAL",
+  "WAITING_FOR_PAYMENT", "RESOLVED", "CLOSED", "CANCELLED",
+];
+
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -22,7 +27,7 @@ export async function PATCH(
 
     const updateData: Record<string, unknown> = {};
 
-    if (body.status && ["OPEN", "IN_PROGRESS", "WAITING_ON_CUSTOMER", "RESOLVED", "CLOSED"].includes(body.status)) {
+    if (body.status && VALID_STATUSES.includes(body.status)) {
       updateData.status = body.status;
       if (body.status === "RESOLVED" && !ticket.resolvedAt) updateData.resolvedAt = new Date();
       if (body.status === "CLOSED" && !ticket.closedAt) updateData.closedAt = new Date();
@@ -36,12 +41,25 @@ export async function PATCH(
       updateData.assignedToId = body.assignedToId || null;
     }
 
+    if (typeof body.isSLACovered === "boolean") {
+      updateData.isSLACovered = body.isSLACovered;
+    }
+
+    if (body.estimatedCost !== undefined) {
+      updateData.estimatedCost = body.estimatedCost === null ? null : parseFloat(body.estimatedCost);
+    }
+
     if (typeof body.resolution === "string") {
       updateData.resolution = sanitizeOptionalText(body.resolution) ?? body.resolution;
     }
 
     if (typeof body.notes === "string") {
       updateData.notes = sanitizeOptionalText(body.notes) ?? body.notes;
+    }
+
+    if (typeof body.clientId === "string") {
+      const client = await prisma.client.findFirst({ where: { id: body.clientId, orgId } });
+      if (client) updateData.clientId = body.clientId;
     }
 
     const updated = await prisma.ticket.update({

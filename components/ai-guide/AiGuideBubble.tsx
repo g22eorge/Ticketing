@@ -139,7 +139,7 @@ export function AiGuideBubble() {
   const [minimised, setMinimised]   = useState(false);
   const [messages, setMessages]     = useState<Message[]>([{
     id: "welcome", role: "model",
-    text: "Hi! I'm your Duuka ProMax guide. Ask me anything about using the system — creating jobs, managing inventory, finance reports, and more.",
+    text: "Hi! I'm your BusinessOS guide. Ask me anything about using the system — creating jobs, managing inventory, finance reports, and more.",
   }]);
   const [inputValue, setInputValue] = useState("");
   const [busy, setBusy]             = useState(false);
@@ -256,7 +256,7 @@ export function AiGuideBubble() {
         onClick={() => { if (!didDrag.current) setOpen((v) => !v); }}
         aria-label={open ? "Close AI Guide" : "Open AI Guide"}
         aria-expanded={open}
-        className="touch-none select-none fixed z-[60] flex h-[52px] w-[52px] items-center justify-center rounded-full shadow-[0_0_0_6px_rgba(212,175,55,0.12),0_12px_32px_rgba(0,0,0,0.4)] transition-transform duration-150 active:scale-95"
+        className="touch-none select-none fixed z-[60] flex h-[52px] w-[52px] items-center justify-center rounded-full shadow-[0_0_0_6px_rgba(230,198,92,0.12),0_12px_32px_rgba(0,0,0,0.4)] transition-transform duration-150 active:scale-95"
         style={{
           left: pos.x, top: pos.y,
           background: "var(--accent)",
@@ -300,7 +300,7 @@ export function AiGuideBubble() {
               <IconBot className="h-4 w-4 text-black" />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-[13px] font-black leading-tight text-black">Duuka AI Guide</p>
+              <p className="truncate text-[13px] font-black leading-tight text-black">BusinessOS AI Guide</p>
               <p className="truncate text-[12px] font-medium text-black/60">
                 {minimised ? "Tap to expand" : "Ask me anything"}
               </p>

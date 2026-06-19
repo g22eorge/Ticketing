@@ -70,7 +70,7 @@ export async function enqueue<T>(
       console.error(`[queue/fallback] ${jobName} failed:`, err);
     }
   } else {
-    console.warn(`[queue/fallback] no handler registered for ${jobName} and Redis is unavailable`);
+    // No handler registered and Redis unavailable — silent no-op.
   }
 
   return null;

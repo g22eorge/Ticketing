@@ -8,51 +8,6 @@ import { requireOrgSession } from "@/lib/org-context";
 import { formatMoneyCompact } from "@/lib/currency";
 import { formatEATDate } from "@/lib/date-eat";
 import { can } from "@/lib/permissions";
-import {
-  TICKET_STATUSES,
-  TICKET_STATUS_META,
-  type JobStatus,
-  type TicketStatus,
-  toTicketLabel,
-} from "@/lib/job-status";
-import { StatusBadge } from "@/components/ui/StatusBadge";
-import type { BadgeVariant } from "@/components/ui/StatusBadge";
-
-type SearchParams = {
-  month?: string;
-  year?: string;
-  period?: string;
-};
-
-type RecentTicket = {
-  id: string;
-  jobNumber: string;
-  status: string;
-  updatedAt: Date;
-  receivedAt: Date;
-  client?: { fullName: string } | null;
-  device?: { brand: string | null; model: string | null } | null;
-  assignedTo?: { name: string | null } | null;
-};
-
-function statusHref(status: TicketStatus) {
-  return `/tickets?status=${status}`;
-}
-
-function percent(value: number, total: number) {
-  if (total <= 0) return 0;
-  return Math.min(100, Math.round((value / total) * 100));
-}
-
-const badgeVariantByStatus: Record<TicketStatus, BadgeVariant> = {
-  PENDING: "neutral",
-  DIAGNOSING: "info",
-  IN_PROGRESS: "info",
-  WAITING: "warning",
-  READY: "success",
-  COMPLETED: "default",
-  CLOSED: "neutral",
-};
 
 function CardShell({
   href,
@@ -73,147 +28,148 @@ function CardShell({
   );
 }
 
-export default async function DashboardPage({
-  searchParams: _searchParams,
-}: {
-  searchParams: Promise<SearchParams>;
-}) {
-  const { session, user, orgId, org } = await requireOrgSession();
+export default async function DashboardPage() {
+  const { user, orgId, org } = await requireOrgSession();
   const currency = org.baseCurrency || "UGX";
   const canSeeClients = can.viewClientInfo(user);
   const canSeeFinance = can.viewFinancials(user);
   const canCreateTicket = can.createJob(user);
-  const isScopedTechnician =
-    user.role === "TECHNICIAN_EXTERNAL" || user.role === "TECHNICIAN_INTERNAL";
-  const ticketScopeWhere = {
-    orgId,
-    ...(isScopedTechnician ? { assignedToId: session.user.id } : {}),
-  };
-
-  const recentTicketsQuery = canSeeClients
-    ? prisma.job.findMany({
-        where: ticketScopeWhere,
-        orderBy: { updatedAt: "desc" },
-        take: 8,
-        select: {
-          id: true,
-          jobNumber: true,
-          status: true,
-          receivedAt: true,
-          updatedAt: true,
-          client: { select: { fullName: true } },
-          device: { select: { brand: true, model: true } },
-          assignedTo: { select: { name: true } },
-        },
-      })
-    : prisma.job.findMany({
-        where: ticketScopeWhere,
-        orderBy: { updatedAt: "desc" },
-        take: 8,
-        select: {
-          id: true,
-          jobNumber: true,
-          status: true,
-          receivedAt: true,
-          updatedAt: true,
-          device: { select: { brand: true, model: true } },
-          assignedTo: { select: { name: true } },
-        },
-      });
 
   const [
-    statusGroup,
-    recentTicketsRaw,
+    ticketStatusGroup,
+    openTicketCount,
+    slaTicketCount,
+    recentTickets,
     clientCount,
     invoiceAgg,
     receiptAgg,
-    overdueTickets,
+    pendingQuotations,
   ] = await Promise.all([
-    prisma.job.groupBy({
+    prisma.ticket.groupBy({
       by: ["status"],
-      where: ticketScopeWhere,
+      where: { orgId },
       _count: { status: true },
+    }).catch(() => []),
+    prisma.ticket.count({
+      where: { orgId, status: { in: ["OPEN", "IN_PROGRESS", "WAITING_ON_CUSTOMER", "WAITING_FOR_APPROVAL", "WAITING_FOR_PAYMENT"] } },
     }),
-    recentTicketsQuery,
-    canSeeClients ? prisma.client.count({ where: { orgId } }) : Promise.resolve(0),
-    canSeeFinance
-      ? prisma.invoice
-          .aggregate({
-            where: { orgId },
-            _count: { id: true },
-            _sum: { totalAmount: true, paidAmount: true },
-          })
-          .catch(() => ({
-            _count: { id: 0 },
-            _sum: { totalAmount: null, paidAmount: null },
-          }))
-      : Promise.resolve({
-          _count: { id: 0 },
-          _sum: { totalAmount: null, paidAmount: null },
-        }),
-    canSeeFinance
-      ? prisma.receipt
-          .aggregate({
-            where: { orgId },
-            _count: { id: true },
-            _sum: { amount: true },
-          })
-          .catch(() => ({ _count: { id: 0 }, _sum: { amount: null } }))
-      : Promise.resolve({ _count: { id: 0 }, _sum: { amount: null } }),
-    prisma.job.count({
-      where: {
-        ...ticketScopeWhere,
-        receivedAt: { lte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
-        status: { notIn: ["COMPLETED", "CLOSED", "DELIVERED"] as JobStatus[] },
+    prisma.ticket.count({
+      where: { orgId, isSLACovered: true },
+    }),
+    prisma.ticket.findMany({
+      where: { orgId },
+      orderBy: { updatedAt: "desc" },
+      take: 8,
+      select: {
+        id: true,
+        ticketNumber: true,
+        status: true,
+        subject: true,
+        priority: true,
+        isSLACovered: true,
+        updatedAt: true,
+        createdAt: true,
+        client: { select: { fullName: true } },
+        assignedTo: { select: { name: true } },
       },
     }),
+    canSeeClients ? prisma.client.count({ where: { orgId } }) : Promise.resolve(0),
+    canSeeFinance
+      ? prisma.invoice.aggregate({ where: { orgId }, _count: { id: true }, _sum: { totalAmount: true, paidAmount: true } }).catch(() => ({ _count: { id: 0 }, _sum: { totalAmount: null, paidAmount: null } }))
+      : Promise.resolve({ _count: { id: 0 }, _sum: { totalAmount: null, paidAmount: null } }),
+    canSeeFinance
+      ? prisma.receipt.aggregate({ where: { orgId }, _count: { id: true }, _sum: { amount: true } }).catch(() => ({ _count: { id: 0 }, _sum: { amount: null } }))
+      : Promise.resolve({ _count: { id: 0 }, _sum: { amount: null } }),
+    canSeeFinance
+      ? prisma.quotation.count({ where: { orgId, status: "DRAFT" } }).catch(() => 0)
+      : Promise.resolve(0),
   ]);
 
-  const recentTickets = recentTicketsRaw as RecentTicket[];
-  const ticketCounts = new Map<TicketStatus, number>();
-  for (const item of statusGroup) {
-    const key = toTicketLabel(item.status as JobStatus);
-    ticketCounts.set(key, (ticketCounts.get(key) ?? 0) + item._count.status);
+  const ticketCounts = new Map<string, number>();
+  for (const item of ticketStatusGroup) {
+    ticketCounts.set(item.status, (ticketCounts.get(item.status) ?? 0) + item._count.status);
   }
+  const totalTickets = [...ticketCounts.values()].reduce((a, b) => a + b, 0);
 
-  const totalTickets = [...ticketCounts.values()].reduce((sum, count) => sum + count, 0);
-  const openTickets =
-    (ticketCounts.get("PENDING") ?? 0) +
-    (ticketCounts.get("DIAGNOSING") ?? 0) +
-    (ticketCounts.get("IN_PROGRESS") ?? 0) +
-    (ticketCounts.get("WAITING") ?? 0);
-  const readyTickets = ticketCounts.get("READY") ?? 0;
-  const completedTickets = ticketCounts.get("COMPLETED") ?? 0;
   const paidTotal = invoiceAgg._sum.paidAmount ?? 0;
   const billedTotal = invoiceAgg._sum.totalAmount ?? 0;
   const outstandingTotal = Math.max(0, billedTotal - paidTotal);
   const receiptTotal = receiptAgg._sum.amount ?? 0;
 
+  const closedTickets = (ticketCounts.get("RESOLVED") ?? 0) + (ticketCounts.get("CLOSED") ?? 0);
+  const waitingTickets = (ticketCounts.get("WAITING_ON_CUSTOMER") ?? 0) + (ticketCounts.get("WAITING_FOR_APPROVAL") ?? 0);
+  const awaitPayment = ticketCounts.get("WAITING_FOR_PAYMENT") ?? 0;
+  const inProgress = ticketCounts.get("IN_PROGRESS") ?? 0;
+
+  const STATUS_COLOR: Record<string, string> = {
+    OPEN: "bg-blue-100 text-blue-800",
+    IN_PROGRESS: "bg-yellow-100 text-yellow-800",
+    WAITING_ON_CUSTOMER: "bg-purple-100 text-purple-800",
+    WAITING_FOR_APPROVAL: "bg-amber-100 text-amber-800",
+    WAITING_FOR_PAYMENT: "bg-pink-100 text-pink-800",
+    RESOLVED: "bg-green-100 text-green-800",
+    CLOSED: "bg-gray-100 text-gray-800",
+    CANCELLED: "bg-red-100 text-red-700",
+  };
+
+  const PRIORITY_COLOR: Record<string, string> = {
+    LOW: "bg-blue-100 text-blue-800",
+    MEDIUM: "bg-yellow-100 text-yellow-800",
+    HIGH: "bg-orange-100 text-orange-800",
+    CRITICAL: "bg-red-100 text-red-800",
+  };
+
   const metricCards = [
     {
-      label: isScopedTechnician ? "My Open Tickets" : "Open Tickets",
-      value: openTickets.toLocaleString(),
-      href: "/tickets",
-      helper: `${overdueTickets} over 7 days`,
+      label: "Open Tickets",
+      value: openTicketCount.toLocaleString(),
+      href: "/tickets?status=OPEN",
+      helper: `${totalTickets} total`,
       tone: "text-stone-900",
     },
     {
-      label: "Ready",
-      value: readyTickets.toLocaleString(),
-      href: statusHref("READY"),
-      helper: "Pickup or delivery queue",
-      tone: "text-emerald-600",
+      label: "In Progress",
+      value: inProgress.toLocaleString(),
+      href: "/tickets?status=IN_PROGRESS",
+      helper: "Active service work",
+      tone: "text-yellow-700",
+    },
+    {
+      label: "Waiting",
+      value: waitingTickets.toLocaleString(),
+      href: "/tickets?status=WAITING_ON_CUSTOMER",
+      helper: "Client or approval needed",
+      tone: "text-purple-700",
+    },
+    {
+      label: "Awaiting Payment",
+      value: awaitPayment.toLocaleString(),
+      href: "/tickets?status=WAITING_FOR_PAYMENT",
+      helper: "Ready for billing",
+      tone: "text-pink-700",
+    },
+    {
+      label: "SLA Covered",
+      value: slaTicketCount.toLocaleString(),
+      href: "/tickets?sla=1",
+      helper: "Under active SLA",
+      tone: "text-emerald-700",
+    },
+    {
+      label: "Resolved / Closed",
+      value: closedTickets.toLocaleString(),
+      href: "/tickets?status=RESOLVED",
+      helper: "Completed work",
+      tone: "text-green-700",
     },
     ...(canSeeClients
-      ? [
-          {
-            label: "Clients",
-            value: clientCount.toLocaleString(),
-            href: "/clients",
-            helper: "Customer records",
-            tone: "text-stone-900",
-          },
-        ]
+      ? [{
+          label: "Clients",
+          value: clientCount.toLocaleString(),
+          href: "/clients",
+          helper: "Customer records",
+          tone: "text-stone-900",
+        }]
       : []),
     ...(canSeeFinance
       ? [
@@ -223,6 +179,13 @@ export default async function DashboardPage({
             href: "/documents/invoices",
             helper: `${invoiceAgg._count.id} invoices`,
             tone: outstandingTotal > 0 ? "text-amber-600" : "text-emerald-600",
+          },
+          {
+            label: "Receipted",
+            value: formatMoneyCompact(receiptTotal, currency),
+            href: "/documents/receipts",
+            helper: "Payments received",
+            tone: "text-emerald-600",
           },
         ]
       : []),
@@ -235,20 +198,14 @@ export default async function DashboardPage({
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-400">
             Service Desk
           </p>
-          <h1 className="mt-1 text-2xl font-bold tracking-tight text-white">
+          <h1 className="mt-1 text-2xl font-bold tracking-tight text-stone-900">
             Dashboard
           </h1>
-          <p className="mt-1 max-w-2xl text-sm text-stone-300">
-            A live operating view of ticket load, pickup readiness, and document flow.
+          <p className="mt-1 max-w-2xl text-sm text-stone-500">
+            ICT support operations, SLA tracking, and billing overview.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Link
-            href="/tickets?view=board"
-            className="rounded-xl border border-stone-200 bg-white px-4 py-2.5 text-sm font-semibold text-stone-700 shadow-sm transition hover:border-stone-300 hover:text-stone-950"
-          >
-            Board View
-          </Link>
           {canCreateTicket ? (
             <Link
               href="/tickets/new"
@@ -276,7 +233,7 @@ export default async function DashboardPage({
                 aria-hidden="true"
                 className="flex h-7 w-7 items-center justify-center rounded-full border border-stone-200 text-sm font-semibold text-stone-400 transition group-hover:border-stone-300 group-hover:text-stone-600"
               >
-                -&gt;
+                &rarr;
               </span>
             </div>
             <p className="mt-3 text-xs text-stone-500">{card.helper}</p>
@@ -290,7 +247,7 @@ export default async function DashboardPage({
             <div>
               <h2 className="text-sm font-semibold text-stone-900">Ticket Pipeline</h2>
               <p className="mt-0.5 text-xs text-stone-500">
-                {totalTickets.toLocaleString()} total tickets in the current scope.
+                {totalTickets.toLocaleString()} tickets across all statuses.
               </p>
             </div>
             <Link
@@ -300,180 +257,56 @@ export default async function DashboardPage({
               View all
             </Link>
           </div>
-          <div className="grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-4">
-            {TICKET_STATUSES.map((status) => {
-              const meta = TICKET_STATUS_META[status];
+          <div className="grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-3">
+            {[ "OPEN", "IN_PROGRESS", "WAITING_ON_CUSTOMER", "WAITING_FOR_APPROVAL", "WAITING_FOR_PAYMENT", "RESOLVED"].map((status) => {
               const count = ticketCounts.get(status) ?? 0;
-              const share = percent(count, totalTickets);
+              const total = Math.max(totalTickets, 1);
+              const share = Math.round((count / total) * 100);
+              const colors: Record<string, { bg: string; border: string; text: string; accent: string }> = {
+                OPEN: { bg: "bg-blue-50", border: "border-blue-200", text: "text-blue-700", accent: "#3b82f6" },
+                IN_PROGRESS: { bg: "bg-yellow-50", border: "border-yellow-200", text: "text-yellow-700", accent: "#eab308" },
+                WAITING_ON_CUSTOMER: { bg: "bg-purple-50", border: "border-purple-200", text: "text-purple-700", accent: "#8b5cf6" },
+                WAITING_FOR_APPROVAL: { bg: "bg-amber-50", border: "border-amber-200", text: "text-amber-700", accent: "#f59e0b" },
+                WAITING_FOR_PAYMENT: { bg: "bg-pink-50", border: "border-pink-200", text: "text-pink-700", accent: "#ec4899" },
+                RESOLVED: { bg: "bg-green-50", border: "border-green-200", text: "text-green-700", accent: "#22c55e" },
+              };
+              const c = colors[status] ?? { bg: "bg-stone-50", border: "border-stone-200", text: "text-stone-600", accent: "#78716c" };
               return (
                 <Link
                   key={status}
-                  href={statusHref(status)}
-                  className={`rounded-xl border ${meta.border} ${meta.bg} p-4 transition hover:-translate-y-0.5 hover:shadow-sm`}
+                  href={`/tickets?status=${status}`}
+                  className={`rounded-xl border ${c.border} ${c.bg} p-4 transition hover:-translate-y-0.5 hover:shadow-sm`}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <p className={`text-xs font-semibold uppercase tracking-wider ${meta.text}`}>
-                        {meta.shortLabel}
+                      <p className={`text-xs font-semibold uppercase tracking-wider ${c.text}`}>
+                        {status.replace(/_/g, " ")}
                       </p>
                       <p className="mt-2 text-2xl font-bold tabular-nums text-stone-950">
                         {count}
                       </p>
                     </div>
-                    <span
-                      className="mt-1 h-2.5 w-2.5 rounded-full"
-                      style={{ backgroundColor: meta.accent }}
-                    />
                   </div>
                   <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-white/80">
                     <div
                       className="h-full rounded-full"
-                      style={{ width: `${share}%`, backgroundColor: meta.accent }}
+                      style={{ width: `${share}%`, backgroundColor: c.accent }}
                     />
                   </div>
-                  <p className="mt-2 text-xs text-stone-500">{meta.description}</p>
                 </Link>
               );
             })}
           </div>
         </section>
 
-        <section className="rounded-xl border border-stone-200 bg-white shadow-sm">
-          <div className="border-b border-stone-100 px-5 py-4">
-            <h2 className="text-sm font-semibold text-stone-900">Operations Snapshot</h2>
-            <p className="mt-0.5 text-xs text-stone-500">
-              The queues that need the next desk action.
-            </p>
-          </div>
-          <div className="divide-y divide-stone-100">
-            <Link
-              href="/tickets?status=WAITING"
-              className="flex items-center justify-between gap-4 px-5 py-4 transition hover:bg-stone-50"
-            >
-              <div>
-                <p className="text-sm font-semibold text-stone-900">Waiting</p>
-                <p className="text-xs text-stone-500">Parts or approval required</p>
-              </div>
-              <span className="text-lg font-bold tabular-nums text-amber-600">
-                {ticketCounts.get("WAITING") ?? 0}
-              </span>
-            </Link>
-            <Link
-              href="/tickets?status=DIAGNOSING"
-              className="flex items-center justify-between gap-4 px-5 py-4 transition hover:bg-stone-50"
-            >
-              <div>
-                <p className="text-sm font-semibold text-stone-900">Diagnosing</p>
-                <p className="text-xs text-stone-500">Assessment in progress</p>
-              </div>
-              <span className="text-lg font-bold tabular-nums text-blue-600">
-                {ticketCounts.get("DIAGNOSING") ?? 0}
-              </span>
-            </Link>
-            <Link
-              href="/tickets?status=COMPLETED"
-              className="flex items-center justify-between gap-4 px-5 py-4 transition hover:bg-stone-50"
-            >
-              <div>
-                <p className="text-sm font-semibold text-stone-900">Completed</p>
-                <p className="text-xs text-stone-500">Finished service work</p>
-              </div>
-              <span className="text-lg font-bold tabular-nums text-violet-600">
-                {completedTickets}
-              </span>
-            </Link>
-          </div>
-        </section>
-      </div>
-
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
-        <section className="rounded-xl border border-stone-200 bg-white shadow-sm">
-          <div className="flex items-center justify-between gap-3 border-b border-stone-100 px-5 py-4">
-            <div>
-              <h2 className="text-sm font-semibold text-stone-900">Recent Tickets</h2>
-              <p className="mt-0.5 text-xs text-stone-500">
-                Latest updates across the service queue.
-              </p>
-            </div>
-            <Link
-              href="/tickets"
-              className="text-sm font-semibold text-stone-500 transition hover:text-stone-900"
-            >
-              Open queue
-            </Link>
-          </div>
-          {recentTickets.length === 0 ? (
-            <div className="px-5 py-12 text-center">
-              <p className="text-sm font-semibold text-stone-600">No tickets yet</p>
-              {canCreateTicket ? (
-                <Link
-                  href="/tickets/new"
-                  className="mt-3 inline-flex rounded-xl bg-stone-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-stone-800"
-                >
-                  Create a ticket
-                </Link>
-              ) : null}
-            </div>
-          ) : (
-            <div className="divide-y divide-stone-100">
-              {recentTickets.map((ticket) => {
-                const ts = toTicketLabel(ticket.status as JobStatus);
-                const meta = TICKET_STATUS_META[ts];
-                const device = [ticket.device?.brand, ticket.device?.model]
-                  .filter(Boolean)
-                  .join(" ");
-                const clientName = canSeeClients ? ticket.client?.fullName : null;
-                return (
-                  <Link
-                    key={ticket.id}
-                    href={`/tickets/${ticket.id}`}
-                    className="grid gap-3 px-5 py-4 transition hover:bg-stone-50 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"
-                  >
-                    <div className="min-w-0">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <p className="font-mono text-sm font-semibold text-stone-900">
-                          {ticket.jobNumber}
-                        </p>
-                        <StatusBadge
-                          label={meta?.label ?? ts}
-                          variant={badgeVariantByStatus[ts]}
-                        />
-                      </div>
-                      <p className="mt-1 truncate text-sm text-stone-600">
-                        {[clientName, device].filter(Boolean).join(" - ") || "Device details pending"}
-                      </p>
-                    </div>
-                    <div className="flex items-center justify-between gap-4 sm:justify-end">
-                      <p className="text-xs text-stone-400">
-                        Updated {formatEATDate(ticket.updatedAt)}
-                      </p>
-                      {ticket.assignedTo?.name ? (
-                        <p className="hidden rounded-full bg-stone-100 px-2.5 py-1 text-xs font-medium text-stone-600 md:block">
-                          {ticket.assignedTo.name}
-                        </p>
-                      ) : null}
-                    </div>
-                  </Link>
-                );
-              })}
-            </div>
-          )}
-        </section>
-
-        <aside className="space-y-4">
+        <section className="space-y-4">
           {canSeeFinance ? (
             <section className="rounded-xl border border-stone-200 bg-white p-5 shadow-sm">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <h2 className="text-sm font-semibold text-stone-900">Documents</h2>
-                  <p className="mt-0.5 text-xs text-stone-500">Billing and receipt health.</p>
+                  <h2 className="text-sm font-semibold text-stone-900">Billing</h2>
+                  <p className="mt-0.5 text-xs text-stone-500">Revenue and document health.</p>
                 </div>
-                <Link
-                  href="/documents"
-                  className="text-xs font-semibold text-stone-500 transition hover:text-stone-900"
-                >
-                  Open
-                </Link>
               </div>
               <div className="mt-5 grid gap-3">
                 <Link
@@ -498,6 +331,19 @@ export default async function DashboardPage({
                     {formatMoneyCompact(receiptTotal, currency)}
                   </p>
                 </Link>
+                {pendingQuotations > 0 && (
+                  <Link
+                    href="/documents/quotations"
+                    className="rounded-xl border border-amber-100 bg-amber-50 px-4 py-3 transition hover:border-amber-200"
+                  >
+                    <p className="text-xs font-semibold uppercase tracking-wider text-amber-700">
+                      Draft Quotations
+                    </p>
+                    <p className="mt-1 text-lg font-bold tabular-nums text-amber-700">
+                      {pendingQuotations}
+                    </p>
+                  </Link>
+                )}
               </div>
             </section>
           ) : null}
@@ -509,14 +355,14 @@ export default async function DashboardPage({
                 href="/tickets"
                 className="flex items-center justify-between rounded-lg px-3 py-2 text-sm font-semibold text-stone-700 transition hover:bg-stone-50"
               >
-                Tickets <span className="text-stone-300">-&gt;</span>
+                Tickets <span className="text-stone-300">&rarr;</span>
               </Link>
               {canCreateTicket ? (
                 <Link
                   href="/tickets/new"
                   className="flex items-center justify-between rounded-lg px-3 py-2 text-sm font-semibold text-stone-700 transition hover:bg-stone-50"
                 >
-                  New Ticket <span className="text-stone-300">-&gt;</span>
+                  New Ticket <span className="text-stone-300">&rarr;</span>
                 </Link>
               ) : null}
               {canSeeClients ? (
@@ -524,21 +370,94 @@ export default async function DashboardPage({
                   href="/clients"
                   className="flex items-center justify-between rounded-lg px-3 py-2 text-sm font-semibold text-stone-700 transition hover:bg-stone-50"
                 >
-                  Clients <span className="text-stone-300">-&gt;</span>
+                  Clients <span className="text-stone-300">&rarr;</span>
                 </Link>
               ) : null}
               {canSeeFinance ? (
-                <Link
-                  href="/documents/quotations"
-                  className="flex items-center justify-between rounded-lg px-3 py-2 text-sm font-semibold text-stone-700 transition hover:bg-stone-50"
-                >
-                  Quotations <span className="text-stone-300">-&gt;</span>
-                </Link>
+                <>
+                  <Link
+                    href="/documents/quotations"
+                    className="flex items-center justify-between rounded-lg px-3 py-2 text-sm font-semibold text-stone-700 transition hover:bg-stone-50"
+                  >
+                    Quotations <span className="text-stone-300">&rarr;</span>
+                  </Link>
+                  <Link
+                    href="/documents/invoices"
+                    className="flex items-center justify-between rounded-lg px-3 py-2 text-sm font-semibold text-stone-700 transition hover:bg-stone-50"
+                  >
+                    Invoices <span className="text-stone-300">&rarr;</span>
+                  </Link>
+                  <Link
+                    href="/documents/receipts"
+                    className="flex items-center justify-between rounded-lg px-3 py-2 text-sm font-semibold text-stone-700 transition hover:bg-stone-50"
+                  >
+                    Receipts <span className="text-stone-300">&rarr;</span>
+                  </Link>
+                </>
               ) : null}
             </div>
           </section>
-        </aside>
+        </section>
       </div>
+
+      {recentTickets.length > 0 && (
+        <section className="rounded-xl border border-stone-200 bg-white shadow-sm">
+          <div className="flex items-center justify-between gap-3 border-b border-stone-100 px-5 py-4">
+            <div>
+              <h2 className="text-sm font-semibold text-stone-900">Recent Tickets</h2>
+              <p className="mt-0.5 text-xs text-stone-500">
+                Latest updates across the service queue.
+              </p>
+            </div>
+            <Link
+              href="/tickets"
+              className="text-sm font-semibold text-stone-500 transition hover:text-stone-900"
+            >
+              Open queue
+            </Link>
+          </div>
+          <div className="divide-y divide-stone-100">
+            {recentTickets.map((ticket) => (
+              <Link
+                key={ticket.id}
+                href={`/tickets/${ticket.id}`}
+                className="grid gap-3 px-5 py-4 transition hover:bg-stone-50 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"
+              >
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="font-mono text-sm font-semibold text-stone-900">
+                      {ticket.ticketNumber}
+                    </p>
+                    <span className={"inline-flex rounded-full px-2 py-0.5 text-xs font-medium " + (STATUS_COLOR[ticket.status] || "bg-stone-100 text-stone-800")}>
+                      {ticket.status.replace(/_/g, " ")}
+                    </span>
+                    {ticket.isSLACovered && (
+                      <span className="inline-flex rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] font-bold text-emerald-700">SLA</span>
+                    )}
+                    <span className={"inline-flex rounded-full px-2 py-0.5 text-xs font-medium " + (PRIORITY_COLOR[ticket.priority] || "bg-stone-100 text-stone-800")}>
+                      {ticket.priority}
+                    </span>
+                  </div>
+                  <p className="mt-1 truncate text-sm text-stone-600">
+                    {ticket.subject}
+                    {ticket.client && ` - ${ticket.client.fullName}`}
+                  </p>
+                </div>
+                <div className="flex items-center justify-between gap-4 sm:justify-end">
+                  <p className="text-xs text-stone-400">
+                    Updated {formatEATDate(ticket.updatedAt)}
+                  </p>
+                  {ticket.assignedTo?.name ? (
+                    <p className="hidden rounded-full bg-stone-100 px-2.5 py-1 text-xs font-medium text-stone-600 md:block">
+                      {ticket.assignedTo.name}
+                    </p>
+                  ) : null}
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 }

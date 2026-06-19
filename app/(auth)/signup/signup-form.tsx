@@ -102,11 +102,11 @@ export function SignupForm() {
         </div>
         <h2 className="text-xl font-semibold text-white">Your workspace is ready</h2>
         <p className="max-w-xs text-sm text-white/60">
-          Account created for <span className="text-[#D4AF37]">{form.email}</span>. Log in to access your workspace.
+          Account created for <span className="text-[#E6C65C]">{form.email}</span>. Log in to access your workspace.
         </p>
         <Link
           href="/login"
-          className="mt-2 inline-flex items-center gap-2 rounded-lg bg-[#D4AF37] px-6 py-2.5 text-sm font-semibold text-black transition-opacity hover:opacity-90"
+          className="mt-2 inline-flex items-center gap-2 rounded-lg bg-[#E6C65C] px-6 py-2.5 text-sm font-semibold text-black transition-opacity hover:opacity-90"
         >
           Log in to your workspace
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
@@ -128,7 +128,7 @@ export function SignupForm() {
             value={form.orgName}
             onChange={set("orgName")}
             placeholder="Acme Repairs Ltd"
-            className="rounded-lg border border-white/10 bg-white/5 px-3.5 py-3 text-base text-white placeholder-white/25 outline-none ring-[#D4AF37]/60 transition focus:border-[#D4AF37]/40 focus:ring-1"
+            className="rounded-lg border border-white/10 bg-white/5 px-3.5 py-3 text-base text-white placeholder-white/25 outline-none ring-[#E6C65C]/60 transition focus:border-[#E6C65C]/40 focus:ring-1"
           />
           {fieldErrors.orgName && <p className="text-xs text-red-400">{fieldErrors.orgName[0]}</p>}
         </div>
@@ -145,7 +145,7 @@ export function SignupForm() {
             value={form.adminName}
             onChange={set("adminName")}
             placeholder="John Ssebagala"
-            className="rounded-lg border border-white/10 bg-white/5 px-3.5 py-3 text-base text-white placeholder-white/25 outline-none ring-[#D4AF37]/60 transition focus:border-[#D4AF37]/40 focus:ring-1"
+            className="rounded-lg border border-white/10 bg-white/5 px-3.5 py-3 text-base text-white placeholder-white/25 outline-none ring-[#E6C65C]/60 transition focus:border-[#E6C65C]/40 focus:ring-1"
           />
           {fieldErrors.adminName && <p className="text-xs text-red-400">{fieldErrors.adminName[0]}</p>}
         </div>
@@ -159,7 +159,7 @@ export function SignupForm() {
             onChange={set("email")}
             placeholder="john@acmerepairs.com"
             autoComplete="email"
-            className="rounded-lg border border-white/10 bg-white/5 px-3.5 py-3 text-base text-white placeholder-white/25 outline-none ring-[#D4AF37]/60 transition focus:border-[#D4AF37]/40 focus:ring-1"
+            className="rounded-lg border border-white/10 bg-white/5 px-3.5 py-3 text-base text-white placeholder-white/25 outline-none ring-[#E6C65C]/60 transition focus:border-[#E6C65C]/40 focus:ring-1"
           />
           {fieldErrors.email && <p className="text-xs text-red-400">{fieldErrors.email[0]}</p>}
         </div>
@@ -175,7 +175,7 @@ export function SignupForm() {
               onChange={set("password")}
               placeholder="min. 8 chars"
               autoComplete="new-password"
-              className="rounded-lg border border-white/10 bg-white/5 px-3.5 py-3 text-base text-white placeholder-white/25 outline-none ring-[#D4AF37]/60 transition focus:border-[#D4AF37]/40 focus:ring-1"
+              className="rounded-lg border border-white/10 bg-white/5 px-3.5 py-3 text-base text-white placeholder-white/25 outline-none ring-[#E6C65C]/60 transition focus:border-[#E6C65C]/40 focus:ring-1"
             />
             {fieldErrors.password && <p className="text-xs text-red-400">{fieldErrors.password[0]}</p>}
           </div>
@@ -188,7 +188,7 @@ export function SignupForm() {
               onChange={set("confirmPassword")}
               placeholder="repeat password"
               autoComplete="new-password"
-              className="rounded-lg border border-white/10 bg-white/5 px-3.5 py-3 text-base text-white placeholder-white/25 outline-none ring-[#D4AF37]/60 transition focus:border-[#D4AF37]/40 focus:ring-1"
+              className="rounded-lg border border-white/10 bg-white/5 px-3.5 py-3 text-base text-white placeholder-white/25 outline-none ring-[#E6C65C]/60 transition focus:border-[#E6C65C]/40 focus:ring-1"
             />
           </div>
         </div>
@@ -205,19 +205,19 @@ export function SignupForm() {
               onClick={() => setPlan(p.id)}
               className={`flex flex-col gap-1 rounded-xl border p-3 text-left transition ${
                 plan === p.id
-                  ? "border-[#D4AF37]/60 bg-[#D4AF37]/8"
+                  ? "border-[#E6C65C]/60 bg-[#E6C65C]/8"
                   : "border-white/8 bg-white/3 hover:border-white/16"
               }`}
             >
               <div className="flex items-center justify-between">
                 <span className="text-sm font-semibold text-white">{p.label}</span>
                 {plan === p.id && (
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5 text-[#D4AF37]" aria-hidden>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5 text-[#E6C65C]" aria-hidden>
                     <polyline points="20 6 9 17 4 12"/>
                   </svg>
                 )}
               </div>
-              <span className="text-[13px] font-medium text-[#D4AF37]/80">{p.price}</span>
+              <span className="text-[13px] font-medium text-[#E6C65C]/80">{p.price}</span>
               <span className="text-[13px] text-white/40">{p.desc}</span>
             </button>
           ))}
@@ -235,7 +235,7 @@ export function SignupForm() {
       <button
         type="submit"
         disabled={state === "loading"}
-        className="flex items-center justify-center gap-2 rounded-lg bg-[#D4AF37] py-3 text-sm font-semibold text-black transition-opacity hover:opacity-90 disabled:opacity-60"
+        className="flex items-center justify-center gap-2 rounded-lg bg-[#E6C65C] py-3 text-sm font-semibold text-black transition-opacity hover:opacity-90 disabled:opacity-60"
       >
         {state === "loading" ? (
           <>
@@ -255,7 +255,7 @@ export function SignupForm() {
 
       <p className="text-center text-xs text-white/30">
         Already have an account?{" "}
-        <Link href="/login" className="text-[#D4AF37]/70 hover:text-[#D4AF37] transition-colors">
+        <Link href="/login" className="text-[#E6C65C]/70 hover:text-[#E6C65C] transition-colors">
           Log in
         </Link>
       </p>

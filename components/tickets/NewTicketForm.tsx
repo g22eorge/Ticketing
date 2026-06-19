@@ -1,172 +1,143 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState } from "react";
 import { useRouter } from "next/navigation";
 
-import { createJobAction } from "@/app/(app)/jobs/new/actions";
+import { createTicketAction } from "@/app/(app)/tickets/new/actions";
 
-const deviceTypes = [
-  { value: "PHONE_ANDROID", label: "Android Phone" },
-  { value: "PHONE_IPHONE", label: "iPhone" },
-  { value: "TABLET", label: "Tablet" },
-  { value: "WINDOWS_PC", label: "Windows PC" },
-  { value: "MAC", label: "Mac" },
-  { value: "OTHER", label: "Other" },
-] as const;
+type ClientOption = {
+  id: string;
+  fullName: string;
+  phone: string;
+  isSLACovered: boolean;
+};
 
 const inputCls =
   "w-full rounded-xl border border-stone-200 bg-white px-4 py-3 text-sm text-stone-900 outline-none transition focus:border-amber-400/60 focus:ring-2 focus:ring-amber-200/40 placeholder:text-stone-400";
 const selectCls =
-  "w-full rounded-xl border border-stone-200 bg-white px-4 py-3 text-sm text-stone-900 outline-none transition focus:border-amber-400/60 focus:ring-2 focus:ring-amber-200/40 appearance-none";
+  "w-full rounded-xl border border-stone-200 bg-white px-4 py-3 text-sm text-stone-900 outline-none transition focus:border-amber-400/60 focus:ring-2 focus:ring-amber-200/40";
 
-export function NewTicketForm({ receivedByName: _receivedByName }: { receivedByName: string }) {
+export function NewTicketForm({ clients }: { clients: ClientOption[] }) {
   const router = useRouter();
-  const [actionResult, submitAction, isPending] = useActionState(createJobAction, { error: null });
-
-  const [clientName, setClientName] = useState("");
-  const [phone, setPhone] = useState("");
-  const [email, setEmail] = useState("");
-  const [deviceType, setDeviceType] = useState("");
-  const [brand, setBrand] = useState("");
-  const [model, setModel] = useState("");
-  const [serial, setSerial] = useState("");
-  const [issue, setIssue] = useState("");
-  const [accessories, setAccessories] = useState("");
-
-  const canSubmit = clientName.trim().length >= 2 && phone.trim().length >= 3 && deviceType && brand.trim() && model.trim() && issue.trim().length >= 5;
-
-  const devicesJson = JSON.stringify([
-    {
-      deviceType,
-      brand,
-      model,
-      serialOrImei: serial,
-      accessories,
-      physicalNotes: "",
-      serviceType: "HARDWARE",
-      softwareOsInstall: false,
-      softwareDriversUpdates: false,
-      softwareDataBackupRestore: false,
-      softwareAccountSetup: false,
-      softwarePerformanceTune: false,
-      softwareThirdPartyApps: false,
-      softwareRequestedNotes: "",
-      softwareLicenseAttested: false,
-      softwareInstallerSource: "",
-      softwareInstallerSourceNote: "",
-      issueDescription: issue,
-    },
-  ]);
+  const [state, formAction, isPending] = useActionState(createTicketAction, { error: null });
 
   return (
-    <form action={submitAction} className="mx-auto max-w-xl space-y-8">
-      <input type="hidden" name="fullName" value={clientName} />
-      <input type="hidden" name="phone" value={phone} />
-      <input type="hidden" name="email" value={email} />
-      <input type="hidden" name="organization" value="" />
-      <input type="hidden" name="devicesJson" value={devicesJson} />
-      <input type="hidden" name="receivedAt" value="" />
-
-      {/* ── Client ── */}
+    <form action={formAction} className="mx-auto max-w-2xl space-y-8">
       <section className="space-y-4">
-        <h2 className="flex items-center gap-2 text-sm font-bold tracking-wide text-stone-800 uppercase">
+        <h2 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-stone-800">
           <span className="flex h-6 w-6 items-center justify-center rounded-full bg-stone-900 text-xs font-bold text-white">1</span>
           Client
         </h2>
+        {clients.length > 0 ? (
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold text-stone-500">Existing client</label>
+            <select name="clientId" className={selectCls} defaultValue="">
+              <option value="">Create or match by phone below</option>
+              {clients.map((client) => (
+                <option key={client.id} value={client.id}>
+                  {client.fullName} - {client.phone}{client.isSLACovered ? " - SLA" : ""}
+                </option>
+              ))}
+            </select>
+          </div>
+        ) : null}
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <label className="mb-1.5 block text-xs font-semibold text-stone-500">Full name *</label>
-            <input className={inputCls} placeholder="John Doe" value={clientName} onChange={(e) => setClientName(e.target.value)} />
+            <label className="mb-1.5 block text-xs font-semibold text-stone-500">Contact person *</label>
+            <input name="reporterName" className={inputCls} placeholder="Jane Doe" required />
           </div>
           <div>
             <label className="mb-1.5 block text-xs font-semibold text-stone-500">Phone *</label>
-            <input className={inputCls} placeholder="+254 7XX XXX XXX" value={phone} onChange={(e) => setPhone(e.target.value)} />
+            <input name="reporterPhone" className={inputCls} placeholder="+256 7XX XXX XXX" required />
           </div>
         </div>
-        <div>
-          <label className="mb-1.5 block text-xs font-semibold text-stone-500">Email</label>
-          <input className={inputCls} placeholder="client@email.com" value={email} onChange={(e) => setEmail(e.target.value)} />
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold text-stone-500">Email</label>
+            <input name="reporterEmail" type="email" className={inputCls} placeholder="client@example.com" />
+          </div>
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold text-stone-500">Company / organization</label>
+            <input name="reporterCompany" className={inputCls} placeholder="Optional" />
+          </div>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold text-stone-500">Client type</label>
+            <select name="clientType" className={selectCls} defaultValue="INDIVIDUAL">
+              <option value="INDIVIDUAL">Individual</option>
+              <option value="COMPANY">Company</option>
+              <option value="SCHOOL">School</option>
+              <option value="NGO">NGO</option>
+              <option value="GOVERNMENT">Government</option>
+            </select>
+          </div>
+          <label className="flex items-center gap-2 self-end rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800">
+            <input name="isSLACovered" type="checkbox" className="h-4 w-4 rounded border-emerald-300 text-emerald-700" />
+            Covered under SLA
+          </label>
         </div>
       </section>
 
-      {/* ── Device ── */}
       <section className="space-y-4">
-        <h2 className="flex items-center gap-2 text-sm font-bold tracking-wide text-stone-800 uppercase">
+        <h2 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-stone-800">
           <span className="flex h-6 w-6 items-center justify-center rounded-full bg-stone-900 text-xs font-bold text-white">2</span>
-          Device
+          Ticket
         </h2>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold text-stone-500">Priority</label>
+            <select name="priority" className={selectCls} defaultValue="MEDIUM">
+              <option value="LOW">Low</option>
+              <option value="MEDIUM">Medium</option>
+              <option value="HIGH">High</option>
+              <option value="CRITICAL">Critical</option>
+            </select>
+          </div>
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold text-stone-500">Service type</label>
+            <select name="category" className={selectCls} defaultValue="OTHER">
+              <option value="HARDWARE">Hardware</option>
+              <option value="SOFTWARE">Software</option>
+              <option value="NETWORK">Network</option>
+              <option value="INTERNET">Internet</option>
+              <option value="EMAIL">Email</option>
+              <option value="PRINTER">Printer</option>
+              <option value="OTHER">Other</option>
+            </select>
+          </div>
+        </div>
         <div>
-          <label className="mb-1.5 block text-xs font-semibold text-stone-500">Type *</label>
-          <select className={selectCls} value={deviceType} onChange={(e) => setDeviceType(e.target.value)}>
-            <option value="">Select device type</option>
-            {deviceTypes.map((dt) => (
-              <option key={dt.value} value={dt.value}>{dt.label}</option>
-            ))}
-          </select>
+          <label className="mb-1.5 block text-xs font-semibold text-stone-500">Subject *</label>
+          <input name="subject" className={inputCls} placeholder="Email not syncing on staff laptops" required />
         </div>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <label className="mb-1.5 block text-xs font-semibold text-stone-500">Brand *</label>
-            <input className={inputCls} placeholder="Samsung" value={brand} onChange={(e) => setBrand(e.target.value)} />
-          </div>
-          <div>
-            <label className="mb-1.5 block text-xs font-semibold text-stone-500">Model *</label>
-            <input className={inputCls} placeholder="Galaxy S24" value={model} onChange={(e) => setModel(e.target.value)} />
-          </div>
+        <div>
+          <label className="mb-1.5 block text-xs font-semibold text-stone-500">Device or service</label>
+          <input name="deviceInfo" className={inputCls} placeholder="HP laptop, printer, network, Microsoft 365..." />
         </div>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <label className="mb-1.5 block text-xs font-semibold text-stone-500">Serial / IMEI</label>
-            <input className={inputCls} placeholder="Optional" value={serial} onChange={(e) => setSerial(e.target.value)} />
-          </div>
-          <div>
-            <label className="mb-1.5 block text-xs font-semibold text-stone-500">Accessories</label>
-            <input className={inputCls} placeholder="Charger, case..." value={accessories} onChange={(e) => setAccessories(e.target.value)} />
-          </div>
+        <div>
+          <label className="mb-1.5 block text-xs font-semibold text-stone-500">Issue description *</label>
+          <textarea name="description" className={`${inputCls} min-h-[120px] resize-y`} placeholder="Describe the support request..." required />
+        </div>
+        <div>
+          <label className="mb-1.5 block text-xs font-semibold text-stone-500">Estimated cost</label>
+          <input name="estimatedCost" type="number" min="0" step="0.01" className={inputCls} placeholder="Optional" />
         </div>
       </section>
 
-      {/* ── Issue ── */}
-      <section className="space-y-4">
-        <h2 className="flex items-center gap-2 text-sm font-bold tracking-wide text-stone-800 uppercase">
-          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-stone-900 text-xs font-bold text-white">3</span>
-          Issue
-        </h2>
-        <div>
-          <label className="mb-1.5 block text-xs font-semibold text-stone-500">Describe the issue *</label>
-          <textarea
-            className={`${inputCls} min-h-[100px] resize-y`}
-            placeholder="Screen cracked, won't power on..."
-            value={issue}
-            onChange={(e) => setIssue(e.target.value)}
-          />
-        </div>
-      </section>
-
-      {/* ── Error ── */}
-      {actionResult.error ? (
+      {state.error ? (
         <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
-          {actionResult.error}
+          {state.error}
         </div>
       ) : null}
 
-      {/* ── Submit ── */}
       <div className="flex items-center gap-3 pt-2">
         <button
           type="submit"
-          disabled={!canSubmit || isPending}
+          disabled={isPending}
           className="inline-flex items-center gap-2 rounded-xl bg-stone-900 px-6 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-stone-800 disabled:cursor-not-allowed disabled:opacity-40"
         >
-          {isPending ? (
-            <>
-              <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <circle cx="12" cy="12" r="10" strokeDasharray="32" strokeDashoffset="12" />
-              </svg>
-              Creating...
-            </>
-          ) : (
-            "Create Ticket"
-          )}
+          {isPending ? "Creating..." : "Create Ticket"}
         </button>
         <button
           type="button"

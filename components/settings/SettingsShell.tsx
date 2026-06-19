@@ -24,20 +24,20 @@ function isActive(pathname: string, href: string) {
 export function SettingsShell({
   workspaceName,
   actorName,
-  lastEditedAt,
   quickActions,
   groups,
   children,
 }: {
   workspaceName: string;
   actorName: string;
-  lastEditedAt: string;
   quickActions?: Array<{ href: string; label: string; icon: React.ReactNode }>;
   groups: SettingsNavGroup[];
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
   const [q, setQ] = useState("");
+  const allItems = useMemo(() => groups.flatMap((g) => g.items), [groups]);
+  const showSearch = allItems.length > 8;
 
   const filtered = useMemo(() => {
     const query = q.trim().toLowerCase();
@@ -68,19 +68,29 @@ export function SettingsShell({
     () => filtered.flatMap((g) => g.items),
     [filtered],
   );
+  const coreGroups = useMemo(
+    () => filtered.filter((g) => g.title !== "Advanced"),
+    [filtered],
+  );
+  const advancedItems = useMemo(
+    () => filtered.find((g) => g.title === "Advanced")?.items ?? [],
+    [filtered],
+  );
+  const hasQuery = q.trim().length > 0;
+  const advancedActive = advancedItems.some((item) => isActive(pathname, item.href));
 
   return (
     <section className="space-y-4">
-      <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)] p-3 sm:rounded-[1.75rem] sm:p-6">
+      <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 sm:p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex min-w-0 items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[var(--line)] bg-[var(--accent)] text-base font-black text-[var(--accent-contrast)] sm:h-11 sm:w-11 sm:rounded-2xl sm:text-lg">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[var(--line)] bg-[var(--accent)] text-base font-black text-[var(--accent-contrast)]">
               {workspaceName.trim().slice(0, 1).toUpperCase() || "S"}
             </div>
             <div className="min-w-0">
-              <p className="truncate text-lg font-black text-[var(--ink)] sm:text-xl">Settings</p>
+              <p className="truncate text-lg font-black text-[var(--ink)]">Settings</p>
               <p className="mt-0.5 truncate text-xs text-[var(--ink-muted)] max-sm:max-w-[220px]">
-                {workspaceName} · {actorName} · Updated {lastEditedAt}
+                {workspaceName} · {actorName}
               </p>
             </div>
           </div>
@@ -101,41 +111,75 @@ export function SettingsShell({
               </div>
             ) : null}
 
-            <div className="flex min-w-0 flex-1 items-center gap-2 rounded-full border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 sm:flex-none sm:px-4">
-              <svg className="h-4 w-4 text-[var(--ink-muted)]" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                <path fillRule="evenodd" d="M9 3.5a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11ZM2 9a7 7 0 1 1 12.2 4.43l3.18 3.19a.75.75 0 1 1-1.06 1.06l-3.19-3.18A7 7 0 0 1 2 9Z" clipRule="evenodd" />
-              </svg>
-              <input
-                value={q}
-                onChange={(e) => setQ(e.target.value)}
-                placeholder="Search"
-                className="w-full bg-transparent text-sm text-[var(--ink)] placeholder:text-[var(--ink-muted)] outline-none sm:w-[260px]"
-              />
-            </div>
+            {showSearch ? (
+              <div className="flex min-w-0 flex-1 items-center gap-2 rounded-full border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 sm:flex-none sm:px-4">
+                <svg className="h-4 w-4 text-[var(--ink-muted)]" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                  <path fillRule="evenodd" d="M9 3.5a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11ZM2 9a7 7 0 1 1 12.2 4.43l3.18 3.19a.75.75 0 1 1-1.06 1.06l-3.19-3.18A7 7 0 0 1 2 9Z" clipRule="evenodd" />
+                </svg>
+                <input
+                  value={q}
+                  onChange={(e) => setQ(e.target.value)}
+                  placeholder="Search"
+                  className="w-full bg-transparent text-sm text-[var(--ink)] placeholder:text-[var(--ink-muted)] outline-none sm:w-[260px]"
+                />
+              </div>
+            ) : null}
           </div>
         </div>
 
-        <div className="mt-4 flex gap-1.5 overflow-x-auto pb-1 sm:mt-5 sm:flex-wrap sm:overflow-visible sm:pb-0">
-          {filteredItems.map((item) => {
+        <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+          {(hasQuery ? filteredItems : coreGroups.flatMap((g) => g.items)).map((item) => {
             const active = isActive(pathname, item.href);
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-all ${
+                className={`rounded-xl border px-3 py-3 transition ${
                   active
-                    ? "border-[var(--accent)]/70 bg-[var(--accent)] text-[var(--accent-contrast)] shadow-sm"
-                    : "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)] hover:border-[var(--accent)]/40 hover:bg-[var(--panel)] hover:text-[var(--ink)]"
+                    ? "border-[var(--accent)]/70 bg-[var(--accent)] text-[var(--accent-contrast)]"
+                    : "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink)] hover:border-[var(--accent)]/40"
                 }`}
               >
-                {active && (
-                  <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-current opacity-80" />
-                )}
-                {item.label}
+                <span className="flex items-center gap-2 text-sm font-bold">
+                  {item.icon ? <span className="shrink-0">{item.icon}</span> : null}
+                  {item.label}
+                </span>
+                {item.description ? (
+                  <span className={active ? "mt-1 block text-xs text-black/70" : "mt-1 block text-xs text-[var(--ink-muted)]"}>
+                    {item.description}
+                  </span>
+                ) : null}
               </Link>
             );
           })}
         </div>
+
+        {advancedItems.length > 0 && !hasQuery ? (
+          <details open={advancedActive} className="mt-3 rounded-xl border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2">
+            <summary className="cursor-pointer text-xs font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
+              Message setup
+            </summary>
+            <div className="mt-2 grid gap-1.5 sm:grid-cols-2 lg:grid-cols-4">
+              {advancedItems.map((item) => {
+                const active = isActive(pathname, item.href);
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={`rounded-lg px-3 py-2 text-sm font-semibold transition ${
+                      active
+                        ? "bg-[var(--accent)] text-[var(--accent-contrast)]"
+                        : "text-[var(--ink-muted)] hover:bg-[var(--panel)] hover:text-[var(--ink)]"
+                    }`}
+                  >
+                    <span className="block">{item.label}</span>
+                    {item.description ? <span className="block text-[11px] font-normal opacity-75">{item.description}</span> : null}
+                  </Link>
+                );
+              })}
+            </div>
+          </details>
+        ) : null}
 
         <div className="mt-3 min-h-[1.25rem]">
           {filteredItems.length === 0 ? (

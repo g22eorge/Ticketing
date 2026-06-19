@@ -97,7 +97,7 @@ export default async function QuotationsPage({
       subtitle="Quotes issued to clients."
       action={
         <Link
-          href="/sales/quotations/new"
+          href="/documents/new?type=quotation"
           className="inline-flex items-center gap-1.5 rounded-lg bg-stone-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-stone-800"
         >
           + New Quotation
@@ -115,7 +115,7 @@ export default async function QuotationsPage({
           <EmptyState
             title="No quotations found"
             description="Generate a quotation from a ticket to see it here."
-            action={{ label: "New Quotation", href: "/sales/quotations/new" }}
+            action={{ label: "New Quotation", href: "/documents/new?type=quotation" }}
           />
         }
         columns={[

@@ -22,6 +22,8 @@ type InvoiceRow = {
   currency: string;
   status: string;
   jobId: string | null;
+  ticketId: string | null;
+  hasReceipt: boolean;
 };
 
 export default async function InvoicesPage({
@@ -64,6 +66,7 @@ export default async function InvoicesPage({
         jobId: true,
         client: { select: { fullName: true } },
         job: { select: { brand: true, model: true } },
+        ticket: { select: { id: true, receipt: { select: { id: true } } } },
       },
       orderBy: { issuedAt: "desc" },
       skip: (page - 1) * pageSize,
@@ -92,6 +95,8 @@ export default async function InvoicesPage({
     currency: inv.currency ?? baseCurrency,
     status: inv.status,
     jobId: inv.jobId,
+    ticketId: inv.ticket?.id ?? null,
+    hasReceipt: Boolean(inv.ticket?.receipt),
   }));
 
   return (
@@ -100,10 +105,10 @@ export default async function InvoicesPage({
       subtitle="Billed to clients."
       action={
         <Link
-          href="/tickets"
+          href="/documents/new?type=invoice"
           className="inline-flex items-center gap-1.5 rounded-lg bg-stone-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-stone-800"
         >
-          View Jobs
+          New Invoice
         </Link>
       }
       searchPlaceholder="Search invoices..."
@@ -118,7 +123,7 @@ export default async function InvoicesPage({
           <EmptyState
             title="No invoices found"
             description="Create an invoice from a ticket to see it here."
-            action={{ label: "View Jobs", href: "/tickets" }}
+            action={{ label: "New Invoice", href: "/documents/new?type=invoice" }}
           />
         }
         columns={[
@@ -138,12 +143,22 @@ export default async function InvoicesPage({
             header: "Actions",
             align: "right",
             render: (r) => (
-              <Link
-                href={`/api/invoices/${r.id}`}
-                className="text-sm font-medium text-stone-600 transition hover:text-stone-900"
-              >
-                Download
-              </Link>
+              <div className="flex justify-end gap-3">
+                {r.ticketId && !r.hasReceipt && r.status !== "PAID" ? (
+                  <Link
+                    href={`/tickets/${r.ticketId}/create-receipt`}
+                    className="text-sm font-semibold text-emerald-700 transition hover:text-emerald-800"
+                  >
+                    Record Payment
+                  </Link>
+                ) : null}
+                <Link
+                  href={`/api/invoices/${r.id}`}
+                  className="text-sm font-medium text-stone-600 transition hover:text-stone-900"
+                >
+                  Download
+                </Link>
+              </div>
             ),
           },
         ]}

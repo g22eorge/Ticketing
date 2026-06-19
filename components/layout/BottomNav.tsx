@@ -33,6 +33,7 @@ const jobsIcon      = <Icon d={["M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 
 const boardIcon     = <Icon d={["M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2","M23 21v-2a4 4 0 0 0-3-3.87","M16 3.13a4 4 0 0 1 0 7.75"]}><circle cx="9" cy="7" r="4" /></Icon>;
 const moreIcon      = <Icon d="" size={22}><circle cx="5" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.2" fill="currentColor" stroke="none"/></Icon>;
 const clientsIcon   = <Icon d={["M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2","M22 21v-2a4 4 0 0 0-3-3.87","M16 3.13a4 4 0 0 1 0 7.75"]}><circle cx="9" cy="7" r="4" /></Icon>;
+const subscriptionIcon = <Icon d={["M8 2v4","M16 2v4","M3 10h18","M5 4h14a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2","M8 14h4"]} />;
 const reportsIcon   = <Icon d={["M3 3v18h18","m19 9-5 5-4-4-3 3"]} />;
 const inventoryIcon = <Icon d={["M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z","M3.27 6.96 12 12.01l8.73-5.05","M12 22.08V12"]} />;
 const posIcon         = <Icon d={["M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z","M3 6h18","M16 10a4 4 0 0 1-8 0"]} />;
@@ -59,10 +60,12 @@ const shiftsIcon      = <Icon d={["M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10
 /* ─────────────────────────── named items ──────────────────────────────── */
 const ITEMS = {
   dashboard:      { href: "/dashboard",                 label: "Home",         icon: homeIcon      },
+  tickets:        { href: "/tickets",                   label: "Tickets",      icon: jobsIcon      },
   jobs:           { href: "/jobs",                      label: "Queue",        icon: jobsIcon      },
   board:          { href: "/technicians",               label: "Techs",        icon: boardIcon     },
   intake:         { href: "/intake",                    label: "Intake",       icon: intakeIcon    },
   clients:        { href: "/clients",                   label: "Clients",      icon: clientsIcon   },
+  subscriptions:  { href: "/subscriptions",              label: "SLA",          icon: subscriptionIcon },
   reports:        { href: "/reports",                   label: "Reports",      icon: reportsIcon   },
   aiInsights:     { href: "/ai-insights",               label: "AI Insights",  icon: aiIcon        },
   pos:            { href: "/pos",                       label: "POS",          icon: posIcon       },
@@ -91,8 +94,8 @@ const ITEMS = {
 
 /* ───────────────────────── module guard ──────────────────────────────── */
 const hrefModule: Record<string, string> = {
-  "/jobs": "JOBS", "/intake": "JOBS", "/technicians": "JOBS",
-  "/clients": "JOBS", "/payout-followups": "JOBS",
+  "/tickets": "JOBS", "/jobs": "JOBS", "/intake": "JOBS", "/technicians": "JOBS",
+  "/clients": "JOBS", "/subscriptions": "SUBSCRIPTIONS", "/payout-followups": "JOBS",
   "/finance": "INVOICING",
   "/complaints": "COMPLAINTS", "/field": "FIELD",
   "/inventory": "INVENTORY", "/pos": "POS",
@@ -109,13 +112,9 @@ function getPrimaryItems(role: Role, permissions: string[], mods?: Set<string>):
   const perm = { role, permissions };
   const ok   = (href: string) => !mods || !hrefModule[href] || mods.has(hrefModule[href]);
   if (role === "TECHNICIAN_EXTERNAL" || !can.viewIntake(perm)) {
-    return [ITEMS.dashboard, ITEMS.jobs, ITEMS.board].filter((i) => ok(i.href));
+    return [ITEMS.dashboard, ITEMS.tickets, ITEMS.clients].filter((i) => ok(i.href));
   }
-  // ADMIN / OPS / MANAGER get a 4-tab premium bar: Home | Repairs | Finance | Activity
-  if (["ADMIN", "OPS", "MANAGER"].includes(role)) {
-    return [ITEMS.dashboard, ITEMS.jobs, ITEMS.invoices, ITEMS.activity].filter((i) => ok(i.href));
-  }
-  return [ITEMS.dashboard, ITEMS.intake, ITEMS.jobs].filter((i) => ok(i.href));
+  return [ITEMS.dashboard, ITEMS.tickets, ITEMS.clients, ITEMS.subscriptions].filter((i) => ok(i.href));
 }
 
 function getMoreGroups(role: Role, permissions: string[], mods?: Set<string>): NavGroup[] {
@@ -160,12 +159,8 @@ function getMoreGroups(role: Role, permissions: string[], mods?: Set<string>): N
   };
 
   const groups: NavGroup[] = [
-    { title: "Customers",  items: [ITEMS.clients, ITEMS.sales, ITEMS.complaints] },
-    { title: "Documents",  items: [ITEMS.jobCards, ITEMS.quotations, ITEMS.invoiceDocs, ITEMS.receipts, ITEMS.deliveryNotes, ITEMS.creditNotes, ITEMS.refunds] },
-    { title: "Operations", items: [ITEMS.inventory, ITEMS.field, ITEMS.payoutFollowups, ITEMS.board] },
-    { title: "Sales",      items: [ITEMS.pos, ITEMS.cashierShifts, ITEMS.targets] },
-    { title: "Finance",    items: [ITEMS.expenses, ITEMS.recurring, ITEMS.taxRates] },
-    { title: "Analytics",  items: [ITEMS.reports, ITEMS.aiInsights] },
+    { title: "Core",       items: [ITEMS.clients, ITEMS.subscriptions] },
+    { title: "Documents",  items: [ITEMS.quotations, ITEMS.invoiceDocs, ITEMS.receipts] },
   ];
 
   return groups

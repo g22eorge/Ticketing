@@ -64,7 +64,7 @@ export function RegisterForm() {
           required
           autoComplete="name"
           placeholder="Jane Doe"
-          className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/20 focus:border-[#D4AF37]/50 focus:bg-white/8 focus:ring-2 focus:ring-[#D4AF37]/15"
+          className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/20 focus:border-[#E6C65C]/50 focus:bg-white/8 focus:ring-2 focus:ring-[#E6C65C]/15"
         />
       </div>
 
@@ -80,7 +80,7 @@ export function RegisterForm() {
           required
           autoComplete="email"
           placeholder="you@yourbusiness.com"
-          className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/20 focus:border-[#D4AF37]/50 focus:bg-white/8 focus:ring-2 focus:ring-[#D4AF37]/15"
+          className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/20 focus:border-[#E6C65C]/50 focus:bg-white/8 focus:ring-2 focus:ring-[#E6C65C]/15"
         />
       </div>
 
@@ -97,7 +97,7 @@ export function RegisterForm() {
             required
             autoComplete="new-password"
             placeholder="Min. 8 characters"
-            className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 pr-20 text-sm text-white outline-none transition placeholder:text-white/20 focus:border-[#D4AF37]/50 focus:bg-white/8 focus:ring-2 focus:ring-[#D4AF37]/15"
+            className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 pr-20 text-sm text-white outline-none transition placeholder:text-white/20 focus:border-[#E6C65C]/50 focus:bg-white/8 focus:ring-2 focus:ring-[#E6C65C]/15"
           />
           <button
             type="button"
@@ -121,7 +121,7 @@ export function RegisterForm() {
           required
           autoComplete="new-password"
           placeholder="Repeat password"
-          className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/20 focus:border-[#D4AF37]/50 focus:bg-white/8 focus:ring-2 focus:ring-[#D4AF37]/15"
+          className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/20 focus:border-[#E6C65C]/50 focus:bg-white/8 focus:ring-2 focus:ring-[#E6C65C]/15"
         />
       </div>
 
@@ -129,7 +129,7 @@ export function RegisterForm() {
       <button
         disabled={isPending}
         type="submit"
-        className="mt-2 w-full rounded-xl bg-[#D4AF37] py-3 text-sm font-semibold text-black transition hover:bg-[#c9a430] disabled:opacity-50"
+        className="mt-2 w-full rounded-xl bg-[#E6C65C] py-3 text-sm font-semibold text-black transition hover:bg-[#c9a430] disabled:opacity-50"
       >
         {isPending ? "Creating account…" : "Create account"}
       </button>

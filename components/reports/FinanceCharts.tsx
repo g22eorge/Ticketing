@@ -17,8 +17,8 @@ import {
 
 import { formatMoneyCompact } from "@/lib/currency";
 
-const ACCENT = "#D4AF37";
-const PIE_COLORS = ["#D4AF37", "#60a5fa", "#34d399", "#f472b6", "#a78bfa", "#fb923c", "#38bdf8", "#4ade80"];
+const ACCENT = "#E6C65C";
+const PIE_COLORS = ["#E6C65C", "#60a5fa", "#34d399", "#f472b6", "#a78bfa", "#fb923c", "#38bdf8", "#4ade80"];
 
 export function PLTrendChart({
   data,

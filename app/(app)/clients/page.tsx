@@ -16,6 +16,9 @@ type ClientRow = {
   fullName: string;
   phone: string;
   email: string | null;
+  clientType: string;
+  isSLACovered: boolean;
+  slaEndDate: string | null;
   tickets: number;
   createdAt: string;
 };
@@ -23,7 +26,7 @@ type ClientRow = {
 export default async function ClientsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; page?: string }>;
+  searchParams: Promise<{ q?: string; page?: string; sla?: string }>;
 }) {
   const { user, orgId } = await requireOrgSession();
   if (!can.viewClientInfo(user)) {
@@ -32,11 +35,13 @@ export default async function ClientsPage({
 
   const params = await searchParams;
   const q = (params.q ?? "").trim();
+  const slaFilter = params.sla;
   const page = Math.max(Number(params.page ?? "1") || 1, 1);
   const pageSize = 20;
 
   const where = {
     orgId,
+    ...(slaFilter === "1" ? { isSLACovered: true } : {}),
     ...(q
       ? {
           OR: [
@@ -48,7 +53,7 @@ export default async function ClientsPage({
       : {}),
   };
 
-  const [clients, total] = await Promise.all([
+  const [clients, total, slaCount] = await Promise.all([
     prisma.client.findMany({
       where,
       select: {
@@ -56,14 +61,18 @@ export default async function ClientsPage({
         fullName: true,
         phone: true,
         email: true,
+        clientType: true,
+        isSLACovered: true,
+        slaEndDate: true,
         createdAt: true,
-        _count: { select: { jobs: true } },
+        _count: { select: { jobs: true, tickets: true } },
       },
       orderBy: { createdAt: "desc" },
       skip: (page - 1) * pageSize,
       take: pageSize,
     }),
     prisma.client.count({ where }),
+    prisma.client.count({ where: { orgId, isSLACovered: true } }),
   ]);
 
   const totalPages = Math.max(Math.ceil(total / pageSize), 1);
@@ -73,30 +82,41 @@ export default async function ClientsPage({
     fullName: c.fullName,
     phone: c.phone,
     email: c.email,
-    tickets: c._count.jobs,
+    clientType: c.clientType,
+    isSLACovered: c.isSLACovered,
+    slaEndDate: c.slaEndDate ? formatEATDate(c.slaEndDate) : null,
+    tickets: c._count.jobs + c._count.tickets,
     createdAt: formatEATDate(c.createdAt),
   }));
 
   return (
     <div className="space-y-6 p-4 md:p-6">
-      {/* Header */}
       <PageLayout
         title="Clients"
-        subtitle="Manage your client list."
+        subtitle={`${total} clients${slaCount > 0 ? ` · ${slaCount} SLA-covered` : ""}`}
         action={
-          <Link
-            href="/tickets/new"
-            className="inline-flex items-center gap-1.5 rounded-lg bg-stone-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-stone-800"
-          >
-            + New Ticket
-          </Link>
+          <div className="flex gap-2">
+            {slaFilter !== "1" && (
+              <Link
+                href="/clients?sla=1"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-semibold text-emerald-700 transition hover:border-emerald-300"
+              >
+                SLA Clients
+              </Link>
+            )}
+            <Link
+              href="/tickets/new"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-stone-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-stone-800"
+            >
+              + New Ticket
+            </Link>
+          </div>
         }
         searchPlaceholder="Search clients..."
         searchValue={q}
         page={page}
         totalPages={totalPages}
       >
-        {/* Inline add client form */}
         <form
           action={async (formData: FormData) => {
             "use server";
@@ -105,8 +125,12 @@ export default async function ClientsPage({
             const fullName = String(formData.get("fullName") ?? "").trim();
             const phone = String(formData.get("phone") ?? "").trim();
             const email = String(formData.get("email") ?? "").trim() || undefined;
+            const clientType = String(formData.get("clientType") ?? "INDIVIDUAL");
+            const isSLACovered = formData.get("isSLACovered") === "on";
             if (!fullName || !phone) return;
-            await prisma.client.create({ data: { orgId, fullName, phone, email } });
+            await prisma.client.create({
+              data: { orgId, fullName, phone, email, clientType: clientType as never, isSLACovered },
+            });
             revalidatePath("/clients");
           }}
           className="flex flex-wrap items-end gap-2 rounded-2xl border border-stone-200 bg-white p-4 shadow-sm"
@@ -114,6 +138,17 @@ export default async function ClientsPage({
           <input name="fullName" required placeholder="Full name" className="w-48 rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-sm outline-none transition focus:border-stone-400 focus:ring-1 focus:ring-stone-400" />
           <input name="phone" required placeholder="Phone" className="w-48 rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-sm outline-none transition focus:border-stone-400 focus:ring-1 focus:ring-stone-400" />
           <input name="email" placeholder="Email (optional)" className="w-48 rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-sm outline-none transition focus:border-stone-400 focus:ring-1 focus:ring-stone-400" />
+          <select name="clientType" className="rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-sm outline-none transition focus:border-stone-400">
+            <option value="INDIVIDUAL">Individual</option>
+            <option value="COMPANY">Company</option>
+            <option value="SCHOOL">School</option>
+            <option value="NGO">NGO</option>
+            <option value="GOVERNMENT">Government</option>
+          </select>
+          <label className="flex items-center gap-1.5 text-sm text-stone-600">
+            <input type="checkbox" name="isSLACovered" className="h-4 w-4 rounded border-stone-300 text-emerald-600 focus:ring-emerald-500" />
+            SLA
+          </label>
           <button type="submit" className="rounded-lg bg-stone-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-stone-800">Add Client</button>
         </form>
 
@@ -122,17 +157,20 @@ export default async function ClientsPage({
           keyExtractor={(r) => r.id}
           emptyState={<EmptyState title="No clients found" description="Add a client to get started." />}
           columns={[
-            { header: "Name", render: (r) => <span className="font-medium text-stone-900">{r.fullName}</span> },
+            { header: "Name", render: (r) => (
+              <div>
+                <span className="font-medium text-stone-900">{r.fullName}</span>
+                {r.isSLACovered && <span className="ml-2 inline-flex rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] font-bold text-emerald-700">SLA</span>}
+              </div>
+            )},
             { header: "Phone", render: (r) => r.phone },
             { header: "Email", render: (r) => r.email ?? "—" },
-            {
-              header: "Tickets",
-              render: (r) => (
-                <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-stone-100 text-xs font-medium text-stone-700">
-                  {r.tickets}
-                </span>
-              ),
-            },
+            { header: "Type", render: (r) => <span className="capitalize text-stone-600">{r.clientType.toLowerCase()}</span> },
+            { header: "Tickets", render: (r) => (
+              <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-stone-100 text-xs font-medium text-stone-700">
+                {r.tickets}
+              </span>
+            )},
             { header: "Created", render: (r) => <span className="text-stone-500">{r.createdAt}</span> },
           ]}
         />

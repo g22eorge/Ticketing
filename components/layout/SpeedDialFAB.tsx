@@ -103,7 +103,7 @@ export function SpeedDialFAB({
         type="button"
         aria-label={open ? "Close actions" : "Quick actions"}
         onClick={() => setOpen((v) => !v)}
-        className="flex h-[52px] w-[52px] items-center justify-center rounded-full bg-[var(--accent)] shadow-[0_4px_20px_rgba(212,175,55,0.35)] transition-transform active:scale-95 hover:scale-105"
+        className="flex h-[52px] w-[52px] items-center justify-center rounded-full bg-[var(--accent)] shadow-[0_4px_20px_rgba(230,198,92,0.35)] transition-transform active:scale-95 hover:scale-105"
         style={{ transition: "transform 0.15s, box-shadow 0.15s" }}
       >
         <svg

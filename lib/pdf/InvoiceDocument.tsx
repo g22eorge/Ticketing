@@ -18,7 +18,7 @@ const styles = StyleSheet.create({
   },
   topAccent: {
     height: 5,
-    backgroundColor: "#D4AF37",
+    backgroundColor: "#E6C65C",
     borderRadius: 8,
     marginBottom: 10,
   },
@@ -132,7 +132,7 @@ const styles = StyleSheet.create({
     fontSize: 9,
     fontWeight: 700,
     marginBottom: 7,
-    color: "#D4AF37",
+    color: "#E6C65C",
     letterSpacing: 0.7,
     textTransform: "uppercase",
   },

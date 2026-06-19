@@ -16,8 +16,37 @@ enum TicketStatus {
   OPEN
   IN_PROGRESS
   WAITING_ON_CUSTOMER
+  WAITING_FOR_APPROVAL
+  WAITING_FOR_PAYMENT
   RESOLVED
   CLOSED
+  CANCELLED
+}
+
+enum SLACycle {
+  MONTHLY
+  ANNUAL
+}
+
+enum ClientSubscriptionStatus {
+  ACTIVE
+  PENDING
+  EXPIRED
+  CANCELLED
+}
+
+enum ClientSubscriptionReminderType {
+  TWO_MONTHS
+  ONE_MONTH
+  TWO_WEEKS
+}
+
+enum ClientType {
+  INDIVIDUAL
+  COMPANY
+  SCHOOL
+  NGO
+  GOVERNMENT
 }
 
 enum TicketPriority {
@@ -57,6 +86,23 @@ model Ticket {
   description   String
   deviceInfo    String?    // e.g., "HP EliteBook 840 G8" or "Office Printer"
 
+  // Client link
+  clientId      String?
+  client        Client?    @relation(fields: [clientId], references: [id], onDelete: SetNull)
+
+  // SLA
+  isSLACovered  Boolean    @default(false)
+
+  // Financial
+  estimatedCost Float?
+
+  // Linked documents
+  quotationId   String?    @unique
+  quotation     Quotation? @relation("TicketQuotation", fields: [quotationId], references: [id], onDelete: SetNull)
+  invoiceId     String?    @unique
+  invoice       Invoice?   @relation("TicketInvoice", fields: [invoiceId], references: [id], onDelete: SetNull)
+  receipt       Receipt?   @relation("TicketReceipt")
+
   // Internal
   assignedToId  String?
   assignedTo    User?      @relation("TicketAssignedTo", fields: [assignedToId], references: [id], onDelete: SetNull)
@@ -71,6 +117,7 @@ model Ticket {
   @@index([orgId, status, createdAt])
   @@index([orgId, priority, createdAt])
   @@index([assignedToId, status])
+  @@index([clientId])
 }
 
 // ── MULTI-TENANCY ────────────────────────────────────────────────────────────
@@ -118,6 +165,7 @@ model Organization {
 
   users                  User[]
   clients                Client[]
+  clientSubscriptions    ClientSubscription[]
   devices                Device[]
   jobs                   Job[]
   parts                  Part[]
@@ -171,6 +219,7 @@ model Organization {
 
 enum OrgModule {
   JOBS
+  SUBSCRIPTIONS
   INVENTORY
   POS
   PURCHASE_ORDERS
@@ -571,16 +620,26 @@ enum StockTransferStatus {
 
 model Client {
   id           String        @id @default(cuid())
-  fullName     String
-  phone        String
-  email        String?
-  organization String?
-  address      String?
-  notes        String?
-  orgId        String?
-  org          Organization? @relation(fields: [orgId], references: [id], onDelete: SetNull)
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  fullName       String
+  phone          String
+  email          String?
+  organization   String?
+  address        String?
+  notes          String?
+
+  // SLA
+  clientType     ClientType    @default(INDIVIDUAL)
+  isSLACovered   Boolean       @default(false)
+  slaStartDate   DateTime?
+  slaEndDate     DateTime?
+  slaBillingCycle SLACycle?
+  slaAmountPaid  Float?
+  slaStatus      ClientSubscriptionStatus?
+
+  orgId          String?
+  org            Organization? @relation(fields: [orgId], references: [id], onDelete: SetNull)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
 
   jobs               Job[]
   devices            Device[]
@@ -592,9 +651,65 @@ model Client {
   invoices           Invoice[]
   recurringInvoices  RecurringInvoice[]
   campaignContacts   CampaignContact[]
+  tickets            Ticket[]
+  subscriptions      ClientSubscription[]
 
   @@unique([phone, orgId])
   @@index([orgId])
+}
+
+model ClientSubscription {
+  id          String                   @id @default(cuid())
+  orgId       String
+  org         Organization             @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  clientId    String
+  client      Client                   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  cycle       SLACycle                 @default(ANNUAL)
+  startDate   DateTime
+  renewalDate DateTime
+  amountPaid  Float                    @default(0)
+  currency    String                   @default("UGX")
+  status      ClientSubscriptionStatus @default(ACTIVE)
+  notes       String?
+  createdAt   DateTime                 @default(now())
+  updatedAt   DateTime                 @updatedAt
+
+  renewals  ClientSubscriptionRenewal[]
+  reminders ClientSubscriptionReminder[]
+
+  @@index([orgId, status, renewalDate])
+  @@index([clientId, renewalDate])
+}
+
+model ClientSubscriptionRenewal {
+  id             String             @id @default(cuid())
+  subscriptionId String
+  subscription   ClientSubscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  renewedAt      DateTime           @default(now())
+  previousRenewalDate DateTime?
+  nextRenewalDate     DateTime
+  amountPaid     Float              @default(0)
+  currency       String             @default("UGX")
+  note           String?
+
+  @@index([subscriptionId, renewedAt])
+}
+
+model ClientSubscriptionReminder {
+  id             String                         @id @default(cuid())
+  subscriptionId String
+  subscription   ClientSubscription             @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  type           ClientSubscriptionReminderType
+  remindAt       DateTime
+  visible        Boolean                        @default(true)
+  emailEnabled   Boolean                        @default(true)
+  whatsappEnabled Boolean                       @default(true)
+  emailSentAt    DateTime?
+  whatsappSentAt DateTime?
+  createdAt      DateTime                       @default(now())
+
+  @@unique([subscriptionId, type, remindAt])
+  @@index([remindAt, visible])
 }
 
 model Device {
@@ -759,6 +874,7 @@ model Invoice {
   job      Job?     @relation(fields: [jobId], references: [id], onDelete: Cascade)
   clientId String?
   client   Client?  @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  ticket     Ticket?  @relation("TicketInvoice")
 
   invoiceType   InvoiceType   @default(REPAIR)
   subject       String?
@@ -1404,8 +1520,8 @@ model DocumentBrandingSettings {
   signatureCompanyLabel String        @default("Signed by: Eagle Info Solutions")
   signatureClientLabel  String        @default("Signed by: Client")
   primaryColor          String        @default("#000000")
-  secondaryColor        String        @default("#D4AF37")
-  accentColor           String        @default("#D4AF37")
+  secondaryColor        String        @default("#E6C65C")
+  accentColor           String        @default("#E6C65C")
   backgroundColor       String        @default("#FFFFFF")
   surfaceColor          String        @default("#F5F5F5")
   borderColor           String        @default("#E5E5E5")
@@ -2431,6 +2547,8 @@ model Receipt {
   invoiceId     String?
   branchId      String?
   clientId      String?
+  ticketId      String?   @unique
+  ticket        Ticket?   @relation("TicketReceipt", fields: [ticketId], references: [id], onDelete: SetNull)
   amount        Float
   currency      String    @default("UGX")
   issuedAt      DateTime  @default(now())
@@ -2798,6 +2916,7 @@ model Quotation {
   client   Client? @relation(fields: [clientId], references: [id], onDelete: SetNull)
   jobId    String?
   job      Job?    @relation("JobQuotation", fields: [jobId], references: [id], onDelete: SetNull)
+  ticket     Ticket?   @relation("TicketQuotation")
 
   subtotal    Float @default(0)
   discountAmount Float @default(0)

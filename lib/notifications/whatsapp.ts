@@ -48,7 +48,6 @@ function getConfig(): WhatsAppConfig | null {
   const businessAccountId = process.env.WHATSAPP_BUSINESS_ACCOUNT_ID;
 
   if (!businessNumber || !accessToken || !phoneNumberId) {
-    console.warn("[WhatsApp] Missing configuration - notifications disabled");
     return null;
   }
 

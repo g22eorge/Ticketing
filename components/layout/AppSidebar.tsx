@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Role } from "@prisma/client";
 import { usePathname } from "next/navigation";
 
-type NavGroup = "dashboard" | "tickets" | "clients" | "documents" | "settings";
+type NavGroup = "dashboard" | "tickets" | "clients" | "subscriptions" | "documents" | "settings";
 
 // ── nav items — only Tickets, Clients, Documents ────────────────────────────
 
@@ -15,6 +15,8 @@ const nav = [
   { href: "/tickets", label: "Tickets", group: "tickets" as NavGroup, roles: "all" as const },
   // Clients
   { href: "/clients", label: "Clients", group: "clients" as NavGroup, roles: "all" as const },
+  // Client subscriptions
+  { href: "/subscriptions", label: "Subscriptions", group: "subscriptions" as NavGroup, roles: "all" as const },
   // Documents
   { href: "/documents/quotations", label: "Quotations", group: "documents" as NavGroup, roles: "all" as const },
   { href: "/documents/invoices",   label: "Invoices",   group: "documents" as NavGroup, roles: "all" as const },
@@ -29,6 +31,7 @@ const groupLabel: Record<NavGroup, string> = {
   dashboard: "Dashboard",
   tickets:  "Tickets",
   clients:  "Clients",
+  subscriptions: "Subscriptions",
   documents: "Documents",
   settings: "Settings",
 };
@@ -36,37 +39,37 @@ const groupLabel: Record<NavGroup, string> = {
 // ── role-based ordering ───────────────────────────────────────────────────────
 
 const roleOrder: Partial<Record<Role, readonly string[]>> = {
-  ADMIN:       ["/dashboard", "/tickets", "/clients", "/documents/quotations", "/documents/invoices", "/documents/receipts", "/settings"],
-  MANAGER:     ["/dashboard", "/tickets", "/clients", "/documents/quotations", "/documents/invoices", "/documents/receipts", "/settings"],
-  OPS:         ["/dashboard", "/tickets", "/clients", "/documents/quotations", "/documents/invoices", "/documents/receipts", "/settings"],
-  FINANCE:     ["/dashboard", "/tickets", "/clients", "/documents/quotations", "/documents/invoices", "/documents/receipts", "/settings"],
-  SALES:       ["/dashboard", "/tickets", "/clients", "/documents/quotations", "/documents/receipts", "/settings"],
-  FRONT_DESK:  ["/dashboard", "/tickets", "/clients", "/documents/quotations", "/documents/receipts", "/settings"],
-  TECHNICIAN_INTERNAL: ["/dashboard", "/tickets", "/clients", "/documents/quotations", "/documents/invoices", "/settings"],
+  ADMIN:       ["/dashboard", "/tickets", "/clients", "/subscriptions", "/documents/quotations", "/documents/invoices", "/documents/receipts", "/settings"],
+  MANAGER:     ["/dashboard", "/tickets", "/clients", "/subscriptions", "/documents/quotations", "/documents/invoices", "/documents/receipts", "/settings"],
+  OPS:         ["/dashboard", "/tickets", "/clients", "/subscriptions", "/documents/quotations", "/documents/invoices", "/documents/receipts", "/settings"],
+  FINANCE:     ["/dashboard", "/tickets", "/clients", "/subscriptions", "/documents/quotations", "/documents/invoices", "/documents/receipts", "/settings"],
+  SALES:       ["/dashboard", "/tickets", "/clients", "/subscriptions", "/documents/quotations", "/documents/receipts", "/settings"],
+  FRONT_DESK:  ["/dashboard", "/tickets", "/clients", "/subscriptions", "/documents/quotations", "/documents/receipts", "/settings"],
+  TECHNICIAN_INTERNAL: ["/dashboard", "/tickets", "/clients", "/subscriptions", "/documents/quotations", "/documents/invoices", "/settings"],
   TECHNICIAN_EXTERNAL: ["/dashboard", "/tickets", "/documents/quotations", "/settings"],
-  TECH_MANAGER: ["/dashboard", "/tickets", "/clients", "/documents/quotations", "/documents/invoices", "/settings"],
-  INTAKE:       ["/dashboard", "/tickets", "/clients", "/settings"],
-  SALES_MANAGER: ["/dashboard", "/tickets", "/clients", "/documents/quotations", "/documents/invoices", "/documents/receipts", "/settings"],
-  SALES_CORPORATE: ["/dashboard", "/tickets", "/clients", "/documents/quotations", "/documents/invoices", "/settings"],
-  SALES_RETAIL: ["/dashboard", "/tickets", "/clients", "/documents/quotations", "/documents/receipts", "/settings"],
+  TECH_MANAGER: ["/dashboard", "/tickets", "/clients", "/subscriptions", "/documents/quotations", "/documents/invoices", "/settings"],
+  INTAKE:       ["/dashboard", "/tickets", "/clients", "/subscriptions", "/settings"],
+  SALES_MANAGER: ["/dashboard", "/tickets", "/clients", "/subscriptions", "/documents/quotations", "/documents/invoices", "/documents/receipts", "/settings"],
+  SALES_CORPORATE: ["/dashboard", "/tickets", "/clients", "/subscriptions", "/documents/quotations", "/documents/invoices", "/settings"],
+  SALES_RETAIL: ["/dashboard", "/tickets", "/clients", "/subscriptions", "/documents/quotations", "/documents/receipts", "/settings"],
   SALES_POS:    ["/dashboard", "/tickets", "/settings"],
   TECH_FIELD:   ["/dashboard", "/tickets", "/settings"],
 };
 
 const roleGroupOrder: Partial<Record<Role, readonly NavGroup[]>> = {
-  ADMIN:       ["dashboard", "tickets", "clients", "documents", "settings"],
-  MANAGER:     ["dashboard", "tickets", "clients", "documents", "settings"],
-  OPS:         ["dashboard", "tickets", "clients", "documents", "settings"],
-  FINANCE:     ["dashboard", "tickets", "clients", "documents", "settings"],
-  SALES:       ["dashboard", "tickets", "clients", "documents", "settings"],
-  FRONT_DESK:  ["dashboard", "tickets", "clients", "documents", "settings"],
-  TECHNICIAN_INTERNAL: ["dashboard", "tickets", "clients", "documents", "settings"],
+  ADMIN:       ["dashboard", "tickets", "clients", "subscriptions", "documents", "settings"],
+  MANAGER:     ["dashboard", "tickets", "clients", "subscriptions", "documents", "settings"],
+  OPS:         ["dashboard", "tickets", "clients", "subscriptions", "documents", "settings"],
+  FINANCE:     ["dashboard", "tickets", "clients", "subscriptions", "documents", "settings"],
+  SALES:       ["dashboard", "tickets", "clients", "subscriptions", "documents", "settings"],
+  FRONT_DESK:  ["dashboard", "tickets", "clients", "subscriptions", "documents", "settings"],
+  TECHNICIAN_INTERNAL: ["dashboard", "tickets", "clients", "subscriptions", "documents", "settings"],
   TECHNICIAN_EXTERNAL: ["dashboard", "tickets", "documents", "settings"],
-  TECH_MANAGER: ["dashboard", "tickets", "clients", "documents", "settings"],
-  INTAKE:       ["dashboard", "tickets", "clients", "settings"],
-  SALES_MANAGER: ["dashboard", "tickets", "clients", "documents", "settings"],
-  SALES_CORPORATE: ["dashboard", "tickets", "clients", "documents", "settings"],
-  SALES_RETAIL: ["dashboard", "tickets", "clients", "documents", "settings"],
+  TECH_MANAGER: ["dashboard", "tickets", "clients", "subscriptions", "documents", "settings"],
+  INTAKE:       ["dashboard", "tickets", "clients", "subscriptions", "settings"],
+  SALES_MANAGER: ["dashboard", "tickets", "clients", "subscriptions", "documents", "settings"],
+  SALES_CORPORATE: ["dashboard", "tickets", "clients", "subscriptions", "documents", "settings"],
+  SALES_RETAIL: ["dashboard", "tickets", "clients", "subscriptions", "documents", "settings"],
   SALES_POS:    ["dashboard", "tickets", "settings"],
   TECH_FIELD:   ["dashboard", "tickets", "settings"],
 };
@@ -87,7 +90,7 @@ function orderedNavForRole(role: Role, _permissions: string[]) {
 
 function groupedNavForRole(role: Role, permissions: string[]) {
   const ordered = orderedNavForRole(role, permissions);
-  const canonicalOrder: NavGroup[] = ["dashboard", "tickets", "clients", "documents", "settings"];
+  const canonicalOrder: NavGroup[] = ["dashboard", "tickets", "clients", "subscriptions", "documents", "settings"];
   const baseGroups: readonly NavGroup[] = roleGroupOrder[role] ?? ["dashboard", "tickets"];
   const missingGroups = canonicalOrder.filter(
     (group) => ordered.some((item) => item.group === group) && !baseGroups.includes(group),
@@ -114,6 +117,9 @@ function navIcon(href: string) {
 
     case "/clients":
       return <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M7 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM14.5 9a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5ZM1.615 16.428a1.224 1.224 0 0 1-.569-1.175 6.002 6.002 0 0 1 11.908 0c.058.467-.172.92-.57 1.174A9.953 9.953 0 0 1 7 18a9.953 9.953 0 0 1-5.385-1.572ZM14.5 16h-.106c.07-.297.088-.611.048-.933a7.47 7.47 0 0 0-1.588-3.755 4.502 4.502 0 0 1 5.874 2.153c.176.463-.039.964-.51 1.16A8.46 8.46 0 0 1 14.5 16Z" /></svg>;
+
+    case "/subscriptions":
+      return <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fillRule="evenodd" d="M6 2a1 1 0 0 1 1 1v1h6V3a1 1 0 1 1 2 0v1h.5A2.5 2.5 0 0 1 18 6.5v8A2.5 2.5 0 0 1 15.5 17h-11A2.5 2.5 0 0 1 2 14.5v-8A2.5 2.5 0 0 1 4.5 4H5V3a1 1 0 0 1 1-1Zm10 7H4v5.5a.5.5 0 0 0 .5.5h11a.5.5 0 0 0 .5-.5V9ZM7 11a1 1 0 1 0 0 2h2a1 1 0 1 0 0-2H7Z" clipRule="evenodd" /></svg>;
 
     case "/documents/quotations":
     case "/documents/invoices":
@@ -142,6 +148,8 @@ function groupIcon(group: NavGroup) {
       return <svg viewBox="0 0 12 12" fill="currentColor" aria-hidden="true"><path d="M6.53 1.47a.75.75 0 0 0-1.06 0l-4 4A.75.75 0 0 0 2 6.75h.5v3A1.25 1.25 0 0 0 3.75 11h4.5A1.25 1.25 0 0 0 9.5 9.75v-3h.5a.75.75 0 0 0 .53-1.28l-4-4Z" /></svg>;
     case "clients":
       return <svg viewBox="0 0 12 12" fill="currentColor" aria-hidden="true"><circle cx="4.5" cy="3.5" r="1.5" /><path d="M1 9.5a3.5 3.5 0 0 1 7 0" /><circle cx="9" cy="4" r="1.25" /><path d="M7 9.5a2.5 2.5 0 0 1 4.5 0" /></svg>;
+    case "subscriptions":
+      return <svg viewBox="0 0 12 12" fill="currentColor" aria-hidden="true"><path d="M3 1a.5.5 0 0 1 .5.5V2h5v-.5a.5.5 0 0 1 1 0V2A1.5 1.5 0 0 1 11 3.5v6A1.5 1.5 0 0 1 9.5 11h-7A1.5 1.5 0 0 1 1 9.5v-6A1.5 1.5 0 0 1 2.5 2v-.5A.5.5 0 0 1 3 1Zm7 4H2v4.5a.5.5 0 0 0 .5.5h7a.5.5 0 0 0 .5-.5V5Z" /></svg>;
     case "documents":
       return <svg viewBox="0 0 12 12" fill="currentColor" aria-hidden="true"><path fillRule="evenodd" d="M2.5 1A1.5 1.5 0 0 0 1 2.5v7A1.5 1.5 0 0 0 2.5 11h7A1.5 1.5 0 0 0 11 9.5v-5L7 1H2.5ZM7 1.5V4h2.5L7 1.5ZM3.5 6a.5.5 0 0 0 0 1h5a.5.5 0 0 0 0-1h-5Zm0 2a.5.5 0 0 0 0 1h3a.5.5 0 0 0 0-1h-3Z" clipRule="evenodd" /></svg>;
     case "settings":
@@ -255,7 +263,7 @@ export function AppSidebar({
                 <path fillRule="evenodd" d="M8 7a5 5 0 1 1 10 0A5 5 0 0 1 8 7ZM2.293 9.707a1 1 0 0 1 1.414-1.414l4.586 4.586a1 1 0 0 1-1.414 1.414L2.293 9.707Z" clipRule="evenodd" />
               </svg>
             </span>
-            Module Access
+            Super Admin
           </Link>
         </div>
       )}

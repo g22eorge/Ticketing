@@ -48,9 +48,9 @@ export function InvitePanel({ inviteAction, roleOptions }: Props) {
 
   return (
     <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
-      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Invite Team Member</p>
+      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Invite user</p>
       <p className="mt-0.5 text-xs text-[var(--ink-muted)]">
-        Generate a 7-day invite link. Send it via WhatsApp, email, or any channel.
+        Generate a 7-day link and send it to the teammate.
       </p>
 
       <form action={action} className="mt-3 grid gap-2 md:grid-cols-[1fr_auto_auto]">
@@ -89,7 +89,7 @@ export function InvitePanel({ inviteAction, roleOptions }: Props) {
       {state.inviteUrl && (
         <div className="mt-3 space-y-1.5">
           <p className="text-xs text-[var(--ink-muted)]">
-            ✅ Invite link ready — valid for 7 days. Copy and send it to your teammate.
+            Invite link ready. It is valid for 7 days.
           </p>
           <div className="flex gap-2">
             <input

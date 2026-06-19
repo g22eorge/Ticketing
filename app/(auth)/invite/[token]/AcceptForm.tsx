@@ -11,7 +11,7 @@ function SubmitButton() {
     <button
       type="submit"
       disabled={pending}
-      className="mt-2 w-full rounded-xl bg-[#D4AF37] py-3 text-sm font-semibold text-black transition hover:bg-[#c9a430] disabled:opacity-50"
+      className="mt-2 w-full rounded-xl bg-[#E6C65C] py-3 text-sm font-semibold text-black transition hover:bg-[#c9a430] disabled:opacity-50"
     >
       {pending ? "Setting up your account…" : "Join workspace"}
     </button>
@@ -51,7 +51,7 @@ export function AcceptForm({ token, email }: { token: string; email: string }) {
           autoFocus
           autoComplete="name"
           placeholder="Jane Doe"
-          className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/20 focus:border-[#D4AF37]/50 focus:ring-2 focus:ring-[#D4AF37]/15"
+          className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/20 focus:border-[#E6C65C]/50 focus:ring-2 focus:ring-[#E6C65C]/15"
         />
         {state.fieldErrors?.name && (
           <p className="text-xs text-red-400">{state.fieldErrors.name[0]}</p>
@@ -71,7 +71,7 @@ export function AcceptForm({ token, email }: { token: string; email: string }) {
             required
             autoComplete="new-password"
             placeholder="Min. 8 characters"
-            className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 pr-20 text-sm text-white outline-none transition placeholder:text-white/20 focus:border-[#D4AF37]/50 focus:ring-2 focus:ring-[#D4AF37]/15"
+            className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 pr-20 text-sm text-white outline-none transition placeholder:text-white/20 focus:border-[#E6C65C]/50 focus:ring-2 focus:ring-[#E6C65C]/15"
           />
           <button
             type="button"
@@ -98,7 +98,7 @@ export function AcceptForm({ token, email }: { token: string; email: string }) {
           required
           autoComplete="new-password"
           placeholder="Repeat password"
-          className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/20 focus:border-[#D4AF37]/50 focus:ring-2 focus:ring-[#D4AF37]/15"
+          className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/20 focus:border-[#E6C65C]/50 focus:ring-2 focus:ring-[#E6C65C]/15"
         />
         {state.fieldErrors?.confirm && (
           <p className="text-xs text-red-400">{state.fieldErrors.confirm[0]}</p>

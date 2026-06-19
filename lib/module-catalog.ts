@@ -4,6 +4,7 @@ export { OrgModule };
 
 export const MODULE_LABELS: Record<OrgModule, string> = {
   JOBS: "Jobs & Repairs",
+  SUBSCRIPTIONS: "Client Subscriptions",
   INVENTORY: "Inventory",
   POS: "Point of Sale",
   PURCHASE_ORDERS: "Purchase Orders",
@@ -17,6 +18,7 @@ export const MODULE_LABELS: Record<OrgModule, string> = {
 
 export const MODULE_ICONS: Record<OrgModule, string> = {
   JOBS: "🔧",
+  SUBSCRIPTIONS: "📅",
   INVENTORY: "📦",
   POS: "🛒",
   PURCHASE_ORDERS: "📋",
@@ -30,6 +32,7 @@ export const MODULE_ICONS: Record<OrgModule, string> = {
 
 export const MODULE_DESCRIPTIONS: Record<OrgModule, string> = {
   JOBS: "Track repair jobs end-to-end — intake, diagnosis, status, and completion",
+  SUBSCRIPTIONS: "Track monthly and annual client SLA subscriptions and renewals",
   INVENTORY: "Manage inventory item stock, reorder alerts, and supplier items",
   POS: "Walk-in sales, product checkout, and receipts",
   PURCHASE_ORDERS: "Raise purchase orders to suppliers and manage goods received",
@@ -43,6 +46,7 @@ export const MODULE_DESCRIPTIONS: Record<OrgModule, string> = {
 
 export const MODULE_MIN_PLAN: Record<OrgModule, OrgPlan> = {
   JOBS: "STARTER",
+  SUBSCRIPTIONS: "STARTER",
   REPORTS: "STARTER",
   COMPLAINTS: "STARTER",
   INVOICING: "STANDARD",
@@ -71,5 +75,5 @@ export const ALL_MODULES: OrgModule[] = (() => {
   } catch {
     // fall through to static enum list
   }
-  return ["JOBS", "INVENTORY", "POS", "PURCHASE_ORDERS", "INVOICING", "COMPLAINTS", "REPORTS", "SALES", "FIELD", "TARGETS"] as OrgModule[];
+  return ["JOBS", "SUBSCRIPTIONS", "INVENTORY", "POS", "PURCHASE_ORDERS", "INVOICING", "COMPLAINTS", "REPORTS", "SALES", "FIELD", "TARGETS"] as OrgModule[];
 })();

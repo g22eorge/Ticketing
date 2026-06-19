@@ -9,8 +9,8 @@ export const defaultBranding = {
   companyContacts: "",
   companyEmail: "",
   companyWebsite: "",
-  documentTitle: "Job Card",
-  quotePrefix: "EIS",
+  documentTitle: "Service Document",
+  quotePrefix: "DOC",
   quoteFormat: "{PREFIX} {M}/{YYYY}/{SEQ}",
   quoteValidityDays: 30,
   sequencePadLength: 4,
@@ -18,14 +18,14 @@ export const defaultBranding = {
   vatRatePercent: 18,
   vatLabel: "VAT",
   termsText:
-    "Quotation valid for 30 days from date issued.\nRepair work begins only after approval is recorded.\nParts availability may affect final timeline.\nHidden pre-existing faults may affect final outcome.\nUncollected devices may attract storage fees after notice.",
+    "Quotation valid for 30 days from date issued.\nWork begins after client approval is recorded.\nFinal timelines may depend on service scope and item availability.\nUncollected items may attract storage fees after notice.",
   footerText: "",
   signatureCompanyLabel: "Signed by: Company",
   signatureClientLabel: "Signed by: Client",
   // Color scheme - Black, Gold & White
   primaryColor: "#000000",
-  secondaryColor: "#D4AF37",
-  accentColor: "#D4AF37",
+  secondaryColor: "#E6C65C",
+  accentColor: "#E6C65C",
   backgroundColor: "#FFFFFF",
   surfaceColor: "#F5F5F5",
   borderColor: "#E5E5E5",
@@ -140,8 +140,8 @@ async function ensureRawTable() {
   await addColumn("jobCardTemplateKey", "'job_card_classic'");
   await addColumn("receiptTemplateKey", "'receipt_classic'");
   await addColumn("primaryColor",   "'#000000'");
-  await addColumn("secondaryColor", "'#D4AF37'");
-  await addColumn("accentColor",    "'#D4AF37'");
+  await addColumn("secondaryColor", "'#E6C65C'");
+  await addColumn("accentColor",    "'#E6C65C'");
   await addColumn("backgroundColor","'#FFFFFF'");
   await addColumn("surfaceColor",   "'#F5F5F5'");
   await addColumn("borderColor",    "'#E5E5E5'");

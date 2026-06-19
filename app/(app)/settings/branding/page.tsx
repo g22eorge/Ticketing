@@ -87,7 +87,7 @@ function renderQuotePreview(prefix: string, format: string, padLength: number) {
   const year = now.getFullYear();
   const sampleSeq = String(2).padStart(Math.max(1, padLength), "0");
   return format
-    .replaceAll("{PREFIX}", prefix || "EIS")
+    .replaceAll("{PREFIX}", prefix || "DOC")
     .replaceAll("{M}", String(month))
     .replaceAll("{MM}", String(month).padStart(2, "0"))
     .replaceAll("{YYYY}", String(year))
@@ -283,9 +283,15 @@ export default async function BrandingPage({
       ) : null}
 
       <form action={saveBrandingAction} className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)] [&_*]:min-w-0">
-        {/* Company & Numbering */}
         <div className="border-b border-[var(--line)] p-4">
-          <p className="mb-3 text-[12px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Company &amp; Numbering</p>
+          <p className="text-[13px] font-bold text-[var(--ink)]">Document branding</p>
+          <p className="mt-1 text-[13px] text-[var(--ink-muted)]">
+            Set the company details used on quotations, invoices, receipts, and ticket documents.
+          </p>
+        </div>
+
+        <div className="border-b border-[var(--line)] p-4">
+          <p className="mb-3 text-[12px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Company details</p>
           <div className="grid gap-2 lg:grid-cols-2">
             <input name="companyName" defaultValue={settings.companyName} placeholder="Company name" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
             <input name="companyTagline" defaultValue={settings.companyTagline ?? ""} placeholder="Tagline" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
@@ -294,9 +300,15 @@ export default async function BrandingPage({
             <input name="companyContacts" defaultValue={settings.companyContacts} placeholder="Contacts" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
             <input name="companyEmail" defaultValue={settings.companyEmail ?? ""} placeholder="Company email" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
             <input name="companyWebsite" defaultValue={settings.companyWebsite ?? ""} placeholder="Company website" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
+          </div>
+        </div>
+
+        <div className="border-b border-[var(--line)] p-4">
+          <p className="mb-3 text-[12px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Numbering</p>
+          <div className="grid gap-2 lg:grid-cols-2">
             <input name="documentTitle" defaultValue={settings.documentTitle} placeholder="Document title" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
-            <input name="quotePrefix" defaultValue={settings.quotePrefix} placeholder="Quote prefix" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
-            <input name="quoteFormat" defaultValue={settings.quoteFormat} placeholder="Quote format" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
+            <input name="quotePrefix" defaultValue={settings.quotePrefix} placeholder="Document prefix" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
+            <input name="quoteFormat" defaultValue={settings.quoteFormat} placeholder="Number format" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
             <p className="text-[13px] text-[var(--ink-muted)] [overflow-wrap:anywhere] lg:col-span-2">
               Preview: <span className="font-medium text-[var(--ink)]">{quotePreview}</span>
             </p>
@@ -305,15 +317,16 @@ export default async function BrandingPage({
           </div>
         </div>
 
-        {/* Document Templates */}
-        <div className="border-b border-[var(--line)] p-4">
-          <p className="mb-1 text-[12px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Document Templates</p>
-          <p className="mb-3 text-[13px] text-[var(--ink-muted)]">Available templates depend on your plan ({planLabel(plan)}).</p>
-          <div className="grid gap-3 lg:grid-cols-2">
+        <details className="border-b border-[var(--line)] p-4">
+          <summary className="cursor-pointer text-[12px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">
+            Document templates
+          </summary>
+          <p className="mt-2 text-[13px] text-[var(--ink-muted)]">Available templates depend on your plan ({planLabel(plan)}).</p>
+          <div className="mt-3 grid gap-3 lg:grid-cols-2">
             {[
               { label: "Invoice", name: "invoiceTemplateKey", value: selectedInvoiceKey, allowed: invoiceTemplates.allowed, locked: invoiceTemplates.locked },
               { label: "Quotation", name: "quotationTemplateKey", value: selectedQuoteKey, allowed: quotationTemplates.allowed, locked: quotationTemplates.locked },
-              { label: "Job Card", name: "jobCardTemplateKey", value: selectedJobCardKey, allowed: jobCardTemplates.allowed, locked: jobCardTemplates.locked },
+              { label: "Ticket document", name: "jobCardTemplateKey", value: selectedJobCardKey, allowed: jobCardTemplates.allowed, locked: jobCardTemplates.locked },
               { label: "Receipt", name: "receiptTemplateKey", value: selectedReceiptKey, allowed: receiptTemplates.allowed, locked: receiptTemplates.locked },
             ].map(({ label, name, value, allowed, locked }) => (
               <div key={name}>
@@ -325,12 +338,13 @@ export default async function BrandingPage({
               </div>
             ))}
           </div>
-        </div>
+        </details>
 
-        {/* VAT & Sign-off */}
-        <div className="border-b border-[var(--line)] p-4">
-          <p className="mb-3 text-[12px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">VAT &amp; Sign-off</p>
-          <div className="grid gap-2 lg:grid-cols-2">
+        <details className="border-b border-[var(--line)] p-4">
+          <summary className="cursor-pointer text-[12px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">
+            Tax and signatures
+          </summary>
+          <div className="mt-3 grid gap-2 lg:grid-cols-2">
             <select name="vatDefaultApplicable" defaultValue={settings.vatDefaultApplicable ? "true" : "false"} className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14">
               <option value="true">VAT default: applicable</option>
               <option value="false">VAT default: not applicable</option>
@@ -340,12 +354,13 @@ export default async function BrandingPage({
             <input name="signatureCompanyLabel" defaultValue={settings.signatureCompanyLabel} placeholder="Company signature label" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
             <input name="signatureClientLabel" defaultValue={settings.signatureClientLabel} placeholder="Client signature label" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
           </div>
-        </div>
+        </details>
 
-        {/* Colors */}
-        <div className="border-b border-[var(--line)] p-4">
-          <p className="mb-3 text-[12px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Colors</p>
-          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+        <details className="border-b border-[var(--line)] p-4">
+          <summary className="cursor-pointer text-[12px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">
+            Colors
+          </summary>
+          <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {[
               { name: "primaryColor", label: "Primary", value: settings.primaryColor },
               { name: "secondaryColor", label: "Secondary", value: settings.secondaryColor },
@@ -360,25 +375,26 @@ export default async function BrandingPage({
               </div>
             ))}
           </div>
-        </div>
+        </details>
 
-        {/* Terms & Footer */}
-        <div className="p-4">
-          <p className="mb-3 text-[12px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Terms &amp; Footer</p>
-          <div className="grid gap-2">
+        <details className="p-4">
+          <summary className="cursor-pointer text-[12px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">
+            Terms and footer
+          </summary>
+          <div className="mt-3 grid gap-2">
             <textarea name="termsText" defaultValue={settings.termsText} className="min-h-28 w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
             <input name="footerText" defaultValue={settings.footerText} placeholder="Footer text" className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
           </div>
-        </div>
+        </details>
 
         <div className="border-t border-[var(--line)] px-4 py-3">
-          <button type="submit" className="btn-premium rounded-lg px-4 py-1.5 text-[13px]">Save Document Settings</button>
+          <button type="submit" className="btn-premium rounded-lg px-4 py-1.5 text-[13px]">Save branding</button>
         </div>
       </form>
 
       <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
-        <p className="mb-2 text-sm font-semibold">Invoice Logo</p>
-        <p className="text-xs text-[var(--ink-muted)]">Accepted: PNG, JPEG, WEBP (max 5MB). Recommended wide aspect ratio.</p>
+        <p className="mb-2 text-sm font-semibold">Document logo</p>
+        <p className="text-xs text-[var(--ink-muted)]">Used on quotations, invoices, receipts, and ticket documents. PNG, JPEG, or WEBP up to 5MB.</p>
 
         <form action={uploadLogoAction} className="mt-3 grid gap-2 lg:flex lg:flex-wrap lg:items-end">
           <input
@@ -388,13 +404,13 @@ export default async function BrandingPage({
             className="w-full min-w-0 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-1.5 text-xs sm:text-sm outline-none"
             required
           />
-          <button type="submit" className="btn-premium rounded-lg px-3 py-1.5 text-sm">Upload Logo</button>
+          <button type="submit" className="btn-premium rounded-lg px-3 py-1.5 text-sm">Upload logo</button>
         </form>
 
         <div className="mt-3">
           {preview ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={preview} alt="Invoice logo preview" className="max-h-28 rounded border border-[var(--line)] bg-black" />
+            <img src={preview} alt="Document logo preview" className="max-h-28 rounded border border-[var(--line)] bg-black" />
           ) : (
             <p className="text-sm text-[var(--ink-muted)]">No logo uploaded yet.</p>
           )}

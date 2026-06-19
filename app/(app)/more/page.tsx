@@ -266,7 +266,7 @@ export default async function MorePage() {
 
       {/* ── App version ──────────────────────────────────────────────── */}
       <p className="mt-6 px-4 text-center text-[12px] text-[var(--ink-muted)]/40">
-        Dduuka ProMax v{APP_VERSION}
+        BusinessOS v{APP_VERSION}
       </p>
 
     </div>

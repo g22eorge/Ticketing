@@ -13,8 +13,7 @@ import { prisma } from "@/lib/prisma";
 import { requireOrgSession } from "@/lib/org-context";
 import { inviteSchema, INVITE_TTL_DAYS, type InviteState } from "@/lib/invites";
 import { InvitePanel } from "@/components/settings/InvitePanel";
-import { checkUserLimit, getLimitsForOrg } from "@/lib/plan-limits";
-import { PlanBanner } from "@/components/shared/PlanBanner";
+import { checkUserLimit } from "@/lib/plan-limits";
 import { rateLimit } from "@/lib/rate-limit";
 
 type SearchParams = {
@@ -22,7 +21,6 @@ type SearchParams = {
   userId?: string;
   limitError?: string;
   add?: string;
-  tab?: string;
 };
 
 type UserDetailsState = {
@@ -70,20 +68,11 @@ type PermissionOption = {
 };
 
 const roleOptions: Array<{ value: Role; label: string; description: string }> = [
-  { value: Role.ADMIN, label: "Admin", description: "Full platform control including user management and financial approvals." },
-  { value: Role.MANAGER, label: "Manager", description: "Oversees operations, staff workload, and pipeline health across all departments." },
-  { value: Role.TECH_MANAGER, label: "Tech Manager", description: "Oversees technician performance, repair turnaround, workload balance, and quality metrics." },
-  { value: Role.FINANCE, label: "Finance", description: "Reviews invoices, approves costs, manages settlements and financial reports." },
-  { value: Role.SALES, label: "Sales", description: "Handles intake, client approvals, quotes, and revenue pipeline tracking." },
-  { value: Role.SALES_MANAGER, label: "Sales Manager", description: "Manages sales team, quotations, targets, and commissions." },
-  { value: Role.SALES_CORPORATE, label: "Corporate Sales", description: "Handles corporate accounts, invoices, and bulk quotations." },
-  { value: Role.SALES_RETAIL, label: "Retail Sales", description: "Handles walk-in retail sales, quotations, and handovers." },
-  { value: Role.SALES_POS, label: "POS Operator", description: "Runs point-of-sale transactions and daily cashier sessions." },
-  { value: Role.OPS, label: "Operations/Accounts", description: "Coordinates workflow, billing, settlement, and daily operations." },
-  { value: Role.FRONT_DESK, label: "Front Desk", description: "Handles front desk intake, customer details, and handover documents." },
-  { value: Role.TECH_FIELD, label: "Field Technician", description: "Handles on-site visits, collections, deliveries, and client sign-offs." },
-  { value: Role.TECHNICIAN_INTERNAL, label: "Internal Technician", description: "Works diagnosis and in-house repair execution." },
-  { value: Role.TECHNICIAN_EXTERNAL, label: "External Technician", description: "External workflow access without client identity or billing history." },
+  { value: Role.ADMIN, label: "Admin", description: "Full access to settings, users, clients, tickets, subscriptions, and documents." },
+  { value: Role.OPS, label: "Operations", description: "Manages tickets, clients, subscriptions, quotations, invoices, and receipts." },
+  { value: Role.FRONT_DESK, label: "Front Desk", description: "Creates tickets, manages client intake, and prepares basic documents." },
+  { value: Role.TECHNICIAN_INTERNAL, label: "Technician", description: "Updates assigned ticket work, diagnosis notes, and progress." },
+  { value: Role.FINANCE, label: "Finance", description: "Works with invoices, receipts, payments, and billing records." },
 ];
 
 const roleDefaults: Record<Role, Array<(typeof EXTRA_PERMISSIONS)[number]>> = {
@@ -674,6 +663,59 @@ export default async function UsersPage({
     redirect(`/settings/users?${new URLSearchParams({ q, userId: targetId }).toString()}`);
   }
 
+  async function updateUserRole(formData: FormData) {
+    "use server";
+
+    const { session, user: actor, orgId: actorOrgId } = await requireOrgSession();
+    if (actor.role !== "ADMIN") return;
+
+    const targetUserId = String(formData.get("userId") ?? "").trim();
+    const q = String(formData.get("q") ?? "").trim();
+    const nextRole = String(formData.get("role") ?? "") as Role;
+
+    if (!targetUserId || !Object.values(Role).includes(nextRole)) {
+      redirect(`/settings/users?${new URLSearchParams({ q, userId: targetUserId }).toString()}`);
+    }
+
+    const target = await prisma.user.findFirst({
+      where: { id: targetUserId, orgId: actorOrgId },
+      select: { id: true, role: true },
+    });
+    if (!target) redirect(`/settings/users${q ? `?${new URLSearchParams({ q }).toString()}` : ""}`);
+
+    if (target.id === session.user.id && nextRole !== "ADMIN") {
+      redirect(`/settings/users?${new URLSearchParams({ q, userId: targetUserId }).toString()}`);
+    }
+
+    const permissionValues = allowedExtraPermissionsForRole(nextRole, roleDefaults[nextRole] ?? []);
+
+    await prisma.$transaction(async (tx) => {
+      await tx.user.updateMany({ where: { id: targetUserId, orgId: actorOrgId }, data: { role: nextRole } });
+      await tx.userPermission.deleteMany({ where: { userId: targetUserId } });
+      if (permissionValues.length > 0) {
+        await tx.userPermission.createMany({
+          data: permissionValues.map((permission) => ({ userId: targetUserId, permission })),
+        });
+      }
+    });
+
+    try {
+      await prisma.userAccessAudit.create({
+        data: {
+          actorUserId: session.user.id,
+          targetUserId,
+          action: "ROLE_UPDATED",
+          detail: JSON.stringify({ fromRole: target.role, toRole: nextRole }),
+        },
+      });
+    } catch {
+      // Keep role updates successful even when audit table is not yet migrated.
+    }
+
+    revalidatePath("/settings/users");
+    redirect(`/settings/users?${new URLSearchParams({ q, userId: targetUserId }).toString()}`);
+  }
+
   async function inviteUser(_prev: InviteState, formData: FormData): Promise<InviteState> {
     "use server";
 
@@ -769,16 +811,6 @@ export default async function UsersPage({
     revalidatePath("/settings/users");
     redirect(`/settings/users?${new URLSearchParams({ userId: created.id }).toString()}`);
   }
-
-  // Fetch plan limits and current usage for the banner.
-  const planInfo = await getLimitsForOrg(orgId);
-  const now = new Date();
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  const [activeUserCount, jobsThisMonth, partCount] = await Promise.all([
-    prisma.user.count({ where: { orgId, isActive: true } }),
-    prisma.job.count({ where: { orgId, receivedAt: { gte: monthStart } } }),
-    prisma.part.count({ where: { orgId, isActive: true } }),
-  ]);
 
   const params = await searchParams;
   let q = "";
@@ -883,27 +915,13 @@ export default async function UsersPage({
 
   const limitError = typeof params.limitError === "string" ? params.limitError : null;
   const showAdd = params.add === "1";
-  const tab = params.tab ?? "profile";
-
-  function tabHref(t: string) {
-    return `/settings/users?${new URLSearchParams({ ...(q && { q }), ...(selectedUser && { userId: selectedUser.id }), tab: t }).toString()}`;
-  }
-
-  const tabs = [
-    { key: "profile", label: "Profile" },
-    { key: "access", label: "Access" },
-    { key: "security", label: "Security" },
-    { key: "log", label: "Log" },
-  ];
 
   return (
     <div className="space-y-3">
       <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
-        <p className="text-[13px] font-bold text-[var(--ink)]">User Management</p>
-        <p className="text-[13px] text-[var(--ink-muted)]">Manage team access, roles and permissions</p>
+        <p className="text-[13px] font-bold text-[var(--ink)]">Users</p>
+        <p className="text-[13px] text-[var(--ink-muted)]">Invite teammates and assign a simple system role.</p>
       </div>
-
-      <PlanBanner plan={planInfo.plan} limits={planInfo} usage={{ users: activeUserCount, jobsThisMonth, parts: partCount }} />
 
       {limitError && (
         <p className="rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-[13px] text-red-400">
@@ -919,9 +937,11 @@ export default async function UsersPage({
             <Link href="/settings/users" className="text-[13px] text-[var(--ink-muted)] hover:text-[var(--ink)]">✕ Close</Link>
           </div>
           <InvitePanel inviteAction={inviteUser} roleOptions={roleOptions} />
-          <div className="mt-3 border-t border-[var(--line)] pt-3">
-            <p className="mb-2 text-[12px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">Or create directly</p>
-            <form action={createUser} className="grid gap-2 sm:grid-cols-2 xl:grid-cols-6">
+          <details className="mt-3 border-t border-[var(--line)] pt-3">
+            <summary className="cursor-pointer text-[12px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">
+              Create directly
+            </summary>
+            <form action={createUser} className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-6">
               <input required name="name" placeholder="Name" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
               <input required type="email" name="email" placeholder="Email" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
               <input name="phone" placeholder="Phone" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
@@ -931,7 +951,7 @@ export default async function UsersPage({
               </select>
               <button type="submit" className="btn-premium rounded-lg px-3 py-1.5 text-[13px] text-white">Create</button>
             </form>
-          </div>
+          </details>
         </section>
       )}
 
@@ -1014,22 +1034,9 @@ export default async function UsersPage({
               </div>
             </div>
 
-            {/* Tab strip */}
-            <div className="flex border-b border-[var(--line)]">
-              {tabs.map(({ key, label }) => (
-                <Link
-                  key={key}
-                  href={tabHref(key)}
-                  className={`px-4 py-2.5 text-[13px] font-medium transition ${tab === key ? "border-b-2 border-[var(--accent)] text-[var(--ink)]" : "text-[var(--ink-muted)] hover:text-[var(--ink)]"}`}
-                >
-                  {label}
-                </Link>
-              ))}
-            </div>
-
-            {/* Tab content */}
-            <div className="p-3">
-              {tab === "profile" && (
+            <div className="space-y-4 p-3">
+              <section className="rounded-xl border border-[var(--line)] bg-[var(--panel-strong)] p-3">
+                <p className="mb-2 text-[12px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Profile</p>
                 <UserDetailsForm
                   id={selectedUser.id}
                   name={selectedUser.name}
@@ -1037,35 +1044,74 @@ export default async function UsersPage({
                   phone={selectedUser.phone}
                   action={updateUserDetails}
                 />
-              )}
-              {tab === "access" && (
-                <UserAccessControlPanel
-                  key={selectedUser.id}
-                  userId={selectedUser.id}
-                  queryText={q}
-                  initialRole={selectedUser.role}
-                  initialPermissions={selectedUser.permissionGrants.map((g) => g.permission)}
-                  roleOptions={roleOptions}
-                  roleDefaultPermissions={roleDefaults}
-                  roleDefaultCapabilities={roleCapabilities}
-                  permissions={permissionOptions}
-                  saveAction={saveAccessChanges}
-                />
-              )}
-              {tab === "security" && (
-                <UserPasswordResetForm userId={selectedUser.id} action={resetUserPassword} />
-              )}
-              {tab === "log" && (
-                <div className="divide-y divide-[var(--line)]">
+              </section>
+
+              <section className="rounded-xl border border-[var(--line)] bg-[var(--panel-strong)] p-3">
+                <p className="mb-2 text-[12px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Role</p>
+                <form action={updateUserRole} className="grid gap-2 md:grid-cols-[1fr_auto]">
+                  <input type="hidden" name="userId" value={selectedUser.id} />
+                  <input type="hidden" name="q" value={q} />
+                  <select
+                    name="role"
+                    defaultValue={selectedUser.role}
+                    className="rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 py-2 text-[13px] outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14"
+                  >
+                    {roleOptions.map((option) => (
+                      <option key={option.value} value={option.value}>{option.label}</option>
+                    ))}
+                  </select>
+                  <button type="submit" className="btn-premium rounded-lg px-4 py-2 text-[13px] text-white">
+                    Save role
+                  </button>
+                </form>
+                <p className="mt-2 text-[13px] text-[var(--ink-muted)]">
+                  {roleOptions.find((option) => option.value === selectedUser.role)?.description ?? "Role controls the main areas this user can access."}
+                </p>
+              </section>
+
+              <details className="rounded-xl border border-[var(--line)] bg-[var(--panel-strong)] p-3">
+                <summary className="cursor-pointer text-[12px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">
+                  Security
+                </summary>
+                <div className="mt-3">
+                  <UserPasswordResetForm userId={selectedUser.id} action={resetUserPassword} />
+                </div>
+              </details>
+
+              <details className="rounded-xl border border-[var(--line)] bg-[var(--panel-strong)] p-3">
+                <summary className="cursor-pointer text-[12px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">
+                  Advanced access
+                </summary>
+                <div className="mt-3">
+                  <UserAccessControlPanel
+                    key={selectedUser.id}
+                    userId={selectedUser.id}
+                    queryText={q}
+                    initialRole={selectedUser.role}
+                    initialPermissions={selectedUser.permissionGrants.map((g) => g.permission)}
+                    roleOptions={roleOptions}
+                    roleDefaultPermissions={roleDefaults}
+                    roleDefaultCapabilities={roleCapabilities}
+                    permissions={permissionOptions}
+                    saveAction={saveAccessChanges}
+                  />
+                </div>
+              </details>
+
+              <details className="rounded-xl border border-[var(--line)] bg-[var(--panel-strong)] p-3">
+                <summary className="cursor-pointer text-[12px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">
+                  Access log
+                </summary>
+                <div className="mt-3 divide-y divide-[var(--line)]">
                   {accessAudit.length > 0 ? (
                     accessAudit.map((entry) => {
                       let detail = "";
                       try {
                         const parsed = entry.detail ? JSON.parse(entry.detail) as { added?: string[]; removed?: string[]; fromRole?: string; toRole?: string } : null;
                         const parts = [
-                          parsed?.fromRole !== parsed?.toRole ? `Role → ${parsed?.toRole}` : null,
+                          parsed?.fromRole !== parsed?.toRole ? `Role -> ${parsed?.toRole}` : null,
                           parsed?.added?.length ? `+${parsed.added.join(", ")}` : null,
-                          parsed?.removed?.length ? `−${parsed.removed.join(", ")}` : null,
+                          parsed?.removed?.length ? `-${parsed.removed.join(", ")}` : null,
                         ].filter(Boolean);
                         detail = parts.join(" · ");
                       } catch {
@@ -1083,7 +1129,7 @@ export default async function UsersPage({
                     <p className="py-4 text-center text-[13px] text-[var(--ink-muted)]">No access changes recorded yet.</p>
                   )}
                 </div>
-              )}
+              </details>
             </div>
           </section>
         ) : (

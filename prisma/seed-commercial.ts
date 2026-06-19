@@ -116,8 +116,8 @@ async function upsertBranding({
     companyEmail: companyEmail ?? null,
     companyWebsite: companyWebsite ?? null,
     primaryColor: primaryColor ?? "#000000",
-    secondaryColor: secondaryColor ?? "#D4AF37",
-    accentColor: secondaryColor ?? "#D4AF37",
+    secondaryColor: secondaryColor ?? "#E6C65C",
+    accentColor: secondaryColor ?? "#E6C65C",
   };
   if (existing) {
     return prisma.documentBrandingSettings.update({ where: { orgId }, data });
