@@ -211,7 +211,7 @@ export function TicketForm({ orgSlug, companyName = "ICT Support" }: TicketFormP
       <div className="mt-6">
         <button type="submit" disabled={busy}
           className="flex w-full items-center justify-center gap-2 rounded-xl px-6 py-3.5 text-sm font-bold text-black transition hover:opacity-90 disabled:opacity-60"
-          style={{ background: "linear-gradient(180deg,#60A5FA 0%,#3B82F6 100%)", boxShadow: "0 6px 24px rgba(230,198,92,0.30)" }}>
+          style={{ background: "linear-gradient(180deg,#60A5FA 0%,#3B82F6 100%)", boxShadow: "0 6px 24px rgba(79,142,247,0.30)" }}>
           {busy ? (
             <><svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>Submitting...</>
           ) : (

@@ -76,7 +76,7 @@ export default async function RootLayout({
 
   return (
     <html lang="en" className={`${inter.variable} h-full antialiased${themeClass ? " " + themeClass : ""}`} suppressHydrationWarning>
-      <body className="min-h-full bg-[var(--page-bg)] text-[var(--ink)]">
+      <body className="min-h-full text-[var(--ink)]" style={{ background: "var(--page-bg)" }}>
         {/* Prevent white flash: dark is the default. Only apply 'light' when the light cookie is set. */}
         <script
           dangerouslySetInnerHTML={{
