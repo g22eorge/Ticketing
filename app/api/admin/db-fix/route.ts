@@ -26,7 +26,7 @@ export async function GET(req: Request) {
     <title>DB Fix</title>
   </head>
   <body style="font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial; padding: 24px;">
-    <h1 style="margin: 0 0 8px;">MRMS DB Fix</h1>
+    <h1 style="margin: 0 0 8px;">Service Desk DB Fix</h1>
     <p style="margin: 0 0 16px;">Runs a one-time schema repair (delivery + notifications + branding + devices). Admin only.</p>
     <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center;">
       <button id="run" type="button" style="padding: 10px 14px; border: 1px solid #000; background: #000; color: #fff; border-radius: 8px; cursor: pointer;">Run Fix</button>

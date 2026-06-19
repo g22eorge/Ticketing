@@ -207,7 +207,7 @@ export async function POST(request: NextRequest) {
     // `org_slug` is sent by the /c/[slug] public company page.
     // Default to EIS org for backward-compatible requests from the root page.
     let resolvedOrgId: string = EIS_ORG_ID;
-    let resolvedOrgName = "Eagle Info Solutions";
+    let resolvedOrgName = "Service Desk";
     if (typeof body.org_slug === "string" && body.org_slug.trim()) {
       const org = await prisma.organization.findUnique({
         where: { slug: body.org_slug.trim() },

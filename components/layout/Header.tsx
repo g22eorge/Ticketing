@@ -8,7 +8,6 @@ import { toast } from "sonner";
 import { authClient } from "@/lib/auth-client";
 import { NotificationBell } from "@/components/shared/NotificationBell";
 import { useTheme } from "@/components/layout/ThemeProvider";
-import { AppLogo } from "@/components/ui/AppLogo";
 import { SettingsPanel } from "@/components/settings/SettingsPanel";
 import { can } from "@/lib/permissions";
 
@@ -122,9 +121,12 @@ export function Header({
           ) : (
             <Link
               href="/dashboard"
-              className="flex items-center lg:hidden transition-opacity hover:opacity-75"
+              className="flex items-center gap-2 lg:hidden transition-opacity hover:opacity-75"
             >
-              <AppLogo height={40} priority />
+              <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[var(--accent)] text-[12px] font-black text-black">
+                OS
+              </span>
+              <span className="text-sm font-bold text-[var(--ink)]">Business OS</span>
             </Link>
           )}
 

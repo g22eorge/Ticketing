@@ -19,27 +19,27 @@ const inter = Inter({
 });
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || "https://localhost:3000";
-const ogImage = `${siteUrl}/eagle-info-logo.png`;
+const ogImage = `${siteUrl}/opengraph-image`;
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "Duuka Pro Max",
-    template: "%s | Duuka Pro Max",
+    default: "Business OS",
+    template: "%s | Business OS",
   },
   description: "Business management platform for repairs, sales, inventory, finance, documents, and daily operations.",
   alternates: { canonical: "/" },
   openGraph: {
-    title: "Duuka Pro Max",
+    title: "Business OS",
     description: "Business management platform for repairs, sales, inventory, finance, documents, and daily operations.",
     url: "/",
-    siteName: "Duuka Pro Max",
+    siteName: "Business OS",
     type: "website",
-    images: [{ url: ogImage, width: 512, height: 512, alt: "Duuka Pro Max" }],
+    images: [{ url: ogImage, width: 512, height: 512, alt: "Business OS" }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Duuka Pro Max",
+    title: "Business OS",
     description: "Business management platform for repairs, sales, inventory, finance, documents, and daily operations.",
     images: [ogImage],
   },

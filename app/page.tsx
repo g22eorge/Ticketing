@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 
 import { getSession } from "@/lib/session";
 import { RepairRequestForm } from "@/components/public/RepairRequestForm";
+import { TicketForm } from "@/components/public/TicketForm";
 import { AppLogoDark } from "@/components/ui/AppLogo";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -279,6 +280,15 @@ export default async function Page() {
           {/* Nav actions */}
           <div className="flex items-center gap-2">
             <a
+              href="#support-ticket"
+              className="hidden items-center gap-1.5 rounded-lg border border-cyan-500/30 bg-cyan-500/10 px-4 py-2 text-xs font-semibold text-cyan-400 transition hover:bg-cyan-500/20 sm:flex"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5" aria-hidden>
+                <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+              </svg>
+              ICT Ticket
+            </a>
+            <a
               href="#repair-form"
               className="hidden items-center gap-1.5 rounded-lg border border-[#D4AF37]/30 bg-[#D4AF37]/10 px-4 py-2 text-xs font-semibold text-[#D4AF37] transition hover:bg-[#D4AF37]/20 sm:flex"
             >
@@ -447,6 +457,49 @@ export default async function Page() {
               </svg>
               Submit a Complaint
             </Link>
+          </div>
+        </section>
+
+        {/* ══════════════════════════════════════════════════════════════
+            ICT SUPPORT TICKET SECTION — public, no login required
+        ══════════════════════════════════════════════════════════════ */}
+        <section id="support-ticket" className="py-12">
+          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-cyan-500/25 bg-cyan-500/8 px-4 py-1.5">
+            <span className="h-1.5 w-1.5 rounded-full bg-cyan-400" />
+            <span className="text-[13px] font-bold uppercase tracking-[0.18em] text-cyan-400">ICT Support Tickets</span>
+          </div>
+          <h2 className="mt-2 text-2xl font-extrabold text-white md:text-3xl">
+            Have an ICT issue?
+            <span className="block bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">We can help.</span>
+          </h2>
+          <p className="mt-3 max-w-xl text-sm leading-relaxed text-white/45">
+            Submit a support ticket for hardware, software, network, internet, email, or printer issues.
+            No login required — submit your issue and we will get back to you.
+          </p>
+
+          <div className="mt-8 max-w-2xl">
+            <div
+              className="relative overflow-hidden rounded-2xl border border-white/10 p-6 md:p-8"
+              style={{
+                background: "linear-gradient(160deg,#0d1a1a 0%,#0a0f0f 100%)",
+                boxShadow: "0 0 0 1px rgba(255,255,255,0.04), 0 20px 60px rgba(0,0,0,0.5)",
+              }}
+            >
+              <div className="pointer-events-none absolute -right-12 -top-12 h-48 w-48 rounded-full bg-cyan-500/6 blur-[60px]" />
+              <div className="relative">
+                <div className="mb-5 flex items-center justify-between">
+                  <div>
+                    <p className="text-base font-bold text-white">Submit a Support Ticket</p>
+                    <p className="mt-0.5 text-xs text-white/35">All fields marked * are required</p>
+                  </div>
+                  <div className="flex items-center gap-1.5 rounded-full border border-cyan-500/25 bg-cyan-500/8 px-3 py-1">
+                    <span className="h-1.5 w-1.5 rounded-full bg-cyan-400" />
+                    <span className="text-[12px] font-semibold text-cyan-400">Live</span>
+                  </div>
+                </div>
+                <TicketForm companyName="ICT Support Team" />
+              </div>
+            </div>
           </div>
         </section>
 

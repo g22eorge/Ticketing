@@ -204,6 +204,7 @@ export function JobTable({
   isNextDisabled,
   prevPageHref,
   nextPageHref,
+  detailBasePath,
 }: {
   jobs: JobRow[];
   role: Role;
@@ -221,7 +222,9 @@ export function JobTable({
   isNextDisabled?: boolean;
   prevPageHref?: string;
   nextPageHref?: string;
+  detailBasePath?: string;
 }) {
+  const detailBase = detailBasePath ?? "/jobs";
   const permissionUser = { role, permissions };
   const canSeeClient = role !== "TECHNICIAN_EXTERNAL";
   const canSeeCost =

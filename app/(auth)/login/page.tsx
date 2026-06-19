@@ -1,9 +1,23 @@
 import { redirect } from "next/navigation";
 
 import { LoginForm } from "@/app/(auth)/login/login-form";
-import { AppLogoDark } from "@/components/ui/AppLogo";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
+
+function NeutralMark({ size = "md" }: { size?: "md" | "lg" }) {
+  const box = size === "lg" ? "h-14 w-14 text-lg" : "h-11 w-11 text-base";
+  return (
+    <div className="flex items-center gap-3">
+      <span className={`flex ${box} items-center justify-center rounded-2xl bg-[#D4AF37] font-black text-black`}>
+        OS
+      </span>
+      <span>
+        <span className="block text-sm font-bold text-white">Business OS</span>
+        <span className="block text-[12px] text-white/40">Operations</span>
+      </span>
+    </div>
+  );
+}
 
 export default async function LoginPage() {
   const session = await getSession();
@@ -33,7 +47,7 @@ export default async function LoginPage() {
           <div className="pointer-events-none absolute -right-10 bottom-20 h-60 w-60 rounded-full bg-[#D4AF37]/6 blur-[60px]" />
 
           <div className="relative">
-            <AppLogoDark height={52} priority />
+            <NeutralMark />
           </div>
 
           <div className="relative space-y-7">
@@ -110,15 +124,8 @@ export default async function LoginPage() {
           </div>
 
           <div className="relative flex items-center justify-between">
-            <p className="text-[13px] text-white/25">© {new Date().getFullYear()} Duuka Pro Max</p>
-            <a
-              href="https://app.eagleinfosolutions.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-[13px] text-[#D4AF37]/50 hover:text-[#D4AF37] transition-colors"
-            >
-              app.eagleinfosolutions.com →
-            </a>
+            <p className="text-[13px] text-white/25">© {new Date().getFullYear()} Business OS</p>
+            <p className="text-[13px] text-[#D4AF37]/50">Operations workspace</p>
           </div>
         </section>
 
@@ -128,12 +135,12 @@ export default async function LoginPage() {
 
             {/* Mobile-only logo */}
             <div className="mb-8 flex justify-center lg:hidden">
-              <AppLogoDark height={64} priority />
+              <NeutralMark size="lg" />
             </div>
 
             {/* Desktop logo row */}
             <div className="mb-8 hidden lg:flex">
-              <AppLogoDark height={48} priority />
+              <NeutralMark />
             </div>
 
             <h2 className="text-2xl font-semibold text-white">Sign in</h2>

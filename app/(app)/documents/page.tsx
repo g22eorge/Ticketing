@@ -100,10 +100,18 @@ export default async function DocumentsHubPage() {
 
       {/* Page header */}
       <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
-        <div className="px-4 py-4">
-          <p className="text-[12px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Documents</p>
-          <p className="text-[15px] font-bold text-[var(--ink)]">Documents Hub</p>
-          <p className="text-[13px] text-[var(--ink-muted)]">All document types — from quotes to refunds</p>
+        <div className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-[12px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Documents</p>
+            <p className="text-[15px] font-bold text-[var(--ink)]">Documents Hub</p>
+            <p className="text-[13px] text-[var(--ink-muted)]">All document types — from quotes to refunds</p>
+          </div>
+          <Link
+            href="/documents/new?type=quotation"
+            className="inline-flex items-center justify-center rounded-xl bg-stone-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-stone-800"
+          >
+            New Document
+          </Link>
         </div>
       </div>
 

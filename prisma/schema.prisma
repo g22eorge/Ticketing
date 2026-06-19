@@ -10,6 +10,69 @@ datasource db {
   url      = "file:./dev.db"
 }
 
+// ── Simplified ICT Ticketing ────────────────────────────────────────────────
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  WAITING_ON_CUSTOMER
+  RESOLVED
+  CLOSED
+}
+
+enum TicketPriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum TicketCategory {
+  HARDWARE
+  SOFTWARE
+  NETWORK
+  INTERNET
+  EMAIL
+  PRINTER
+  OTHER
+}
+
+model Ticket {
+  id        String          @id @default(cuid())
+  ticketNumber String         @unique
+  status    TicketStatus    @default(OPEN)
+  priority  TicketPriority  @default(MEDIUM)
+  category  TicketCategory  @default(OTHER)
+  orgId     String?
+  org       Organization?   @relation(fields: [orgId], references: [id], onDelete: SetNull)
+
+  // Reporter (may not be a registered user)
+  reporterName  String
+  reporterPhone String
+  reporterEmail String?
+  reporterCompany String?
+
+  // Issue
+  subject       String
+  description   String
+  deviceInfo    String?    // e.g., "HP EliteBook 840 G8" or "Office Printer"
+
+  // Internal
+  assignedToId  String?
+  assignedTo    User?      @relation("TicketAssignedTo", fields: [assignedToId], references: [id], onDelete: SetNull)
+  notes         String?
+  resolution    String?
+
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  resolvedAt    DateTime?
+  closedAt      DateTime?
+
+  @@index([orgId, status, createdAt])
+  @@index([orgId, priority, createdAt])
+  @@index([assignedToId, status])
+}
+
 // ── MULTI-TENANCY ────────────────────────────────────────────────────────────
 
 enum OrgPlan {
@@ -60,6 +123,7 @@ model Organization {
   parts                  Part[]
   repairRequests         RepairRequest[]
   repairRequestSequences RepairRequestSequence[]
+  ticketSequences        TicketSequence[]
   brandingSettings       DocumentBrandingSettings?
   commTemplates          CommunicationTemplate[]
   commPolicies           CommunicationPolicy[]
@@ -88,6 +152,7 @@ model Organization {
   salesTargets           SalesTarget[]
   moduleGrants           OrgModuleGrant[]
   leads                  Lead[]
+  tickets                Ticket[]
   quotations             Quotation[]
   posSessions            PosSession[]
   fieldVisits            FieldVisit[]
@@ -216,6 +281,7 @@ model User {
   recurringInvoicesCreated RecurringInvoice[]  @relation("RecurringInvoiceCreatedBy")
   journalEntriesCreated    JournalEntry[]      @relation("JournalEntryCreatedBy")
   campaignsCreated         Campaign[]          @relation("CampaignCreatedBy")
+  ticketsAssigned          Ticket[]            @relation("TicketAssignedTo")
 
   @@index([orgId])
   @@index([branchId])
@@ -1455,6 +1521,19 @@ model RepairRequestSequence {
   updatedAt DateTime      @updatedAt
 
   @@unique([orgId, year])
+}
+
+// Allocates human-friendly ticket numbers safely under concurrency.
+model TicketSequence {
+  id        String        @id @default(cuid())
+  orgId     String        // non-nullable; use "_public" for un-org-scoped tickets
+  org       Organization  @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  year      Int
+  value     Int           @default(0)
+  updatedAt DateTime      @updatedAt
+
+  @@unique([orgId, year])
+  @@index([orgId])
 }
 
 enum RepairRequestStatus {
