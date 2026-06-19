@@ -24,8 +24,8 @@ export const defaultBranding = {
   signatureClientLabel: "Signed by: Client",
   // Color scheme - Black, Gold & White
   primaryColor: "#000000",
-  secondaryColor: "#E6C65C",
-  accentColor: "#E6C65C",
+  secondaryColor: "#4F8EF7",
+  accentColor: "#4F8EF7",
   backgroundColor: "#FFFFFF",
   surfaceColor: "#F5F5F5",
   borderColor: "#E5E5E5",
@@ -140,8 +140,8 @@ async function ensureRawTable() {
   await addColumn("jobCardTemplateKey", "'job_card_classic'");
   await addColumn("receiptTemplateKey", "'receipt_classic'");
   await addColumn("primaryColor",   "'#000000'");
-  await addColumn("secondaryColor", "'#E6C65C'");
-  await addColumn("accentColor",    "'#E6C65C'");
+  await addColumn("secondaryColor", "'#4F8EF7'");
+  await addColumn("accentColor",    "'#4F8EF7'");
   await addColumn("backgroundColor","'#FFFFFF'");
   await addColumn("surfaceColor",   "'#F5F5F5'");
   await addColumn("borderColor",    "'#E5E5E5'");

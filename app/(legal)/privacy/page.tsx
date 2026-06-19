@@ -18,7 +18,7 @@ export default function PrivacyPage() {
         <div className="mx-auto flex max-w-4xl items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
             <span className="text-base font-bold tracking-tight text-white">Business</span>
-            <span className="rounded bg-[#E6C65C]/15 px-1.5 py-0.5 text-[13px] font-bold text-[#E6C65C]">OS</span>
+            <span className="rounded bg-[#4F8EF7]/15 px-1.5 py-0.5 text-[13px] font-bold text-[#4F8EF7]">OS</span>
           </Link>
           <Link href="/register" className="text-sm text-white/50 transition-colors hover:text-white">
             Get started →
@@ -29,7 +29,7 @@ export default function PrivacyPage() {
       {/* Content */}
       <main className="mx-auto max-w-3xl px-4 py-12 md:px-6 md:py-16">
         <div className="mb-8">
-          <p className="mb-2 text-[13px] font-bold uppercase tracking-[0.18em] text-[#E6C65C]/70">Legal</p>
+          <p className="mb-2 text-[13px] font-bold uppercase tracking-[0.18em] text-[#4F8EF7]/70">Legal</p>
           <h1 className="mb-2 text-3xl font-bold text-white">Data Privacy</h1>
           <p className="text-sm text-white/40">Effective date: {EFFECTIVE_DATE}</p>
         </div>
@@ -169,7 +169,7 @@ export default function PrivacyPage() {
             </ul>
             <p className="mt-3">
               To exercise any of these rights, contact us at{" "}
-              <a href={`mailto:${CONTACT_EMAIL}`} className="text-[#E6C65C] hover:underline">{CONTACT_EMAIL}</a>.
+              <a href={`mailto:${CONTACT_EMAIL}`} className="text-[#4F8EF7] hover:underline">{CONTACT_EMAIL}</a>.
               We will respond within 30 days.
             </p>
           </section>
@@ -195,7 +195,7 @@ export default function PrivacyPage() {
             <h2 className="mb-3 text-base font-bold text-white">11. Contact</h2>
             <p>
               For privacy-related questions or to exercise your rights, contact us at{" "}
-              <a href={`mailto:${CONTACT_EMAIL}`} className="text-[#E6C65C] hover:underline">{CONTACT_EMAIL}</a>.
+              <a href={`mailto:${CONTACT_EMAIL}`} className="text-[#4F8EF7] hover:underline">{CONTACT_EMAIL}</a>.
             </p>
           </section>
 

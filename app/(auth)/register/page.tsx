@@ -24,15 +24,15 @@ export default async function RegisterPage() {
     <main className="theme-blackgold min-h-dvh bg-[#05080f]">
       {/* Ambient glow */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
-        <div className="absolute left-1/2 top-0 h-[500px] w-[700px] -translate-x-1/2 rounded-full bg-[#E6C65C]/8 blur-[120px]" />
+        <div className="absolute left-1/2 top-0 h-[500px] w-[700px] -translate-x-1/2 rounded-full bg-[#4F8EF7]/8 blur-[120px]" />
       </div>
 
       <div className="grid min-h-dvh grid-cols-1 lg:grid-cols-[1fr_1fr]">
 
         {/* ── Left: branding panel ── */}
         <section className="relative hidden flex-col justify-between overflow-hidden bg-[linear-gradient(150deg,#0d0d0d_0%,#161616_50%,#1a1500_100%)] p-12 lg:flex">
-          <div className="pointer-events-none absolute -left-16 top-1/3 h-80 w-80 rounded-full bg-[#E6C65C]/10 blur-[80px]" />
-          <div className="pointer-events-none absolute -right-10 bottom-20 h-60 w-60 rounded-full bg-[#E6C65C]/6 blur-[60px]" />
+          <div className="pointer-events-none absolute -left-16 top-1/3 h-80 w-80 rounded-full bg-[#4F8EF7]/10 blur-[80px]" />
+          <div className="pointer-events-none absolute -right-10 bottom-20 h-60 w-60 rounded-full bg-[#4F8EF7]/6 blur-[60px]" />
 
           <div className="relative">
             <AppLogoDark height={52} priority />
@@ -40,7 +40,7 @@ export default async function RegisterPage() {
 
           <div className="relative space-y-8">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#E6C65C]/70">Business OS</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#4F8EF7]/70">Business OS</p>
               <h1 className="mt-3 text-3xl font-semibold leading-snug text-white xl:text-4xl">
                 Your operations,<br />fully organised
               </h1>
@@ -56,7 +56,7 @@ export default async function RegisterPage() {
                 { icon: "◈", text: "Full audit trail on every job and status change" },
               ].map((item) => (
                 <div key={item.text} className="flex items-start gap-3">
-                  <span className="mt-0.5 text-[#E6C65C]/60 text-xs">{item.icon}</span>
+                  <span className="mt-0.5 text-[#4F8EF7]/60 text-xs">{item.icon}</span>
                   <p className="text-sm text-white/55">{item.text}</p>
                 </div>
               ))}
@@ -89,7 +89,7 @@ export default async function RegisterPage() {
 
             <p className="mt-6 text-center text-xs text-white/30">
               Already have an account?{" "}
-              <Link href="/login" className="text-[#E6C65C]/70 transition hover:text-[#E6C65C]">
+              <Link href="/login" className="text-[#4F8EF7]/70 transition hover:text-[#4F8EF7]">
                 Sign in
               </Link>
             </p>

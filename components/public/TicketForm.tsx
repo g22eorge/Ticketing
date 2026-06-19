@@ -131,7 +131,7 @@ export function TicketForm({ orgSlug, companyName = "ICT Support" }: TicketFormP
     );
   }
 
-  const inputCls = "w-full rounded-lg border border-white/10 bg-white/5 px-3.5 py-2.5 text-sm text-white placeholder-white/30 outline-none transition focus:border-[#E6C65C]/50 focus:ring-1 focus:ring-[#E6C65C]/25";
+  const inputCls = "w-full rounded-lg border border-white/10 bg-white/5 px-3.5 py-2.5 text-sm text-white placeholder-white/30 outline-none transition focus:border-[#4F8EF7]/50 focus:ring-1 focus:ring-[#4F8EF7]/25";
   const labelCls = "mb-1 block text-[13px] font-semibold uppercase tracking-wider text-white/40";
 
   return (
@@ -211,7 +211,7 @@ export function TicketForm({ orgSlug, companyName = "ICT Support" }: TicketFormP
       <div className="mt-6">
         <button type="submit" disabled={busy}
           className="flex w-full items-center justify-center gap-2 rounded-xl px-6 py-3.5 text-sm font-bold text-black transition hover:opacity-90 disabled:opacity-60"
-          style={{ background: "linear-gradient(180deg,#F0D46A 0%,#D4B540 100%)", boxShadow: "0 6px 24px rgba(230,198,92,0.30)" }}>
+          style={{ background: "linear-gradient(180deg,#60A5FA 0%,#3B82F6 100%)", boxShadow: "0 6px 24px rgba(230,198,92,0.30)" }}>
           {busy ? (
             <><svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>Submitting...</>
           ) : (

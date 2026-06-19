@@ -186,7 +186,7 @@ export function RepairRequestForm({ orgSlug, companyName = "BusinessOS", whatsap
     );
   }
 
-  const inputCls = "w-full rounded-lg border border-white/10 bg-white/5 px-3.5 py-2.5 text-sm text-white placeholder-white/30 outline-none transition focus:border-[#E6C65C]/50 focus:ring-1 focus:ring-[#E6C65C]/25";
+  const inputCls = "w-full rounded-lg border border-white/10 bg-white/5 px-3.5 py-2.5 text-sm text-white placeholder-white/30 outline-none transition focus:border-[#4F8EF7]/50 focus:ring-1 focus:ring-[#4F8EF7]/25";
   const labelCls = "mb-1 block text-[13px] font-semibold uppercase tracking-wider text-white/40";
 
   return (
@@ -287,7 +287,7 @@ export function RepairRequestForm({ orgSlug, companyName = "BusinessOS", whatsap
               key={opt.value}
               className={`flex cursor-pointer flex-col gap-0.5 rounded-lg border px-3.5 py-3 transition ${
                 data.handover_method === opt.value
-                  ? "border-[#E6C65C]/50 bg-[#E6C65C]/8"
+                  ? "border-[#4F8EF7]/50 bg-[#4F8EF7]/8"
                   : "border-white/8 bg-white/3 hover:border-white/15"
               }`}
             >
@@ -297,7 +297,7 @@ export function RepairRequestForm({ orgSlug, companyName = "BusinessOS", whatsap
                 onChange={(e) => set("handover_method", e.target.value)}
                 className="sr-only"
               />
-              <span className={`mb-1 ${data.handover_method === opt.value ? "text-[#E6C65C]/80" : "text-white/40"}`}>{opt.icon}</span>
+              <span className={`mb-1 ${data.handover_method === opt.value ? "text-[#4F8EF7]/80" : "text-white/40"}`}>{opt.icon}</span>
               <span className="text-sm font-semibold text-white/80">{opt.label}</span>
               <span className="text-[13px] text-white/35">{opt.desc}</span>
             </label>
@@ -358,7 +358,7 @@ export function RepairRequestForm({ orgSlug, companyName = "BusinessOS", whatsap
         <button
           type="submit" disabled={busy}
           className="flex w-full items-center justify-center gap-2 rounded-xl px-6 py-3.5 text-sm font-bold text-black transition hover:opacity-90 disabled:opacity-60"
-          style={{ background: "linear-gradient(180deg,#F0D46A 0%,#D4B540 100%)", boxShadow: "0 6px 24px rgba(230,198,92,0.30)" }}
+          style={{ background: "linear-gradient(180deg,#60A5FA 0%,#3B82F6 100%)", boxShadow: "0 6px 24px rgba(230,198,92,0.30)" }}
         >
           {busy ? (
             <>

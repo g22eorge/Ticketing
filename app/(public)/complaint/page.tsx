@@ -170,7 +170,7 @@ export default async function ComplaintPage({
               defaultValue={ref}
               placeholder="e.g. TKT-2024-0001"
               required
-              className="w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2.5 text-sm font-mono text-white outline-none placeholder:text-white/20 focus:border-[#E6C65C]/40"
+              className="w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2.5 text-sm font-mono text-white outline-none placeholder:text-white/20 focus:border-[#4F8EF7]/40"
             />
             {ticketInfo && (
               <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/8 px-3 py-2">
@@ -190,20 +190,20 @@ export default async function ComplaintPage({
               defaultValue={ticketInfo?.reporterName ?? ""}
               placeholder="Full name *"
               required
-              className="w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2.5 text-sm text-white outline-none placeholder:text-white/20 focus:border-[#E6C65C]/40"
+              className="w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2.5 text-sm text-white outline-none placeholder:text-white/20 focus:border-[#4F8EF7]/40"
             />
             <input
               name="clientPhone"
               defaultValue={ticketInfo?.reporterPhone ?? ""}
               placeholder="Phone number *"
               required
-              className="w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2.5 text-sm text-white outline-none placeholder:text-white/20 focus:border-[#E6C65C]/40"
+              className="w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2.5 text-sm text-white outline-none placeholder:text-white/20 focus:border-[#4F8EF7]/40"
             />
             <input
               name="clientEmail"
               defaultValue={ticketInfo?.reporterEmail ?? ""}
               placeholder="Email (optional)"
-              className="w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2.5 text-sm text-white outline-none placeholder:text-white/20 focus:border-[#E6C65C]/40"
+              className="w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2.5 text-sm text-white outline-none placeholder:text-white/20 focus:border-[#4F8EF7]/40"
             />
           </div>
 
@@ -214,7 +214,7 @@ export default async function ComplaintPage({
             <select
               name="category"
               defaultValue="OTHER"
-              className="w-full rounded-lg border border-white/10 bg-[#05080f] px-3 py-2.5 text-sm text-white outline-none focus:border-[#E6C65C]/40"
+              className="w-full rounded-lg border border-white/10 bg-[#05080f] px-3 py-2.5 text-sm text-white outline-none focus:border-[#4F8EF7]/40"
             >
               {CATEGORIES.map((c) => (
                 <option key={c} value={c}>
@@ -227,20 +227,20 @@ export default async function ComplaintPage({
               placeholder="Describe your complaint in detail *"
               required
               rows={4}
-              className="w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2.5 text-sm text-white outline-none placeholder:text-white/20 focus:border-[#E6C65C]/40 resize-none"
+              className="w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2.5 text-sm text-white outline-none placeholder:text-white/20 focus:border-[#4F8EF7]/40 resize-none"
             />
             <textarea
               name="expectedResolution"
               placeholder="What resolution would you like? (optional)"
               rows={2}
-              className="w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2.5 text-sm text-white outline-none placeholder:text-white/20 focus:border-[#E6C65C]/40 resize-none"
+              className="w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2.5 text-sm text-white outline-none placeholder:text-white/20 focus:border-[#4F8EF7]/40 resize-none"
             />
           </div>
 
           <button
             type="submit"
             className="w-full rounded-xl py-3 text-sm font-bold text-black shadow-[0_4px_20px_rgba(230,198,92,0.25)] transition hover:opacity-90"
-            style={{ background: "linear-gradient(180deg,#F0D46A 0%,#D4B540 100%)" }}
+            style={{ background: "linear-gradient(180deg,#60A5FA 0%,#3B82F6 100%)" }}
           >
             Submit Complaint
           </button>

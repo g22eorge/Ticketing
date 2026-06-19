@@ -19,7 +19,7 @@ export default async function AcceptInvitePage({ params }: Props) {
   return (
     <main className="theme-blackgold min-h-dvh bg-[#05080f]">
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
-        <div className="absolute left-1/2 top-0 h-[500px] w-[700px] -translate-x-1/2 rounded-full bg-[#E6C65C]/8 blur-[120px]" />
+        <div className="absolute left-1/2 top-0 h-[500px] w-[700px] -translate-x-1/2 rounded-full bg-[#4F8EF7]/8 blur-[120px]" />
       </div>
 
       <div className="flex min-h-dvh items-center justify-center px-5 py-12">
@@ -49,7 +49,7 @@ export default async function AcceptInvitePage({ params }: Props) {
             /* ── Accept form ── */
             <div className="space-y-6">
               <div className="text-center">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#E6C65C]/70">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#4F8EF7]/70">
                   You&apos;ve been invited
                 </p>
                 <h2 className="mt-2 text-2xl font-semibold text-white">

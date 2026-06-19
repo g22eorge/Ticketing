@@ -61,7 +61,7 @@ export default async function Page() {
     <main className="relative min-h-screen overflow-x-hidden bg-[#020408] text-white">
       {/* Ambient glow */}
       <div className="pointer-events-none fixed inset-0 -z-10">
-        <div className="absolute left-1/4 top-0 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-[#E6C65C]/5 blur-[140px]" />
+        <div className="absolute left-1/4 top-0 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-[#4F8EF7]/5 blur-[140px]" />
         <div className="absolute right-0 top-1/4 h-[400px] w-[400px] rounded-full bg-blue-500/4 blur-[120px]" />
       </div>
 
@@ -84,13 +84,13 @@ export default async function Page() {
 
       {/* ── Hero ── */}
       <section className="mx-auto max-w-5xl px-4 pt-16 pb-12 text-center md:pt-24 md:pb-16">
-        <div className="inline-flex items-center gap-2 rounded-full border border-[#E6C65C]/20 bg-[#E6C65C]/5 px-4 py-1.5">
-          <span className="inline-block h-2 w-2 rounded-full bg-[#E6C65C]" />
-          <span className="text-[13px] font-semibold tracking-wide text-[#E6C65C]">Service Tickets &amp; Business Management</span>
+        <div className="inline-flex items-center gap-2 rounded-full border border-[#4F8EF7]/20 bg-[#4F8EF7]/5 px-4 py-1.5">
+          <span className="inline-block h-2 w-2 rounded-full bg-[#4F8EF7]" />
+          <span className="text-[13px] font-semibold tracking-wide text-[#4F8EF7]">Service Tickets &amp; Business Management</span>
         </div>
 
         <h1 className="mt-6 text-4xl font-black leading-[1.05] tracking-tight md:text-5xl">
-          <span className="bg-gradient-to-r from-[#F0D46A] via-[#E6C65C] to-[#D4B540] bg-clip-text text-transparent">
+          <span className="bg-gradient-to-r from-[#60A5FA] via-[#4F8EF7] to-[#3B82F6] bg-clip-text text-transparent">
             Need support?
           </span><br />
           We&apos;re here to help.
@@ -214,7 +214,7 @@ export default async function Page() {
               href="https://wa.me/256772006344?text=Hi%2C%20I%27m%20interested%20in%20BusinessOS%20for%20my%20business."
               target="_blank" rel="noreferrer"
               className="inline-flex items-center gap-2 rounded-xl px-6 py-2.5 text-sm font-bold text-black shadow-[0_4px_20px_rgba(230,198,92,0.25)] transition hover:opacity-90"
-              style={{ background: "linear-gradient(180deg,#F0D46A 0%,#D4B540 100%)" }}
+              style={{ background: "linear-gradient(180deg,#60A5FA 0%,#3B82F6 100%)" }}
             >
               <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4" aria-hidden><path d={WA_PATH}/></svg>
               Get BusinessOS
@@ -238,7 +238,7 @@ export default async function Page() {
             </div>
             <nav className="flex flex-wrap items-center justify-center gap-4">
               <Link href="/complaint" className="text-xs font-semibold text-red-400/60 transition hover:text-red-400">Complaint</Link>
-              <Link href="/login" className="text-xs font-semibold text-white/35 transition hover:text-[#E6C65C]">Staff Login</Link>
+              <Link href="/login" className="text-xs font-semibold text-white/35 transition hover:text-[#4F8EF7]">Staff Login</Link>
               <a
                 href="https://wa.me/256772006344"
                 target="_blank" rel="noreferrer"
