@@ -68,19 +68,19 @@ export default async function RootLayout({
 }>) {
   const cookieStore = await cookies();
   const stored = cookieStore.get("theme")?.value as string | undefined;
-  let initialTheme: "system" | "dark" | "light" = "system";
-  if (stored === "dark") initialTheme = "dark";
-  else if (stored === "light") initialTheme = "light";
+  let initialTheme: "system" | "dark" | "light" = "dark";
+  if (stored === "light") initialTheme = "light";
+  else if (stored === "dark") initialTheme = "dark";
 
-  const themeClass = stored === "dark" ? "theme-blackgold" : stored === "light" ? "light" : "";
+  const themeClass = stored === "light" ? "light" : "theme-blackgold";
 
   return (
     <html lang="en" className={`${inter.variable} h-full antialiased${themeClass ? " " + themeClass : ""}`} suppressHydrationWarning>
       <body className="min-h-full bg-[var(--page-bg)] text-[var(--ink)]">
-        {/* Prevent white flash: apply theme class before React hydrates */}
+        {/* Prevent white flash: dark is the default. Only apply 'light' when the light cookie is set. */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){var m=window.matchMedia('(prefers-color-scheme: dark)');var t=document.cookie.match(/theme=(dark|light)/);var dark=t?t[1]==='dark':m.matches;document.documentElement.classList.remove('theme-blackgold','light');if(dark)document.documentElement.classList.add('theme-blackgold');else document.documentElement.classList.add('light');})();`,
+            __html: `(function(){var t=document.cookie.match(/theme=light/);var root=document.documentElement;root.classList.remove('theme-blackgold','light');if(t)root.classList.add('light');else root.classList.add('theme-blackgold');})();`,
           }}
         />
         <ThemeProvider initialTheme={initialTheme}>

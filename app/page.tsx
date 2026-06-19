@@ -6,6 +6,8 @@ import { getSession } from "@/lib/session";
 import { TicketForm } from "@/components/public/TicketForm";
 import { AppLogoDark } from "@/components/ui/AppLogo";
 
+export const dynamic = "force-dynamic";
+
 export async function generateMetadata(): Promise<Metadata> {
   return {
     title: "BusinessOS — Business Management & Service Tickets",
