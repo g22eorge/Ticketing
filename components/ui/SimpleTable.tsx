@@ -25,10 +25,10 @@ export function SimpleTable<T>({ columns, rows, keyExtractor, emptyState }: Simp
   if (rows.length === 0) return <>{emptyState}</>;
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm">
+    <div className="overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--panel)] shadow-sm">
       <table className="w-full text-left text-sm">
-        <thead className="bg-stone-50">
-          <tr className="border-b border-stone-200 text-xs font-semibold uppercase tracking-wider text-stone-500">
+        <thead className="bg-[var(--panel-strong)]">
+          <tr className="border-b border-[var(--line)] text-xs font-semibold uppercase tracking-wider text-[var(--ink-muted)]">
             {columns.map((col, i) => (
               <th key={i} className={`px-4 py-3 ${alignClass(col.align)}`}>
                 {col.header}
@@ -36,9 +36,9 @@ export function SimpleTable<T>({ columns, rows, keyExtractor, emptyState }: Simp
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-stone-100">
+        <tbody className="divide-y divide-[var(--line)]">
           {rows.map((row, i) => (
-            <tr key={keyExtractor(row)} className="transition hover:bg-stone-50/50">
+            <tr key={keyExtractor(row)} className="transition hover:bg-[var(--panel-strong)]/50">
               {columns.map((col, j) => (
                 <td key={j} className={`px-4 py-3 ${alignClass(col.align)}`}>
                   {col.render(row, i)}
@@ -68,8 +68,8 @@ export function PageLayout({ title, subtitle, action, searchPlaceholder, searchV
     <div className="space-y-6 p-4 md:p-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-stone-900">{title}</h1>
-          <p className="mt-1 text-sm text-stone-500">{subtitle}</p>
+          <h1 className="text-2xl font-semibold tracking-tight text-[var(--ink)]">{title}</h1>
+          <p className="mt-1 text-sm text-[var(--ink-muted)]">{subtitle}</p>
         </div>
         {action}
       </div>
@@ -80,7 +80,7 @@ export function PageLayout({ title, subtitle, action, searchPlaceholder, searchV
             name="q"
             defaultValue={searchValue}
             placeholder={searchPlaceholder}
-            className="w-full rounded-lg border border-stone-200 bg-white px-4 py-2.5 text-sm outline-none transition focus:border-stone-400 focus:ring-1 focus:ring-stone-400"
+            className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel)] px-4 py-2.5 text-sm text-[var(--ink)] outline-none transition placeholder:text-[var(--ink-muted)] focus:border-[var(--accent)]/60 focus:ring-1 focus:ring-[var(--accent)]/20"
           />
         </form>
       )}
@@ -89,10 +89,10 @@ export function PageLayout({ title, subtitle, action, searchPlaceholder, searchV
 
       {totalPages > 1 && (
         <div className="flex items-center justify-between text-sm">
-          <p className="text-stone-500">Page {page} of {totalPages}</p>
+          <p className="text-[var(--ink-muted)]">Page {page} of {totalPages}</p>
           <div className="flex gap-2">
-            {page > 1 && <Link href={`?page=${page - 1}`} className="rounded-lg border border-stone-200 px-3 py-1.5 text-stone-600 transition hover:border-stone-300 hover:bg-stone-50">Previous</Link>}
-            {page < totalPages && <Link href={`?page=${page + 1}`} className="rounded-lg border border-stone-200 px-3 py-1.5 text-stone-600 transition hover:border-stone-300 hover:bg-stone-50">Next</Link>}
+            {page > 1 && <Link href={`?page=${page - 1}`} className="rounded-lg border border-[var(--line)] px-3 py-1.5 text-[var(--ink-muted)] transition hover:border-[var(--accent)]/40 hover:bg-[var(--panel-strong)]">Previous</Link>}
+            {page < totalPages && <Link href={`?page=${page + 1}`} className="rounded-lg border border-[var(--line)] px-3 py-1.5 text-[var(--ink-muted)] transition hover:border-[var(--accent)]/40 hover:bg-[var(--panel-strong)]">Next</Link>}
           </div>
         </div>
       )}

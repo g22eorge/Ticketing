@@ -8,7 +8,8 @@ import { requireOrgSession } from "@/lib/org-context";
 import { can } from "@/lib/permissions";
 import { formatMoney } from "@/lib/currency";
 import { formatEATDate } from "@/lib/date-eat";
-import { StatusBadge } from "@/components/ui/StatusBadge";
+import { StatusBadge, invoiceStatusVariant } from "@/components/ui/StatusBadge";
+import { InvoiceActionCell } from "./InvoiceActionCell";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { SimpleTable, PageLayout } from "@/components/ui/SimpleTable";
 
@@ -78,18 +79,12 @@ export default async function InvoicesPage({
   const totalPages = Math.max(Math.ceil(total / pageSize), 1);
   const baseCurrency = org.baseCurrency || "UGX";
 
-  const statusVariant = (s: string) => {
-    if (s === "PAID") return "success" as const;
-    if (s === "VOID") return "neutral" as const;
-    if (s === "DRAFT") return "warning" as const;
-    return "default" as const;
-  };
 
   const rows: InvoiceRow[] = invoices.map((inv) => ({
     id: inv.id,
     invoiceNumber: inv.invoiceNumber,
     clientName: inv.client?.fullName ?? null,
-  device: [inv.job?.brand, inv.job?.model].filter(Boolean).join(" ") || "—",
+    device: [inv.job?.brand, inv.job?.model].filter(Boolean).join(" ") || "—",
     date: formatEATDate(inv.issuedAt),
     amount: inv.totalAmount,
     currency: inv.currency ?? baseCurrency,
@@ -102,11 +97,11 @@ export default async function InvoicesPage({
   return (
     <PageLayout
       title="Invoices"
-      subtitle="Billed to clients."
+      subtitle="Standalone and ticket invoices billed to clients."
       action={
         <Link
           href="/documents/new?type=invoice"
-          className="inline-flex items-center gap-1.5 rounded-lg bg-stone-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-stone-800"
+          className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--brand)] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:brightness-110"
         >
           New Invoice
         </Link>
@@ -122,43 +117,42 @@ export default async function InvoicesPage({
         emptyState={
           <EmptyState
             title="No invoices found"
-            description="Create an invoice from a ticket to see it here."
+            description="Create a standalone invoice or generate one from a ticket to see it here."
             action={{ label: "New Invoice", href: "/documents/new?type=invoice" }}
           />
         }
         columns={[
           {
             header: "Invoice #",
-            render: (r) => <span className="font-medium text-stone-900">{r.invoiceNumber}</span>,
+            render: (r) => (
+              <Link
+                href={`/documents/invoices/${encodeURIComponent(r.invoiceNumber)}`}
+                className="font-medium text-[var(--ink)] hover:text-[var(--accent)] hover:underline"
+              >
+                {r.invoiceNumber}
+              </Link>
+            ),
           },
-          { header: "Client", render: (r) => r.clientName ?? "—" },
-          { header: "Device", render: (r) => r.device },
-          { header: "Date", render: (r) => <span className="text-stone-500">{r.date}</span> },
-          { header: "Amount", render: (r) => <span className="font-medium text-stone-900">{formatMoney(r.amount, r.currency)}</span> },
+          { header: "Client", render: (r) => <span className="text-[var(--ink-muted)]">{r.clientName ?? "—"}</span> },
+          { header: "Device", render: (r) => <span className="text-[var(--ink-muted)]">{r.device}</span> },
+          { header: "Date", render: (r) => <span className="text-[var(--ink-muted)]">{r.date}</span> },
+          { header: "Amount", render: (r) => <span className="font-medium text-[var(--ink)]">{formatMoney(r.amount, r.currency)}</span> },
           {
             header: "Status",
-            render: (r) => <StatusBadge label={r.status} variant={statusVariant(r.status)} />,
+            render: (r) => <StatusBadge label={r.status} variant={invoiceStatusVariant(r.status)} />,
           },
           {
             header: "Actions",
             align: "right",
             render: (r) => (
-              <div className="flex justify-end gap-3">
-                {r.ticketId && !r.hasReceipt && r.status !== "PAID" ? (
-                  <Link
-                    href={`/tickets/${r.ticketId}/create-receipt`}
-                    className="text-sm font-semibold text-emerald-700 transition hover:text-emerald-800"
-                  >
-                    Record Payment
-                  </Link>
-                ) : null}
-                <Link
-                  href={`/api/invoices/${r.id}`}
-                  className="text-sm font-medium text-stone-600 transition hover:text-stone-900"
-                >
-                  Download
-                </Link>
-              </div>
+              <InvoiceActionCell
+                id={r.id}
+                invoiceNumber={r.invoiceNumber}
+                status={r.status}
+                userRole={user.role}
+                ticketId={r.ticketId}
+                hasReceipt={r.hasReceipt}
+              />
             ),
           },
         ]}

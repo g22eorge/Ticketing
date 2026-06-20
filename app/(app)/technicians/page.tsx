@@ -218,7 +218,6 @@ export default async function TechniciansPage({
     return routeWith({ dismiss: Array.from(merged).join(",") });
   }
   const boardReturnTo = routeWith({});
-  const hasActiveFilters = Boolean(filters.q || filters.status || filters.ready);
   const quickActions = [
     { href: routeWith({ ready: "1", status: "" }), label: "Ready", count: readyCount, active: filters.ready === "1" },
     { href: routeWith({ status: "IN_REPAIR", ready: "" }), label: "In Repair", count: inRepairCount, active: filters.status === "IN_REPAIR" && filters.ready !== "1" },

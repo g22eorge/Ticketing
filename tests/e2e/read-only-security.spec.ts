@@ -40,14 +40,14 @@ function parseSetCookie(setCookie: string, origin: URL): Cookie {
   return cookie;
 }
 
-async function ensureAccount(userId: string) {
+async function ensureAccount(userId: string, email: string) {
   const passwordHash = await hashPassword(password);
   const existing = await prisma.account.findFirst({ where: { userId, providerId: "credential" }, select: { id: true } });
   if (existing) {
     await prisma.account.update({ where: { id: existing.id }, data: { password: passwordHash } });
     return;
   }
-  await prisma.account.create({ data: { userId, accountId: userId, providerId: "credential", password: passwordHash } });
+  await prisma.account.create({ data: { userId, accountId: email, providerId: "credential", password: passwordHash } });
 }
 
 async function login(page: Page, email: string) {
@@ -81,7 +81,7 @@ async function seedReadOnlyFixture() {
     update: { orgId: org.id, role: "ADMIN", accessMode: "READ_ONLY", isActive: true, emailVerified: true },
     create: { orgId: org.id, name: "Read Only Admin", email: "read-only-admin@example.invalid", role: "ADMIN", accessMode: "READ_ONLY", isActive: true, emailVerified: true },
   });
-  await ensureAccount(user.id);
+  await ensureAccount(user.id, user.email);
 
   const client = await prisma.client.upsert({
     where: { phone_orgId: { orgId: org.id, phone: "08029990001" } },

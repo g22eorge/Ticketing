@@ -106,7 +106,7 @@ export default async function ClientsPage({
             )}
             <Link
               href="/tickets/new"
-              className="inline-flex items-center gap-1.5 rounded-lg bg-stone-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-stone-800"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--brand)] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:brightness-110"
             >
               + New Ticket
             </Link>
@@ -133,23 +133,23 @@ export default async function ClientsPage({
             });
             revalidatePath("/clients");
           }}
-          className="flex flex-wrap items-end gap-2 rounded-2xl border border-stone-200 bg-white p-4 shadow-sm"
+          className="flex flex-wrap items-end gap-2 rounded-2xl border border-[var(--line)] bg-[var(--panel)] p-4 shadow-sm"
         >
-          <input name="fullName" required placeholder="Full name" className="w-48 rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-sm outline-none transition focus:border-stone-400 focus:ring-1 focus:ring-stone-400" />
-          <input name="phone" required placeholder="Phone" className="w-48 rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-sm outline-none transition focus:border-stone-400 focus:ring-1 focus:ring-stone-400" />
-          <input name="email" placeholder="Email (optional)" className="w-48 rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-sm outline-none transition focus:border-stone-400 focus:ring-1 focus:ring-stone-400" />
-          <select name="clientType" className="rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-sm outline-none transition focus:border-stone-400">
+          <input name="fullName" required placeholder="Full name" className="w-48 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm outline-none transition focus:border-[var(--accent)]/60 focus:ring-1 focus:ring-[var(--accent)]/20" />
+          <input name="phone" required placeholder="Phone" className="w-48 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm outline-none transition focus:border-[var(--accent)]/60 focus:ring-1 focus:ring-[var(--accent)]/20" />
+          <input name="email" placeholder="Email (optional)" className="w-48 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm outline-none transition focus:border-[var(--accent)]/60 focus:ring-1 focus:ring-[var(--accent)]/20" />
+          <select name="clientType" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm outline-none transition focus:border-[var(--accent)]/60">
             <option value="INDIVIDUAL">Individual</option>
             <option value="COMPANY">Company</option>
             <option value="SCHOOL">School</option>
             <option value="NGO">NGO</option>
             <option value="GOVERNMENT">Government</option>
           </select>
-          <label className="flex items-center gap-1.5 text-sm text-stone-600">
+          <label className="flex items-center gap-1.5 text-sm text-[var(--ink-muted)]">
             <input type="checkbox" name="isSLACovered" className="h-4 w-4 rounded border-stone-300 text-emerald-600 focus:ring-emerald-500" />
             SLA
           </label>
-          <button type="submit" className="rounded-lg bg-stone-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-stone-800">Add Client</button>
+          <button type="submit" className="rounded-lg bg-[var(--brand)] px-4 py-2 text-sm font-medium text-white transition hover:brightness-110">Add Client</button>
         </form>
 
         <SimpleTable
@@ -159,19 +159,19 @@ export default async function ClientsPage({
           columns={[
             { header: "Name", render: (r) => (
               <div>
-                <span className="font-medium text-stone-900">{r.fullName}</span>
+                <Link href={`/clients/${r.id}`} className="font-medium text-[var(--ink)] hover:text-[var(--accent)] hover:underline">{r.fullName}</Link>
                 {r.isSLACovered && <span className="ml-2 inline-flex rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] font-bold text-emerald-700">SLA</span>}
               </div>
             )},
             { header: "Phone", render: (r) => r.phone },
             { header: "Email", render: (r) => r.email ?? "—" },
-            { header: "Type", render: (r) => <span className="capitalize text-stone-600">{r.clientType.toLowerCase()}</span> },
+            { header: "Type", render: (r) => <span className="capitalize text-[var(--ink-muted)]">{r.clientType.toLowerCase()}</span> },
             { header: "Tickets", render: (r) => (
-              <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-stone-100 text-xs font-medium text-stone-700">
+              <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-[var(--panel-strong)] text-xs font-medium text-[var(--ink)]">
                 {r.tickets}
               </span>
             )},
-            { header: "Created", render: (r) => <span className="text-stone-500">{r.createdAt}</span> },
+            { header: "Created", render: (r) => <span className="text-[var(--ink-muted)]">{r.createdAt}</span> },
           ]}
         />
       </PageLayout>

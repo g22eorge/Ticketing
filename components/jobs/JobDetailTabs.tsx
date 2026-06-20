@@ -481,7 +481,7 @@ type Props = {
     timelineConfidence?: "FIRM" | "ESTIMATED" | "PARTS_DEPENDENT" | null;
     timelineNote?: string | null;
     assignedTo?: { id: string; name: string; role: Role } | null;
-    client?: { fullName: string; phone: string; email: string | null } | null;
+    client?: { id: string; fullName: string; phone: string; email: string | null } | null;
     clientPayments?: Array<{
       id: string;
       amount: number;
@@ -833,9 +833,9 @@ export function JobDetailTabs({ role, permissions = [], job, technicians, device
               <p className="mt-0.5 text-sm font-semibold text-[var(--ink)] [overflow-wrap:anywhere]">{previewText(job.issueDescription, 90)}</p>
             </div>
             <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-[var(--ink-muted)]">
-              <span>Client: <strong className="text-[var(--ink)]">{job.client?.fullName ?? "No client"}</strong></span>
+              <span>Client: <strong className="text-[var(--ink)]">{job.client ? <Link href={`/clients/${job.client.id}`} className="hover:text-[var(--accent)] hover:underline">{job.client.fullName}</Link> : "No client"}</strong></span>
               <span>Device: <strong className="text-[var(--ink)]">{[job.brand, job.model].filter(v => v && v !== "Unknown").join(" ") || job.deviceType}</strong></span>
-              <span>Technician: <strong className="text-[var(--ink)]">{assignedLabel}</strong></span>
+              <span>Technician: <strong className="text-[var(--ink)]">{job.assignedTo ? <Link href={`/users/${job.assignedTo.id}`} className="hover:text-[var(--accent)] hover:underline">{assignedLabel}</Link> : assignedLabel}</strong></span>
               <span>Updated: <strong className="text-[var(--ink)]">{formatUtcDateTime(job.updatedAt)}</strong></span>
             </div>
           </div>
@@ -876,10 +876,12 @@ export function JobDetailTabs({ role, permissions = [], job, technicians, device
             <p className="mt-1 line-clamp-2 text-sm leading-snug text-[var(--ink-muted)]">{job.issueDescription}</p>
             <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[12px] text-[var(--ink-muted)]">
               {role !== "TECHNICIAN_EXTERNAL" && job.client?.fullName ? (
-                <span>👤 <strong className="text-[var(--ink)]">{job.client.fullName}</strong></span>
+                <span>👤 <strong className="text-[var(--ink)]"><Link href={`/clients/${job.client.id}`} className="hover:text-[var(--accent)] hover:underline">{job.client.fullName}</Link></strong></span>
               ) : null}
               <span>⚡ <strong className="text-[var(--ink)]">{
-                assignedLabel === "No technician assigned yet." ? "Unassigned" : assignedLabel
+                job.assignedTo
+                  ? <Link href={`/users/${job.assignedTo.id}`} className="hover:text-[var(--accent)] hover:underline">{assignedLabel === "No technician assigned yet." ? "Unassigned" : assignedLabel}</Link>
+                  : assignedLabel === "No technician assigned yet." ? "Unassigned" : assignedLabel
               }</strong></span>
             </div>
           </div>
@@ -1327,9 +1329,9 @@ export function JobDetailTabs({ role, permissions = [], job, technicians, device
               {(job.client?.fullName ?? "?")[0].toUpperCase()}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-lg font-black text-[var(--ink)]">{job.client?.fullName ?? "No client"}</p>
+              <Link href={`/clients/${job.client?.id}`} className="text-lg font-black text-[var(--ink)] hover:text-[var(--accent)] hover:underline">{job.client?.fullName ?? "No client"}</Link>
               {job.client?.phone ? (
-                <a href={`tel:${job.client.phone}`} className="text-sm text-[var(--accent)]">{job.client.phone}</a>
+                <a href={`tel:${job.client.phone}`} className="block text-sm text-[var(--accent)]">{job.client.phone}</a>
               ) : <p className="text-sm text-[var(--ink-muted)]">No phone</p>}
             </div>
           </div>

@@ -72,7 +72,7 @@ async function upsertUser({
   } else {
     await prisma.account.create({
       data: {
-        accountId: user.id,
+        accountId: user.email,
         providerId: "credential",
         userId: user.id,
         password: await hashPassword(DEMO_PASSWORD),

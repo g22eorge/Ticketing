@@ -21,8 +21,8 @@ export default async function NewTicketPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-stone-800">New Ticket</h1>
-        <p className="mt-1 text-sm text-stone-500">Create an ICT support ticket.</p>
+        <h1 className="text-2xl font-bold tracking-tight text-[var(--ink)]">New Ticket</h1>
+        <p className="mt-1 text-sm text-[var(--ink-muted)]">Create an ICT support ticket.</p>
       </div>
       <NewTicketForm clients={clients} />
     </div>

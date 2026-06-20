@@ -15,7 +15,7 @@ export default function TwitterImage() {
         style={{
           width: "100%",
           height: "100%",
-          background: "#020408",
+          background: "#0a1628",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -28,7 +28,7 @@ export default function TwitterImage() {
             position: "absolute",
             inset: 0,
             background:
-              "radial-gradient(900px 450px at 18% 22%, rgba(230,198,92,0.22), transparent 55%), radial-gradient(720px 420px at 82% 70%, rgba(230,198,92,0.14), transparent 60%)",
+              "radial-gradient(900px 450px at 18% 22%, rgba(79,142,247,0.18), transparent 55%), radial-gradient(720px 420px at 82% 70%, rgba(79,142,247,0.12), transparent 60%)",
           }}
         />
 
@@ -38,7 +38,7 @@ export default function TwitterImage() {
             height: "100%",
             borderRadius: 40,
             border: "1px solid rgba(255,255,255,0.10)",
-            background: "linear-gradient(180deg, rgba(16,16,16,0.92), rgba(0,0,0,0.86))",
+            background: "linear-gradient(180deg, rgba(15,31,58,0.92), rgba(10,22,40,0.86))",
             boxShadow: "0 40px 120px rgba(0,0,0,0.55)",
             display: "flex",
             padding: 64,
@@ -55,7 +55,7 @@ export default function TwitterImage() {
               width: 520,
               height: 520,
               borderRadius: 999,
-              background: "radial-gradient(circle at 30% 30%, rgba(230,198,92,0.26), rgba(230,198,92,0.00) 65%)",
+              background: "radial-gradient(circle at 30% 30%, rgba(79,142,247,0.24), rgba(79,142,247,0.00) 65%)",
               filter: "blur(1px)",
             }}
           />
@@ -68,11 +68,11 @@ export default function TwitterImage() {
                   height: 72,
                   borderRadius: 999,
                   background: "#fff",
-                  border: "1px solid rgba(230,198,92,0.35)",
+                  border: "1px solid rgba(79,142,247,0.35)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  boxShadow: "0 0 18px rgba(230,198,92,0.25)",
+                  boxShadow: "0 0 18px rgba(79,142,247,0.25)",
                   overflow: "hidden",
                 }}
               >
@@ -82,7 +82,7 @@ export default function TwitterImage() {
                 <div style={{ color: "rgba(255,255,255,0.86)", fontSize: 14, letterSpacing: 4, fontWeight: 700 }}>
                   BUSINESS OS
                 </div>
-                <div style={{ color: "rgba(230,198,92,0.92)", fontSize: 12, letterSpacing: 3, fontWeight: 700 }}>
+                <div style={{ color: "rgba(79,142,247,0.92)", fontSize: 12, letterSpacing: 3, fontWeight: 700 }}>
                   BUSINESS MANAGEMENT
                 </div>
               </div>

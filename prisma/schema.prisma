@@ -7,7 +7,7 @@ generator client {
 
 datasource db {
   provider = "sqlite"
-  url      = "file:./dev.db"
+  url      = env("DATABASE_URL")
 }
 
 // ── Simplified ICT Ticketing ────────────────────────────────────────────────
@@ -213,9 +213,28 @@ model Organization {
   bankAccounts           BankAccount[]
   bankTransactions       BankTransaction[]
   campaigns              Campaign[]
+  whatsAppConfig         OrgWhatsAppConfig?
 
   @@index([slug])
   @@index([isActive])
+}
+
+model OrgWhatsAppConfig {
+  orgId             String       @id
+  businessNumber    String
+  phoneNumberId     String
+  accessToken       String
+  businessAccountId String?
+  provider          String       @default("meta")
+  atApiKey          String?
+  atUsername        String?
+  atSenderId        String?
+  smsFallback       Boolean      @default(false)
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+  org               Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@index([provider])
 }
 
 enum OrgModule {

@@ -6,7 +6,7 @@ interface TableProps {
 
 function Table({ children }: TableProps) {
   return (
-    <div className="overflow-x-auto rounded-xl border border-stone-200 bg-white shadow-sm">
+    <div className="overflow-x-auto rounded-xl border border-[var(--line)] bg-[var(--panel)] shadow-sm">
       <table className="w-full text-left text-sm">{children}</table>
     </div>
   );
@@ -14,8 +14,8 @@ function Table({ children }: TableProps) {
 
 function TableHead({ children }: { children: React.ReactNode }) {
   return (
-    <thead className="bg-stone-50">
-      <tr className="border-b border-stone-200 text-xs font-semibold uppercase tracking-wider text-stone-500">
+    <thead className="bg-[var(--panel-strong)]">
+      <tr className="border-b border-[var(--line)] text-xs font-semibold uppercase tracking-wider text-[var(--ink-muted)]">
         {children}
       </tr>
     </thead>
@@ -23,7 +23,7 @@ function TableHead({ children }: { children: React.ReactNode }) {
 }
 
 function TableBody({ children }: { children: React.ReactNode }) {
-  return <tbody className="divide-y divide-stone-100">{children}</tbody>;
+  return <tbody className="divide-y divide-[var(--line)]">{children}</tbody>;
 }
 
 function TableCell({ children, className = "" }: { children: React.ReactNode; className?: string }) {

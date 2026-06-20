@@ -60,7 +60,7 @@ export default async function Page() {
   if (session?.user) redirect("/dashboard");
 
   return (
-    <main className="relative min-h-screen overflow-x-hidden bg-[#020408] text-white">
+    <main className="relative min-h-screen overflow-x-hidden bg-[#0a1628] text-white">
       {/* Ambient glow */}
       <div className="pointer-events-none fixed inset-0 -z-10">
         <div className="absolute left-1/4 top-0 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-[#4F8EF7]/5 blur-[140px]" />
@@ -68,7 +68,7 @@ export default async function Page() {
       </div>
 
       {/* ── Topbar ── */}
-      <nav className="sticky top-0 z-40 border-b border-white/5 bg-[#020408]/80 backdrop-blur-md">
+      <nav className="sticky top-0 z-40 border-b border-white/5 bg-[#0a1628]/80 backdrop-blur-md">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3.5">
           <div className="flex items-center gap-3">
             <AppLogoDark height={32} priority />

@@ -12,7 +12,7 @@ const CONTACT_EMAIL = process.env.NEXT_PUBLIC_CONTACT_EMAIL || "support@example.
 
 export default function PrivacyPage() {
   return (
-    <div className="min-h-screen bg-[#020408] text-white">
+    <div className="min-h-screen bg-[#0a1628] text-white">
       {/* Nav */}
       <header className="border-b border-white/8 px-4 py-4 md:px-6">
         <div className="mx-auto flex max-w-4xl items-center justify-between">

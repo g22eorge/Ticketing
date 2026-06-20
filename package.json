@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "export DATABASE_URL=\"file:./dev.db\" CLEAR_NEXT_CACHE=1; bunx prisma db push --skip-generate && node scripts/generate-prisma-clean.mjs && node scripts/assert-prisma-models.mjs && next dev",
+    "dev": "export DATABASE_URL=\"file:$(pwd)/prisma/dev.db\" CLEAR_NEXT_CACHE=1; bunx prisma db push --skip-generate && node scripts/generate-prisma-clean.mjs && node scripts/assert-prisma-models.mjs && next dev",
     "build": "node scripts/vercel-build.mjs",
     "vercel-build": "node scripts/vercel-build.mjs",
     "start": "PORT=${PORT:-3000} BIND_HOST=${BIND_HOST:-0.0.0.0}; if [ -f .next/standalone/server.js ]; then HOSTNAME=$BIND_HOST PORT=$PORT bun .next/standalone/server.js; else next start -p $PORT -H $BIND_HOST; fi",
@@ -57,6 +57,7 @@
     "install": "^0.13.0",
     "ioredis": "^5.10.1",
     "kysely": "0.28.17",
+    "lucide-react": "^1.21.0",
     "next": "16.2.6",
     "prisma": "6.19.3",
     "qrcode": "^1.5.4",
@@ -83,9 +84,11 @@
     "typescript": "^5"
   },
   "overrides": {
+    "@babel/core": "7.29.7",
     "defu": "6.1.7",
+    "js-yaml": "4.2.0",
     "postcss": "8.5.15",
-    "ws": "8.20.1"
+    "ws": "8.21.0"
   },
   "ignoreScripts": [
     "sharp",

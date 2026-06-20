@@ -18,10 +18,10 @@ const STATUS_COLOR: Record<string, string> = {
   OPEN: "bg-blue-100 text-blue-800",
   IN_PROGRESS: "bg-yellow-100 text-yellow-800",
   WAITING_ON_CUSTOMER: "bg-purple-100 text-purple-800",
-  WAITING_FOR_APPROVAL: "bg-amber-100 text-amber-800",
+  WAITING_FOR_APPROVAL: "bg-amber-900/50 text-amber-300 border border-amber-700/50",
   WAITING_FOR_PAYMENT: "bg-pink-100 text-pink-800",
   RESOLVED: "bg-green-100 text-green-800",
-  CLOSED: "bg-gray-100 text-gray-800",
+  CLOSED: "bg-[var(--panel-strong)] text-[var(--ink)]",
   CANCELLED: "bg-red-100 text-red-700",
 };
 
@@ -85,15 +85,15 @@ export default async function TicketsPage({
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-400">Support</p>
-          <h1 className="mt-1 text-2xl font-bold tracking-tight text-stone-900">ICT Tickets</h1>
-          <p className="mt-1 text-sm text-stone-500">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--ink-muted)]">Support</p>
+          <h1 className="mt-1 text-2xl font-bold tracking-tight text-[var(--ink)]">ICT Tickets</h1>
+          <p className="mt-1 text-sm text-[var(--ink-muted)]">
             {totalTickets} total &middot; {slaCount} SLA-covered
           </p>
         </div>
         <Link
           href="/tickets/new"
-          className="rounded-xl bg-stone-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-stone-800"
+          className="rounded-xl bg-[var(--brand)] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:brightness-110"
         >
           New Ticket
         </Link>
@@ -102,7 +102,7 @@ export default async function TicketsPage({
       <div className="flex flex-wrap gap-2">
         <Link
           href="/tickets"
-          className={"rounded-full border px-4 py-1.5 text-sm font-semibold transition " + (!statusFilter && !slaFilter ? "border-stone-900 bg-stone-900 text-white" : "border-stone-200 bg-white text-stone-600 hover:border-stone-300 hover:text-stone-800")}
+          className={"rounded-full border px-4 py-1.5 text-sm font-semibold transition " + (!statusFilter && !slaFilter ? "border-[var(--brand)] bg-[var(--brand)] text-white" : "border-[var(--line)] bg-[var(--panel)] text-[var(--ink-muted)] hover:border-[var(--accent)]/40 hover:text-[var(--ink)]")}
         >
           All ({totalTickets})
         </Link>
@@ -110,7 +110,7 @@ export default async function TicketsPage({
           <Link
             key={s}
             href={"/tickets?status=" + s}
-            className={"rounded-full border px-4 py-1.5 text-sm font-semibold transition " + (statusFilter === s ? "border-stone-900 bg-stone-900 text-white" : "border-stone-200 bg-white text-stone-600 hover:border-stone-300 hover:text-stone-800")}
+            className={"rounded-full border px-4 py-1.5 text-sm font-semibold transition " + (statusFilter === s ? "border-[var(--brand)] bg-[var(--brand)] text-white" : "border-[var(--line)] bg-[var(--panel)] text-[var(--ink-muted)] hover:border-[var(--accent)]/40 hover:text-[var(--ink)]")}
           >
             {STATUS_LABEL[s] ?? s.replace(/_/g, " ")} ({statusCounts.get(s) ?? 0})
           </Link>
@@ -122,78 +122,78 @@ export default async function TicketsPage({
           SLA ({slaCount})
         </Link>
         {(statusFilter || priorityFilter || slaFilter) && (
-          <Link href="/tickets" className="rounded-full border border-stone-200 bg-white px-4 py-1.5 text-sm font-semibold text-stone-500 hover:border-stone-300 hover:text-stone-700">
+          <Link href="/tickets" className="rounded-full border border-[var(--line)] bg-[var(--panel)] px-4 py-1.5 text-sm font-semibold text-[var(--ink-muted)] hover:border-[var(--accent)]/40 hover:text-[var(--ink)]">
             Clear
           </Link>
         )}
       </div>
 
       {tickets.length === 0 ? (
-        <div className="flex flex-col items-center gap-3 rounded-2xl border border-stone-200 bg-white py-16 text-center">
-          <p className="text-sm font-semibold text-stone-500">No tickets found</p>
-          <p className="text-xs text-stone-400">New tickets will appear here</p>
+        <div className="flex flex-col items-center gap-3 rounded-2xl border border-[var(--line)] bg-[var(--panel)] py-16 text-center">
+          <p className="text-sm font-semibold text-[var(--ink-muted)]">No tickets found</p>
+          <p className="text-xs text-[var(--ink-muted)]">New tickets will appear here</p>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-xl border border-stone-200 bg-white shadow-sm">
-          <table className="min-w-full divide-y divide-stone-200 text-sm">
-            <thead className="bg-stone-50">
+        <div className="overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)] shadow-sm">
+          <table className="min-w-full divide-y divide-[var(--line)] text-sm">
+            <thead className="bg-[var(--panel-strong)]">
               <tr>
-                <th className="whitespace-nowrap px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-stone-500">Ticket</th>
-                <th className="whitespace-nowrap px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-stone-500">Subject</th>
-                <th className="whitespace-nowrap px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-stone-500">Client</th>
-                <th className="whitespace-nowrap px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-stone-500">Category</th>
-                <th className="whitespace-nowrap px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-stone-500">Priority</th>
-                <th className="whitespace-nowrap px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-stone-500">Status</th>
-                <th className="whitespace-nowrap px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-stone-500">Assigned</th>
-                <th className="whitespace-nowrap px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-stone-500">Est. Cost</th>
-                <th className="whitespace-nowrap px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-stone-500">Created</th>
+                <th className="whitespace-nowrap px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[var(--ink-muted)]">Ticket</th>
+                <th className="whitespace-nowrap px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[var(--ink-muted)]">Subject</th>
+                <th className="whitespace-nowrap px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[var(--ink-muted)]">Client</th>
+                <th className="whitespace-nowrap px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[var(--ink-muted)]">Category</th>
+                <th className="whitespace-nowrap px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[var(--ink-muted)]">Priority</th>
+                <th className="whitespace-nowrap px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[var(--ink-muted)]">Status</th>
+                <th className="whitespace-nowrap px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[var(--ink-muted)]">Assigned</th>
+                <th className="whitespace-nowrap px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[var(--ink-muted)]">Est. Cost</th>
+                <th className="whitespace-nowrap px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[var(--ink-muted)]">Created</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-stone-200">
+            <tbody className="divide-y divide-[var(--line)]">
               {tickets.map((t) => (
-                <tr key={t.id} className="hover:bg-stone-50">
+                <tr key={t.id} className="hover:bg-[var(--panel-strong)]">
                   <td className="whitespace-nowrap px-4 py-3">
-                    <Link href={"/tickets/" + t.id} className="font-mono text-xs font-semibold text-amber-600 hover:text-amber-700 hover:underline">
+                    <Link href={"/tickets/" + t.id} className="font-mono text-xs font-semibold text-[var(--accent)] hover:text-[var(--accent)]/80 hover:underline">
                       {t.ticketNumber}
                     </Link>
                     {t.isSLACovered && (
-                      <span className="ml-2 inline-flex rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] font-bold text-emerald-700">SLA</span>
+                      <span className="ml-2 inline-flex rounded-full bg-emerald-900/60 px-1.5 py-0.5 text-[10px] font-bold text-emerald-300 border border-emerald-700/50">SLA</span>
                     )}
                   </td>
                   <td className="px-4 py-3">
-                    <Link href={"/tickets/" + t.id} className="font-medium text-stone-900 hover:text-amber-700 hover:underline">
+                    <Link href={"/tickets/" + t.id} className="font-medium text-[var(--ink)] hover:text-amber-700 hover:underline">
                       {t.subject}
                     </Link>
                   </td>
                   <td className="whitespace-nowrap px-4 py-3">
                     {t.client ? (
-                      <Link href={"/clients"} className="text-sm font-medium text-stone-700 hover:text-stone-900">
+                      <Link href={"/clients"} className="text-sm font-medium text-[var(--ink)] hover:text-[var(--ink)]">
                         {t.client.fullName}
-                        {t.client.isSLACovered && <span className="ml-1 text-emerald-600 text-xs">SLA</span>}
+                        {t.client.isSLACovered && <span className="ml-1 text-emerald-400 text-xs">SLA</span>}
                       </Link>
                     ) : (
                       <div>
-                        <div className="text-sm font-medium text-stone-700">{t.reporterName}</div>
-                        <div className="text-xs text-stone-400">{t.reporterPhone}</div>
+                        <div className="text-sm font-medium text-[var(--ink)]">{t.reporterName}</div>
+                        <div className="text-xs text-[var(--ink-muted)]">{t.reporterPhone}</div>
                       </div>
                     )}
                   </td>
-                  <td className="whitespace-nowrap px-4 py-3 text-stone-600">{t.category.replace(/_/g, " ")}</td>
+                  <td className="whitespace-nowrap px-4 py-3 text-[var(--ink-muted)]">{t.category.replace(/_/g, " ")}</td>
                   <td className="whitespace-nowrap px-4 py-3">
-                    <span className={"inline-flex rounded-full px-2 py-0.5 text-xs font-medium " + (PRIORITY_COLOR[t.priority] || "bg-stone-100 text-stone-800")}>
+                    <span className={"inline-flex rounded-full px-2 py-0.5 text-xs font-medium " + (PRIORITY_COLOR[t.priority] || "bg-[var(--panel-strong)] text-[var(--ink)]")}>
                       {t.priority}
                     </span>
                   </td>
                   <td className="whitespace-nowrap px-4 py-3">
-                    <span className={"inline-flex rounded-full px-2 py-0.5 text-xs font-medium " + (STATUS_COLOR[t.status] || "bg-stone-100 text-stone-800")}>
+                    <span className={"inline-flex rounded-full px-2 py-0.5 text-xs font-medium " + (STATUS_COLOR[t.status] || "bg-[var(--panel-strong)] text-[var(--ink)]")}>
                       {STATUS_LABEL[t.status] ?? t.status.replace(/_/g, " ")}
                     </span>
                   </td>
-                  <td className="whitespace-nowrap px-4 py-3 text-stone-600">{t.assignedTo?.name ?? "—"}</td>
-                  <td className="whitespace-nowrap px-4 py-3 text-stone-600">
+                  <td className="whitespace-nowrap px-4 py-3 text-[var(--ink-muted)]">{t.assignedTo?.name ?? "—"}</td>
+                  <td className="whitespace-nowrap px-4 py-3 text-[var(--ink-muted)]">
                     {t.estimatedCost ? formatMoney(t.estimatedCost, currency) : "—"}
                   </td>
-                  <td className="whitespace-nowrap px-4 py-3 text-stone-500">{formatEATDate(t.createdAt)}</td>
+                  <td className="whitespace-nowrap px-4 py-3 text-[var(--ink-muted)]">{formatEATDate(t.createdAt)}</td>
                 </tr>
               ))}
             </tbody>

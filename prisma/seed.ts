@@ -235,7 +235,7 @@ async function seedDefaultCommsTemplates() {
 
 // ── Auth helpers ─────────────────────────────────────────────────────────────
 
-async function ensureCredentialAccount(userId: string, password: string) {
+async function ensureCredentialAccount(userId: string, email: string, password: string) {
   const existing = await prisma.account.findFirst({
     where: { userId, providerId: "credential" },
   });
@@ -250,7 +250,7 @@ async function ensureCredentialAccount(userId: string, password: string) {
 
   await prisma.account.create({
     data: {
-      accountId: userId,
+      accountId: email,
       providerId: "credential",
       userId,
       password: await hashPassword(password),
@@ -285,7 +285,7 @@ async function ensureUser({
     },
   });
 
-  await ensureCredentialAccount(user.id, password);
+  await ensureCredentialAccount(user.id, email, password);
   return user;
 }
 

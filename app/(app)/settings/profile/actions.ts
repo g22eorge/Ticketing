@@ -179,7 +179,7 @@ export async function adminChangeUserPasswordAction(
 
     if (updated.count === 0) {
       await tx.account.create({
-        data: { accountId: target.id, providerId: "credential", userId: target.id, password: hashed },
+        data: { accountId: target.email, providerId: "credential", userId: target.id, password: hashed },
       });
     }
 

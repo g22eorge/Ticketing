@@ -27,7 +27,7 @@ function toSqliteAbsoluteUrl(url: string) {
 
 function createPrismaClient() {
   // Use TURSO_DATABASE_URL to detect production mode
-  const isProduction = !!process.env.TURSO_DATABASE_URL;
+  const isProduction = process.env.NODE_ENV === "production" && !!process.env.TURSO_DATABASE_URL;
 
   // GitHub Actions/CI runs Next in production mode but uses local sqlite.
   const isCi = process.env.CI === "true" || process.env.GITHUB_ACTIONS === "true";
@@ -55,6 +55,9 @@ function createPrismaClient() {
     }
 
     return new PrismaClient({
+      datasources: {
+        db: { url: process.env.DATABASE_URL },
+      },
       log: ["error", "warn"],
     });
   }

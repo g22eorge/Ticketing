@@ -16,7 +16,7 @@ async function send(to: string, subject: string, html: string) {
 
 // Shared styles
 const base = (body: string) => `
-  <div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:32px 24px;background:#0d0d0d;color:#e5e5e5;border-radius:12px">
+  <div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:32px 24px;background:#0a1628;color:#e5e5e5;border-radius:12px">
     <div style="margin-bottom:24px">
       <span style="font-size:11px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:#4F8EF7">BusinessOS</span>
     </div>

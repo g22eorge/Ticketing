@@ -41,10 +41,6 @@ type BrandingSettings = typeof defaultBranding;
 
 let rawTableEnsured = false;
 
-function hasDelegate() {
-  return Boolean((prisma as unknown as { documentBrandingSettings?: unknown }).documentBrandingSettings);
-}
-
 function coerceRow(row: Record<string, unknown>): BrandingSettings {
   return {
     id: "singleton",

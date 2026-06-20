@@ -36,7 +36,8 @@ export default async function QuotationDetailPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ editError?: string }>;
 }) {
-  const { id } = await params;
+  const { id: documentRef } = await params;
+  const resolvedRef = decodeURIComponent(documentRef);
   const filters = await searchParams;
   const { user, orgId } = await requireOrgSession();
 
@@ -45,7 +46,10 @@ export default async function QuotationDetailPage({
   }
 
   const quotationWhere: Prisma.QuotationWhereInput = {
-    id,
+    OR: [
+      { id: resolvedRef },
+      { quoteNumber: resolvedRef },
+    ],
     orgId,
     ...(!can.viewAllSales(user) ? { createdById: user.id } : {}),
   };
@@ -64,11 +68,13 @@ export default async function QuotationDetailPage({
 
   if (!quotation) notFound();
 
+  const id = quotation.id;
+  const detailHref = `/sales/quotations/${encodeURIComponent(quotation.quoteNumber)}`;
   const currency = quotation.currency;
   const canSend = can.createQuotations(user) && quotation.status === "DRAFT";
   const canAccept = can.approveQuotations(user) && quotation.status === "SENT";
   const canReject = can.createQuotations(user) && quotation.status === "SENT";
-  const canEditDraft = can.createQuotations(user) && quotation.status === "DRAFT" && !quotation.convertedToInvoiceId;
+  const canEditAfterApproval = can.createQuotations(user) && quotation.status === "ACCEPTED" && !quotation.convertedToInvoiceId;
   const canConvert = can.createInvoices(user) && quotation.status === "ACCEPTED" && !quotation.convertedToInvoiceId;
   const canOverrideDiscount = can.overrideDiscount(user);
   const recipientName = quotation.client?.fullName ?? quotation.lead?.fullName ?? null;
@@ -91,9 +97,9 @@ export default async function QuotationDetailPage({
     try {
       await updateQuotationStatus(id, "SENT");
     } catch {
-      redirect(`/sales/quotations/${id}`);
+      redirect(detailHref);
     }
-    redirect(`/sales/quotations/${id}`);
+    redirect(detailHref);
   }
 
   async function acceptAction() {
@@ -101,9 +107,9 @@ export default async function QuotationDetailPage({
     try {
       await updateQuotationStatus(id, "ACCEPTED");
     } catch {
-      redirect(`/sales/quotations/${id}`);
+      redirect(detailHref);
     }
-    redirect(`/sales/quotations/${id}`);
+    redirect(detailHref);
   }
 
   async function rejectAction() {
@@ -111,9 +117,9 @@ export default async function QuotationDetailPage({
     try {
       await updateQuotationStatus(id, "REJECTED");
     } catch {
-      redirect(`/sales/quotations/${id}`);
+      redirect(detailHref);
     }
-    redirect(`/sales/quotations/${id}`);
+    redirect(detailHref);
   }
 
   async function updateDetailsAction(formData: FormData) {
@@ -125,9 +131,9 @@ export default async function QuotationDetailPage({
       });
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Failed to update quotation";
-      redirect(`/sales/quotations/${id}?editError=${encodeURIComponent(msg)}`);
+      redirect(`${detailHref}?editError=${encodeURIComponent(msg)}`);
     }
-    redirect(`/sales/quotations/${id}`);
+    redirect(detailHref);
   }
 
   async function addItemAction(formData: FormData) {
@@ -141,9 +147,9 @@ export default async function QuotationDetailPage({
       });
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Failed to add item";
-      redirect(`/sales/quotations/${id}?editError=${encodeURIComponent(msg)}`);
+      redirect(`${detailHref}?editError=${encodeURIComponent(msg)}`);
     }
-    redirect(`/sales/quotations/${id}`);
+    redirect(detailHref);
   }
 
   async function updateItemAction(formData: FormData) {
@@ -158,9 +164,9 @@ export default async function QuotationDetailPage({
       });
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Failed to update item";
-      redirect(`/sales/quotations/${id}?editError=${encodeURIComponent(msg)}`);
+      redirect(`${detailHref}?editError=${encodeURIComponent(msg)}`);
     }
-    redirect(`/sales/quotations/${id}`);
+    redirect(detailHref);
   }
 
   async function removeItemAction(formData: FormData) {
@@ -170,9 +176,9 @@ export default async function QuotationDetailPage({
       await removeQuotationItem(itemId);
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Failed to remove item";
-      redirect(`/sales/quotations/${id}?editError=${encodeURIComponent(msg)}`);
+      redirect(`${detailHref}?editError=${encodeURIComponent(msg)}`);
     }
-    redirect(`/sales/quotations/${id}`);
+    redirect(detailHref);
   }
 
   async function deleteAction() {
@@ -181,14 +187,14 @@ export default async function QuotationDetailPage({
       await deleteQuotation(id);
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Failed to delete quotation";
-      redirect(`/sales/quotations/${id}?editError=${encodeURIComponent(msg)}`);
+      redirect(`${detailHref}?editError=${encodeURIComponent(msg)}`);
     }
   }
 
   async function convertToInvoiceAction() {
     "use server";
     const { user, orgId, org } = await requireOrgSession();
-    if (!can.createInvoices(user)) redirect(`/sales/quotations/${id}`);
+    if (!can.createInvoices(user)) redirect(detailHref);
 
     const quotation = await prisma.quotation.findFirst({
       where: {
@@ -200,7 +206,7 @@ export default async function QuotationDetailPage({
       },
       select: { id: true },
     });
-    if (!quotation) redirect(`/sales/quotations/${id}`);
+    if (!quotation) redirect(detailHref);
 
     const invoice = await prisma.$transaction(async (tx) => (
       ensureInvoiceFromQuotation(tx, { orgId, quotationId: id, currency: org.baseCurrency })
@@ -218,7 +224,7 @@ export default async function QuotationDetailPage({
       revalidatePath("/documents/quotations");
       redirect(`/documents/invoices?pay=${invoice.id}`);
     }
-    redirect(`/sales/quotations/${id}`);
+    redirect(detailHref);
   }
   return (
     <div className="mx-auto max-w-3xl space-y-4">
@@ -350,7 +356,7 @@ export default async function QuotationDetailPage({
         <div className="rounded-lg border border-red-400/30 bg-red-500/10 px-3 py-2 text-xs text-red-700 dark:text-red-400">{filters.editError}</div>
       ) : null}
 
-      {canEditDraft ? (
+      {canEditAfterApproval ? (
         <details className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
           <summary className="cursor-pointer list-none text-[13px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)] [&::-webkit-details-marker]:hidden">
             Edit Quote
@@ -365,28 +371,38 @@ export default async function QuotationDetailPage({
                 className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm font-normal text-[var(--ink)] outline-none focus:border-[var(--accent)]/50"
               />
             </label>
-            <label className="space-y-1 text-[12px] font-semibold text-[var(--ink-muted)] sm:col-span-2">
-              Notes
-              <textarea
-                name="notes"
-                rows={3}
-                defaultValue={quotation.notes ?? ""}
-                className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm font-normal text-[var(--ink)] outline-none focus:border-[var(--accent)]/50"
-              />
-            </label>
             <div className="sm:col-span-2">
               <button type="submit" className="btn-premium rounded-lg px-4 py-2 text-[12px] font-bold">
-                Save Quote
+                Save Changes
               </button>
             </div>
           </form>
-          <form action={deleteAction} className="mt-3 border-t border-[var(--line)] pt-3">
-            <button type="submit" className="rounded-lg border border-red-400/30 bg-red-500/10 px-4 py-2 text-[12px] font-bold text-red-700 transition hover:bg-red-500/20 dark:text-red-400">
-              Delete Draft
+        </details>
+      ) : null}
+
+      {/* Notes — always editable */}
+      <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
+        <details className="group">
+          <summary className="cursor-pointer list-none text-[13px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)] [&::-webkit-details-marker]:hidden">
+            Notes {quotation.notes ? <span className="ml-1 opacity-50">— click to edit</span> : <span className="ml-1 font-normal normal-case tracking-normal opacity-60">— add notes</span>}
+          </summary>
+          <form action={updateDetailsAction} className="mt-3 space-y-2">
+            <textarea
+              name="notes"
+              rows={3}
+              defaultValue={quotation.notes ?? ""}
+              className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm font-normal text-[var(--ink)] outline-none focus:border-[var(--accent)]/50 resize-none"
+              placeholder="Add notes..."
+            />
+            <button type="submit" className="btn-premium-secondary rounded-lg px-4 py-2 text-[12px] font-semibold">
+              Save Notes
             </button>
           </form>
         </details>
-      ) : null}
+        {quotation.notes ? (
+          <p className="mt-2 whitespace-pre-wrap text-sm text-[var(--ink)]">{quotation.notes}</p>
+        ) : null}
+      </div>
 
       <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
         <div className="border-b border-[var(--line)] px-4 py-3">
@@ -401,34 +417,34 @@ export default async function QuotationDetailPage({
                 <th className="w-28 px-4 py-2.5 text-right">Unit Price</th>
                 <th className="w-16 px-4 py-2.5 text-right">Disc %</th>
                 <th className="w-28 px-4 py-2.5 text-right">Total</th>
-                {canEditDraft ? <th className="w-28 px-4 py-2.5 text-right">Actions</th> : null}
+                {canEditAfterApproval ? <th className="w-28 px-4 py-2.5 text-right">Actions</th> : null}
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--line)]">
               {quotation.items.map((item) => (
                 <tr key={item.id}>
                   <td className="px-4 py-3 text-[var(--ink)]">
-                    {canEditDraft ? (
+                    {canEditAfterApproval ? (
                       <input form={`quote-item-${item.id}`} name="description" defaultValue={item.description} className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1.5 text-sm outline-none focus:border-[var(--accent)]/50" />
                     ) : item.description}
                   </td>
                   <td className="px-4 py-3 text-right text-[var(--ink-muted)]">
-                    {canEditDraft ? (
+                    {canEditAfterApproval ? (
                       <input form={`quote-item-${item.id}`} name="quantity" type="number" min="1" step="any" defaultValue={item.quantity} className="w-20 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-1.5 text-right text-sm outline-none focus:border-[var(--accent)]/50" />
                     ) : item.quantity}
                   </td>
                   <td className="px-4 py-3 text-right text-[var(--ink-muted)]">
-                    {canEditDraft ? (
+                    {canEditAfterApproval ? (
                       <input form={`quote-item-${item.id}`} name="unitPrice" type="number" min="0" step="any" defaultValue={item.unitPrice} className="w-28 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-1.5 text-right text-sm outline-none focus:border-[var(--accent)]/50" />
                     ) : formatMoney(item.unitPrice, currency)}
                   </td>
                   <td className="px-4 py-3 text-right text-[var(--ink-muted)]">
-                    {canEditDraft && canOverrideDiscount ? (
+                    {canEditAfterApproval && canOverrideDiscount ? (
                       <input form={`quote-item-${item.id}`} name="discount" type="number" min="0" max="100" step="any" defaultValue={item.discount} className="w-20 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-1.5 text-right text-sm outline-none focus:border-[var(--accent)]/50" />
                     ) : item.discount > 0 ? `${item.discount}%` : <span className="opacity-40">—</span>}
                   </td>
                   <td className="px-4 py-3 text-right font-medium text-[var(--ink)]">{formatMoney(item.lineTotal, currency)}</td>
-                  {canEditDraft ? (
+                  {canEditAfterApproval ? (
                     <td className="px-4 py-3 text-right">
                       <form id={`quote-item-${item.id}`} action={updateItemAction} className="inline">
                         <input type="hidden" name="itemId" value={item.id} />
@@ -445,13 +461,13 @@ export default async function QuotationDetailPage({
               ))}
               {quotation.items.length === 0 ? (
                 <tr>
-                  <td colSpan={canEditDraft ? 6 : 5} className="px-4 py-6 text-center text-sm text-[var(--ink-muted)]">No items</td>
+                  <td colSpan={canEditAfterApproval ? 6 : 5} className="px-4 py-6 text-center text-sm text-[var(--ink-muted)]">No items</td>
                 </tr>
               ) : null}
             </tbody>
           </table>
         </div>
-        {canEditDraft ? (
+        {canEditAfterApproval ? (
           <form action={addItemAction} className="grid gap-2 border-t border-[var(--line)] px-4 py-3 md:grid-cols-[1fr_80px_120px_90px_auto]">
             <input name="description" placeholder="New item description" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm outline-none focus:border-[var(--accent)]/50" />
             <input name="quantity" type="number" min="1" step="any" defaultValue="1" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm outline-none focus:border-[var(--accent)]/50" />

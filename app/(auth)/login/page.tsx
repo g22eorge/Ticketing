@@ -35,7 +35,7 @@ export default async function LoginPage() {
   }
 
   return (
-    <main className="theme-blackgold min-h-dvh bg-[#05080f]">
+    <main className="theme-blackgold min-h-dvh bg-[#0a1628]">
       {/* Subtle ambient glow */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
         <div className="absolute left-1/2 top-0 h-[500px] w-[700px] -translate-x-1/2 rounded-full bg-[#4F8EF7]/8 blur-[120px]" />
@@ -44,7 +44,7 @@ export default async function LoginPage() {
       <div className="grid min-h-dvh grid-cols-1 lg:grid-cols-[1fr_1fr]">
 
         {/* ── Left: branding panel (desktop only) ── */}
-        <section className="relative hidden flex-col justify-between overflow-hidden bg-[linear-gradient(150deg,#0d0d0d_0%,#161616_50%,#1a1500_100%)] p-12 lg:flex">
+        <section className="relative hidden flex-col justify-between overflow-hidden bg-[linear-gradient(150deg,#0a1628_0%,#0f1f3a_50%,#0a1628_100%)] p-12 lg:flex">
           <div className="pointer-events-none absolute -left-16 top-1/3 h-80 w-80 rounded-full bg-[#4F8EF7]/10 blur-[80px]" />
           <div className="pointer-events-none absolute -right-10 bottom-20 h-60 w-60 rounded-full bg-[#4F8EF7]/6 blur-[60px]" />
 
@@ -139,7 +139,7 @@ export default async function LoginPage() {
         </section>
 
         {/* ── Right: login form ── */}
-        <section className="flex min-h-dvh items-center justify-center px-5 py-10 lg:min-h-0 lg:bg-[#0d0d0d] lg:px-12">
+        <section className="flex min-h-dvh items-center justify-center px-5 py-10 lg:min-h-0 lg:bg-[#0f1f3a] lg:px-12">
           <div className="w-full max-w-sm">
 
             {/* Mobile-only logo */}

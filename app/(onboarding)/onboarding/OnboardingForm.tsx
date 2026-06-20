@@ -16,11 +16,11 @@ import { createOrganization, type CreateOrgState } from "./actions";
 // ── Plan display metadata ─────────────────────────────────────────────────────
 
 const PLAN_META = {
-  STARTER:    { label: "Free",         price: null,    color: "text-[var(--ink-muted)]",    bg: "bg-[var(--panel-strong)]",      border: "border-[var(--line)]" },
-  STANDARD:   { label: "Standard",     price: 35_000,  color: "text-blue-700 dark:text-blue-300",    bg: "bg-blue-50 dark:bg-blue-950/30",    border: "border-blue-200 dark:border-blue-800" },
-  GROWTH:     { label: "Professional", price: 75_000,  color: "text-violet-700 dark:text-violet-300", bg: "bg-violet-50 dark:bg-violet-950/30", border: "border-violet-200 dark:border-violet-800" },
-  PREMIUM:    { label: "Premium",      price: 120_000, color: "text-amber-700 dark:text-amber-300",  bg: "bg-amber-50 dark:bg-amber-950/30",  border: "border-amber-200 dark:border-amber-800" },
-  ENTERPRISE: { label: "Enterprise",   price: 200_000, color: "text-rose-700 dark:text-rose-300",    bg: "bg-rose-50 dark:bg-rose-950/30",    border: "border-rose-200 dark:border-rose-800" },
+  STARTER:    { label: "Free",         price: null,    color: "text-[var(--ink-muted)]",                   bg: "bg-[var(--panel-strong)]",            border: "border-[var(--line)]" },
+  STANDARD:   { label: "Standard",     price: 35_000,  color: "text-sky-700 dark:text-sky-400",          bg: "bg-sky-500/10 dark:bg-sky-950/30",    border: "border-sky-400/30 dark:border-sky-600" },
+  GROWTH:     { label: "Professional", price: 75_000,  color: "text-violet-700 dark:text-violet-400", bg: "bg-violet-500/10 dark:bg-violet-950/30", border: "border-violet-400/30 dark:border-violet-600" },
+  PREMIUM:    { label: "Premium",      price: 120_000, color: "text-amber-700 dark:text-amber-400",       bg: "bg-amber-500/10 dark:bg-amber-950/30", border: "border-amber-400/30 dark:border-amber-600" },
+  ENTERPRISE: { label: "Enterprise",   price: 200_000, color: "text-rose-700 dark:text-rose-400",         bg: "bg-rose-500/10 dark:bg-rose-950/30",   border: "border-rose-400/30 dark:border-rose-600" },
 } as const;
 
 const ALL_MODULES = Object.keys(MODULE_LABELS) as OrgModule[];
@@ -107,7 +107,7 @@ export function OnboardingForm() {
               step === s.n
                 ? "bg-[var(--gold)] text-black"
                 : step > s.n
-                ? "bg-emerald-500 text-white"
+                ? "bg-emerald-500 text-white dark:bg-emerald-600"
                 : "bg-[var(--panel-strong)] text-[var(--ink-muted)]"
             }`}>
               {step > s.n ? "✓" : s.n}
@@ -116,7 +116,7 @@ export function OnboardingForm() {
               {s.label}
             </span>
             {i < steps.length - 1 && (
-              <div className={`mx-3 h-px w-8 ${step > s.n ? "bg-emerald-400" : "bg-[var(--line)]"}`} />
+              <div className={`mx-3 h-px w-8 ${step > s.n ? "bg-emerald-400 dark:bg-emerald-500" : "bg-[var(--line)]"}`} />
             )}
           </div>
         ))}
@@ -205,7 +205,7 @@ export function OnboardingForm() {
           </div>
 
           {selected.size === 0 && (
-            <p className="text-center text-xs text-amber-600">Select at least one module to continue.</p>
+            <p className="text-center text-xs text-amber-600 dark:text-amber-400">Select at least one module to continue.</p>
           )}
 
           <div className="flex gap-2">

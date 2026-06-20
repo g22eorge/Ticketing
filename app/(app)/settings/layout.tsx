@@ -63,7 +63,59 @@ export default async function SettingsLayout({ children }: { children: ReactNode
               description: "Company and document setup",
               icon: (
                 <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4" aria-hidden="true">
-                  <path fillRule="evenodd" d="M10 2c-3.866 0-7 1.343-7 3v10c0 1.657 3.134 3 7 3s7-1.343 7-3V5c0-1.657-3.134-3-7-3Zm0 1.5c3.314 0 5.5 1.074 5.5 1.5S13.314 6.5 10 6.5 4.5 5.426 4.5 5 6.686 3.5 10 3.5Zm5.5 4.05c-1.2.76-3.22 1.2-5.5 1.2s-4.3-.44-5.5-1.2V10c0 .426 2.186 1.5 5.5 1.5s5.5-1.074 5.5-1.5V7.55Zm0 4c-1.2.76-3.22 1.2-5.5 1.2s-4.3-.44-5.5-1.2V14c0 .426 2.186 1.5 5.5 1.5s5.5-1.074 5.5-1.5v-2.45Z" clipRule="evenodd" />
+                  <path fillRule="evenodd" d="M10 2c-3.866 0-7 1.343-7 3v10c0 1.657 3.134 3 7 3s7-1.343 7-3V5c0-1.657-3.134-3-7-3Zm0 1.5c3.314 0 5.5 1.074 5.5 1.5S13.314 6.5 10 6.5 4.5 5.426 4.5 5 6.686 3.5 10 3.5Z" clipRule="evenodd" />
+                </svg>
+              ),
+            }
+          : null,
+        user.role === "ADMIN"
+          ? {
+              href: "/settings/billing",
+              label: "Billing",
+              description: "Payments and plans",
+              icon: (
+                <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4" aria-hidden="true">
+                  <path d="M1 4a1 1 0 0 1 1-1h16a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V4Z" />
+                  <path d="M1 10a1 1 0 0 1 1-1h16a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1v-6Z" />
+                </svg>
+              ),
+            }
+          : null,
+        user.role === "ADMIN"
+          ? {
+              href: "/settings/groups",
+              label: "Groups",
+              description: "Team group settings",
+              icon: (
+                <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4" aria-hidden="true">
+                  <path d="M13 6a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                  <path d="M2.046 15.253c-.18.01-.34-.092-.382-.266a6.5 6.5 0 0 1 11.672 0c-.042.174-.202.276-.382.266a34.816 34.816 0 0 0-10.908 0Z" />
+                </svg>
+              ),
+            }
+          : null,
+        ["ADMIN", "OPS"].includes(user.role)
+          ? {
+              href: "/settings/branches",
+              label: "Branches",
+              description: "Multi-location branches",
+              icon: (
+                <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4" aria-hidden="true">
+                  <path fillRule="evenodd" d="M4 16.5a1.5 1.5 0 0 1 1.5-1.5h1a1.5 1.5 0 0 1 0 3h-1a1.5 1.5 0 0 1-1.5-1.5Z" clipRule="evenodd" />
+                  <path d="M1.5 8.5a1.5 1.5 0 0 1 1.5-1.5h1a1.5 1.5 0 0 1 0 3H3a1.5 1.5 0 0 1-1.5-1.5Z" />
+                  <path fillRule="evenodd" d="M4 16v-12h12v12H4Z" clipRule="evenodd" />
+                </svg>
+              ),
+            }
+          : null,
+        ["ADMIN", "OPS"].includes(user.role)
+          ? {
+              href: "/settings/audit",
+              label: "Audit",
+              description: "System audit trail",
+              icon: (
+                <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4" aria-hidden="true">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.536-11.464a.75.75 0 0 0-1.06 0l-3.5 3.5a.75.75 0 0 0 0 1.06l1.5 1.5a.75.75 0 0 0 1.06-1.06L10.06 11l2.976-2.975a.75.75 0 0 0 0-1.06Z" clipRule="evenodd" />
                 </svg>
               ),
             }
@@ -73,6 +125,32 @@ export default async function SettingsLayout({ children }: { children: ReactNode
     {
       title: "Advanced",
       items: [
+        can.viewAccountsSummary(permUser)
+          ? {
+              href: "/settings/ai",
+              label: "AI Settings",
+              description: "AI assistant configuration",
+              icon: (
+                <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4" aria-hidden="true">
+                  <path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 0 2h-1v1a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-1H1a1 1 0 0 1 0-2h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2z" />
+                </svg>
+              ),
+            }
+          : null,
+        ["ADMIN", "OPS"].includes(user.role)
+          ? {
+              href: "/settings/targets",
+              label: "Targets",
+              description: "Sales and team targets",
+              icon: (
+                <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4" aria-hidden="true">
+                  <circle cx="10" cy="10" r="9" stroke="currentColor" strokeWidth="1.5" fill="none" />
+                  <circle cx="10" cy="10" r="5" stroke="currentColor" strokeWidth="1.5" fill="none" />
+                  <circle cx="10" cy="10" r="1" fill="currentColor" />
+                </svg>
+              ),
+            }
+          : null,
         ["ADMIN", "OPS"].includes(user.role)
           ? { href: "/settings/notifications/templates", label: "Templates", description: "WhatsApp and email" }
             : null,

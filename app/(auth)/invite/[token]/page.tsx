@@ -17,7 +17,7 @@ export default async function AcceptInvitePage({ params }: Props) {
   const isInvalid = !invite || isExpired || isUsed;
 
   return (
-    <main className="theme-blackgold min-h-dvh bg-[#05080f]">
+    <main className="theme-blackgold min-h-dvh bg-[#0a1628]">
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
         <div className="absolute left-1/2 top-0 h-[500px] w-[700px] -translate-x-1/2 rounded-full bg-[#4F8EF7]/8 blur-[120px]" />
       </div>

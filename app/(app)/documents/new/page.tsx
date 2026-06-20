@@ -3,28 +3,33 @@ export const dynamic = "force-dynamic";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
+import { getAppCurrency } from "@/lib/currency";
+import { getDocumentBrandingSettings } from "@/lib/document-branding";
 import { requireOrgSession } from "@/lib/org-context";
 import { can } from "@/lib/permissions";
+import { prisma } from "@/lib/prisma";
+import { NewQuotationForm } from "../../sales/quotations/new/NewQuotationForm";
+import { NewInvoiceForm } from "./NewInvoiceForm";
 
 const DOCUMENT_TYPES = [
   {
     key: "quotation",
     label: "Quotation",
-    href: "/sales/quotations/new",
+    href: "/documents/new?type=quotation",
     listHref: "/documents/quotations",
     description: "Create a standalone customer quotation.",
-    detail: "Start here, then continue to the focused quotation form.",
+    detail: "Select a client, add quoted items, and create a draft without opening a ticket.",
     cta: "Create quotation",
     allowed: (user: Awaited<ReturnType<typeof requireOrgSession>>["user"]) => can.createQuotations(user),
   },
   {
     key: "invoice",
     label: "Invoice",
-    href: "/tickets",
+    href: "/documents/new?type=invoice",
     listHref: "/documents/invoices",
-    description: "Create an invoice from a billable ticket.",
-    detail: "Open a ticket, then use Create Invoice from the ticket actions.",
-    cta: "Choose ticket",
+    description: "Create a standalone client invoice.",
+    detail: "Select a client, add invoice lines, and issue it without opening a ticket.",
+    cta: "Create invoice",
     allowed: (user: Awaited<ReturnType<typeof requireOrgSession>>["user"]) => can.createInvoices(user),
   },
   {
@@ -45,7 +50,7 @@ export default async function NewDocumentPage({
 }: {
   searchParams: Promise<{ type?: string }>;
 }) {
-  const { user } = await requireOrgSession();
+  const { user, orgId } = await requireOrgSession();
   const params = await searchParams;
   const selectedType = (params.type ?? "quotation").toLowerCase();
   const selected = DOCUMENT_TYPES.find((item) => item.key === selectedType) ?? DOCUMENT_TYPES[0];
@@ -54,8 +59,25 @@ export default async function NewDocumentPage({
     redirect("/documents");
   }
 
+  const needsDocumentForm = selected.key === "quotation" || selected.key === "invoice";
+  const currency = getAppCurrency();
+  const [clients, branding] = needsDocumentForm
+    ? await Promise.all([
+      prisma.client.findMany({
+        where: { orgId },
+        orderBy: { fullName: "asc" },
+        take: 300,
+        select: { id: true, fullName: true, phone: true, email: true, organization: true, address: true },
+      }),
+      getDocumentBrandingSettings(orgId),
+    ])
+    : ([
+      [],
+      null,
+    ] as const);
+
   return (
-    <div className="mx-auto max-w-5xl space-y-5 p-4 md:p-6">
+    <div className="mx-auto max-w-6xl space-y-5 p-4 md:p-6">
       <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-4">
         <p className="text-xs font-bold uppercase tracking-[0.16em] text-[var(--ink-muted)]">New Document</p>
         <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
@@ -89,39 +111,39 @@ export default async function NewDocumentPage({
         ))}
       </div>
 
-      <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-5">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 className="text-base font-bold text-[var(--ink)]">Continue to {selected.label}</h2>
-            <p className="mt-1 text-sm text-[var(--ink-muted)]">{selected.detail}</p>
+      {selected.key === "quotation" && branding ? (
+        <NewQuotationForm
+          currency={currency}
+          canOverrideDiscount={can.overrideDiscount(user)}
+          clients={clients}
+          defaultTaxApplicable={branding.vatDefaultApplicable}
+          defaultTaxRate={branding.vatRatePercent}
+          defaultTaxLabel={branding.vatLabel}
+        />
+      ) : selected.key === "invoice" && branding ? (
+        <NewInvoiceForm
+          currency={currency}
+          clients={clients}
+          defaultTaxApplicable={branding.vatDefaultApplicable}
+          defaultTaxRate={branding.vatRatePercent}
+          defaultTaxLabel={branding.vatLabel}
+        />
+      ) : (
+        <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="text-base font-bold text-[var(--ink)]">Continue to {selected.label}</h2>
+              <p className="mt-1 text-sm text-[var(--ink-muted)]">{selected.detail}</p>
+            </div>
+            <Link
+              href={selected.href}
+              className="btn-premium inline-flex items-center justify-center rounded-lg px-4 py-2.5 text-sm font-bold"
+            >
+              {selected.cta}
+            </Link>
           </div>
-          <Link
-            href={selected.href}
-            className="btn-premium inline-flex items-center justify-center rounded-lg px-4 py-2.5 text-sm font-bold"
-          >
-            {selected.cta}
-          </Link>
         </div>
-      </div>
-
-      {selected.key === "quotation" ? (
-        <div className="grid gap-3 sm:grid-cols-2">
-          <Link
-            href="/sales/quotations/new"
-            className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:border-[var(--accent)]/45"
-          >
-            <p className="text-sm font-bold text-[var(--ink)]">Standalone quotation</p>
-            <p className="mt-1 text-xs text-[var(--ink-muted)]">Use this when the quote is not tied to a ticket.</p>
-          </Link>
-          <Link
-            href="/tickets"
-            className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 transition hover:border-[var(--accent)]/45"
-          >
-            <p className="text-sm font-bold text-[var(--ink)]">Ticket quotation</p>
-            <p className="mt-1 text-xs text-[var(--ink-muted)]">Open a ticket and create its quotation from ticket actions.</p>
-          </Link>
-        </div>
-      ) : null}
+      )}
     </div>
   );
 }

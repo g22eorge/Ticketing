@@ -16,7 +16,7 @@ import {
   sendIntakeRejectionNotification,
   sendJobCreatedNotification,
 } from "@/lib/notifications/whatsapp";
-import { notifyRepairRequestReceived, notifyJobCreated } from "@/lib/notifications";
+import { notifyJobCreated } from "@/lib/notifications";
 
 const listSchema = z.object({
   take: z.coerce.number().int().positive().max(500).optional(),

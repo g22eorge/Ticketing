@@ -14,6 +14,40 @@ import { requireOrgSession } from "@/lib/org-context";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+export async function PATCH(
+  req: NextRequest,
+  context: { params: Promise<{ id: string }> },
+) {
+  const { id } = await context.params;
+  const { user, orgId } = await requireOrgSession();
+
+  if (!can.createInvoices(user)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const body = await req.json().catch(() => null);
+  if (!body) return NextResponse.json({ error: "Invalid body" }, { status: 400 });
+
+  const { status, notes } = body as { status?: string; notes?: string };
+
+  const invoice = await prisma.invoice.findFirst({ where: { id, orgId } });
+  if (!invoice) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  if (status && !["DRAFT", "ISSUED", "PAID", "VOID"].includes(status)) {
+    return NextResponse.json({ error: "Invalid status" }, { status: 400 });
+  }
+
+  await prisma.invoice.update({
+    where: { id },
+    data: {
+      ...(status ? { status: status as import("@prisma/client").InvoiceStatus } : {}),
+      ...(notes !== undefined ? { notes: notes || null } : {}),
+    },
+  });
+
+  return NextResponse.json({ ok: true });
+}
+
 export async function GET(
   _req: NextRequest,
   context: { params: Promise<{ id: string }> },

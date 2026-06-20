@@ -30,7 +30,7 @@ async function main() {
   if (!existingAccount) {
     await prisma.account.create({
       data: {
-        accountId: admin.id,
+        accountId: admin.email,
         providerId: "credential",
         userId: admin.id,
         password: await hashPassword(adminPassword),

@@ -89,7 +89,7 @@ export async function acceptInvite(
 
       await tx.account.create({
         data: {
-          accountId: user.id,
+          accountId: user.email,
           providerId: "credential",
           userId: user.id,
           password: hashed,

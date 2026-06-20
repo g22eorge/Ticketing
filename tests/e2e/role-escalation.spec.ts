@@ -17,7 +17,7 @@ const prisma = new PrismaClient();
 const baseUrl = process.env.E2E_BASE_URL ?? "http://127.0.0.1:4173";
 const password = process.env.E2E_PASSWORD ?? "Tenant123!";
 
-async function ensureAccount(userId: string) {
+async function ensureAccount(userId: string, email: string) {
   const passwordHash = await hashPassword(password);
   const existing = await prisma.account.findFirst({
     where: { userId, providerId: "credential" },
@@ -28,7 +28,7 @@ async function ensureAccount(userId: string) {
     return;
   }
   await prisma.account.create({
-    data: { userId, accountId: userId, providerId: "credential", password: passwordHash },
+    data: { userId, accountId: email, providerId: "credential", password: passwordHash },
   });
 }
 
@@ -75,7 +75,7 @@ async function seedFixture() {
     },
   });
 
-  await Promise.all([ensureAccount(extTech.id), ensureAccount(salesUser.id)]);
+  await Promise.all([ensureAccount(extTech.id, extTech.email), ensureAccount(salesUser.id, salesUser.email)]);
 
   return { org, extTech, salesUser };
 }

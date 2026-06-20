@@ -110,7 +110,7 @@ export default async function ComplaintPage({
 
   if (submitted) {
     return (
-      <div className="min-h-screen bg-[#020408] flex items-center justify-center p-4">
+      <div className="min-h-screen bg-[#0a1628] flex items-center justify-center p-4">
         <div className="w-full max-w-md space-y-4">
           <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-6 text-center">
             <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full border border-emerald-500/30 bg-emerald-500/20">
@@ -137,7 +137,7 @@ export default async function ComplaintPage({
   }
 
   return (
-    <div className="min-h-screen bg-[#020408] p-4">
+    <div className="min-h-screen bg-[#0a1628] p-4">
       <div className="mx-auto max-w-lg space-y-5 py-8">
         <div className="text-center">
           <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-xl border border-red-500/20 bg-red-500/10">
@@ -214,7 +214,7 @@ export default async function ComplaintPage({
             <select
               name="category"
               defaultValue="OTHER"
-              className="w-full rounded-lg border border-white/10 bg-[#05080f] px-3 py-2.5 text-sm text-white outline-none focus:border-[#4F8EF7]/40"
+              className="w-full rounded-lg border border-white/10 bg-[#0f1f3a] px-3 py-2.5 text-sm text-white outline-none focus:border-[#4F8EF7]/40"
             >
               {CATEGORIES.map((c) => (
                 <option key={c} value={c}>

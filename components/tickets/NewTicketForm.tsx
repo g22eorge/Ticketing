@@ -13,9 +13,9 @@ type ClientOption = {
 };
 
 const inputCls =
-  "w-full rounded-xl border border-stone-200 bg-white px-4 py-3 text-sm text-stone-900 outline-none transition focus:border-amber-400/60 focus:ring-2 focus:ring-amber-200/40 placeholder:text-stone-400";
+  "w-full rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3 text-sm text-[var(--ink)] outline-none transition focus:border-[var(--accent)]/60 focus:ring-2 focus:ring-[var(--accent)]/20 placeholder:text-[var(--ink-muted)]";
 const selectCls =
-  "w-full rounded-xl border border-stone-200 bg-white px-4 py-3 text-sm text-stone-900 outline-none transition focus:border-amber-400/60 focus:ring-2 focus:ring-amber-200/40";
+  "w-full rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3 text-sm text-[var(--ink)] outline-none transition focus:border-[var(--accent)]/60 focus:ring-2 focus:ring-[var(--accent)]/20";
 
 export function NewTicketForm({ clients }: { clients: ClientOption[] }) {
   const router = useRouter();
@@ -24,13 +24,13 @@ export function NewTicketForm({ clients }: { clients: ClientOption[] }) {
   return (
     <form action={formAction} className="mx-auto max-w-2xl space-y-8">
       <section className="space-y-4">
-        <h2 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-stone-800">
-          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-stone-900 text-xs font-bold text-white">1</span>
+        <h2 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-[var(--ink)]">
+          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--brand)] text-xs font-bold text-white">1</span>
           Client
         </h2>
         {clients.length > 0 ? (
           <div>
-            <label className="mb-1.5 block text-xs font-semibold text-stone-500">Existing client</label>
+            <label className="mb-1.5 block text-xs font-semibold text-[var(--ink-muted)]">Existing client</label>
             <select name="clientId" className={selectCls} defaultValue="">
               <option value="">Create or match by phone below</option>
               {clients.map((client) => (
@@ -43,27 +43,27 @@ export function NewTicketForm({ clients }: { clients: ClientOption[] }) {
         ) : null}
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <label className="mb-1.5 block text-xs font-semibold text-stone-500">Contact person *</label>
+            <label className="mb-1.5 block text-xs font-semibold text-[var(--ink-muted)]">Contact person *</label>
             <input name="reporterName" className={inputCls} placeholder="Jane Doe" required />
           </div>
           <div>
-            <label className="mb-1.5 block text-xs font-semibold text-stone-500">Phone *</label>
+            <label className="mb-1.5 block text-xs font-semibold text-[var(--ink-muted)]">Phone *</label>
             <input name="reporterPhone" className={inputCls} placeholder="+256 7XX XXX XXX" required />
           </div>
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <label className="mb-1.5 block text-xs font-semibold text-stone-500">Email</label>
+            <label className="mb-1.5 block text-xs font-semibold text-[var(--ink-muted)]">Email</label>
             <input name="reporterEmail" type="email" className={inputCls} placeholder="client@example.com" />
           </div>
           <div>
-            <label className="mb-1.5 block text-xs font-semibold text-stone-500">Company / organization</label>
+            <label className="mb-1.5 block text-xs font-semibold text-[var(--ink-muted)]">Company / organization</label>
             <input name="reporterCompany" className={inputCls} placeholder="Optional" />
           </div>
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <label className="mb-1.5 block text-xs font-semibold text-stone-500">Client type</label>
+            <label className="mb-1.5 block text-xs font-semibold text-[var(--ink-muted)]">Client type</label>
             <select name="clientType" className={selectCls} defaultValue="INDIVIDUAL">
               <option value="INDIVIDUAL">Individual</option>
               <option value="COMPANY">Company</option>
@@ -80,13 +80,13 @@ export function NewTicketForm({ clients }: { clients: ClientOption[] }) {
       </section>
 
       <section className="space-y-4">
-        <h2 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-stone-800">
-          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-stone-900 text-xs font-bold text-white">2</span>
+        <h2 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-[var(--ink)]">
+          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--brand)] text-xs font-bold text-white">2</span>
           Ticket
         </h2>
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <label className="mb-1.5 block text-xs font-semibold text-stone-500">Priority</label>
+            <label className="mb-1.5 block text-xs font-semibold text-[var(--ink-muted)]">Priority</label>
             <select name="priority" className={selectCls} defaultValue="MEDIUM">
               <option value="LOW">Low</option>
               <option value="MEDIUM">Medium</option>
@@ -95,7 +95,7 @@ export function NewTicketForm({ clients }: { clients: ClientOption[] }) {
             </select>
           </div>
           <div>
-            <label className="mb-1.5 block text-xs font-semibold text-stone-500">Service type</label>
+            <label className="mb-1.5 block text-xs font-semibold text-[var(--ink-muted)]">Service type</label>
             <select name="category" className={selectCls} defaultValue="OTHER">
               <option value="HARDWARE">Hardware</option>
               <option value="SOFTWARE">Software</option>
@@ -108,19 +108,19 @@ export function NewTicketForm({ clients }: { clients: ClientOption[] }) {
           </div>
         </div>
         <div>
-          <label className="mb-1.5 block text-xs font-semibold text-stone-500">Subject *</label>
+          <label className="mb-1.5 block text-xs font-semibold text-[var(--ink-muted)]">Subject *</label>
           <input name="subject" className={inputCls} placeholder="Email not syncing on staff laptops" required />
         </div>
         <div>
-          <label className="mb-1.5 block text-xs font-semibold text-stone-500">Device or service</label>
+          <label className="mb-1.5 block text-xs font-semibold text-[var(--ink-muted)]">Device or service</label>
           <input name="deviceInfo" className={inputCls} placeholder="HP laptop, printer, network, Microsoft 365..." />
         </div>
         <div>
-          <label className="mb-1.5 block text-xs font-semibold text-stone-500">Issue description *</label>
+          <label className="mb-1.5 block text-xs font-semibold text-[var(--ink-muted)]">Issue description *</label>
           <textarea name="description" className={`${inputCls} min-h-[120px] resize-y`} placeholder="Describe the support request..." required />
         </div>
         <div>
-          <label className="mb-1.5 block text-xs font-semibold text-stone-500">Estimated cost</label>
+          <label className="mb-1.5 block text-xs font-semibold text-[var(--ink-muted)]">Estimated cost</label>
           <input name="estimatedCost" type="number" min="0" step="0.01" className={inputCls} placeholder="Optional" />
         </div>
       </section>
@@ -135,14 +135,14 @@ export function NewTicketForm({ clients }: { clients: ClientOption[] }) {
         <button
           type="submit"
           disabled={isPending}
-          className="inline-flex items-center gap-2 rounded-xl bg-stone-900 px-6 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-stone-800 disabled:cursor-not-allowed disabled:opacity-40"
+          className="inline-flex items-center gap-2 rounded-xl bg-[var(--brand)] px-6 py-3 text-sm font-bold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
         >
           {isPending ? "Creating..." : "Create Ticket"}
         </button>
         <button
           type="button"
           onClick={() => router.back()}
-          className="rounded-xl border border-stone-200 px-5 py-3 text-sm font-semibold text-stone-500 transition hover:border-stone-300 hover:text-stone-700"
+          className="rounded-xl border border-[var(--line)] px-5 py-3 text-sm font-semibold text-[var(--ink-muted)] transition hover:border-[var(--accent)]/40 hover:text-[var(--ink)]"
         >
           Cancel
         </button>

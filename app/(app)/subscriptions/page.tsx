@@ -1,5 +1,6 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { ClientSubscriptionStatus, SLACycle } from "@prisma/client";
 
 import { formatMoney } from "@/lib/currency";
@@ -168,7 +169,7 @@ export default async function ClientSubscriptionsPage() {
       where: { orgId },
       orderBy: { renewalDate: "asc" },
       include: {
-        client: { select: { fullName: true, phone: true, email: true } },
+        client: { select: { id: true, fullName: true, phone: true, email: true } },
         renewals: { orderBy: { renewedAt: "desc" }, take: 3 },
         reminders: { orderBy: { remindAt: "asc" }, take: 3 },
       },
@@ -241,7 +242,7 @@ export default async function ClientSubscriptionsPage() {
               <section key={sub.id} className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div>
-                    <p className="text-base font-bold text-[var(--ink)]">{sub.client.fullName}</p>
+                    <Link href={`/clients/${sub.client.id}`} className="text-base font-bold text-[var(--ink)] hover:text-[var(--accent)] hover:underline">{sub.client.fullName}</Link>
                     <p className="text-xs text-[var(--ink-muted)]">{sub.client.phone}{sub.client.email ? ` · ${sub.client.email}` : ""}</p>
                     <div className="mt-2 flex flex-wrap gap-2">
                       <span className="rounded-full border border-[var(--line)] px-2 py-0.5 text-xs font-bold text-[var(--ink-muted)]">{sub.cycle}</span>
@@ -294,7 +295,7 @@ export default async function ClientSubscriptionsPage() {
           <div className="mt-4 space-y-3">
             {upcomingReminders.map(({ subscription, reminder }) => (
               <div key={reminder.id} className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2">
-                <p className="text-sm font-bold text-[var(--ink)]">{subscription.client.fullName}</p>
+                <Link href={`/clients/${subscription.client.id}`} className="text-sm font-bold text-[var(--ink)] hover:text-[var(--accent)] hover:underline">{subscription.client.fullName}</Link>
                 <p className="text-xs text-[var(--ink-muted)]">{reminder.type.replaceAll("_", " ")} · {fmtDate(reminder.remindAt)}</p>
                 <p className="mt-1 text-[11px] text-[var(--ink-muted)]">Supports email and WhatsApp notification.</p>
               </div>

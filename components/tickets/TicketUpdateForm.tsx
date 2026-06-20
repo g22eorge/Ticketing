@@ -93,16 +93,16 @@ export function TicketUpdateForm({
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-xs font-semibold uppercase tracking-wider text-stone-500 mb-1">Status</label>
+          <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-[var(--ink-muted)]">Status</label>
           <select name="status" defaultValue={currentStatus}
-            className="w-full rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500">
+            className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 py-2 text-sm text-[var(--ink)] outline-none transition focus:border-[var(--accent)]/60 focus:ring-1 focus:ring-[var(--accent)]/20">
             {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{STATUS_LABEL[s] ?? s.replace(/_/g, " ")}</option>)}
           </select>
         </div>
         <div>
-          <label className="block text-xs font-semibold uppercase tracking-wider text-stone-500 mb-1">Priority</label>
+          <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-[var(--ink-muted)]">Priority</label>
           <select name="priority" defaultValue={currentPriority}
-            className="w-full rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500">
+            className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 py-2 text-sm text-[var(--ink)] outline-none transition focus:border-[var(--accent)]/60 focus:ring-1 focus:ring-[var(--accent)]/20">
             {PRIORITY_OPTIONS.map((p) => <option key={p} value={p}>{p}</option>)}
           </select>
         </div>
@@ -110,18 +110,18 @@ export function TicketUpdateForm({
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-xs font-semibold uppercase tracking-wider text-stone-500 mb-1">Assigned To</label>
+          <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-[var(--ink-muted)]">Assigned To</label>
           <select name="assignedToId" defaultValue={currentAssignedToId ?? ""}
-            className="w-full rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500">
+            className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 py-2 text-sm text-[var(--ink)] outline-none transition focus:border-[var(--accent)]/60 focus:ring-1 focus:ring-[var(--accent)]/20">
             <option value="">Unassigned</option>
             {users.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
           </select>
         </div>
         <div>
-          <label className="block text-xs font-semibold uppercase tracking-wider text-stone-500 mb-1">Estimated Cost</label>
+          <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-[var(--ink-muted)]">Estimated Cost</label>
           <input name="estimatedCost" type="number" step="0.01" min="0"
             defaultValue={currentEstimatedCost ?? ""} placeholder="0.00"
-            className="w-full rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500" />
+            className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 py-2 text-sm text-[var(--ink)] outline-none transition focus:border-[var(--accent)]/60 focus:ring-1 focus:ring-[var(--accent)]/20" />
         </div>
       </div>
 
@@ -129,27 +129,27 @@ export function TicketUpdateForm({
         <input type="checkbox" id="isSLACovered" name="isSLACovered"
           defaultChecked={currentIsSLACovered}
           className="h-4 w-4 rounded border-stone-300 text-emerald-600 focus:ring-emerald-500" />
-        <label htmlFor="isSLACovered" className="text-sm font-medium text-stone-700">
+        <label htmlFor="isSLACovered" className="text-sm font-medium text-[var(--ink)]">
           Covered under SLA
         </label>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-xs font-semibold uppercase tracking-wider text-stone-500 mb-1">Resolution</label>
+          <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-[var(--ink-muted)]">Resolution</label>
           <textarea name="resolution" rows={3} defaultValue={currentResolution ?? ""} placeholder="Resolution notes..."
-            className="w-full rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 resize-none" />
+            className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 py-2 text-sm text-[var(--ink)] outline-none transition focus:border-[var(--accent)]/60 focus:ring-1 focus:ring-[var(--accent)]/20 resize-none" />
         </div>
         <div>
-          <label className="block text-xs font-semibold uppercase tracking-wider text-stone-500 mb-1">Internal Notes</label>
+          <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-[var(--ink-muted)]">Internal Notes</label>
           <textarea name="notes" rows={3} defaultValue={currentNotes ?? ""} placeholder="Internal notes..."
-            className="w-full rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 resize-none" />
+            className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 py-2 text-sm text-[var(--ink)] outline-none transition focus:border-[var(--accent)]/60 focus:ring-1 focus:ring-[var(--accent)]/20 resize-none" />
         </div>
       </div>
 
       <div className="flex justify-end">
         <button type="submit" disabled={busy}
-          className="rounded-lg bg-stone-900 px-5 py-2 text-sm font-semibold text-white transition hover:bg-stone-800 disabled:opacity-60">
+          className="rounded-lg bg-[var(--brand)] px-5 py-2 text-sm font-semibold text-white transition hover:brightness-110 disabled:opacity-60">
           {busy ? "Saving..." : "Save Changes"}
         </button>
       </div>

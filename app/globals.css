@@ -25,11 +25,11 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --page-bg: #020408;
+    --page-bg: #0a1628;
     --ink: rgba(255, 255, 255, 0.94);
     --ink-muted: rgba(255, 255, 255, 0.52);
-    --panel: #0c1017;
-    --panel-strong: #131822;
+    --panel: #0f1f3a;
+    --panel-strong: #162640;
     --line: rgba(255, 255, 255, 0.10);
     --brand: #4F8EF7;
     --brand-deep: #3B7EE8;
@@ -37,17 +37,17 @@
     --accent-fg: #4F8EF7;
     --accent-muted: rgba(79, 142, 247, 0.14);
     --accent-border: rgba(79, 142, 247, 0.35);
-    --sidebar-bg: #05080f;
+    --sidebar-bg: #0a1628;
   }
 }
 
 /* Manual dark mode override - Midnight Blue: deep dark backgrounds, electric blue accent */
 .theme-blackgold {
-  --page-bg: #020408;
+  --page-bg: #0a1628;
   --ink: rgba(255, 255, 255, 0.94);
   --ink-muted: rgba(255, 255, 255, 0.52);
-  --panel: #0c1017;
-  --panel-strong: #131822;
+  --panel: #0f1f3a;
+  --panel-strong: #162640;
   --line: rgba(255, 255, 255, 0.10);
   --brand: #4F8EF7;
   --brand-deep: #3B7EE8;
@@ -55,7 +55,7 @@
   --accent-fg: #4F8EF7;
   --accent-muted: rgba(79, 142, 247, 0.14);
   --accent-border: rgba(79, 142, 247, 0.35);
-  --sidebar-bg: #05080f;
+  --sidebar-bg: #0f1f3a;
 }
 
 /* Manual light mode override */
