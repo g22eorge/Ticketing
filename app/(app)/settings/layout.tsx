@@ -123,37 +123,9 @@ export default async function SettingsLayout({ children }: { children: ReactNode
       ].filter(Boolean) as SettingsNavGroup["items"],
     },
     {
-      title: "Advanced",
+      title: "Notifications",
       items: [
-        can.viewAccountsSummary(permUser)
-          ? {
-              href: "/settings/ai",
-              label: "AI Settings",
-              description: "AI assistant configuration",
-              icon: (
-                <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4" aria-hidden="true">
-                  <path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 0 2h-1v1a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-1H1a1 1 0 0 1 0-2h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2z" />
-                </svg>
-              ),
-            }
-          : null,
-        ["ADMIN", "OPS"].includes(user.role)
-          ? {
-              href: "/settings/targets",
-              label: "Targets",
-              description: "Sales and team targets",
-              icon: (
-                <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4" aria-hidden="true">
-                  <circle cx="10" cy="10" r="9" stroke="currentColor" strokeWidth="1.5" fill="none" />
-                  <circle cx="10" cy="10" r="5" stroke="currentColor" strokeWidth="1.5" fill="none" />
-                  <circle cx="10" cy="10" r="1" fill="currentColor" />
-                </svg>
-              ),
-            }
-          : null,
-        ["ADMIN", "OPS"].includes(user.role)
-          ? { href: "/settings/notifications/templates", label: "Templates", description: "WhatsApp and email" }
-            : null,
+        user.role === "ADMIN" ? { href: "/settings/notifications/templates", label: "Templates", description: "WhatsApp and email" } : null,
         user.role === "ADMIN" ? { href: "/settings/notifications/whatsapp", label: "WhatsApp", description: "Provider connection" } : null,
         ["ADMIN", "OPS"].includes(user.role)
           ? { href: "/settings/notifications/outbox", label: "Outbox", description: "Delivery status" }
