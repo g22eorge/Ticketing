@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback, useTransition } from "react";
 import { createPortal } from "react-dom";
-import { MoreHorizontal, Ban, CheckCircle2 } from "lucide-react";
+import { Ban, CheckCircle2 } from "lucide-react";
 
 export type DocAction = {
   key: string;

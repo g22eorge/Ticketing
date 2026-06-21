@@ -1,12 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { Download, Send, Printer, FileText, X } from "lucide-react";
 import { DocumentActionCell } from "@/components/shared/DocumentActionCell";
 import { StatusBadge, receiptStatusVariant } from "@/components/ui/StatusBadge";
 import { formatMoney } from "@/lib/currency";
 import { formatEATDate, formatEATDateTime } from "@/lib/date-eat";
 import { documentAction } from "@/app/(app)/documents/actions";
+
+const ICO = ({ children }: { children: React.ReactNode }) => (
+  <span className="inline-flex h-[13px] w-[13px] items-center justify-center text-[11px] leading-none">{children}</span>
+);
 
 interface ReceiptDetailPageProps {
   receiptNumber: string;
@@ -43,20 +46,20 @@ export function ReceiptDetailView(props: ReceiptDetailPageProps) {
 
   const quickActions = !isVoided
     ? [
-        { key: "download", label: "Download PDF", icon: <Download size={13} />, href: `/api/receipts/${id}`, external: true },
-        { key: "send", label: "Send receipt", icon: <Send size={13} />, serverAction: sa("receipt-send"), tone: "accent" as const },
-        { key: "print", label: "Print", icon: <Printer size={13} />, href: `/api/receipts/${id}`, external: true },
-        { key: "duplicate", label: "Duplicate receipt", icon: <FileText size={13} />, serverAction: sa("receipt-duplicate") },
+        { key: "download", label: "Download PDF", icon: <ICO>↓</ICO>, href: `/api/receipts/${id}`, external: true },
+        { key: "send", label: "Send receipt", icon: <ICO>↗</ICO>, serverAction: sa("receipt-send"), tone: "accent" as const },
+        { key: "print", label: "Print", icon: <ICO>⎙</ICO>, href: `/api/receipts/${id}`, external: true },
+        { key: "duplicate", label: "Duplicate receipt", icon: <ICO>📄</ICO>, serverAction: sa("receipt-duplicate") },
       ]
     : [
-        { key: "download", label: "Download PDF", icon: <Download size={13} />, href: `/api/receipts/${id}`, external: true },
-        { key: "dup", label: "Duplicate receipt", icon: <FileText size={13} />, serverAction: sa("receipt-duplicate") },
+        { key: "download", label: "Download PDF", icon: <ICO>↓</ICO>, href: `/api/receipts/${id}`, external: true },
+        { key: "dup", label: "Duplicate receipt", icon: <ICO>📄</ICO>, serverAction: sa("receipt-duplicate") },
       ];
 
   const moreActions = !isVoided
     ? [
         { key: "div1", label: "", icon: null, divider: true },
-        { key: "void", label: "Void receipt", icon: <X size={13} />, serverAction: sa("receipt-void"), confirm: "Void this receipt? This cannot be undone.", tone: "danger" as const },
+        { key: "void", label: "Void receipt", icon: <span className="inline-flex h-[13px] w-[13px] items-center justify-center text-[11px] leading-none">✕</span>, serverAction: sa("receipt-void"), confirm: "Void this receipt? This cannot be undone.", tone: "danger" as const },
       ]
     : [];
 

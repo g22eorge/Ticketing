@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { QuotationStatus, InvoiceStatus } from "@prisma/client";
+import { QuotationStatus, InvoiceStatus, PaymentMethod } from "@prisma/client";
 
 import { can } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
@@ -143,11 +143,58 @@ export async function documentAction(formData: FormData) {
     }
     case "invoice-mark-paid": {
       if (!can.approveInvoices(user)) break;
-      const inv = await prisma.invoice.findFirst({ where: { id, orgId }, select: { totalAmount: true } });
+      const inv = await prisma.invoice.findFirst({
+        where: { id, orgId },
+        select: { totalAmount: true, currency: true, clientId: true, invoiceNumber: true, ticket: { select: { id: true, ticketNumber: true } } },
+      });
       if (!inv) break;
-      await prisma.invoice.updateMany({
-        where: { id, orgId, status: { in: ["DRAFT", "ISSUED"] } },
-        data: { status: "PAID" as InvoiceStatus, paidAt: new Date(), paidAmount: inv.totalAmount },
+      const ticketId = inv.ticket?.id ?? null;
+      const ticketNumber = inv.ticket?.ticketNumber ?? null;
+      await prisma.$transaction(async (tx) => {
+        const result = await tx.invoice.updateMany({
+          where: { id, orgId, status: { in: ["DRAFT", "ISSUED"] } },
+          data: { status: "PAID" as InvoiceStatus, paidAt: new Date(), paidAmount: inv.totalAmount },
+        });
+        if (result.count === 0) return;
+
+        const existingReceipt = await tx.receipt.findFirst({ where: { invoiceId: id } });
+        if (existingReceipt) return;
+
+        if (ticketId) {
+          const ticketReceipt = await tx.receipt.findFirst({ where: { ticketId } });
+          if (ticketReceipt) {
+            await tx.receipt.update({ where: { id: ticketReceipt.id }, data: { invoiceId: id } });
+            return;
+          }
+        }
+
+        const receiptNumber = await nextDocumentNumber(tx, "RCT", "receipt");
+
+        const payment = await tx.payment.create({
+          data: {
+            orgId,
+            invoiceId: id,
+            amount: inv.totalAmount,
+            currency: inv.currency,
+            method: "CASH" as PaymentMethod,
+            createdById: user.id,
+            note: ticketNumber ? `Payment for ticket ${ticketNumber}` : `Payment for invoice ${inv.invoiceNumber}`,
+          },
+        });
+
+        await tx.receipt.create({
+          data: {
+            orgId,
+            receiptNumber,
+            paymentId: payment.id,
+            invoiceId: id,
+            ticketId,
+            clientId: inv.clientId ?? null,
+            amount: inv.totalAmount,
+            currency: inv.currency,
+            issuedById: user.id,
+          },
+        });
       });
       await writeSystemAuditEvent({ orgId, actorUserId: user.id, entityType: "Invoice", entityId: id, action: "INVOICE_MARKED_PAID", summary: "Invoice marked as paid" });
       revalidatePath("/documents/invoices");

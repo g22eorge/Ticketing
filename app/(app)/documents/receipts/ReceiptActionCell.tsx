@@ -1,8 +1,11 @@
 "use client";
 
-import { Eye, Download, Send, Printer, FileText, X } from "lucide-react";
 import { DocumentActionCell, type DocAction } from "@/components/shared/DocumentActionCell";
 import { documentAction } from "@/app/(app)/documents/actions";
+
+const ICO = ({ children }: { children: React.ReactNode }) => (
+  <span className="inline-flex h-[13px] w-[13px] items-center justify-center text-[11px] leading-none">{children}</span>
+);
 
 interface ReceiptActionCellProps {
   id: string;
@@ -31,23 +34,23 @@ export function ReceiptActionCell({ id, receiptNumber, voidedAt, userRole }: Rec
 
   if (!isVoided) {
     quickActions.push(
-      { key: "view", label: "View receipt", icon: <Eye size={13} />, href: viewHref },
-      { key: "download", label: "Download PDF", icon: <Download size={13} />, href: pdfHref, external: true },
-      { key: "send", label: "Send receipt", icon: <Send size={13} />, serverAction: sa("receipt-send"), tone: "accent" },
-      { key: "print", label: "Print", icon: <Printer size={13} />, href: pdfHref, external: true },
+      { key: "view", label: "View receipt", icon: <ICO>👁</ICO>, href: viewHref },
+      { key: "download", label: "Download PDF", icon: <ICO>↓</ICO>, href: pdfHref, external: true },
+      { key: "send", label: "Send receipt", icon: <ICO>↗</ICO>, serverAction: sa("receipt-send"), tone: "accent" },
+      { key: "print", label: "Print", icon: <ICO>⎙</ICO>, href: pdfHref, external: true },
     );
     moreActions.push(
-      { key: "duplicate", label: "Duplicate receipt", icon: <FileText size={13} />, serverAction: sa("receipt-duplicate") },
+      { key: "duplicate", label: "Duplicate receipt", icon: <ICO>📄</ICO>, serverAction: sa("receipt-duplicate") },
       { key: "div1", label: "", icon: null, divider: true },
-      { key: "void", label: "Void receipt", icon: <X size={13} />, serverAction: sa("receipt-void"), confirm: "Void this receipt? This cannot be undone.", tone: "danger" },
+      { key: "void", label: "Void receipt", icon: <ICO>✕</ICO>, serverAction: sa("receipt-void"), confirm: "Void this receipt? This cannot be undone.", tone: "danger" },
     );
   } else {
     quickActions.push(
-      { key: "view", label: "View receipt", icon: <Eye size={13} />, href: viewHref },
-      { key: "download", label: "Download PDF", icon: <Download size={13} />, href: pdfHref, external: true },
+      { key: "view", label: "View receipt", icon: <ICO>👁</ICO>, href: viewHref },
+      { key: "download", label: "Download PDF", icon: <ICO>↓</ICO>, href: pdfHref, external: true },
     );
     if (isAdmin) {
-      quickActions.push({ key: "dup", label: "Duplicate receipt", icon: <FileText size={13} />, serverAction: sa("receipt-duplicate") });
+      quickActions.push({ key: "dup", label: "Duplicate receipt", icon: <ICO>📄</ICO>, serverAction: sa("receipt-duplicate") });
     }
   }
 
