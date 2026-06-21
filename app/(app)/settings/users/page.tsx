@@ -4,7 +4,7 @@ import Link from "next/link";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { Plus, Search, ShieldCheck, Lock, ChevronDown, CircleDot, Circle, Users, X, ChevronLeft } from "lucide-react";
+import { Plus, Search, ShieldCheck, Lock, ChevronDown, CircleDot, Circle, Users, X } from "lucide-react";
 import { CopyButton } from "@/components/settings/CopyButton";
 
 import { prisma } from "@/lib/prisma";
@@ -344,9 +344,9 @@ export default async function UsersPage({
         </section>
       )}
 
-      {/* Main content */}
-      <div className={`grid gap-5 ${selectedUser ? "lg:grid-cols-[320px_1fr]" : ""}`}>
-        {/* User list */}
+      {/* Main content — relative container for overlay */}
+      <div className="relative">
+        {/* User list — always full width */}
         <section className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
           <div className="flex items-center gap-2 border-b border-[var(--line)] px-3 py-2">
             <Search className="h-3.5 w-3.5 shrink-0 text-[var(--ink-muted)]" />
@@ -359,8 +359,9 @@ export default async function UsersPage({
               <p className="px-3 py-6 text-center text-[13px] text-[var(--ink-muted)]">No users found.</p>
             ) : (
               filtered.map((u) => (
-                <div
+                <Link
                   key={u.id}
+                  href={`/settings/users?userId=${u.id}${query ? `&q=${encodeURIComponent(query)}` : ""}`}
                   className={`flex items-center gap-3 px-3 py-2.5 transition ${selectedUser?.id === u.id ? "bg-[var(--accent)]/8" : "hover:bg-[var(--panel-strong)]/40"}`}
                 >
                   <span className={`mt-0.5 h-2 w-2 shrink-0 rounded-full ${u.isActive ? "bg-emerald-400" : "bg-[var(--line)]"}`} />
@@ -368,50 +369,39 @@ export default async function UsersPage({
                     <p className="truncate text-[13px] font-medium text-[var(--ink)]">{u.name}</p>
                     <p className="truncate text-[12px] text-[var(--ink-muted)]">{roleLabel(u.role)}</p>
                   </div>
-                  <Link
-                    href={`/settings/users?userId=${u.id}`}
-                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)] transition hover:border-[var(--accent)]/50 hover:text-[var(--accent)]"
-                    title="View profile"
-                  >
-                    <CircleDot className="h-3.5 w-3.5" />
-                  </Link>
-                </div>
+                </Link>
               ))
             )}
           </div>
         </section>
 
-        {/* Detail Panel */}
-        {selectedUser ? (
-          <div className="space-y-4">
-            <section className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
-              {/* Status header */}
-              <div className="flex items-start justify-between gap-3 border-b border-[var(--line)] px-4 py-3">
-                <div className="min-w-0 flex items-center gap-2">
-                  <Link
-                    href={`/settings/users${query ? `?q=${encodeURIComponent(query)}` : ""}`}
-                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)] transition hover:border-[var(--accent)]/50 hover:text-[var(--accent)] lg:hidden"
-                    title="Back to list"
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </Link>
-                  <div className="min-w-0">
-                    <p className="text-[14px] font-semibold text-[var(--ink)]">{selectedUser.name}</p>
-                    <p className="text-[13px] text-[var(--ink-muted)]">{selectedUser.email}</p>
-                  </div>
+        {/* Detail overlay panel — slides in from right on top of list */}
+        {selectedUser && (
+          <>
+            <Link
+              href={`/settings/users${query ? `?q=${encodeURIComponent(query)}` : ""}`}
+              className="absolute inset-0 z-10 bg-black/30 backdrop-blur-[2px]"
+              aria-label="Close"
+            />
+            <div className="absolute inset-y-0 right-0 z-20 w-full max-w-lg overflow-y-auto rounded-xl border border-[var(--line)] bg-[var(--panel)] shadow-2xl">
+              {/* Panel header */}
+              <div className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-[var(--line)] bg-[var(--panel)] px-4 py-3">
+                <div className="min-w-0">
+                  <p className="text-[14px] font-semibold text-[var(--ink)]">{selectedUser.name}</p>
+                  <p className="text-[13px] text-[var(--ink-muted)]">{selectedUser.email}</p>
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
-                  <Link
-                    href={`/settings/users${query ? `?q=${encodeURIComponent(query)}` : ""}`}
-                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)] transition hover:border-[var(--accent)]/50 hover:text-[var(--accent)]"
-                    title="Close details"
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </Link>
                   <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[12px] font-semibold ${selectedUser.isActive ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400" : "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]"}`}>
                     {selectedUser.isActive ? <CircleDot className="h-3 w-3" /> : <Circle className="h-3 w-3" />}
                     {selectedUser.isActive ? "Active" : "Inactive"}
                   </span>
+                  <Link
+                    href={`/settings/users${query ? `?q=${encodeURIComponent(query)}` : ""}`}
+                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)] transition hover:border-[var(--accent)]/50 hover:text-[var(--accent)]"
+                    title="Close"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </Link>
                 </div>
               </div>
 
@@ -453,7 +443,6 @@ export default async function UsersPage({
                   </form>
                 </div>
 
-                {/* Divider */}
                 <div className="border-t border-[var(--line)]" />
 
                 {/* Permissions */}
@@ -465,7 +454,6 @@ export default async function UsersPage({
                   <RolePermissions role={selectedUser.role} userId={selectedUser.id} />
                 </div>
 
-                {/* Divider */}
                 <div className="border-t border-[var(--line)]" />
 
                 {/* Password reset */}
@@ -483,7 +471,6 @@ export default async function UsersPage({
                   </form>
                 </details>
 
-                {/* Divider */}
                 <div className="border-t border-[var(--line)]" />
 
                 {/* Active / Deactivate */}
@@ -517,17 +504,12 @@ export default async function UsersPage({
                   )}
                 </div>
 
-                {/* Last active */}
                 <p className="text-[12px] text-[var(--ink-muted)]">
                   Last active {formatLastSeen(selectedUser.sessions[0]?.updatedAt ?? selectedUser.updatedAt)}
                 </p>
               </div>
-            </section>
-          </div>
-        ) : (
-          <div className="panel-shadow flex items-center justify-center rounded-xl border border-[var(--line)] bg-[var(--panel)] p-12 text-[13px] text-[var(--ink-muted)]">
-            Select a user to manage their access.
-          </div>
+            </div>
+          </>
         )}
       </div>
     </div>
