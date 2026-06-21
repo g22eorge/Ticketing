@@ -25,7 +25,7 @@ const s = StyleSheet.create({
   fieldLabel: { width: 100, fontSize: F.label, color: C.muted, textTransform: "uppercase", letterSpacing: 0.3 },
   fieldValue: { flex: 1, fontSize: F.body, fontFamily: "Helvetica-Bold", color: C.ink },
 
-  twoCol: { flexDirection: "row", gap: 24, marginBottom: 2 },
+  twoCol: { flexDirection: "row", gap: 36, marginBottom: 2 },
   col: { flex: 1 },
 
   textBlock: { fontSize: F.body, color: C.body, lineHeight: 1.5, minHeight: 30 },

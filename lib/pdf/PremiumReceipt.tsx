@@ -22,15 +22,15 @@ const s = StyleSheet.create({
   fieldLabel: { width: 100, fontSize: F.label, color: C.muted, textTransform: "uppercase", letterSpacing: 0.3 },
   fieldValue: { flex: 1, fontSize: F.body, fontFamily: "Helvetica-Bold", color: C.ink },
 
-  twoCol: { flexDirection: "row", gap: 24, marginBottom: 2 },
+  twoCol: { flexDirection: "row", gap: 36, marginBottom: 2 },
   col: { flex: 1 },
 
   lightRule: { borderTopWidth: 0.5, borderTopColor: C.rule, marginTop: 10, marginBottom: 10 },
 
   lineItemRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 3, paddingBottom: 3, borderBottomWidth: 0.3, borderBottomColor: C.rule },
-  lineDesc: { fontSize: F.body, color: C.body, flex: 1, paddingRight: 8 },
-  lineQty: { fontSize: F.label, color: C.muted, width: 30, textAlign: "center" },
-  linePrice: { fontSize: F.body, fontFamily: "Helvetica-Bold", color: C.ink, width: 70, textAlign: "right" },
+  lineDesc: { fontSize: F.body, color: C.body, flex: 1, paddingRight: 12 },
+  lineQty: { fontSize: F.label, color: C.muted, width: 32, textAlign: "center" },
+  linePrice: { fontSize: F.body, fontFamily: "Helvetica-Bold", color: C.ink, width: 90, textAlign: "right" },
 
   priceRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 3 },
   priceLabel: { fontSize: F.body, color: C.body },

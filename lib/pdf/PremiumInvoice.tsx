@@ -27,7 +27,7 @@ const s = StyleSheet.create({
   fieldLabel: { width: 100, fontSize: F.label, color: C.muted, textTransform: "uppercase", letterSpacing: 0.3 },
   fieldValue: { flex: 1, fontSize: F.body, fontFamily: "Helvetica-Bold", color: C.ink },
 
-  twoCol: { flexDirection: "row", gap: 24, marginBottom: 2 },
+  twoCol: { flexDirection: "row", gap: 36, marginBottom: 2 },
   col: { flex: 1 },
 
   textBlock: { fontSize: F.body, color: C.body, lineHeight: 1.5 },
@@ -42,9 +42,9 @@ const s = StyleSheet.create({
   totalValue: { fontSize: F.title, fontFamily: "Helvetica-Bold", color: C.accent, textAlign: "right" },
 
   lineItemRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 4, paddingBottom: 4, borderBottomWidth: 0.5, borderBottomColor: C.rule },
-  lineDesc: { fontSize: F.body, color: C.body, flex: 1, paddingRight: 8 },
-  lineQty: { fontSize: F.label, color: C.muted, width: 30, textAlign: "center" },
-  linePrice: { fontSize: F.body, fontFamily: "Helvetica-Bold", color: C.ink, width: 70, textAlign: "right" },
+  lineDesc: { fontSize: F.body, color: C.body, flex: 1, paddingRight: 12 },
+  lineQty: { fontSize: F.label, color: C.muted, width: 32, textAlign: "center" },
+  linePrice: { fontSize: F.body, fontFamily: "Helvetica-Bold", color: C.ink, width: 90, textAlign: "right" },
 
   footer: { marginTop: 20, borderTopWidth: 0.5, borderTopColor: C.rule, paddingTop: 8, fontSize: F.micro, color: C.faint, textAlign: "center" },
 });
