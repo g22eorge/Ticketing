@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { Prisma, InvoiceStatus } from "@prisma/client";
 import { revalidatePath } from "next/cache";
+import { Download, CheckCircle2, ArrowLeft, ArrowRight, CircleDollarSign, Save, ExternalLink } from "lucide-react";
 
 import { CopyButton } from "@/components/shared/CopyButton";
 import { StatusBadge, type BadgeVariant } from "@/components/ui/StatusBadge";
@@ -120,7 +121,7 @@ export default async function InvoiceDetailPage({
     } catch { /* fail silently */ }
   }
 
-  const isEditable = invoice.status === "ISSUED";
+  const isEditable = invoice.status === "DRAFT" || invoice.status === "ISSUED";
 
   return (
     <div className="mx-auto max-w-4xl space-y-4">
@@ -152,11 +153,19 @@ export default async function InvoiceDetailPage({
               href={pdfHref}
               target="_blank"
               rel="noreferrer"
-              className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-4 py-2 text-[12px] font-bold text-[var(--ink)] transition hover:border-[var(--accent)]/40"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-4 py-2 text-[12px] font-bold text-[var(--ink)] transition hover:border-[var(--accent)]/40"
             >
-              Download PDF
+              <Download className="h-3.5 w-3.5" aria-hidden="true" /> Download PDF
             </a>
             <CopyButton text={pdfUrl} label="Copy PDF link" title="Copy invoice PDF link" />
+            {invoice.status === "DRAFT" && can.createInvoices(user) && (
+              <form action={updateStatusAction} className="inline-flex items-center gap-1">
+                <input type="hidden" name="status" value="ISSUED" />
+                <button type="submit" className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-2 text-[12px] font-bold text-emerald-700 transition hover:bg-emerald-500/20 dark:text-emerald-400">
+                  <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" /> Confirm Invoice
+                </button>
+              </form>
+            )}
             {canEditInvoice && (
               <form action={updateStatusAction} className="flex items-center gap-1">
                 <select
@@ -168,24 +177,16 @@ export default async function InvoiceDetailPage({
                   <option value="PAID">Mark Paid</option>
                   <option value="VOID">Void</option>
                 </select>
-                <button type="submit" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-[12px] font-bold text-[var(--ink)] transition hover:border-[var(--accent)]/40">
-                  Go
-                </button>
-              </form>
-            )}
-            {!canEditInvoice && invoice.status === "DRAFT" && (
-              <form action={updateStatusAction}>
-                <input type="hidden" name="status" value="ISSUED" />
-                <button type="submit" className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-2 text-[12px] font-bold text-emerald-700 transition hover:bg-emerald-500/20 dark:text-emerald-400">
-                  Confirm Invoice
+                <button type="submit" className="inline-flex items-center gap-1 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-[12px] font-bold text-[var(--ink)] transition hover:border-[var(--accent)]/40">
+                  <ArrowRight className="h-3 w-3" aria-hidden="true" /> Go
                 </button>
               </form>
             )}
             <Link
               href="/documents/invoices"
-              className="rounded-lg border border-[var(--line)] px-4 py-2 text-[12px] font-bold text-[var(--ink-muted)] transition hover:text-[var(--ink)]"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--line)] px-4 py-2 text-[12px] font-bold text-[var(--ink-muted)] transition hover:text-[var(--ink)]"
             >
-              Back to invoices
+              <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" /> Back to invoices
             </Link>
           </div>
         </div>
@@ -194,82 +195,90 @@ export default async function InvoiceDetailPage({
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_280px]">
         <div className="space-y-4">
           <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
-            <div className="border-b border-[var(--line)] px-4 py-3">
+            <div className="flex items-center justify-between border-b border-[var(--line)] px-4 py-3">
               <p className="text-[13px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Line Items</p>
+              <span className="rounded-full bg-[var(--panel-strong)] px-2.5 py-0.5 text-[12px] font-bold text-[var(--ink-muted)]">
+                {invoice.lines.length} {invoice.lines.length === 1 ? "item" : "items"}
+              </span>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full border-collapse text-[13px]">
-                <thead className="bg-[var(--panel-strong)]/50 text-left text-[12px] font-bold uppercase tracking-[0.15em] text-[var(--ink-muted)]">
-                  <tr className="border-b border-[var(--line)]">
-                    <th className="px-4 py-2.5">Description</th>
-                    <th className="w-16 px-4 py-2.5 text-right">Qty</th>
-                    <th className="w-28 px-4 py-2.5 text-right">Unit Price</th>
-                    <th className="w-28 px-4 py-2.5 text-right">Tax</th>
-                    <th className="w-28 px-4 py-2.5 text-right">Total</th>
-                    {isEditable ? <th className="w-24 px-4 py-2.5 text-right">Actions</th> : null}
+              <table className="w-full text-[13px]">
+                <thead>
+                  <tr className="border-b border-[var(--line)] bg-[var(--panel-strong)]/60 text-left text-[11px] font-bold uppercase tracking-[0.15em] text-[var(--ink-muted)]">
+                    <th className="w-10 px-4 py-2.5">#</th>
+                    <th className="px-3 py-2.5">Description</th>
+                    <th className="w-16 px-3 py-2.5 text-right">Qty</th>
+                    <th className="w-28 px-3 py-2.5 text-right">Unit Price</th>
+                    {discountTotal > 0 ? <th className="w-20 px-3 py-2.5 text-right">Disc %</th> : null}
+                    <th className="w-32 px-3 py-2.5 text-right">Total</th>
+                    {isEditable ? <th className="w-20 px-3 py-2.5 text-right">Action</th> : null}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[var(--line)]">
-                  {invoice.lines.map((line) => (
-                    <tr key={line.id}>
-                      <td className="px-4 py-3 text-[var(--ink)]">
+                  {invoice.lines.length === 0 ? (
+                    <tr>
+                      <td colSpan={isEditable ? 7 : 6} className="px-4 py-8 text-center text-sm text-[var(--ink-muted)]">No line items</td>
+                    </tr>
+                  ) : invoice.lines.map((line, i) => (
+                    <tr key={line.id} className="group hover:bg-[var(--panel-strong)]/30 transition-colors">
+                      <td className="px-4 py-2.5 text-[12px] text-[var(--ink-muted)]">{i + 1}</td>
+                      <td className="px-3 py-2.5 text-[var(--ink)]">
                         {isEditable ? (
                           <input form={`inv-item-${line.id}`} name="description" defaultValue={line.description} className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1.5 text-sm outline-none focus:border-[var(--accent)]/50" />
-                        ) : line.description}
+                        ) : <span className="font-medium">{line.description}</span>}
                       </td>
-                      <td className="px-4 py-3 text-right text-[var(--ink-muted)]">
+                      <td className="px-3 py-2.5 text-right tabular-nums text-[var(--ink-muted)]">
                         {isEditable ? (
-                          <input form={`inv-item-${line.id}`} name="quantity" type="number" min="1" step="any" defaultValue={line.quantity} className="w-20 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-1.5 text-right text-sm outline-none focus:border-[var(--accent)]/50" />
+                          <input form={`inv-item-${line.id}`} name="quantity" type="number" min="1" step="any" defaultValue={line.quantity} className="w-16 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-1.5 text-right text-sm outline-none focus:border-[var(--accent)]/50 tabular-nums" />
                         ) : line.quantity}
                       </td>
-                      <td className="px-4 py-3 text-right text-[var(--ink-muted)]">
+                      <td className="px-3 py-2.5 text-right tabular-nums text-[var(--ink-muted)]">
                         {isEditable ? (
-                          <input form={`inv-item-${line.id}`} name="unitPrice" type="number" min="0" step="any" defaultValue={line.unitPrice} className="w-28 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-1.5 text-right text-sm outline-none focus:border-[var(--accent)]/50" />
+                          <input form={`inv-item-${line.id}`} name="unitPrice" type="number" min="0" step="any" defaultValue={line.unitPrice} className="w-28 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-1.5 text-right text-sm outline-none focus:border-[var(--accent)]/50 tabular-nums" />
                         ) : formatMoney(line.unitPrice, currency)}
                       </td>
-                      <td className="px-4 py-3 text-right text-[var(--ink-muted)]">
-                        {line.taxAmount > 0 ? formatMoney(line.taxAmount, currency) : <span className="opacity-40">—</span>}
-                      </td>
-                      <td className="px-4 py-3 text-right font-medium text-[var(--ink)]">{formatMoney(line.lineTotal + line.taxAmount, currency)}</td>
+                      {discountTotal > 0 ? (
+                        <td className="px-3 py-2.5 text-right tabular-nums text-[var(--ink-muted)]">
+                          {line.discountAmount > 0 ? `${line.discountAmount}%` : <span className="opacity-30">—</span>}
+                        </td>
+                      ) : null}
+                      <td className="px-3 py-2.5 text-right tabular-nums font-semibold text-[var(--ink)]">{formatMoney(line.lineTotal + line.taxAmount, currency)}</td>
                       {isEditable ? (
-                        <td className="px-4 py-3 text-right">
+                        <td className="px-3 py-2.5 text-right">
                           <form id={`inv-item-${line.id}`} action={updateLineAction} className="inline">
                             <input type="hidden" name="lineId" value={line.id} />
-                            <button type="submit" className="rounded-lg border border-[var(--line)] px-2.5 py-1 text-[12px] font-semibold text-[var(--ink)]">Save</button>
+                            <button type="submit" className="inline-flex items-center gap-1 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1 text-[11px] font-semibold text-[var(--ink)] transition hover:border-[var(--accent)]/50 hover:text-[var(--accent)]">
+                              <Save className="h-3 w-3" aria-hidden="true" /> Save
+                            </button>
                           </form>
                         </td>
                       ) : null}
                     </tr>
                   ))}
-                  {invoice.lines.length === 0 ? (
-                    <tr>
-                      <td colSpan={5} className="px-4 py-6 text-center text-sm text-[var(--ink-muted)]">No invoice lines</td>
-                    </tr>
-                  ) : null}
                 </tbody>
               </table>
             </div>
-            <div className="border-t border-[var(--line)] px-4 py-3">
-              <div className="flex flex-col items-end gap-1 text-[13px]">
-                <div className="flex gap-4">
+            <div className="border-t border-[var(--line)] bg-[var(--panel-strong)]/30 px-4 py-3">
+              <div className="flex flex-col items-end gap-1.5 text-[13px]">
+                <div className="flex w-full max-w-[280px] items-center justify-between gap-4">
                   <span className="text-[var(--ink-muted)]">Subtotal</span>
-                  <span className="font-medium text-[var(--ink)]">{formatMoney(subtotal, currency)}</span>
+                  <span className="tabular-nums font-medium text-[var(--ink)]">{formatMoney(subtotal, currency)}</span>
                 </div>
                 {discountTotal > 0 ? (
-                  <div className="flex gap-4">
+                  <div className="flex w-full max-w-[280px] items-center justify-between gap-4">
                     <span className="text-[var(--ink-muted)]">Discount</span>
-                    <span className="font-medium text-red-600">-{formatMoney(discountTotal, currency)}</span>
+                    <span className="tabular-nums font-medium text-red-500">-{formatMoney(discountTotal, currency)}</span>
                   </div>
                 ) : null}
                 {taxTotal > 0 ? (
-                  <div className="flex gap-4">
+                  <div className="flex w-full max-w-[280px] items-center justify-between gap-4">
                     <span className="text-[var(--ink-muted)]">Tax</span>
-                    <span className="font-medium text-[var(--ink)]">{formatMoney(taxTotal, currency)}</span>
+                    <span className="tabular-nums font-medium text-[var(--ink)]">{formatMoney(taxTotal, currency)}</span>
                   </div>
                 ) : null}
-                <div className="flex gap-4 border-t border-[var(--line)] pt-2">
-                  <span className="font-semibold text-[var(--ink)]">Total</span>
-                  <span className="text-[15px] font-bold text-[var(--ink)]">{formatMoney(invoice.totalAmount, currency)}</span>
+                <div className="flex w-full max-w-[280px] items-center justify-between gap-4 border-t border-[var(--line)] pt-2">
+                  <span className="font-semibold text-[var(--ink)]">Total Due</span>
+                  <span className="tabular-nums text-[17px] font-black text-[var(--ink)]">{formatMoney(invoice.totalAmount, currency)}</span>
                 </div>
               </div>
             </div>
@@ -289,8 +298,8 @@ export default async function InvoiceDetailPage({
                   className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm font-normal text-[var(--ink)] outline-none focus:border-[var(--accent)]/50 resize-none"
                   placeholder="Add notes..."
                 />
-                <button type="submit" className="btn-premium-secondary rounded-lg px-4 py-2 text-[12px] font-semibold">
-                  Save Notes
+                <button type="submit" className="btn-premium-secondary inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-[12px] font-semibold">
+                  <Save className="h-3.5 w-3.5" aria-hidden="true" /> Save Notes
                 </button>
               </form>
             </details>
@@ -302,55 +311,63 @@ export default async function InvoiceDetailPage({
 
         <aside className="space-y-4 lg:sticky lg:top-4 lg:self-start">
           <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-4">
-            <p className="mb-3 text-[13px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Client</p>
-            <p className="text-sm font-bold text-[var(--ink)]">{invoice.client?.fullName ?? "Client"}</p>
-            <div className="mt-1 space-y-1 text-xs text-[var(--ink-muted)]">
-              {invoice.client?.organization ? <p>{invoice.client.organization}</p> : null}
-              {invoice.client?.phone ? <p>{invoice.client.phone}</p> : null}
+            <div className="mb-3 flex items-center gap-2">
+              <p className="text-[12px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Client</p>
+            </div>
+            <p className="text-sm font-bold text-[var(--ink)]">{invoice.client?.fullName ?? "—"}</p>
+            {invoice.client?.organization ? (
+              <p className="mt-0.5 text-xs text-[var(--ink-muted)]">{invoice.client.organization}</p>
+            ) : null}
+            <div className="mt-2.5 space-y-1 text-xs text-[var(--ink-muted)]">
+              {invoice.client?.phone ? <p className="tabular-nums">{invoice.client.phone}</p> : null}
               {invoice.client?.email ? <p>{invoice.client.email}</p> : null}
-              {invoice.client?.address ? <p>{invoice.client.address}</p> : null}
+              {invoice.client?.address ? <p className="mt-1 leading-relaxed">{invoice.client.address}</p> : null}
             </div>
             {invoice.client ? (
-              <Link href={`/clients/${invoice.client.id}`} className="mt-3 inline-flex text-xs font-bold text-[var(--accent)] hover:underline">
-                Open client
+              <Link href={`/clients/${invoice.client.id}`} className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-[var(--accent)] hover:underline">
+                <ExternalLink className="h-3 w-3" aria-hidden="true" /> Open client
               </Link>
             ) : null}
           </div>
 
           <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-4">
-            <p className="mb-3 text-[13px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Payment</p>
+            <div className="mb-3 flex items-center gap-2">
+              <p className="text-[12px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Payment</p>
+            </div>
             <dl className="space-y-2 text-sm">
-              <div className="flex justify-between gap-3">
+              <div className="flex items-center justify-between gap-3">
                 <dt className="text-[var(--ink-muted)]">Paid</dt>
-                <dd className="font-semibold text-[var(--ink)]">{formatMoney(invoice.paidAmount, currency)}</dd>
+                <dd className="tabular-nums font-semibold text-emerald-600">{formatMoney(invoice.paidAmount, currency)}</dd>
               </div>
-              <div className="flex justify-between gap-3">
+              <div className="flex items-center justify-between gap-3">
                 <dt className="text-[var(--ink-muted)]">Balance</dt>
-                <dd className="font-semibold text-[var(--ink)]">{formatMoney(balanceDue, currency)}</dd>
+                <dd className="tabular-nums font-semibold text-[var(--ink)]">{formatMoney(balanceDue, currency)}</dd>
               </div>
               {invoice.dueDate ? (
-                <div className="flex justify-between gap-3">
+                <div className="flex items-center justify-between gap-3">
                   <dt className="text-[var(--ink-muted)]">Due</dt>
-                  <dd className="font-semibold text-[var(--ink)]">{formatEATDate(invoice.dueDate)}</dd>
+                  <dd className="tabular-nums font-medium text-[var(--ink)]">{formatEATDate(invoice.dueDate)}</dd>
                 </div>
               ) : null}
             </dl>
             {invoice.ticket && invoice.status !== "PAID" ? (
               <Link
                 href={`/tickets/${invoice.ticket.id}/create-receipt`}
-                className="btn-premium mt-4 inline-flex w-full items-center justify-center rounded-lg px-4 py-2.5 text-xs font-bold"
+                className="btn-premium mt-4 flex w-full items-center justify-center gap-1.5 rounded-lg px-4 py-2.5 text-xs font-bold"
               >
-                Record Payment
+                <CircleDollarSign className="h-3.5 w-3.5" aria-hidden="true" /> Record Payment
               </Link>
             ) : null}
           </div>
 
           <div className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-4">
-            <p className="mb-3 text-[13px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Details</p>
+            <div className="mb-3 flex items-center gap-2">
+              <p className="text-[12px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Details</p>
+            </div>
             <dl className="space-y-2 text-sm">
               <div>
                 <dt className="text-xs text-[var(--ink-muted)]">Issued</dt>
-                <dd className="font-medium text-[var(--ink)]">{formatEATDateTime(invoice.issuedAt)}</dd>
+                <dd className="tabular-nums font-medium text-[var(--ink)]">{formatEATDateTime(invoice.issuedAt)}</dd>
               </div>
               <div>
                 <dt className="text-xs text-[var(--ink-muted)]">Type</dt>
@@ -375,15 +392,15 @@ export default async function InvoiceDetailPage({
             </dl>
             {invoice.payments.length > 0 ? (
               <div className="mt-3 border-t border-[var(--line)] pt-3">
-                <p className="mb-2 text-xs font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Recent payments</p>
-                <div className="space-y-2">
+                <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--ink-muted)]">Recent payments</p>
+                <div className="space-y-1.5">
                   {invoice.payments.map((payment) => (
-                    <div key={payment.id} className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-xs">
-                      <div className="flex justify-between gap-2">
-                        <span className="font-semibold text-[var(--ink)]">{formatMoney(payment.amount, payment.currency)}</span>
-                        <span className="text-[var(--ink-muted)]">{formatEATDate(payment.receivedAt)}</span>
+                    <div key={payment.id} className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)]/60 px-3 py-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="tabular-nums text-xs font-semibold text-[var(--ink)]">{formatMoney(payment.amount, payment.currency)}</span>
+                        <span className="text-[11px] text-[var(--ink-muted)]">{formatEATDate(payment.receivedAt)}</span>
                       </div>
-                      <p className="mt-1 text-[var(--ink-muted)]">{payment.method}{payment.reference ? ` · ${payment.reference}` : ""}</p>
+                      <p className="mt-0.5 text-[11px] text-[var(--ink-muted)]">{payment.method}{payment.reference ? ` · ${payment.reference}` : ""}</p>
                     </div>
                   ))}
                 </div>

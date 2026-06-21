@@ -39,8 +39,37 @@ export async function toDataUriFromLocal(filePath: string, contentType: string):
 
 type LogoCandidate = { file: string; type: string };
 
-/** Resolve logo for job-card and quotation PDFs (eagle-info-logo variants only). */
-export async function resolvePdfLogo(): Promise<string | undefined> {
+async function tryLogoUrl(url: string): Promise<string | undefined> {
+  if (!url) return undefined;
+  if (url.startsWith("data:")) return url;
+  if (url.startsWith("http://") || url.startsWith("https://")) {
+    return (await toDataUriFromRemote(url)) ?? undefined;
+  }
+  if (url.startsWith("/")) {
+    const baseUrl = process.env.BETTER_AUTH_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? "";
+    if (baseUrl) {
+      return (await toDataUriFromRemote(`${baseUrl}${url}`)) ?? undefined;
+    }
+    const filePath = path.join(process.cwd(), "public", url);
+    try {
+      const ext = path.extname(url).slice(1).toLowerCase();
+      const mimeTypes: Record<string, string> = { png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg", webp: "image/webp" };
+      const type = mimeTypes[ext] ?? "image/png";
+      return toDataUriFromLocal(filePath, type);
+    } catch {
+      return undefined;
+    }
+  }
+  return undefined;
+}
+
+/** Resolve logo for job-card and quotation PDFs. Checks brandingLogoUrl first, then falls back to legacy candidates. */
+export async function resolvePdfLogo(brandingLogoUrl?: string): Promise<string | undefined> {
+  if (brandingLogoUrl) {
+    const resolved = await tryLogoUrl(brandingLogoUrl);
+    if (resolved) return resolved;
+  }
+
   const localCandidates: LogoCandidate[] = [
     { file: path.join(process.cwd(), "public", "eagle-info-logo.png"), type: "image/png" },
     { file: path.join(process.cwd(), "public", "eagle-info-logo.jpg"), type: "image/jpeg" },
@@ -62,8 +91,13 @@ export async function resolvePdfLogo(): Promise<string | undefined> {
   return undefined;
 }
 
-/** Resolve logo for invoice PDFs — also checks invoice-logo variants and INVOICE_LOGO_URL env. */
-export async function resolveInvoiceLogo(): Promise<string | undefined> {
+/** Resolve logo for invoice PDFs. Checks brandingLogoUrl first, then falls back to legacy candidates and INVOICE_LOGO_URL env. */
+export async function resolveInvoiceLogo(brandingLogoUrl?: string): Promise<string | undefined> {
+  if (brandingLogoUrl) {
+    const resolved = await tryLogoUrl(brandingLogoUrl);
+    if (resolved) return resolved;
+  }
+
   const localCandidates: LogoCandidate[] = [
     { file: path.join(process.cwd(), "public", "eagle-info-logo.png"), type: "image/png" },
     { file: path.join(process.cwd(), "public", "eagle-info-logo.jpg"), type: "image/jpeg" },

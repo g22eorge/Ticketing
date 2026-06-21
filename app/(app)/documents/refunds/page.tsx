@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { OutboundMessageType, type PaymentMethod } from "@prisma/client";
 import { Prisma } from "@prisma/client";
+import { Plus, X, CircleDollarSign } from "lucide-react";
 
 import { formatMoney, formatMoneyCompact, normalizeCurrency } from "@/lib/currency";
 import { can } from "@/lib/permissions";
@@ -339,8 +340,8 @@ export default async function RefundsPage({
             <p className="text-[13px] text-[var(--ink-muted)]">All cash refunds issued against invoices and sales</p>
           </div>
           {["ADMIN", "OPS", "MANAGER", "FINANCE"].includes(user.role) && (
-            <Link href="/documents/refunds?new=1" className="btn-premium rounded-lg px-3 py-1.5 text-[12px]">
-              + New Refund
+            <Link href="/documents/refunds?new=1" className="btn-premium inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[12px]">
+              <Plus className="h-3.5 w-3.5" aria-hidden="true" /> New Refund
             </Link>
           )}
         </div>
@@ -369,8 +370,8 @@ export default async function RefundsPage({
               <p className="text-xs font-semibold uppercase tracking-wide text-[var(--ink-muted)]">Issue New Refund</p>
               <p className="text-[13px] text-[var(--ink-muted)]">Record cash-out against an invoice, sale, or credit note.</p>
             </div>
-            <Link href="/documents/refunds" className="rounded-lg border border-[var(--line)] px-3 py-1.5 text-[13px] font-semibold text-[var(--ink-muted)] hover:text-[var(--ink)]">
-              Cancel
+            <Link href="/documents/refunds" className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--line)] px-3 py-1.5 text-[13px] font-semibold text-[var(--ink-muted)] hover:text-[var(--ink)]">
+              <X className="h-3.5 w-3.5" aria-hidden="true" /> Cancel
             </Link>
           </div>
           {hasRefundSources ? (
@@ -462,8 +463,8 @@ export default async function RefundsPage({
               />
             </div>
             <div className="flex justify-end gap-2 sm:col-span-2 lg:col-span-3">
-              <button type="submit" className="h-9 rounded-lg bg-[var(--accent)] px-5 text-sm font-semibold text-white hover:opacity-90">
-                Issue Refund
+              <button type="submit" className="inline-flex items-center gap-1.5 h-9 rounded-lg bg-[var(--accent)] px-5 text-sm font-semibold text-white hover:opacity-90">
+                <CircleDollarSign className="h-3.5 w-3.5" aria-hidden="true" /> Issue Refund
               </button>
             </div>
           </form>

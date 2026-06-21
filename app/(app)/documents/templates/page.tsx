@@ -1,5 +1,6 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { Eye, Lock, CheckCircle2 } from "lucide-react";
 
 import { getDocumentBrandingSettings } from "@/lib/document-branding";
 import { can } from "@/lib/permissions";
@@ -235,14 +236,14 @@ export default async function DocumentTemplatesPage() {
                           rel="noreferrer"
                           className="flex w-full items-center justify-center gap-1 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-1 text-[13px] font-medium text-[var(--ink-muted)] transition hover:border-[var(--accent)]/40 hover:text-[var(--ink)]"
                         >
-                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                          <Eye className="h-3 w-3" aria-hidden="true" />
                           Preview PDF
                         </a>
 
                         {/* Set as default / locked / active */}
                         {isAllowed ? (
                           isCurrent ? (
-                            <span className="block text-center text-[13px] text-[var(--ink-muted)]">✓ Active</span>
+                            <span className="inline-flex items-center gap-1 text-center text-[13px] text-[var(--ink-muted)]"><CheckCircle2 className="h-3.5 w-3.5 text-green-600" aria-hidden="true" /> Active</span>
                           ) : (
                             <form action={setTemplateAction}>
                               <input type="hidden" name="key"  value={t.key} />
@@ -265,18 +266,7 @@ export default async function DocumentTemplatesPage() {
                       {/* Lock overlay for locked templates */}
                       {!isAllowed ? (
                         <div className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-xl bg-[var(--panel)]/60">
-                          <svg
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="1.8"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            className="h-6 w-6 text-[var(--ink-muted)]/50"
-                          >
-                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                          </svg>
+                          <Lock className="h-6 w-6 text-[var(--ink-muted)]/50" aria-hidden="true" />
                         </div>
                       ) : null}
                     </div>

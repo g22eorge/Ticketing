@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
+import { Search } from "lucide-react";
 
 export type SettingsNavItem = {
   href: string;
@@ -113,9 +114,7 @@ export function SettingsShell({
 
             {showSearch ? (
               <div className="flex min-w-0 flex-1 items-center gap-2 rounded-full border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 sm:flex-none sm:px-4">
-                <svg className="h-4 w-4 text-[var(--ink-muted)]" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                  <path fillRule="evenodd" d="M9 3.5a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11ZM2 9a7 7 0 1 1 12.2 4.43l3.18 3.19a.75.75 0 1 1-1.06 1.06l-3.19-3.18A7 7 0 0 1 2 9Z" clipRule="evenodd" />
-                </svg>
+                <Search className="h-4 w-4 text-[var(--ink-muted)]" aria-hidden="true" />
                 <input
                   value={q}
                   onChange={(e) => setQ(e.target.value)}

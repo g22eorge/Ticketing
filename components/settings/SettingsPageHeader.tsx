@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 
 export function SettingsPageHeader({
   title,
@@ -22,7 +23,7 @@ export function SettingsPageHeader({
               href={backHref}
               className="inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-[0.14em] text-slate-700 hover:text-slate-900 dark:text-[var(--ink-muted)] dark:hover:text-[var(--ink)]"
             >
-              <span aria-hidden="true">←</span>
+              <ArrowLeft className="h-3 w-3" aria-hidden="true" />
               <span>{backLabel}</span>
             </Link>
           ) : (

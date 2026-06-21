@@ -67,10 +67,8 @@ export async function GET(
     return NextResponse.json({ error: "Payment not found" }, { status: 404 });
   }
 
-  const [branding, logoUrl] = await Promise.all([
-    getDocumentBrandingSettings(orgId),
-    resolveInvoiceLogo(),
-  ]);
+  const branding = await getDocumentBrandingSettings(orgId);
+  const logoUrl = await resolveInvoiceLogo(branding?.companyLogoUrl);
 
   const currency = normalizeCurrency(payment.currency, org.baseCurrency);
   const forLabel = payment.invoice?.job?.jobNumber

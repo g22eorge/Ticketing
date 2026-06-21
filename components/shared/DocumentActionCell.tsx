@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback, useTransition } from "react";
 import { createPortal } from "react-dom";
+import { MoreHorizontal, Ban, CheckCircle2 } from "lucide-react";
 
 export type DocAction = {
   key: string;
@@ -187,11 +188,7 @@ export function DocumentActionCell({ quickActions, moreActions, label = "More ac
                 : "border-[var(--line)] text-[var(--ink-muted)] hover:text-[var(--ink)] hover:bg-[var(--panel-strong)]"
             }`}
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-              <circle cx="5" cy="12" r="1.8" />
-              <circle cx="12" cy="12" r="1.8" />
-              <circle cx="19" cy="12" r="1.8" />
-            </svg>
+            <MoreHorizontal className="h-4 w-4" aria-hidden="true" />
           </button>
 
           {open && typeof document !== "undefined" && createPortal(
@@ -259,22 +256,22 @@ export function DocumentActionCell({ quickActions, moreActions, label = "More ac
             <p className="text-sm font-semibold text-[var(--ink)]">{confirmAction.confirm}</p>
             <p className="mt-2 text-sm text-[var(--ink-muted)]">{confirmAction.label}</p>
             <div className="mt-4 flex items-center justify-end gap-2">
-              <button
+                <button
                 type="button"
                 onClick={() => setConfirmAction(null)}
-                className="rounded-lg border border-[var(--line)] px-3 py-1.5 text-[13px] font-medium text-[var(--ink-muted)] transition hover:text-[var(--ink)]"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--line)] px-3 py-1.5 text-[13px] font-medium text-[var(--ink-muted)] transition hover:text-[var(--ink)]"
               >
-                Cancel
+                <Ban className="h-3.5 w-3.5" aria-hidden="true" /> Cancel
               </button>
               <button
                 type="button"
                 disabled={isPending}
                 onClick={confirmProceed}
-                className={`rounded-lg px-3 py-1.5 text-[13px] font-bold text-white transition ${
+                className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[13px] font-bold text-white transition ${
                   confirmAction.tone === "danger" ? "bg-red-600 hover:bg-red-700" : "bg-[var(--accent)] hover:brightness-110"
                 } ${isPending ? "opacity-50" : ""}`}
               >
-                Confirm
+                <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" /> Confirm
               </button>
             </div>
           </div>

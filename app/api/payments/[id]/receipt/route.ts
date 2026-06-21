@@ -44,10 +44,8 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  const [branding, logoUrl] = await Promise.all([
-    getDocumentBrandingSettings(orgId),
-    resolveInvoiceLogo(),
-  ]);
+  const branding = await getDocumentBrandingSettings(orgId);
+  const logoUrl = await resolveInvoiceLogo(branding?.companyLogoUrl);
   const receipt = await prisma.receipt.findFirst({
     where: { orgId, paymentId: payment.id },
     select: { receiptNumber: true },

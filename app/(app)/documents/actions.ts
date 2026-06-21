@@ -31,6 +31,7 @@ export async function documentAction(formData: FormData) {
       });
       await writeSystemAuditEvent({ orgId, actorUserId: user.id, entityType: "Quotation", entityId: id, action: "QUOTATION_SENT", summary: "Quotation sent to client" });
       revalidatePath("/documents/quotations");
+      break;
     }
     case "quotation-approve": {
       if (!can.approveQuotations(user)) break;
@@ -40,7 +41,7 @@ export async function documentAction(formData: FormData) {
       });
       await writeSystemAuditEvent({ orgId, actorUserId: user.id, entityType: "Quotation", entityId: id, action: "QUOTATION_APPROVED", summary: "Quotation approved" });
       revalidatePath("/documents/quotations");
-      redirect("/documents/quotations");
+      break;
     }
     case "quotation-reject": {
       if (!can.createQuotations(user)) break;
@@ -50,7 +51,7 @@ export async function documentAction(formData: FormData) {
       });
       await writeSystemAuditEvent({ orgId, actorUserId: user.id, entityType: "Quotation", entityId: id, action: "QUOTATION_REJECTED", summary: "Quotation rejected" });
       revalidatePath("/documents/quotations");
-      redirect("/documents/quotations");
+      break;
     }
     case "quotation-convert": {
       if (!can.createInvoices(user)) break;
@@ -87,7 +88,7 @@ export async function documentAction(formData: FormData) {
       await prisma.quotation.delete({ where: { id } });
       await writeSystemAuditEvent({ orgId, actorUserId: user.id, entityType: "Quotation", entityId: id, action: "QUOTATION_DELETED", summary: "Draft quotation deleted" });
       revalidatePath("/documents/quotations");
-      redirect("/documents/quotations");
+      break;
     }
     case "quotation-duplicate": {
       if (!can.createQuotations(user)) break;
@@ -125,7 +126,7 @@ export async function documentAction(formData: FormData) {
       });
       await writeSystemAuditEvent({ orgId, actorUserId: user.id, entityType: "Quotation", entityId: dup.id, action: "QUOTATION_DUPLICATED", summary: `Duplicated from ${original.quoteNumber}` });
       revalidatePath("/documents/quotations");
-      redirect("/documents/quotations");
+      break;
     }
 
     // ── Invoice ──
@@ -138,6 +139,7 @@ export async function documentAction(formData: FormData) {
       }
       await writeSystemAuditEvent({ orgId, actorUserId: user.id, entityType: "Invoice", entityId: id, action: "INVOICE_SENT", summary: "Invoice sent/issued" });
       revalidatePath("/documents/invoices");
+      break;
     }
     case "invoice-mark-paid": {
       if (!can.approveInvoices(user)) break;
@@ -149,7 +151,8 @@ export async function documentAction(formData: FormData) {
       });
       await writeSystemAuditEvent({ orgId, actorUserId: user.id, entityType: "Invoice", entityId: id, action: "INVOICE_MARKED_PAID", summary: "Invoice marked as paid" });
       revalidatePath("/documents/invoices");
-      redirect("/documents/invoices");
+      revalidatePath("/documents/receipts");
+      break;
     }
     case "invoice-void": {
       if (!can.voidInvoices(user)) break;
@@ -159,7 +162,7 @@ export async function documentAction(formData: FormData) {
       });
       await writeSystemAuditEvent({ orgId, actorUserId: user.id, entityType: "Invoice", entityId: id, action: "INVOICE_VOIDED", summary: "Invoice voided" });
       revalidatePath("/documents/invoices");
-      redirect("/documents/invoices");
+      break;
     }
     case "invoice-delete-draft": {
       if (!can.createInvoices(user)) break;
@@ -168,7 +171,7 @@ export async function documentAction(formData: FormData) {
       await prisma.invoice.delete({ where: { id } });
       await writeSystemAuditEvent({ orgId, actorUserId: user.id, entityType: "Invoice", entityId: id, action: "INVOICE_DELETED", summary: "Draft invoice deleted" });
       revalidatePath("/documents/invoices");
-      redirect("/documents/invoices");
+      break;
     }
     case "invoice-duplicate": {
       if (!can.createInvoices(user)) break;
@@ -201,7 +204,7 @@ export async function documentAction(formData: FormData) {
       });
       await writeSystemAuditEvent({ orgId, actorUserId: user.id, entityType: "Invoice", entityId: dup.id, action: "INVOICE_DUPLICATED", summary: `Duplicated from ${original.invoiceNumber}` });
       revalidatePath("/documents/invoices");
-      redirect("/documents/invoices");
+      break;
     }
 
     // ── Receipt ──
@@ -209,7 +212,7 @@ export async function documentAction(formData: FormData) {
       if (!can.viewFinancials(user)) break;
       await writeSystemAuditEvent({ orgId, actorUserId: user.id, entityType: "Receipt", entityId: id, action: "RECEIPT_SENT", summary: "Receipt sent to client" });
       revalidatePath("/documents/receipts");
-      redirect("/documents/receipts");
+      break;
     }
     case "receipt-void": {
       if (user.role !== "ADMIN" && user.role !== "FINANCE" && !can.voidInvoices(user)) break;
@@ -219,7 +222,7 @@ export async function documentAction(formData: FormData) {
       });
       await writeSystemAuditEvent({ orgId, actorUserId: user.id, entityType: "Receipt", entityId: id, action: "RECEIPT_VOIDED", summary: "Receipt voided" });
       revalidatePath("/documents/receipts");
-      redirect("/documents/receipts");
+      break;
     }
     case "receipt-duplicate": {
       if (!can.viewFinancials(user)) break;
@@ -241,7 +244,7 @@ export async function documentAction(formData: FormData) {
       });
       await writeSystemAuditEvent({ orgId, actorUserId: user.id, entityType: "Receipt", entityId: dup.id, action: "RECEIPT_DUPLICATED", summary: `Reissued from ${original.receiptNumber}` });
       revalidatePath("/documents/receipts");
-      redirect("/documents/receipts");
+      break;
     }
   }
 

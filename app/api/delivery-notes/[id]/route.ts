@@ -77,10 +77,8 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  const [branding, logoUrl] = await Promise.all([
-    getDocumentBrandingSettings(orgId),
-    resolveInvoiceLogo(),
-  ]);
+  const branding = await getDocumentBrandingSettings(orgId);
+  const logoUrl = await resolveInvoiceLogo(branding?.companyLogoUrl);
   const sourceRef = note.invoice?.invoiceNumber
     ? `${note.invoice.invoiceNumber}${note.invoice.job ? ` / ${note.invoice.job.jobNumber}` : ""}`
     : (note.sale?.invoiceNumber ?? note.sale?.saleNumber ?? "-");

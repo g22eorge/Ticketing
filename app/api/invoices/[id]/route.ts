@@ -73,7 +73,7 @@ export async function GET(
   }
 
   const branding = await getDocumentBrandingSettings(orgId);
-  const logoUrl = await resolvePdfLogo();
+  const logoUrl = await resolvePdfLogo(branding?.companyLogoUrl);
   const issuedAt = invoice.issuedAt ?? new Date();
   const currency = invoice.currency;
   const address = [branding.companyAddressLine1, branding.companyAddressLine2].filter(Boolean).join(", ");

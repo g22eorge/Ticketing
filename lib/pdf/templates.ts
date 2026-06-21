@@ -106,11 +106,9 @@ export function templatesForAll(kind: DocKind) {
   return DOC_TEMPLATES.filter((t) => t.kind === kind);
 }
 
-export function splitTemplatesByPlan(kind: DocKind, plan: OrgPlan) {
+export function splitTemplatesByPlan(kind: DocKind, _plan: OrgPlan) {
   const all = templatesForAll(kind);
-  const allowed = all.filter((t) => planAllows(plan, t.minPlan));
-  const locked = all.filter((t) => !planAllows(plan, t.minPlan));
-  return { allowed, locked };
+  return { allowed: all, locked: [] as TemplateDef[] };
 }
 
 export function planLabel(plan: OrgPlan) {
@@ -127,12 +125,12 @@ export function planLabel(plan: OrgPlan) {
 export function resolveTemplateKey(params: {
   kind: DocKind;
   requestedKey: string | null | undefined;
-  plan: OrgPlan;
+  plan?: OrgPlan;
 }): TemplateKey {
-  const allowed = templatesFor(params.kind, params.plan);
+  const all = templatesForAll(params.kind);
   const requested = params.requestedKey as TemplateKey;
-  if (allowed.some((t) => t.key === requested)) return requested;
-  return allowed[0]?.key ?? (fallbackKeyForKind(params.kind) as TemplateKey);
+  if (requested && all.some((t) => t.key === requested)) return requested;
+  return all[0]?.key ?? (fallbackKeyForKind(params.kind) as TemplateKey);
 }
 
 function fallbackKeyForKind(kind: DocKind) {

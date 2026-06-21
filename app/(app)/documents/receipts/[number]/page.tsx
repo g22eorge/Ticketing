@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
+import { ChevronLeft } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { requireOrgSession } from "@/lib/org-context";
 import { can } from "@/lib/permissions";
@@ -42,21 +43,20 @@ export default async function ReceiptDetailPage({
 
   if (!receipt) notFound();
 
-  // Optional related data for display
-  const invoiceNumber = receipt.invoiceId
-    ? (await prisma.invoice.findUnique({ where: { id: receipt.invoiceId }, select: { invoiceNumber: true } }))?.invoiceNumber ?? null
-    : null;
-
-  const clientName = receipt.clientId
-    ? (await prisma.client.findUnique({ where: { id: receipt.clientId }, select: { fullName: true } }))?.fullName ?? null
-    : null;
+  const [invoiceNumber, clientData] = await Promise.all([
+    receipt.invoiceId
+      ? prisma.invoice.findUnique({ where: { id: receipt.invoiceId }, select: { invoiceNumber: true } }).then(r => r?.invoiceNumber ?? null)
+      : null,
+    receipt.clientId
+      ? prisma.client.findUnique({ where: { id: receipt.clientId }, select: { fullName: true, phone: true, email: true, address: true, organization: true } })
+      : null,
+  ]);
 
   return (
     <div className="space-y-5">
       <div className="flex items-center gap-1.5 text-xs font-medium text-[var(--ink-muted)]">
         <Link href="/documents/receipts" className="inline-flex items-center gap-1 transition hover:text-[var(--ink)]">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
-          All Receipts
+          <ChevronLeft className="h-3.5 w-3.5" aria-hidden="true" /> All Receipts
         </Link>
       </div>
       <ReceiptDetailView
@@ -66,8 +66,13 @@ export default async function ReceiptDetailPage({
         currency={receipt.currency}
         issuedAt={receipt.issuedAt}
         voidedAt={receipt.voidedAt}
+        voidReason={receipt.voidReason}
         invoiceNumber={invoiceNumber}
-        clientName={clientName}
+        clientName={clientData?.fullName ?? null}
+        clientPhone={clientData?.phone ?? null}
+        clientEmail={clientData?.email ?? null}
+        clientAddress={clientData?.address ?? null}
+        clientOrganization={clientData?.organization ?? null}
       />
     </div>
   );

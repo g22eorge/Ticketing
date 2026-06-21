@@ -4,12 +4,14 @@ import path from "node:path";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
+import { CheckCircle2, ArrowRight } from "lucide-react";
 
 import { defaultBranding, getDocumentBrandingSettings, saveDocumentBrandingSettings } from "@/lib/document-branding";
 import { sanitizeOptionalText, sanitizeText } from "@/lib/sanitize";
 import { requireOrgSession } from "@/lib/org-context";
 import { can } from "@/lib/permissions";
-import { planLabel, resolveTemplateKey, splitTemplatesByPlan } from "@/lib/pdf/templates";
+import { planLabel, resolveTemplateKey, splitTemplatesByPlan, templatesForAll, type DocKind } from "@/lib/pdf/templates";
+import type { OrgPlan } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
 type SearchParams = {
@@ -24,6 +26,20 @@ const logoFiles = [
   { name: "eagle-info-logo.jpeg", type: "image/jpeg" },
   { name: "eagle-info-logo.webp", type: "image/webp" },
 ];
+
+const DOC_KIND_LABELS: Record<DocKind, string> = {
+  INVOICE:   "Invoice",
+  QUOTATION: "Quotation",
+  JOB_CARD:  "Job Card",
+  RECEIPT:   "Receipt",
+};
+
+const DOC_KIND_TEMPLATE_FIELD: Record<DocKind, string> = {
+  INVOICE:   "invoiceTemplateKey",
+  QUOTATION: "quotationTemplateKey",
+  JOB_CARD:  "jobCardTemplateKey",
+  RECEIPT:   "receiptTemplateKey",
+};
 
 const brandingSchema = z.object({
   companyName: z.string().min(2).max(120),
@@ -52,22 +68,10 @@ const brandingSchema = z.object({
   surfaceColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/).default("#F5F5F5"),
   borderColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/).default("#E5E5E5"),
 
-  invoiceTemplateKey: z.preprocess((v) => {
-    const text = String(v ?? "").trim();
-    return text ? text : undefined;
-  }, z.string().min(1).optional()),
-  quotationTemplateKey: z.preprocess((v) => {
-    const text = String(v ?? "").trim();
-    return text ? text : undefined;
-  }, z.string().min(1).optional()),
-  jobCardTemplateKey: z.preprocess((v) => {
-    const text = String(v ?? "").trim();
-    return text ? text : undefined;
-  }, z.string().min(1).optional()),
-  receiptTemplateKey: z.preprocess((v) => {
-    const text = String(v ?? "").trim();
-    return text ? text : undefined;
-  }, z.string().min(1).optional()),
+  invoiceTemplateKey: z.string().optional(),
+  quotationTemplateKey: z.string().optional(),
+  jobCardTemplateKey: z.string().optional(),
+  receiptTemplateKey: z.string().optional(),
 });
 
 function normalizeOptionalEmail(value: FormDataEntryValue | null) {
@@ -94,7 +98,16 @@ function renderQuotePreview(prefix: string, format: string, padLength: number) {
     .replaceAll("{SEQ}", sampleSeq);
 }
 
-async function resolveLogoPreview() {
+async function resolveLogoPreview(companyLogoUrl?: string) {
+  if (companyLogoUrl) {
+    const filePath = path.join(process.cwd(), "public", companyLogoUrl.replace(/^\//, "").split("?")[0]);
+    try {
+      const info = await stat(filePath);
+      return `${companyLogoUrl.split("?")[0]}?v=${info.mtimeMs}`;
+    } catch {
+      // fall through
+    }
+  }
   for (const file of logoFiles) {
     const filePath = path.join(process.cwd(), "public", file.name);
     try {
@@ -126,10 +139,10 @@ export default async function BrandingPage({
   }
 
   const params = await searchParams;
-  const preview = await resolveLogoPreview();
+  const settings = await getDocumentBrandingSettings(orgId);
+  const preview = await resolveLogoPreview(settings.companyLogoUrl);
   const org = await prisma.organization.findUnique({ where: { id: orgId }, select: { plan: true } }).catch(() => null);
   const plan = org?.plan ?? "STARTER";
-  const settings = await getDocumentBrandingSettings(orgId);
 
   const invoiceTemplates = splitTemplatesByPlan("INVOICE", plan);
   const quotationTemplates = splitTemplatesByPlan("QUOTATION", plan);
@@ -149,7 +162,7 @@ export default async function BrandingPage({
   async function uploadLogoAction(formData: FormData) {
     "use server";
 
-    const { user: currentUser } = await requireOrgSession();
+    const { user: currentUser, orgId: uploadOrgId } = await requireOrgSession();
     if (currentUser.role !== "ADMIN") {
       redirect("/dashboard");
     }
@@ -169,20 +182,30 @@ export default async function BrandingPage({
     }
 
     const publicDir = path.join(process.cwd(), "public");
-    const targetName = `eagle-info-logo.${ext}`;
-    const targetPath = path.join(publicDir, targetName);
 
-    for (const candidate of logoFiles.map((f) => path.join(publicDir, f.name))) {
-      if (candidate === targetPath) continue;
+    const existingSettings = await getDocumentBrandingSettings(uploadOrgId);
+    const existingUrl = existingSettings.companyLogoUrl;
+    if (existingUrl) {
+      const existingName = existingUrl.replace(/^\//, "").split("?")[0];
+      const existingPath = path.join(publicDir, existingName);
       try {
-        await unlink(candidate);
+        await unlink(existingPath);
       } catch {
-        // ignore if missing
+        // ignore
       }
     }
 
+    const targetName = `company-logo-${uploadOrgId}.${ext}`;
+    const targetPath = path.join(publicDir, targetName);
+    const logoUrl = `/${targetName}`;
+
     const bytes = Buffer.from(await file.arrayBuffer());
     await writeFile(targetPath, bytes);
+
+    await saveDocumentBrandingSettings(uploadOrgId, {
+      ...existingSettings,
+      companyLogoUrl: logoUrl,
+    });
 
     revalidatePath("/settings/branding");
     redirect("/settings/branding?saved=1");
@@ -195,6 +218,9 @@ export default async function BrandingPage({
     if (currentUser.role !== "ADMIN") {
       redirect("/dashboard");
     }
+
+    const orgRow = await prisma.organization.findUnique({ where: { id: saveOrgId }, select: { plan: true } }).catch(() => null);
+    const actionPlan: OrgPlan = orgRow?.plan ?? "STARTER";
 
     const parsed = brandingSchema.safeParse({
       companyName: String(formData.get("companyName") ?? ""),
@@ -233,6 +259,8 @@ export default async function BrandingPage({
       redirect("/settings/branding?error=Invalid+branding+input");
     }
 
+    const currentSettings = await getDocumentBrandingSettings(saveOrgId);
+
     await saveDocumentBrandingSettings(saveOrgId, {
       ...defaultBranding,
       id: "singleton",
@@ -243,6 +271,7 @@ export default async function BrandingPage({
       companyContacts: sanitizeText(parsed.data.companyContacts),
       companyEmail: sanitizeOptionalText(parsed.data.companyEmail) ?? "",
       companyWebsite: sanitizeOptionalText(parsed.data.companyWebsite) ?? "",
+      companyLogoUrl: currentSettings.companyLogoUrl ?? "",
       documentTitle: sanitizeText(parsed.data.documentTitle),
       quotePrefix: sanitizeText(parsed.data.quotePrefix),
       quoteFormat: sanitizeText(parsed.data.quoteFormat),
@@ -262,10 +291,10 @@ export default async function BrandingPage({
       surfaceColor: parsed.data.surfaceColor,
       borderColor: parsed.data.borderColor,
 
-      invoiceTemplateKey: resolveTemplateKey({ kind: "INVOICE", requestedKey: parsed.data.invoiceTemplateKey, plan }),
-      quotationTemplateKey: resolveTemplateKey({ kind: "QUOTATION", requestedKey: parsed.data.quotationTemplateKey, plan }),
-      jobCardTemplateKey: resolveTemplateKey({ kind: "JOB_CARD", requestedKey: parsed.data.jobCardTemplateKey, plan }),
-      receiptTemplateKey: resolveTemplateKey({ kind: "RECEIPT", requestedKey: parsed.data.receiptTemplateKey, plan }),
+      invoiceTemplateKey: resolveTemplateKey({ kind: "INVOICE", requestedKey: parsed.data.invoiceTemplateKey, plan: actionPlan }),
+      quotationTemplateKey: resolveTemplateKey({ kind: "QUOTATION", requestedKey: parsed.data.quotationTemplateKey, plan: actionPlan }),
+      jobCardTemplateKey: resolveTemplateKey({ kind: "JOB_CARD", requestedKey: parsed.data.jobCardTemplateKey, plan: actionPlan }),
+      receiptTemplateKey: resolveTemplateKey({ kind: "RECEIPT", requestedKey: parsed.data.receiptTemplateKey, plan: actionPlan }),
     });
 
     revalidatePath("/settings/branding");
@@ -317,34 +346,58 @@ export default async function BrandingPage({
           </div>
         </div>
 
-        <details className="border-b border-[var(--line)] p-4">
-          <summary className="cursor-pointer text-[12px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">
-            Document templates
-          </summary>
-          <p className="mt-2 text-[13px] text-[var(--ink-muted)]">Available templates depend on your plan ({planLabel(plan)}).</p>
-          <div className="mt-3 grid gap-3 lg:grid-cols-2">
-            {[
-              { label: "Invoice", name: "invoiceTemplateKey", value: selectedInvoiceKey, allowed: invoiceTemplates.allowed, locked: invoiceTemplates.locked },
-              { label: "Quotation", name: "quotationTemplateKey", value: selectedQuoteKey, allowed: quotationTemplates.allowed, locked: quotationTemplates.locked },
-              { label: "Ticket document", name: "jobCardTemplateKey", value: selectedJobCardKey, allowed: jobCardTemplates.allowed, locked: jobCardTemplates.locked },
-              { label: "Receipt", name: "receiptTemplateKey", value: selectedReceiptKey, allowed: receiptTemplates.allowed, locked: receiptTemplates.locked },
-            ].map(({ label, name, value, allowed, locked }) => (
-              <div key={name}>
-                <p className="mb-1 text-[12px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">{label}</p>
-                <select name={name} defaultValue={value} className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14">
-                  {allowed.map((t) => <option key={t.key} value={t.key}>{t.label}</option>)}
-                  {locked.map((t) => <option key={t.key} value={t.key} disabled>{t.label} (Upgrade to {planLabel(t.minPlan)})</option>)}
-                </select>
-              </div>
-            ))}
+        <div className="border-b border-[var(--line)] p-4">
+          <div className="mb-3 flex items-center justify-between">
+            <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Document templates</p>
+            <a href="/documents/templates" className="inline-flex items-center gap-1 text-[12px] font-medium text-[var(--accent)] hover:underline">
+              Manage all templates <ArrowRight className="h-3 w-3" />
+            </a>
           </div>
-        </details>
+          <p className="mb-4 text-[13px] text-[var(--ink-muted)]">Available templates depend on your plan ({planLabel(plan)}). Click <strong>Set as default</strong> to change the active template.</p>
+          <div className="grid gap-5 lg:grid-cols-2">
+            {([
+              { docKind: "INVOICE" as DocKind, label: DOC_KIND_LABELS.INVOICE, field: DOC_KIND_TEMPLATE_FIELD.INVOICE, value: selectedInvoiceKey, templates: invoiceTemplates.allowed },
+              { docKind: "QUOTATION" as DocKind, label: DOC_KIND_LABELS.QUOTATION, field: DOC_KIND_TEMPLATE_FIELD.QUOTATION, value: selectedQuoteKey, templates: quotationTemplates.allowed },
+              { docKind: "JOB_CARD" as DocKind, label: DOC_KIND_LABELS.JOB_CARD, field: DOC_KIND_TEMPLATE_FIELD.JOB_CARD, value: selectedJobCardKey, templates: jobCardTemplates.allowed },
+              { docKind: "RECEIPT" as DocKind, label: DOC_KIND_LABELS.RECEIPT, field: DOC_KIND_TEMPLATE_FIELD.RECEIPT, value: selectedReceiptKey, templates: receiptTemplates.allowed },
+            ]).map(({ docKind, label, field, value, templates }) => {
+              const active = templates.find((t) => t.key === value);
+              return (
+                <div key={docKind} className="space-y-2">
+                  <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">{label}</p>
+                  <select
+                    name={field}
+                    defaultValue={value}
+                    className="w-full cursor-pointer rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-[13px] outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14"
+                  >
+                    {templates.map((t) => (
+                      <option key={t.key} value={t.key}>{t.label}</option>
+                    ))}
+                  </select>
+                  <div className="flex flex-wrap gap-2">
+                    {templates.map((t) => {
+                      const isActive = t.key === value;
+                      return (
+                        <div
+                          key={t.key}
+                          className={`flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] ${isActive ? "bg-[var(--accent)]/12 font-semibold" : "opacity-50"}`}
+                        >
+                          <span className={`h-2 w-2 flex-shrink-0 rounded-full ${t.previewColor}`} />
+                          <span className={isActive ? "text-[var(--accent)]" : "text-[var(--ink-muted)]"}>{t.label}</span>
+                          {isActive && <CheckCircle2 className="h-3 w-3 text-[var(--accent)]" />}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
 
-        <details className="border-b border-[var(--line)] p-4">
-          <summary className="cursor-pointer text-[12px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">
-            Tax and signatures
-          </summary>
-          <div className="mt-3 grid gap-2 lg:grid-cols-2">
+        <div className="border-b border-[var(--line)] p-4">
+          <p className="mb-3 text-[12px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Tax and signatures</p>
+          <div className="grid gap-2 lg:grid-cols-2">
             <select name="vatDefaultApplicable" defaultValue={settings.vatDefaultApplicable ? "true" : "false"} className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14">
               <option value="true">VAT default: applicable</option>
               <option value="false">VAT default: not applicable</option>
@@ -354,12 +407,10 @@ export default async function BrandingPage({
             <input name="signatureCompanyLabel" defaultValue={settings.signatureCompanyLabel} placeholder="Company signature label" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
             <input name="signatureClientLabel" defaultValue={settings.signatureClientLabel} placeholder="Client signature label" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
           </div>
-        </details>
+        </div>
 
-        <details className="border-b border-[var(--line)] p-4">
-          <summary className="cursor-pointer text-[12px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">
-            Colors
-          </summary>
+        <div className="border-b border-[var(--line)] p-4">
+          <p className="mb-3 text-[12px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Colors</p>
           <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {[
               { name: "primaryColor", label: "Primary", value: settings.primaryColor },
@@ -375,17 +426,15 @@ export default async function BrandingPage({
               </div>
             ))}
           </div>
-        </details>
+        </div>
 
-        <details className="p-4">
-          <summary className="cursor-pointer text-[12px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">
-            Terms and footer
-          </summary>
+        <div className="p-4">
+          <p className="mb-3 text-[12px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Terms and footer</p>
           <div className="mt-3 grid gap-2">
             <textarea name="termsText" defaultValue={settings.termsText} className="min-h-28 w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
             <input name="footerText" defaultValue={settings.footerText} placeholder="Footer text" className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
           </div>
-        </details>
+        </div>
 
         <div className="border-t border-[var(--line)] px-4 py-3">
           <button type="submit" className="btn-premium rounded-lg px-4 py-1.5 text-[13px]">Save branding</button>

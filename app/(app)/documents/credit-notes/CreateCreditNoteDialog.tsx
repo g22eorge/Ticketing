@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { Plus, X, FilePlus2 } from "lucide-react";
 
 type SaleLine = {
   id: string;
@@ -41,9 +42,9 @@ export function CreateCreditNoteDialog({ eligibleSales, action }: Props) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="btn-premium rounded-lg px-3 py-1.5 text-[12px]"
+        className="btn-premium inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[12px]"
       >
-        + New Credit Note
+        <Plus className="h-3.5 w-3.5" aria-hidden="true" /> New Credit Note
       </button>
 
       {open ? (
@@ -66,9 +67,7 @@ export function CreateCreditNoteDialog({ eligibleSales, action }: Props) {
                 className="flex h-7 w-7 items-center justify-center rounded-lg text-[var(--ink-muted)] transition hover:bg-[var(--panel-strong)] hover:text-[var(--ink)]"
                 aria-label="Close"
               >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                  <path d="M18 6 6 18M6 6l12 12" />
-                </svg>
+                <X className="h-3.5 w-3.5" />
               </button>
             </div>
 
@@ -139,8 +138,8 @@ export function CreateCreditNoteDialog({ eligibleSales, action }: Props) {
                   >
                     Cancel
                   </button>
-                  <button type="submit" className="btn-premium rounded-lg px-4 py-2 text-sm font-semibold">
-                    Create Credit Note
+                  <button type="submit" className="btn-premium inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold">
+                    <FilePlus2 className="h-3.5 w-3.5" aria-hidden="true" /> Create Credit Note
                   </button>
                 </div>
               </form>

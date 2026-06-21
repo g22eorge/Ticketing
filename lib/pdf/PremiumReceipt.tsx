@@ -100,7 +100,7 @@ export function PremiumReceiptDocument({ sale, branding }: { sale: Sale; brandin
           <View>
             {/* eslint-disable-next-line jsx-a11y/alt-text */}
             {branding?.companyLogoUrl ? <Image src={branding.companyLogoUrl} style={{ width: 60, height: 30, objectFit: "contain", marginBottom: 4 }} /> : null}
-            <Text style={s.brandName}>{branding?.companyName || "Eagle Info Solutions"}</Text>
+            <Text style={s.brandName}>{branding?.companyName || ""}</Text>
             {branding?.companyTagline ? <Text style={s.brandSub}>{branding.companyTagline}</Text> : null}
             {(branding?.companyContacts || address) ? <Text style={s.brandContact}>{[branding?.companyContacts, address].filter(Boolean).join("  ")}</Text> : null}
           </View>

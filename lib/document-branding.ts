@@ -9,6 +9,7 @@ export const defaultBranding = {
   companyContacts: "",
   companyEmail: "",
   companyWebsite: "",
+  companyLogoUrl: "",
   documentTitle: "Service Document",
   quotePrefix: "DOC",
   quoteFormat: "{PREFIX} {M}/{YYYY}/{SEQ}",
@@ -51,6 +52,7 @@ function coerceRow(row: Record<string, unknown>): BrandingSettings {
     companyContacts: String(row.companyContacts ?? defaultBranding.companyContacts),
     companyEmail: row.companyEmail ? String(row.companyEmail) : "",
     companyWebsite: row.companyWebsite ? String(row.companyWebsite) : "",
+    companyLogoUrl: row.companyLogoUrl ? String(row.companyLogoUrl) : "",
     documentTitle: String(row.documentTitle ?? defaultBranding.documentTitle),
     quotePrefix: String(row.quotePrefix ?? defaultBranding.quotePrefix),
     quoteFormat: String(row.quoteFormat ?? defaultBranding.quoteFormat),
@@ -90,6 +92,7 @@ async function ensureRawTable() {
       companyContacts TEXT NOT NULL,
       companyEmail TEXT,
       companyWebsite TEXT,
+      companyLogoUrl TEXT,
       documentTitle TEXT NOT NULL,
       quotePrefix TEXT NOT NULL,
       quoteFormat TEXT NOT NULL,
@@ -121,7 +124,7 @@ async function ensureRawTable() {
   const ADDABLE_COLUMNS: ReadonlySet<string> = new Set([
     "invoiceTemplateKey", "quotationTemplateKey", "jobCardTemplateKey", "receiptTemplateKey",
     "primaryColor", "secondaryColor", "accentColor", "backgroundColor", "surfaceColor", "borderColor",
-    "orgId",
+    "orgId", "companyLogoUrl",
   ]);
   const addColumn = async (name: string, dflt: string) => {
     if (!ADDABLE_COLUMNS.has(name)) return;
@@ -142,6 +145,7 @@ async function ensureRawTable() {
   await addColumn("surfaceColor",   "'#F5F5F5'");
   await addColumn("borderColor",    "'#E5E5E5'");
   await addColumn("orgId",          "NULL");
+  await addColumn("companyLogoUrl", "NULL");
 
   rawTableEnsured = true;
 }
@@ -208,7 +212,7 @@ export async function saveDocumentBrandingSettings(orgId: string, data: Branding
     INSERT INTO "DocumentBrandingSettings" (
       id, orgId,
       companyName, companyTagline, companyAddressLine1, companyAddressLine2,
-      companyContacts, companyEmail, companyWebsite, documentTitle,
+      companyContacts, companyEmail, companyWebsite, companyLogoUrl, documentTitle,
       quotePrefix, quoteFormat, quoteValidityDays, sequencePadLength,
       vatDefaultApplicable, vatRatePercent, vatLabel, termsText,
       footerText, signatureCompanyLabel, signatureClientLabel,
@@ -220,6 +224,7 @@ export async function saveDocumentBrandingSettings(orgId: string, data: Branding
       ${data.companyName}, ${data.companyTagline},
       ${data.companyAddressLine1}, ${data.companyAddressLine2},
       ${data.companyContacts}, ${data.companyEmail}, ${data.companyWebsite},
+      ${data.companyLogoUrl ?? ""},
       ${data.documentTitle}, ${data.quotePrefix}, ${data.quoteFormat},
       ${data.quoteValidityDays}, ${data.sequencePadLength},
       ${data.vatDefaultApplicable}, ${data.vatRatePercent}, ${data.vatLabel},
@@ -240,6 +245,7 @@ export async function saveDocumentBrandingSettings(orgId: string, data: Branding
       companyContacts = excluded.companyContacts,
       companyEmail = excluded.companyEmail,
       companyWebsite = excluded.companyWebsite,
+      companyLogoUrl = excluded.companyLogoUrl,
       documentTitle = excluded.documentTitle,
       quotePrefix = excluded.quotePrefix,
       quoteFormat = excluded.quoteFormat,

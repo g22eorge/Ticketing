@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { Prisma, QuotationStatus } from "@prisma/client";
+import { Download, Edit3, Save, Trash2, Plus } from "lucide-react";
 
 import { CopyButton } from "@/components/shared/CopyButton";
 import { MenuActionButton, MenuActionLink, MenuSection, RowActionsMenu } from "@/components/shared/RowActionsMenu";
@@ -74,7 +75,7 @@ export default async function QuotationDetailPage({
   const canSend = can.createQuotations(user) && quotation.status === "DRAFT";
   const canAccept = can.approveQuotations(user) && quotation.status === "SENT";
   const canReject = can.createQuotations(user) && quotation.status === "SENT";
-  const canEditAfterApproval = can.createQuotations(user) && quotation.status === "ACCEPTED" && !quotation.convertedToInvoiceId;
+  const canEditLineItems = (can.createQuotations(user) && ["DRAFT", "SENT", "ACCEPTED"].includes(quotation.status)) && !quotation.convertedToInvoiceId;
   const canConvert = can.createInvoices(user) && quotation.status === "ACCEPTED" && !quotation.convertedToInvoiceId;
   const canOverrideDiscount = can.overrideDiscount(user);
   const recipientName = quotation.client?.fullName ?? quotation.lead?.fullName ?? null;
@@ -264,9 +265,9 @@ export default async function QuotationDetailPage({
             href={pdfHref}
             target="_blank"
             rel="noreferrer"
-            className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-4 py-2 text-[12px] font-bold text-[var(--ink)] transition hover:border-[var(--accent)]/40"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-4 py-2 text-[12px] font-bold text-[var(--ink)] transition hover:border-[var(--accent)]/40"
           >
-            Download PDF
+            <Download className="h-3.5 w-3.5" aria-hidden="true" /> Download PDF
           </a>
           <RowActionsMenu label={`Quotation actions for ${quotation.quoteNumber}`}>
             <div className="py-1 text-left">
@@ -356,10 +357,10 @@ export default async function QuotationDetailPage({
         <div className="rounded-lg border border-red-400/30 bg-red-500/10 px-3 py-2 text-xs text-red-700 dark:text-red-400">{filters.editError}</div>
       ) : null}
 
-      {canEditAfterApproval ? (
+      {canEditLineItems ? (
         <details className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5">
           <summary className="cursor-pointer list-none text-[13px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)] [&::-webkit-details-marker]:hidden">
-            Edit Quote
+            <span className="inline-flex items-center gap-1.5"><Edit3 className="h-3.5 w-3.5" aria-hidden="true" /> Edit Quote</span>
           </summary>
           <form action={updateDetailsAction} className="mt-3 grid gap-3 sm:grid-cols-2">
             <label className="space-y-1 text-[12px] font-semibold text-[var(--ink-muted)]">
@@ -372,8 +373,8 @@ export default async function QuotationDetailPage({
               />
             </label>
             <div className="sm:col-span-2">
-              <button type="submit" className="btn-premium rounded-lg px-4 py-2 text-[12px] font-bold">
-                Save Changes
+              <button type="submit" className="btn-premium inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-[12px] font-bold">
+                <Save className="h-3.5 w-3.5" aria-hidden="true" /> Save Changes
               </button>
             </div>
           </form>
@@ -394,8 +395,8 @@ export default async function QuotationDetailPage({
               className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm font-normal text-[var(--ink)] outline-none focus:border-[var(--accent)]/50 resize-none"
               placeholder="Add notes..."
             />
-            <button type="submit" className="btn-premium-secondary rounded-lg px-4 py-2 text-[12px] font-semibold">
-              Save Notes
+            <button type="submit" className="btn-premium-secondary inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-[12px] font-semibold">
+                <Save className="h-3.5 w-3.5" aria-hidden="true" /> Save Notes
             </button>
           </form>
         </details>
@@ -406,68 +407,76 @@ export default async function QuotationDetailPage({
 
       <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
         <div className="border-b border-[var(--line)] px-4 py-3">
-          <p className="text-[13px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Line Items</p>
+          <div className="flex items-center justify-between">
+            <p className="text-[13px] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Line Items</p>
+            <span className="rounded-full bg-[var(--panel-strong)] px-2.5 py-0.5 text-[12px] font-bold text-[var(--ink-muted)]">
+              {quotation.items.length} {quotation.items.length === 1 ? "item" : "items"}
+            </span>
+          </div>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full border-collapse text-[13px]">
-            <thead className="bg-[var(--panel-strong)]/50 text-left text-[12px] font-bold uppercase tracking-[0.15em] text-[var(--ink-muted)]">
-              <tr className="border-b border-[var(--line)]">
-                <th className="px-4 py-2.5">Description</th>
-                <th className="w-16 px-4 py-2.5 text-right">Qty</th>
-                <th className="w-28 px-4 py-2.5 text-right">Unit Price</th>
-                <th className="w-16 px-4 py-2.5 text-right">Disc %</th>
-                <th className="w-28 px-4 py-2.5 text-right">Total</th>
-                {canEditAfterApproval ? <th className="w-28 px-4 py-2.5 text-right">Actions</th> : null}
+          <table className="w-full text-[13px]">
+            <thead>
+              <tr className="border-b border-[var(--line)] bg-[var(--panel-strong)]/60 text-left text-[11px] font-bold uppercase tracking-[0.15em] text-[var(--ink-muted)]">
+                <th className="w-10 px-4 py-2.5">#</th>
+                <th className="px-3 py-2.5">Description</th>
+                <th className="w-16 px-3 py-2.5 text-right">Qty</th>
+                <th className="w-28 px-3 py-2.5 text-right">Unit Price</th>
+                <th className="w-20 px-3 py-2.5 text-right">Disc %</th>
+                <th className="w-32 px-3 py-2.5 text-right">Total</th>
+                {canEditLineItems ? <th className="w-36 px-3 py-2.5 text-right">Actions</th> : null}
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--line)]">
-              {quotation.items.map((item) => (
-                <tr key={item.id}>
-                  <td className="px-4 py-3 text-[var(--ink)]">
-                    {canEditAfterApproval ? (
+              {quotation.items.length === 0 ? (
+                <tr>
+                  <td colSpan={canEditLineItems ? 7 : 6} className="px-4 py-8 text-center text-sm text-[var(--ink-muted)]">No line items</td>
+                </tr>
+              ) : quotation.items.map((item, i) => (
+                <tr key={item.id} className="group hover:bg-[var(--panel-strong)]/30 transition-colors">
+                  <td className="px-4 py-2.5 text-[12px] text-[var(--ink-muted)]">{i + 1}</td>
+                  <td className="px-3 py-2.5 text-[var(--ink)]">
+                    {canEditLineItems ? (
                       <input form={`quote-item-${item.id}`} name="description" defaultValue={item.description} className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1.5 text-sm outline-none focus:border-[var(--accent)]/50" />
-                    ) : item.description}
+                    ) : <span className="font-medium">{item.description}</span>}
                   </td>
-                  <td className="px-4 py-3 text-right text-[var(--ink-muted)]">
-                    {canEditAfterApproval ? (
-                      <input form={`quote-item-${item.id}`} name="quantity" type="number" min="1" step="any" defaultValue={item.quantity} className="w-20 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-1.5 text-right text-sm outline-none focus:border-[var(--accent)]/50" />
+                  <td className="px-3 py-2.5 text-right tabular-nums text-[var(--ink-muted)]">
+                    {canEditLineItems ? (
+                      <input form={`quote-item-${item.id}`} name="quantity" type="number" min="1" step="any" defaultValue={item.quantity} className="w-16 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-1.5 text-right text-sm outline-none focus:border-[var(--accent)]/50 tabular-nums" />
                     ) : item.quantity}
                   </td>
-                  <td className="px-4 py-3 text-right text-[var(--ink-muted)]">
-                    {canEditAfterApproval ? (
-                      <input form={`quote-item-${item.id}`} name="unitPrice" type="number" min="0" step="any" defaultValue={item.unitPrice} className="w-28 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-1.5 text-right text-sm outline-none focus:border-[var(--accent)]/50" />
+                  <td className="px-3 py-2.5 text-right tabular-nums text-[var(--ink-muted)]">
+                    {canEditLineItems ? (
+                      <input form={`quote-item-${item.id}`} name="unitPrice" type="number" min="0" step="any" defaultValue={item.unitPrice} className="w-28 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-1.5 text-right text-sm outline-none focus:border-[var(--accent)]/50 tabular-nums" />
                     ) : formatMoney(item.unitPrice, currency)}
                   </td>
-                  <td className="px-4 py-3 text-right text-[var(--ink-muted)]">
-                    {canEditAfterApproval && canOverrideDiscount ? (
-                      <input form={`quote-item-${item.id}`} name="discount" type="number" min="0" max="100" step="any" defaultValue={item.discount} className="w-20 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-1.5 text-right text-sm outline-none focus:border-[var(--accent)]/50" />
-                    ) : item.discount > 0 ? `${item.discount}%` : <span className="opacity-40">—</span>}
+                  <td className="px-3 py-2.5 text-right tabular-nums text-[var(--ink-muted)]">
+                    {canEditLineItems && canOverrideDiscount ? (
+                      <input form={`quote-item-${item.id}`} name="discount" type="number" min="0" max="100" step="any" defaultValue={item.discount} className="w-20 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-1.5 text-right text-sm outline-none focus:border-[var(--accent)]/50 tabular-nums" />
+                    ) : item.discount > 0 ? `${item.discount}%` : <span className="opacity-30">—</span>}
                   </td>
-                  <td className="px-4 py-3 text-right font-medium text-[var(--ink)]">{formatMoney(item.lineTotal, currency)}</td>
-                  {canEditAfterApproval ? (
-                    <td className="px-4 py-3 text-right">
-                      <form id={`quote-item-${item.id}`} action={updateItemAction} className="inline">
-                        <input type="hidden" name="itemId" value={item.id} />
-                        {!canOverrideDiscount ? <input type="hidden" name="discount" value="0" /> : null}
-                        <button type="submit" className="rounded-lg border border-[var(--line)] px-2.5 py-1 text-[12px] font-semibold text-[var(--ink)]">Save</button>
-                      </form>
-                      <form action={removeItemAction} className="ml-1 inline">
-                        <input type="hidden" name="itemId" value={item.id} />
-                        <button type="submit" className="rounded-lg border border-red-400/30 px-2.5 py-1 text-[12px] font-semibold text-red-600">Remove</button>
-                      </form>
+                  <td className="px-3 py-2.5 text-right tabular-nums font-semibold text-[var(--ink)]">{formatMoney(item.lineTotal, currency)}</td>
+                  {canEditLineItems ? (
+                    <td className="px-3 py-2.5 text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <form id={`quote-item-${item.id}`} action={updateItemAction} className="inline">
+                          <input type="hidden" name="itemId" value={item.id} />
+                          {!canOverrideDiscount ? <input type="hidden" name="discount" value="0" /> : null}
+                          <button type="submit" className="inline-flex items-center gap-1 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1 text-[11px] font-semibold text-[var(--ink)] transition hover:border-[var(--accent)]/50 hover:text-[var(--accent)]"><Save className="h-3 w-3" aria-hidden="true" /> Save</button>
+                        </form>
+                        <form action={removeItemAction} className="inline">
+                          <input type="hidden" name="itemId" value={item.id} />
+                          <button type="submit" className="inline-flex items-center gap-1 rounded-lg border border-red-400/30 bg-red-500/5 px-2.5 py-1 text-[11px] font-semibold text-red-600 transition hover:bg-red-500/15"><Trash2 className="h-3 w-3" aria-hidden="true" /> Remove</button>
+                        </form>
+                      </div>
                     </td>
                   ) : null}
                 </tr>
               ))}
-              {quotation.items.length === 0 ? (
-                <tr>
-                  <td colSpan={canEditAfterApproval ? 6 : 5} className="px-4 py-6 text-center text-sm text-[var(--ink-muted)]">No items</td>
-                </tr>
-              ) : null}
             </tbody>
           </table>
         </div>
-        {canEditAfterApproval ? (
+        {canEditLineItems ? (
           <form action={addItemAction} className="grid gap-2 border-t border-[var(--line)] px-4 py-3 md:grid-cols-[1fr_80px_120px_90px_auto]">
             <input name="description" placeholder="New item description" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm outline-none focus:border-[var(--accent)]/50" />
             <input name="quantity" type="number" min="1" step="any" defaultValue="1" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm outline-none focus:border-[var(--accent)]/50" />
@@ -475,28 +484,28 @@ export default async function QuotationDetailPage({
             {canOverrideDiscount ? (
               <input name="discount" type="number" min="0" max="100" step="any" defaultValue="0" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm outline-none focus:border-[var(--accent)]/50" />
             ) : <input type="hidden" name="discount" value="0" />}
-            <button type="submit" className="btn-premium-secondary rounded-lg px-4 py-2 text-[12px] font-semibold">
-              Add Item
+            <button type="submit" className="btn-premium-secondary inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-[12px] font-semibold">
+                <Plus className="h-3.5 w-3.5" aria-hidden="true" /> Add Item
             </button>
           </form>
         ) : null}
-        <div className="border-t border-[var(--line)] px-4 py-3">
-          <div className="flex flex-col items-end gap-1 text-[13px]">
+        <div className="border-t border-[var(--line)] bg-[var(--panel-strong)]/30 px-4 py-3">
+          <div className="flex flex-col items-end gap-1.5 text-[13px]">
             {quotation.discountAmount > 0 ? (
-              <div className="flex gap-4">
+              <div className="flex w-full max-w-[280px] items-center justify-between gap-4">
                 <span className="text-[var(--ink-muted)]">Discount</span>
-                <span className="font-medium text-red-600">-{formatMoney(quotation.discountAmount, currency)}</span>
+                <span className="tabular-nums font-medium text-red-500">-{formatMoney(quotation.discountAmount, currency)}</span>
               </div>
             ) : null}
             {quotation.vatAmount > 0 ? (
-              <div className="flex gap-4">
+              <div className="flex w-full max-w-[280px] items-center justify-between gap-4">
                 <span className="text-[var(--ink-muted)]">{taxDisplayLabel}{taxDisplayRate !== null ? ` (${taxDisplayRate}%)` : ""}</span>
-                <span className="font-medium text-[var(--ink)]">{formatMoney(quotation.vatAmount, currency)}</span>
+                <span className="tabular-nums font-medium text-[var(--ink)]">{formatMoney(quotation.vatAmount, currency)}</span>
               </div>
             ) : null}
-            <div className="flex gap-4 border-t border-[var(--line)] pt-2">
+            <div className="flex w-full max-w-[280px] items-center justify-between gap-4 border-t border-[var(--line)] pt-2">
               <span className="font-semibold text-[var(--ink)]">Total</span>
-              <span className="text-[15px] font-bold text-[var(--ink)]">{formatMoney(quotation.totalAmount, currency)}</span>
+              <span className="tabular-nums text-[17px] font-black text-[var(--ink)]">{formatMoney(quotation.totalAmount, currency)}</span>
             </div>
           </div>
         </div>

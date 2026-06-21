@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { CircleDollarSign } from "lucide-react";
 
 import { prisma } from "@/lib/prisma";
 import { requireOrgSession } from "@/lib/org-context";
@@ -85,7 +86,7 @@ export default async function ReceiptsPage({
           href="/documents/new?type=receipt"
           className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--brand)] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:brightness-110"
         >
-          Record Payment
+          <CircleDollarSign className="h-4 w-4" aria-hidden="true" /> Record Payment
         </Link>
       }
       searchPlaceholder="Search receipts..."

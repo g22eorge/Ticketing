@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useTransition, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { Plus, X, FilePlus2 } from "lucide-react";
 
 type ClientOption = {
   id: string;
@@ -309,9 +310,9 @@ export function NewQuotationForm({
             <button
               type="button"
               onClick={addItem}
-              className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-xs font-semibold text-[var(--ink)] transition hover:border-[var(--accent)]/50"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-xs font-semibold text-[var(--ink)] transition hover:border-[var(--accent)]/50"
             >
-              Add item
+              <Plus className="h-3.5 w-3.5" aria-hidden="true" /> Add item
             </button>
           </div>
 
@@ -369,10 +370,10 @@ export function NewQuotationForm({
                     type="button"
                     onClick={() => removeItem(item.id)}
                     disabled={items.length <= 1}
-                    className="mt-5 h-9 rounded-lg text-sm font-semibold text-[var(--ink-muted)] transition hover:bg-red-500/10 hover:text-red-600 disabled:opacity-30"
+                    className="mt-5 flex h-9 items-center justify-center rounded-lg text-sm font-semibold text-[var(--ink-muted)] transition hover:bg-red-500/10 hover:text-red-600 disabled:opacity-30"
                     aria-label="Remove item"
                   >
-                    x
+                    <X className="h-4 w-4" aria-hidden="true" />
                   </button>
                 </div>
                 <p className="mt-2 text-right text-sm font-semibold tabular-nums text-[var(--ink)]">{formatAmount(lineTotal(item))}</p>
@@ -438,15 +439,15 @@ export function NewQuotationForm({
             </div>
           </dl>
 
-          <button type="submit" disabled={isPending} className="btn-premium mt-5 w-full rounded-lg px-5 py-3 text-sm font-bold disabled:opacity-60">
-            {isPending ? "Creating..." : "Create Quotation"}
+          <button type="submit" disabled={isPending} className="btn-premium mt-5 inline-flex w-full items-center justify-center gap-1.5 rounded-lg px-5 py-3 text-sm font-bold disabled:opacity-60">
+            <FilePlus2 className="h-4 w-4" aria-hidden="true" /> {isPending ? "Creating..." : "Create Quotation"}
           </button>
           <button
             type="button"
             onClick={() => router.back()}
-            className="mt-2 w-full rounded-lg border border-[var(--line)] px-5 py-2.5 text-sm font-semibold text-[var(--ink-muted)] transition hover:text-[var(--ink)]"
+            className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-[var(--line)] px-5 py-2.5 text-sm font-semibold text-[var(--ink-muted)] transition hover:text-[var(--ink)]"
           >
-            Cancel
+            <X className="h-4 w-4" aria-hidden="true" /> Cancel
           </button>
         </section>
       </aside>

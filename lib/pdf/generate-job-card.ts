@@ -44,7 +44,7 @@ export async function generateJobCardBuffer(
     plan: org?.plan ?? "STARTER",
   });
   const JobCardDoc = JobCardTemplateComponent(templateKey);
-  const logoUrl = await resolvePdfLogo();
+  const logoUrl = await resolvePdfLogo(branding?.companyLogoUrl);
   const documentNumber = `JC-${job.jobNumber}`;
 
   if (staffUserId) {

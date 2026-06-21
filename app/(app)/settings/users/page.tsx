@@ -4,6 +4,7 @@ import Link from "next/link";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
+import { X } from "lucide-react";
 
 import { UserAccessControlPanel } from "@/components/settings/UserAccessControlPanel";
 import { UserDetailsForm } from "@/components/settings/UserDetailsForm";
@@ -934,7 +935,7 @@ export default async function UsersPage({
         <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-3">
           <div className="mb-3 flex items-center justify-between">
             <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Add User</p>
-            <Link href="/settings/users" className="text-[13px] text-[var(--ink-muted)] hover:text-[var(--ink)]">✕ Close</Link>
+            <Link href="/settings/users" className="inline-flex items-center gap-1 text-[13px] text-[var(--ink-muted)] hover:text-[var(--ink)]"><X className="h-3.5 w-3.5" aria-hidden="true" />Close</Link>
           </div>
           <InvitePanel inviteAction={inviteUser} roleOptions={roleOptions} />
           <details className="mt-3 border-t border-[var(--line)] pt-3">
@@ -977,7 +978,7 @@ export default async function UsersPage({
               className="min-w-0 flex-1 rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50"
             />
             {q ? (
-              <Link href="/settings/users" className="flex items-center rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2 text-[13px] text-[var(--ink-muted)] hover:text-[var(--ink)]">✕</Link>
+              <Link href="/settings/users" aria-label="Clear search" className="flex items-center rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2 text-[13px] text-[var(--ink-muted)] hover:text-[var(--ink)]"><X className="h-3.5 w-3.5" aria-hidden="true" /></Link>
             ) : null}
           </form>
           <div className="divide-y divide-[var(--line)]">
