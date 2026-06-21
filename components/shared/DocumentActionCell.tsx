@@ -188,7 +188,9 @@ export function DocumentActionCell({ quickActions, moreActions, label = "More ac
                 : "border-[var(--line)] text-[var(--ink-muted)] hover:text-[var(--ink)] hover:bg-[var(--panel-strong)]"
             }`}
           >
-            <MoreHorizontal className="h-4 w-4" aria-hidden="true" />
+            <span className="flex h-4 w-4 items-center justify-center text-[13px] leading-none">
+              ⋮
+            </span>
           </button>
 
           {open && typeof document !== "undefined" && createPortal(

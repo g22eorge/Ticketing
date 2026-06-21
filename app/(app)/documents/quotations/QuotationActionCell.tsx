@@ -1,6 +1,6 @@
 "use client";
 
-import { Eye, Pencil, Check, Download, Send, FileText, Trash2, X, Receipt, Printer, ArrowRight } from "lucide-react";
+import { Eye, Pencil, Download, Send, FileText, Trash2, X, Receipt, Printer, ArrowRight } from "lucide-react";
 import { DocumentActionCell, type DocAction } from "@/components/shared/DocumentActionCell";
 import { documentAction } from "@/app/(app)/documents/actions";
 
@@ -33,7 +33,7 @@ export function QuotationActionCell({ id, quoteNumber, status, convertedToInvoic
     quickActions.push(
       { key: "view", label: "View quotation", icon: <Eye size={13} />, href: viewHref },
       { key: "edit", label: "Edit quotation", icon: <Pencil size={13} />, href: viewHref, tone: "accent" },
-      { key: "approve", label: "Approve quotation", icon: <Check size={13} />, serverAction: sa("quotation-approve"), confirm: "Approve this quotation?", tone: "success" },
+      { key: "approve", label: "Approve quotation", icon: <span className="inline-flex h-[13px] w-[13px] items-center justify-center text-[11px] leading-none">✓</span>, serverAction: sa("quotation-approve"), confirm: "Approve this quotation?", tone: "success" },
       { key: "download", label: "Download PDF", icon: <Download size={13} />, href: pdfHref, external: true },
     );
     moreActions.push(
@@ -47,7 +47,7 @@ export function QuotationActionCell({ id, quoteNumber, status, convertedToInvoic
       { key: "view", label: "View quotation", icon: <Eye size={13} />, href: viewHref },
       { key: "download", label: "Download PDF", icon: <Download size={13} />, href: pdfHref, external: true },
       { key: "resend", label: "Resend quotation", icon: <Send size={13} />, serverAction: sa("quotation-send"), tone: "accent" },
-      { key: "approve", label: "Approve quotation", icon: <Check size={13} />, serverAction: sa("quotation-approve"), confirm: "Approve this quotation?", tone: "success" },
+      { key: "approve", label: "Approve quotation", icon: <span className="inline-flex h-[13px] w-[13px] items-center justify-center text-[11px] leading-none">✓</span>, serverAction: sa("quotation-approve"), confirm: "Approve this quotation?", tone: "success" },
     );
     moreActions.push(
       { key: "edit", label: "Edit quotation", icon: <Pencil size={13} />, href: viewHref, tone: "accent" },
