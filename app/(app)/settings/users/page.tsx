@@ -345,7 +345,7 @@ export default async function UsersPage({
       )}
 
       {/* Main content */}
-      <div className="grid gap-5 lg:grid-cols-[300px_1fr]">
+      <div className={`grid gap-5 ${selectedUser ? "lg:grid-cols-[320px_1fr]" : ""}`}>
         {/* User list */}
         <section className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
           <div className="flex items-center gap-2 border-b border-[var(--line)] px-3 py-2">
