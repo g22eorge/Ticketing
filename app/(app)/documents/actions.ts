@@ -24,9 +24,8 @@ export async function documentAction(formData: FormData) {
         where: { id, orgId, status: "DRAFT" },
         data: { status: "SENT" as QuotationStatus, sentAt: new Date() },
       });
-      // also allow re-sending a SENT quotation (no-op status-wise, but logs audit)
       await prisma.quotation.updateMany({
-        where: { id, orgId, status: "SENT" },
+        where: { id, orgId, status: { in: ["SENT", "ACCEPTED"] } },
         data: { sentAt: new Date() },
       });
       await writeSystemAuditEvent({ orgId, actorUserId: user.id, entityType: "Quotation", entityId: id, action: "QUOTATION_SENT", summary: "Quotation sent to client" });

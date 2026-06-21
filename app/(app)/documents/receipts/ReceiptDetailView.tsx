@@ -59,7 +59,7 @@ export function ReceiptDetailView(props: ReceiptDetailPageProps) {
   const moreActions = !isVoided
     ? [
         { key: "div1", label: "", icon: null, divider: true },
-        { key: "void", label: "Void receipt", icon: <span className="inline-flex h-[13px] w-[13px] items-center justify-center text-[11px] leading-none">✕</span>, serverAction: sa("receipt-void"), confirm: "Void this receipt? This cannot be undone.", tone: "danger" as const },
+        { key: "void", label: "Void receipt", icon: <ICO>✕</ICO>, serverAction: sa("receipt-void"), confirm: "Void this receipt? This cannot be undone.", tone: "danger" as const },
       ]
     : [];
 

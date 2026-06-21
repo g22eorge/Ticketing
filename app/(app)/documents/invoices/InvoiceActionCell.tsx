@@ -14,9 +14,10 @@ interface InvoiceActionCellProps {
   userRole: string;
   ticketId: string | null;
   hasReceipt: boolean;
+  receiptNumber: string | null;
 }
 
-export function InvoiceActionCell({ id, invoiceNumber, status, userRole, ticketId, hasReceipt }: InvoiceActionCellProps) {
+export function InvoiceActionCell({ id, invoiceNumber, status, userRole, ticketId, hasReceipt, receiptNumber }: InvoiceActionCellProps) {
   const viewHref = `/documents/invoices/${encodeURIComponent(invoiceNumber)}`;
   const pdfHref = `/api/invoices/${id}`;
   const isAdmin = userRole === "ADMIN" || userRole === "MANAGER" || userRole === "SALES_MANAGER" || userRole === "FINANCE";
@@ -67,7 +68,7 @@ export function InvoiceActionCell({ id, invoiceNumber, status, userRole, ticketI
     quickActions.push(
       { key: "view", label: "View invoice", icon: <ICO>👁</ICO>, href: viewHref },
       { key: "download", label: "Download PDF", icon: <ICO>↓</ICO>, href: pdfHref, external: true },
-      { key: "receipt", label: "View receipt", icon: <ICO>🧾</ICO>, href: hasReceipt ? "/documents/receipts" : viewHref, tone: "success" },
+      { key: "receipt", label: "View receipt", icon: <ICO>🧾</ICO>, href: receiptNumber ? `/documents/receipts/${encodeURIComponent(receiptNumber)}` : viewHref, tone: "success" },
       { key: "duplicate", label: "Duplicate invoice", icon: <ICO>📄</ICO>, serverAction: sa("invoice-duplicate") },
     );
     moreActions.push(

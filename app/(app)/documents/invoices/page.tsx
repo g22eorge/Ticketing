@@ -26,6 +26,7 @@ type InvoiceRow = {
   jobId: string | null;
   ticketId: string | null;
   hasReceipt: boolean;
+  receiptNumber: string | null;
 };
 
 export default async function InvoicesPage({
@@ -68,7 +69,7 @@ export default async function InvoicesPage({
         jobId: true,
         client: { select: { fullName: true } },
         job: { select: { brand: true, model: true } },
-        ticket: { select: { id: true, receipt: { select: { id: true } } } },
+        ticket: { select: { id: true, receipt: { select: { id: true, receiptNumber: true } } } },
       },
       orderBy: { issuedAt: "desc" },
       skip: (page - 1) * pageSize,
@@ -93,6 +94,7 @@ export default async function InvoicesPage({
     jobId: inv.jobId,
     ticketId: inv.ticket?.id ?? null,
     hasReceipt: Boolean(inv.ticket?.receipt),
+    receiptNumber: inv.ticket?.receipt?.receiptNumber ?? null,
   }));
 
   return (
@@ -153,6 +155,7 @@ export default async function InvoicesPage({
                 userRole={user.role}
                 ticketId={r.ticketId}
                 hasReceipt={r.hasReceipt}
+                receiptNumber={r.receiptNumber}
               />
             ),
           },
