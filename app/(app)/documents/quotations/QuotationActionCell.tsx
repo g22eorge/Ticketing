@@ -64,6 +64,8 @@ export function QuotationActionCell({ id, quoteNumber, status, convertedToInvoic
     );
     moreActions.push(
       { key: "duplicate", label: "Duplicate quotation", icon: <FileText size={13} />, serverAction: sa("quotation-duplicate") },
+      { key: "div1", label: "", icon: null, divider: true },
+      { key: "convert", label: "Convert to invoice", icon: <ArrowRight size={13} />, serverAction: sa("quotation-convert"), confirm: "Convert this quotation to an invoice?", tone: "success" },
     );
   } else if (convertedToInvoiceId) {
     quickActions.push(
