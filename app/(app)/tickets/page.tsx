@@ -8,21 +8,21 @@ import type { TicketStatus, TicketPriority } from "@prisma/client";
 export const dynamic = "force-dynamic";
 
 const PRIORITY_COLOR: Record<string, string> = {
-  LOW: "bg-blue-100 text-blue-800",
-  MEDIUM: "bg-yellow-100 text-yellow-800",
-  HIGH: "bg-orange-100 text-orange-800",
-  CRITICAL: "bg-red-100 text-red-800",
+  LOW: "bg-blue-950 text-blue-300",
+  MEDIUM: "bg-yellow-950 text-yellow-300",
+  HIGH: "bg-orange-950 text-orange-300",
+  CRITICAL: "bg-red-950 text-red-300",
 };
 
 const STATUS_COLOR: Record<string, string> = {
-  OPEN: "bg-blue-100 text-blue-800",
-  IN_PROGRESS: "bg-yellow-100 text-yellow-800",
-  WAITING_ON_CUSTOMER: "bg-purple-100 text-purple-800",
-  WAITING_FOR_APPROVAL: "bg-amber-900/50 text-amber-300 border border-amber-700/50",
-  WAITING_FOR_PAYMENT: "bg-pink-100 text-pink-800",
-  RESOLVED: "bg-green-100 text-green-800",
+  OPEN: "bg-blue-950 text-blue-300",
+  IN_PROGRESS: "bg-yellow-950 text-yellow-300",
+  WAITING_ON_CUSTOMER: "bg-purple-950 text-purple-300",
+  WAITING_FOR_APPROVAL: "bg-amber-950 text-amber-300",
+  WAITING_FOR_PAYMENT: "bg-pink-950 text-pink-300",
+  RESOLVED: "bg-emerald-950 text-emerald-300",
   CLOSED: "bg-[var(--panel-strong)] text-[var(--ink)]",
-  CANCELLED: "bg-red-100 text-red-700",
+  CANCELLED: "bg-red-950 text-red-300",
 };
 
 const STATUS_LABEL: Record<string, string> = {
@@ -117,7 +117,7 @@ export default async function TicketsPage({
         ))}
         <Link
           href="/tickets?sla=1"
-          className={"rounded-full border px-4 py-1.5 text-sm font-semibold transition " + (slaFilter === "1" ? "border-emerald-700 bg-emerald-50 text-emerald-800" : "border-emerald-200 bg-emerald-50 text-emerald-700 hover:border-emerald-300")}
+          className={"rounded-full border px-4 py-1.5 text-sm font-semibold transition " + (slaFilter === "1" ? "border-emerald-700 bg-emerald-950 text-emerald-300" : "border-emerald-900 bg-emerald-950 text-emerald-400 hover:border-emerald-700")}
         >
           SLA ({slaCount})
         </Link>
@@ -161,7 +161,7 @@ export default async function TicketsPage({
                     )}
                   </td>
                   <td className="px-4 py-3">
-                    <Link href={"/tickets/" + t.id} className="font-medium text-[var(--ink)] hover:text-amber-700 hover:underline">
+                    <Link href={"/tickets/" + t.id} className="font-medium text-[var(--ink)] hover:text-[var(--accent)] hover:underline">
                       {t.subject}
                     </Link>
                   </td>

@@ -262,21 +262,21 @@ export default async function DashboardPage() {
               const count = ticketCounts.get(status) ?? 0;
               const total = Math.max(totalTickets, 1);
               const share = Math.round((count / total) * 100);
-              const colors: Record<string, { bg: string; border: string; text: string; accent: string }> = {
-                OPEN: { bg: "#EFF6FF", border: "#BFDBFE", text: "#1D4ED8", accent: "#3b82f6" },
-                IN_PROGRESS: { bg: "#FEF9C3", border: "#FDE047", text: "#A16207", accent: "#eab308" },
-                WAITING_ON_CUSTOMER: { bg: "#F5F3FF", border: "#DDD6FE", text: "#6D28D9", accent: "#8b5cf6" },
-                WAITING_FOR_APPROVAL: { bg: "#FFFBEB", border: "#FDE68A", text: "#B45309", accent: "#f59e0b" },
-                WAITING_FOR_PAYMENT: { bg: "#FDF2F8", border: "#FBCFE8", text: "#BE185D", accent: "#ec4899" },
-                RESOLVED: { bg: "#F0FDF4", border: "#BBF7D0", text: "#15803D", accent: "#22c55e" },
+              const colors: Record<string, { border: string; text: string; accent: string }> = {
+                OPEN: { border: "var(--accent)", text: "var(--accent)", accent: "#3b82f6" },
+                IN_PROGRESS: { border: "#eab308", text: "#eab308", accent: "#eab308" },
+                WAITING_ON_CUSTOMER: { border: "#8b5cf6", text: "#8b5cf6", accent: "#8b5cf6" },
+                WAITING_FOR_APPROVAL: { border: "#f59e0b", text: "#f59e0b", accent: "#f59e0b" },
+                WAITING_FOR_PAYMENT: { border: "#ec4899", text: "#ec4899", accent: "#ec4899" },
+                RESOLVED: { border: "#22c55e", text: "#22c55e", accent: "#22c55e" },
               };
-              const c = colors[status] ?? { bg: "bg-[var(--panel-strong)]", border: "border-[var(--line)]", text: "text-[var(--ink-muted)]", accent: "#78716c" };
+              const c = colors[status] ?? { border: "var(--line)", text: "var(--ink-muted)", accent: "#78716c" };
               return (
                 <Link
                   key={status}
                   href={`/tickets?status=${status}`}
-                  className="rounded-xl p-4 transition hover:-translate-y-0.5 hover:shadow-sm"
-                  style={{ backgroundColor: c.bg, borderColor: c.border }}
+                  className="rounded-xl border bg-[var(--panel-strong)] p-4 transition hover:-translate-y-0.5 hover:shadow-sm"
+                  style={{ borderColor: c.border }}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div>

@@ -121,9 +121,9 @@ export function TicketBoardView({
                             <span
                               className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${
                                 age >= 7
-                                  ? "bg-rose-50 text-rose-700"
+                                  ? "bg-rose-950 text-rose-400"
                                   : age >= 3
-                                  ? "bg-amber-50 text-amber-700"
+                                  ? "bg-amber-950 text-amber-400"
                                   : "bg-[var(--panel-strong)] text-[var(--ink-muted)]"
                               }`}
                             >
