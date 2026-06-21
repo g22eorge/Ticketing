@@ -33,7 +33,6 @@ export function QuotationActionCell({ id, quoteNumber, status, convertedToInvoic
     quickActions.push(
       { key: "view", label: "View quotation", icon: <Eye size={13} />, href: viewHref },
       { key: "edit", label: "Edit quotation", icon: <Pencil size={13} />, href: viewHref, tone: "accent" },
-      { key: "approve", label: "Approve quotation", icon: <span className="inline-flex h-[13px] w-[13px] items-center justify-center text-[11px] leading-none">✓</span>, serverAction: sa("quotation-approve"), confirm: "Approve this quotation?", tone: "success" },
       { key: "download", label: "Download PDF", icon: <Download size={13} />, href: pdfHref, external: true },
     );
     moreActions.push(
