@@ -77,12 +77,6 @@ export default async function RootLayout({
   return (
     <html lang="en" className={`${inter.variable} h-full antialiased${themeClass ? " " + themeClass : ""}`} suppressHydrationWarning>
       <body className="min-h-full text-[var(--ink)]" style={{ background: "var(--page-bg)" }}>
-        {/* Prevent white flash: dark is the default. Only apply 'light' when the light cookie is set. */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `(function(){var t=document.cookie.match(/theme=light/);var root=document.documentElement;root.classList.remove('theme-blackgold','light');if(t)root.classList.add('light');else root.classList.add('theme-blackgold');})();`,
-          }}
-        />
         <ThemeProvider initialTheme={initialTheme}>
           {children}
           <Toaster richColors />
