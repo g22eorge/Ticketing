@@ -323,26 +323,24 @@ export default async function DashboardPage() {
                 </Link>
                 <Link
                   href="/documents/receipts"
-                  className="rounded-xl border px-4 py-3 transition"
-                  style={{ borderColor: "#A7F3D0", backgroundColor: "#F0FDF4" }}
+                  className="rounded-xl border border-emerald-800 bg-emerald-950 px-4 py-3 transition"
                 >
-                  <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#15803D" }}>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-emerald-300">
                     Receipted
                   </p>
-                  <p className="mt-1 text-lg font-bold tabular-nums" style={{ color: "#15803D" }}>
+                  <p className="mt-1 text-lg font-bold tabular-nums text-emerald-300">
                     {formatMoneyCompact(receiptTotal, currency)}
                   </p>
                 </Link>
                 {pendingQuotations > 0 && (
                   <Link
                     href="/documents/quotations"
-                    className="rounded-xl border px-4 py-3 transition"
-                    style={{ borderColor: "#FDE68A", backgroundColor: "#FFFBEB" }}
+                    className="rounded-xl border border-amber-800 bg-amber-950 px-4 py-3 transition"
                   >
-                    <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#B45309" }}>
+                    <p className="text-xs font-semibold uppercase tracking-wider text-amber-300">
                       Draft Quotations
                     </p>
-                    <p className="mt-1 text-lg font-bold tabular-nums" style={{ color: "#B45309" }}>
+                    <p className="mt-1 text-lg font-bold tabular-nums text-amber-300">
                       {pendingQuotations}
                     </p>
                   </Link>
