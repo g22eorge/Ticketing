@@ -100,17 +100,9 @@ async function seedActionFixture() {
 }
 
 async function openMoreMenu(page: Page) {
-  // The more button has aria-label "Actions for {number}"
   const moreBtn = page.getByRole("button", { name: /actions? for/i }).first();
   await moreBtn.click();
-  await page.waitForTimeout(300);
-}
-
-async function openMoreMenuForRow(page: Page, receiptNumber: string) {
-  // Find the row containing the receipt number, then click its more button
-  const row = page.locator("tbody tr", { has: page.locator(`a:text-is("${receiptNumber}")`) });
-  await row.getByRole("button", { name: /actions? for/i }).click();
-  await page.waitForTimeout(300);
+  await page.waitForTimeout(400);
 }
 
 async function closeDropdown(page: Page) {
@@ -128,12 +120,11 @@ test("quotations list page shows action cells with Lucide icons and dropdown wor
   });
 
   await page.goto("/documents/quotations");
+  await page.waitForLoadState("networkidle");
   await expect(page.getByRole("table")).toBeVisible();
 
-  // Quick action buttons should be visible
   await expect(page.getByRole("link", { name: "View quotation" }).first()).toBeVisible();
 
-  // Open the ⋮ dropdown
   await openMoreMenu(page);
   await expect(page.getByRole("button", { name: "Send to client" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Duplicate quotation" })).toBeVisible();
@@ -151,28 +142,26 @@ test("quotation can be sent, approved, and converted to invoice via action butto
   });
 
   await page.goto(`/documents/quotations?q=${job.jobNumber}`);
+  await page.waitForLoadState("networkidle");
   await expect(page.getByRole("table")).toBeVisible();
 
-  // Open ⋮ and send the quotation
   await openMoreMenu(page);
   await page.getByRole("button", { name: "Send to client" }).click();
   await expect.poll(async () => prisma.quotation.findUnique({ where: { id: quote.id } })?.status).toBe("SENT");
 
-  // Reload — now SENT status shows different actions
   await page.reload();
+  await page.waitForLoadState("networkidle");
   await expect(page.getByRole("button", { name: "Approve quotation" })).toBeVisible();
 
-  // Confirm approval via dialog
   await page.getByRole("button", { name: "Approve quotation" }).click();
   await expect(page.getByText("Approve this quotation?")).toBeVisible();
   await page.getByRole("button", { name: "Confirm" }).click();
   await expect.poll(async () => prisma.quotation.findUnique({ where: { id: quote.id } })?.status).toBe("ACCEPTED");
 
-  // Reload — ACCEPTED shows Convert to Invoice
   await page.reload();
+  await page.waitForLoadState("networkidle");
   await expect(page.getByRole("button", { name: "Convert to invoice" })).toBeVisible();
 
-  // Convert via dialog
   await page.getByRole("button", { name: "Convert to invoice" }).click();
   await expect(page.getByText("Convert this quotation to an invoice?")).toBeVisible();
   await page.getByRole("button", { name: "Confirm" }).click();
@@ -190,22 +179,21 @@ test("invoice can be issued, marked paid, and voided via action buttons", async 
   });
 
   await page.goto("/documents/invoices");
+  await page.waitForLoadState("networkidle");
   await expect(page.getByRole("table")).toBeVisible();
 
-  // Quick actions visible
   await expect(page.getByRole("link", { name: "View invoice" }).first()).toBeVisible();
 
-  // Open ⋮ and send invoice (moves to ISSUED)
-  await openMoreMenu(page);
+  // "Send invoice" is in the quick actions (icon button), click it directly
   await page.getByRole("button", { name: "Send invoice" }).click();
+  await page.waitForTimeout(1000); // Wait for server action to complete
   await expect.poll(async () => prisma.invoice.findUnique({ where: { id: invoice.id } })?.status).toBe("ISSUED");
 
-  // Reload — ISSUED shows Mark as Paid and Void
   await page.reload();
+  await page.waitForLoadState("networkidle");
   await expect(page.getByRole("button", { name: "Mark as paid" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Void invoice" })).toBeVisible();
 
-  // Mark as paid via dialog
   await page.getByRole("button", { name: "Mark as paid" }).click();
   await expect(page.getByText("Mark this invoice as paid?")).toBeVisible();
   await page.getByRole("button", { name: "Confirm" }).click();
@@ -226,17 +214,17 @@ test("receipt detail page shows correct data, status badge, and action buttons",
   });
 
   await page.goto(`/documents/receipts/${encodeURIComponent(receipt.receiptNumber)}`);
+  await page.waitForLoadState("networkidle");
 
-  // Page title shows receipt number
   await expect(page.getByRole("heading", { name: receipt.receiptNumber })).toBeVisible();
-
-  // Status badge shows "Issued" — there are multiple "Issued" texts, be specific
   await expect(page.getByText("Issued").filter({ hasText: /^Issued$/ }).first()).toBeVisible();
 
-  // Action buttons visible — quick actions visible as link/button combo
   await expect(page.getByRole("link", { name: "Download PDF" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Send receipt" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Print" })).toBeVisible();
+  // Print is rendered as an <a> with title="Print", not a <button>
+  await expect(page.locator('a[title="Print"]')).toBeVisible();
+  // Void receipt is in the more dropdown
+  await openMoreMenu(page);
   await expect(page.getByRole("button", { name: "Void receipt" })).toBeVisible();
 });
 
@@ -254,13 +242,12 @@ test("receipts list shows voided receipts with read-only actions and active rece
   });
 
   await page.goto("/documents/receipts");
+  await page.waitForLoadState("networkidle");
   await expect(page.getByRole("table")).toBeVisible();
 
-  // Both receipts should be visible (links to detail)
   await expect(page.getByRole("link", { name: activeReceipt.receiptNumber })).toBeVisible();
   await expect(page.getByRole("link", { name: voidedReceipt.receiptNumber })).toBeVisible();
 
-  // Find the voided receipt row and check its more menu
   const rows = page.locator("tbody tr");
   const count = await rows.count();
   let voidedRowIndex = -1;
@@ -271,9 +258,10 @@ test("receipts list shows voided receipts with read-only actions and active rece
   expect(voidedRowIndex).toBeGreaterThanOrEqual(0);
 
   const voidedRow = rows.nth(voidedRowIndex);
+  // The "More" button's accessible name includes the row label (e.g., "Actions for RCP-ACT-V2-...")
   const moreBtn = voidedRow.getByRole("button", { name: /actions? for/i });
   await moreBtn.click();
-  await page.waitForTimeout(300);
+  await page.waitForTimeout(400);
 
   // Void button should not exist in voided receipt's more menu
   await expect(page.getByRole("button", { name: "Void receipt" })).toHaveCount(0);
@@ -290,9 +278,9 @@ test("receipt can be voided via receipts list action cell with confirmation dial
   });
 
   await page.goto("/documents/receipts");
+  await page.waitForLoadState("networkidle");
   await expect(page.getByRole("table")).toBeVisible();
 
-  // Find the row for our receipt
   const rows = page.locator("tbody tr");
   let targetRow: ReturnType<typeof rows.nth> | null = null;
   for (let i = 0; i < await rows.count(); i++) {
@@ -301,9 +289,8 @@ test("receipt can be voided via receipts list action cell with confirmation dial
   }
   expect(targetRow).not.toBeNull();
   await targetRow!.getByRole("button", { name: /actions? for/i }).click();
-  await page.waitForTimeout(300);
+  await page.waitForTimeout(400);
 
-  // Confirm void via dialog
   await page.getByRole("button", { name: "Void receipt" }).click();
   await expect(page.getByText("Void this receipt? This cannot be undone.")).toBeVisible();
   await page.getByRole("button", { name: "Confirm" }).click();
@@ -320,7 +307,8 @@ test("PDF download links return valid PDFs for quotations, invoices, and receipt
   });
   const expectPdf = async (urlPath: string) => {
     const result = await page.evaluate(async (p) => {
-      const absUrl = new URL(p, window.location.href).toString();
+      const base = window.location.origin;
+      const absUrl = new URL(p, base).toString();
       const response = await fetch(absUrl, { headers: { accept: "application/pdf" } });
       return { status: response.status, contentType: response.headers.get("content-type") ?? "", bytes: (await response.arrayBuffer()).byteLength };
     }, urlPath);
@@ -351,13 +339,14 @@ test("confirm dialog cancel button dismisses without executing action", async ({
     data: { orgId: org.id, jobId: job.id, quoteNumber: `Q-E2E-CANCEL-${Date.now()}`, status: "SENT", totalAmount: 50000, currency: "UGX" },
   });
 
-    await page.goto("/documents/quotations");
+  await page.goto("/documents/quotations");
+  await page.waitForLoadState("networkidle");
   await openMoreMenu(page);
   await page.getByRole("button", { name: "Reject quotation" }).click();
   await expect(page.getByText("Reject this quotation?")).toBeVisible();
-  await page.getByRole("button", { name: "Cancel" }).click();
+  // Use exact: true to avoid matching the "Actions for ..." button
+  await page.getByRole("button", { name: "Cancel", exact: true }).click();
 
-  // Dialog should be gone and status unchanged
   await expect(page.getByText("Reject this quotation?")).not.toBeVisible();
   await expect.poll(async () => prisma.quotation.findUnique({ where: { id: quote.id } })?.status).toBe("SENT");
 });
@@ -372,6 +361,7 @@ test("view action on invoice rows navigates to the correct detail page", async (
   });
 
   await page.goto("/documents/invoices");
+  await page.waitForLoadState("networkidle");
   await page.getByRole("link", { name: "View invoice" }).first().click();
   await page.waitForURL(`**/documents/invoices/**`);
   await expect(page.getByRole("heading", { name: /INV-VIEW-TEST/ })).toBeVisible();
@@ -387,6 +377,8 @@ test("receipt detail page can void a receipt with confirmation dialog", async ({
   });
 
   await page.goto(`/documents/receipts/${encodeURIComponent(receipt.receiptNumber)}`);
+  await page.waitForLoadState("networkidle");
+  // "Void receipt" is in the more dropdown, need to open it first
   await openMoreMenu(page);
   await page.getByRole("button", { name: "Void receipt" }).click();
   await expect(page.getByText("Void this receipt? This cannot be undone.")).toBeVisible();

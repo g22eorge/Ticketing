@@ -265,9 +265,9 @@ export default async function DashboardPage() {
               const colors: Record<string, { border: string; text: string; accent: string }> = {
                 OPEN: { border: "var(--accent)", text: "var(--accent)", accent: "#3b82f6" },
                 IN_PROGRESS: { border: "#eab308", text: "#eab308", accent: "#eab308" },
-                WAITING_ON_CUSTOMER: { border: "#8b5cf6", text: "#8b5cf6", accent: "#8b5cf6" },
+                WAITING_ON_CUSTOMER: { border: "#7c3aed", text: "#7c3aed", accent: "#7c3aed" },
                 WAITING_FOR_APPROVAL: { border: "#f59e0b", text: "#f59e0b", accent: "#f59e0b" },
-                WAITING_FOR_PAYMENT: { border: "#ec4899", text: "#ec4899", accent: "#ec4899" },
+                WAITING_FOR_PAYMENT: { border: "#be185d", text: "#be185d", accent: "#be185d" },
                 RESOLVED: { border: "#22c55e", text: "#22c55e", accent: "#22c55e" },
               };
               const c = colors[status] ?? { border: "var(--line)", text: "var(--ink-muted)", accent: "#78716c" };
