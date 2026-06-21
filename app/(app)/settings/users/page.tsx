@@ -4,1140 +4,548 @@ import Link from "next/link";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { X } from "lucide-react";
+import { Plus, Search, ShieldCheck, Lock, ChevronDown, CircleDot, Circle, Users, X, ChevronLeft } from "lucide-react";
+import { CopyButton } from "@/components/settings/CopyButton";
 
-import { UserAccessControlPanel } from "@/components/settings/UserAccessControlPanel";
-import { UserDetailsForm } from "@/components/settings/UserDetailsForm";
-import { UserPasswordResetForm } from "@/components/settings/UserPasswordResetForm";
-import { EXTRA_PERMISSIONS } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { requireOrgSession } from "@/lib/org-context";
-import { inviteSchema, INVITE_TTL_DAYS, type InviteState } from "@/lib/invites";
-import { InvitePanel } from "@/components/settings/InvitePanel";
+import { INVITE_TTL_DAYS } from "@/lib/invites";
 import { checkUserLimit } from "@/lib/plan-limits";
 import { rateLimit } from "@/lib/rate-limit";
+import { EXTRA_PERMISSIONS } from "@/lib/permissions";
 
 type SearchParams = {
   q?: string;
   userId?: string;
   limitError?: string;
+  inviteUrl?: string;
+  error?: string;
   add?: string;
+  saved?: string;
 };
 
-type UserDetailsState = {
-  error?: string;
-  success?: string;
-};
-
-type UserPasswordResetState = {
-  error?: string;
-  success?: string;
-};
-
-const createUserSchema = z.object({
-  name: z.string().min(2),
-  email: z.string().email(),
-  phone: z.string().optional(),
-  password: z.string().min(8),
-  role: z.nativeEnum(Role),
-});
-
-const updateUserDetailsSchema = z.object({
+// ── Schemas ─────────────────────────────────────────────────────────────────
+const updateSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(2).max(80),
   email: z.string().email(),
   phone: z.string().optional(),
+  role: z.nativeEnum(Role),
 });
 
-const resetPasswordSchema = z.object({
+const resetSchema = z.object({
   userId: z.string().min(1),
   password: z.string().min(8),
   confirm: z.string().min(8),
-}).refine((data) => data.password === data.confirm, {
+}).refine((d) => d.password === d.confirm, {
   message: "Passwords do not match",
   path: ["confirm"],
 });
 
-type PermissionOption = {
-  key: string;
-  group: string;
-  action: string;
-  label: string;
-  description: string;
-  permission?: (typeof EXTRA_PERMISSIONS)[number];
-  mutable: boolean;
-};
-
+// ── Role Data ────────────────────────────────────────────────────────────────
 const roleOptions: Array<{ value: Role; label: string; description: string }> = [
-  { value: Role.ADMIN, label: "Admin", description: "Full access to settings, users, clients, tickets, subscriptions, and documents." },
-  { value: Role.OPS, label: "Operations", description: "Manages tickets, clients, subscriptions, quotations, invoices, and receipts." },
-  { value: Role.FRONT_DESK, label: "Front Desk", description: "Creates tickets, manages client intake, and prepares basic documents." },
-  { value: Role.TECHNICIAN_INTERNAL, label: "Technician", description: "Updates assigned ticket work, diagnosis notes, and progress." },
-  { value: Role.FINANCE, label: "Finance", description: "Works with invoices, receipts, payments, and billing records." },
+  { value: Role.ADMIN, label: "Admin", description: "Full system access and user management." },
+  { value: Role.OPS, label: "Operations", description: "Manages tickets, clients, and documents." },
+  { value: Role.FRONT_DESK, label: "Front Desk", description: "Client intake and basic documents." },
+  { value: Role.TECHNICIAN_INTERNAL, label: "Technician", description: "Updates assigned tickets and diagnosis." },
+  { value: Role.FINANCE, label: "Finance", description: "Invoices, receipts, and billing." },
 ];
 
 const roleDefaults: Record<Role, Array<(typeof EXTRA_PERMISSIONS)[number]>> = {
-  ADMIN: [
-    "can_run_internal_repairs",
-    "can_intake",
-    "can_manage_intake",
-    "can_search_jobs",
-    "can_generate_job_cards",
-    "can_view_job_progress",
-    "can_view_approved_cost",
-    "can_assign_jobs",
-    "can_view_external_updates",
-    "can_view_external_quotes",
-    "can_review_external_bills",
-    "can_view_accounts_summary",
-    "can_approve_invoices",
-  ],
-  MANAGER: [
-    "can_manage_intake",
-    "can_search_jobs",
-    "can_generate_job_cards",
-    "can_assign_jobs",
-    "can_view_approved_cost",
-    "can_view_external_updates",
-    "can_view_external_quotes",
-    "can_review_external_bills",
-    "can_view_accounts_summary",
-    "can_approve_invoices",
-  ],
-  TECH_MANAGER: [
-    "can_run_internal_repairs",
-    "can_manage_intake",
-    "can_search_jobs",
-    "can_generate_job_cards",
-    "can_assign_jobs",
-    "can_view_job_progress",
-    "can_view_approved_cost",
-    "can_view_external_updates",
-    "can_view_external_quotes",
-    "can_review_external_bills",
-  ],
-  FINANCE: [
-    "can_search_jobs",
-    "can_view_approved_cost",
-    "can_view_external_quotes",
-    "can_review_external_bills",
-    "can_view_accounts_summary",
-    "can_approve_invoices",
-  ],
-  SALES: [
-    "can_intake",
-    "can_manage_intake",
-    "can_search_jobs",
-    "can_generate_job_cards",
-    "can_view_job_progress",
-    "can_view_approved_cost",
-    "can_view_external_quotes",
-  ],
-  SALES_MANAGER: [
-    "can_search_jobs",
-    "can_view_job_progress",
-    "can_view_approved_cost",
-    "can_view_accounts_summary",
-    "can_approve_invoices",
-    "can_create_leads",
-    "can_view_all_sales",
-    "can_create_quotations",
-    "can_approve_quotations",
-    "can_override_discount",
-    "can_create_invoices",
-    "can_manage_commissions",
-    "can_set_targets",
-    "can_view_team_targets",
-  ],
-  SALES_CORPORATE: [
-    "can_search_jobs",
-    "can_create_leads",
-    "can_create_quotations",
-    "can_create_invoices",
-  ],
-  SALES_RETAIL: [
-    "can_search_jobs",
-    "can_create_leads",
-    "can_create_quotations",
-    "can_open_pos_session",
-  ],
-  SALES_POS: [
-    "can_open_pos_session",
-  ],
-  OPS: [
-    "can_manage_intake",
-    "can_search_jobs",
-    "can_generate_job_cards",
-    "can_assign_jobs",
-    "can_view_external_updates",
-    "can_view_external_quotes",
-    "can_review_external_bills",
-    "can_view_accounts_summary",
-    "can_approve_invoices",
-  ],
-  FRONT_DESK: [
-    "can_intake",
-    "can_manage_intake",
-    "can_generate_job_cards",
-    "can_view_job_progress",
-    "can_search_jobs",
-  ],
-  // Legacy alias.
-  INTAKE: [
-    "can_intake",
-    "can_manage_intake",
-    "can_generate_job_cards",
-    "can_view_job_progress",
-    "can_search_jobs",
-  ],
-  TECHNICIAN_INTERNAL: [
-    "can_run_internal_repairs",
-    "can_search_jobs",
-    "can_view_job_progress",
-    "can_view_external_updates",
-  ],
-  TECH_FIELD: [
-    "can_search_jobs",
-    "can_view_job_progress",
-    "can_manage_field_visits",
-    "can_record_field_signoffs",
-  ],
+  ADMIN: ["can_run_internal_repairs","can_intake","can_manage_intake","can_search_jobs","can_generate_job_cards","can_view_job_progress","can_view_approved_cost","can_assign_jobs","can_view_external_updates","can_view_external_quotes","can_review_external_bills","can_view_accounts_summary","can_approve_invoices"],
+  OPS: ["can_manage_intake","can_search_jobs","can_generate_job_cards","can_assign_jobs","can_view_external_updates","can_view_external_quotes","can_review_external_bills","can_view_accounts_summary","can_approve_invoices"],
+  FINANCE: ["can_search_jobs","can_view_approved_cost","can_view_external_quotes","can_review_external_bills","can_view_accounts_summary","can_approve_invoices"],
+  FRONT_DESK: ["can_intake","can_manage_intake","can_generate_job_cards","can_view_job_progress","can_search_jobs"],
+  TECHNICIAN_INTERNAL: ["can_run_internal_repairs","can_search_jobs","can_view_job_progress","can_view_external_updates"],
+  MANAGER: [],
+  TECH_MANAGER: [],
+  SALES: [],
+  SALES_MANAGER: [],
+  SALES_CORPORATE: [],
+  SALES_RETAIL: [],
+  SALES_POS: [],
+  TECH_FIELD: [],
   TECHNICIAN_EXTERNAL: [],
+  INTAKE: [],
 };
-
-const roleCapabilities: Record<Role, string[]> = {
-  ADMIN: [
-    "dashboard_view",
-    "jobs_view",
-    "jobs_assign",
-    "jobs_create",
-    "intake_manage",
-    "device_records",
-    "client_records",
-    "tech_notes",
-    "parts_bills",
-    "invoices_view",
-    "invoices_approve",
-    "reports_export",
-    "users_manage",
-    "settings_admin",
-    "approval_cost",
-    "delete_records",
-    "download_docs",
-  ],
-  MANAGER: [
-    "dashboard_view",
-    "jobs_view",
-    "jobs_assign",
-    "jobs_create",
-    "intake_manage",
-    "device_records",
-    "client_records",
-    "parts_bills",
-    "invoices_view",
-    "invoices_approve",
-    "reports_export",
-    "approval_cost",
-    "download_docs",
-  ],
-  TECH_MANAGER: [
-    "dashboard_view",
-    "jobs_view",
-    "jobs_assign",
-    "jobs_create",
-    "intake_manage",
-    "device_records",
-    "client_records",
-    "tech_notes",
-    "parts_bills",
-    "approval_cost",
-    "download_docs",
-  ],
-  FINANCE: [
-    "dashboard_view",
-    "jobs_view",
-    "client_records",
-    "parts_bills",
-    "invoices_view",
-    "invoices_approve",
-    "reports_export",
-    "approval_cost",
-    "download_docs",
-  ],
-  SALES: [
-    "dashboard_view",
-    "jobs_view",
-    "jobs_create",
-    "intake_manage",
-    "device_records",
-    "client_records",
-    "invoices_view",
-    "reports_export",
-    "approval_cost",
-    "download_docs",
-  ],
-  SALES_MANAGER: [
-    "dashboard_view",
-    "jobs_view",
-    "jobs_create",
-    "client_records",
-    "invoices_view",
-    "invoices_approve",
-    "reports_export",
-    "approval_cost",
-    "download_docs",
-  ],
-  SALES_CORPORATE: [
-    "dashboard_view",
-    "jobs_view",
-    "client_records",
-    "invoices_view",
-    "download_docs",
-  ],
-  SALES_RETAIL: [
-    "dashboard_view",
-    "jobs_view",
-    "client_records",
-    "download_docs",
-  ],
-  SALES_POS: [
-    "dashboard_view",
-    "jobs_view",
-  ],
-  OPS: [
-    "dashboard_view",
-    "jobs_view",
-    "jobs_assign",
-    "jobs_create",
-    "intake_manage",
-    "device_records",
-    "client_records",
-    "tech_notes",
-    "parts_bills",
-    "invoices_view",
-    "invoices_approve",
-    "reports_export",
-    "approval_cost",
-    "download_docs",
-  ],
-  FRONT_DESK: [
-    "dashboard_view",
-    "jobs_view",
-    "jobs_create",
-    "intake_manage",
-    "device_records",
-    "client_records",
-    "download_docs",
-  ],
-  // Legacy alias.
-  INTAKE: [
-    "dashboard_view",
-    "jobs_view",
-    "jobs_create",
-    "intake_manage",
-    "device_records",
-    "client_records",
-    "download_docs",
-  ],
-  TECHNICIAN_INTERNAL: [
-    "dashboard_view",
-    "jobs_view",
-    "device_records",
-    "tech_notes",
-    "download_docs",
-  ],
-  TECH_FIELD: [
-    "dashboard_view",
-    "jobs_view",
-    "device_records",
-    "tech_notes",
-  ],
-  TECHNICIAN_EXTERNAL: [
-    "dashboard_view",
-    "jobs_view",
-    "tech_notes",
-  ],
-};
-
-const permissionOptions: PermissionOption[] = [
-  { key: "dashboard_view", group: "Dashboard Access", action: "View", label: "Dashboard overview", description: "Access the operational dashboard and queue counters.", mutable: false },
-  { key: "jobs_view", group: "Job Management", action: "View", label: "View jobs", description: "Open job queues and job detail screens.", permission: "can_search_jobs", mutable: true },
-  { key: "jobs_assign", group: "Job Management", action: "Assign", label: "Assign jobs", description: "Assign jobs to internal or external technicians.", permission: "can_assign_jobs", mutable: true },
-  { key: "jobs_create", group: "Job Management", action: "Create", label: "Create jobs", description: "Create intake jobs and convert requests into active jobs.", permission: "can_intake", mutable: true },
-  { key: "intake_manage", group: "Intake Process", action: "Edit", label: "Manage intake", description: "Update intake funnel and intake stage ownership.", permission: "can_manage_intake", mutable: true },
-  { key: "device_records", group: "Device Records", action: "Edit", label: "Update device records", description: "Edit serial, accessories, and condition records.", permission: "can_view_job_progress", mutable: true },
-  { key: "client_records", group: "Client Records", action: "View", label: "View client records", description: "Access client profile and contact details.", mutable: false },
-  { key: "tech_notes", group: "Technician Updates", action: "Edit", label: "Technician updates", description: "Add diagnosis, repair notes, and update progress.", permission: "can_run_internal_repairs", mutable: true },
-  { key: "parts_bills", group: "Parts and Bills", action: "View", label: "Review parts and external bills", description: "Review billables tied to parts and external costs.", permission: "can_review_external_bills", mutable: true },
-  { key: "invoices_view", group: "Invoices and Payments", action: "View", label: "View invoice and settlement", description: "Open invoice workspace and settlement records.", permission: "can_view_accounts_summary", mutable: true },
-  { key: "invoices_approve", group: "Invoices and Payments", action: "Approve", label: "Approve invoices", description: "Approve invoice-sensitive actions and finance approvals.", permission: "can_approve_invoices", mutable: true },
-  { key: "reports_export", group: "Reports", action: "Export", label: "Export reports", description: "View and export operational and finance reports.", permission: "can_view_accounts_summary", mutable: true },
-  { key: "users_manage", group: "User Management", action: "Edit", label: "Manage users", description: "Create, update, deactivate, and assign user access.", mutable: false },
-  { key: "settings_admin", group: "Settings", action: "Edit", label: "Admin settings", description: "Manage branding and system-level settings.", mutable: false },
-  { key: "approval_cost", group: "Approvals", action: "Approve", label: "Approve quoted cost", description: "Approve and publish final approved costs.", permission: "can_view_approved_cost", mutable: true },
-  { key: "delete_records", group: "Delete/Edit Restrictions", action: "Delete", label: "Delete records", description: "Delete/archive sensitive records when policy allows.", mutable: false },
-  { key: "download_docs", group: "Delete/Edit Restrictions", action: "Download", label: "Download documents", description: "Download handover, quotation, and invoice PDFs.", permission: "can_generate_job_cards", mutable: true },
-];
 
 function roleLabel(role: Role) {
-  if (role === "TECHNICIAN_INTERNAL") return "Internal Technician";
-  if (role === "TECHNICIAN_EXTERNAL") return "External Technician";
+  if (role === "TECHNICIAN_INTERNAL") return "Technician";
+  if (role === "TECHNICIAN_EXTERNAL") return "External Tech";
   if (role === "FRONT_DESK" || role === "INTAKE") return "Front Desk";
-  if (role === "OPS") return "Operations/Accounts";
-  if (role === "MANAGER") return "Manager";
-  if (role === "TECH_MANAGER") return "Tech Manager";
-  if (role === "FINANCE") return "Finance";
-  if (role === "SALES") return "Sales";
-  const found = roleOptions.find((r) => r.value === role);
-  if (found) return found.label;
-  return "Admin";
+  if (role === "OPS") return "Operations";
+  return roleOptions.find((r) => r.value === role)?.label ?? role;
 }
 
-function formatDateTime(value?: Date | null) {
-  if (!value) return "No activity yet";
-  return value.toLocaleString();
+function formatLastSeen(value?: Date | null): string {
+  if (!value) return "Never";
+  const diff = Date.now() - value.getTime();
+  const minutes = Math.floor(diff / 60000);
+  if (minutes < 1) return "Just now";
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}d ago`;
+  return new Intl.DateTimeFormat("en-UG", { dateStyle: "short" }).format(value);
 }
 
-function allowedExtraPermissionsForRole(role: Role, values: Array<(typeof EXTRA_PERMISSIONS)[number]>) {
-  if (role === "TECHNICIAN_EXTERNAL") return [];
-  return Array.from(new Set(values));
+function formatDate(value: Date): string {
+  return new Intl.DateTimeFormat("en-UG", { dateStyle: "medium", timeStyle: "short" }).format(value);
 }
 
-function searchMatches(user: {
-  name: string;
-  email: string;
-  phone: string | null;
-  role: Role;
-}, query: string) {
-  if (!query) return true;
-  const haystack = [
-    user.name,
-    user.email,
-    user.phone ?? "",
-    user.role,
-    roleLabel(user.role),
-  ].join(" ").toLowerCase();
-  return haystack.includes(query.toLowerCase());
-}
-
+// ── Main Page ────────────────────────────────────────────────────────────────
 export default async function UsersPage({
   searchParams,
 }: {
   searchParams: Promise<SearchParams>;
 }) {
-  const { user, orgId } = await requireOrgSession();
-  if (user.role !== "ADMIN") {
-    redirect("/dashboard");
-  }
+  const { user: currentUser, orgId } = await requireOrgSession();
+  if (currentUser.role !== "ADMIN") redirect("/dashboard");
 
-  async function updateUserDetails(state: UserDetailsState, formData: FormData): Promise<UserDetailsState> {
+  const {
+    q = "",
+    userId,
+    add,
+    inviteUrl,
+    error: errorParam,
+    limitError,
+  } = await searchParams;
+  const showAdd = add === "1";
+  const query = q.trim();
+
+  // ── Data ────────────────────────────────────────────────────────────────────
+  const users = await prisma.user.findMany({
+    where: { orgId },
+    orderBy: [{ isActive: "desc" }, { name: "asc" }],
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      phone: true,
+      role: true,
+      isActive: true,
+      updatedAt: true,
+      sessions: { orderBy: { updatedAt: "desc" }, take: 1, select: { updatedAt: true } },
+    },
+  }).catch(() => []);
+
+  const filtered = query
+    ? users.filter((u) =>
+        [u.name, u.email, u.phone ?? "", u.role, roleLabel(u.role)]
+          .join(" ")
+          .toLowerCase()
+          .includes(query.toLowerCase())
+      )
+    : users;
+
+  const selectedUser = filtered.find((u) => u.id === userId);
+
+  // ── Server Actions ──────────────────────────────────────────────────────────
+  async function saveUserChanges(formData: FormData) {
     "use server";
-
-    const { session, user: actor, orgId: actorOrgId } = await requireOrgSession();
-    if (actor.role !== "ADMIN") return { error: "Not authorized" };
-
-    const parsed = updateUserDetailsSchema.safeParse({
+    const { user: actor, orgId: oId } = await requireOrgSession();
+    if (actor.role !== "ADMIN") return;
+    const parsed = updateSchema.safeParse({
       id: String(formData.get("id") ?? "").trim(),
       name: String(formData.get("name") ?? "").trim(),
       email: String(formData.get("email") ?? "").trim().toLowerCase(),
       phone: String(formData.get("phone") ?? "").trim(),
+      role: String(formData.get("role") ?? "OPS") as Role,
     });
+    if (!parsed.success) return;
 
-    if (!parsed.success) return { error: "Invalid user details" };
-
-    const existing = await prisma.user.findFirst({
-      where: { id: parsed.data.id, orgId: actorOrgId },
-      select: { id: true, name: true, email: true, phone: true },
+    const target = await prisma.user.findFirst({
+      where: { id: parsed.data.id, orgId: oId },
+      select: { id: true, role: true },
     });
-    if (!existing) return { error: "User not found" };
+    if (!target) return;
 
-    const emailConflict = await prisma.user.findFirst({
-      where: { email: parsed.data.email, NOT: { id: parsed.data.id } },
-      select: { id: true },
-    });
-    if (emailConflict) return { error: "Email is already in use by another user" };
+    const perms = roleDefaults[parsed.data.role] ?? [];
 
-    const nextPhone = parsed.data.phone ? parsed.data.phone : null;
-    const changed = {
-      name: existing.name !== parsed.data.name,
-      email: existing.email !== parsed.data.email,
-      phone: (existing.phone ?? null) !== nextPhone,
-    };
-
-    if (!changed.name && !changed.email && !changed.phone) {
-      return { success: "No changes to save" };
-    }
-
-    await prisma.user.update({
-      where: { id: parsed.data.id },
-      data: {
-        name: parsed.data.name,
-        email: parsed.data.email,
-        phone: nextPhone,
-      },
-    });
-
-    try {
-      await prisma.userAccessAudit.create({
-        data: {
-          actorUserId: session.user.id,
-          targetUserId: parsed.data.id,
-          action: "USER_DETAILS_UPDATED",
-          detail: JSON.stringify({
-            from: { name: existing.name, email: existing.email, phone: existing.phone ?? null },
-            to: { name: parsed.data.name, email: parsed.data.email, phone: nextPhone },
-          }),
-        },
+    await prisma.$transaction(async (tx) => {
+      await tx.user.update({
+        where: { id: parsed.data.id },
+        data: { name: parsed.data.name, email: parsed.data.email, phone: parsed.data.phone || null, role: parsed.data.role },
       });
-    } catch {
-      // ignore if audit table isn't migrated yet
-    }
+      await tx.userPermission.deleteMany({ where: { userId: parsed.data.id } });
+      if (perms.length) {
+        await tx.userPermission.createMany({
+          data: perms.map((p) => ({ userId: parsed.data.id, permission: p })),
+        });
+      }
+    });
 
     revalidatePath("/settings/users");
-    return { success: "User details saved" };
+    redirect(`/settings/users?userId=${parsed.data.id}&saved=1`);
   }
 
-  async function resetUserPassword(state: UserPasswordResetState, formData: FormData): Promise<UserPasswordResetState> {
+  async function resetPassword(formData: FormData) {
     "use server";
-
-    const { session, user: actor, orgId: actorOrgId } = await requireOrgSession();
-    if (actor.role !== "ADMIN") return { error: "Not authorized" };
-
-    const parsed = resetPasswordSchema.safeParse({
+    const { session, user: actor, orgId: oId } = await requireOrgSession();
+    if (actor.role !== "ADMIN") return;
+    const parsed = resetSchema.safeParse({
       userId: String(formData.get("userId") ?? "").trim(),
       password: String(formData.get("password") ?? ""),
       confirm: String(formData.get("confirm") ?? ""),
     });
-    if (!parsed.success) {
-      return { error: parsed.error.issues[0]?.message ?? "Invalid password" };
-    }
-
-    const target = await prisma.user.findFirst({ where: { id: parsed.data.userId, orgId: actorOrgId }, select: { id: true } });
-    if (!target) return { error: "User not found" };
+    if (!parsed.success) return;
+    const target = await prisma.user.findFirst({
+      where: { id: parsed.data.userId, orgId: oId },
+      select: { id: true },
+    });
+    if (!target) return;
 
     const hashed = await hashPassword(parsed.data.password);
-
     await prisma.$transaction(async (tx) => {
-      const updated = await tx.account.updateMany({
+      await tx.account.updateMany({
         where: { userId: parsed.data.userId, providerId: "credential" },
         data: { password: hashed },
       });
-      if (updated.count === 0) {
-        await tx.account.create({
-          data: {
-            accountId: parsed.data.userId,
-            providerId: "credential",
-            userId: parsed.data.userId,
-            password: hashed,
-          },
-        });
-      }
-
-      // Force re-login everywhere after reset.
-      await tx.session.deleteMany({ where: { userId: parsed.data.userId } });
+      await tx.session.deleteMany({ where: { userId: parsed.data.userId } }).catch(() => {});
     });
-
-    try {
-      await prisma.userAccessAudit.create({
-        data: {
-          actorUserId: session.user.id,
-          targetUserId: parsed.data.userId,
-          action: "PASSWORD_RESET",
-          detail: JSON.stringify({ method: "ADMIN_RESET", signedOutAllSessions: true }),
-        },
-      });
-    } catch {
-      // ignore
-    }
-
     revalidatePath("/settings/users");
-    return { success: "Password reset. User has been signed out." };
   }
 
-  async function saveAccessChanges(formData: FormData) {
+  async function toggleActive(formData: FormData) {
     "use server";
-
-    const { session, user: actor, orgId: actorOrgId } = await requireOrgSession();
-    if (actor.role !== "ADMIN") return;
-
-    const targetUserId = String(formData.get("userId") ?? "").trim();
-    const q = String(formData.get("q") ?? "").trim();
-    const nextRole = String(formData.get("role") ?? "") as Role;
-    const submittedPermissionValues = formData
-      .getAll("permissions")
-      .map((value) => String(value).trim())
-      .filter((value): value is (typeof EXTRA_PERMISSIONS)[number] =>
-        EXTRA_PERMISSIONS.includes(value as (typeof EXTRA_PERMISSIONS)[number]),
-      );
-
-    if (!targetUserId || !Object.values(Role).includes(nextRole)) {
-      redirect(`/settings/users?${new URLSearchParams({ q, userId: targetUserId }).toString()}`);
-    }
-
-    const permissionValues = allowedExtraPermissionsForRole(nextRole, submittedPermissionValues);
-
-    const target = await prisma.user.findFirst({
-      where: { id: targetUserId, orgId: actorOrgId },
-      select: {
-        id: true,
-        role: true,
-      },
-    });
-    if (!target) {
-      redirect(`/settings/users${q ? `?${new URLSearchParams({ q }).toString()}` : ""}`);
-    }
-
-    if (target.id === session.user.id && nextRole !== "ADMIN") {
-      redirect(`/settings/users?${new URLSearchParams({ q, userId: targetUserId }).toString()}`);
-    }
-
-    let currentPermissionValues: string[] = [];
-    try {
-      const rows = await prisma.$queryRaw<Array<{ permission: string }>>`
-        SELECT permission FROM "UserPermission" WHERE userId = ${targetUserId}
-      `;
-      currentPermissionValues = rows.map((row) => row.permission).filter(Boolean);
-    } catch {
-      currentPermissionValues = [];
-    }
-
-    const currentPermissions = new Set<string>(currentPermissionValues);
-    const nextPermissions = new Set<string>(permissionValues);
-
-    const added = [...nextPermissions].filter((permission) => !currentPermissions.has(permission));
-    const removed = [...currentPermissions].filter((permission) => !nextPermissions.has(permission));
-    const roleChanged = target.role !== nextRole;
-    const permissionChanged = added.length > 0 || removed.length > 0;
-
-    if (!roleChanged && !permissionChanged) {
-      redirect(`/settings/users?${new URLSearchParams({ q, userId: targetUserId }).toString()}`);
-    }
-
-    await prisma.$transaction(async (tx) => {
-      await tx.user.updateMany({ where: { id: targetUserId, orgId: actorOrgId }, data: { role: nextRole } });
-      await tx.userPermission.deleteMany({ where: { userId: targetUserId } });
-
-      if (permissionValues.length > 0) {
-        await tx.userPermission.createMany({
-          data: permissionValues.map((permission) => ({ userId: targetUserId, permission })),
-        });
-      }
-    });
-
-    try {
-      await prisma.userAccessAudit.create({
-        data: {
-          actorUserId: session.user.id,
-          targetUserId,
-          action: roleChanged ? "ROLE_AND_PERMISSION_UPDATED" : "PERMISSION_UPDATED",
-          detail: JSON.stringify({
-            fromRole: target.role,
-            toRole: nextRole,
-            added,
-            removed,
-          }),
-        },
-      });
-    } catch {
-      // Keep access updates successful even when audit table is not yet migrated.
-    }
-
-    revalidatePath("/settings/users");
-    redirect(`/settings/users?${new URLSearchParams({ q, userId: targetUserId }).toString()}`);
-  }
-
-  async function toggleUserActive(formData: FormData) {
-    "use server";
-    const { user: actor, orgId: actorOrgId, session } = await requireOrgSession();
+    const { session, user: actor, orgId: oId } = await requireOrgSession();
     if (actor.role !== "ADMIN") return;
     const targetId = String(formData.get("userId") ?? "").trim();
-    const q = String(formData.get("q") ?? "").trim();
-    if (!targetId || targetId === session.user.id) return; // can't deactivate yourself
-    const target = await prisma.user.findFirst({ where: { id: targetId, orgId: actorOrgId }, select: { id: true, isActive: true } });
+    if (!targetId || targetId === session.user.id) return;
+    const target = await prisma.user.findFirst({
+      where: { id: targetId, orgId: oId },
+      select: { id: true, isActive: true },
+    });
     if (!target) return;
     await prisma.user.update({ where: { id: targetId }, data: { isActive: !target.isActive } });
-    // Revoke all active sessions when deactivating
     if (target.isActive) {
       await prisma.session.deleteMany({ where: { userId: targetId } }).catch(() => {});
     }
     revalidatePath("/settings/users");
-    redirect(`/settings/users?${new URLSearchParams({ q, userId: targetId }).toString()}`);
   }
 
-  async function updateUserRole(formData: FormData) {
+  async function inviteUser(formData: FormData): Promise<void> {
     "use server";
-
-    const { session, user: actor, orgId: actorOrgId } = await requireOrgSession();
-    if (actor.role !== "ADMIN") return;
-
-    const targetUserId = String(formData.get("userId") ?? "").trim();
-    const q = String(formData.get("q") ?? "").trim();
-    const nextRole = String(formData.get("role") ?? "") as Role;
-
-    if (!targetUserId || !Object.values(Role).includes(nextRole)) {
-      redirect(`/settings/users?${new URLSearchParams({ q, userId: targetUserId }).toString()}`);
-    }
-
-    const target = await prisma.user.findFirst({
-      where: { id: targetUserId, orgId: actorOrgId },
-      select: { id: true, role: true },
-    });
-    if (!target) redirect(`/settings/users${q ? `?${new URLSearchParams({ q }).toString()}` : ""}`);
-
-    if (target.id === session.user.id && nextRole !== "ADMIN") {
-      redirect(`/settings/users?${new URLSearchParams({ q, userId: targetUserId }).toString()}`);
-    }
-
-    const permissionValues = allowedExtraPermissionsForRole(nextRole, roleDefaults[nextRole] ?? []);
-
-    await prisma.$transaction(async (tx) => {
-      await tx.user.updateMany({ where: { id: targetUserId, orgId: actorOrgId }, data: { role: nextRole } });
-      await tx.userPermission.deleteMany({ where: { userId: targetUserId } });
-      if (permissionValues.length > 0) {
-        await tx.userPermission.createMany({
-          data: permissionValues.map((permission) => ({ userId: targetUserId, permission })),
-        });
-      }
-    });
-
-    try {
-      await prisma.userAccessAudit.create({
-        data: {
-          actorUserId: session.user.id,
-          targetUserId,
-          action: "ROLE_UPDATED",
-          detail: JSON.stringify({ fromRole: target.role, toRole: nextRole }),
-        },
-      });
-    } catch {
-      // Keep role updates successful even when audit table is not yet migrated.
-    }
-
-    revalidatePath("/settings/users");
-    redirect(`/settings/users?${new URLSearchParams({ q, userId: targetUserId }).toString()}`);
-  }
-
-  async function inviteUser(_prev: InviteState, formData: FormData): Promise<InviteState> {
-    "use server";
-
-    const { user: actor, orgId: actorOrgId } = await requireOrgSession();
-    if (actor.role !== "ADMIN") return { error: "Only admins can invite users." };
-
-    const rl = rateLimit.invite(actorOrgId);
-    if (!rl.allowed) return { error: "Too many invites sent recently. Please wait before generating more." };
-
-    const parsed = inviteSchema.safeParse({
-      email: String(formData.get("email") ?? "").trim().toLowerCase(),
-      role: String(formData.get("role") ?? "OPS"),
-    });
-    if (!parsed.success) return { fieldErrors: parsed.error.flatten().fieldErrors };
-
-    const { email, role } = parsed.data;
-
-    // Block if email already belongs to this org.
-    const existing = await prisma.user.findFirst({
-      where: { email, orgId: actorOrgId },
-      select: { id: true },
-    });
-    if (existing) return { error: "That email already has an account in this workspace." };
-
-    // Enforce plan user limit.
-    const userLimit = await checkUserLimit(actorOrgId);
-    if (!userLimit.allowed) return { error: userLimit.reason };
-
-    // Expire any previous pending invites for this email in this org.
-    await prisma.userInvite.updateMany({
-      where: { email, orgId: actorOrgId, usedAt: null },
-      data: { expiresAt: new Date() },
-    });
-
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + INVITE_TTL_DAYS);
-
+    const { user: actor, orgId: oId } = await requireOrgSession();
+    if (actor.role !== "ADMIN") redirect("/settings/users");
+    const email = String(formData.get("email") ?? "").trim().toLowerCase();
+    const role = String(formData.get("role") ?? "OPS") as Role;
+    if (!email || !email.includes("@")) redirect("/settings/users?add=1&error=Invalid+email");
+    const rl = rateLimit.invite(oId);
+    if (!rl.allowed) redirect("/settings/users?add=1&error=Too+many+invites");
+    const existing = await prisma.user.findFirst({ where: { email, orgId: oId }, select: { id: true } });
+    if (existing) redirect("/settings/users?add=1&error=Email+already+used");
+    const limit = await checkUserLimit(oId);
+    if (!limit.allowed) redirect(`/settings/users?add=1&limitError=${encodeURIComponent(limit.reason)}`);
+    await prisma.userInvite.updateMany({ where: { email, orgId: oId, usedAt: null }, data: { expiresAt: new Date() } });
+    const expires = new Date();
+    expires.setDate(expires.getDate() + INVITE_TTL_DAYS);
     const invite = await prisma.userInvite.create({
-      data: { email, role, orgId: actorOrgId, invitedById: actor.id, expiresAt },
+      data: { email, role, orgId: oId, invitedById: actor.id, expiresAt: expires },
     });
-
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
-    const inviteUrl = `${baseUrl}/invite/${invite.token}`;
-
-    return { inviteUrl };
+    const base = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+    redirect(`/settings/users?add=1&inviteUrl=${encodeURIComponent(`${base}/invite/${invite.token}`)}`);
   }
 
   async function createUser(formData: FormData) {
     "use server";
-
-    const { user: actor, orgId: actorOrgId } = await requireOrgSession();
+    const { user: actor, orgId: oId } = await requireOrgSession();
     if (actor.role !== "ADMIN") return;
-
-    const parsed = createUserSchema.safeParse({
-      name: String(formData.get("name") ?? "").trim(),
-      email: String(formData.get("email") ?? "").trim().toLowerCase(),
-      phone: String(formData.get("phone") ?? "").trim(),
-      password: String(formData.get("password") ?? ""),
-      role: String(formData.get("role") ?? "OPS"),
-    });
-
-    if (!parsed.success) {
-      revalidatePath("/settings/users");
-      redirect("/settings/users");
-    }
-
-    const userLimit = await checkUserLimit(actorOrgId);
-    if (!userLimit.allowed) {
-      // Can't return from a void server action — redirect with error param
-      redirect(`/settings/users?limitError=${encodeURIComponent(userLimit.reason)}`);
-    }
-
-    const created = await prisma.user.create({
-      data: {
-        orgId: actorOrgId,
-        name: parsed.data.name,
-        email: parsed.data.email,
-        phone: parsed.data.phone || null,
-        role: parsed.data.role,
-        emailVerified: true,
-      },
-    });
-
-    await prisma.account.create({
-      data: {
-        accountId: created.id,
-        providerId: "credential",
-        userId: created.id,
-        password: await hashPassword(parsed.data.password),
-      },
-    });
-
+    const name = String(formData.get("name") ?? "").trim();
+    const email = String(formData.get("email") ?? "").trim().toLowerCase();
+    const phone = String(formData.get("phone") ?? "").trim();
+    const password = String(formData.get("password") ?? "");
+    const role = String(formData.get("role") ?? "OPS") as Role;
+    if (!name || !email || !password) { redirect("/settings/users"); return; }
+    const limit = await checkUserLimit(oId);
+    if (!limit.allowed) { redirect(`/settings/users?add=1&limitError=${encodeURIComponent(limit.reason)}`); return; }
+    const created = await prisma.user.create({ data: { orgId: oId, name, email, phone: phone || null, role, emailVerified: true } });
+    await prisma.account.create({ data: { accountId: created.id, providerId: "credential", userId: created.id, password: await hashPassword(password) } });
     revalidatePath("/settings/users");
-    redirect(`/settings/users?${new URLSearchParams({ userId: created.id }).toString()}`);
+    redirect(`/settings/users?userId=${created.id}`);
   }
 
-  const params = await searchParams;
-  let q = "";
-  let filteredUsers: Array<{
-    id: string;
-    name: string;
-    email: string;
-    phone: string | null;
-    role: Role;
-    isActive: boolean;
-    createdAt: Date;
-    updatedAt: Date;
-    sessions: Array<{ updatedAt: Date }>;
-    auditLogs: Array<{ createdAt: Date }>;
-    permissionGrants: Array<{ permission: string }>;
-  }> = [];
-  let selectedUser: (typeof filteredUsers)[number] | null = null;
-  let accessAudit: Array<{
-    id: string;
-    action: string;
-    detail: string | null;
-    createdAt: Date;
-    actorUser: { name: string };
-  }> = [];
-
-  try {
-    q = typeof params.q === "string" ? params.q.trim() : "";
-
-    const users = await prisma.user.findMany({
-      where: { orgId },
-      orderBy: [{ isActive: "desc" }, { name: "asc" }],
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        phone: true,
-        role: true,
-        isActive: true,
-        createdAt: true,
-        updatedAt: true,
-        sessions: {
-          orderBy: { updatedAt: "desc" },
-          take: 1,
-          select: { updatedAt: true },
-        },
-        auditLogs: {
-          orderBy: { createdAt: "desc" },
-          take: 1,
-          select: { createdAt: true },
-        },
-      },
-    });
-
-    let permissionMap = new Map<string, string[]>();
-    try {
-      const rows = await prisma.$queryRaw<Array<{ userId: string; permission: string }>>`
-        SELECT userId, permission FROM "UserPermission"
-      `;
-      permissionMap = rows.reduce((acc, row) => {
-        if (!acc.has(row.userId)) acc.set(row.userId, []);
-        acc.get(row.userId)?.push(row.permission);
-        return acc;
-      }, new Map<string, string[]>());
-    } catch {
-      permissionMap = new Map();
-    }
-
-    const usersWithPermissions = users.map((entry) => ({
-      ...entry,
-      permissionGrants: (permissionMap.get(entry.id) ?? []).map((permission) => ({ permission })),
-    }));
-
-    filteredUsers = usersWithPermissions.filter((item) => searchMatches(item, q));
-    selectedUser = filteredUsers.find((item) => item.id === params.userId) ?? filteredUsers[0] ?? null;
-
-    if (selectedUser) {
-      try {
-        accessAudit = await prisma.userAccessAudit.findMany({
-          where: { targetUserId: selectedUser.id },
-          orderBy: { createdAt: "desc" },
-          take: 12,
-          select: {
-            id: true,
-            action: true,
-            detail: true,
-            createdAt: true,
-            actorUser: { select: { name: true } },
-          },
-        });
-      } catch {
-        accessAudit = [];
-      }
-    }
-  } catch (error) {
-    console.error("[settings/users] failed to load", error);
-    return (
-      <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-6 text-sm text-[var(--ink-muted)]">
-        Could not load user access controls right now. Please retry after a moment.
-      </section>
-    );
-  }
-
-  const limitError = typeof params.limitError === "string" ? params.limitError : null;
-  const showAdd = params.add === "1";
+  // ── Render ─────────────────────────────────────────────────────────────────
+  const savedFlag = (await searchParams).saved === "1";
 
   return (
-    <div className="space-y-3">
-      <div className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3">
-        <p className="text-[13px] font-bold text-[var(--ink)]">Users</p>
-        <p className="text-[13px] text-[var(--ink-muted)]">Invite teammates and assign a simple system role.</p>
+    <div className="min-w-0 space-y-5">
+      {/* Header */}
+      <div className="flex items-end justify-between gap-3">
+        <div>
+          <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/60">Settings</p>
+          <h1 className="mt-1 text-xl font-bold text-[var(--ink)]">System Users</h1>
+          <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">{filtered.length} team member{filtered.length !== 1 ? "s" : ""}</p>
+        </div>
+        <Link
+          href={showAdd ? "/settings/users" : "/settings/users?add=1"}
+          className="btn-premium inline-flex items-center rounded-lg px-4 py-2 text-sm font-semibold"
+        >
+          <Plus className="mr-1.5 h-4 w-4" />
+          {showAdd ? "Done" : "Add user"}
+        </Link>
       </div>
 
-      {limitError && (
-        <p className="rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-[13px] text-red-400">
+      {(limitError || errorParam) && (
+        <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-2.5 text-sm text-red-400">
           {limitError}
-        </p>
+          {errorParam?.replaceAll("+", " ")}
+        </div>
       )}
 
-      {/* Add User — inline, toggled by URL param */}
+      {savedFlag && (
+        <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-2.5 text-sm text-emerald-400">
+          User saved.
+        </div>
+      )}
+
+      {/* Add user panel */}
       {showAdd && (
-        <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)] p-3">
-          <div className="mb-3 flex items-center justify-between">
-            <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Add User</p>
-            <Link href="/settings/users" className="inline-flex items-center gap-1 text-[13px] text-[var(--ink-muted)] hover:text-[var(--ink)]"><X className="h-3.5 w-3.5" aria-hidden="true" />Close</Link>
+        <section className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
+          <div className="border-b border-[var(--line)] px-4 py-2.5">
+            <p className="text-[13px] font-semibold text-[var(--ink)]">Add User</p>
           </div>
-          <InvitePanel inviteAction={inviteUser} roleOptions={roleOptions} />
-          <details className="mt-3 border-t border-[var(--line)] pt-3">
-            <summary className="cursor-pointer text-[12px] font-bold uppercase tracking-[0.18em] text-[var(--ink-muted)]/60">
-              Create directly
-            </summary>
-            <form action={createUser} className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-6">
-              <input required name="name" placeholder="Name" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
-              <input required type="email" name="email" placeholder="Email" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
-              <input name="phone" placeholder="Phone" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
-              <input required minLength={8} type="password" name="password" placeholder="Password (min 8)" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
-              <select name="role" defaultValue="OPS" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14">
-                {roleOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-              </select>
-              <button type="submit" className="btn-premium rounded-lg px-3 py-1.5 text-[13px] text-white">Create</button>
+          <div className="space-y-4 p-4">
+            {/* Invite */}
+            <form action={inviteUser} className="flex flex-col gap-2 sm:flex-row sm:items-end">
+              <div className="flex min-w-0 flex-1 gap-2">
+                <input required type="email" name="email" placeholder="colleague@company.com" className="min-w-0 flex-1 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
+                <select name="role" defaultValue="OPS" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50">
+                  {roleOptions.map((o) => (<option key={o.value} value={o.value}>{o.label}</option>))}
+                </select>
+              </div>
+              <button type="submit" className="btn-premium shrink-0 rounded-lg px-4 py-1.5 text-[13px]">Send invite</button>
             </form>
-          </details>
+            {inviteUrl && (
+              <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3">
+                <p className="mb-1 text-[13px] font-semibold text-emerald-400">Invite link generated</p>
+                <div className="flex items-center gap-2">
+                  <input readOnly value={inviteUrl} className="min-w-0 flex-1 rounded border border-[var(--line)] bg-[var(--panel)] px-2 py-1 text-[12px] text-[var(--ink)]" />
+                  <CopyButton text={inviteUrl} />
+                </div>
+              </div>
+            )}
+            <div className="relative py-2">
+              <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-[var(--line)]" /></div>
+              <p className="relative flex justify-center bg-[var(--panel)] pr-3 text-[12px] text-[var(--ink-muted)]"><span className="bg-[var(--panel-strong)] px-2">or create directly</span></p>
+            </div>
+            <form action={createUser} className="grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
+              <input required name="name" placeholder="Full name" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50" />
+              <input required type="email" name="email" placeholder="Email" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50" />
+              <input name="phone" placeholder="Phone (optional)" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50" />
+              <input required minLength={8} type="password" name="password" placeholder="Password (min 8)" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50" />
+              <select name="role" defaultValue="OPS" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50">
+                {roleOptions.map((o) => (<option key={o.value} value={o.value}>{o.label}</option>))}
+              </select>
+              <button type="submit" className="btn-premium rounded-lg px-4 py-1.5 text-[13px] sm:col-span-2 xl:col-span-5">Create user</button>
+            </form>
+          </div>
         </section>
       )}
 
-      {/* Main two-column layout */}
-      <div className="grid gap-3 lg:grid-cols-[260px_1fr]">
-
-        {/* Left: search + user list */}
-        <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)]">
-          <div className="flex items-center justify-between border-b border-[var(--line)] px-3 py-2">
-            <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Users</p>
-            <Link
-              href={showAdd ? "/settings/users" : "/settings/users?add=1"}
-              className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1 text-[13px] font-semibold text-[var(--ink-muted)] transition hover:border-[var(--accent)]/50 hover:text-[var(--accent)]"
-            >
-              {showAdd ? "Close" : "+ Add"}
-            </Link>
+      {/* Main content */}
+      <div className="grid gap-5 lg:grid-cols-[300px_1fr]">
+        {/* User list */}
+        <section className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
+          <div className="flex items-center gap-2 border-b border-[var(--line)] px-3 py-2">
+            <Search className="h-3.5 w-3.5 shrink-0 text-[var(--ink-muted)]" />
+            <form method="GET" className="min-w-0 flex-1">
+              <input name="q" defaultValue={query} placeholder="Search…" className="min-w-0 w-full rounded border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1 text-[13px] outline-none focus:border-[var(--accent)]/50" />
+            </form>
           </div>
-          <form method="GET" className="flex gap-1 border-b border-[var(--line)] px-2 py-2">
-            <input
-              name="q"
-              defaultValue={q}
-              placeholder="Search…"
-              className="min-w-0 flex-1 rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50"
-            />
-            {q ? (
-              <Link href="/settings/users" aria-label="Clear search" className="flex items-center rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2 text-[13px] text-[var(--ink-muted)] hover:text-[var(--ink)]"><X className="h-3.5 w-3.5" aria-hidden="true" /></Link>
-            ) : null}
-          </form>
           <div className="divide-y divide-[var(--line)]">
-            {filteredUsers.map((item) => (
-              <Link
-                key={item.id}
-                href={`/settings/users?${new URLSearchParams({ ...(q && { q }), userId: item.id }).toString()}`}
-                className={`flex items-center gap-2.5 px-3 py-2.5 transition ${selectedUser?.id === item.id ? "bg-[var(--accent)]/8" : "hover:bg-[var(--panel-strong)]/40"}`}
-              >
-                <span className={`h-5 w-0.5 shrink-0 rounded-full transition-all ${selectedUser?.id === item.id ? "bg-[var(--accent)]" : "bg-transparent"}`} />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-[13px] font-medium text-[var(--ink)]">{item.name}</p>
-                  <p className="truncate text-[13px] text-[var(--ink-muted)]">{roleLabel(item.role)}</p>
+            {filtered.length === 0 ? (
+              <p className="px-3 py-6 text-center text-[13px] text-[var(--ink-muted)]">No users found.</p>
+            ) : (
+              filtered.map((u) => (
+                <div
+                  key={u.id}
+                  className={`flex items-center gap-3 px-3 py-2.5 transition ${selectedUser?.id === u.id ? "bg-[var(--accent)]/8" : "hover:bg-[var(--panel-strong)]/40"}`}
+                >
+                  <span className={`mt-0.5 h-2 w-2 shrink-0 rounded-full ${u.isActive ? "bg-emerald-400" : "bg-[var(--line)]"}`} />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-[13px] font-medium text-[var(--ink)]">{u.name}</p>
+                    <p className="truncate text-[12px] text-[var(--ink-muted)]">{roleLabel(u.role)}</p>
+                  </div>
+                  <Link
+                    href={`/settings/users?userId=${u.id}`}
+                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)] transition hover:border-[var(--accent)]/50 hover:text-[var(--accent)]"
+                    title="View profile"
+                  >
+                    <CircleDot className="h-3.5 w-3.5" />
+                  </Link>
                 </div>
-                {!item.isActive && (
-                  <span className="shrink-0 rounded-full border border-[var(--line)] px-1.5 py-0.5 text-[12px] text-[var(--ink-muted)]">Off</span>
-                )}
-              </Link>
-            ))}
-            {filteredUsers.length === 0 && (
-              <p className="px-3 py-5 text-center text-[13px] text-[var(--ink-muted)]">No users found.</p>
+              ))
             )}
           </div>
         </section>
 
-        {/* Right: selected user */}
+        {/* Detail Panel */}
         {selectedUser ? (
-          <section className="panel-shadow rounded-xl border border-[var(--line)] bg-[var(--panel)]">
-            {/* User header */}
-            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--line)] px-3 py-2.5">
-              <div className="min-w-0">
-                <p className="truncate text-[13px] font-semibold text-[var(--ink)]">{selectedUser.name}</p>
-                <p className="truncate text-[13px] text-[var(--ink-muted)]">{selectedUser.email} · {roleLabel(selectedUser.role)}</p>
-              </div>
-              <div className="flex shrink-0 items-center gap-1.5">
-                <span className={`rounded-full border px-2 py-0.5 text-[12px] font-semibold ${selectedUser.isActive ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400" : "border-[var(--line)] text-[var(--ink-muted)]"}`}>
-                  {selectedUser.isActive ? "Active" : "Inactive"}
-                </span>
-                {user.role === "ADMIN" && selectedUser.id !== user.id && (
-                  <form action={toggleUserActive}>
-                    <input type="hidden" name="userId" value={selectedUser.id} />
-                    <input type="hidden" name="q" value={q} />
-                    <button
-                      type="submit"
-                      className={`rounded border px-2 py-0.5 text-[12px] font-semibold transition-colors ${selectedUser.isActive ? "border-red-400/30 text-red-600 hover:bg-red-500/10 dark:text-red-400" : "border-emerald-400/30 text-emerald-600 hover:bg-emerald-500/10 dark:text-emerald-400"}`}
-                    >
-                      {selectedUser.isActive ? "Deactivate" : "Reactivate"}
-                    </button>
-                  </form>
-                )}
-                <span className="text-[13px] text-[var(--ink-muted)]">
-                  Last seen {formatDateTime(selectedUser.sessions[0]?.updatedAt ?? selectedUser.auditLogs[0]?.createdAt ?? selectedUser.updatedAt)}
-                </span>
-              </div>
-            </div>
-
-            <div className="space-y-4 p-3">
-              <section className="rounded-xl border border-[var(--line)] bg-[var(--panel-strong)] p-3">
-                <p className="mb-2 text-[12px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Profile</p>
-                <UserDetailsForm
-                  id={selectedUser.id}
-                  name={selectedUser.name}
-                  email={selectedUser.email}
-                  phone={selectedUser.phone}
-                  action={updateUserDetails}
-                />
-              </section>
-
-              <section className="rounded-xl border border-[var(--line)] bg-[var(--panel-strong)] p-3">
-                <p className="mb-2 text-[12px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Role</p>
-                <form action={updateUserRole} className="grid gap-2 md:grid-cols-[1fr_auto]">
-                  <input type="hidden" name="userId" value={selectedUser.id} />
-                  <input type="hidden" name="q" value={q} />
-                  <select
-                    name="role"
-                    defaultValue={selectedUser.role}
-                    className="rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 py-2 text-[13px] outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14"
+          <div className="space-y-4">
+            <section className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
+              {/* Status header */}
+              <div className="flex items-start justify-between gap-3 border-b border-[var(--line)] px-4 py-3">
+                <div className="min-w-0 flex items-center gap-2">
+                  <Link
+                    href={`/settings/users${query ? `?q=${encodeURIComponent(query)}` : ""}`}
+                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)] transition hover:border-[var(--accent)]/50 hover:text-[var(--accent)] lg:hidden"
+                    title="Back to list"
                   >
-                    {roleOptions.map((option) => (
-                      <option key={option.value} value={option.value}>{option.label}</option>
-                    ))}
-                  </select>
-                  <button type="submit" className="btn-premium rounded-lg px-4 py-2 text-[13px] text-white">
-                    Save role
-                  </button>
-                </form>
-                <p className="mt-2 text-[13px] text-[var(--ink-muted)]">
-                  {roleOptions.find((option) => option.value === selectedUser.role)?.description ?? "Role controls the main areas this user can access."}
-                </p>
-              </section>
-
-              <details className="rounded-xl border border-[var(--line)] bg-[var(--panel-strong)] p-3">
-                <summary className="cursor-pointer text-[12px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">
-                  Security
-                </summary>
-                <div className="mt-3">
-                  <UserPasswordResetForm userId={selectedUser.id} action={resetUserPassword} />
+                    <ChevronLeft className="h-4 w-4" />
+                  </Link>
+                  <div className="min-w-0">
+                    <p className="text-[14px] font-semibold text-[var(--ink)]">{selectedUser.name}</p>
+                    <p className="text-[13px] text-[var(--ink-muted)]">{selectedUser.email}</p>
+                  </div>
                 </div>
-              </details>
-
-              <details className="rounded-xl border border-[var(--line)] bg-[var(--panel-strong)] p-3">
-                <summary className="cursor-pointer text-[12px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">
-                  Advanced access
-                </summary>
-                <div className="mt-3">
-                  <UserAccessControlPanel
-                    key={selectedUser.id}
-                    userId={selectedUser.id}
-                    queryText={q}
-                    initialRole={selectedUser.role}
-                    initialPermissions={selectedUser.permissionGrants.map((g) => g.permission)}
-                    roleOptions={roleOptions}
-                    roleDefaultPermissions={roleDefaults}
-                    roleDefaultCapabilities={roleCapabilities}
-                    permissions={permissionOptions}
-                    saveAction={saveAccessChanges}
-                  />
+                <div className="flex shrink-0 items-center gap-2">
+                  <Link
+                    href={`/settings/users${query ? `?q=${encodeURIComponent(query)}` : ""}`}
+                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)] transition hover:border-[var(--accent)]/50 hover:text-[var(--accent)]"
+                    title="Close details"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </Link>
+                  <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[12px] font-semibold ${selectedUser.isActive ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400" : "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]"}`}>
+                    {selectedUser.isActive ? <CircleDot className="h-3 w-3" /> : <Circle className="h-3 w-3" />}
+                    {selectedUser.isActive ? "Active" : "Inactive"}
+                  </span>
                 </div>
-              </details>
+              </div>
 
-              <details className="rounded-xl border border-[var(--line)] bg-[var(--panel-strong)] p-3">
-                <summary className="cursor-pointer text-[12px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">
-                  Access log
-                </summary>
-                <div className="mt-3 divide-y divide-[var(--line)]">
-                  {accessAudit.length > 0 ? (
-                    accessAudit.map((entry) => {
-                      let detail = "";
-                      try {
-                        const parsed = entry.detail ? JSON.parse(entry.detail) as { added?: string[]; removed?: string[]; fromRole?: string; toRole?: string } : null;
-                        const parts = [
-                          parsed?.fromRole !== parsed?.toRole ? `Role -> ${parsed?.toRole}` : null,
-                          parsed?.added?.length ? `+${parsed.added.join(", ")}` : null,
-                          parsed?.removed?.length ? `-${parsed.removed.join(", ")}` : null,
-                        ].filter(Boolean);
-                        detail = parts.join(" · ");
-                      } catch {
-                        detail = entry.detail ?? "";
-                      }
-                      return (
-                        <div key={entry.id} className="py-2">
-                          <p className="text-[13px] font-medium text-[var(--ink)]">{entry.action}</p>
-                          <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">{entry.actorUser.name} · {entry.createdAt.toLocaleString()}</p>
-                          {detail ? <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">{detail}</p> : null}
-                        </div>
-                      );
-                    })
+              <div className="p-4 space-y-6">
+                {/* Profile form */}
+                <div>
+                  <div className="mb-3 flex items-center gap-2">
+                    <Users className="h-4 w-4 text-[var(--ink-muted)]" />
+                    <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">User Profile</p>
+                  </div>
+                  <form action={saveUserChanges} className="space-y-3">
+                    <input type="hidden" name="id" value={selectedUser.id} />
+                    <div className="grid gap-3 sm:grid-cols-3">
+                      <div className="space-y-1">
+                        <label className="text-[12px] font-medium text-[var(--ink-muted)]">Name</label>
+                        <input name="name" defaultValue={selectedUser.name} required className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[12px] font-medium text-[var(--ink-muted)]">Email</label>
+                        <input name="email" type="email" defaultValue={selectedUser.email} required className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[12px] font-medium text-[var(--ink-muted)]">Phone</label>
+                        <input name="phone" defaultValue={selectedUser.phone ?? ""} className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14" />
+                      </div>
+                    </div>
+                    <div className="grid gap-3 sm:grid-cols-3">
+                      <div className="space-y-1 sm:col-span-2">
+                        <label className="text-[12px] font-medium text-[var(--ink-muted)]">Role</label>
+                        <select name="role" defaultValue={selectedUser.role} className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14">
+                          {roleOptions.map((o) => (<option key={o.value} value={o.value}>{o.label}</option>))}
+                        </select>
+                        <p className="text-[12px] text-[var(--ink-muted)]">{roleOptions.find((o) => o.value === selectedUser.role)?.description}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 pt-1">
+                      <button type="submit" className="btn-premium rounded-lg px-6 py-2 text-[13px] font-semibold">Save Changes</button>
+                    </div>
+                  </form>
+                </div>
+
+                {/* Divider */}
+                <div className="border-t border-[var(--line)]" />
+
+                {/* Permissions */}
+                <div>
+                  <div className="mb-3 flex items-center gap-2">
+                    <ShieldCheck className="h-4 w-4 text-[var(--ink-muted)]" />
+                    <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Permissions</p>
+                  </div>
+                  <RolePermissions role={selectedUser.role} userId={selectedUser.id} />
+                </div>
+
+                {/* Divider */}
+                <div className="border-t border-[var(--line)]" />
+
+                {/* Password reset */}
+                <details className="group">
+                  <summary className="flex cursor-pointer list-none items-center gap-2 py-1 text-[12px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70 transition hover:text-[var(--accent)]">
+                    <Lock className="h-4 w-4" />
+                    Reset Password
+                    <ChevronDown className="ml-auto h-4 w-4 transition group-open:rotate-180" />
+                  </summary>
+                  <form action={resetPassword} className="mt-3 grid gap-3 sm:grid-cols-[1fr_1fr_auto]">
+                    <input type="hidden" name="userId" value={selectedUser.id} />
+                    <input required minLength={8} type="password" name="password" placeholder="New password" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50" />
+                    <input required minLength={8} type="password" name="confirm" placeholder="Confirm password" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-1.5 text-[13px] outline-none focus:border-[var(--accent)]/50" />
+                    <button type="submit" className="btn-premium rounded-lg px-4 py-1.5 text-[13px]">Reset</button>
+                  </form>
+                </details>
+
+                {/* Divider */}
+                <div className="border-t border-[var(--line)]" />
+
+                {/* Active / Deactivate */}
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Account Status</p>
+                    <p className="mt-1 text-[13px] text-[var(--ink-muted)]">
+                      {selectedUser.isActive ? "User can sign in and access the system." : "User is deactivated and cannot sign in."}
+                    </p>
+                  </div>
+                  {currentUser.id !== selectedUser.id ? (
+                    <details className="group relative">
+                      <summary className={`inline-flex cursor-pointer list-none items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[13px] font-semibold transition ${selectedUser.isActive ? "border-red-400/30 text-red-400 hover:bg-red-500/10" : "border-emerald-400/30 text-emerald-400 hover:bg-emerald-500/10"}`}>
+                        {selectedUser.isActive ? "Deactivate" : "Activate"}
+                        <ChevronDown className="h-3.5 w-3.5" />
+                      </summary>
+                      <div className="absolute right-0 top-full z-10 mt-2 w-72 rounded-xl border border-[var(--line)] bg-[var(--panel-strong)] p-4 shadow-lg">
+                        <p className="mb-3 text-[13px] text-[var(--ink)]">
+                          {selectedUser.isActive ? "Are you sure you want to deactivate this user?" : "Reactivate this user?"}
+                        </p>
+                        <form action={toggleActive}>
+                          <input type="hidden" name="userId" value={selectedUser.id} />
+                          <button type="submit" className={`w-full rounded-lg px-3 py-1.5 text-[13px] font-semibold ${selectedUser.isActive ? "bg-red-500/15 text-red-400 hover:bg-red-500/20 border border-red-400/30" : "bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/20 border border-emerald-400/30"}`}>
+                            Yes, {selectedUser.isActive ? "deactivate" : "activate"}
+                          </button>
+                        </form>
+                      </div>
+                    </details>
                   ) : (
-                    <p className="py-4 text-center text-[13px] text-[var(--ink-muted)]">No access changes recorded yet.</p>
+                    <p className="rounded-md border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-1 text-[12px] text-[var(--ink-muted)]">You</p>
                   )}
                 </div>
-              </details>
-            </div>
-          </section>
+
+                {/* Last active */}
+                <p className="text-[12px] text-[var(--ink-muted)]">
+                  Last active {formatLastSeen(selectedUser.sessions[0]?.updatedAt ?? selectedUser.updatedAt)}
+                </p>
+              </div>
+            </section>
+          </div>
         ) : (
           <div className="panel-shadow flex items-center justify-center rounded-xl border border-[var(--line)] bg-[var(--panel)] p-12 text-[13px] text-[var(--ink-muted)]">
-            Select a user to manage their profile and access.
+            Select a user to manage their access.
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+async function RolePermissions({ role }: { role: Role; userId: string }) {
+  const perms = roleDefaults[role] ?? [];
+  return (
+    <div>
+      <p className="text-[13px] text-[var(--ink-muted)] mb-1">{roleOptions.find((o) => o.value === role)?.description}</p>
+      <div className="flex flex-wrap gap-1.5">
+        {perms.map((p) => (
+          <span key={p} className="rounded-full border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-0.5 text-[12px] text-[var(--ink-muted)]">
+            {p.replace(/^can_/, "").replace(/_/g, " ")}
+          </span>
+        ))}
+        {perms.length === 0 && <span className="text-[13px] text-[var(--ink-muted)]">No custom permissions for this role.</span>}
       </div>
     </div>
   );
