@@ -1,4 +1,4 @@
-import { access, stat, unlink, writeFile } from "node:fs/promises";
+import { stat } from "node:fs/promises";
 import path from "node:path";
 
 import { revalidatePath } from "next/cache";
@@ -18,13 +18,6 @@ type SearchParams = {
   error?: string;
   profileSaved?: string;
 };
-
-const logoFiles = [
-  { name: "eagle-info-logo.png", type: "image/png" },
-  { name: "eagle-info-logo.jpg", type: "image/jpeg" },
-  { name: "eagle-info-logo.jpeg", type: "image/jpeg" },
-  { name: "eagle-info-logo.webp", type: "image/webp" },
-];
 
 const DOC_KIND_LABELS: Record<DocKind, string> = {
   INVOICE:   "Invoice",
@@ -98,32 +91,19 @@ function renderQuotePreview(prefix: string, format: string, padLength: number) {
 }
 
 async function resolveLogoPreview(companyLogoUrl?: string) {
-  if (companyLogoUrl) {
-    const filePath = path.join(process.cwd(), "public", companyLogoUrl.replace(/^\//, "").split("?")[0]);
-    try {
-      const info = await stat(filePath);
-      return `${companyLogoUrl.split("?")[0]}?v=${info.mtimeMs}`;
-    } catch {
-      // fall through
-    }
-  }
-  for (const file of logoFiles) {
-    const filePath = path.join(process.cwd(), "public", file.name);
-    try {
-      await access(filePath);
-      const info = await stat(filePath);
-      return `/${file.name}?v=${info.mtimeMs}`;
-    } catch {
-      // continue
-    }
-  }
-  return null;
-}
+  if (!companyLogoUrl) return null;
 
-function extensionFromMime(mime: string) {
-  if (mime === "image/png") return "png";
-  if (mime === "image/jpeg") return "jpg";
-  if (mime === "image/webp") return "webp";
+  if (companyLogoUrl.startsWith("data:")) {
+    return companyLogoUrl;
+  }
+
+  const filePath = path.join(process.cwd(), "public", companyLogoUrl.replace(/^\//, "").split("?")[0]);
+  try {
+    const info = await stat(filePath);
+    return `${companyLogoUrl.split("?")[0]}?v=${info.mtimeMs}`;
+  } catch {
+    // fall through
+  }
   return null;
 }
 
@@ -249,35 +229,15 @@ export default async function BrandingPage({
       redirect("/settings/branding?error=Logo+must+be+5MB+or+less");
     }
 
-    const ext = extensionFromMime(file.type);
-    if (!ext) {
+    const mime = file.type;
+    if (!["image/png", "image/jpeg", "image/webp"].includes(mime)) {
       redirect("/settings/branding?error=Use+PNG,+JPEG,+or+WEBP");
     }
 
-    const publicDir = path.join(process.cwd(), "public");
-
     const existingSettings = await getDocumentBrandingSettings(uploadOrgId);
-    const existingUrl = existingSettings.companyLogoUrl;
-    if (existingUrl) {
-      const existingName = existingUrl.replace(/^\//, "").split("?")[0];
-      const existingPath = path.join(publicDir, existingName);
-      try {
-        await unlink(existingPath);
-      } catch {
-        // ignore
-      }
-    }
-
-    const targetName = `company-logo-${uploadOrgId}.${ext}`;
-    const targetPath = path.join(publicDir, targetName);
-    const logoUrl = `/${targetName}`;
-
     const bytes = Buffer.from(await file.arrayBuffer());
-    try {
-      await writeFile(targetPath, bytes);
-    } catch {
-      redirect("/settings/branding?error=Could+not+save+logo+on+server");
-    }
+    const base64 = bytes.toString("base64");
+    const logoUrl = `data:${mime};base64,${base64}`;
 
     await saveDocumentBrandingSettings(uploadOrgId, {
       ...existingSettings,
