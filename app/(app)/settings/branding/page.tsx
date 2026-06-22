@@ -253,6 +253,11 @@ export default async function BrandingPage({
     const orgRow = await prisma.organization.findUnique({ where: { id: saveOrgId }, select: { plan: true } }).catch(() => null);
     const actionPlan: OrgPlan = orgRow?.plan ?? "STARTER";
 
+    const rawVatDefault = String(formData.get("vatDefaultApplicable") ?? "true");
+    const rawVatPercent = formData.get("vatRatePercent");
+    const rawQuoteDays = formData.get("quoteValidityDays");
+    const rawSeqPad = formData.get("sequencePadLength");
+
     const parsed = brandingSchema.safeParse({
       companyName: String(formData.get("companyName") ?? ""),
       companyTagline: String(formData.get("companyTagline") ?? ""),
@@ -264,21 +269,21 @@ export default async function BrandingPage({
       documentTitle: String(formData.get("documentTitle") ?? ""),
       quotePrefix: String(formData.get("quotePrefix") ?? ""),
       quoteFormat: String(formData.get("quoteFormat") ?? ""),
-      quoteValidityDays: formData.get("quoteValidityDays"),
-      sequencePadLength: formData.get("sequencePadLength"),
-      vatDefaultApplicable: String(formData.get("vatDefaultApplicable") ?? "true"),
-      vatRatePercent: formData.get("vatRatePercent"),
+      quoteValidityDays: rawQuoteDays != null && String(rawQuoteDays).trim() !== "" ? rawQuoteDays : "30",
+      sequencePadLength: rawSeqPad != null && String(rawSeqPad).trim() !== "" ? rawSeqPad : "4",
+      vatDefaultApplicable: (rawVatDefault === "true" || rawVatDefault === "false") ? rawVatDefault : "true",
+      vatRatePercent: rawVatPercent != null && String(rawVatPercent).trim() !== "" ? rawVatPercent : "18",
       vatLabel: String(formData.get("vatLabel") ?? ""),
       termsText: String(formData.get("termsText") ?? ""),
       footerText: String(formData.get("footerText") ?? ""),
       signatureCompanyLabel: String(formData.get("signatureCompanyLabel") ?? ""),
       signatureClientLabel: String(formData.get("signatureClientLabel") ?? ""),
-      primaryColor: String(formData.get("primaryColor") ?? "#000000"),
-      secondaryColor: String(formData.get("secondaryColor") ?? "#666666"),
-      accentColor: String(formData.get("accentColor") ?? "#333333"),
-      backgroundColor: String(formData.get("backgroundColor") ?? "#FFFFFF"),
-      surfaceColor: String(formData.get("surfaceColor") ?? "#F5F5F5"),
-      borderColor: String(formData.get("borderColor") ?? "#E5E5E5"),
+      primaryColor: String(formData.get("primaryColor") ?? "#000000").replace(/^$/, "#000000"),
+      secondaryColor: String(formData.get("secondaryColor") ?? "#4F8EF7").replace(/^$/, "#4F8EF7"),
+      accentColor: String(formData.get("accentColor") ?? "#333333").replace(/^$/, "#333333"),
+      backgroundColor: String(formData.get("backgroundColor") ?? "#FFFFFF").replace(/^$/, "#FFFFFF"),
+      surfaceColor: String(formData.get("surfaceColor") ?? "#F5F5F5").replace(/^$/, "#F5F5F5"),
+      borderColor: String(formData.get("borderColor") ?? "#E5E5E5").replace(/^$/, "#E5E5E5"),
 
       invoiceTemplateKey: String(formData.get("invoiceTemplateKey") ?? ""),
       quotationTemplateKey: String(formData.get("quotationTemplateKey") ?? ""),
@@ -287,7 +292,8 @@ export default async function BrandingPage({
     });
 
     if (!parsed.success) {
-      redirect("/settings/branding?error=Invalid+branding+input");
+      const fieldErrors = Object.keys(parsed.error.flatten().fieldErrors).join(",");
+      redirect(`/settings/branding?error=Invalid+input:${encodeURIComponent(fieldErrors)}`);
     }
 
     const currentSettings = await getDocumentBrandingSettings(saveOrgId);

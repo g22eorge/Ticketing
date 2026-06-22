@@ -27,16 +27,32 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
 
   const payment = await prisma.payment.findFirst({
     where: { id, orgId },
-    select: {
-      id: true,
-      amount: true,
-      currency: true,
-      method: true,
-      reference: true,
-      receivedAt: true,
+    include: {
       createdBy: { select: { name: true } },
-      sale: { select: { id: true, saleNumber: true, client: { select: { fullName: true, phone: true } } } },
-      invoice: { select: { id: true, invoiceNumber: true, job: { select: { id: true, jobNumber: true, client: { select: { fullName: true, phone: true } } } } } },
+      invoice: {
+        select: {
+          id: true,
+          invoiceNumber: true,
+          totalAmount: true,
+          paidAmount: true,
+          job: {
+            select: {
+              id: true,
+              jobNumber: true,
+              client: { select: { fullName: true, phone: true } },
+            },
+          },
+        },
+      },
+      sale: {
+        select: {
+          id: true,
+          saleNumber: true,
+          totalAmount: true,
+          paidAmount: true,
+          client: { select: { fullName: true, phone: true } },
+        },
+      },
     },
   });
 
@@ -59,16 +75,22 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
         ? `Invoice ${payment.invoice.invoiceNumber}`
         : "Payment";
 
-  const clientName = payment.invoice?.job?.client?.fullName
-    ?? payment.sale?.client?.fullName
-    ?? null;
-  const clientPhone = payment.invoice?.job?.client?.phone
-    ?? payment.sale?.client?.phone
-    ?? null;
+  const clientName =
+    payment.invoice?.job?.client?.fullName ?? payment.sale?.client?.fullName ?? null;
+  const clientPhone =
+    payment.invoice?.job?.client?.phone ?? payment.sale?.client?.phone ?? null;
+
+  const invoiceTotal =
+    payment.invoice?.totalAmount ?? payment.sale?.totalAmount ?? null;
+  const priorPaid = payment.invoice?.paidAmount ?? payment.sale?.paidAmount ?? 0;
+  const balance =
+    invoiceTotal != null ? Math.max(0, invoiceTotal - (priorPaid + payment.amount)) : null;
+  const hasPartPayment = invoiceTotal != null && balance != null && balance > 0;
 
   const element = createElement(PaymentReceiptDocument as never, {
     branding: { ...branding, companyLogoUrl: logoUrl ?? null },
-    receiptNumber: receipt?.receiptNumber ?? `RCPT-${payment.id.slice(0, 8).toUpperCase()}`,
+    receiptNumber:
+      receipt?.receiptNumber ?? `RCPT-${payment.id.slice(0, 8).toUpperCase()}`,
     receivedAt: payment.receivedAt.toLocaleString("en-GB"),
     method: prettyEnum(payment.method),
     reference: payment.reference,
@@ -77,6 +99,13 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
     receivedBy: payment.createdBy?.name ?? user.name,
     clientName,
     clientPhone,
+    ...(hasPartPayment
+      ? {
+          totalLabel: "Total Amount",
+          totalAmountLabel: formatMoney(invoiceTotal!, currency),
+          balanceLabel: formatMoney(balance!, currency),
+        }
+      : {}),
   });
 
   const pdf = await renderToBuffer(element as never);

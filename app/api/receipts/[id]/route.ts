@@ -46,18 +46,27 @@ export async function GET(
 
   const payment = await prisma.payment.findFirst({
     where: { id: receipt.paymentId, orgId },
-    select: {
-      amount: true,
-      currency: true,
-      method: true,
-      reference: true,
-      receivedAt: true,
+    include: {
       createdBy: { select: { name: true } },
-      sale: { select: { saleNumber: true, client: { select: { fullName: true, phone: true } } } },
       invoice: {
         select: {
           invoiceNumber: true,
-          job: { select: { jobNumber: true, client: { select: { fullName: true, phone: true } } } },
+          totalAmount: true,
+          paidAmount: true,
+          job: {
+            select: {
+              jobNumber: true,
+              client: { select: { fullName: true, phone: true } },
+            },
+          },
+        },
+      },
+      sale: {
+        select: {
+          saleNumber: true,
+          totalAmount: true,
+          paidAmount: true,
+          client: { select: { fullName: true, phone: true } },
         },
       },
     },
@@ -82,6 +91,13 @@ export async function GET(
   const clientName = payment.invoice?.job?.client?.fullName ?? payment.sale?.client?.fullName ?? null;
   const clientPhone = payment.invoice?.job?.client?.phone ?? payment.sale?.client?.phone ?? null;
 
+  const invoiceTotal =
+    payment.invoice?.totalAmount ?? payment.sale?.totalAmount ?? null;
+  const priorPaid = payment.invoice?.paidAmount ?? payment.sale?.paidAmount ?? 0;
+  const balance =
+    invoiceTotal != null ? Math.max(0, invoiceTotal - (priorPaid + payment.amount)) : null;
+  const hasPartPayment = invoiceTotal != null && balance != null && balance > 0;
+
   const element = createElement(PaymentReceiptDocument as never, {
     branding: { ...branding, companyLogoUrl: logoUrl ?? null },
     receiptNumber: receipt.receiptNumber,
@@ -93,6 +109,13 @@ export async function GET(
     receivedBy: payment.createdBy?.name ?? user.name,
     clientName,
     clientPhone,
+    ...(hasPartPayment
+      ? {
+          totalLabel: "Total Amount",
+          totalAmountLabel: formatMoney(invoiceTotal!, currency),
+          balanceLabel: formatMoney(balance!, currency),
+        }
+      : {}),
   });
 
   const pdf = await renderToBuffer(element as never);

@@ -89,18 +89,6 @@ const styles = StyleSheet.create({
     paddingBottom: 3,
     paddingTop: 1,
   },
-  infoRowHighlight: {
-    marginBottom: 5,
-    paddingTop: 3,
-    paddingBottom: 4,
-    paddingHorizontal: 4,
-    border: "1 solid #bfd3ea",
-    borderRadius: 6,
-    backgroundColor: "#f1f7ff",
-  },
-  infoRowGroupGap: {
-    marginTop: 4,
-  },
   infoLabel: {
     fontSize: 7.4,
     fontWeight: 600,
@@ -114,10 +102,6 @@ const styles = StyleSheet.create({
     fontWeight: 700,
     color: "#0f172a",
     textAlign: "right",
-  },
-  infoValueHighlight: {
-    color: "#0f3b7a",
-    fontSize: 9.4,
   },
   section: {
     marginBottom: 7,
@@ -361,12 +345,6 @@ const styles = StyleSheet.create({
     fontWeight: 700,
     color: "#0f172a",
   },
-  footer: {
-    marginTop: 1,
-    fontSize: 7.6,
-    color: "#5b6b81",
-    textAlign: "center",
-  },
   footerInline: {
     marginTop: 4,
     paddingTop: 4,
@@ -374,6 +352,59 @@ const styles = StyleSheet.create({
     fontSize: 7.5,
     color: "#5b6b81",
     textAlign: "center",
+  },
+  footerDivider: {
+    borderTopWidth: 1,
+    borderTopColor: "#dbe5f0",
+    marginTop: 12,
+    marginBottom: 10,
+  },
+  footer: { flexDirection: "row", gap: 24 },
+  footerLeft: { flex: 1 },
+  footerRight: { flex: 1 },
+  footerSectionLabel: {
+    fontSize: 7,
+    fontWeight: 700,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    color: "#475569",
+    marginBottom: 4,
+  },
+  footerNoteText: {
+    fontSize: 8,
+    color: "#0f172a",
+    lineHeight: 1.5,
+    marginBottom: 6,
+  },
+  footerTermsText: {
+    fontSize: 8,
+    color: "#0f172a",
+    lineHeight: 1.5,
+    marginBottom: 4,
+  },
+  balanceBoxFooter: {
+    borderWidth: 1,
+    borderColor: "#d6e0eb",
+    borderRadius: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    alignItems: "flex-end",
+    width: "100%",
+    marginTop: 6,
+    backgroundColor: "#f9fbff",
+  },
+  balanceBoxFooterLabel: {
+    fontSize: 7,
+    fontWeight: 700,
+    color: "#6B7280",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    marginBottom: 3,
+  },
+  balanceBoxFooterAmount: {
+    fontSize: 14,
+    fontWeight: 700,
+    color: "#0f3b7a",
   },
 });
 
@@ -494,11 +525,7 @@ export function InvoiceDocument(props: InvoiceDocProps) {
                 <Text style={styles.infoLabel}>Est No:</Text>
                 <Text style={styles.infoValue}>{props.quotationNumber}</Text>
               </View>
-              <View style={[styles.infoRow, styles.infoRowHighlight]}>
-                <Text style={styles.infoLabel}>Balance Due:</Text>
-                <Text style={[styles.infoValue, styles.infoValueHighlight]}>{props.totalAmountPayable}</Text>
-              </View>
-              <View style={[styles.infoRow, styles.infoRowGroupGap]}>
+              <View style={styles.infoRow}>
                 <Text style={styles.infoLabel}>Est Date:</Text>
                 <Text style={styles.infoValue}>{props.dateIssued}</Text>
               </View>
@@ -637,15 +664,34 @@ export function InvoiceDocument(props: InvoiceDocProps) {
           </View>
         )}
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Terms & Conditions</Text>
-          {(props.termsText ?? "")
-            .split("\n")
-            .map((line) => line.trim())
-            .filter(Boolean)
-            .map((line) => (
-              <Text key={line} style={styles.termsItem}>- {line}</Text>
-            ))}
+        <View style={styles.footerDivider} />
+        <View style={styles.footer}>
+          <View style={styles.footerLeft}>
+            {props.footerText ? (
+              <>
+                <Text style={styles.footerSectionLabel}>Notes</Text>
+                <Text style={styles.footerNoteText}>{props.footerText}</Text>
+              </>
+            ) : null}
+            {props.termsText ? (
+              <>
+                <Text style={styles.footerSectionLabel}>Terms & Conditions</Text>
+                {(props.termsText ?? "")
+                  .split("\n")
+                  .map((line) => line.trim())
+                  .filter(Boolean)
+                  .map((line) => (
+                    <Text key={line} style={styles.footerTermsText}>- {line}</Text>
+                  ))}
+              </>
+            ) : null}
+          </View>
+          <View style={styles.footerRight}>
+            <View style={styles.balanceBoxFooter}>
+              <Text style={styles.balanceBoxFooterLabel}>Balance Due</Text>
+              <Text style={styles.balanceBoxFooterAmount}>{props.totalAmountPayable}</Text>
+            </View>
+          </View>
         </View>
 
         <View style={styles.signaturesWrap} wrap={false}>

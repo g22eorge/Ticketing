@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { getTableColumns } from "@/lib/db-utils";
 
 export const defaultBranding = {
   id: "singleton",
@@ -113,14 +114,8 @@ async function ensureRawTable() {
     )
   `);
 
-  // Older installs may have the table without the newer template columns.
-  // Keep this local to branding to avoid hard dependency on /api/admin/db-fix.
-  const cols = await prisma.$queryRaw<Array<{ name: string }>>`
-    PRAGMA table_info('DocumentBrandingSettings')
-  `.catch(() => []);
-  const colSet = new Set(cols.map((c) => c.name));
+  const colSet = await getTableColumns("DocumentBrandingSettings");
 
-  // Allowlist guards against accidental SQL injection if call sites ever change.
   const ADDABLE_COLUMNS: ReadonlySet<string> = new Set([
     "invoiceTemplateKey", "quotationTemplateKey", "jobCardTemplateKey", "receiptTemplateKey",
     "primaryColor", "secondaryColor", "accentColor", "backgroundColor", "surfaceColor", "borderColor",
@@ -129,9 +124,13 @@ async function ensureRawTable() {
   const addColumn = async (name: string, dflt: string) => {
     if (!ADDABLE_COLUMNS.has(name)) return;
     if (colSet.has(name)) return;
-    await prisma.$executeRawUnsafe(
-      `ALTER TABLE "DocumentBrandingSettings" ADD COLUMN "${name}" TEXT DEFAULT ${dflt}`,
-    ).catch(() => {/* ignore if already exists in concurrent request */});
+    try {
+      await prisma.$executeRawUnsafe(
+        `ALTER TABLE "DocumentBrandingSettings" ADD COLUMN "${name}" TEXT DEFAULT ${dflt}`,
+      );
+    } catch {
+      /* ignore if already exists in concurrent request */
+    }
     colSet.add(name);
   };
   await addColumn("invoiceTemplateKey", "'invoice_classic'");

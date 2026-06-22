@@ -44,7 +44,7 @@
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
     "@hookform/resolvers": "^5.2.2",
-    "@libsql/client": "^0.17.3",
+    "@libsql/client": "^0.17.4",
     "@prisma/adapter-libsql": "^7.6.0",
     "@prisma/client": "6.19.3",
     "@react-email/components": "^1.0.12",

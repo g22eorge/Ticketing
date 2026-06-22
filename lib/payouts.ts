@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
+import { getTableColumns } from "@/lib/db-utils";
 
 export type JobPayoutSnapshot = {
   id: string;
@@ -23,10 +24,7 @@ export async function hasJobPayoutColumns() {
   }
 
   try {
-    const columns = await prisma.$queryRaw<Array<{ name: string }>>`
-      PRAGMA table_info("Job")
-    `;
-    const names = new Set(columns.map((column) => column.name));
+    const names = await getTableColumns("Job");
     payoutColumnsPresentCache =
       names.has("externalTechFee") &&
       names.has("externalPaid") &&
