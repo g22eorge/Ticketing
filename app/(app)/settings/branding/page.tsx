@@ -132,8 +132,16 @@ export default async function BrandingPage({
 }: {
   searchParams: Promise<SearchParams>;
 }) {
-  const { user, orgId } = await requireOrgSession();
-  if (!can.manageUsers(user)) {
+  let sessionUser: Awaited<ReturnType<typeof requireOrgSession>>["user"] | null = null;
+  let orgId: string | null = null;
+  try {
+    const { user, orgId: sid } = await requireOrgSession();
+    sessionUser = user;
+    orgId = sid;
+  } catch {
+    redirect("/login");
+  }
+  if (!sessionUser || !orgId || !can.manageUsers(sessionUser)) {
     redirect("/dashboard");
   }
 
@@ -150,8 +158,13 @@ export default async function BrandingPage({
   } catch {
     preview = null;
   }
-  const org = await prisma.organization.findUnique({ where: { id: orgId }, select: { plan: true } }).catch(() => null);
-  const plan = org?.plan ?? "STARTER";
+  let orgPlan: { plan: import("@prisma/client").OrgPlan } | null = null;
+  try {
+    orgPlan = await prisma.organization.findUnique({ where: { id: orgId }, select: { plan: true } });
+  } catch {
+    orgPlan = null;
+  }
+  const plan = orgPlan?.plan ?? "STARTER";
 
   let invoiceTemplates: { allowed: import("@/lib/pdf/templates").TemplateDef[]; locked: import("@/lib/pdf/templates").TemplateDef[] };
   let quotationTemplates: typeof invoiceTemplates;
