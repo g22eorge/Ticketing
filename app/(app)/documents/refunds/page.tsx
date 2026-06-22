@@ -3,7 +3,6 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { OutboundMessageType, type PaymentMethod } from "@prisma/client";
 import { Prisma } from "@prisma/client";
-import { Plus, X, CircleDollarSign } from "lucide-react";
 
 import { formatMoney, formatMoneyCompact, normalizeCurrency } from "@/lib/currency";
 import { can } from "@/lib/permissions";
@@ -341,7 +340,9 @@ export default async function RefundsPage({
           </div>
           {["ADMIN", "OPS", "MANAGER", "FINANCE"].includes(user.role) && (
             <Link href="/documents/refunds?new=1" className="btn-premium inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[12px]">
-              <Plus className="h-3.5 w-3.5" aria-hidden="true" /> New Refund
+              <svg viewBox="0 0 20 20" fill="currentColor" className="h-3.5 w-3.5" aria-hidden="true">
+                  <path d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z" />
+                </svg> New Refund
             </Link>
           )}
         </div>
@@ -371,7 +372,9 @@ export default async function RefundsPage({
               <p className="text-[13px] text-[var(--ink-muted)]">Record cash-out against an invoice, sale, or credit note.</p>
             </div>
             <Link href="/documents/refunds" className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--line)] px-3 py-1.5 text-[13px] font-semibold text-[var(--ink-muted)] hover:text-[var(--ink)]">
-              <X className="h-3.5 w-3.5" aria-hidden="true" /> Cancel
+              <svg viewBox="0 0 20 20" fill="currentColor" className="h-3.5 w-3.5" aria-hidden="true">
+                  <path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" />
+                </svg> Cancel
             </Link>
           </div>
           {hasRefundSources ? (
@@ -464,7 +467,9 @@ export default async function RefundsPage({
             </div>
             <div className="flex justify-end gap-2 sm:col-span-2 lg:col-span-3">
               <button type="submit" className="inline-flex items-center gap-1.5 h-9 rounded-lg bg-[var(--accent)] px-5 text-sm font-semibold text-white hover:opacity-90">
-                <CircleDollarSign className="h-3.5 w-3.5" aria-hidden="true" /> Issue Refund
+                <svg viewBox="0 0 20 20" fill="currentColor" className="h-3.5 w-3.5" aria-hidden="true">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16ZM8.732 5.968a.75.75 0 0 1 1.036.036l.036.036a.75.75 0 0 1-1.072 1.048 1.25 1.25 0 1 0 1.71 1.784.75.75 0 1 1 1.06 1.061 2.75 2.75 0 1 1-3.89-3.89.75.75 0 0 1 .12-.075Zm2.168 7.064a.75.75 0 0 1-1.036-.036l-.036-.036a.75.75 0 0 1 1.072-1.048 1.25 1.25 0 1 0-1.71-1.784.75.75 0 1 1-1.06-1.061 2.75 2.75 0 1 1 3.89 3.89.75.75 0 0 1-.12.075Z" clipRule="evenodd" />
+                  </svg> Issue Refund
               </button>
             </div>
           </form>

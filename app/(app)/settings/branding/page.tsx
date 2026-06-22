@@ -4,7 +4,6 @@ import path from "node:path";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { CheckCircle2, ArrowRight } from "lucide-react";
 
 import { defaultBranding, getDocumentBrandingSettings, saveDocumentBrandingSettings } from "@/lib/document-branding";
 import { sanitizeOptionalText, sanitizeText } from "@/lib/sanitize";
@@ -139,20 +138,48 @@ export default async function BrandingPage({
   }
 
   const params = await searchParams;
-  const settings = await getDocumentBrandingSettings(orgId);
-  const preview = await resolveLogoPreview(settings.companyLogoUrl);
+  let settings;
+  try {
+    settings = await getDocumentBrandingSettings(orgId);
+  } catch {
+    settings = defaultBranding;
+  }
+  let preview: string | null = null;
+  try {
+    preview = await resolveLogoPreview(settings.companyLogoUrl);
+  } catch {
+    preview = null;
+  }
   const org = await prisma.organization.findUnique({ where: { id: orgId }, select: { plan: true } }).catch(() => null);
   const plan = org?.plan ?? "STARTER";
 
-  const invoiceTemplates = splitTemplatesByPlan("INVOICE", plan);
-  const quotationTemplates = splitTemplatesByPlan("QUOTATION", plan);
-  const jobCardTemplates = splitTemplatesByPlan("JOB_CARD", plan);
-  const receiptTemplates = splitTemplatesByPlan("RECEIPT", plan);
-
-  const selectedInvoiceKey = resolveTemplateKey({ kind: "INVOICE", requestedKey: (settings as unknown as { invoiceTemplateKey?: string | null }).invoiceTemplateKey, plan });
-  const selectedQuoteKey = resolveTemplateKey({ kind: "QUOTATION", requestedKey: (settings as unknown as { quotationTemplateKey?: string | null }).quotationTemplateKey, plan });
-  const selectedJobCardKey = resolveTemplateKey({ kind: "JOB_CARD", requestedKey: (settings as unknown as { jobCardTemplateKey?: string | null }).jobCardTemplateKey, plan });
-  const selectedReceiptKey = resolveTemplateKey({ kind: "RECEIPT", requestedKey: (settings as unknown as { receiptTemplateKey?: string | null }).receiptTemplateKey, plan });
+  let invoiceTemplates: { allowed: import("@/lib/pdf/templates").TemplateDef[]; locked: import("@/lib/pdf/templates").TemplateDef[] };
+  let quotationTemplates: typeof invoiceTemplates;
+  let jobCardTemplates: typeof invoiceTemplates;
+  let receiptTemplates: typeof invoiceTemplates;
+  let selectedInvoiceKey: string;
+  let selectedQuoteKey: string;
+  let selectedJobCardKey: string;
+  let selectedReceiptKey: string;
+  try {
+    invoiceTemplates = splitTemplatesByPlan("INVOICE", plan);
+    quotationTemplates = splitTemplatesByPlan("QUOTATION", plan);
+    jobCardTemplates = splitTemplatesByPlan("JOB_CARD", plan);
+    receiptTemplates = splitTemplatesByPlan("RECEIPT", plan);
+    selectedInvoiceKey = resolveTemplateKey({ kind: "INVOICE", requestedKey: (settings as unknown as { invoiceTemplateKey?: string | null }).invoiceTemplateKey, plan });
+    selectedQuoteKey = resolveTemplateKey({ kind: "QUOTATION", requestedKey: (settings as unknown as { quotationTemplateKey?: string | null }).quotationTemplateKey, plan });
+    selectedJobCardKey = resolveTemplateKey({ kind: "JOB_CARD", requestedKey: (settings as unknown as { jobCardTemplateKey?: string | null }).jobCardTemplateKey, plan });
+    selectedReceiptKey = resolveTemplateKey({ kind: "RECEIPT", requestedKey: (settings as unknown as { receiptTemplateKey?: string | null }).receiptTemplateKey, plan });
+  } catch {
+    invoiceTemplates = { allowed: templatesForAll("INVOICE"), locked: [] };
+    quotationTemplates = { allowed: templatesForAll("QUOTATION"), locked: [] };
+    jobCardTemplates = { allowed: templatesForAll("JOB_CARD"), locked: [] };
+    receiptTemplates = { allowed: templatesForAll("RECEIPT"), locked: [] };
+    selectedInvoiceKey = "invoice_classic";
+    selectedQuoteKey = "quote_classic";
+    selectedJobCardKey = "job_card_classic";
+    selectedReceiptKey = "receipt_classic";
+  }
   const quotePreview = renderQuotePreview(
     settings.quotePrefix,
     settings.quoteFormat,
@@ -200,7 +227,11 @@ export default async function BrandingPage({
     const logoUrl = `/${targetName}`;
 
     const bytes = Buffer.from(await file.arrayBuffer());
-    await writeFile(targetPath, bytes);
+    try {
+      await writeFile(targetPath, bytes);
+    } catch {
+      redirect("/settings/branding?error=Could+not+save+logo+on+server");
+    }
 
     await saveDocumentBrandingSettings(uploadOrgId, {
       ...existingSettings,
@@ -350,7 +381,7 @@ export default async function BrandingPage({
           <div className="mb-3 flex items-center justify-between">
             <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Document templates</p>
             <a href="/documents/templates" className="inline-flex items-center gap-1 text-[12px] font-medium text-[var(--accent)] hover:underline">
-              Manage all templates <ArrowRight className="h-3 w-3" />
+              Manage all templates <svg viewBox="0 0 20 20" fill="currentColor" className="h-3 w-3" aria-hidden="true"><path fillRule="evenodd" d="M3 10a.75.75 0 0 1 .75-.75h10.638L10.23 5.29a.75.75 0 1 1 1.04-1.08l5.5 5.25a.75.75 0 0 1 0 1.08l-5.5 5.25a.75.75 0 1 1-1.04-1.08l4.158-3.96H3.75A.75.75 0 0 1 3 10Z" clipRule="evenodd" /></svg>
             </a>
           </div>
           <p className="mb-4 text-[13px] text-[var(--ink-muted)]">Available templates depend on your plan ({planLabel(plan)}). Click <strong>Set as default</strong> to change the active template.</p>
@@ -384,7 +415,7 @@ export default async function BrandingPage({
                         >
                           <span className={`h-2 w-2 flex-shrink-0 rounded-full ${t.previewColor}`} />
                           <span className={isActive ? "text-[var(--accent)]" : "text-[var(--ink-muted)]"}>{t.label}</span>
-                          {isActive && <CheckCircle2 className="h-3 w-3 text-[var(--accent)]" />}
+                          {isActive && <svg viewBox="0 0 20 20" fill="currentColor" className="h-3 w-3 text-[var(--accent)]" aria-hidden="true"><path fillRule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z" clipRule="evenodd" /></svg>}
                         </div>
                       );
                     })}

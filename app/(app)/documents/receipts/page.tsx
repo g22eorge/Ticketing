@@ -2,7 +2,6 @@ export const dynamic = "force-dynamic";
 
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { CircleDollarSign } from "lucide-react";
 
 import { prisma } from "@/lib/prisma";
 import { requireOrgSession } from "@/lib/org-context";
@@ -86,7 +85,9 @@ export default async function ReceiptsPage({
           href="/documents/new?type=receipt"
           className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--brand)] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:brightness-110"
         >
-          <CircleDollarSign className="h-4 w-4" aria-hidden="true" /> Record Payment
+          <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4" aria-hidden="true">
+            <path fillRule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16ZM8.732 5.968a.75.75 0 0 1 1.036.036l.036.036a.75.75 0 0 1-1.072 1.048 1.25 1.25 0 1 0 1.71 1.784.75.75 0 1 1 1.06 1.061 2.75 2.75 0 1 1-3.89-3.89.75.75 0 0 1 .12-.075Zm2.168 7.064a.75.75 0 0 1-1.036-.036l-.036-.036a.75.75 0 0 1 1.072-1.048 1.25 1.25 0 1 0-1.71-1.784.75.75 0 1 1-1.06-1.061 2.75 2.75 0 1 1 3.89 3.89.75.75 0 0 1-.12.075Z" clipRule="evenodd" />
+          </svg> Record Payment
         </Link>
       }
       searchPlaceholder="Search receipts..."

@@ -1,6 +1,6 @@
 "use client";
 
-import dynamic from "next/dynamic";
+import { AppSidebar } from "@/components/layout/AppSidebar";
 import type { Role } from "@prisma/client";
 
 type SidebarProps = {
@@ -9,28 +9,9 @@ type SidebarProps = {
   isPlatformAdmin?: boolean;
   enabledModules?: Set<string>;
   orgName?: string | null;
-  badges?: {
-    receivedJobs?: number;
-    inventory?: number;
-    procurement?: number;
-    purchaseRequests?: number;
-    purchaseOrders?: number;
-    paymentFollowups?: number;
-    pendingRequests?: number;
-    complaints?: number;
-  };
+  badges?: Record<string, number | undefined>;
 };
 
-const AppSidebar = dynamic(
-  () => import("@/components/layout/AppSidebar").then((mod) => mod.AppSidebar),
-  {
-    ssr: false,
-    loading: () => (
-      <aside className="hidden lg:sticky lg:top-0 lg:flex lg:h-screen lg:w-64 lg:flex-col bg-[var(--sidebar-bg)] border-r border-[var(--line)]" />
-    ),
-  },
-);
-
-export function ClientOnlySidebar(props: SidebarProps) {
-  return <AppSidebar {...props} />;
+export function ClientOnlySidebar({ role, permissions, isPlatformAdmin, orgName }: SidebarProps) {
+  return <AppSidebar role={role} permissions={permissions} isPlatformAdmin={isPlatformAdmin} orgName={orgName} />;
 }

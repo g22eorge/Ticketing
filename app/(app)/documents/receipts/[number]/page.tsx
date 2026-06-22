@@ -2,7 +2,6 @@ export const dynamic = "force-dynamic";
 
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
-import { ChevronLeft } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { requireOrgSession } from "@/lib/org-context";
 import { can } from "@/lib/permissions";
@@ -56,7 +55,9 @@ export default async function ReceiptDetailPage({
     <div className="space-y-5">
       <div className="flex items-center gap-1.5 text-xs font-medium text-[var(--ink-muted)]">
         <Link href="/documents/receipts" className="inline-flex items-center gap-1 transition hover:text-[var(--ink)]">
-          <ChevronLeft className="h-3.5 w-3.5" aria-hidden="true" /> All Receipts
+          <svg viewBox="0 0 20 20" fill="currentColor" className="h-3.5 w-3.5" aria-hidden="true">
+              <path fillRule="evenodd" d="M11.78 5.22a.75.75 0 0 1 0 1.06L8.06 10l3.72 3.72a.75.75 0 1 1-1.06 1.06l-4.25-4.25a.75.75 0 0 1 0-1.06l4.25-4.25a.75.75 0 0 1 1.06 0Z" clipRule="evenodd" />
+            </svg> All Receipts
         </Link>
       </div>
       <ReceiptDetailView

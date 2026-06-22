@@ -2,7 +2,6 @@ export const dynamic = "force-dynamic";
 
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { List, ArrowRight } from "lucide-react";
 
 import { getAppCurrency } from "@/lib/currency";
 import { getDocumentBrandingSettings } from "@/lib/document-branding";
@@ -87,7 +86,9 @@ export default async function NewDocumentPage({
             <p className="mt-1 text-sm text-[var(--ink-muted)]">{selected.description}</p>
           </div>
           <Link href={selected.listHref} className="inline-flex items-center gap-1.5 justify-center rounded-lg border border-[var(--line)] px-3 py-2 text-sm font-semibold text-[var(--ink-muted)] transition hover:text-[var(--ink)]">
-            <List className="h-4 w-4" aria-hidden="true" /> View {selected.label}s
+            <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4" aria-hidden="true">
+              <path fillRule="evenodd" d="M2 4.75A.75.75 0 0 1 2.75 4h14.5a.75.75 0 0 1 0 1.5H2.75A.75.75 0 0 1 2 4.75Zm4 5A.75.75 0 0 1 6.75 9h9.5a.75.75 0 0 1 0 1.5H6.75A.75.75 0 0 1 6 9.75Zm1.5 2.5a.75.75 0 0 0 0 1.5h5.5a.75.75 0 0 0 0-1.5h-5.5Z" clipRule="evenodd" />
+            </svg> View {selected.label}s
           </Link>
         </div>
       </div>
@@ -140,7 +141,9 @@ export default async function NewDocumentPage({
               href={selected.href}
               className="btn-premium inline-flex items-center justify-center gap-1.5 rounded-lg px-4 py-2.5 text-sm font-bold"
             >
-              <ArrowRight className="h-4 w-4" aria-hidden="true" /> {selected.cta}
+              <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4" aria-hidden="true">
+              <path fillRule="evenodd" d="M3 10a.75.75 0 0 1 .75-.75h10.638L10.23 5.29a.75.75 0 1 1 1.04-1.08l5.5 5.25a.75.75 0 0 1 0 1.08l-5.5 5.25a.75.75 0 1 1-1.04-1.08l4.158-3.96H3.75A.75.75 0 0 1 3 10Z" clipRule="evenodd" />
+            </svg> {selected.cta}
             </Link>
           </div>
         </div>

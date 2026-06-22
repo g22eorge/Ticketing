@@ -2,7 +2,6 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { OutboundMessageType, type DeliveryMethod } from "@prisma/client";
-import { ArrowRight, Download } from "lucide-react";
 
 import { can } from "@/lib/permissions";
 import { formatMoney } from "@/lib/currency";
@@ -516,10 +515,15 @@ export default async function DeliveryNotesPage({
                 <td className="px-3 py-2">
                   <div className="flex items-center justify-end gap-1.5">
                     <Link href={n.invoice?.job ? `/jobs/${n.invoice.job.id}` : n.sale ? `/pos/${n.sale.id}` : "/documents/delivery-notes"} title="View source" className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)] transition hover:border-[var(--accent)]/50 hover:text-[var(--accent)]">
-                      <ArrowRight className="h-3 w-3" aria-hidden="true" />
+                      <svg viewBox="0 0 20 20" fill="currentColor" className="h-3 w-3" aria-hidden="true">
+                          <path fillRule="evenodd" d="M3 10a.75.75 0 0 1 .75-.75h10.638L10.23 5.29a.75.75 0 1 1 1.04-1.08l5.5 5.25a.75.75 0 0 1 0 1.08l-5.5 5.25a.75.75 0 1 1-1.04-1.08l4.158-3.96H3.75A.75.75 0 0 1 3 10Z" clipRule="evenodd" />
+                        </svg>
                     </Link>
                     <a href={`/api/delivery-notes/${n.id}`} target="_blank" rel="noreferrer" title="Download PDF" className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-[var(--accent)]/40 bg-[var(--accent)]/10 text-[var(--accent)] transition hover:bg-[var(--accent)]/20">
-                      <Download className="h-3 w-3" aria-hidden="true" />
+                      <svg viewBox="0 0 20 20" fill="currentColor" className="h-3 w-3" aria-hidden="true">
+                          <path d="M10.75 2.75a.75.75 0 0 0-1.5 0v8.614L6.295 8.235a.75.75 0 1 0-1.09 1.03l4.25 4.5a.75.75 0 0 0 1.09 0l4.25-4.5a.75.75 0 0 0-1.09-1.03l-2.955 3.129V2.75Z" />
+                          <path d="M3.5 12.75a.75.75 0 0 1-1.5 0v-6A2.75 2.75 0 0 1 4.75 3h10.5A2.75 2.75 0 0 1 18 6.75v6a.75.75 0 0 1-1.5 0v-6a1.25 1.25 0 0 0-1.25-1.25H4.75a1.25 1.25 0 0 0-1.25 1.25v6Z" />
+                        </svg>
                     </a>
                     <RowActionsMenu label="Delivery note actions">
                       <div className="py-1 text-left">

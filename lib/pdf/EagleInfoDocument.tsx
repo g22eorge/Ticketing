@@ -97,7 +97,7 @@ const s = StyleSheet.create({
   totalRowBold: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 6 },
   totalLabelBold: { fontSize: 10, fontFamily: "Helvetica-Bold" },
   totalValueBold: { fontSize: 10, fontFamily: "Helvetica-Bold", textAlign: "right" },
-  balanceDueRow: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 6, borderTopWidth: 1.5, borderTopColor: INK, marginTop: 2 },
+  balanceBoxFooter: { borderWidth: 1, borderColor: DIVIDER, borderRadius: 4, paddingHorizontal: 10, paddingVertical: 7, alignItems: "flex-end", width: "100%", marginTop: 8 },
 
   // ── Footer ──
   footerDivider: { borderTopWidth: 1, borderTopColor: DIVIDER, marginTop: 20, marginBottom: 14 },
@@ -269,7 +269,7 @@ export function EagleInfoDocument(props: EagleInfoDocumentProps) {
           ))}
         </View>
 
-        {/* ── Totals ── */}
+        {/* ── Totals ──Hall only Sub Total, VAT, Total (no Balance Due) ── */}
         <View style={s.totalsWrap}>
           {subTotal ? (
             <View style={s.totalRow}>
@@ -287,22 +287,12 @@ export function EagleInfoDocument(props: EagleInfoDocumentProps) {
             <Text style={s.totalLabelBold}>{totalLabel}</Text>
             <Text style={s.totalValueBold}>{totalAmount}</Text>
           </View>
-          {paymentMade ? (
-            <View style={s.totalRow}>
-              <Text style={s.totalLabel}>Payment Made</Text>
-              <Text style={s.totalValue}>{paymentMade}</Text>
-            </View>
-          ) : null}
-          <View style={s.balanceDueRow}>
-            <Text style={s.totalLabelBold}>Balance Due</Text>
-            <Text style={s.totalValueBold}>{balanceDue}</Text>
-          </View>
         </View>
 
         {/* ── Footer ── */}
         <View style={s.footerDivider} />
         <View style={s.footer}>
-          {/* Left: notes + payment to */}
+          {/* Left: notes + payment to + terms */}
           <View style={s.footerLeft}>
             {notes ? (
               <>
@@ -319,15 +309,21 @@ export function EagleInfoDocument(props: EagleInfoDocumentProps) {
                 ))}
               </>
             ) : null}
+            {termsText ? (
+              <>
+                <Text style={s.footerLabel}>Terms &amp; Conditions</Text>
+                <Text style={s.footerText}>{termsText}</Text>
+              </>
+            ) : null}
           </View>
 
-          {/* Right: terms */}
-          {termsText ? (
-            <View style={s.footerRight}>
-              <Text style={s.footerLabel}>Terms &amp; Conditions</Text>
-              <Text style={s.footerText}>{termsText}</Text>
+          {/* Right: balance due */}
+          <View style={s.footerRight}>
+            <View style={s.balanceBoxFooter}>
+              <Text style={s.balanceLabel}>Balance Due</Text>
+              <Text style={s.balanceAmount}>{balanceDue}</Text>
             </View>
-          ) : null}
+          </View>
         </View>
 
       </Page>

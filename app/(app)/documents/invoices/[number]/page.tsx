@@ -2,7 +2,6 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { Prisma, InvoiceStatus } from "@prisma/client";
 import { revalidatePath } from "next/cache";
-import { Download, CheckCircle2, ArrowLeft, ArrowRight, CircleDollarSign, Save, ExternalLink } from "lucide-react";
 
 import { CopyButton } from "@/components/shared/CopyButton";
 import { StatusBadge, type BadgeVariant } from "@/components/ui/StatusBadge";
@@ -155,14 +154,19 @@ export default async function InvoiceDetailPage({
               rel="noreferrer"
               className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-4 py-2 text-[12px] font-bold text-[var(--ink)] transition hover:border-[var(--accent)]/40"
             >
-              <Download className="h-3.5 w-3.5" aria-hidden="true" /> Download PDF
+              <svg viewBox="0 0 20 20" fill="currentColor" className="h-3.5 w-3.5" aria-hidden="true">
+                  <path d="M10.75 2.75a.75.75 0 0 0-1.5 0v8.614L6.295 8.235a.75.75 0 1 0-1.09 1.03l4.25 4.5a.75.75 0 0 0 1.09 0l4.25-4.5a.75.75 0 0 0-1.09-1.03l-2.955 3.129V2.75Z" />
+                  <path d="M3.5 12.75a.75.75 0 0 1-1.5 0v-6A2.75 2.75 0 0 1 4.75 3h10.5A2.75 2.75 0 0 1 18 6.75v6a.75.75 0 0 1-1.5 0v-6a1.25 1.25 0 0 0-1.25-1.25H4.75a1.25 1.25 0 0 0-1.25 1.25v6Z" />
+                </svg> Download PDF
             </a>
             <CopyButton text={pdfUrl} label="Copy PDF link" title="Copy invoice PDF link" />
             {invoice.status === "DRAFT" && can.createInvoices(user) && (
               <form action={updateStatusAction} className="inline-flex items-center gap-1">
                 <input type="hidden" name="status" value="ISSUED" />
                 <button type="submit" className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-2 text-[12px] font-bold text-emerald-700 transition hover:bg-emerald-500/20 dark:text-emerald-400">
-                  <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" /> Confirm Invoice
+                  <svg viewBox="0 0 20 20" fill="currentColor" className="h-3.5 w-3.5" aria-hidden="true">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z" clipRule="evenodd" />
+                  </svg> Confirm Invoice
                 </button>
               </form>
             )}
@@ -178,7 +182,9 @@ export default async function InvoiceDetailPage({
                   <option value="VOID">Void</option>
                 </select>
                 <button type="submit" className="inline-flex items-center gap-1 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-[12px] font-bold text-[var(--ink)] transition hover:border-[var(--accent)]/40">
-                  <ArrowRight className="h-3 w-3" aria-hidden="true" /> Go
+                  <svg viewBox="0 0 20 20" fill="currentColor" className="h-3 w-3" aria-hidden="true">
+                    <path fillRule="evenodd" d="M3 10a.75.75 0 0 1 .75-.75h10.638L10.23 5.29a.75.75 0 1 1 1.04-1.08l5.5 5.25a.75.75 0 0 1 0 1.08l-5.5 5.25a.75.75 0 1 1-1.04-1.08l4.158-3.96H3.75A.75.75 0 0 1 3 10Z" clipRule="evenodd" />
+                  </svg> Go
                 </button>
               </form>
             )}
@@ -186,7 +192,9 @@ export default async function InvoiceDetailPage({
               href="/documents/invoices"
               className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--line)] px-4 py-2 text-[12px] font-bold text-[var(--ink-muted)] transition hover:text-[var(--ink)]"
             >
-              <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" /> Back to invoices
+              <svg viewBox="0 0 20 20" fill="currentColor" className="h-3.5 w-3.5" aria-hidden="true">
+                <path fillRule="evenodd" d="M17 10a.75.75 0 0 1-.75.75H5.612l4.158 3.96a.75.75 0 1 1-1.04 1.08l-5.5-5.25a.75.75 0 0 1 0-1.08l5.5-5.25a.75.75 0 0 1 1.04 1.08L5.612 9.25H16.25A.75.75 0 0 1 17 10Z" clipRule="evenodd" />
+              </svg> Back to invoices
             </Link>
           </div>
         </div>
@@ -248,7 +256,10 @@ export default async function InvoiceDetailPage({
                           <form id={`inv-item-${line.id}`} action={updateLineAction} className="inline">
                             <input type="hidden" name="lineId" value={line.id} />
                             <button type="submit" className="inline-flex items-center gap-1 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1 text-[11px] font-semibold text-[var(--ink)] transition hover:border-[var(--accent)]/50 hover:text-[var(--accent)]">
-                              <Save className="h-3 w-3" aria-hidden="true" /> Save
+                              <svg viewBox="0 0 20 20" fill="currentColor" className="h-3 w-3" aria-hidden="true">
+                                  <path d="M5 3a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2H5Zm0 2h10v10H5V5Z" />
+                                  <path d="M7 7h6v1H7V7Zm0 3h6v1H7v-1Z" />
+                                </svg> Save
                             </button>
                           </form>
                         </td>
@@ -299,7 +310,10 @@ export default async function InvoiceDetailPage({
                   placeholder="Add notes..."
                 />
                 <button type="submit" className="btn-premium-secondary inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-[12px] font-semibold">
-                  <Save className="h-3.5 w-3.5" aria-hidden="true" /> Save Notes
+                  <svg viewBox="0 0 20 20" fill="currentColor" className="h-3.5 w-3.5" aria-hidden="true">
+                    <path d="M5 3a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2H5Zm0 2h10v10H5V5Z" />
+                    <path d="M7 7h6v1H7V7Zm0 3h6v1H7v-1Z" />
+                  </svg> Save Notes
                 </button>
               </form>
             </details>
@@ -325,7 +339,9 @@ export default async function InvoiceDetailPage({
             </div>
             {invoice.client ? (
               <Link href={`/clients/${invoice.client.id}`} className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-[var(--accent)] hover:underline">
-                <ExternalLink className="h-3 w-3" aria-hidden="true" /> Open client
+                <svg viewBox="0 0 20 20" fill="currentColor" className="h-3 w-3" aria-hidden="true">
+                  <path fillRule="evenodd" d="M4.5 5.5a.5.5 0 0 1 .5-.5h8a.5.5 0 0 1 .5.5v8a.5.5 0 0 1-.5.5H5a.5.5 0 0 1-.5-.5v-3.5a.5.5 0 0 0-.5-.5H5Zm7 1.5a.5.5 0 0 1 .5-.5H14a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V9h-2.5a.5.5 0 0 1-.5-.5h-1.5a.5.5 0 0 1-.5-.5V5a.5.5 0 0 1 .5-.5h3.5Z" clipRule="evenodd" />
+                </svg> Open client
               </Link>
             ) : null}
           </div>
@@ -355,7 +371,9 @@ export default async function InvoiceDetailPage({
                 href={`/tickets/${invoice.ticket.id}/create-receipt`}
                 className="btn-premium mt-4 flex w-full items-center justify-center gap-1.5 rounded-lg px-4 py-2.5 text-xs font-bold"
               >
-                <CircleDollarSign className="h-3.5 w-3.5" aria-hidden="true" /> Record Payment
+                <svg viewBox="0 0 20 20" fill="currentColor" className="h-3.5 w-3.5" aria-hidden="true">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16ZM8.732 5.968a.75.75 0 0 1 1.036.036l.036.036a.75.75 0 0 1-1.072 1.048 1.25 1.25 0 1 0 1.71 1.784.75.75 0 1 1 1.06 1.061 2.75 2.75 0 1 1-3.89-3.89.75.75 0 0 1 .12-.075Zm2.168 7.064a.75.75 0 0 1-1.036-.036l-.036-.036a.75.75 0 0 1 1.072-1.048 1.25 1.25 0 1 0-1.71-1.784.75.75 0 1 1-1.06-1.061 2.75 2.75 0 1 1 3.89 3.89.75.75 0 0 1-.12.075Z" clipRule="evenodd" />
+                </svg> Record Payment
               </Link>
             ) : null}
           </div>

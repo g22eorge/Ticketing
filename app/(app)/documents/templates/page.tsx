@@ -1,6 +1,5 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { Eye, Lock, CheckCircle2 } from "lucide-react";
 
 import { getDocumentBrandingSettings } from "@/lib/document-branding";
 import { can } from "@/lib/permissions";
@@ -236,14 +235,18 @@ export default async function DocumentTemplatesPage() {
                           rel="noreferrer"
                           className="flex w-full items-center justify-center gap-1 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-2 py-1 text-[13px] font-medium text-[var(--ink-muted)] transition hover:border-[var(--accent)]/40 hover:text-[var(--ink)]"
                         >
-                          <Eye className="h-3 w-3" aria-hidden="true" />
-                          Preview PDF
+                          <svg viewBox="0 0 20 20" fill="currentColor" className="h-3 w-3" aria-hidden="true">
+                            <path d="M10 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Zm3.5 0a7 7 0 1 0-1.856 4.166m.764-4.748A5.49 5.49 0 0 0 9.754 10a5.49 5.49 0 0 0-2.154 1.918m3.256 0a7 7 0 0 0-1.856-4.166m3.256 4.748A6 6 0 0 1 10 17.5a6 6 0 0 1-3.256-2.082" />
+                            <path d="M10 8a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z" />
+                          </svg> Preview PDF
                         </a>
 
                         {/* Set as default / locked / active */}
                         {isAllowed ? (
                           isCurrent ? (
-                            <span className="inline-flex items-center gap-1 text-center text-[13px] text-[var(--ink-muted)]"><CheckCircle2 className="h-3.5 w-3.5 text-green-600" aria-hidden="true" /> Active</span>
+                            <span className="inline-flex items-center gap-1 text-center text-[13px] text-[var(--ink-muted)]"><svg viewBox="0 0 20 20" fill="currentColor" className="h-3.5 w-3.5 text-green-600" aria-hidden="true">
+                                <path fillRule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z" clipRule="evenodd" />
+                              </svg> Active</span>
                           ) : (
                             <form action={setTemplateAction}>
                               <input type="hidden" name="key"  value={t.key} />
@@ -266,7 +269,9 @@ export default async function DocumentTemplatesPage() {
                       {/* Lock overlay for locked templates */}
                       {!isAllowed ? (
                         <div className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-xl bg-[var(--panel)]/60">
-                          <Lock className="h-6 w-6 text-[var(--ink-muted)]/50" aria-hidden="true" />
+                          <svg viewBox="0 0 20 20" fill="currentColor" className="h-6 w-6 text-[var(--ink-muted)]/50" aria-hidden="true">
+                            <path fillRule="evenodd" d="M10 1a4.5 4.5 0 0 0-4.5 4.5V9H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2h-.5V5.5A4.5 4.5 0 0 0 10 1Zm3 8V5.5a3 3 0 1 0-6 0V9h6Z" clipRule="evenodd" />
+                          </svg>
                         </div>
                       ) : null}
                     </div>

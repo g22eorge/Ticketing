@@ -270,7 +270,7 @@ export default async function UsersPage({
   const savedFlag = (await searchParams).saved === "1";
 
   return (
-    <div className="min-w-0 space-y-5">
+    <div className="min-w-0 min-h-screen relative space-y-5">
       {/* Header */}
       <div className="flex items-end justify-between gap-3">
         <div>
@@ -282,7 +282,7 @@ export default async function UsersPage({
           href={showAdd ? "/settings/users" : "/settings/users?add=1"}
           className="btn-premium inline-flex items-center rounded-lg px-4 py-2 text-sm font-semibold"
         >
-          <Plus className="mr-1.5 h-4 w-4" />
+          <svg viewBox="0 0 20 20" fill="currentColor" className="mr-1.5 h-4 w-4" aria-hidden="true"><path d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z" /></svg>
           {showAdd ? "Done" : "Add user"}
         </Link>
       </div>
@@ -344,46 +344,45 @@ export default async function UsersPage({
         </section>
       )}
 
-      {/* Main content — relative container for overlay */}
-      <div className="relative">
-        {/* User list — always full width */}
-        <section className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
-          <div className="flex items-center gap-2 border-b border-[var(--line)] px-3 py-2">
-            <Search className="h-3.5 w-3.5 shrink-0 text-[var(--ink-muted)]" />
-            <form method="GET" className="min-w-0 flex-1">
-              <input name="q" defaultValue={query} placeholder="Search…" className="min-w-0 w-full rounded border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1 text-[13px] outline-none focus:border-[var(--accent)]/50" />
-            </form>
-          </div>
-          <div className="divide-y divide-[var(--line)]">
-            {filtered.length === 0 ? (
-              <p className="px-3 py-6 text-center text-[13px] text-[var(--ink-muted)]">No users found.</p>
-            ) : (
-              filtered.map((u) => (
-                <Link
-                  key={u.id}
-                  href={`/settings/users?userId=${u.id}${query ? `&q=${encodeURIComponent(query)}` : ""}`}
-                  className={`flex items-center gap-3 px-3 py-2.5 transition ${selectedUser?.id === u.id ? "bg-[var(--accent)]/8" : "hover:bg-[var(--panel-strong)]/40"}`}
-                >
-                  <span className={`mt-0.5 h-2 w-2 shrink-0 rounded-full ${u.isActive ? "bg-emerald-400" : "bg-[var(--line)]"}`} />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-[13px] font-medium text-[var(--ink)]">{u.name}</p>
-                    <p className="truncate text-[12px] text-[var(--ink-muted)]">{roleLabel(u.role)}</p>
-                  </div>
-                </Link>
-              ))
-            )}
-          </div>
-        </section>
+      {/* User list — always full width */}
+      <section className="panel-shadow overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
+        <div className="flex items-center gap-2 border-b border-[var(--line)] px-3 py-2">
+          <svg viewBox="0 0 20 20" fill="currentColor" className="h-3.5 w-3.5 shrink-0 text-[var(--ink-muted)]" aria-hidden="true"><path fillRule="evenodd" d="M9 3.5a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11ZM3 9a6 6 0 1 1 12 0A6 6 0 0 1 3 9Zm9.78 8.22a.75.75 0 0 0-1.06-1.06l-3.25 3.22V8.5a.75.75 0 0 0-1.5 0v5.09l-3.22-3.22a.75.75 0 1 0-1.06 1.06l3.75 3.75a.75.75 0 0 0 1.06 0l3.78-3.75Z" clipRule="evenodd" /></svg>
+          <form method="GET" className="min-w-0 flex-1">
+            <input name="q" defaultValue={query} placeholder="Search…" className="min-w-0 w-full rounded border border-[var(--line)] bg-[var(--panel-strong)] px-2.5 py-1 text-[13px] outline-none focus:border-[var(--accent)]/50" />
+          </form>
+        </div>
+        <div className="divide-y divide-[var(--line)]">
+          {filtered.length === 0 ? (
+            <p className="px-3 py-6 text-center text-[13px] text-[var(--ink-muted)]">No users found.</p>
+          ) : (
+            filtered.map((u) => (
+              <Link
+                key={u.id}
+                data-user-id={u.id}
+                href={`/settings/users?userId=${u.id}${query ? `&q=${encodeURIComponent(query)}` : ""}`}
+                className={`flex items-center gap-3 px-3 py-2.5 transition ${selectedUser?.id === u.id ? "bg-[var(--accent)]/8" : "hover:bg-[var(--panel-strong)]/40"}`}
+              >
+                <span className={`mt-0.5 h-2 w-2 shrink-0 rounded-full ${u.isActive ? "bg-emerald-400" : "bg-[var(--line)]"}`} />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[13px] font-medium text-[var(--ink)]">{u.name}</p>
+                  <p className="truncate text-[12px] text-[var(--ink-muted)]">{roleLabel(u.role)}</p>
+                </div>
+              </Link>
+            ))
+          )}
+        </div>
+      </section>
 
-        {/* Detail overlay panel — slides in from right on top of list */}
-        {selectedUser && (
-          <>
-            <Link
-              href={`/settings/users${query ? `?q=${encodeURIComponent(query)}` : ""}`}
-              className="absolute inset-0 z-10 bg-black/30 backdrop-blur-[2px]"
-              aria-label="Close"
-            />
-            <div className="absolute inset-y-0 right-0 z-20 w-full max-w-lg overflow-y-auto rounded-xl border border-[var(--line)] bg-[var(--panel)] shadow-2xl">
+      {/* Detail overlay panel — absolute inset-y-0 fills parent (min-h-screen relative container) */}
+      {selectedUser && (
+        <>
+          <Link
+            href={`/settings/users${query ? `?q=${encodeURIComponent(query)}` : ""}`}
+            className="absolute inset-0 z-10 bg-black/30 backdrop-blur-[2px]"
+            aria-label="Close"
+          />
+          <div className="absolute inset-y-0 right-0 z-20 w-full max-w-lg overflow-y-auto rounded-xl border border-[var(--line)] bg-[var(--panel)] shadow-2xl">
               {/* Panel header */}
               <div className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-[var(--line)] bg-[var(--panel)] px-4 py-3">
                 <div className="min-w-0">
@@ -392,7 +391,7 @@ export default async function UsersPage({
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
                   <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[12px] font-semibold ${selectedUser.isActive ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400" : "border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)]"}`}>
-                    {selectedUser.isActive ? <CircleDot className="h-3 w-3" /> : <Circle className="h-3 w-3" />}
+                    {selectedUser.isActive ? <svg viewBox="0 0 20 20" fill="currentColor" className="h-3 w-3" aria-hidden="true"><circle cx="10" cy="10" r="5" /></svg> : <svg viewBox="0 0 20 20" fill="currentColor" className="h-3 w-3" aria-hidden="true"><circle cx="10" cy="10" r="5" fill="none" stroke="currentColor" strokeWidth="2" /></svg>}
                     {selectedUser.isActive ? "Active" : "Inactive"}
                   </span>
                   <Link
@@ -400,7 +399,7 @@ export default async function UsersPage({
                     className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)] transition hover:border-[var(--accent)]/50 hover:text-[var(--accent)]"
                     title="Close"
                   >
-                    <X className="h-3.5 w-3.5" />
+                    <svg viewBox="0 0 20 20" fill="currentColor" className="h-3.5 w-3.5" aria-hidden="true"><path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" /></svg>
                   </Link>
                 </div>
               </div>
@@ -409,7 +408,7 @@ export default async function UsersPage({
                 {/* Profile form */}
                 <div>
                   <div className="mb-3 flex items-center gap-2">
-                    <Users className="h-4 w-4 text-[var(--ink-muted)]" />
+                    <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4 text-[var(--ink-muted)]" aria-hidden="true"><path d="M10 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM7 9a1 1 0 1 1 2 0 1 1 0 0 1-2 0ZM3 9a1 1 0 0 1 1-1h12a1 1 0 1 1 0 2H4a1 1 0 0 1-1-1Zm9 7.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z" /></svg>
                     <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">User Profile</p>
                   </div>
                   <form action={saveUserChanges} className="space-y-3">
@@ -448,7 +447,7 @@ export default async function UsersPage({
                 {/* Permissions */}
                 <div>
                   <div className="mb-3 flex items-center gap-2">
-                    <ShieldCheck className="h-4 w-4 text-[var(--ink-muted)]" />
+                    <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4 text-[var(--ink-muted)]" aria-hidden="true"><path fillRule="evenodd" d="M9.661 2.237a.75.75 0 0 1 .678 0 11.9 11.9 0 0 1 5.455 3.05l.255.255a.75.75 0 0 1-.238.948l-1.07.535a.75.75 0 0 1-1.07-.237l-.446-.892A9.4 9.4 0 0 0 8.94 3.653a.75.75 0 0 1 0-.535l.447-.892a.75.75 0 0 1 .238.948l-1.07.535a.75.75 0 0 1-1.07-.237l-.255-.255a11.9 11.9 0 0 0-5.455-3.05.75.75 0 0 1 0-.678l.91-1.82a.75.75 0 0 1 .832-.433l.255.255a11.9 11.9 0 0 1 5.455 3.05.75.75 0 0 1 .255.535 10.5 10.5 0 0 0-4.168-.535.75.75 0 0 1-.448-.129l-.255-.255a.75.75 0 0 1-.238-.948l.91-1.82Z" clipRule="evenodd" /></svg>
                     <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70">Permissions</p>
                   </div>
                   <RolePermissions role={selectedUser.role} userId={selectedUser.id} />
@@ -459,9 +458,9 @@ export default async function UsersPage({
                 {/* Password reset */}
                 <details className="group">
                   <summary className="flex cursor-pointer list-none items-center gap-2 py-1 text-[12px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]/70 transition hover:text-[var(--accent)]">
-                    <Lock className="h-4 w-4" />
+                    <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4" aria-hidden="true"><path fillRule="evenodd" d="M10 1a4.5 4.5 0 0 0-4.5 4.5V9H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2h-.5V5.5A4.5 4.5 0 0 0 10 1Zm3 8V5.5a3 3 0 1 0-6 0V9h6Z" clipRule="evenodd" /></svg>
                     Reset Password
-                    <ChevronDown className="ml-auto h-4 w-4 transition group-open:rotate-180" />
+                    <svg viewBox="0 0 20 20" fill="currentColor" className="ml-auto h-4 w-4 transition group-open:rotate-180" aria-hidden="true"><path fillRule="evenodd" d="M5.22 8.22a.75.75 0 0 1 0-1.06l4.97-4.97a.75.75 0 0 1 1.06 0l4.97 4.97a.75.75 0 0 1 0 1.06l-4.97 4.97a.75.75 0 0 1-1.06 0l-4.97-4.97Z" clipRule="evenodd" /></svg>
                   </summary>
                   <form action={resetPassword} className="mt-3 grid gap-3 sm:grid-cols-[1fr_1fr_auto]">
                     <input type="hidden" name="userId" value={selectedUser.id} />
@@ -485,7 +484,7 @@ export default async function UsersPage({
                     <details className="group relative">
                       <summary className={`inline-flex cursor-pointer list-none items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[13px] font-semibold transition ${selectedUser.isActive ? "border-red-400/30 text-red-400 hover:bg-red-500/10" : "border-emerald-400/30 text-emerald-400 hover:bg-emerald-500/10"}`}>
                         {selectedUser.isActive ? "Deactivate" : "Activate"}
-                        <ChevronDown className="h-3.5 w-3.5" />
+                        <svg viewBox="0 0 20 20" fill="currentColor" className="h-3.5 w-3.5" aria-hidden="true"><path fillRule="evenodd" d="M5.22 8.22a.75.75 0 0 1 0-1.06l4.97-4.97a.75.75 0 0 1 1.06 0l4.97 4.97a.75.75 0 0 1 0 1.06l-4.97 4.97a.75.75 0 0 1-1.06 0l-4.97-4.97Z" clipRule="evenodd" /></svg>
                       </summary>
                       <div className="absolute right-0 top-full z-10 mt-2 w-72 rounded-xl border border-[var(--line)] bg-[var(--panel-strong)] p-4 shadow-lg">
                         <p className="mb-3 text-[13px] text-[var(--ink)]">
@@ -511,7 +510,6 @@ export default async function UsersPage({
             </div>
           </>
         )}
-      </div>
     </div>
   );
 }
