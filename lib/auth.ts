@@ -67,12 +67,18 @@ function assertProductionAuthConfig() {
 
   if (!isRuntimeProduction) return;
 
+  const missing: string[] = [];
   if (!process.env.BETTER_AUTH_SECRET || process.env.BETTER_AUTH_SECRET.length < 32) {
-    throw new Error("Missing BETTER_AUTH_SECRET: set a stable production secret of at least 32 characters");
+    missing.push("BETTER_AUTH_SECRET (min 32 chars)");
   }
-
   if (!normalizeOrigin(process.env.BETTER_AUTH_URL ?? process.env.NEXT_PUBLIC_APP_URL)) {
-    throw new Error("Missing BETTER_AUTH_URL or NEXT_PUBLIC_APP_URL: set the production app URL");
+    missing.push("BETTER_AUTH_URL or NEXT_PUBLIC_APP_URL (production app URL)");
+  }
+  if (missing.length > 0) {
+    console.error(
+      "[auth] Production auth config incomplete: missing " + missing.join(", ") + ". " +
+      "Auth-dependent pages will fail. Set these env vars in your deployment dashboard."
+    );
   }
 }
 
