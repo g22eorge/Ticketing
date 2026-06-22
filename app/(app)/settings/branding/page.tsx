@@ -163,7 +163,7 @@ export default async function BrandingPage({
   let selectedReceiptKey = "receipt_classic";
   let quotePreview = "DOC 06/2026/01";
   let settingsLoaded = false;
-  let _opErrors: string[] = [];
+  const _opErrors: string[] = [];
 
   try {
     try {
