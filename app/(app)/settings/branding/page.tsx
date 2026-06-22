@@ -163,11 +163,13 @@ export default async function BrandingPage({
   let selectedReceiptKey = "receipt_classic";
   let quotePreview = "DOC 06/2026/01";
   let settingsLoaded = false;
+  let _opErrors: string[] = [];
 
   try {
     try {
       settings = await getDocumentBrandingSettings(orgId);
-    } catch {
+    } catch (err) {
+      _opErrors.push(`branding: ${err instanceof Error ? err.message : String(err)}`);
       settings = defaultBranding;
     }
     try {
@@ -178,7 +180,8 @@ export default async function BrandingPage({
     try {
       const orgRow = await prisma.organization.findUnique({ where: { id: orgId }, select: { plan: true } });
       plan = orgRow?.plan ?? "STARTER";
-    } catch {
+    } catch (err) {
+      _opErrors.push(`org: ${err instanceof Error ? err.message : String(err)}`);
       plan = "STARTER";
     }
 
@@ -191,7 +194,8 @@ export default async function BrandingPage({
       selectedQuoteKey = resolveTemplateKey({ kind: "QUOTATION", requestedKey: (settings as unknown as { quotationTemplateKey?: string | null }).quotationTemplateKey, plan });
       selectedJobCardKey = resolveTemplateKey({ kind: "JOB_CARD", requestedKey: (settings as unknown as { jobCardTemplateKey?: string | null }).jobCardTemplateKey, plan });
       selectedReceiptKey = resolveTemplateKey({ kind: "RECEIPT", requestedKey: (settings as unknown as { receiptTemplateKey?: string | null }).receiptTemplateKey, plan });
-    } catch {
+    } catch (err) {
+      _opErrors.push(`templates: ${err instanceof Error ? err.message : String(err)}`);
       invoiceTemplates = { allowed: templatesForAll("INVOICE"), locked: [] };
       quotationTemplates = { allowed: templatesForAll("QUOTATION"), locked: [] };
       jobCardTemplates = { allowed: templatesForAll("JOB_CARD"), locked: [] };
@@ -205,8 +209,10 @@ export default async function BrandingPage({
     quotePreview = renderQuotePreview(settings.quotePrefix, settings.quoteFormat, settings.sequencePadLength);
     settingsLoaded = true;
   } catch (err) {
-    fallbackError = String(err instanceof Error ? err.message : err);
+    _opErrors.push(`outer: ${err instanceof Error ? err.message : String(err)}`);
   }
+
+  fallbackError = _opErrors.length > 0 ? _opErrors.join(" | ") : fallbackError;
 
   if (!settingsLoaded) {
     return (
