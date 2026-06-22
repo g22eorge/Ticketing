@@ -84,39 +84,47 @@ function assertProductionAuthConfig() {
 
 assertProductionAuthConfig();
 
-export const auth = betterAuth({
-  secret: process.env.BETTER_AUTH_SECRET,
-  baseURL: process.env.BETTER_AUTH_URL ?? process.env.NEXT_PUBLIC_APP_URL,
-  trustedOrigins,
-  database: prismaAdapter(prisma, { provider: "sqlite" }),
-  emailAndPassword: { enabled: true },
-  user: {
-    additionalFields: {
-      role: {
-        type: "string",
-        required: true,
-        defaultValue: "OPS",
-        input: false,
-      },
-      isActive: {
-        type: "boolean",
-        required: true,
-        defaultValue: true,
-        input: false,
-      },
-      orgId: {
-        type: "string",
-        required: false,
-        input: false,
+// Initialize betterAuth — wrap in try/catch so a missing or misconfigured
+// env doesn't crash every page at module-import time on deploy.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let _auth: any = null;
+try {
+  _auth = betterAuth({
+    secret: process.env.BETTER_AUTH_SECRET,
+    baseURL: process.env.BETTER_AUTH_URL ?? process.env.NEXT_PUBLIC_APP_URL,
+    trustedOrigins,
+    database: prismaAdapter(prisma, { provider: "sqlite" }),
+    emailAndPassword: { enabled: true },
+    user: {
+      additionalFields: {
+        role: {
+          type: "string",
+          required: true,
+          defaultValue: "OPS",
+          input: false,
+        },
+        isActive: {
+          type: "boolean",
+          required: true,
+          defaultValue: true,
+          input: false,
+        },
+        orgId: {
+          type: "string",
+          required: false,
+          input: false,
+        },
       },
     },
-  },
-  session: {
-    // Keep sessions reasonably short.
-    // expiresIn: session lifetime (seconds)
-    // disableSessionRefresh: prevents extending sessions indefinitely
-    expiresIn: 60 * 60 * 8, // 8 hours
-    disableSessionRefresh: true,
-    cookieCache: { enabled: true, maxAge: 60 * 5 }, // 5 minutes
-  },
-});
+    session: {
+      expiresIn: 60 * 60 * 8,
+      disableSessionRefresh: true,
+      cookieCache: { enabled: true, maxAge: 60 * 5 },
+    },
+  });
+} catch (err) {
+  console.error("[auth] Failed to initialize betterAuth:", err);
+  _auth = null;
+}
+
+export const auth = _auth;
