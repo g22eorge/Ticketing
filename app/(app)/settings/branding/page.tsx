@@ -146,58 +146,81 @@ export default async function BrandingPage({
   }
 
   const params = await searchParams;
-  let settings;
-  try {
-    settings = await getDocumentBrandingSettings(orgId);
-  } catch {
-    settings = defaultBranding;
-  }
-  let preview: string | null = null;
-  try {
-    preview = await resolveLogoPreview(settings.companyLogoUrl);
-  } catch {
-    preview = null;
-  }
-  let orgPlan: { plan: import("@prisma/client").OrgPlan } | null = null;
-  try {
-    orgPlan = await prisma.organization.findUnique({ where: { id: orgId }, select: { plan: true } });
-  } catch {
-    orgPlan = null;
-  }
-  const plan = orgPlan?.plan ?? "STARTER";
 
-  let invoiceTemplates: { allowed: import("@/lib/pdf/templates").TemplateDef[]; locked: import("@/lib/pdf/templates").TemplateDef[] };
-  let quotationTemplates: typeof invoiceTemplates;
-  let jobCardTemplates: typeof invoiceTemplates;
-  let receiptTemplates: typeof invoiceTemplates;
-  let selectedInvoiceKey: string;
-  let selectedQuoteKey: string;
-  let selectedJobCardKey: string;
-  let selectedReceiptKey: string;
+  // ── Everything below is wrapped in a top-level try/catch ──
+  // Any crash here falls through to the safe fallback UI.
+  let fallbackError: string | null = null;
+  let settings = defaultBranding;
+  let preview: string | null = null;
+  let plan: OrgPlan = "STARTER";
+  let invoiceTemplates: { allowed: import("@/lib/pdf/templates").TemplateDef[]; locked: import("@/lib/pdf/templates").TemplateDef[] } = { allowed: [], locked: [] };
+  let quotationTemplates: typeof invoiceTemplates = { allowed: [], locked: [] };
+  let jobCardTemplates: typeof invoiceTemplates = { allowed: [], locked: [] };
+  let receiptTemplates: typeof invoiceTemplates = { allowed: [], locked: [] };
+  let selectedInvoiceKey = "invoice_classic";
+  let selectedQuoteKey = "quote_classic";
+  let selectedJobCardKey = "job_card_classic";
+  let selectedReceiptKey = "receipt_classic";
+  let quotePreview = "DOC 06/2026/01";
+  let settingsLoaded = false;
+
   try {
-    invoiceTemplates = splitTemplatesByPlan("INVOICE", plan);
-    quotationTemplates = splitTemplatesByPlan("QUOTATION", plan);
-    jobCardTemplates = splitTemplatesByPlan("JOB_CARD", plan);
-    receiptTemplates = splitTemplatesByPlan("RECEIPT", plan);
-    selectedInvoiceKey = resolveTemplateKey({ kind: "INVOICE", requestedKey: (settings as unknown as { invoiceTemplateKey?: string | null }).invoiceTemplateKey, plan });
-    selectedQuoteKey = resolveTemplateKey({ kind: "QUOTATION", requestedKey: (settings as unknown as { quotationTemplateKey?: string | null }).quotationTemplateKey, plan });
-    selectedJobCardKey = resolveTemplateKey({ kind: "JOB_CARD", requestedKey: (settings as unknown as { jobCardTemplateKey?: string | null }).jobCardTemplateKey, plan });
-    selectedReceiptKey = resolveTemplateKey({ kind: "RECEIPT", requestedKey: (settings as unknown as { receiptTemplateKey?: string | null }).receiptTemplateKey, plan });
-  } catch {
-    invoiceTemplates = { allowed: templatesForAll("INVOICE"), locked: [] };
-    quotationTemplates = { allowed: templatesForAll("QUOTATION"), locked: [] };
-    jobCardTemplates = { allowed: templatesForAll("JOB_CARD"), locked: [] };
-    receiptTemplates = { allowed: templatesForAll("RECEIPT"), locked: [] };
-    selectedInvoiceKey = "invoice_classic";
-    selectedQuoteKey = "quote_classic";
-    selectedJobCardKey = "job_card_classic";
-    selectedReceiptKey = "receipt_classic";
+    try {
+      settings = await getDocumentBrandingSettings(orgId);
+    } catch {
+      settings = defaultBranding;
+    }
+    try {
+      preview = await resolveLogoPreview(settings.companyLogoUrl);
+    } catch {
+      preview = null;
+    }
+    try {
+      const orgRow = await prisma.organization.findUnique({ where: { id: orgId }, select: { plan: true } });
+      plan = orgRow?.plan ?? "STARTER";
+    } catch {
+      plan = "STARTER";
+    }
+
+    try {
+      invoiceTemplates = splitTemplatesByPlan("INVOICE", plan);
+      quotationTemplates = splitTemplatesByPlan("QUOTATION", plan);
+      jobCardTemplates = splitTemplatesByPlan("JOB_CARD", plan);
+      receiptTemplates = splitTemplatesByPlan("RECEIPT", plan);
+      selectedInvoiceKey = resolveTemplateKey({ kind: "INVOICE", requestedKey: (settings as unknown as { invoiceTemplateKey?: string | null }).invoiceTemplateKey, plan });
+      selectedQuoteKey = resolveTemplateKey({ kind: "QUOTATION", requestedKey: (settings as unknown as { quotationTemplateKey?: string | null }).quotationTemplateKey, plan });
+      selectedJobCardKey = resolveTemplateKey({ kind: "JOB_CARD", requestedKey: (settings as unknown as { jobCardTemplateKey?: string | null }).jobCardTemplateKey, plan });
+      selectedReceiptKey = resolveTemplateKey({ kind: "RECEIPT", requestedKey: (settings as unknown as { receiptTemplateKey?: string | null }).receiptTemplateKey, plan });
+    } catch {
+      invoiceTemplates = { allowed: templatesForAll("INVOICE"), locked: [] };
+      quotationTemplates = { allowed: templatesForAll("QUOTATION"), locked: [] };
+      jobCardTemplates = { allowed: templatesForAll("JOB_CARD"), locked: [] };
+      receiptTemplates = { allowed: templatesForAll("RECEIPT"), locked: [] };
+      selectedInvoiceKey = "invoice_classic";
+      selectedQuoteKey = "quote_classic";
+      selectedJobCardKey = "job_card_classic";
+      selectedReceiptKey = "receipt_classic";
+    }
+
+    quotePreview = renderQuotePreview(settings.quotePrefix, settings.quoteFormat, settings.sequencePadLength);
+    settingsLoaded = true;
+  } catch (err) {
+    fallbackError = String(err instanceof Error ? err.message : err);
   }
-  const quotePreview = renderQuotePreview(
-    settings.quotePrefix,
-    settings.quoteFormat,
-    settings.sequencePadLength,
-  );
+
+  if (!settingsLoaded) {
+    return (
+      <div className="min-w-0 space-y-4">
+        <div className="rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-700 dark:text-red-400">
+          <p className="font-semibold">Failed to load branding settings.</p>
+          <p className="mt-1 text-xs opacity-80">{fallbackError}</p>
+        </div>
+        <a href="/dashboard" className="inline-block rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-4 py-1.5 text-sm hover:bg-[var(--surface)]">
+          Back to dashboard
+        </a>
+      </div>
+    );
+  }
 
   async function uploadLogoAction(formData: FormData) {
     "use server";
