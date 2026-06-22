@@ -4,7 +4,6 @@ import Link from "next/link";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { Plus, Search, ShieldCheck, Lock, ChevronDown, CircleDot, Circle, Users, X } from "lucide-react";
 import { CopyButton } from "@/components/settings/CopyButton";
 
 import { prisma } from "@/lib/prisma";

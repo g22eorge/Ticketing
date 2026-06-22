@@ -26,14 +26,12 @@ function toSqliteAbsoluteUrl(url: string) {
 }
 
 function createPrismaClient() {
-  // Use TURSO_DATABASE_URL to detect production mode
-  const isProduction = process.env.NODE_ENV === "production" && !!process.env.TURSO_DATABASE_URL;
+  const tursoUrl = process.env.TURSO_DATABASE_URL?.trim();
+  const isProduction = process.env.NODE_ENV === "production" && !!tursoUrl;
 
-  // GitHub Actions/CI runs Next in production mode but uses local sqlite.
   const isCi = process.env.CI === "true" || process.env.GITHUB_ACTIONS === "true";
-
-  // When Next runs `next build`, NODE_ENV is production; allow local sqlite during build.
   const isBuildPhase = process.env.NEXT_PHASE === "phase-production-build";
+
   if (
     process.env.NODE_ENV === "production" &&
     !isProduction &&
@@ -41,8 +39,11 @@ function createPrismaClient() {
     !isCi &&
     process.env.ALLOW_SQLITE_PRODUCTION !== "1"
   ) {
-    // Prefer a clear error over a noisy sqlite "unable to open" failure on serverless.
-    throw new Error("Missing TURSO_DATABASE_URL (set Turso env vars for production runtime)");
+    console.error(
+      "[prisma] TURSO_DATABASE_URL is empty or missing in production. " +
+      "Set TURSO_DATABASE_URL + TURSO_AUTH_TOKEN, or set ALLOW_SQLITE_PRODUCTION=1 for local sqlite. " +
+      "Falling back to local SQLite — DB queries will fail if the file is absent on serverless."
+    );
   }
 
   if (!isProduction) {
@@ -62,9 +63,16 @@ function createPrismaClient() {
     });
   }
 
-  const url = process.env.TURSO_DATABASE_URL;
+  const url = tursoUrl;
   if (!url) {
-    throw new Error("Missing TURSO_DATABASE_URL");
+    console.error("[prisma] TURSO_DATABASE_URL missing — cannot create Turso adapter. " +
+      "Ensure TURSO_DATABASE_URL and TURSO_AUTH_TOKEN are set in your deployment environment.");
+    return new PrismaClient({
+      datasources: {
+        db: { url: toSqliteAbsoluteUrl(DEFAULT_LOCAL_DATABASE_URL) },
+      },
+      log: ["error", "warn"],
+    });
   }
 
   const adapter = new PrismaLibSql({
