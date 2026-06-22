@@ -8,7 +8,12 @@ import { checkRateLimit, rateLimitHeaders, getClientIp } from "@/lib/rate-limit"
 export const runtime = "nodejs";
 export const preferredRegion = "sfo1";
 
-const { GET: _GET, POST: _POST } = toNextJsHandler(auth);
+const _fallbackHandler = () =>
+  NextResponse.json({ error: "Auth unavailable" }, { status: 503 });
+
+const { GET: _GET, POST: _POST } = auth
+  ? toNextJsHandler(auth)
+  : { GET: _fallbackHandler, POST: _fallbackHandler };
 
 export { _GET as GET };
 

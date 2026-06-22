@@ -97,7 +97,12 @@ export async function POST(request: NextRequest) {
       }),
     });
 
-    const upstream = await auth.handler(syntheticRequest);
+    const upstream = auth
+      ? await auth.handler(syntheticRequest)
+      : new Response(JSON.stringify({ error: "Auth unavailable" }), {
+          status: 503,
+          headers: { "content-type": "application/json" },
+        });
 
     const text = await upstream.text();
 

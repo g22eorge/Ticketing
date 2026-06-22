@@ -81,7 +81,7 @@ function allowedForType(user: { role: Role; permissions: string[] }, type: Expor
 }
 
 export async function GET(req: NextRequest) {
-  const session = await auth.api.getSession({ headers: req.headers });
+  const session = auth ? await auth.api.getSession({ headers: req.headers }) : null;
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

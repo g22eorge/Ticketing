@@ -32,6 +32,9 @@ async function isAllowedOptionalDeploymentUser(user: { email: string; orgId: str
 }
 
 export async function getSession() {
+  if (!auth) {
+    return { session: null, user: null };
+  }
   return auth.api.getSession({
     headers: await headers(),
   });
