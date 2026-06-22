@@ -169,7 +169,9 @@ export default async function BrandingPage({
     try {
       settings = await getDocumentBrandingSettings(orgId);
     } catch (err) {
-      _opErrors.push(`branding: ${err instanceof Error ? err.message : String(err)}`);
+      const msg = `branding: ${err instanceof Error ? err.message : String(err)}`;
+      _opErrors.push(msg);
+      console.error("[branding/page] getDocumentBrandingSettings failed:", err);
       settings = defaultBranding;
     }
     try {
@@ -209,7 +211,9 @@ export default async function BrandingPage({
     quotePreview = renderQuotePreview(settings.quotePrefix, settings.quoteFormat, settings.sequencePadLength);
     settingsLoaded = true;
   } catch (err) {
-    _opErrors.push(`outer: ${err instanceof Error ? err.message : String(err)}`);
+    const msg = `outer: ${err instanceof Error ? err.message : String(err)}`;
+    _opErrors.push(msg);
+    console.error("[branding/page] outer catch:", err);
   }
 
   fallbackError = _opErrors.length > 0 ? _opErrors.join(" | ") : fallbackError;
