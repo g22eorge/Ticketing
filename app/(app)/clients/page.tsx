@@ -138,7 +138,7 @@ export default async function ClientsPage({
           <input name="fullName" required placeholder="Full name" className="w-48 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm outline-none transition focus:border-[var(--accent)]/60 focus:ring-1 focus:ring-[var(--accent)]/20" />
           <input name="phone" required placeholder="Phone" className="w-48 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm outline-none transition focus:border-[var(--accent)]/60 focus:ring-1 focus:ring-[var(--accent)]/20" />
           <input name="email" placeholder="Email (optional)" className="w-48 rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm outline-none transition focus:border-[var(--accent)]/60 focus:ring-1 focus:ring-[var(--accent)]/20" />
-          <select name="clientType" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm outline-none transition focus:border-[var(--accent)]/60">
+          <select name="clientType" aria-label="Client type" className="rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-sm outline-none transition focus:border-[var(--accent)]/60">
             <option value="INDIVIDUAL">Individual</option>
             <option value="COMPANY">Company</option>
             <option value="SCHOOL">School</option>
