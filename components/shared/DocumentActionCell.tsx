@@ -51,6 +51,7 @@ function QuickButton({ action, onConfirm }: { action: DocAction; onConfirm: (a: 
         target={action.external ? "_blank" : undefined}
         rel={action.external ? "noreferrer" : undefined}
         title={action.label}
+        aria-label={action.label}
         className={`inline-flex h-7 w-7 items-center justify-center rounded-md border border-[var(--line)] transition ${cls}`}
       >
         {action.icon}
@@ -63,6 +64,7 @@ function QuickButton({ action, onConfirm }: { action: DocAction; onConfirm: (a: 
       <button
         type="button"
         title={action.label}
+        aria-label={action.label}
         disabled={isPending}
         onClick={() => {
           if (action.confirm) {
@@ -83,6 +85,7 @@ function QuickButton({ action, onConfirm }: { action: DocAction; onConfirm: (a: 
     <button
       type="button"
       title={action.label}
+      aria-label={action.label}
       onClick={() => onConfirm(action)}
       className={`inline-flex h-7 w-7 items-center justify-center rounded-md border border-[var(--line)] transition ${cls}`}
     >
