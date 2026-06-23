@@ -121,9 +121,9 @@
 }
 
 .theme-blackgold .btn-premium {
-  border-color: rgba(79, 142, 247, 0.7);
-  background: linear-gradient(160deg, #e8c337 0%, #b8860a 100%);
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.12) inset, 0 4px 14px rgba(79, 142, 247, 0.25), 0 8px 24px rgba(0, 0, 0, 0.45);
+  border-color: var(--accent-border);
+  background: linear-gradient(160deg, var(--accent) 0%, var(--brand-deep) 100%);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.12) inset, 0 4px 14px var(--accent-muted), 0 8px 24px rgba(0, 0, 0, 0.45);
   color: #fff;
 }
 
@@ -356,15 +356,15 @@ pre,
 /* ── Buttons ─────────────────────────────────────────────────────────────── */
 
 .btn-premium {
-  border: 1px solid rgba(180, 148, 10, 0.8);
-  background: linear-gradient(160deg, #e8c337 0%, #c49e0a 100%);
+  border: 1px solid var(--accent-border);
+  background: linear-gradient(160deg, var(--accent) 0%, var(--brand-deep) 100%);
   color: #fff;
   font-weight: 600;
   letter-spacing: -0.01em;
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.25) inset,
-    0 1px 2px rgba(180, 148, 10, 0.3),
-    0 4px 12px rgba(180, 148, 10, 0.2);
+    0 1px 2px var(--accent-muted),
+    0 4px 12px var(--accent-muted);
   transition: transform 120ms ease, box-shadow 120ms ease, filter 120ms ease;
 }
 
@@ -372,8 +372,8 @@ pre,
   filter: brightness(1.06);
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.25) inset,
-    0 2px 4px rgba(180, 148, 10, 0.3),
-    0 6px 16px rgba(180, 148, 10, 0.25);
+    0 2px 4px var(--accent-muted),
+    0 6px 16px var(--accent-muted);
 }
 
 .btn-premium:active {
