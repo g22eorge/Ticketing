@@ -24,23 +24,23 @@ const ogImage = `${siteUrl}/opengraph-image`;
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "Business OS",
-    template: "%s | Business OS",
+    default: "Techserve ICT Solutions",
+    template: "%s | Techserve ICT Solutions",
   },
-  description: "Business management platform for repairs, sales, inventory, finance, documents, and daily operations.",
+  description: "A customised ICT service operations platform for Techserve ICT Solutions — managing service requests, jobs, clients, and operations.",
   alternates: { canonical: "/" },
   openGraph: {
-    title: "Business OS",
-    description: "Business management platform for repairs, sales, inventory, finance, documents, and daily operations.",
+    title: "Techserve ICT Solutions",
+    description: "A customised ICT service operations platform for Techserve ICT Solutions.",
     url: "/",
-    siteName: "Business OS",
+    siteName: "Techserve ICT Solutions",
     type: "website",
-    images: [{ url: ogImage, width: 512, height: 512, alt: "Business OS" }],
+    images: [{ url: ogImage, width: 512, height: 512, alt: "Techserve ICT Solutions" }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Business OS",
-    description: "Business management platform for repairs, sales, inventory, finance, documents, and daily operations.",
+    title: "Techserve ICT Solutions",
+    description: "A customised ICT service operations platform for Techserve ICT Solutions.",
     images: [ogImage],
   },
   icons: {

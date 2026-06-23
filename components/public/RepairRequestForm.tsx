@@ -74,13 +74,13 @@ const empty: FormData = {
 interface RepairRequestFormProps {
   /** Org slug to scope the request. Omit for the default EIS form. */
   orgSlug?: string;
-  /** Company name shown in success message. Defaults to "BusinessOS". */
+  /** Company name shown in success message. Defaults to "Techserve ICT Solutions". */
   companyName?: string;
-  /** WhatsApp number for the success CTA, e.g. "256772006344". */
+  /** WhatsApp number for the success CTA, e.g. "256756844448". */
   whatsappNumber?: string;
 }
 
-export function RepairRequestForm({ orgSlug, companyName = "BusinessOS", whatsappNumber = "256772006344" }: RepairRequestFormProps) {
+export function RepairRequestForm({ orgSlug, companyName = "Techserve ICT Solutions", whatsappNumber = "256756844448" }: RepairRequestFormProps) {
   const [step, setStep]       = useState<Step>("form");
   const [data, setData]       = useState<FormData>(empty);
   const [errors, setErrors]   = useState<string[]>([]);

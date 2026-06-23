@@ -10,9 +10,9 @@ export const dynamic = "force-dynamic";
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
-    title: "BusinessOS — Business Management & Service Tickets",
+    title: "Techserve ICT Solutions — ICT Service Operations Platform",
     description:
-      "Submit ICT support tickets and complaints. BusinessOS is a complete business management platform for repairs, sales, inventory, finance, and operations.",
+      "Submit ICT support tickets and complaints. Techserve ICT Solutions is a customised platform for service operations, repairs, and ICT management.",
     alternates: { canonical: "/" },
   };
 }
@@ -86,20 +86,20 @@ export default async function Page() {
 
       {/* ── Hero ── */}
       <section className="mx-auto max-w-5xl px-4 pt-16 pb-12 text-center md:pt-24 md:pb-16">
-        <div className="inline-flex items-center gap-2 rounded-full border border-[#4F8EF7]/20 bg-[#4F8EF7]/5 px-4 py-1.5">
+<div className="inline-flex items-center gap-2 rounded-full border border-[#4F8EF7]/20 bg-[#4F8EF7]/5 px-4 py-1.5">
           <span className="inline-block h-2 w-2 rounded-full bg-[#4F8EF7]" />
-          <span className="text-[13px] font-semibold tracking-wide text-[#4F8EF7]">Service Tickets &amp; Business Management</span>
+          <span className="text-[13px] font-semibold tracking-wide text-[#4F8EF7]">ICT Service Operations Platform</span>
         </div>
 
         <h1 className="mt-6 text-4xl font-black leading-[1.05] tracking-tight md:text-5xl">
           <span className="bg-gradient-to-r from-[#60A5FA] via-[#4F8EF7] to-[#3B82F6] bg-clip-text text-transparent">
-            Need support?
+            Helping Techserve ICT Solutions
           </span><br />
-          We&apos;re here to help.
+          Deliver ICT Services Better
         </h1>
 
         <p className="mx-auto mt-5 max-w-lg text-sm leading-7 text-white/45">
-          Submit an ICT support ticket or file a complaint. BusinessOS powers your business — from repairs and sales to inventory, finance, and operations.
+          A customised platform for managing service requests, jobs, clients, quotations, invoices, receipts, staff activity, and operational reports.
         </p>
 
         {/* Quick actions */}
@@ -206,26 +206,25 @@ export default async function Page() {
       <section className="mx-auto max-w-5xl px-4 py-12">
         <div className="rounded-2xl border border-white/8 bg-gradient-to-br from-white/[0.04] to-transparent p-8 text-center md:p-12">
           <AppLogoDark height={48} className="mx-auto mb-4 justify-center" />
-          <h3 className="text-lg font-bold text-white">BusinessOS</h3>
+          <h3 className="text-lg font-bold text-white">Techserve ICT Solutions</h3>
           <p className="mx-auto mt-2 max-w-lg text-[13px] leading-relaxed text-white/45">
-            The complete business management platform — sales, inventory, finance, CRM, 
-            documents, and AI-powered insights. Built for service centres, retailers, and technology companies.
+            A customised ICT service operations platform — managing service requests, jobs, clients, quotations, invoices, receipts, and operational reports.
           </p>
           <div className="mt-6 flex flex-wrap justify-center gap-3">
             <a
-              href="https://wa.me/256772006344?text=Hi%2C%20I%27m%20interested%20in%20BusinessOS%20for%20my%20business."
+              href="https://wa.me/256756844448?text=Hi%2C%20I%27m%20interested%20in%20the%20Techserve%20ICT%20Solutions%20service%20operations%20platform."
               target="_blank" rel="noreferrer"
               className="inline-flex items-center gap-2 rounded-xl px-6 py-2.5 text-sm font-bold text-black shadow-[0_4px_20px_rgba(230,198,92,0.25)] transition hover:opacity-90"
               style={{ background: "linear-gradient(180deg,#60A5FA 0%,#3B82F6 100%)" }}
             >
               <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4" aria-hidden><path d={WA_PATH}/></svg>
-              Get BusinessOS
+              Contact Techserve ICT Solutions
             </a>
             <a
-              href="tel:+256772006344"
+              href="tel:+256756844448"
               className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-6 py-2.5 text-sm font-semibold text-white/60 transition hover:text-white"
             >
-              +256 772 006 344
+              0756844448
             </a>
           </div>
         </div>
@@ -242,7 +241,7 @@ export default async function Page() {
               <Link href="/complaint" className="text-xs font-semibold text-red-400/60 transition hover:text-red-400">Complaint</Link>
               <Link href="/login" className="text-xs font-semibold text-white/35 transition hover:text-[#4F8EF7]">Staff Login</Link>
               <a
-                href="https://wa.me/256772006344"
+                href="https://wa.me/256756844448"
                 target="_blank" rel="noreferrer"
                 className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#25D366]"
               >
@@ -252,7 +251,11 @@ export default async function Page() {
             </nav>
           </div>
           <p className="mt-4 text-center text-[11px] text-white/20">
-            © {new Date().getFullYear()} BusinessOS. All rights reserved.
+            © {new Date().getFullYear()} Techserve Solutions Limited. All Rights Reserved.
+            <span className="mx-1">·</span>
+            <a href="https://care.eagleinfosolutions.com" target="_blank" rel="noreferrer" className="underline-offset-1 transition hover:text-white/40 hover:underline">
+              Developed by Eagle Info Solutions
+            </a>
           </p>
         </div>
       </footer>

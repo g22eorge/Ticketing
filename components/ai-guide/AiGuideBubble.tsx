@@ -139,7 +139,7 @@ export function AiGuideBubble() {
   const [minimised, setMinimised]   = useState(false);
   const [messages, setMessages]     = useState<Message[]>([{
     id: "welcome", role: "model",
-    text: "Hi! I'm your BusinessOS guide. Ask me anything about using the system — creating jobs, managing inventory, finance reports, and more.",
+    text: "Hi! I'm your Techserve ICT Solutions guide. Ask me anything about using the system — creating jobs, managing inventory, finance reports, and more.",
   }]);
   const [inputValue, setInputValue] = useState("");
   const [busy, setBusy]             = useState(false);
@@ -300,7 +300,7 @@ export function AiGuideBubble() {
               <IconBot className="h-4 w-4 text-black" />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-[13px] font-black leading-tight text-black">BusinessOS AI Guide</p>
+              <p className="truncate text-[13px] font-black leading-tight text-black">Techserve ICT Solutions AI Guide</p>
               <p className="truncate text-[12px] font-medium text-black/60">
                 {minimised ? "Tap to expand" : "Ask me anything"}
               </p>

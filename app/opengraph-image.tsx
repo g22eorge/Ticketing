@@ -80,21 +80,21 @@ export default function OpenGraphImage() {
               </div>
               <div style={{ display: "flex", flexDirection: "column" }}>
                 <div style={{ color: "rgba(255,255,255,0.86)", fontSize: 14, letterSpacing: 4, fontWeight: 700 }}>
-                  BUSINESS OS
+                  TECHSERVE ICT
                 </div>
                 <div style={{ color: "rgba(79,142,247,0.92)", fontSize: 12, letterSpacing: 3, fontWeight: 700 }}>
-                  BUSINESS MANAGEMENT
+                  SERVICE OPERATIONS PLATFORM
                 </div>
               </div>
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", color: "#fff", fontSize: 56, fontWeight: 800, lineHeight: 1.05 }}>
-              <div style={{ display: "flex" }}>Repair Booking,</div>
-              <div style={{ display: "flex" }}>Hardware, and Software</div>
+              <div style={{ display: "flex" }}>ICT Support &</div>
+              <div style={{ display: "flex" }}>Service Management</div>
             </div>
 
             <div style={{ color: "rgba(255,255,255,0.70)", fontSize: 18, lineHeight: 1.4 }}>
-              Track jobs, approvals, external assignments, and customer updates in one place.
+              Manage service requests, jobs, clients, quotations, invoices, and operational reports in one place.
             </div>
           </div>
 
@@ -111,7 +111,7 @@ export default function OpenGraphImage() {
                 background: "rgba(0,0,0,0.35)",
               }}
             >
-              BusinessOS
+              Techserve ICT Solutions
             </div>
           </div>
         </div>

@@ -2,12 +2,12 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Terms of Service — BusinessOS",
-  description: "Terms and conditions governing use of the BusinessOS platform.",
+  title: "Terms of Service — Techserve ICT Solutions",
+  description: "Terms and conditions governing use of the Techserve ICT Solutions platform.",
 };
 
 const EFFECTIVE_DATE = "1 May 2025";
-const COMPANY = "BusinessOS";
+const COMPANY = "Techserve ICT Solutions";
 const CONTACT_EMAIL = process.env.NEXT_PUBLIC_CONTACT_EMAIL || "support@example.com";
 
 export default function TermsPage() {
@@ -38,7 +38,7 @@ export default function TermsPage() {
 
           <section>
             <p>
-              These Terms of Service (&ldquo;Terms&rdquo;) govern your access to and use of the BusinessOS software platform
+              These Terms of Service (&ldquo;Terms&rdquo;) govern your access to and use of the Techserve ICT Solutions platform
               (&ldquo;Platform&rdquo;) operated by {COMPANY} (&ldquo;we&rdquo;, &ldquo;us&rdquo;, or &ldquo;our&rdquo;).
               By creating a workspace or using the Platform you agree to be bound by these Terms.
               If you do not agree, do not use the Platform.

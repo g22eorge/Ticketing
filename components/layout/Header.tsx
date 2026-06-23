@@ -124,9 +124,9 @@ export function Header({
               className="flex items-center gap-2 lg:hidden transition-opacity hover:opacity-75"
             >
               <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[var(--accent)] text-[12px] font-black text-black">
-                OS
+                TI
               </span>
-              <span className="text-sm font-bold text-[var(--ink)]">Business OS</span>
+              <span className="text-sm font-bold text-[var(--ink)]">Techserve ICT Solutions</span>
             </Link>
           )}
 

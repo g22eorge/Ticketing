@@ -139,11 +139,11 @@ export function AppSidebar({
         className="flex items-center gap-3 border-b border-[var(--line)] px-5 py-4 transition-opacity hover:opacity-80"
       >
         <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--accent)] text-sm font-black text-black">
-          OS
+          TI
         </span>
         <span className="min-w-0">
-          <span className="block text-sm font-bold text-[var(--ink)]">Business OS</span>
-          <span className="block text-[12px] text-[var(--ink-muted)]">Operations</span>
+          <span className="block text-sm font-bold text-[var(--ink)]">Techserve ICT Solutions</span>
+          <span className="block text-[12px] text-[var(--ink-muted)]">Service Desk</span>
         </span>
       </Link>
 

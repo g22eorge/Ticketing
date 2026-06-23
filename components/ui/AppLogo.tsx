@@ -14,11 +14,11 @@ function NeutralLogo({ height = 40, className = "" }: Props) {
         className="inline-flex shrink-0 items-center justify-center rounded-xl bg-[#4F8EF7] font-black text-white"
         style={{ width: box, height: box, fontSize: Math.max(11, Math.round(box * 0.34)) }}
       >
-        OS
+        TI
       </span>
       <span className="leading-none">
-        <span className="block text-sm font-bold text-current">Business OS</span>
-        <span className="block text-[12px] font-medium text-current opacity-55">Operations</span>
+        <span className="block text-sm font-bold text-current">Techserve ICT Solutions</span>
+        <span className="block text-[12px] font-medium text-current opacity-55">Service Desk</span>
       </span>
     </span>
   );

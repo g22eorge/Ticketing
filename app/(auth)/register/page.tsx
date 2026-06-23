@@ -40,7 +40,7 @@ export default async function RegisterPage() {
 
           <div className="relative space-y-8">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#4F8EF7]/70">Business OS</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#4F8EF7]/70">Techserve ICT Solutions</p>
               <h1 className="mt-3 text-3xl font-semibold leading-snug text-white xl:text-4xl">
                 Your operations,<br />fully organised
               </h1>
@@ -63,7 +63,7 @@ export default async function RegisterPage() {
             </div>
           </div>
 
-          <p className="relative text-[13px] text-white/25">© {new Date().getFullYear()} Nexus</p>
+          <p className="relative text-[13px] text-white/25">© {new Date().getFullYear()} Techserve Solutions Limited</p>
         </section>
 
         {/* ── Right: register form ── */}

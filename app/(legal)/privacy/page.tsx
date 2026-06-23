@@ -2,12 +2,12 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy — BusinessOS",
-  description: "How BusinessOS collects, uses, and protects your personal data.",
+  title: "Privacy Policy — Techserve ICT Solutions",
+  description: "How Techserve ICT Solutions collects, uses, and protects your personal data.",
 };
 
 const EFFECTIVE_DATE = "1 May 2025";
-const COMPANY = "BusinessOS";
+const COMPANY = "Techserve ICT Solutions";
 const CONTACT_EMAIL = process.env.NEXT_PUBLIC_CONTACT_EMAIL || "support@example.com";
 
 export default function PrivacyPage() {
@@ -38,7 +38,7 @@ export default function PrivacyPage() {
 
           <section>
             <p>
-              {COMPANY} (&ldquo;we&rdquo;, &ldquo;us&rdquo;, &ldquo;our&rdquo;) operates the BusinessOS platform.
+              {COMPANY} (&ldquo;we&rdquo;, &ldquo;us&rdquo;, &ldquo;our&rdquo;) operates the Techserve ICT Solutions platform.
               This Privacy Policy explains what information we collect, how we use it, and your rights regarding it.
               By using the Platform you agree to the practices described here.
             </p>

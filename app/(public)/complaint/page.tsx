@@ -146,7 +146,7 @@ export default async function ComplaintPage({
             </svg>
           </div>
           <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-red-400/70">
-            BusinessOS
+            Techserve ICT Solutions
           </p>
           <h1 className="mt-1 text-xl font-black text-white">File a Complaint</h1>
           <p className="mt-1 text-sm text-white/40">

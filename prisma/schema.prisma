@@ -1520,11 +1520,11 @@ model DocumentBrandingSettings {
   id                    String        @id @default(cuid())
   orgId                 String?       @unique
   org                   Organization? @relation(fields: [orgId], references: [id], onDelete: SetNull)
-  companyName           String        @default("Eagle Info Solutions")
+  companyName           String        @default("Techserve ICT Solutions")
   companyTagline        String?
   companyAddressLine1   String        @default("Nalubega Complex, 1st Floor")
   companyAddressLine2   String        @default("Shop L28, Bombo Road Opposite Watoto Church")
-  companyContacts       String        @default("+256772 006 344 | +256754 006 344")
+  companyContacts       String        @default("0756844448 | +256756844448")
   companyEmail          String?
   companyWebsite        String?
   documentTitle         String        @default("Job Card")
@@ -1536,8 +1536,8 @@ model DocumentBrandingSettings {
   vatRatePercent        Float         @default(18)
   vatLabel              String        @default("VAT")
   termsText             String        @default("Quotation valid for 30 days from date issued.\nRepair work begins only after approval is recorded.\nParts availability may affect final timeline.\nHidden pre-existing faults may affect final outcome.\nUncollected devices may attract storage fees after notice.")
-  footerText            String        @default("Powered by Duuka Pro Max — Eagle Info's repair & business management platform. care.eagleinfosolutions.com")
-  signatureCompanyLabel String        @default("Signed by: Eagle Info Solutions")
+  footerText            String        @default("Techserve ICT Solutions — care.eagleinfosolutions.com")
+  signatureCompanyLabel String        @default("Signed by: Techserve ICT Solutions")
   signatureClientLabel  String        @default("Signed by: Client")
   primaryColor          String        @default("#000000")
   secondaryColor        String        @default("#E6C65C")
