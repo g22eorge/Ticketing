@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { LoginForm } from "@/app/(auth)/login/login-form";
@@ -49,18 +50,18 @@ export default async function LoginPage() {
           </div>
 
           {/* Footer */}
-          <p className="mt-6 text-center text-[11px] text-white/20">
-            © {new Date().getFullYear()} Techserve Solutions Limited. All Rights Reserved.
-            <span className="mx-1">·</span>
-            <a
-              href="https://care.eagleinfosolutions.com"
-              target="_blank"
-              rel="noreferrer"
+          <div className="mt-6 flex items-center justify-center gap-4 text-[11px] text-white/20">
+            <Link
+              href="/"
               className="underline-offset-1 transition hover:text-white/40 hover:underline"
             >
-              Developed by Eagle Info Solutions
-            </a>
-          </p>
+              Home
+            </Link>
+            <span>·</span>
+            <p>
+              © {new Date().getFullYear()} Techserve Solutions Limited. All Rights Reserved.
+            </p>
+          </div>
         </div>
       </div>
     </main>
