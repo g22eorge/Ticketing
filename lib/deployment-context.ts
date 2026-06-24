@@ -1,12 +1,12 @@
 import { headers } from "next/headers";
 
-import { EIS_ORG_ID, isCareDomain } from "@/lib/org";
+import { TIIS_ORG_ID, isCareDomain } from "@/lib/org";
 
 export type DeploymentContext =
   | {
       mode: "CARE_SINGLE_TENANT";
       host: string;
-      fixedOrgId: typeof EIS_ORG_ID;
+      fixedOrgId: typeof TIIS_ORG_ID;
     }
   | {
       mode: "COMMERCIAL_MULTI_TENANT";
@@ -20,7 +20,7 @@ export function resolveDeploymentContext(host: string | null | undefined): Deplo
     return {
       mode: "CARE_SINGLE_TENANT",
       host: normalizedHost,
-      fixedOrgId: EIS_ORG_ID,
+      fixedOrgId: TIIS_ORG_ID,
     };
   }
 

@@ -1,6 +1,6 @@
 import { describe, it, expect } from "bun:test";
 import {
-  EIS_ORG_ID,
+  TIIS_ORG_ID,
   EIS_ORG_SLUG,
   EIS_ORG_NAME,
   isCareDomain,
@@ -11,8 +11,8 @@ import {
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 describe("EIS constants", () => {
-  it("EIS_ORG_ID is the well-known fixed ID", () => {
-    expect(EIS_ORG_ID).toBe("org_eis_01");
+  it("TIIS_ORG_ID is the well-known fixed ID", () => {
+    expect(TIIS_ORG_ID).toBe("org_tiis_01");
   });
 
   it("EIS_ORG_SLUG is correct", () => {

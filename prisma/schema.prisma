@@ -66,6 +66,19 @@ enum TicketCategory {
   OTHER
 }
 
+model Survey {
+  id        String   @id @default(cuid())
+  ticketId  String   @unique
+  ticket    Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  rating    Int      @default(5) // 1-5 stars
+  comment   String?
+  orgId     String?
+  org       Organization? @relation(fields: [orgId], references: [id], onDelete: SetNull)
+  createdAt DateTime @default(now())
+
+  @@index([ticketId])
+  @@index([orgId])
+}
 model Ticket {
   id        String          @id @default(cuid())
   ticketNumber String         @unique
@@ -103,6 +116,7 @@ model Ticket {
   invoice       Invoice?   @relation("TicketInvoice", fields: [invoiceId], references: [id], onDelete: SetNull)
   receipt       Receipt?   @relation("TicketReceipt")
   complaints    Complaint[]
+  survey        Survey?
 
   // Internal
   assignedToId  String?
@@ -214,6 +228,7 @@ model Organization {
   bankTransactions       BankTransaction[]
   campaigns              Campaign[]
   whatsAppConfig         OrgWhatsAppConfig?
+  surveys                Survey[]
 
   @@index([slug])
   @@index([isActive])

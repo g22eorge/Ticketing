@@ -1,14 +1,23 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+
 import { ImageResponse } from "next/og";
-import { eagleLogo } from "@/lib/eagle-logo";
 
-export const size = {
-  width: 1200,
-  height: 630,
-};
-
+export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
+function loadLogo(): string | null {
+  try {
+    const buf = readFileSync(join(process.cwd(), "public", "tiis-logo.png"));
+    return `data:image/png;base64,${buf.toString("base64")}`;
+  } catch {
+    return null;
+  }
+}
+
 export default function TwitterImage() {
+  const logoSrc = loadLogo();
+
   return new ImageResponse(
     (
       <div
@@ -62,22 +71,22 @@ export default function TwitterImage() {
 
           <div style={{ display: "flex", flexDirection: "column", gap: 18, maxWidth: 720 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
-              <div
-                style={{
-                  width: 72,
-                  height: 72,
-                  borderRadius: 999,
-                  background: "#fff",
-                  border: "1px solid rgba(79,142,247,0.35)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  boxShadow: "0 0 18px rgba(79,142,247,0.25)",
-                  overflow: "hidden",
-                }}
-              >
-                <img src={eagleLogo} width={72} height={72} style={{ objectFit: "cover" }} alt="" />
-              </div>
+              {logoSrc ? (
+                <div
+                  style={{
+                    width: 72,
+                    height: 72,
+                    borderRadius: 999,
+                    background: "#fff",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    overflow: "hidden",
+                  }}
+                >
+                  <img src={logoSrc} width={72} height={72} style={{ objectFit: "contain" }} alt="" />
+                </div>
+              ) : null}
               <div style={{ display: "flex", flexDirection: "column" }}>
                 <div style={{ color: "rgba(255,255,255,0.86)", fontSize: 14, letterSpacing: 4, fontWeight: 700 }}>
                   TECHSERVE ICT
@@ -89,8 +98,8 @@ export default function TwitterImage() {
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", color: "#fff", fontSize: 56, fontWeight: 800, lineHeight: 1.05 }}>
-              <div style={{ display: "flex" }}>ICT Support &amp;</div>
-              <div style={{ display: "flex" }}>Service Management</div>
+              <div>ICT Support &amp;</div>
+              <div>Service Management</div>
             </div>
 
             <div style={{ color: "rgba(255,255,255,0.70)", fontSize: 18, lineHeight: 1.4 }}>

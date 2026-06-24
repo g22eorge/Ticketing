@@ -3,7 +3,7 @@ import { sanitizeText, sanitizeOptionalText } from "@/lib/sanitize";
 import { orgDb, prisma } from "@/lib/prisma";
 import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
 
-const EIS_ORG_ID = "org_eis_01";
+const TIIS_ORG_ID = "org_tiis_01";
 
 const ALLOWED_ORIGINS = new Set([
   process.env.ALLOWED_ORIGIN_1 || "https://app.eagleinfosolutions.com",
@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, errors }, { status: 400, headers: corsHeaders });
     }
 
-    let resolvedOrgId: string = EIS_ORG_ID;
+    let resolvedOrgId: string = TIIS_ORG_ID;
     if (typeof body.org_slug === "string" && body.org_slug.trim()) {
       const org = await prisma.organization.findUnique({
         where: { slug: body.org_slug.trim() },
@@ -100,8 +100,8 @@ export async function POST(request: NextRequest) {
         { status: 429, headers: corsHeaders });
     }
 
-    const orgIdForSeq = resolvedOrgId === EIS_ORG_ID ? "_public" : resolvedOrgId;
-    const orgIdForTicket = resolvedOrgId === EIS_ORG_ID ? null : resolvedOrgId;
+    const orgIdForSeq = resolvedOrgId === TIIS_ORG_ID ? "_public" : resolvedOrgId;
+    const orgIdForTicket = resolvedOrgId === TIIS_ORG_ID ? null : resolvedOrgId;
     const year = now.getFullYear();
 
     const seqRecord = await prisma.ticketSequence.upsert({

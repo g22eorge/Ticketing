@@ -7,7 +7,7 @@ import { usePathname } from "next/navigation";
 type NavItem = {
   href: string;
   label: string;
-  icon: "home" | "ticket" | "client" | "subscription" | "quote" | "invoice" | "receipt" | "settings";
+  icon: "home" | "ticket" | "client" | "subscription" | "quote" | "invoice" | "receipt" | "reports" | "settings";
   roles: "all" | readonly Role[];
 };
 
@@ -19,14 +19,15 @@ const NAV: readonly NavItem[] = [
   { href: "/documents/quotations", label: "Quotations", icon: "quote", roles: "all" },
   { href: "/documents/invoices", label: "Invoices", icon: "invoice", roles: "all" },
   { href: "/documents/receipts", label: "Receipts", icon: "receipt", roles: "all" },
+  { href: "/reports-dashboard", label: "Reports", icon: "reports", roles: [Role.ADMIN, Role.MANAGER, Role.OPS, Role.FINANCE] },
   { href: "/settings", label: "Settings", icon: "settings", roles: "all" },
 ];
 
 const ROLE_ORDER: Partial<Record<Role, readonly string[]>> = {
-  ADMIN: ["/dashboard", "/tickets", "/clients", "/subscriptions", "/documents/quotations", "/documents/invoices", "/documents/receipts", "/settings"],
-  MANAGER: ["/dashboard", "/tickets", "/clients", "/subscriptions", "/documents/quotations", "/documents/invoices", "/documents/receipts", "/settings"],
-  OPS: ["/dashboard", "/tickets", "/clients", "/subscriptions", "/documents/quotations", "/documents/invoices", "/documents/receipts", "/settings"],
-  FINANCE: ["/dashboard", "/tickets", "/clients", "/subscriptions", "/documents/quotations", "/documents/invoices", "/documents/receipts", "/settings"],
+  ADMIN: ["/dashboard", "/tickets", "/clients", "/subscriptions", "/documents/quotations", "/documents/invoices", "/documents/receipts", "/reports-dashboard", "/settings"],
+  MANAGER: ["/dashboard", "/tickets", "/clients", "/subscriptions", "/documents/quotations", "/documents/invoices", "/documents/receipts", "/reports-dashboard", "/settings"],
+  OPS: ["/dashboard", "/tickets", "/clients", "/subscriptions", "/documents/quotations", "/documents/invoices", "/documents/receipts", "/reports-dashboard", "/settings"],
+  FINANCE: ["/dashboard", "/tickets", "/clients", "/subscriptions", "/documents/quotations", "/documents/invoices", "/documents/receipts", "/reports-dashboard", "/settings"],
   SALES: ["/dashboard", "/tickets", "/clients", "/subscriptions", "/documents/quotations", "/documents/receipts", "/settings"],
   FRONT_DESK: ["/dashboard", "/tickets", "/clients", "/subscriptions", "/documents/quotations", "/documents/receipts", "/settings"],
   TECHNICIAN_INTERNAL: ["/dashboard", "/tickets", "/clients", "/subscriptions", "/documents/quotations", "/documents/invoices", "/settings"],
@@ -104,6 +105,12 @@ function NavIcon({ icon }: { icon: NavItem["icon"] }) {
       return (
         <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
           <path fillRule="evenodd" d="M4.25 2A2.25 2.25 0 0 0 2 4.25v13.5A2.25 2.25 0 0 0 4.25 20h11.5A2.25 2.25 0 0 0 18 17.75V4.25A2.25 2.25 0 0 0 15.75 2H4.25ZM6 7.75A.75.75 0 0 1 6.75 7h6.5a.75.75 0 0 1 0 1.5h-6.5A.75.75 0 0 1 6 7.75Zm0 3a.75.75 0 0 1 .75-.75h6.5a.75.75 0 0 1 0 1.5h-6.5a.75.75 0 0 1-.75-.75Zm0 3a.75.75 0 0 1 .75-.75h3.5a.75.75 0 0 1 0 1.5h-3.5a.75.75 0 0 1-.75-.75Z" clipRule="evenodd" />
+        </svg>
+      );
+    case "reports":
+      return (
+        <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+          <path d="M15.5 2A1.5 1.5 0 0 0 14 3.5v13a1.5 1.5 0 0 0 1.5 1.5h1a1.5 1.5 0 0 0 1.5-1.5v-13A1.5 1.5 0 0 0 16.5 2h-1ZM9.5 6A1.5 1.5 0 0 0 8 7.5v9A1.5 1.5 0 0 0 9.5 18h1a1.5 1.5 0 0 0 1.5-1.5v-9A1.5 1.5 0 0 0 10.5 6h-1Zm-6 4A1.5 1.5 0 0 0 2 11.5v5A1.5 1.5 0 0 0 3.5 18h1A1.5 1.5 0 0 0 6 16.5v-5A1.5 1.5 0 0 0 4.5 10h-1Z" />
         </svg>
       );
     case "settings":

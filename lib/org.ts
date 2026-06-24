@@ -1,4 +1,4 @@
-export const EIS_ORG_ID = "org_eis_01";
+export const TIIS_ORG_ID = "org_tiis_01";
 export const EIS_ORG_SLUG = "eagle-info-solutions";
 export const EIS_ORG_NAME = "BusinessOS";
 

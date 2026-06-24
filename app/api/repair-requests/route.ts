@@ -6,7 +6,7 @@ import { orgDb, prisma } from "@/lib/prisma";
 import { deliverOutboundMessage, enqueueEmailMessage, enqueueWhatsAppMessage } from "@/lib/notifications/whatsapp-outbox";
 import { notifyRepairRequestReceived } from "@/lib/notifications";
 
-const EIS_ORG_ID = "org_eis_01";
+const TIIS_ORG_ID = "org_tiis_01";
 
 const ALLOWED_ORIGINS = new Set([
   process.env.ALLOWED_ORIGIN_1 || "https://app.eagleinfosolutions.com",
@@ -206,7 +206,7 @@ export async function POST(request: NextRequest) {
 
     // `org_slug` is sent by the /c/[slug] public company page.
     // Default to EIS org for backward-compatible requests from the root page.
-    let resolvedOrgId: string = EIS_ORG_ID;
+    let resolvedOrgId: string = TIIS_ORG_ID;
     let resolvedOrgName = "Service Desk";
     if (typeof body.org_slug === "string" && body.org_slug.trim()) {
       const org = await prisma.organization.findUnique({
