@@ -80,7 +80,8 @@ const worker = new Worker(
     }
   },
   {
-    connection: conn,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    connection: conn as any,
     concurrency: 4,
   },
 );
