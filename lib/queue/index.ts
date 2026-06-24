@@ -27,7 +27,8 @@ function getQueue(): Queue | null {
   const conn = getRedisConnection();
   if (!conn) return null;
   _queue = new Queue(QUEUE_NAME, {
-    connection: conn,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    connection: conn as any,
     defaultJobOptions: {
       attempts: 3,
       backoff: { type: "exponential", delay: 5_000 },
