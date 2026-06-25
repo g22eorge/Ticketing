@@ -28,19 +28,35 @@ export default async function AdminModulesPage() {
     );
   }
 
+  // Fetch orgs without grants; then fetch grants separately.
   const orgs = await prisma.organization.findMany({
     select: {
       id: true,
       name: true,
       slug: true,
       plan: true,
-      orgModuleGrants: {
-        select: { module: true },
-        orderBy: { module: "asc" },
-      },
     },
     orderBy: { name: "asc" },
   });
+
+  const grants = await prisma.orgModuleGrant.findMany({
+    select: {
+      orgId: true,
+      module: true,
+    },
+    orderBy: { module: "asc" },
+  });
+
+  const grantsByOrg = new Map<string, OrgModule[]>();
+  for (const g of grants) {
+    const list = grantsByOrg.get(g.orgId) ?? [];
+    list.push(g.module);
+    grantsByOrg.set(g.orgId, list);
+  }
+
+  const allModules = Object.values(OrgModule).filter(
+    (v): v is OrgModule => typeof v === "string"
+  );
 
   return (
     <div className="p-6 max-w-6xl">
@@ -51,8 +67,7 @@ export default async function AdminModulesPage() {
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {orgs.map((org) => {
-          const granted = new Set(org.orgModuleGrants.map((g) => g.module));
-          const allModules = Object.values(OrgModule);
+          const granted = new Set(grantsByOrg.get(org.id) ?? []);
           return (
             <div
               key={org.id}
