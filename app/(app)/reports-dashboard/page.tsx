@@ -65,12 +65,17 @@ async function getReportData(orgId: string, from: string | null, to: string | nu
     : 0;
 
   const surveyWhere = orgId ? { orgId, ...(dateFilter ? { createdAt: dateFilter } : {}) } : {};
-  const surveyAgg = await prisma.survey.aggregate({
-    where: surveyWhere,
-    _avg: { rating: true },
-    _count: { id: true },
-  });
-  const csatScore = surveyAgg._avg.rating ?? null;
+  let csatScore: number | null = null;
+  try {
+    const surveyAgg = await prisma.survey.aggregate({
+      where: { orgId },
+      _avg: { rating: true },
+      _count: { id: true },
+    });
+    csatScore = surveyAgg._avg.rating ?? null;
+  } catch {
+    csatScore = null;
+  }
 
   // --- Finance data -------------------------------------------------------
   const payments = await prisma.payment.findMany({
@@ -95,17 +100,27 @@ async function getReportData(orgId: string, from: string | null, to: string | nu
   const debtorsTotal = receivables._sum.totalAmount ?? 0;
 
   // New invoice metrics
-  const invoicesIssued = await prisma.invoice.count({
-    where: { orgId, ...(dateFilter ? { issuedAt: dateFilter } : {}) },
-  });
+  let invoicesIssued = 0;
+  try {
+    invoicesIssued = await prisma.invoice.count({
+      where: { orgId, ...(dateFilter ? { issuedAt: dateFilter } : {}) },
+    });
+  } catch {
+    invoicesIssued = 0;
+  }
 
-  const overdueInvoices = await prisma.invoice.count({
-    where: {
-      orgId,
-      status: { not: "PAID" },
-      dueDate: { lt: new Date() },
-    },
-  });
+  let overdueInvoices = 0;
+  try {
+    overdueInvoices = await prisma.invoice.count({
+      where: {
+        orgId,
+        status: { not: "PAID" },
+        dueDate: { lt: new Date() },
+      },
+    });
+  } catch {
+    overdueInvoices = 0;
+  }
 
   // --- Operations data ------------------------------------------------------
   const jobsReceived = await prisma.job.count({
