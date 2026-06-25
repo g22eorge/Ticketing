@@ -1,5 +1,5 @@
 export default {
-  captureMessage: (...args: any[]) => {},
-  captureException: (...args: any[]) => {},
+  captureMessage: function() {},
+  captureException: function() {}
   // Add other Sentry methods as needed
 };

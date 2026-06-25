@@ -107,7 +107,7 @@ export async function GET(req: NextRequest) {
       where: { orgId, status: { not: "PAID" } },
       _sum: { totalAmount: true },
     })
-    .catch(() => ({ _sum: { totalAmount: 0 } } as any));
+    .catch(() => ({ _sum: { totalAmount: 0 } } as { _sum: { totalAmount: number | null } }));
   const debtorsTotal = receivables._sum.totalAmount ?? 0;
 
   // --- Analytics data ------------------------------------------------------

@@ -606,7 +606,7 @@ export async function GET(req: NextRequest) {
     const quotationsCount = await prisma.quotation.count({ where: { orgId } });
     const receivables = await prisma.invoice
       .aggregate({ where: { orgId, status: { not: "PAID" } }, _sum: { totalAmount: true } })
-      .catch(() => ({ _sum: { totalAmount: 0 } } as any));
+      .catch(() => ({ _sum: { totalAmount: 0 } } as { _sum: { totalAmount: number | null } }));
     const debtorsTotal = receivables._sum.totalAmount ?? 0;
 
     const rows = [
