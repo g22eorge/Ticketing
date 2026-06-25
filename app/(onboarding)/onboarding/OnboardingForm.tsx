@@ -139,7 +139,7 @@ export function OnboardingForm() {
               type="text"
               value={businessName}
               onChange={(e) => setBusinessName(e.target.value)}
-              placeholder="e.g. Eagle Info Repairs"
+              placeholder="e.g. Techserve Repairs"
               required
               minLength={2}
               maxLength={100}

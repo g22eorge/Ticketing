@@ -77,9 +77,9 @@ export default async function NotificationTemplatesPage({
       where: {
         orgId: replaceOrgId,
         OR: [
-          { body: { contains: "Eagle Info Solutions" } },
+          { body: { contains: "Techserve ICT Solutions" } },
           { body: { contains: "Your Repair Team" } },
-          { subject: { contains: "Eagle Info Solutions" } },
+          { subject: { contains: "Techserve ICT Solutions" } },
           { subject: { contains: "Your Repair Team" } },
         ],
       },
@@ -89,11 +89,11 @@ export default async function NotificationTemplatesPage({
     let updated = 0;
     for (const t of rows) {
       const nextBody = t.body
-        .replaceAll("Eagle Info Solutions", companyName)
+            .replaceAll("Techserve ICT Solutions", companyName)
         .replaceAll("Your Repair Team", companyName);
       const nextSubject = t.subject
         ? t.subject
-            .replaceAll("Eagle Info Solutions", companyName)
+        .replaceAll("Techserve ICT Solutions", companyName)
             .replaceAll("Your Repair Team", companyName)
         : null;
       if (nextBody === t.body && nextSubject === t.subject) continue;
