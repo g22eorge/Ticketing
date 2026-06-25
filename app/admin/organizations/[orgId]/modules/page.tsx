@@ -4,6 +4,7 @@ import { OrgModule } from "@prisma/client";
 import Link from "next/link";
 import { NextRequest, NextResponse } from "next/server";
 import { checkIsPlatformAdmin } from "@/lib/platform-admin";
+import { notFound } from "next/navigation";
 
 const MODULE_LABELS: Record<OrgModule, string> = {
   JOBS: "Tickets & Repair Jobs",
@@ -24,6 +25,11 @@ export default async function ManageOrgModulesPage({
 }: {
   params: { orgId: string };
 }) {
+  const orgId = params.orgId;
+  if (!orgId) {
+    notFound();
+  }
+
   const { user } = await requireOrgSession();
   if (!user.email || !checkIsPlatformAdmin(user.email)) {
     return (
@@ -34,9 +40,9 @@ export default async function ManageOrgModulesPage({
   }
 
   const [org, grants] = await Promise.all([
-    prisma.organization.findUnique({ where: { id: params.orgId } }),
+    prisma.organization.findUnique({ where: { id: orgId } }),
     prisma.orgModuleGrant.findMany({
-      where: { orgId: params.orgId },
+      where: { orgId },
       select: { module: true },
     }),
   ]);
@@ -113,6 +119,11 @@ export async function POST(
   req: NextRequest,
   { params }: { params: { orgId: string } }
 ) {
+  const orgId = params.orgId;
+  if (!orgId) {
+    return NextResponse.json({ error: "Org ID required" }, { status: 400 });
+  }
+
   const { user } = await requireOrgSession();
   if (!user.email || !checkIsPlatformAdmin(user.email)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -125,7 +136,6 @@ export async function POST(
     (v): v is OrgModule => typeof v === "string"
   );
   const selected = modules.filter((m) => allModules.includes(m as OrgModule));
-  const orgId = params.orgId;
 
   await prisma.$transaction([
     prisma.orgModuleGrant.deleteMany({ where: { orgId } }),
