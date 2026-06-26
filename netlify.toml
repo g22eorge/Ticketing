@@ -4,12 +4,12 @@
 
 [[redirects]]
   from = "https://tiis.netlify.com/*"
-  to = "https://connect.techserveict.com/:splat"
+  to = "https://care.techserveict.com/:splat"
   status = 301
   force = true
 
 [[redirects]]
   from = "http://tiis.netlify.com/*"
-  to = "https://connect.techserveict.com/:splat"
+  to = "https://care.techserveict.com/:splat"
   status = 301
   force = true
