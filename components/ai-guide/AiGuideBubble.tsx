@@ -148,12 +148,10 @@ export function AiGuideBubble() {
   const inputRef  = useRef<HTMLTextAreaElement>(null);
   const wrapRef   = useRef<HTMLDivElement>(null);
 
-  // ── Drag ──────────────────────────────────────────────────────────────────
-  const [pos, setPos]   = useState<{ x: number; y: number } | null>(null);
-  const drag = useRef<{ sx: number; sy: number; ox: number; oy: number } | null>(null);
-  const didDrag = useRef(false);
-
-  useEffect(() => { setPos(getDefaultPos()); }, []);
+   // ── Drag ──────────────────────────────────────────────────────────────────
+   const [pos, setPos]   = useState<{ x: number; y: number } | null>(() => getDefaultPos());
+   const drag = useRef<{ sx: number; sy: number; ox: number; oy: number } | null>(null);
+   const didDrag = useRef(false);
 
   const onPtrDown = useCallback((e: React.PointerEvent) => {
     if (open) return;
@@ -180,8 +178,9 @@ export function AiGuideBubble() {
     }
   }, [pos]);
 
-  // Close panel on route change
-  useEffect(() => { setOpen(false); }, [pathname]);
+   // Close panel on route change
+   // eslint-disable-next-line react-hooks/set-state-in-effect
+   useEffect(() => { setOpen(false); }, [pathname]);
 
   // Close on outside click
   useEffect(() => {

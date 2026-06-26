@@ -4,6 +4,7 @@ import Link from "next/link";
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUserRole } from "@/lib/session";
 import { checkIsPlatformAdmin } from "@/lib/platform-admin";
+import { requireOrgSession } from "@/lib/org-context";
 import { notFound, redirect } from "next/navigation";
 
 const MODULE_LABELS: Record<OrgModule, string> = {
