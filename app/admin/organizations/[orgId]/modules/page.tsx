@@ -1,10 +1,10 @@
-import { requireOrgSession } from "@/lib/org-context";
 import { prisma } from "@/lib/prisma";
 import { OrgModule } from "@prisma/client";
 import Link from "next/link";
 import { NextRequest, NextResponse } from "next/server";
+import { getCurrentUserRole } from "@/lib/session";
 import { checkIsPlatformAdmin } from "@/lib/platform-admin";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 const MODULE_LABELS: Record<OrgModule, string> = {
   JOBS: "Tickets & Repair Jobs",
@@ -30,13 +30,9 @@ export default async function ManageOrgModulesPage({
     notFound();
   }
 
-  const { user } = await requireOrgSession();
-  if (!user.email || !checkIsPlatformAdmin(user.email)) {
-    return (
-      <div className="p-6">
-        <p className="text-red-600">Forbidden — Platform admin access required.</p>
-      </div>
-    );
+  const { user } = await getCurrentUserRole();
+  if (!user?.email || !checkIsPlatformAdmin(user.email)) {
+    redirect("/login");
   }
 
   const [org, grants] = await Promise.all([
