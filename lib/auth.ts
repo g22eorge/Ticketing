@@ -21,6 +21,8 @@ function collectTrustedOrigins() {
     "https://mrms-f8wt.vercel.app",         // commercial Vercel deployment
     "https://mrms-eight.vercel.app",
     "https://mrms-apga.vercel.app",         // commercial Vercel deployment (apga)
+    "https://tsict.netlify.app",            // Netlify deployment
+    "https://care.techserveict.com",        // custom domain
   ];
 
   const devOrigins = process.env.NODE_ENV === "production"
