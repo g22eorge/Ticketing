@@ -19,7 +19,7 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentUserRole, getCurrentUserRoleOptional } from "@/lib/session";
 import { checkIsPlatformAdmin } from "@/lib/platform-admin";
 import { getDeploymentContext } from "@/lib/deployment-context";
-import { TIIS_ORG_ID } from "@/lib/org";
+
 
 /** Use in server components and server actions that require a full org context. */
 export async function requireOrgSession() {
@@ -31,7 +31,7 @@ export async function requireOrgSession() {
       redirect("/platform");
     }
 
-    if (user!.orgId !== TIIS_ORG_ID) {
+    if (user!.orgId !== deployment.fixedOrgId) {
       redirect("/login");
     }
 
