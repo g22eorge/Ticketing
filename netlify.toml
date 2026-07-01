@@ -3,13 +3,13 @@
   publish = ".next"
 
 [[redirects]]
-  from = "https://care.techserveict.com/*"
-  to = "https://tsict.netlify.app/:splat"
+  from = "https://tsict.netlify.app/*"
+  to = "https://care.techserveict.com/:splat"
   status = 301
   force = true
 
 [[redirects]]
-  from = "http://care.techserveict.com/*"
-  to = "https://tsict.netlify.app/:splat"
+  from = "http://tsict.netlify.app/*"
+  to = "https://care.techserveict.com/:splat"
   status = 301
   force = true
