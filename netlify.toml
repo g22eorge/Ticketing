@@ -1,15 +1,2 @@
-[build]
-  command = "npm run build"
-  publish = ".next"
-
-[[redirects]]
-  from = "https://tsict.netlify.app/*"
-  to = "https://care.techserveict.com/:splat"
-  status = 301
-  force = true
-
-[[redirects]]
-  from = "http://tsict.netlify.app/*"
-  to = "https://care.techserveict.com/:splat"
-  status = 301
-  force = true
+# No redirects - both domains should serve the app directly
+# Use Netlify environment variables to control which domain is primary
