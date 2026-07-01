@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import Link from "next/link";
 
 import { prisma } from "@/lib/prisma";
 import { requireOrgSession } from "@/lib/org-context";
@@ -43,7 +44,7 @@ export default async function AdminOrgsPage() {
       isActive: true,
       billingStatus: true,
       moduleGrants: { select: { module: true } },
-      _count: { select: { users: true, jobs: true } },
+      _count: { select: { users: true, clients: true, clientSubscriptions: true, jobs: true } },
     },
   });
 
@@ -52,9 +53,9 @@ export default async function AdminOrgsPage() {
       <div className="panel-shadow flex items-center justify-between rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-2.5">
         <div>
           <p className="text-[12px] uppercase tracking-[0.16em] text-[var(--ink-muted)]">Admin</p>
-          <p className="text-[13px] font-bold text-[var(--ink)]">Organisation Module Access</p>
+          <p className="text-[13px] font-bold text-[var(--ink)]">Super Admin Panel</p>
           <p className="text-[13px] text-[var(--ink-muted)]">
-            Toggle which modules each org can access
+            Manage client accounts, subscriptions, and module access across all organisations
           </p>
         </div>
         <span className="rounded-full border border-amber-400/30 bg-amber-500/10 px-2 py-0.5 text-[12px] font-semibold text-amber-700 dark:text-amber-400">
@@ -75,7 +76,7 @@ export default async function AdminOrgsPage() {
                 <div className="flex-1 min-w-0">
                   <p className="text-[13px] font-bold text-[var(--ink)] truncate">{org.name}</p>
                   <p className="text-[12px] text-[var(--ink-muted)]">
-                    {org.slug} · {org.plan} · {org._count.users} users · {org._count.jobs} jobs
+                    {org.slug} · {org.plan} · {org._count.users} users · {org._count.clients} clients · {org._count.clientSubscriptions} subscriptions
                   </p>
                 </div>
                 <span
@@ -87,6 +88,12 @@ export default async function AdminOrgsPage() {
                 >
                   {org.billingStatus}
                 </span>
+                <Link
+                  href={`/platform-admin/orgs/${org.id}`}
+                  className="rounded-lg border border-[var(--line)] px-3 py-1.5 text-xs font-bold text-[var(--ink-muted)] transition hover:border-[var(--accent)]/40 hover:text-[var(--ink)]"
+                >
+                  Manage
+                </Link>
               </div>
 
               {/* Module toggles */}

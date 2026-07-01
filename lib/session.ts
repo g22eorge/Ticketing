@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 
 import { auth } from "@/lib/auth";
 import { getDeploymentContext } from "@/lib/deployment-context";
-import { EIS_ORG_ID } from "@/lib/org";
+import { TIIS_ORG_ID } from "@/lib/org";
 import { prisma } from "@/lib/prisma";
 
 function normalizeRole(role: Role): Role {
@@ -21,17 +21,20 @@ async function enforceDeploymentUser(user: { email: string; orgId: string | null
   const deployment = await getDeploymentContext();
   if (deployment.mode !== "CARE_SINGLE_TENANT") return;
   if (isPlatformAdminEmail(user.email)) return;
-  if (user.orgId !== EIS_ORG_ID) redirect("/login");
+  if (user.orgId !== TIIS_ORG_ID) redirect("/login");
 }
 
 async function isAllowedOptionalDeploymentUser(user: { email: string; orgId: string | null }) {
   const deployment = await getDeploymentContext();
   if (deployment.mode !== "CARE_SINGLE_TENANT") return true;
   if (isPlatformAdminEmail(user.email)) return true;
-  return user.orgId === EIS_ORG_ID;
+  return user.orgId === TIIS_ORG_ID;
 }
 
 export async function getSession() {
+  if (!auth) {
+    return { session: null, user: null };
+  }
   return auth.api.getSession({
     headers: await headers(),
   });

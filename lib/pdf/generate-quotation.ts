@@ -60,7 +60,7 @@ export async function generateQuotationBuffer(
   const issuedAtDate = job.quotedAt ?? new Date();
   const dueDate = new Date(issuedAtDate);
   dueDate.setDate(dueDate.getDate() + branding.quoteValidityDays);
-  const logoUrl = await resolvePdfLogo();
+  const logoUrl = await resolvePdfLogo(branding?.companyLogoUrl);
   const quotationNumber = formatQuotationNumber(
     job.jobNumber, issuedAtDate, branding.quotePrefix,
     branding.quoteFormat, branding.sequencePadLength,

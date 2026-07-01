@@ -94,7 +94,7 @@ function documentShell(input: {
   <main class="sheet">
     <header>
       <div>
-        <div class="brand">Eagle Info Repair Manager</div>
+        <div class="brand">Service Desk</div>
         <div class="subtitle">Procurement document export</div>
       </div>
       <div class="subtitle">Generated ${esc(generatedAt)}</div>
@@ -116,7 +116,7 @@ function documentShell(input: {
       <tfoot><tr><td colspan="3" class="num">Document Total</td><td class="num">${esc(money(input.total, currency))}</td></tr></tfoot>
     </table>
     ${input.notes ? `<section class="notes"><div class="label">Notes</div><div>${esc(input.notes)}</div></section>` : ""}
-    <footer><span>Prepared by Eagle Info Repair Manager</span><span>${esc(input.number)}</span></footer>
+    <footer><span>Prepared by Service Desk</span><span>${esc(input.number)}</span></footer>
   </main>
 </body>
 </html>`;

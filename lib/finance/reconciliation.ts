@@ -88,10 +88,6 @@ export async function loadCashCollectionsByChannel(params: {
 
 type ChannelTotals = { repairs: number; products: number; corporate: number; unallocated: number; total: number };
 
-function zeroChannels(): ChannelTotals {
-  return { repairs: 0, products: 0, corporate: 0, unallocated: 0, total: 0 };
-}
-
 function bucketchannels(
   payments: { amount: number; currency: string | null; exchangeRateToBase: number | null; saleId: string | null; receivedAt: Date | null; invoice: { invoiceType: string } | null }[],
   legacyJobs: { clientBill: number | null; clientPaidAt: Date | null; invoice: { id: string } | null }[],

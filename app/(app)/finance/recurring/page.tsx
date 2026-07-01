@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import type { InvoiceStatus, InvoiceType } from "@prisma/client";
@@ -389,7 +390,11 @@ export default async function RecurringInvoicesPage({
                         {FREQ_LABELS[rec.frequency as Frequency] ?? rec.frequency} · {TYPE_LABELS[rec.invoiceType] ?? rec.invoiceType}
                       </p>
                     </td>
-                    <td className="px-4 py-3 text-[13px] text-[var(--ink)]">{rec.client.fullName}</td>
+                    <td className="px-4 py-3 text-[13px]">
+                      <Link href={`/clients/${rec.client.id}`} className="font-medium text-[var(--ink)] hover:text-[var(--accent)] hover:underline">
+                        {rec.client.fullName}
+                      </Link>
+                    </td>
                     <td className="hidden px-4 py-3 text-[12px] text-[var(--ink-muted)] md:table-cell">
                       {FREQ_LABELS[rec.frequency as Frequency] ?? rec.frequency}
                     </td>

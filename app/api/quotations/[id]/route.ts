@@ -45,7 +45,7 @@ export async function GET(
   }
 
   const branding = await getDocumentBrandingSettings(orgId);
-  const logoUrl = await resolvePdfLogo();
+  const logoUrl = await resolvePdfLogo(branding?.companyLogoUrl);
   const recipient = quotation.client ?? quotation.lead;
   const clientLocation = quotation.client
     ? [quotation.client.organization, quotation.client.address].filter(Boolean).join("\n") || null

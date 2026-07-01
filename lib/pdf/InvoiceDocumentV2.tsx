@@ -13,7 +13,7 @@ const WHITE = "#ffffff";
 const RED = "#dc2626";
 
 const s = StyleSheet.create({
-  page: { padding: 20, fontSize: 8.6, color: DARK, backgroundColor: BG },
+  page: { padding: 28, fontSize: 8.6, color: DARK, backgroundColor: BG },
 
   // ── header ────────────────────────────────────────────────────────────────
   header: {

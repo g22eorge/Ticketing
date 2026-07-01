@@ -43,7 +43,7 @@ function daysAgo(n) {
 }
 
 // ── IDs for Local Org ─────────────────────────────────────────────────────────
-const ORG_ID  = process.env.SEED_ORG_ID ?? "org_eis_01";
+const ORG_ID  = process.env.SEED_ORG_ID ?? "org_tiis_01";
 const ADMIN   = process.env.SEED_ADMIN_ID ?? "cmpjmedf400012ljfrwg8hihf";
 const OPS     = process.env.SEED_OPS_ID ?? "cmpjmedf500052ljf7fuj9371";
 

@@ -70,7 +70,7 @@ export default async function FieldVisitDetailPage({
           brand: true,
           model: true,
           deviceType: true,
-          ...(isManager ? { client: { select: { fullName: true, phone: true } } } : {}),
+          ...(isManager ? { client: { select: { id: true, fullName: true, phone: true } } } : {}),
         },
       },
     },
@@ -119,7 +119,7 @@ export default async function FieldVisitDetailPage({
             />
             <DetailRow label="Device" value={`${visit.job.brand} ${visit.job.model}`} />
             {isManager && visit.job.client && (
-              <DetailRow label="Client" value={`${visit.job.client.fullName} — ${visit.job.client.phone}`} />
+              <DetailRow label="Client" value={<Link href={`/clients/${visit.job.client.id}`} className="hover:text-[var(--accent)] hover:underline">{visit.job.client.fullName} — {visit.job.client.phone}</Link>} />
             )}
           </dl>
         </div>
@@ -129,7 +129,7 @@ export default async function FieldVisitDetailPage({
         <p className="mb-3 text-xs font-bold uppercase tracking-wide text-[var(--ink-muted)]">Visit Details</p>
         <dl className="divide-y divide-[var(--line)]">
           <DetailRow label="Type" value={TYPE_LABELS[visit.type] ?? visit.type} />
-          <DetailRow label="Assigned To" value={visit.assignedTo.name} />
+          <DetailRow label="Assigned To" value={<Link href={`/users/${visit.assignedTo.id}`} className="hover:text-[var(--accent)] hover:underline">{visit.assignedTo.name}</Link>} />
           <DetailRow label="Scheduled By" value={visit.scheduledBy.name} />
           <DetailRow label="Scheduled At" value={formatEATDateTime(visit.scheduledAt)} />
           {visit.startedAt && (

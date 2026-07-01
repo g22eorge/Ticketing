@@ -32,7 +32,6 @@ export function ThemeProvider({
     } else if (theme === "light") {
       root.classList.add("light");
     }
-    // Cookie is the canonical persistence layer (read on SSR).
     document.cookie = `theme=${theme};path=/;max-age=${60 * 60 * 24 * 365};SameSite=Lax`;
   }, [theme]);
 

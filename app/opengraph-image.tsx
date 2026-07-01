@@ -1,21 +1,30 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+
 import { ImageResponse } from "next/og";
-import { eagleLogo } from "@/lib/eagle-logo";
 
-export const size = {
-  width: 1200,
-  height: 630,
-};
-
+export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
+function loadLogo(): string | null {
+  try {
+    const buf = readFileSync(join(process.cwd(), "public", "tiis-logo.png"));
+    return `data:image/png;base64,${buf.toString("base64")}`;
+  } catch {
+    return null;
+  }
+}
+
 export default function OpenGraphImage() {
+  const logoSrc = loadLogo();
+
   return new ImageResponse(
     (
       <div
         style={{
           width: "100%",
           height: "100%",
-          background: "#050505",
+          background: "#0a1628",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -28,7 +37,7 @@ export default function OpenGraphImage() {
             position: "absolute",
             inset: 0,
             background:
-              "radial-gradient(900px 450px at 18% 22%, rgba(212,175,55,0.22), transparent 55%), radial-gradient(720px 420px at 82% 70%, rgba(212,175,55,0.14), transparent 60%)",
+              "radial-gradient(900px 450px at 18% 22%, rgba(79,142,247,0.18), transparent 55%), radial-gradient(720px 420px at 82% 70%, rgba(79,142,247,0.12), transparent 60%)",
           }}
         />
 
@@ -38,7 +47,7 @@ export default function OpenGraphImage() {
             height: "100%",
             borderRadius: 40,
             border: "1px solid rgba(255,255,255,0.10)",
-            background: "linear-gradient(180deg, rgba(16,16,16,0.92), rgba(0,0,0,0.86))",
+            background: "linear-gradient(180deg, rgba(15,31,58,0.92), rgba(10,22,40,0.86))",
             boxShadow: "0 40px 120px rgba(0,0,0,0.55)",
             display: "flex",
             padding: 64,
@@ -55,46 +64,46 @@ export default function OpenGraphImage() {
               width: 520,
               height: 520,
               borderRadius: 999,
-              background: "radial-gradient(circle at 30% 30%, rgba(212,175,55,0.26), rgba(212,175,55,0.00) 65%)",
+              background: "radial-gradient(circle at 30% 30%, rgba(79,142,247,0.24), rgba(79,142,247,0.00) 65%)",
               filter: "blur(1px)",
             }}
           />
 
           <div style={{ display: "flex", flexDirection: "column", gap: 18, maxWidth: 720 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
-              <div
-                style={{
-                  width: 72,
-                  height: 72,
-                  borderRadius: 999,
-                  background: "#fff",
-                  border: "1px solid rgba(212,175,55,0.35)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  boxShadow: "0 0 18px rgba(212,175,55,0.25)",
-                  overflow: "hidden",
-                }}
-              >
-                <img src={eagleLogo} width={72} height={72} style={{ objectFit: "cover" }} alt="" />
-              </div>
+              {logoSrc ? (
+                <div
+                  style={{
+                    width: 72,
+                    height: 72,
+                    borderRadius: 999,
+                    background: "#fff",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    overflow: "hidden",
+                  }}
+                >
+                  <img src={logoSrc} width={72} height={72} style={{ objectFit: "contain" }} alt="" />
+                </div>
+              ) : null}
               <div style={{ display: "flex", flexDirection: "column" }}>
                 <div style={{ color: "rgba(255,255,255,0.86)", fontSize: 14, letterSpacing: 4, fontWeight: 700 }}>
-                  EAGLE INFO SOLUTIONS
+                  TECHSERVE ICT
                 </div>
-                <div style={{ color: "rgba(212,175,55,0.92)", fontSize: 12, letterSpacing: 3, fontWeight: 700 }}>
-                  REPAIR MANAGEMENT
+                <div style={{ color: "rgba(79,142,247,0.92)", fontSize: 12, letterSpacing: 3, fontWeight: 700 }}>
+                  SERVICE OPERATIONS PLATFORM
                 </div>
               </div>
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", color: "#fff", fontSize: 56, fontWeight: 800, lineHeight: 1.05 }}>
-              <div style={{ display: "flex" }}>Repair Booking,</div>
-              <div style={{ display: "flex" }}>Hardware, and Software</div>
+              <div>ICT Support &</div>
+              <div>Service Management</div>
             </div>
 
             <div style={{ color: "rgba(255,255,255,0.70)", fontSize: 18, lineHeight: 1.4 }}>
-              Track jobs, approvals, external assignments, and customer updates in one place.
+              Manage service requests, jobs, clients, quotations, invoices, and operational reports in one place.
             </div>
           </div>
 
@@ -111,7 +120,7 @@ export default function OpenGraphImage() {
                 background: "rgba(0,0,0,0.35)",
               }}
             >
-              Duuka ProMax
+              Techserve ICT Solutions
             </div>
           </div>
         </div>

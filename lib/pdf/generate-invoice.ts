@@ -96,7 +96,7 @@ export async function generateInvoiceBuffer(
     invType === "CONTRACT"    ? "CONTRACT" :
     "REPAIR";
   const issuedAtDate = new Date();
-  const logoUrl = await resolveInvoiceLogo();
+  const logoUrl = await resolveInvoiceLogo(branding?.companyLogoUrl);
   const normalizedFooterText = branding.footerText.trim();
   const quotationNumber = formatQuotationNumber(
     job.jobNumber, issuedAtDate, branding.quotePrefix,

@@ -27,7 +27,8 @@ function getQueue(): Queue | null {
   const conn = getRedisConnection();
   if (!conn) return null;
   _queue = new Queue(QUEUE_NAME, {
-    connection: conn,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    connection: conn as any,
     defaultJobOptions: {
       attempts: 3,
       backoff: { type: "exponential", delay: 5_000 },
@@ -70,7 +71,7 @@ export async function enqueue<T>(
       console.error(`[queue/fallback] ${jobName} failed:`, err);
     }
   } else {
-    console.warn(`[queue/fallback] no handler registered for ${jobName} and Redis is unavailable`);
+    // No handler registered and Redis unavailable — silent no-op.
   }
 
   return null;

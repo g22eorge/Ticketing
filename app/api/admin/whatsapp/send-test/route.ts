@@ -20,7 +20,7 @@ export async function GET() {
     <title>WhatsApp Send Test</title>
   </head>
   <body style="font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial; padding: 24px;">
-    <h1 style="margin: 0 0 8px;">MRMS WhatsApp Send Test</h1>
+    <h1 style="margin: 0 0 8px;">Service Desk WhatsApp Send Test</h1>
     <p style="margin: 0 0 16px;">Sends a single WhatsApp message via Cloud API. Admin only.</p>
     <div style="display:flex; gap:10px; flex-wrap: wrap; margin-bottom: 12px;">
       <a href="/api/admin/whatsapp/health" style="padding: 10px 14px; border: 1px solid #ddd; background: #fff; color: #111; border-radius: 8px; text-decoration:none;">View Health</a>
@@ -43,7 +43,7 @@ export async function GET() {
       const to = document.getElementById('to');
       const msg = document.getElementById('msg');
 
-      msg.value = 'Hello! This is a test message from MRMS.';
+      msg.value = 'Hello! This is a test message from Service Desk.';
 
       btn.addEventListener('click', async () => {
         btn.disabled = true;

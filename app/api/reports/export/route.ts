@@ -20,7 +20,8 @@ type ExportType =
   | "expenses"
   | "inventory-stock"
   | "leads"
-  | "staff-sales";
+  | "staff-sales"
+  | "summary";
 
 function toCsv(rows: Array<Record<string, string | number>>) {
   if (rows.length === 0) return "";
@@ -81,7 +82,7 @@ function allowedForType(user: { role: Role; permissions: string[] }, type: Expor
 }
 
 export async function GET(req: NextRequest) {
-  const session = await auth.api.getSession({ headers: req.headers });
+  const session = auth ? await auth.api.getSession({ headers: req.headers }) : null;
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -111,7 +112,7 @@ export async function GET(req: NextRequest) {
   const orgId = user.orgId;
 
   const type = (req.nextUrl.searchParams.get("type") ?? "") as ExportType;
-  if (!["pipeline-aging", "revenue-variance", "technician-performance", "external-payouts", "device-performance", "pos-sales", "invoices", "expenses", "inventory-stock", "leads", "staff-sales"].includes(type)) {
+  if (!["pipeline-aging", "revenue-variance", "technician-performance", "external-payouts", "device-performance", "pos-sales", "invoices", "expenses", "inventory-stock", "leads", "staff-sales", "summary"].includes(type)) {
     return NextResponse.json({ error: "Invalid export type" }, { status: 400 });
   }
 
@@ -574,6 +575,56 @@ export async function GET(req: NextRequest) {
       headers: {
         "content-type": "text/csv; charset=utf-8",
         "content-disposition": `attachment; filename="staff-sales-${month.label}.csv"`,
+      },
+    });
+  }
+
+  // ── Summary Report ──────────────────────────────────────────
+  if (type === "summary") {
+    // Admin metrics
+    const completedJobs = await prisma.job.findMany({
+      where: { orgId, status: "COMPLETED", completedAt: { not: null } },
+      select: { receivedAt: true, completedAt: true },
+    });
+    const avgResolutionHours = completedJobs.length
+      ? completedJobs.reduce((sum, j) => sum + (j.completedAt!.getTime() - j.receivedAt.getTime()) / 36e5, 0) / completedJobs.length
+      : 0;
+
+    const surveyAgg = await prisma.survey.aggregate({ where: { orgId }, _avg: { rating: true }, _count: { id: true } });
+    const csatScore = surveyAgg._avg.rating ?? null;
+
+    // Finance metrics
+    const payments = await prisma.payment.findMany({ where: { orgId }, select: { amount: true } });
+    const paymentsReceived = payments.reduce((s, p) => s + p.amount, 0);
+
+    const unpaidInvoices = await prisma.invoice.findMany({
+      where: { orgId, status: { not: "PAID" } },
+      select: { totalAmount: true, paidAmount: true },
+    });
+    const cashPending = unpaidInvoices.reduce((s, inv) => s + (inv.totalAmount - (inv.paidAmount ?? 0)), 0);
+
+    const quotationsCount = await prisma.quotation.count({ where: { orgId } });
+    const receivables = await prisma.invoice
+      .aggregate({ where: { orgId, status: { not: "PAID" } }, _sum: { totalAmount: true } })
+      .catch(() => ({ _sum: { totalAmount: 0 } } as { _sum: { totalAmount: number | null } }));
+    const debtorsTotal = receivables._sum.totalAmount ?? 0;
+
+    const rows = [
+      { metric: "avg_resolution_hours", value: avgResolutionHours.toFixed(2) },
+      { metric: "csat_score", value: csatScore !== null ? csatScore.toFixed(2) : "N/A" },
+      { metric: "payments_received", value: paymentsReceived.toFixed(2) },
+      { metric: "cash_pending", value: cashPending.toFixed(2) },
+      { metric: "quotations_count", value: String(quotationsCount) },
+      { metric: "debtors_total", value: debtorsTotal.toFixed(2) },
+      { metric: "uptime", value: "N/A" },
+      { metric: "exported_at", value: new Date().toISOString() },
+    ];
+
+    const csv = toCsv(rows);
+    return new NextResponse(csv, {
+      headers: {
+        "content-type": "text/csv; charset=utf-8",
+        "content-disposition": `attachment; filename="summary-report-${new Date().toISOString().slice(0, 10)}.csv"`,
       },
     });
   }

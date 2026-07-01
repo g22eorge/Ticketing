@@ -30,7 +30,7 @@ async function upsertUser(email: string, name: string, role: string) {
     await prisma.account.update({ where: { id: existing.id }, data: { password: await hashPassword(DEMO_PASSWORD) } });
   } else {
     await prisma.account.create({
-      data: { accountId: user.id, providerId: "credential", userId: user.id, password: await hashPassword(DEMO_PASSWORD) },
+      data: { accountId: user.email, providerId: "credential", userId: user.id, password: await hashPassword(DEMO_PASSWORD) },
     });
   }
   return user;

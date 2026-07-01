@@ -50,11 +50,31 @@ export default async function OrgDetailPage({ params }: { params: Promise<{ id: 
   if (!org) notFound();
 
   // Counts that aren't on the relation (Job has orgId but Organisation has no jobs[] relation)
-  const [orgUsers, jobCount, billingHistory, smsUsed, orgWaCfg] = await Promise.all([
+  const [orgUsers, clients, subscriptions, jobCount, billingHistory, smsUsed, orgWaCfg] = await Promise.all([
     prisma.user.findMany({
       where: { orgId: id },
       select: { id: true, name: true, email: true, role: true, isActive: true, createdAt: true },
       orderBy: { createdAt: "asc" },
+    }).catch(() => []),
+    prisma.client.findMany({
+      where: { orgId: id },
+      select: { id: true, fullName: true, phone: true, email: true, isSLACovered: true },
+      orderBy: { fullName: "asc" },
+      take: 20,
+    }).catch(() => []),
+    prisma.clientSubscription.findMany({
+      where: { orgId: id },
+      select: {
+        id: true,
+        cycle: true,
+        renewalDate: true,
+        status: true,
+        amountPaid: true,
+        currency: true,
+        client: { select: { fullName: true, phone: true } },
+      },
+      orderBy: { renewalDate: "asc" },
+      take: 20,
     }).catch(() => []),
     prisma.job.count({ where: { orgId: id } }).catch(() => 0),
     getBillingEventsByOrg(id).catch(() => [] as Awaited<ReturnType<typeof getBillingEventsByOrg>>),
@@ -104,6 +124,8 @@ export default async function OrgDetailPage({ params }: { params: Promise<{ id: 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[
           { label: "Users",   value: orgUsers.length },
+          { label: "Clients", value: clients.length },
+          { label: "SLA Subs", value: subscriptions.length },
           { label: "Jobs",    value: jobCount },
           { label: "Total Paid", value: fmtMoney(totalPaid) },
           { label: `SMS ${smsUsed}/${smsLimit}`, value: `${smsPct}%` },
@@ -246,6 +268,49 @@ export default async function OrgDetailPage({ params }: { params: Promise<{ id: 
             )}
           </tbody>
         </table>
+      </div>
+
+      {/* Clients and subscriptions */}
+      <div className="grid gap-4 lg:grid-cols-2">
+        <div className="overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
+          <div className="border-b border-[var(--line)] px-5 py-3">
+            <SectionTitle>Client Accounts ({clients.length})</SectionTitle>
+          </div>
+          <div className="divide-y divide-[var(--line)]">
+            {clients.map((client) => (
+              <div key={client.id} className="px-5 py-3">
+                <p className="text-sm font-bold text-[var(--ink)]">{client.fullName}</p>
+                <p className="text-xs text-[var(--ink-muted)]">{client.phone}{client.email ? ` · ${client.email}` : ""}</p>
+                {client.isSLACovered ? <span className="mt-2 inline-flex rounded-full bg-emerald-500/10 px-2 py-0.5 text-[11px] font-bold text-emerald-700">SLA</span> : null}
+              </div>
+            ))}
+            {clients.length === 0 ? <p className="px-5 py-6 text-sm text-[var(--ink-muted)]">No clients yet.</p> : null}
+          </div>
+        </div>
+
+        <div className="overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
+          <div className="border-b border-[var(--line)] px-5 py-3">
+            <SectionTitle>Client Subscriptions ({subscriptions.length})</SectionTitle>
+          </div>
+          <div className="divide-y divide-[var(--line)]">
+            {subscriptions.map((subscription) => (
+              <div key={subscription.id} className="px-5 py-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-bold text-[var(--ink)]">{subscription.client.fullName}</p>
+                    <p className="text-xs text-[var(--ink-muted)]">{subscription.cycle} · {subscription.status}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs font-semibold text-[var(--ink-muted)]">Renewal</p>
+                    <p className="text-sm font-bold text-[var(--ink)]">{fmt(subscription.renewalDate)}</p>
+                    <p className="text-xs text-[var(--ink-muted)]">{fmtMoney(subscription.amountPaid, subscription.currency)}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+            {subscriptions.length === 0 ? <p className="px-5 py-6 text-sm text-[var(--ink-muted)]">No client subscriptions yet.</p> : null}
+          </div>
+        </div>
       </div>
 
       {/* Payment history */}

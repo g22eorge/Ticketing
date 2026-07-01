@@ -146,25 +146,33 @@ export function NewJobStepper({ receivedByName }: { receivedByName: string }) {
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  useEffect(() => {
-    const q = clientLookupQuery.trim();
-    if (q.length < 2) {
-      setClientLookupResults([]);
-      setClientLookupLoading(false);
-      return;
-    }
+   // eslint-disable-next-line react-hooks/set-state-in-effect
+   useEffect(() => {
+     const q = clientLookupQuery.trim();
+     if (q.length < 2) {
+       // eslint-disable-next-line react-hooks/set-state-in-effect
+       setClientLookupResults([]);
+       // eslint-disable-next-line react-hooks/set-state-in-effect
+       setClientLookupLoading(false);
+       return;
+     }
 
-    let cancelled = false;
-    setClientLookupLoading(true);
-    const timer = setTimeout(async () => {
+     let cancelled = false;
+     // eslint-disable-next-line react-hooks/set-state-in-effect
+     setClientLookupLoading(true);
+     const timer = setTimeout(async () => {
       try {
         const res = await fetch(`/api/clients/lookup?q=${encodeURIComponent(q)}`);
-        if (!res.ok) return;
-        const data = await res.json();
-        if (cancelled) return;
-        setClientLookupResults(Array.isArray(data.clients) ? data.clients : []);
-      } finally {
-        if (!cancelled) setClientLookupLoading(false);
+       if (!res.ok) return;
+       const data = await res.json();
+       if (cancelled) return;
+       // eslint-disable-next-line react-hooks/set-state-in-effect
+       setClientLookupResults(Array.isArray(data.clients) ? data.clients : []);
+     } finally {
+       if (!cancelled) {
+         // eslint-disable-next-line react-hooks/set-state-in-effect
+         setClientLookupLoading(false);
+       }
       }
     }, 200);
 

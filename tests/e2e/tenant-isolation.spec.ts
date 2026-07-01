@@ -40,14 +40,14 @@ function parseSetCookie(setCookie: string, origin: URL): Cookie {
   return cookie;
 }
 
-async function ensureAccount(userId: string) {
+async function ensureAccount(userId: string, email: string) {
   const passwordHash = await hashPassword(password);
   const existing = await prisma.account.findFirst({ where: { userId, providerId: "credential" }, select: { id: true } });
   if (existing) {
     await prisma.account.update({ where: { id: existing.id }, data: { password: passwordHash } });
     return;
   }
-  await prisma.account.create({ data: { userId, accountId: userId, providerId: "credential", password: passwordHash } });
+  await prisma.account.create({ data: { userId, accountId: email, providerId: "credential", password: passwordHash } });
 }
 
 async function seedTenantFixture() {
@@ -85,8 +85,8 @@ async function seedTenantFixture() {
       create: { orgId: orgB.id, name: "Tenant B Admin", email: "tenant-b-admin@example.invalid", role: "ADMIN", isActive: true, emailVerified: true },
     }),
   ]);
-  await ensureAccount(userA.id);
-  await ensureAccount(userB.id);
+  await ensureAccount(userA.id, userA.email);
+  await ensureAccount(userB.id, userB.email);
 
   const clientB = await prisma.client.upsert({
     where: { phone_orgId: { phone: "08028880001", orgId: orgB.id } },

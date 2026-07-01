@@ -146,7 +146,7 @@ export default async function FeedbackPage({
       <div className="mx-auto max-w-lg space-y-4 py-8">
         <div className="text-center">
           <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]">
-            Eagle Info Repair
+            Techserve ICT Solutions
           </p>
           <h1 className="mt-1 text-xl font-black text-[var(--ink)]">Submit a Complaint</h1>
           <p className="mt-1 text-sm text-[var(--ink-muted)]">

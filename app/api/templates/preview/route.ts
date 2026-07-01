@@ -30,7 +30,7 @@ export const dynamic = "force-dynamic";
 // ── Logo resolver (same as invoice route) ─────────────────────────────────────
 
 async function resolveLogoDataUri(): Promise<string | undefined> {
-  const file = fileURLToPath(new URL("../../../../public/eagle-info-logo.png", import.meta.url));
+  const file = fileURLToPath(new URL("../../../../public/tiis-logo.png", import.meta.url));
   const bytes = await readFile(file);
   return `data:image/png;base64,${bytes.toString("base64")}`;
 }
@@ -38,7 +38,7 @@ async function resolveLogoDataUri(): Promise<string | undefined> {
 // ── Sample / dummy data ───────────────────────────────────────────────────────
 
 const SAMPLE = {
-  companyName:       "Eagle Info Tech Ltd",
+  companyName:       "Techserve ICT Solutions",
   companyTagline:    "Expert Device Repair & Support",
   companyAddressLine1: "Plot 42, Kampala Road",
   companyAddressLine2: "Kampala, Uganda",
@@ -80,9 +80,9 @@ const SAMPLE = {
   notes:           "Client to be contacted via WhatsApp when device is ready for pickup.",
   status:          "COMPLETED",
   currency:        "UGX",
-  termsText:       "Payment is due on collection.\nAll repairs carry a 30-day limited warranty on parts and labour.\nEagle Info Tech is not liable for pre-existing software issues.",
-  footerText:      "Thank you for trusting Eagle Info Tech. We value your business.",
-  signatureCompanyLabel: "Authorised by Eagle Info Tech",
+   termsText:       "Payment is due on collection.\nAll repairs carry a 30-day limited warranty on parts and labour.\nTechserve ICT Solutions is not liable for pre-existing software issues.",
+   footerText:      "Thank you for trusting Techserve ICT Solutions. We value your business.",
+   signatureCompanyLabel: "Authorised by Techserve ICT Solutions",
   signatureClientLabel:  "Client Signature",
   documentTitle:   "INVOICE",
 };

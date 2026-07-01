@@ -6,7 +6,7 @@ import { redirect } from "next/navigation";
 import { MonthSelectForm } from "@/components/shared/MonthSelectForm";
 import { TechnicianBarChart } from "@/components/reports/ReportsCharts";
 import { MobileActivityFeed } from "@/components/reports/MobileActivityFeed";
-import { getClientBill, getExternalTechBill, resolveTechCost } from "@/lib/billing";
+import { getClientBill, resolveTechCost } from "@/lib/billing";
 import { formatMoneyCompact, toBaseAmount } from "@/lib/currency";
 import { formatEATMonthLabel } from "@/lib/date-eat";
 import { loadBilledTotals, loadCashCollectionsByChannel, loadReceivablesTotal } from "@/lib/finance/reconciliation";
@@ -396,9 +396,6 @@ export default async function ReportsPage({
   const revenueSelected = revenueFor(completedSelected);
   const revenuePrev = revenueFor(completedPrev);
   const revenueDelta = revenueSelected - revenuePrev;
-  const marginSelected = completedSelected
-    .filter((j) => getClientBill(j) !== null)
-    .reduce((s, j) => s + ((getClientBill(j) ?? 0) - (getExternalTechBill(j) ?? 0)), 0);
 
   const cashIn = payments.reduce(
     (s, p) =>
@@ -501,9 +498,7 @@ export default async function ReportsPage({
     .sort((a, b) => b.total - a.total);
 
   // Revenue channels
-  const repairCollectionsTotal = collectionsByChannel.repairs;
   const posSalesTotal = collectionsByChannel.products;
-  const invoicesPaidTotal = collectionsByChannel.corporate + collectionsByChannel.unallocated;
   const totalAllChannels = collectionsByChannel.total;
   const totalBilledAllChannels = billedByChannel.total;
   const expensesTotal = expensesMtd.reduce((s, e) => s + e.amount, 0);
@@ -1098,7 +1093,7 @@ export default async function ReportsPage({
                 <p className="mt-1 text-2xl font-black tabular-nums text-[var(--ink)]">{formatMoneyCompact(receivables.total, currency)}</p>
                 <p className="mt-1 text-xs text-[var(--ink-muted)]">{receivables.invoiceCount + receivables.saleCount} open invoices &amp; sales</p>
                 {receivables.total > 0 && (
-                  <Link href="/finance/invoices" className="mt-3 inline-block text-xs font-semibold text-emerald-600 hover:underline">
+                  <Link href="/documents/invoices" className="mt-3 inline-block text-xs font-semibold text-emerald-600 hover:underline">
                     View outstanding invoices →
                   </Link>
                 )}

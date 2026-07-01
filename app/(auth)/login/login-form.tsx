@@ -52,7 +52,7 @@ export function LoginForm() {
           required
           autoComplete="email"
           placeholder="you@example.com"
-          className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/20 focus:border-[#D4AF37]/50 focus:bg-white/8 focus:ring-2 focus:ring-[#D4AF37]/15"
+          className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/20 focus:border-[#4F8EF7]/50 focus:bg-white/8 focus:ring-2 focus:ring-[#4F8EF7]/15"
         />
       </div>
 
@@ -69,7 +69,7 @@ export function LoginForm() {
             required
             autoComplete="current-password"
             placeholder="••••••••"
-            className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 pr-20 text-sm text-white outline-none transition placeholder:text-white/20 focus:border-[#D4AF37]/50 focus:bg-white/8 focus:ring-2 focus:ring-[#D4AF37]/15"
+            className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 pr-20 text-sm text-white outline-none transition placeholder:text-white/20 focus:border-[#4F8EF7]/50 focus:bg-white/8 focus:ring-2 focus:ring-[#4F8EF7]/15"
           />
           <button
             type="button"
@@ -87,7 +87,7 @@ export function LoginForm() {
           <input
             type="checkbox"
             name="rememberMe"
-            className="h-3.5 w-3.5 rounded border border-white/20 bg-white/5 accent-[#D4AF37]"
+            className="h-3.5 w-3.5 rounded border border-white/20 bg-white/5 accent-[#4F8EF7]"
           />
           Remember me
         </label>
@@ -104,7 +104,7 @@ export function LoginForm() {
               alert("Please contact your administrator to reset your password.");
             }
           }}
-          className="text-xs text-[#D4AF37]/60 transition hover:text-[#D4AF37]"
+          className="text-xs text-[#4F8EF7]/60 transition hover:text-[#4F8EF7]"
         >
           Forgot password?
         </button>
@@ -114,14 +114,14 @@ export function LoginForm() {
       <button
         disabled={isPending}
         type="submit"
-        className="mt-2 w-full rounded-xl bg-[#D4AF37] py-3 text-sm font-semibold text-black transition hover:bg-[#c9a430] disabled:opacity-50"
+        className="mt-2 w-full rounded-xl bg-[#4F8EF7] py-3 text-sm font-semibold text-black transition hover:bg-[#2563EB] disabled:opacity-50"
       >
         {isPending ? "Signing in…" : "Sign in"}
       </button>
 
       <p className="text-center text-xs text-white/30">
         New here?{" "}
-        <Link href="/register" className="text-[#D4AF37]/70 transition hover:text-[#D4AF37]">
+        <Link href="/register" className="text-[#4F8EF7]/70 transition hover:text-[#4F8EF7]">
           Create a free account
         </Link>
       </p>

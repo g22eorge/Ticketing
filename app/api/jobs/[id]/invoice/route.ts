@@ -64,7 +64,22 @@ async function toDataUriFromLocal(filePath: string, contentType: string) {
   return `data:${contentType};base64,${bytes.toString("base64")}`;
 }
 
-async function resolveInvoiceLogo() {
+async function resolveInvoiceLogo(brandingLogoUrl?: string) {
+  if (brandingLogoUrl) {
+    if (brandingLogoUrl.startsWith("data:")) return brandingLogoUrl;
+    if (brandingLogoUrl.startsWith("http://") || brandingLogoUrl.startsWith("https://")) {
+      const remote = await toDataUriFromRemote(brandingLogoUrl);
+      if (remote) return remote;
+    }
+    if (brandingLogoUrl.startsWith("/")) {
+      const baseUrl = process.env.BETTER_AUTH_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? "";
+      if (baseUrl) {
+        const resolved = await toDataUriFromRemote(`${baseUrl}${brandingLogoUrl}`);
+        if (resolved) return resolved;
+      }
+    }
+  }
+
   const localCandidates: Array<{ file: string; type: string }> = [
     { file: path.join(process.cwd(), "public", "eagle-info-logo.png"), type: "image/png" },
     { file: path.join(process.cwd(), "public", "eagle-info-logo.jpg"), type: "image/jpeg" },
@@ -211,7 +226,7 @@ export async function GET(
   const issuedAtDate = new Date();
   const dueDate = new Date(issuedAtDate);
   dueDate.setDate(dueDate.getDate() + branding.quoteValidityDays);
-  const logoUrl = await resolveInvoiceLogo();
+  const logoUrl = await resolveInvoiceLogo(branding?.companyLogoUrl);
   const normalizedFooterText = (branding.footerText ?? "").trim();
   const issuedAtForNumber = job.invoiceIssuedAt ?? issuedAtDate;
   const quotationNumber = formatQuotationNumber(

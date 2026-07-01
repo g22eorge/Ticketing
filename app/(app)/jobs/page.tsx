@@ -651,7 +651,6 @@ export default async function JobsPage({
         ];
         const activeTotal = PIPELINE_STATUSES.reduce((s, p) => s + (uiStatusCountMap.get(p.key) ?? 0), 0);
         if (activeTotal === 0) return null;
-        const overdueCount = uiStatusCountMap.get("RECEIVED") ?? 0; // rough proxy — overdue already has a filter
         return (
           <div className="panel-shadow hidden overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)] lg:block mb-0">
             <div className="px-4 pt-3 pb-2">

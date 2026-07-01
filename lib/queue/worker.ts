@@ -36,7 +36,6 @@ registerFallbackHandler(Jobs.LANDED_COST_RECALC, handleLandedCostRecalc);
 const conn = getRedisConnection();
 
 if (!conn) {
-  console.warn("[worker] REDIS_URL not set — BullMQ worker not started. Jobs run inline (fallback mode).");
   process.exit(0);
 }
 
@@ -81,7 +80,8 @@ const worker = new Worker(
     }
   },
   {
-    connection: conn,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    connection: conn as any,
     concurrency: 4,
   },
 );

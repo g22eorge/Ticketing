@@ -262,7 +262,7 @@ function quotationLineTotal(item: { quantity: number; unitPrice: number; discoun
   return item.quantity * item.unitPrice * (1 - item.discount / 100);
 }
 
-async function recalculateQuotationTotals(quotationId: string) {
+export async function recalculateQuotationTotals(quotationId: string) {
   const [items, quotation] = await Promise.all([
     prisma.quotationItem.findMany({ where: { quotationId } }),
     prisma.quotation.findUnique({ where: { id: quotationId }, select: { subtotal: true, vatAmount: true, taxRate: true } }),

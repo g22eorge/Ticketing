@@ -35,9 +35,9 @@ export type OrgRow = {
 function TrialBadge({ trialEndsAt }: { trialEndsAt: Date | null }) {
   if (!trialEndsAt) return <span className="text-[var(--ink-muted)]">—</span>;
   const days = Math.ceil((new Date(trialEndsAt).getTime() - Date.now()) / 86_400_000);
-  if (days < 0) return <span className="font-semibold text-red-600">Expired</span>;
-  if (days <= 3) return <span className="font-semibold text-red-500">{days}d left</span>;
-  if (days <= 7) return <span className="font-semibold text-amber-500">{days}d left</span>;
+  if (days < 0)   return <span className="font-semibold text-red-600 dark:text-red-400">Expired</span>;
+  if (days <= 3)  return <span className="font-semibold text-red-500 dark:text-red-400">{days}d left</span>;
+  if (days <= 7)  return <span className="font-semibold text-amber-500 dark:text-amber-400">{days}d left</span>;
   return <span className="text-[var(--ink-muted)]">{days}d left</span>;
 }
 
@@ -203,7 +203,7 @@ export function OrgTable({ orgs }: { orgs: OrgRow[] }) {
                           <option value="PAST_DUE">Past Due</option>
                           <option value="CANCELLED">Cancelled</option>
                         </select>
-                        <button type="submit" className="rounded border border-[var(--line)] bg-[var(--panel-strong)] px-1.5 py-0.5 text-[13px] font-semibold text-[var(--ink-muted)] hover:border-sky-400/60 hover:text-sky-600">
+                        <button type="submit" className="rounded border border-[var(--line)] bg-[var(--panel-strong)] px-1.5 py-0.5 text-[13px] font-semibold text-[var(--ink-muted)] hover:border-sky-400/60 hover:text-sky-600 dark:hover:text-sky-300">
                           Status
                         </button>
                       </form>

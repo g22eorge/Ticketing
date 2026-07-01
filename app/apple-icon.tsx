@@ -33,7 +33,7 @@ export default function AppleIcon() {
             boxShadow: "0 18px 55px rgba(0,0,0,0.55)",
           }}
         >
-          <span style={{ color: "#D4AF37", fontWeight: 900, fontSize: 44, letterSpacing: 3 }}>EIS</span>
+          <span style={{ color: "#4F8EF7", fontWeight: 900, fontSize: 44, letterSpacing: 3 }}>BOS</span>
         </div>
       </div>
     ),

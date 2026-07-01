@@ -9,10 +9,10 @@
   --line: #D4CEC6;
   --brand: #111111;
   --brand-deep: #000000;
-  --accent: #D4AF37;
-  --accent-fg: #7A5F00;
-  --accent-muted: rgba(212, 175, 55, 0.12);
-  --accent-border: rgba(212, 175, 55, 0.35);
+  --accent: #4F8EF7;
+  --accent-fg: #1D4ED8;
+  --accent-muted: rgba(79, 142, 247, 0.10);
+  --accent-border: rgba(79, 142, 247, 0.30);
   --sidebar-bg: #FFFFFF;
   --mobile-gap: 0.75rem;
   --mobile-radius: 0.9rem;
@@ -25,40 +25,40 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --page-bg: #050505;
-    --ink: rgba(255, 255, 255, 0.92);
+    --page-bg: #0a1628;
+    --ink: rgba(255, 255, 255, 0.94);
     --ink-muted: rgba(255, 255, 255, 0.52);
-    --panel: #141414;
-    --panel-strong: #1c1c1c;
-    --line: rgba(255, 255, 255, 0.12);
-    --brand: #D4AF37;
-    --brand-deep: #B8960C;
-    --accent: #D4AF37;
-    --accent-fg: #D4AF37;
-    --accent-muted: rgba(212, 175, 55, 0.14);
-    --accent-border: rgba(212, 175, 55, 0.35);
-    --sidebar-bg: #0a0a0a;
+    --panel: #0f1f3a;
+    --panel-strong: #162640;
+    --line: rgba(255, 255, 255, 0.10);
+--brand: #1d4ed8;
+    --brand-deep: #3B7EE8;
+    --accent: #4F8EF7;
+    --accent-fg: #4F8EF7;
+    --accent-muted: rgba(79, 142, 247, 0.14);
+    --accent-border: rgba(79, 142, 247, 0.35);
+    --sidebar-bg: #0a1628;
   }
 }
 
-/* Manual dark mode override — applies on top of system preference */
+/* Manual dark mode override - Midnight Blue: deep dark backgrounds, electric blue accent */
 .theme-blackgold {
-  --page-bg: #050505;
-  --ink: rgba(255, 255, 255, 0.92);
+  --page-bg: #0a1628;
+  --ink: rgba(255, 255, 255, 0.94);
   --ink-muted: rgba(255, 255, 255, 0.52);
-  --panel: #141414;
-  --panel-strong: #1c1c1c;
-  --line: rgba(255, 255, 255, 0.12);
-  --brand: #D4AF37;
-  --brand-deep: #B8960C;
-  --accent: #D4AF37;
-  --accent-fg: #D4AF37;
-  --accent-muted: rgba(212, 175, 55, 0.14);
-  --accent-border: rgba(212, 175, 55, 0.35);
-  --sidebar-bg: #0a0a0a;
+  --panel: #0f1f3a;
+  --panel-strong: #162640;
+  --line: rgba(255, 255, 255, 0.10);
+  --brand: #1d4ed8;
+  --brand-deep: #3B7EE8;
+  --accent: #4F8EF7;
+  --accent-fg: #4F8EF7;
+  --accent-muted: rgba(79, 142, 247, 0.14);
+  --accent-border: rgba(79, 142, 247, 0.35);
+  --sidebar-bg: #0f1f3a;
 }
 
-/* Manual light mode override — explicitly sets light vars to override system preference */
+/* Manual light mode override */
 .light {
   --page-bg: #F5F3EF;
   --ink: #111111;
@@ -68,10 +68,10 @@
   --line: #D4CEC6;
   --brand: #111111;
   --brand-deep: #000000;
-  --accent: #D4AF37;
-  --accent-fg: #7A5F00;
-  --accent-muted: rgba(212, 175, 55, 0.12);
-  --accent-border: rgba(212, 175, 55, 0.35);
+  --accent: #4F8EF7;
+  --accent-fg: #1D4ED8;
+  --accent-muted: rgba(79, 142, 247, 0.10);
+  --accent-border: rgba(79, 142, 247, 0.30);
   --sidebar-bg: #FFFFFF;
 }
 
@@ -85,8 +85,8 @@
 .theme-blackgold :where(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea):focus {
   background: var(--panel-strong);
   color: var(--ink);
-  border-color: rgba(212, 175, 55, 0.62);
-  box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.22);
+  border-color: rgba(79, 142, 247, 0.62);
+  box-shadow: 0 0 0 2px rgba(79, 142, 247, 0.22);
 }
 .theme-blackgold :where(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea)::placeholder {
   color: var(--ink-muted);
@@ -121,15 +121,15 @@
 }
 
 .theme-blackgold .btn-premium {
-  border-color: rgba(212, 175, 55, 0.7);
-  background: linear-gradient(160deg, #e8c337 0%, #b8860a 100%);
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.15) inset, 0 4px 12px rgba(212, 175, 55, 0.25), 0 8px 24px rgba(0, 0, 0, 0.4);
+  border-color: var(--accent-border);
+  background: linear-gradient(160deg, var(--accent) 0%, var(--brand-deep) 100%);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.12) inset, 0 4px 14px var(--accent-muted), 0 8px 24px rgba(0, 0, 0, 0.45);
   color: #fff;
 }
 
 .theme-blackgold .btn-premium:hover {
   filter: brightness(1.1);
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.2) inset, 0 6px 16px rgba(212, 175, 55, 0.3), 0 12px 32px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.18) inset, 0 6px 18px rgba(79, 142, 247, 0.30), 0 12px 32px rgba(0, 0, 0, 0.55);
 }
 
 .theme-blackgold .btn-premium:active {
@@ -166,9 +166,9 @@
 }
 
 .theme-blackgold .btn-premium-success {
-  border-color: rgba(212, 175, 55, 0.7);
-  background: linear-gradient(160deg, #e8c337 0%, #b8860a 100%);
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.15) inset, 0 4px 12px rgba(212, 175, 55, 0.25), 0 8px 24px rgba(0, 0, 0, 0.4);
+  border-color: rgba(79, 142, 247, 0.7);
+  background: linear-gradient(160deg, #60A5FA 0%, #3B82F6 100%);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.15) inset, 0 4px 12px rgba(79, 142, 247, 0.25), 0 8px 24px rgba(0, 0, 0, 0.4);
   color: #fff;
 }
 
@@ -180,31 +180,31 @@
 .theme-blackgold .btn-premium-dark:focus-visible {
   outline: none;
   box-shadow:
-    0 0 0 2px rgba(212, 175, 55, 0.6),
+    0 0 0 2px rgba(79, 142, 247, 0.6),
     0 0 0 4px rgba(0, 0, 0, 0.5),
     0 6px 14px rgba(0, 0, 0, 0.3);
 }
 
 .theme-blackgold .nav-icon-premium {
-  border-color: rgba(212, 175, 55, 0.35);
-  background: linear-gradient(160deg, rgba(255, 252, 224, 0.15) 0%, rgba(212, 175, 55, 0.08) 100%);
-  color: rgba(212, 175, 55, 0.9);
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.05) inset, 0 3px 8px rgba(212, 175, 55, 0.1);
+  border-color: rgba(79, 142, 247, 0.35);
+  background: linear-gradient(160deg, rgba(200, 220, 255, 0.15) 0%, rgba(79, 142, 247, 0.08) 100%);
+  color: rgba(79, 142, 247, 0.9);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.05) inset, 0 3px 8px rgba(79, 142, 247, 0.1);
 }
 
 .theme-blackgold .nav-icon-premium-active {
-  border-color: rgba(212, 175, 55, 0.6);
-  background: linear-gradient(160deg, rgba(232, 195, 55, 0.25) 0%, rgba(212, 175, 55, 0.12) 100%);
-  color: #d4af37;
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.1) inset, 0 4px 10px rgba(212, 175, 55, 0.15);
+  border-color: rgba(79, 142, 247, 0.6);
+  background: linear-gradient(160deg, rgba(96, 165, 250, 0.25) 0%, rgba(79, 142, 247, 0.12) 100%);
+  color: #4F8EF7;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.1) inset, 0 4px 10px rgba(79, 142, 247, 0.15);
 }
 
 .theme-blackgold .panel-elevated {
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.06) inset,
     0 0 0 1px rgba(255, 255, 255, 0.06),
-    0 8px 16px rgba(0, 0, 0, 0.4),
-    0 24px 56px rgba(0, 0, 0, 0.6);
+    0 8px 16px rgba(0, 0, 0, 0.45),
+    0 24px 56px rgba(0, 0, 0, 0.65);
 }
 
 .theme-blackgold .mobile-quick-actions {
@@ -295,7 +295,7 @@ pre,
 .panel-shadow:hover {
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.95) inset,
-    0 0 0 1px rgba(212, 175, 55, 0.2),
+    0 0 0 1px rgba(79, 142, 247, 0.2),
     0 4px 8px rgba(17, 17, 17, 0.05),
     0 12px 28px rgba(17, 17, 17, 0.09);
 }
@@ -356,15 +356,15 @@ pre,
 /* ── Buttons ─────────────────────────────────────────────────────────────── */
 
 .btn-premium {
-  border: 1px solid rgba(180, 148, 10, 0.8);
-  background: linear-gradient(160deg, #e8c337 0%, #c49e0a 100%);
+  border: 1px solid var(--accent-border);
+  background: linear-gradient(160deg, var(--accent) 0%, var(--brand-deep) 100%);
   color: #fff;
   font-weight: 600;
   letter-spacing: -0.01em;
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.25) inset,
-    0 1px 2px rgba(180, 148, 10, 0.3),
-    0 4px 12px rgba(180, 148, 10, 0.2);
+    0 1px 2px var(--accent-muted),
+    0 4px 12px var(--accent-muted);
   transition: transform 120ms ease, box-shadow 120ms ease, filter 120ms ease;
 }
 
@@ -372,8 +372,8 @@ pre,
   filter: brightness(1.06);
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.25) inset,
-    0 2px 4px rgba(180, 148, 10, 0.3),
-    0 6px 16px rgba(180, 148, 10, 0.25);
+    0 2px 4px var(--accent-muted),
+    0 6px 16px var(--accent-muted);
 }
 
 .btn-premium:active {
@@ -397,35 +397,35 @@ pre,
 }
 
 .btn-premium-danger {
-  border: 1px solid #1a1a1a;
-  background: linear-gradient(160deg, #2a2a2a 0%, #0a0a0a 100%);
+  border: 1px solid rgba(79, 142, 247, 0.25);
+  background: linear-gradient(160deg, #1c1c1c 0%, #0a0a0a 100%);
   color: #fff;
   font-weight: 600;
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.12) inset, 0 3px 10px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.08) inset, 0 3px 10px rgba(0, 0, 0, 0.3);
 }
 
 .btn-premium-success {
-  border: 1px solid rgba(180, 148, 10, 0.8);
-  background: linear-gradient(160deg, #e8c337 0%, #c49e0a 100%);
+  border: 1px solid rgba(79, 142, 247, 0.7);
+  background: linear-gradient(160deg, #60A5FA 0%, #3B82F6 100%);
   color: #fff;
   font-weight: 600;
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.25) inset, 0 4px 12px rgba(180, 148, 10, 0.2);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.25) inset, 0 4px 12px rgba(79, 142, 247, 0.2);
 }
 
 .btn-premium-warning {
-  border: 1px solid #1a1a1a;
-  background: linear-gradient(160deg, #2a2a2a 0%, #0a0a0a 100%);
+  border: 1px solid rgba(79, 142, 247, 0.25);
+  background: linear-gradient(160deg, #1c1c1c 0%, #0a0a0a 100%);
   color: #fff;
   font-weight: 600;
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.12) inset, 0 3px 10px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.08) inset, 0 3px 10px rgba(0, 0, 0, 0.3);
 }
 
 .btn-premium-dark {
-  border: 1px solid #1a1a1a;
-  background: linear-gradient(160deg, #2a2a2a 0%, #0a0a0a 100%);
-  color: #fff;
+  border: 1px solid rgba(79, 142, 247, 0.20);
+  background: linear-gradient(160deg, #1c1c1c 0%, #0a0a0a 100%);
+  color: rgba(255, 255, 255, 0.88);
   font-weight: 600;
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.12) inset, 0 3px 10px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.08) inset, 0 3px 10px rgba(0, 0, 0, 0.3);
 }
 
 .btn-premium,
@@ -446,7 +446,7 @@ pre,
   outline: none;
   box-shadow:
     0 0 0 2px rgba(255, 255, 255, 0.95),
-    0 0 0 4px rgba(212, 175, 55, 0.5),
+    0 0 0 4px rgba(79, 142, 247, 0.5),
     0 6px 14px rgba(15, 23, 42, 0.18);
 }
 
@@ -479,15 +479,15 @@ pre,
   border: 1px solid var(--accent-border);
   background: linear-gradient(160deg, #fffdf0 0%, #fef9dc 100%);
   color: var(--accent);
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.8) inset, 0 3px 8px rgba(212, 175, 55, 0.12);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.8) inset, 0 3px 8px rgba(79, 142, 247, 0.12);
   transition: transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease;
 }
 
 .nav-icon-premium-active {
-  border-color: rgba(212, 175, 55, 0.5);
+  border-color: rgba(79, 142, 247, 0.5);
   background: linear-gradient(160deg, #fef9dc 0%, #fde97a 40%, #fae060 100%);
   color: #a07b00;
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.5) inset, 0 4px 10px rgba(212, 175, 55, 0.2);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.5) inset, 0 4px 10px rgba(79, 142, 247, 0.2);
 }
 
 .sidebar-nav-icon {
@@ -509,8 +509,8 @@ pre,
 }
 
 a:hover .nav-icon-premium {
-  border-color: rgba(212, 175, 55, 0.55);
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.85) inset, 0 5px 12px rgba(212, 175, 55, 0.18);
+  border-color: rgba(79, 142, 247, 0.55);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.85) inset, 0 5px 12px rgba(79, 142, 247, 0.18);
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -569,17 +569,17 @@ a:hover .nav-icon-premium {
 
 :where(input, select, textarea):focus {
   outline: none;
-  border-color: rgba(212, 175, 55, 0.6);
-  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.12);
+  border-color: rgba(79, 142, 247, 0.6);
+  box-shadow: 0 0 0 3px rgba(79, 142, 247, 0.12);
   background: var(--panel);
 }
 
 :where(input, select, textarea):focus-visible {
   outline: none;
-  border-color: rgba(212, 175, 55, 0.7);
+  border-color: rgba(79, 142, 247, 0.7);
   box-shadow:
     0 0 0 2px rgba(255, 255, 255, 0.95),
-    0 0 0 4px rgba(212, 175, 55, 0.4);
+    0 0 0 4px rgba(79, 142, 247, 0.4);
 }
 
 :where(details > summary) {
@@ -632,16 +632,16 @@ tr:has(details[open]) {
 }
 
 .theme-blackgold :where(input, select, textarea):focus {
-  border-color: rgba(212, 175, 55, 0.65);
-  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.15);
+  border-color: rgba(79, 142, 247, 0.65);
+  box-shadow: 0 0 0 3px rgba(79, 142, 247, 0.15);
   background: rgba(255, 255, 255, 0.07);
 }
 
 .theme-blackgold :where(input, select, textarea):focus-visible {
-  border-color: rgba(212, 175, 55, 0.7);
+  border-color: rgba(79, 142, 247, 0.7);
   box-shadow:
     0 0 0 2px rgba(0, 0, 0, 0.5),
-    0 0 0 4px rgba(212, 175, 55, 0.35);
+    0 0 0 4px rgba(79, 142, 247, 0.35);
 }
 
 .theme-blackgold select option {
@@ -763,8 +763,8 @@ tr:has(details[open]) {
 }
 
 /* ── Accessible accent text ──────────────────────────────────────────────── */
-/* In light mode #D4AF37 fails WCAG AA contrast on white. Override text-only
-   uses of --accent to use --accent-fg (#7A5F00, ~6:1 on white) instead.
+/* In light mode #4F8EF7 passes WCAG AA (~4.6:1 on white). Override text-only
+   uses of --accent to use --accent-fg (#1D4ED8, ~7.5:1 on white) for safety.
    Dark mode keeps --accent-fg == --accent so no change there.               */
 .text-\[var\(--accent\)\] {
   color: var(--accent-fg) !important;

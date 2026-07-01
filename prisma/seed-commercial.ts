@@ -72,7 +72,7 @@ async function upsertUser({
   } else {
     await prisma.account.create({
       data: {
-        accountId: user.id,
+        accountId: user.email,
         providerId: "credential",
         userId: user.id,
         password: await hashPassword(DEMO_PASSWORD),
@@ -116,8 +116,8 @@ async function upsertBranding({
     companyEmail: companyEmail ?? null,
     companyWebsite: companyWebsite ?? null,
     primaryColor: primaryColor ?? "#000000",
-    secondaryColor: secondaryColor ?? "#D4AF37",
-    accentColor: secondaryColor ?? "#D4AF37",
+    secondaryColor: secondaryColor ?? "#4F8EF7",
+    accentColor: secondaryColor ?? "#4F8EF7",
   };
   if (existing) {
     return prisma.documentBrandingSettings.update({ where: { orgId }, data });

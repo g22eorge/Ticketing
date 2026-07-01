@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { getTableColumns } from "@/lib/db-utils";
 
 export interface OrgWhatsAppConfig {
   orgId: string;
@@ -30,14 +31,7 @@ async function ensureTable() {
       updatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
     )
   `);
-  // Safely add AT columns to existing tables
-  const existingColumns = new Set(
-    (
-      await prisma.$queryRaw<Array<{ name: string }>>`
-        PRAGMA table_info('OrgWhatsAppConfig')
-      `
-    ).map((column) => column.name),
-  );
+  const existingColumns = await getTableColumns("OrgWhatsAppConfig");
   const atCols: [string, string][] = [
     ["atApiKey", "TEXT"],
     ["atUsername", "TEXT"],
@@ -46,7 +40,7 @@ async function ensureTable() {
   ];
   for (const [col, def] of atCols) {
     if (!existingColumns.has(col)) {
-      await prisma.$executeRawUnsafe(`ALTER TABLE "OrgWhatsAppConfig" ADD COLUMN ${col} ${def}`);
+      await prisma.$executeRawUnsafe(`ALTER TABLE "OrgWhatsAppConfig" ADD COLUMN ${col} ${def}`).catch(() => {});
     }
   }
   tableEnsured = true;

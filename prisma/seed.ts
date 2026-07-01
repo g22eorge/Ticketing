@@ -28,7 +28,7 @@ import { ensureDefaultAiKnowledge } from "@/lib/ai-knowledge";
 // ── Constants ────────────────────────────────────────────────────────────────
 
 const PROTECTED_SEED_TABLES = ["AuditLog", "Photo", "Job", "ClientNote", "Client"] as const;
-const EIS_ORG_ID = "org_eis_01";
+const TIIS_ORG_ID = "org_tiis_01";
 
 // ── Guard ────────────────────────────────────────────────────────────────────
 
@@ -235,7 +235,7 @@ async function seedDefaultCommsTemplates() {
 
 // ── Auth helpers ─────────────────────────────────────────────────────────────
 
-async function ensureCredentialAccount(userId: string, password: string) {
+async function ensureCredentialAccount(userId: string, email: string, password: string) {
   const existing = await prisma.account.findFirst({
     where: { userId, providerId: "credential" },
   });
@@ -250,7 +250,7 @@ async function ensureCredentialAccount(userId: string, password: string) {
 
   await prisma.account.create({
     data: {
-      accountId: userId,
+      accountId: email,
       providerId: "credential",
       userId,
       password: await hashPassword(password),
@@ -273,19 +273,19 @@ async function ensureUser({
 }) {
   const user = await prisma.user.upsert({
     where: { email },
-    update: { name, role, orgId: EIS_ORG_ID, isActive: true, emailVerified: true, phone: phone ?? null },
+    update: { name, role, orgId: TIIS_ORG_ID, isActive: true, emailVerified: true, phone: phone ?? null },
     create: {
       name,
       email,
       role,
-      orgId: EIS_ORG_ID,
+      orgId: TIIS_ORG_ID,
       isActive: true,
       emailVerified: true,
       phone: phone ?? null,
     },
   });
 
-  await ensureCredentialAccount(user.id, password);
+  await ensureCredentialAccount(user.id, email, password);
   return user;
 }
 
@@ -303,7 +303,7 @@ async function ensureClient({
   organization?: string;
 }) {
   return prisma.client.upsert({
-    where: { phone_orgId: { phone, orgId: EIS_ORG_ID } },
+    where: { phone_orgId: { phone, orgId: TIIS_ORG_ID } },
     update: {
       fullName,
       email: email ?? null,
@@ -314,7 +314,7 @@ async function ensureClient({
       phone,
       email: email ?? null,
       organization: organization ?? null,
-      orgId: EIS_ORG_ID,
+      orgId: TIIS_ORG_ID,
     },
   });
 }
@@ -390,7 +390,7 @@ async function ensureJob(data: {
     receivedAt: data.receivedAt,
     completedAt: data.completedAt ?? null,
     closedAt: data.closedAt ?? null,
-    orgId: EIS_ORG_ID,
+    orgId: TIIS_ORG_ID,
   };
 
   if (existing) {
@@ -412,7 +412,7 @@ async function ensureAudit(jobId: string, userId: string, action: string, detail
   if (existing) return;
 
   await prisma.auditLog.create({
-    data: { jobId, userId, action, detail: serialized, orgId: EIS_ORG_ID },
+    data: { jobId, userId, action, detail: serialized, orgId: TIIS_ORG_ID },
   });
 }
 
@@ -429,18 +429,35 @@ async function main() {
   const defaultPassword = process.env.SEED_PASSWORD ?? "password123";
 
   // ─── Organisation ──────────────────────────────────────────────────────────
-  await prisma.organization.upsert({
-    where: { id: EIS_ORG_ID },
-    update: { name: "Eagle Info Tech", plan: "GROWTH", isActive: true },
-    create: {
-      id: EIS_ORG_ID,
-      name: "Eagle Info Tech",
-      slug: "eagle-info-tech",
-      plan: "GROWTH",
-      isActive: true,
-      baseCurrency: "UGX",
-    },
+  // If the legacy org_eis_01 exists, update it to org_tiis_01 with new branding
+  const existingOrg = await prisma.organization.findUnique({
+    where: { id: "org_eis_01" },
   });
+  if (existingOrg) {
+    await prisma.organization.update({
+      where: { id: "org_eis_01" },
+      data: {
+        id: TIIS_ORG_ID,
+        name: "Techserve ICT Solutions",
+        slug: "techserve",
+        plan: "GROWTH",
+        baseCurrency: "UGX",
+      },
+    });
+  } else {
+    await prisma.organization.upsert({
+      where: { id: TIIS_ORG_ID },
+      update: { name: "Techserve ICT Solutions", slug: "techserve", plan: "GROWTH", isActive: true },
+      create: {
+        id: TIIS_ORG_ID,
+        name: "Techserve ICT Solutions",
+        slug: "techserve",
+        plan: "GROWTH",
+        isActive: true,
+        baseCurrency: "UGX",
+      },
+    });
+  }
 
   // Module grants
   const modules = [
@@ -457,9 +474,9 @@ async function main() {
   ] as const;
   for (const mod of modules) {
     await prisma.orgModuleGrant.upsert({
-      where: { orgId_module: { orgId: EIS_ORG_ID, module: mod } },
+      where: { orgId_module: { orgId: TIIS_ORG_ID, module: mod } },
       update: {},
-      create: { orgId: EIS_ORG_ID, module: mod },
+      create: { orgId: TIIS_ORG_ID, module: mod },
     });
   }
 
@@ -1396,9 +1413,9 @@ async function main() {
   const parts = await Promise.all(
     partData.map((p) =>
       prisma.part.upsert({
-        where: { sku_orgId: { sku: p.sku, orgId: EIS_ORG_ID } },
+        where: { sku_orgId: { sku: p.sku, orgId: TIIS_ORG_ID } },
         update: { name: p.name, manufacturer: p.manufacturer, unitCost: p.unitCost, qtyOnHand: p.qtyOnHand, reorderLevel: p.reorderLevel },
-        create: { ...p, orgId: EIS_ORG_ID, isActive: true },
+        create: { ...p, orgId: TIIS_ORG_ID, isActive: true },
       }),
     ),
   );
@@ -1424,7 +1441,7 @@ async function main() {
         paidAt: job.clientPaid ? job.clientPaidAt : null,
       },
       create: {
-        orgId: EIS_ORG_ID,
+        orgId: TIIS_ORG_ID,
         jobId: job.id,
         clientId: job.clientId,
         invoiceNumber: invNumber,
@@ -1443,7 +1460,7 @@ async function main() {
       where: undefined as never,
       update: {},
       create: {
-        orgId: EIS_ORG_ID,
+        orgId: TIIS_ORG_ID,
         invoiceId: inv.id,
         description: `Repair service — ${job.brand} ${job.model}`,
         quantity: 1,
@@ -1467,7 +1484,7 @@ async function main() {
       where: { invoiceNumber: invNumber },
       update: {},
       create: {
-        orgId: EIS_ORG_ID,
+        orgId: TIIS_ORG_ID,
         clientId: si.client.id,
         invoiceNumber: invNumber,
         invoiceType: "SERVICE",
@@ -1493,7 +1510,7 @@ async function main() {
       if (!exists) {
         await prisma.payment.create({
           data: {
-            orgId: EIS_ORG_ID,
+            orgId: TIIS_ORG_ID,
             invoiceId: inv.id,
             currency: "UGX",
             amount: inv.totalAmount,
@@ -1515,7 +1532,7 @@ async function main() {
     if (!exists) {
       await prisma.payment.create({
         data: {
-          orgId: EIS_ORG_ID,
+          orgId: TIIS_ORG_ID,
           invoiceId: issuedInv.id,
           currency: "UGX",
           amount: issuedInv.totalAmount * 0.5,
@@ -1537,7 +1554,7 @@ async function main() {
     update: {},
     create: {
       id: "bank_eis_main",
-      orgId: EIS_ORG_ID,
+      orgId: TIIS_ORG_ID,
       name: "Stanbic Bank — Operations Account",
       accountNumber: "9030012345678",
       bankName: "Stanbic Bank Uganda",
@@ -1552,7 +1569,7 @@ async function main() {
     update: {},
     create: {
       id: "bank_eis_mm",
-      orgId: EIS_ORG_ID,
+      orgId: TIIS_ORG_ID,
       name: "MTN Mobile Money Float",
       accountNumber: "+256772006344",
       bankName: "MTN MoMo",
@@ -1579,7 +1596,7 @@ async function main() {
       where: { bankAccountId: tx.bankAccountId, reference: tx.reference },
     });
     if (!exists) {
-      await prisma.bankTransaction.create({ data: { ...tx, orgId: EIS_ORG_ID } });
+      await prisma.bankTransaction.create({ data: { ...tx, orgId: TIIS_ORG_ID } });
     }
   }
 
@@ -1612,7 +1629,7 @@ async function main() {
     await prisma.expense.upsert({
       where: { expenseNumber: exp.expenseNumber },
       update: {},
-      create: { ...exp, orgId: EIS_ORG_ID, currency: "UGX", createdById: finance.id },
+      create: { ...exp, orgId: TIIS_ORG_ID, currency: "UGX", createdById: finance.id },
     });
   }
 
@@ -1624,7 +1641,7 @@ async function main() {
     update: {},
     create: {
       id: "pos_sess_eis_01",
-      orgId: EIS_ORG_ID,
+      orgId: TIIS_ORG_ID,
       operatorId: frontDesk.id,
       status: "CLOSED",
       openingFloat: 200000,
@@ -1699,7 +1716,7 @@ async function main() {
     const saleRecord = existing ?? await prisma.sale.create({
       data: {
         id: sale.id,
-        orgId: EIS_ORG_ID,
+        orgId: TIIS_ORG_ID,
         saleNumber: sale.saleNumber,
         clientId: sale.clientId,
         posSessionId: posSession.id,
@@ -1736,7 +1753,7 @@ async function main() {
     if (!payExists) {
       await prisma.payment.create({
         data: {
-          orgId: EIS_ORG_ID,
+          orgId: TIIS_ORG_ID,
           saleId: saleRecord.id,
           currency: "UGX",
           amount: subtotal,
@@ -1753,7 +1770,7 @@ async function main() {
   // ─── Notifications ─────────────────────────────────────────────────────────
   // Seed realistic in-app notifications so the bell is non-empty from day one.
   // We clear existing seed org notifications first (idempotent re-runs).
-  await prisma.notification.deleteMany({ where: { orgId: EIS_ORG_ID } });
+  await prisma.notification.deleteMany({ where: { orgId: TIIS_ORG_ID } });
 
   const adminOpsIds = [admin.id, ops.id];
   const now = Date.now();
@@ -1789,7 +1806,7 @@ async function main() {
           userId: uid,
           channel: NotificationChannel.DASHBOARD,
           isRead: true,
-          orgId: EIS_ORG_ID,
+          orgId: TIIS_ORG_ID,
           createdAt: new Date(now - Math.round(Math.random() * 5 * 24) * hr),
         });
       }
@@ -1803,7 +1820,7 @@ async function main() {
           userId: uid,
           channel: NotificationChannel.DASHBOARD,
           isRead: false,
-          orgId: EIS_ORG_ID,
+          orgId: TIIS_ORG_ID,
           createdAt: new Date(now - Math.round(Math.random() * 2 * 24) * hr),
         });
       }
@@ -1817,7 +1834,7 @@ async function main() {
           userId: uid,
           channel: NotificationChannel.DASHBOARD,
           isRead: job.status !== "READY_FOR_PICKUP",
-          orgId: EIS_ORG_ID,
+          orgId: TIIS_ORG_ID,
           createdAt: new Date(now - Math.round(Math.random() * 3 * 24) * hr),
         });
       }
@@ -1831,7 +1848,7 @@ async function main() {
           userId: uid,
           channel: NotificationChannel.DASHBOARD,
           isRead: false,
-          orgId: EIS_ORG_ID,
+          orgId: TIIS_ORG_ID,
           createdAt: new Date(now - Math.round(Math.random() * 12) * hr),
         });
       }
@@ -1847,7 +1864,7 @@ async function main() {
         userId: job.assignedToId,
         channel: NotificationChannel.DASHBOARD,
         isRead: ["COMPLETED", "DELIVERED", "CLOSED"].includes(job.status),
-        orgId: EIS_ORG_ID,
+        orgId: TIIS_ORG_ID,
         createdAt: new Date(now - Math.round(Math.random() * 4 * 24) * hr),
       });
     }

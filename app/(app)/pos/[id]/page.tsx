@@ -109,8 +109,6 @@ export default async function SalePage({ params }: { params: Promise<{ id: strin
     creditNoteId: string | null;
   }> = [];
 
-  const deliveryNotes: never[] = [];
-
   try {
     sale = await prisma.sale.findFirst({
       where: { id, orgId },

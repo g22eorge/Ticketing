@@ -320,7 +320,6 @@ export default async function CreditNotesPage({
 
   const totalValue = creditNotes.reduce((s, cn) => s + cn.totalAmount, 0);
   const pendingReturn = creditNotes.filter((cn) => !cn.itemsReceivedBackAt).length;
-  const totalRefunded = creditNotes.reduce((s, cn) => s + cn.refunds.reduce((r, rf) => r + rf.amount, 0), 0);
   const currency = org.baseCurrency;
 
   const fmt = (d: Date | string | null) =>

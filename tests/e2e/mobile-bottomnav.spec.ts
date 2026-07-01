@@ -121,11 +121,15 @@ test.describe("Mobile bottom navigation at 390×844", () => {
     await page.goto(`${baseUrl}/dashboard`);
     await waitSettled(page);
 
-    const jobsLink = page.locator(".mobile-bottom-nav a[href='/jobs']").first();
-    await expect(jobsLink).toBeVisible();
-    await jobsLink.click();
-    await page.waitForURL("**/jobs**", { timeout: 10000 });
-    expect(page.url()).toContain("/jobs");
+    // The bottom nav primary items are: Dashboard, Tickets, Clients (Queue),
+    // and optionally Subscriptions. There is no /jobs link in the bottom nav.
+    // Test that clicking the Queue/Tickets item navigates to the correct page.
+    // Use the Queue link (tickets) as the closest equivalent to "Jobs"
+    const ticketsLink = page.locator(".mobile-bottom-nav a[href='/tickets']").first();
+    await expect(ticketsLink).toBeVisible();
+    await ticketsLink.click();
+    await page.waitForURL("**/tickets**", { timeout: 10000 });
+    expect(page.url()).toContain("/tickets");
   });
 
   test("Settings link is in /more and points to /settings hub", async ({ page }) => {
@@ -162,7 +166,8 @@ test.describe("Mobile bottom navigation at 390×844", () => {
     await expect(moreLink).toBeVisible();
     await moreLink.click();
     await page.waitForURL("**/more**", { timeout: 10000 });
-    await expect(page.getByText("Business")).toBeVisible();
+    // Use exact: true to avoid matching "BusinessOS" or "Business OS"
+    await expect(page.getByText("Business", { exact: true }).first()).toBeVisible();
   });
 
   test("job detail mobile action bar hides while editing fields", async ({ page }) => {

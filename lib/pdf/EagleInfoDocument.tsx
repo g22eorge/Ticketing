@@ -38,7 +38,7 @@ const LABEL_SZ = 7;           // caps section-label font size
 // ── Styles ─────────────────────────────────────────────────────────────────────
 const s = StyleSheet.create({
   page: {
-    paddingHorizontal: 40,
+    paddingHorizontal: 36,
     paddingVertical: 36,
     fontSize: 9,
     fontFamily: "Helvetica",
@@ -47,15 +47,15 @@ const s = StyleSheet.create({
   },
 
   // ── Header ──
-  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 },
-  headerLeft: { flex: 1, paddingRight: 24 },
+  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14 },
+  headerLeft: { flex: 1, paddingRight: 28 },
   logo: { width: 72, height: 36, marginBottom: 6, objectFit: "contain" },
-  companyName: { fontSize: 13, fontFamily: "Helvetica-Bold", marginBottom: 3 },
-  companyLine: { fontSize: 8, color: MUTED, marginBottom: 1.5 },
+  companyName: { fontSize: 13.5, fontFamily: "Helvetica-Bold", marginBottom: 3 },
+  companyLine: { fontSize: 8.5, color: MUTED, marginBottom: 1.5 },
   phoneEmailRow: { flexDirection: "row", gap: 4, marginBottom: 1.5 },
-  companyLineLabel: { fontSize: 8, color: INK, fontFamily: "Helvetica-Bold", width: 38 },
+  companyLineLabel: { fontSize: 8, color: INK, fontFamily: "Helvetica-Bold", width: 42 },
 
-  headerRight: { width: 180, alignItems: "flex-end" },
+  headerRight: { width: 175, alignItems: "flex-end" },
   docTitle: { fontSize: 22, fontFamily: "Helvetica-Bold", marginBottom: 3 },
   docNumber: { fontSize: 8.5, color: MUTED, marginBottom: 8 },
   balanceBox: { borderWidth: 1, borderColor: DIVIDER, borderRadius: 4, paddingHorizontal: 10, paddingVertical: 7, alignItems: "flex-end", width: "100%" },
@@ -71,7 +71,7 @@ const s = StyleSheet.create({
   toLabel: { fontSize: LABEL_SZ, fontFamily: "Helvetica-Bold", color: MUTED, textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 5 },
   toName: { fontSize: 10.5, fontFamily: "Helvetica-Bold", marginBottom: 2 },
   toLine: { fontSize: 8.5, color: MUTED, marginBottom: 1.5 },
-  datesBlock: { width: 200 },
+  datesBlock: { width: 220 },
   dateRow: { flexDirection: "row", justifyContent: "space-between", borderBottomWidth: 1, borderBottomColor: DIVIDER, paddingVertical: 4 },
   dateLabel: { fontSize: 8.5, color: MUTED },
   dateValue: { fontSize: 8.5, fontFamily: "Helvetica-Bold" },
@@ -81,26 +81,26 @@ const s = StyleSheet.create({
   tableHead: { flexDirection: "row", borderBottomWidth: 1.5, borderBottomColor: INK, paddingBottom: 4, marginBottom: 0 },
   th: { fontSize: 8, fontFamily: "Helvetica-Bold", textTransform: "uppercase", letterSpacing: 0.4 },
   tableRow: { flexDirection: "row", borderBottomWidth: 1, borderBottomColor: DIVIDER, paddingVertical: 7 },
-  colNum:   { width: 24 },
-  colDesc:  { flex: 1, paddingRight: 6 },
-  colQty:   { width: 44, textAlign: "center" },
-  colRate:  { width: 88, textAlign: "right" },
-  colAmt:   { width: 96, textAlign: "right" },
+  colNum:   { width: 22 },
+  colDesc:  { flex: 1, paddingRight: 8 },
+  colQty:   { width: 38, textAlign: "center" },
+  colRate:  { width: 100, textAlign: "right" },
+  colAmt:   { width: 110, textAlign: "right" },
   itemName: { fontSize: 9, fontFamily: "Helvetica-Bold", marginBottom: 2 },
   itemSku:  { fontSize: 7.5, color: MUTED },
 
   // ── Totals ──
-  totalsWrap: { marginTop: 6, marginLeft: "auto", width: 220 },
+  totalsWrap: { marginTop: 8, marginLeft: "auto", width: 260 },
   totalRow: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 4, borderBottomWidth: 1, borderBottomColor: DIVIDER },
   totalLabel: { fontSize: 9, color: MUTED },
   totalValue: { fontSize: 9, textAlign: "right" },
-  totalRowBold: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 5 },
-  totalLabelBold: { fontSize: 9.5, fontFamily: "Helvetica-Bold" },
-  totalValueBold: { fontSize: 9.5, fontFamily: "Helvetica-Bold", textAlign: "right" },
-  balanceDueRow: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 5, borderTopWidth: 1.5, borderTopColor: INK, marginTop: 2 },
+  totalRowBold: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 6 },
+  totalLabelBold: { fontSize: 10, fontFamily: "Helvetica-Bold" },
+  totalValueBold: { fontSize: 10, fontFamily: "Helvetica-Bold", textAlign: "right" },
+  balanceBoxFooter: { borderWidth: 1, borderColor: DIVIDER, borderRadius: 4, paddingHorizontal: 10, paddingVertical: 7, alignItems: "flex-end", width: "100%", marginTop: 8 },
 
   // ── Footer ──
-  footerDivider: { borderTopWidth: 1, borderTopColor: DIVIDER, marginTop: 28, marginBottom: 14 },
+  footerDivider: { borderTopWidth: 1, borderTopColor: DIVIDER, marginTop: 20, marginBottom: 14 },
   footer: { flexDirection: "row", gap: 32 },
   footerLeft: { flex: 1 },
   footerRight: { flex: 1 },
@@ -269,7 +269,7 @@ export function EagleInfoDocument(props: EagleInfoDocumentProps) {
           ))}
         </View>
 
-        {/* ── Totals ── */}
+        {/* ── Totals ──Hall only Sub Total, VAT, Total (no Balance Due) ── */}
         <View style={s.totalsWrap}>
           {subTotal ? (
             <View style={s.totalRow}>
@@ -287,22 +287,12 @@ export function EagleInfoDocument(props: EagleInfoDocumentProps) {
             <Text style={s.totalLabelBold}>{totalLabel}</Text>
             <Text style={s.totalValueBold}>{totalAmount}</Text>
           </View>
-          {paymentMade ? (
-            <View style={s.totalRow}>
-              <Text style={s.totalLabel}>Payment Made</Text>
-              <Text style={s.totalValue}>{paymentMade}</Text>
-            </View>
-          ) : null}
-          <View style={s.balanceDueRow}>
-            <Text style={s.totalLabelBold}>Balance Due</Text>
-            <Text style={s.totalValueBold}>{balanceDue}</Text>
-          </View>
         </View>
 
         {/* ── Footer ── */}
         <View style={s.footerDivider} />
         <View style={s.footer}>
-          {/* Left: notes + payment to */}
+          {/* Left: notes + payment to + terms */}
           <View style={s.footerLeft}>
             {notes ? (
               <>
@@ -319,15 +309,21 @@ export function EagleInfoDocument(props: EagleInfoDocumentProps) {
                 ))}
               </>
             ) : null}
+            {termsText ? (
+              <>
+                <Text style={s.footerLabel}>Terms &amp; Conditions</Text>
+                <Text style={s.footerText}>{termsText}</Text>
+              </>
+            ) : null}
           </View>
 
-          {/* Right: terms */}
-          {termsText ? (
-            <View style={s.footerRight}>
-              <Text style={s.footerLabel}>Terms &amp; Conditions</Text>
-              <Text style={s.footerText}>{termsText}</Text>
+          {/* Right: balance due */}
+          <View style={s.footerRight}>
+            <View style={s.balanceBoxFooter}>
+              <Text style={s.balanceLabel}>Balance Due</Text>
+              <Text style={s.balanceAmount}>{balanceDue}</Text>
             </View>
-          ) : null}
+          </View>
         </View>
 
       </Page>

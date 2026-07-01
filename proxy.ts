@@ -15,8 +15,8 @@ const PUBLIC_PATHS = [
   // API
   "/api/auth",
   "/api/login",
+  "/api/tickets",
   "/api/webhooks",
-  "/api/repair-requests",
   "/api/billing/callback", // Pesapal payment redirect (arrives without session)
   "/api/cron",             // Scheduled jobs triggered by Vercel cron
 
@@ -30,6 +30,7 @@ const PUBLIC_PATHS = [
   "/terms",
   "/privacy",
   "/status",
+  "/complaint",
   "/onboarding",           // New-user org setup flow
   "/feedback",             // Public feedback widget
 

@@ -7,7 +7,132 @@ generator client {
 
 datasource db {
   provider = "sqlite"
-  url      = "file:./dev.db"
+  url      = env("DATABASE_URL")
+}
+
+// ── Simplified ICT Ticketing ────────────────────────────────────────────────
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  WAITING_ON_CUSTOMER
+  WAITING_FOR_APPROVAL
+  WAITING_FOR_PAYMENT
+  RESOLVED
+  CLOSED
+  CANCELLED
+}
+
+enum SLACycle {
+  MONTHLY
+  ANNUAL
+}
+
+enum ClientSubscriptionStatus {
+  ACTIVE
+  PENDING
+  EXPIRED
+  CANCELLED
+}
+
+enum ClientSubscriptionReminderType {
+  TWO_MONTHS
+  ONE_MONTH
+  TWO_WEEKS
+}
+
+enum ClientType {
+  INDIVIDUAL
+  COMPANY
+  SCHOOL
+  NGO
+  GOVERNMENT
+}
+
+enum TicketPriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum TicketCategory {
+  HARDWARE
+  SOFTWARE
+  NETWORK
+  INTERNET
+  EMAIL
+  PRINTER
+  OTHER
+}
+
+model Survey {
+  id        String   @id @default(cuid())
+  ticketId  String   @unique
+  ticket    Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  rating    Int      @default(5) // 1-5 stars
+  comment   String?
+  orgId     String?
+  org       Organization? @relation(fields: [orgId], references: [id], onDelete: SetNull)
+  createdAt DateTime @default(now())
+
+  @@index([ticketId])
+  @@index([orgId])
+}
+model Ticket {
+  id        String          @id @default(cuid())
+  ticketNumber String         @unique
+  status    TicketStatus    @default(OPEN)
+  priority  TicketPriority  @default(MEDIUM)
+  category  TicketCategory  @default(OTHER)
+  orgId     String?
+  org       Organization?   @relation(fields: [orgId], references: [id], onDelete: SetNull)
+
+  // Reporter (may not be a registered user)
+  reporterName  String
+  reporterPhone String
+  reporterEmail String?
+  reporterCompany String?
+
+  // Issue
+  subject       String
+  description   String
+  deviceInfo    String?    // e.g., "HP EliteBook 840 G8" or "Office Printer"
+
+  // Client link
+  clientId      String?
+  client        Client?    @relation(fields: [clientId], references: [id], onDelete: SetNull)
+
+  // SLA
+  isSLACovered  Boolean    @default(false)
+
+  // Financial
+  estimatedCost Float?
+
+  // Linked documents
+  quotationId   String?    @unique
+  quotation     Quotation? @relation("TicketQuotation", fields: [quotationId], references: [id], onDelete: SetNull)
+  invoiceId     String?    @unique
+  invoice       Invoice?   @relation("TicketInvoice", fields: [invoiceId], references: [id], onDelete: SetNull)
+  receipt       Receipt?   @relation("TicketReceipt")
+  complaints    Complaint[]
+  survey        Survey?
+
+  // Internal
+  assignedToId  String?
+  assignedTo    User?      @relation("TicketAssignedTo", fields: [assignedToId], references: [id], onDelete: SetNull)
+  notes         String?
+  resolution    String?
+
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  resolvedAt    DateTime?
+  closedAt      DateTime?
+
+  @@index([orgId, status, createdAt])
+  @@index([orgId, priority, createdAt])
+  @@index([assignedToId, status])
+  @@index([clientId])
 }
 
 // ── MULTI-TENANCY ────────────────────────────────────────────────────────────
@@ -55,11 +180,13 @@ model Organization {
 
   users                  User[]
   clients                Client[]
+  clientSubscriptions    ClientSubscription[]
   devices                Device[]
   jobs                   Job[]
   parts                  Part[]
   repairRequests         RepairRequest[]
   repairRequestSequences RepairRequestSequence[]
+  ticketSequences        TicketSequence[]
   brandingSettings       DocumentBrandingSettings?
   commTemplates          CommunicationTemplate[]
   commPolicies           CommunicationPolicy[]
@@ -88,6 +215,7 @@ model Organization {
   salesTargets           SalesTarget[]
   moduleGrants           OrgModuleGrant[]
   leads                  Lead[]
+  tickets                Ticket[]
   quotations             Quotation[]
   posSessions            PosSession[]
   fieldVisits            FieldVisit[]
@@ -99,13 +227,34 @@ model Organization {
   bankAccounts           BankAccount[]
   bankTransactions       BankTransaction[]
   campaigns              Campaign[]
+  whatsAppConfig         OrgWhatsAppConfig?
+  surveys                Survey[]
 
   @@index([slug])
   @@index([isActive])
 }
 
+model OrgWhatsAppConfig {
+  orgId             String       @id
+  businessNumber    String
+  phoneNumberId     String
+  accessToken       String
+  businessAccountId String?
+  provider          String       @default("meta")
+  atApiKey          String?
+  atUsername        String?
+  atSenderId        String?
+  smsFallback       Boolean      @default(false)
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+  org               Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@index([provider])
+}
+
 enum OrgModule {
   JOBS
+  SUBSCRIPTIONS
   INVENTORY
   POS
   PURCHASE_ORDERS
@@ -216,6 +365,7 @@ model User {
   recurringInvoicesCreated RecurringInvoice[]  @relation("RecurringInvoiceCreatedBy")
   journalEntriesCreated    JournalEntry[]      @relation("JournalEntryCreatedBy")
   campaignsCreated         Campaign[]          @relation("CampaignCreatedBy")
+  ticketsAssigned          Ticket[]            @relation("TicketAssignedTo")
 
   @@index([orgId])
   @@index([branchId])
@@ -505,16 +655,26 @@ enum StockTransferStatus {
 
 model Client {
   id           String        @id @default(cuid())
-  fullName     String
-  phone        String
-  email        String?
-  organization String?
-  address      String?
-  notes        String?
-  orgId        String?
-  org          Organization? @relation(fields: [orgId], references: [id], onDelete: SetNull)
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  fullName       String
+  phone          String
+  email          String?
+  organization   String?
+  address        String?
+  notes          String?
+
+  // SLA
+  clientType     ClientType    @default(INDIVIDUAL)
+  isSLACovered   Boolean       @default(false)
+  slaStartDate   DateTime?
+  slaEndDate     DateTime?
+  slaBillingCycle SLACycle?
+  slaAmountPaid  Float?
+  slaStatus      ClientSubscriptionStatus?
+
+  orgId          String?
+  org            Organization? @relation(fields: [orgId], references: [id], onDelete: SetNull)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
 
   jobs               Job[]
   devices            Device[]
@@ -526,9 +686,65 @@ model Client {
   invoices           Invoice[]
   recurringInvoices  RecurringInvoice[]
   campaignContacts   CampaignContact[]
+  tickets            Ticket[]
+  subscriptions      ClientSubscription[]
 
   @@unique([phone, orgId])
   @@index([orgId])
+}
+
+model ClientSubscription {
+  id          String                   @id @default(cuid())
+  orgId       String
+  org         Organization             @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  clientId    String
+  client      Client                   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  cycle       SLACycle                 @default(ANNUAL)
+  startDate   DateTime
+  renewalDate DateTime
+  amountPaid  Float                    @default(0)
+  currency    String                   @default("UGX")
+  status      ClientSubscriptionStatus @default(ACTIVE)
+  notes       String?
+  createdAt   DateTime                 @default(now())
+  updatedAt   DateTime                 @updatedAt
+
+  renewals  ClientSubscriptionRenewal[]
+  reminders ClientSubscriptionReminder[]
+
+  @@index([orgId, status, renewalDate])
+  @@index([clientId, renewalDate])
+}
+
+model ClientSubscriptionRenewal {
+  id             String             @id @default(cuid())
+  subscriptionId String
+  subscription   ClientSubscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  renewedAt      DateTime           @default(now())
+  previousRenewalDate DateTime?
+  nextRenewalDate     DateTime
+  amountPaid     Float              @default(0)
+  currency       String             @default("UGX")
+  note           String?
+
+  @@index([subscriptionId, renewedAt])
+}
+
+model ClientSubscriptionReminder {
+  id             String                         @id @default(cuid())
+  subscriptionId String
+  subscription   ClientSubscription             @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  type           ClientSubscriptionReminderType
+  remindAt       DateTime
+  visible        Boolean                        @default(true)
+  emailEnabled   Boolean                        @default(true)
+  whatsappEnabled Boolean                       @default(true)
+  emailSentAt    DateTime?
+  whatsappSentAt DateTime?
+  createdAt      DateTime                       @default(now())
+
+  @@unique([subscriptionId, type, remindAt])
+  @@index([remindAt, visible])
 }
 
 model Device {
@@ -693,6 +909,7 @@ model Invoice {
   job      Job?     @relation(fields: [jobId], references: [id], onDelete: Cascade)
   clientId String?
   client   Client?  @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  ticket     Ticket?  @relation("TicketInvoice")
 
   invoiceType   InvoiceType   @default(REPAIR)
   subject       String?
@@ -1318,11 +1535,11 @@ model DocumentBrandingSettings {
   id                    String        @id @default(cuid())
   orgId                 String?       @unique
   org                   Organization? @relation(fields: [orgId], references: [id], onDelete: SetNull)
-  companyName           String        @default("Eagle Info Solutions")
+  companyName           String        @default("Techserve ICT Solutions")
   companyTagline        String?
   companyAddressLine1   String        @default("Nalubega Complex, 1st Floor")
   companyAddressLine2   String        @default("Shop L28, Bombo Road Opposite Watoto Church")
-  companyContacts       String        @default("+256772 006 344 | +256754 006 344")
+  companyContacts       String        @default("0756844448 | +256756844448")
   companyEmail          String?
   companyWebsite        String?
   documentTitle         String        @default("Job Card")
@@ -1334,12 +1551,12 @@ model DocumentBrandingSettings {
   vatRatePercent        Float         @default(18)
   vatLabel              String        @default("VAT")
   termsText             String        @default("Quotation valid for 30 days from date issued.\nRepair work begins only after approval is recorded.\nParts availability may affect final timeline.\nHidden pre-existing faults may affect final outcome.\nUncollected devices may attract storage fees after notice.")
-  footerText            String        @default("Powered by Duuka Pro Max — Eagle Info's repair & business management platform. care.eagleinfosolutions.com")
-  signatureCompanyLabel String        @default("Signed by: Eagle Info Solutions")
+  footerText            String        @default("Techserve ICT Solutions — care.eagleinfosolutions.com")
+  signatureCompanyLabel String        @default("Signed by: Techserve ICT Solutions")
   signatureClientLabel  String        @default("Signed by: Client")
   primaryColor          String        @default("#000000")
-  secondaryColor        String        @default("#D4AF37")
-  accentColor           String        @default("#D4AF37")
+  secondaryColor        String        @default("#E6C65C")
+  accentColor           String        @default("#E6C65C")
   backgroundColor       String        @default("#FFFFFF")
   surfaceColor          String        @default("#F5F5F5")
   borderColor           String        @default("#E5E5E5")
@@ -1455,6 +1672,19 @@ model RepairRequestSequence {
   updatedAt DateTime      @updatedAt
 
   @@unique([orgId, year])
+}
+
+// Allocates human-friendly ticket numbers safely under concurrency.
+model TicketSequence {
+  id        String        @id @default(cuid())
+  orgId     String        // non-nullable; use "_public" for un-org-scoped tickets
+  org       Organization  @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  year      Int
+  value     Int           @default(0)
+  updatedAt DateTime      @updatedAt
+
+  @@unique([orgId, year])
+  @@index([orgId])
 }
 
 enum RepairRequestStatus {
@@ -2352,6 +2582,8 @@ model Receipt {
   invoiceId     String?
   branchId      String?
   clientId      String?
+  ticketId      String?   @unique
+  ticket        Ticket?   @relation("TicketReceipt", fields: [ticketId], references: [id], onDelete: SetNull)
   amount        Float
   currency      String    @default("UGX")
   issuedAt      DateTime  @default(now())
@@ -2489,6 +2721,8 @@ enum ComplaintCategory {
   STAFF_CONDUCT
   DAMAGE_CAUSED
   UNRESOLVED_FAULT
+  ICT_SUPPORT
+  RESPONSE_TIME
   OTHER
 }
 
@@ -2512,6 +2746,8 @@ model Complaint {
   // Linked reference (one or the other)
   jobId  String?
   job    Job?    @relation(fields: [jobId], references: [id], onDelete: SetNull)
+  ticketId String?
+  ticket   Ticket? @relation(fields: [ticketId], references: [id], onDelete: SetNull)
   saleId String?
 
   // Complainant info
@@ -2546,6 +2782,7 @@ model Complaint {
   @@index([orgId, status, createdAt])
   @@index([orgId, createdAt])
   @@index([jobId])
+  @@index([ticketId])
 }
 
 // ── Sales Targets ───────────────────────────────────────────────────────────
@@ -2719,6 +2956,7 @@ model Quotation {
   client   Client? @relation(fields: [clientId], references: [id], onDelete: SetNull)
   jobId    String?
   job      Job?    @relation("JobQuotation", fields: [jobId], references: [id], onDelete: SetNull)
+  ticket     Ticket?   @relation("TicketQuotation")
 
   subtotal    Float @default(0)
   discountAmount Float @default(0)

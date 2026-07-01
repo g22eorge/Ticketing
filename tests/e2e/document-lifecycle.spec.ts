@@ -29,14 +29,14 @@ function parseSetCookie(setCookie: string, origin: URL): Cookie {
   return cookie;
 }
 
-async function ensureAccount(userId: string) {
+async function ensureAccount(userId: string, email: string) {
   const passwordHash = await hashPassword(password);
   const existing = await prisma.account.findFirst({ where: { userId, providerId: "credential" }, select: { id: true } });
   if (existing) {
     await prisma.account.update({ where: { id: existing.id }, data: { password: passwordHash } });
     return;
   }
-  await prisma.account.create({ data: { userId, accountId: userId, providerId: "credential", password: passwordHash } });
+  await prisma.account.create({ data: { userId, accountId: email, providerId: "credential", password: passwordHash } });
 }
 
 async function login(page: Page, email: string) {
@@ -70,7 +70,7 @@ async function seedLifecycleFixture() {
     update: { orgId: org.id, role: "ADMIN", isActive: true, emailVerified: true },
     create: { orgId: org.id, name: "Document Lifecycle Admin", email: "document-lifecycle-admin@example.invalid", role: "ADMIN", isActive: true, emailVerified: true },
   });
-  await ensureAccount(user.id);
+  await ensureAccount(user.id, user.email);
 
   const client = await prisma.client.upsert({
     where: { phone_orgId: { phone: "08025550001", orgId: org.id } },
@@ -131,16 +131,21 @@ test("document lifecycle generates job card, quote, invoice, receipt, and delive
   await login(page, user.email);
 
   await page.goto("/documents/job-cards?q=E2E-DOC-LIFE-0001");
-  await expect(page.getByRole("link", { name: "Create Job Card" })).toBeVisible();
+  await page.waitForLoadState("networkidle");
+  // The job-cards page shows "New Repair Job" link (links to /jobs/new), not "Create Job Card"
+  await expect(page.getByRole("link", { name: "New Repair Job" })).toBeVisible();
   // "Convert to Quotation" is now in the ⋯ overflow menu — open it first
-  await page.getByRole("button", { name: "Job card actions" }).click();
+  await page.getByRole("button", { name: /actions? for/i }).click();
+  await page.waitForTimeout(400);
   await page.getByRole("button", { name: "Convert to Quotation" }).click();
   await expect.poll(async () => prisma.quotation.count({ where: { orgId: org.id, jobId: job.id } })).toBe(1);
 
   await page.goto("/documents/quotations?q=E2E-DOC-LIFE-0001");
+  await page.waitForLoadState("networkidle");
   await expect(page.getByRole("link", { name: /New Quote/i }).or(page.getByRole("link", { name: /New Quotation/i }))).toBeVisible();
   // "Convert to Invoice" is now in the ⋯ overflow menu — open it first
-  await page.getByRole("button", { name: "Quotation actions" }).click();
+  await page.getByRole("button", { name: /actions? for/i }).click();
+  await page.waitForTimeout(400);
   await page.getByRole("button", { name: "Convert to Invoice" }).click();
   await expect.poll(async () => prisma.invoice.count({ where: { orgId: org.id, jobId: job.id } })).toBe(1);
 

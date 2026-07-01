@@ -69,50 +69,64 @@ function assertProductionAuthConfig() {
 
   if (!isRuntimeProduction) return;
 
+  const missing: string[] = [];
   if (!process.env.BETTER_AUTH_SECRET || process.env.BETTER_AUTH_SECRET.length < 32) {
-    throw new Error("Missing BETTER_AUTH_SECRET: set a stable production secret of at least 32 characters");
+    missing.push("BETTER_AUTH_SECRET (min 32 chars)");
   }
-
   if (!normalizeOrigin(process.env.BETTER_AUTH_URL ?? process.env.NEXT_PUBLIC_APP_URL)) {
-    throw new Error("Missing BETTER_AUTH_URL or NEXT_PUBLIC_APP_URL: set the production app URL");
+    missing.push("BETTER_AUTH_URL or NEXT_PUBLIC_APP_URL (production app URL)");
+  }
+  if (missing.length > 0) {
+    console.error(
+      "[auth] Production auth config incomplete: missing " + missing.join(", ") + ". " +
+      "Auth-dependent pages will fail. Set these env vars in your deployment dashboard."
+    );
   }
 }
 
 assertProductionAuthConfig();
 
-export const auth = betterAuth({
-  secret: process.env.BETTER_AUTH_SECRET,
-  baseURL: process.env.BETTER_AUTH_URL ?? process.env.NEXT_PUBLIC_APP_URL,
-  trustedOrigins,
-  database: prismaAdapter(prisma, { provider: "sqlite" }),
-  emailAndPassword: { enabled: true },
-  user: {
-    additionalFields: {
-      role: {
-        type: "string",
-        required: true,
-        defaultValue: "OPS",
-        input: false,
-      },
-      isActive: {
-        type: "boolean",
-        required: true,
-        defaultValue: true,
-        input: false,
-      },
-      orgId: {
-        type: "string",
-        required: false,
-        input: false,
+// Initialize betterAuth — wrap in try/catch so a missing or misconfigured
+// env doesn't crash every page at module-import time on deploy.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let _auth: any = null;
+try {
+  _auth = betterAuth({
+    secret: process.env.BETTER_AUTH_SECRET,
+    baseURL: process.env.BETTER_AUTH_URL ?? process.env.NEXT_PUBLIC_APP_URL,
+    trustedOrigins,
+    database: prismaAdapter(prisma, { provider: "sqlite" }),
+    emailAndPassword: { enabled: true },
+    user: {
+      additionalFields: {
+        role: {
+          type: "string",
+          required: true,
+          defaultValue: "OPS",
+          input: false,
+        },
+        isActive: {
+          type: "boolean",
+          required: true,
+          defaultValue: true,
+          input: false,
+        },
+        orgId: {
+          type: "string",
+          required: false,
+          input: false,
+        },
       },
     },
-  },
-  session: {
-    // Keep sessions reasonably short.
-    // expiresIn: session lifetime (seconds)
-    // disableSessionRefresh: prevents extending sessions indefinitely
-    expiresIn: 60 * 60 * 8, // 8 hours
-    disableSessionRefresh: true,
-    cookieCache: { enabled: true, maxAge: 60 * 5 }, // 5 minutes
-  },
-});
+    session: {
+      expiresIn: 60 * 60 * 8,
+      disableSessionRefresh: true,
+      cookieCache: { enabled: true, maxAge: 60 * 5 },
+    },
+  });
+} catch (err) {
+  console.error("[auth] Failed to initialize betterAuth:", err);
+  _auth = null;
+}
+
+export const auth = _auth;

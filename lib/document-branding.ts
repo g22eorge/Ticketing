@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { getTableColumns } from "@/lib/db-utils";
 
 export const defaultBranding = {
   id: "singleton",
@@ -9,8 +10,9 @@ export const defaultBranding = {
   companyContacts: "",
   companyEmail: "",
   companyWebsite: "",
-  documentTitle: "Job Card",
-  quotePrefix: "EIS",
+  companyLogoUrl: "",
+  documentTitle: "Service Document",
+  quotePrefix: "DOC",
   quoteFormat: "{PREFIX} {M}/{YYYY}/{SEQ}",
   quoteValidityDays: 30,
   sequencePadLength: 4,
@@ -18,14 +20,14 @@ export const defaultBranding = {
   vatRatePercent: 18,
   vatLabel: "VAT",
   termsText:
-    "Quotation valid for 30 days from date issued.\nRepair work begins only after approval is recorded.\nParts availability may affect final timeline.\nHidden pre-existing faults may affect final outcome.\nUncollected devices may attract storage fees after notice.",
+    "Quotation valid for 30 days from date issued.\nWork begins after client approval is recorded.\nFinal timelines may depend on service scope and item availability.\nUncollected items may attract storage fees after notice.",
   footerText: "",
   signatureCompanyLabel: "Signed by: Company",
   signatureClientLabel: "Signed by: Client",
   // Color scheme - Black, Gold & White
   primaryColor: "#000000",
-  secondaryColor: "#D4AF37",
-  accentColor: "#D4AF37",
+  secondaryColor: "#4F8EF7",
+  accentColor: "#4F8EF7",
   backgroundColor: "#FFFFFF",
   surfaceColor: "#F5F5F5",
   borderColor: "#E5E5E5",
@@ -41,10 +43,6 @@ type BrandingSettings = typeof defaultBranding;
 
 let rawTableEnsured = false;
 
-function hasDelegate() {
-  return Boolean((prisma as unknown as { documentBrandingSettings?: unknown }).documentBrandingSettings);
-}
-
 function coerceRow(row: Record<string, unknown>): BrandingSettings {
   return {
     id: "singleton",
@@ -55,6 +53,7 @@ function coerceRow(row: Record<string, unknown>): BrandingSettings {
     companyContacts: String(row.companyContacts ?? defaultBranding.companyContacts),
     companyEmail: row.companyEmail ? String(row.companyEmail) : "",
     companyWebsite: row.companyWebsite ? String(row.companyWebsite) : "",
+    companyLogoUrl: row.companyLogoUrl ? String(row.companyLogoUrl) : "",
     documentTitle: String(row.documentTitle ?? defaultBranding.documentTitle),
     quotePrefix: String(row.quotePrefix ?? defaultBranding.quotePrefix),
     quoteFormat: String(row.quoteFormat ?? defaultBranding.quoteFormat),
@@ -94,6 +93,7 @@ async function ensureRawTable() {
       companyContacts TEXT NOT NULL,
       companyEmail TEXT,
       companyWebsite TEXT,
+      companyLogoUrl TEXT,
       documentTitle TEXT NOT NULL,
       quotePrefix TEXT NOT NULL,
       quoteFormat TEXT NOT NULL,
@@ -114,25 +114,23 @@ async function ensureRawTable() {
     )
   `);
 
-  // Older installs may have the table without the newer template columns.
-  // Keep this local to branding to avoid hard dependency on /api/admin/db-fix.
-  const cols = await prisma.$queryRaw<Array<{ name: string }>>`
-    PRAGMA table_info('DocumentBrandingSettings')
-  `.catch(() => []);
-  const colSet = new Set(cols.map((c) => c.name));
+  const colSet = await getTableColumns("DocumentBrandingSettings");
 
-  // Allowlist guards against accidental SQL injection if call sites ever change.
   const ADDABLE_COLUMNS: ReadonlySet<string> = new Set([
     "invoiceTemplateKey", "quotationTemplateKey", "jobCardTemplateKey", "receiptTemplateKey",
     "primaryColor", "secondaryColor", "accentColor", "backgroundColor", "surfaceColor", "borderColor",
-    "orgId",
+    "orgId", "companyLogoUrl",
   ]);
   const addColumn = async (name: string, dflt: string) => {
     if (!ADDABLE_COLUMNS.has(name)) return;
     if (colSet.has(name)) return;
-    await prisma.$executeRawUnsafe(
-      `ALTER TABLE "DocumentBrandingSettings" ADD COLUMN "${name}" TEXT DEFAULT ${dflt}`,
-    ).catch(() => {/* ignore if already exists in concurrent request */});
+    try {
+      await prisma.$executeRawUnsafe(
+        `ALTER TABLE "DocumentBrandingSettings" ADD COLUMN "${name}" TEXT DEFAULT ${dflt}`,
+      );
+    } catch {
+      /* ignore if already exists in concurrent request */
+    }
     colSet.add(name);
   };
   await addColumn("invoiceTemplateKey", "'invoice_classic'");
@@ -140,12 +138,13 @@ async function ensureRawTable() {
   await addColumn("jobCardTemplateKey", "'job_card_classic'");
   await addColumn("receiptTemplateKey", "'receipt_classic'");
   await addColumn("primaryColor",   "'#000000'");
-  await addColumn("secondaryColor", "'#D4AF37'");
-  await addColumn("accentColor",    "'#D4AF37'");
+  await addColumn("secondaryColor", "'#4F8EF7'");
+  await addColumn("accentColor",    "'#4F8EF7'");
   await addColumn("backgroundColor","'#FFFFFF'");
   await addColumn("surfaceColor",   "'#F5F5F5'");
   await addColumn("borderColor",    "'#E5E5E5'");
   await addColumn("orgId",          "NULL");
+  await addColumn("companyLogoUrl", "NULL");
 
   rawTableEnsured = true;
 }
@@ -168,29 +167,32 @@ async function getViaRaw(orgId?: string) {
         `;
 
     if (!rows[0]) {
-      await prisma.$executeRaw`
-        INSERT INTO "DocumentBrandingSettings" (
-          id, companyName, companyTagline, companyAddressLine1, companyAddressLine2,
-          companyContacts, companyEmail, companyWebsite, documentTitle,
-          quotePrefix, quoteFormat, quoteValidityDays, sequencePadLength,
-          vatDefaultApplicable, vatRatePercent, vatLabel, termsText,
-          footerText, signatureCompanyLabel, signatureClientLabel,
-          invoiceTemplateKey, quotationTemplateKey, jobCardTemplateKey, receiptTemplateKey,
-          updatedAt
-        ) VALUES (
-          ${defaultBranding.id}, ${defaultBranding.companyName}, ${defaultBranding.companyTagline},
-          ${defaultBranding.companyAddressLine1}, ${defaultBranding.companyAddressLine2},
-          ${defaultBranding.companyContacts}, ${defaultBranding.companyEmail}, ${defaultBranding.companyWebsite},
-          ${defaultBranding.documentTitle}, ${defaultBranding.quotePrefix}, ${defaultBranding.quoteFormat},
-          ${defaultBranding.quoteValidityDays}, ${defaultBranding.sequencePadLength},
-          ${defaultBranding.vatDefaultApplicable}, ${defaultBranding.vatRatePercent}, ${defaultBranding.vatLabel},
-          ${defaultBranding.termsText}, ${defaultBranding.footerText},
-          ${defaultBranding.signatureCompanyLabel}, ${defaultBranding.signatureClientLabel},
-          ${defaultBranding.invoiceTemplateKey}, ${defaultBranding.quotationTemplateKey}, ${defaultBranding.jobCardTemplateKey}, ${defaultBranding.receiptTemplateKey},
-          CURRENT_TIMESTAMP
-        )
-        ON CONFLICT(id) DO NOTHING
-      `;
+      try {
+        await prisma.$executeRawUnsafe(
+          `INSERT OR IGNORE INTO "DocumentBrandingSettings" (
+            id, companyName, companyTagline, companyAddressLine1, companyAddressLine2,
+            companyContacts, companyEmail, companyWebsite, documentTitle,
+            quotePrefix, quoteFormat, quoteValidityDays, sequencePadLength,
+            vatDefaultApplicable, vatRatePercent, vatLabel, termsText,
+            footerText, signatureCompanyLabel, signatureClientLabel,
+            invoiceTemplateKey, quotationTemplateKey, jobCardTemplateKey, receiptTemplateKey,
+            updatedAt
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
+          defaultBranding.id, defaultBranding.companyName, defaultBranding.companyTagline,
+          defaultBranding.companyAddressLine1, defaultBranding.companyAddressLine2,
+          defaultBranding.companyContacts, defaultBranding.companyEmail, defaultBranding.companyWebsite,
+          defaultBranding.documentTitle, defaultBranding.quotePrefix, defaultBranding.quoteFormat,
+          defaultBranding.quoteValidityDays, defaultBranding.sequencePadLength,
+          defaultBranding.vatDefaultApplicable, defaultBranding.vatRatePercent, defaultBranding.vatLabel,
+          defaultBranding.termsText, defaultBranding.footerText,
+          defaultBranding.signatureCompanyLabel, defaultBranding.signatureClientLabel,
+          defaultBranding.invoiceTemplateKey, defaultBranding.quotationTemplateKey,
+          defaultBranding.jobCardTemplateKey, defaultBranding.receiptTemplateKey,
+        );
+      } catch {
+        // Row may already exist (PK or orgId UNIQUE from Prisma-managed schema on Turso).
+        // INSERT OR IGNORE handles most cases; this catch is a safety net for edge cases.
+      }
       return defaultBranding;
     }
 
@@ -201,73 +203,123 @@ async function getViaRaw(orgId?: string) {
 }
 
 export async function saveDocumentBrandingSettings(orgId: string, data: BrandingSettings) {
-  // Always use raw SQL — handles both SQLite and Turso, and is immune to schema drift
-  // because ensureRawTable() adds any missing columns before we write.
   await ensureRawTable();
 
-  // Use orgId as the row id so each org gets its own row without conflicting with 'singleton'
   const rowId = orgId;
 
-  await prisma.$executeRaw`
-    INSERT INTO "DocumentBrandingSettings" (
-      id, orgId,
-      companyName, companyTagline, companyAddressLine1, companyAddressLine2,
-      companyContacts, companyEmail, companyWebsite, documentTitle,
-      quotePrefix, quoteFormat, quoteValidityDays, sequencePadLength,
-      vatDefaultApplicable, vatRatePercent, vatLabel, termsText,
-      footerText, signatureCompanyLabel, signatureClientLabel,
-      primaryColor, secondaryColor, accentColor, backgroundColor, surfaceColor, borderColor,
-      invoiceTemplateKey, quotationTemplateKey, jobCardTemplateKey, receiptTemplateKey,
-      updatedAt
-    ) VALUES (
-      ${rowId}, ${orgId},
-      ${data.companyName}, ${data.companyTagline},
-      ${data.companyAddressLine1}, ${data.companyAddressLine2},
-      ${data.companyContacts}, ${data.companyEmail}, ${data.companyWebsite},
-      ${data.documentTitle}, ${data.quotePrefix}, ${data.quoteFormat},
-      ${data.quoteValidityDays}, ${data.sequencePadLength},
-      ${data.vatDefaultApplicable}, ${data.vatRatePercent}, ${data.vatLabel},
-      ${data.termsText}, ${data.footerText}, ${data.signatureCompanyLabel},
-      ${data.signatureClientLabel},
-      ${data.primaryColor}, ${data.secondaryColor}, ${data.accentColor},
-      ${data.backgroundColor}, ${data.surfaceColor}, ${data.borderColor},
-      ${data.invoiceTemplateKey}, ${data.quotationTemplateKey},
-      ${data.jobCardTemplateKey}, ${data.receiptTemplateKey},
-      CURRENT_TIMESTAMP
-    )
-    ON CONFLICT(id) DO UPDATE SET
-      orgId = excluded.orgId,
-      companyName = excluded.companyName,
-      companyTagline = excluded.companyTagline,
-      companyAddressLine1 = excluded.companyAddressLine1,
-      companyAddressLine2 = excluded.companyAddressLine2,
-      companyContacts = excluded.companyContacts,
-      companyEmail = excluded.companyEmail,
-      companyWebsite = excluded.companyWebsite,
-      documentTitle = excluded.documentTitle,
-      quotePrefix = excluded.quotePrefix,
-      quoteFormat = excluded.quoteFormat,
-      quoteValidityDays = excluded.quoteValidityDays,
-      sequencePadLength = excluded.sequencePadLength,
-      vatDefaultApplicable = excluded.vatDefaultApplicable,
-      vatRatePercent = excluded.vatRatePercent,
-      vatLabel = excluded.vatLabel,
-      termsText = excluded.termsText,
-      footerText = excluded.footerText,
-      signatureCompanyLabel = excluded.signatureCompanyLabel,
-      signatureClientLabel = excluded.signatureClientLabel,
-      primaryColor = excluded.primaryColor,
-      secondaryColor = excluded.secondaryColor,
-      accentColor = excluded.accentColor,
-      backgroundColor = excluded.backgroundColor,
-      surfaceColor = excluded.surfaceColor,
-      borderColor = excluded.borderColor,
-      invoiceTemplateKey = excluded.invoiceTemplateKey,
-      quotationTemplateKey = excluded.quotationTemplateKey,
-      jobCardTemplateKey = excluded.jobCardTemplateKey,
-      receiptTemplateKey = excluded.receiptTemplateKey,
-      updatedAt = CURRENT_TIMESTAMP
+  const existing = await prisma.$queryRaw<Array<{ id: string }>>`
+    SELECT id FROM "DocumentBrandingSettings"
+    WHERE id = ${rowId} OR orgId = ${orgId}
+    LIMIT 1
   `;
+
+  if (existing.length > 0) {
+    await prisma.$executeRaw`
+      UPDATE "DocumentBrandingSettings" SET
+        orgId = ${orgId},
+        companyName = ${data.companyName},
+        companyTagline = ${data.companyTagline},
+        companyAddressLine1 = ${data.companyAddressLine1},
+        companyAddressLine2 = ${data.companyAddressLine2},
+        companyContacts = ${data.companyContacts},
+        companyEmail = ${data.companyEmail},
+        companyWebsite = ${data.companyWebsite},
+        companyLogoUrl = ${data.companyLogoUrl ?? ""},
+        documentTitle = ${data.documentTitle},
+        quotePrefix = ${data.quotePrefix},
+        quoteFormat = ${data.quoteFormat},
+        quoteValidityDays = ${data.quoteValidityDays},
+        sequencePadLength = ${data.sequencePadLength},
+        vatDefaultApplicable = ${data.vatDefaultApplicable},
+        vatRatePercent = ${data.vatRatePercent},
+        vatLabel = ${data.vatLabel},
+        termsText = ${data.termsText},
+        footerText = ${data.footerText},
+        signatureCompanyLabel = ${data.signatureCompanyLabel},
+        signatureClientLabel = ${data.signatureClientLabel},
+        primaryColor = ${data.primaryColor},
+        secondaryColor = ${data.secondaryColor},
+        accentColor = ${data.accentColor},
+        backgroundColor = ${data.backgroundColor},
+        surfaceColor = ${data.surfaceColor},
+        borderColor = ${data.borderColor},
+        invoiceTemplateKey = ${data.invoiceTemplateKey},
+        quotationTemplateKey = ${data.quotationTemplateKey},
+        jobCardTemplateKey = ${data.jobCardTemplateKey},
+        receiptTemplateKey = ${data.receiptTemplateKey},
+        updatedAt = CURRENT_TIMESTAMP
+      WHERE id = ${existing[0].id}
+    `;
+  } else {
+    try {
+      await prisma.$executeRaw`
+        INSERT INTO "DocumentBrandingSettings" (
+          id, orgId,
+          companyName, companyTagline, companyAddressLine1, companyAddressLine2,
+          companyContacts, companyEmail, companyWebsite, companyLogoUrl, documentTitle,
+          quotePrefix, quoteFormat, quoteValidityDays, sequencePadLength,
+          vatDefaultApplicable, vatRatePercent, vatLabel, termsText,
+          footerText, signatureCompanyLabel, signatureClientLabel,
+          primaryColor, secondaryColor, accentColor, backgroundColor, surfaceColor, borderColor,
+          invoiceTemplateKey, quotationTemplateKey, jobCardTemplateKey, receiptTemplateKey,
+          updatedAt
+        ) VALUES (
+          ${rowId}, ${orgId},
+          ${data.companyName}, ${data.companyTagline},
+          ${data.companyAddressLine1}, ${data.companyAddressLine2},
+          ${data.companyContacts}, ${data.companyEmail}, ${data.companyWebsite},
+          ${data.companyLogoUrl ?? ""},
+          ${data.documentTitle}, ${data.quotePrefix}, ${data.quoteFormat},
+          ${data.quoteValidityDays}, ${data.sequencePadLength},
+          ${data.vatDefaultApplicable}, ${data.vatRatePercent}, ${data.vatLabel},
+          ${data.termsText}, ${data.footerText}, ${data.signatureCompanyLabel},
+          ${data.signatureClientLabel},
+          ${data.primaryColor}, ${data.secondaryColor}, ${data.accentColor},
+          ${data.backgroundColor}, ${data.surfaceColor}, ${data.borderColor},
+          ${data.invoiceTemplateKey}, ${data.quotationTemplateKey},
+          ${data.jobCardTemplateKey}, ${data.receiptTemplateKey},
+          CURRENT_TIMESTAMP
+        )
+      `;
+    } catch {
+      await prisma.$executeRaw`
+        UPDATE "DocumentBrandingSettings" SET
+          orgId = ${orgId},
+          companyName = ${data.companyName},
+          companyTagline = ${data.companyTagline},
+          companyAddressLine1 = ${data.companyAddressLine1},
+          companyAddressLine2 = ${data.companyAddressLine2},
+          companyContacts = ${data.companyContacts},
+          companyEmail = ${data.companyEmail},
+          companyWebsite = ${data.companyWebsite},
+          companyLogoUrl = ${data.companyLogoUrl ?? ""},
+          documentTitle = ${data.documentTitle},
+          quotePrefix = ${data.quotePrefix},
+          quoteFormat = ${data.quoteFormat},
+          quoteValidityDays = ${data.quoteValidityDays},
+          sequencePadLength = ${data.sequencePadLength},
+          vatDefaultApplicable = ${data.vatDefaultApplicable},
+          vatRatePercent = ${data.vatRatePercent},
+          vatLabel = ${data.vatLabel},
+          termsText = ${data.termsText},
+          footerText = ${data.footerText},
+          signatureCompanyLabel = ${data.signatureCompanyLabel},
+          signatureClientLabel = ${data.signatureClientLabel},
+          primaryColor = ${data.primaryColor},
+          secondaryColor = ${data.secondaryColor},
+          accentColor = ${data.accentColor},
+          backgroundColor = ${data.backgroundColor},
+          surfaceColor = ${data.surfaceColor},
+          borderColor = ${data.borderColor},
+          invoiceTemplateKey = ${data.invoiceTemplateKey},
+          quotationTemplateKey = ${data.quotationTemplateKey},
+          jobCardTemplateKey = ${data.jobCardTemplateKey},
+          receiptTemplateKey = ${data.receiptTemplateKey},
+          updatedAt = CURRENT_TIMESTAMP
+        WHERE orgId = ${orgId} OR id = ${rowId}
+      `;
+    }
+  }
 }
 
 export async function getDocumentBrandingSettings(orgId?: string): Promise<BrandingSettings> {

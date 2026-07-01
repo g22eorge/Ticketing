@@ -21,18 +21,18 @@ export default async function RegisterPage() {
   if (validUser?.isActive) redirect("/onboarding");
 
   return (
-    <main className="theme-blackgold min-h-dvh bg-[#0a0a0a]">
+    <main className="theme-blackgold min-h-dvh bg-[#0a1628]">
       {/* Ambient glow */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
-        <div className="absolute left-1/2 top-0 h-[500px] w-[700px] -translate-x-1/2 rounded-full bg-[#D4AF37]/8 blur-[120px]" />
+        <div className="absolute left-1/2 top-0 h-[500px] w-[700px] -translate-x-1/2 rounded-full bg-[#4F8EF7]/8 blur-[120px]" />
       </div>
 
       <div className="grid min-h-dvh grid-cols-1 lg:grid-cols-[1fr_1fr]">
 
         {/* ── Left: branding panel ── */}
-        <section className="relative hidden flex-col justify-between overflow-hidden bg-[linear-gradient(150deg,#0d0d0d_0%,#161616_50%,#1a1500_100%)] p-12 lg:flex">
-          <div className="pointer-events-none absolute -left-16 top-1/3 h-80 w-80 rounded-full bg-[#D4AF37]/10 blur-[80px]" />
-          <div className="pointer-events-none absolute -right-10 bottom-20 h-60 w-60 rounded-full bg-[#D4AF37]/6 blur-[60px]" />
+        <section className="relative hidden flex-col justify-between overflow-hidden bg-[linear-gradient(150deg,#0a1628_0%,#0f1f3a_50%,#0a1628_100%)] p-12 lg:flex">
+          <div className="pointer-events-none absolute -left-16 top-1/3 h-80 w-80 rounded-full bg-[#4F8EF7]/10 blur-[80px]" />
+          <div className="pointer-events-none absolute -right-10 bottom-20 h-60 w-60 rounded-full bg-[#4F8EF7]/6 blur-[60px]" />
 
           <div className="relative">
             <AppLogoDark height={52} priority />
@@ -40,7 +40,7 @@ export default async function RegisterPage() {
 
           <div className="relative space-y-8">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#D4AF37]/70">Business OS</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#4F8EF7]/70">Techserve ICT Solutions</p>
               <h1 className="mt-3 text-3xl font-semibold leading-snug text-white xl:text-4xl">
                 Your operations,<br />fully organised
               </h1>
@@ -56,18 +56,18 @@ export default async function RegisterPage() {
                 { icon: "◈", text: "Full audit trail on every job and status change" },
               ].map((item) => (
                 <div key={item.text} className="flex items-start gap-3">
-                  <span className="mt-0.5 text-[#D4AF37]/60 text-xs">{item.icon}</span>
+                  <span className="mt-0.5 text-[#4F8EF7]/60 text-xs">{item.icon}</span>
                   <p className="text-sm text-white/55">{item.text}</p>
                 </div>
               ))}
             </div>
           </div>
 
-          <p className="relative text-[13px] text-white/25">© {new Date().getFullYear()} Nexus</p>
+          <p className="relative text-[13px] text-white/25">© {new Date().getFullYear()} Techserve Solutions Limited</p>
         </section>
 
         {/* ── Right: register form ── */}
-        <section className="flex min-h-dvh items-center justify-center px-5 py-10 lg:min-h-0 lg:bg-[#0d0d0d] lg:px-12">
+        <section className="flex min-h-dvh items-center justify-center px-5 py-10 lg:min-h-0 lg:bg-[#0f1f3a] lg:px-12">
           <div className="w-full max-w-sm">
 
             {/* Mobile logo */}
@@ -89,7 +89,7 @@ export default async function RegisterPage() {
 
             <p className="mt-6 text-center text-xs text-white/30">
               Already have an account?{" "}
-              <Link href="/login" className="text-[#D4AF37]/70 transition hover:text-[#D4AF37]">
+              <Link href="/login" className="text-[#4F8EF7]/70 transition hover:text-[#4F8EF7]">
                 Sign in
               </Link>
             </p>

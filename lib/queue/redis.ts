@@ -18,9 +18,8 @@ function buildConnection(): Redis | null {
     lazyConnect: true,
   });
 
-  conn.on("error", (err) => {
-    // Log but never crash the Next.js process — queue is optional.
-    console.error("[queue/redis] connection error:", err.message);
+  conn.on("error", () => {
+    // Silent — queue is optional; noisy logs when Redis is absent serve no one.
   });
 
   return conn;

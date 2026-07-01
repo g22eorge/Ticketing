@@ -77,9 +77,9 @@ export default async function NotificationTemplatesPage({
       where: {
         orgId: replaceOrgId,
         OR: [
-          { body: { contains: "Eagle Info Solutions" } },
+          { body: { contains: "Techserve ICT Solutions" } },
           { body: { contains: "Your Repair Team" } },
-          { subject: { contains: "Eagle Info Solutions" } },
+          { subject: { contains: "Techserve ICT Solutions" } },
           { subject: { contains: "Your Repair Team" } },
         ],
       },
@@ -89,11 +89,11 @@ export default async function NotificationTemplatesPage({
     let updated = 0;
     for (const t of rows) {
       const nextBody = t.body
-        .replaceAll("Eagle Info Solutions", companyName)
+            .replaceAll("Techserve ICT Solutions", companyName)
         .replaceAll("Your Repair Team", companyName);
       const nextSubject = t.subject
         ? t.subject
-            .replaceAll("Eagle Info Solutions", companyName)
+        .replaceAll("Techserve ICT Solutions", companyName)
             .replaceAll("Your Repair Team", companyName)
         : null;
       if (nextBody === t.body && nextSubject === t.subject) continue;
@@ -135,9 +135,9 @@ export default async function NotificationTemplatesPage({
             <button
               className="btn-premium-secondary rounded-lg px-3 py-1.5 text-sm"
               type="submit"
-              title='Replace "Eagle Info Solutions"/"Your Repair Team" with your company name'
+              title="Replace old sender names in existing templates with your company name"
             >
-              Replace Brand Name
+              Clean sender names
             </button>
           </form>
         ) : null}
@@ -701,7 +701,7 @@ export default async function NotificationTemplatesPage({
                           <input
                             name="metaTemplateName"
                             defaultValue={t.metaTemplateName ?? ""}
-                            placeholder="Template name (e.g. repair_status_update)"
+                            placeholder="Template name (e.g. ticket_status_update)"
                             className="rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 py-2 text-sm font-mono outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/14"
                           />
                           <input

@@ -19,28 +19,28 @@ const inter = Inter({
 });
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || "https://localhost:3000";
-const ogImage = `${siteUrl}/eagle-info-logo.png`;
+const ogImage = `${siteUrl}/opengraph-image`;
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "Duuka Pro Max",
-    template: "%s | Duuka Pro Max",
+    default: "Techserve ICT Solutions",
+    template: "%s | Techserve ICT Solutions",
   },
-  description: "Business management platform for repairs, sales, inventory, finance, documents, and daily operations.",
+  description: "A customised ICT service operations platform for Techserve ICT Solutions — managing service requests, jobs, clients, and operations.",
   alternates: { canonical: "/" },
   openGraph: {
-    title: "Duuka Pro Max",
-    description: "Business management platform for repairs, sales, inventory, finance, documents, and daily operations.",
+    title: "Techserve ICT Solutions",
+    description: "A customised ICT service operations platform for Techserve ICT Solutions.",
     url: "/",
-    siteName: "Duuka Pro Max",
+    siteName: "Techserve ICT Solutions",
     type: "website",
-    images: [{ url: ogImage, width: 512, height: 512, alt: "Duuka Pro Max" }],
+    images: [{ url: ogImage, width: 512, height: 512, alt: "Techserve ICT Solutions" }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Duuka Pro Max",
-    description: "Business management platform for repairs, sales, inventory, finance, documents, and daily operations.",
+    title: "Techserve ICT Solutions",
+    description: "A customised ICT service operations platform for Techserve ICT Solutions.",
     images: [ogImage],
   },
   icons: {
@@ -68,15 +68,15 @@ export default async function RootLayout({
 }>) {
   const cookieStore = await cookies();
   const stored = cookieStore.get("theme")?.value as string | undefined;
-  let initialTheme: "system" | "dark" | "light" = "system";
-  if (stored === "dark") initialTheme = "dark";
-  else if (stored === "light") initialTheme = "light";
+  let initialTheme: "system" | "dark" | "light" = "dark";
+  if (stored === "light") initialTheme = "light";
+  else if (stored === "dark") initialTheme = "dark";
 
-  const themeClass = stored === "dark" ? "theme-blackgold" : stored === "light" ? "light" : "";
+  const themeClass = stored === "light" ? "light" : "theme-blackgold";
 
   return (
-    <html lang="en" className={`${inter.variable} h-full antialiased${themeClass ? " " + themeClass : ""}`}>
-      <body className="min-h-full bg-[var(--page-bg)] text-[var(--ink)]">
+    <html lang="en" className={`${inter.variable} h-full antialiased${themeClass ? " " + themeClass : ""}`} suppressHydrationWarning>
+      <body className="min-h-full text-[var(--ink)]" style={{ background: "var(--page-bg)" }}>
         <ThemeProvider initialTheme={initialTheme}>
           {children}
           <Toaster richColors />

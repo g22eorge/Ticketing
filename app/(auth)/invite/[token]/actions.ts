@@ -89,7 +89,7 @@ export async function acceptInvite(
 
       await tx.account.create({
         data: {
-          accountId: user.id,
+          accountId: user.email,
           providerId: "credential",
           userId: user.id,
           password: hashed,
@@ -104,10 +104,14 @@ export async function acceptInvite(
   }
 
   // Sign them in automatically.
-  await auth.api.signInEmail({
-    body: { email: invite.email, password, callbackURL: "/dashboard" },
-    headers: await headers(),
-  });
+  if (auth) {
+    await auth.api.signInEmail({
+      body: { email: invite.email, password, callbackURL: "/dashboard" },
+      headers: await headers(),
+    });
+  } else {
+    redirect("/login");
+  }
 
   redirect("/dashboard");
 }

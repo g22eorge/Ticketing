@@ -20,7 +20,7 @@ export async function GET() {
     <title>WhatsApp Retry</title>
   </head>
   <body style="font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial; padding: 24px;">
-    <h1 style="margin: 0 0 8px;">MRMS WhatsApp Retry</h1>
+    <h1 style="margin: 0 0 8px;">Service Desk WhatsApp Retry</h1>
     <p style="margin: 0 0 16px;">Retries due WhatsApp outbox messages. Admin only.</p>
     <div style="display:flex; gap:10px; flex-wrap: wrap;">
       <button id="run" style="padding: 10px 14px; border: 1px solid #000; background: #000; color: #fff; border-radius: 8px; cursor: pointer;">Run Retry</button>

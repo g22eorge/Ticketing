@@ -39,6 +39,7 @@ function pageMeta(pathname: string, role: Role) {
     return { title: "Client Details", subtitle: `Ref ${parts[1].slice(0, 8)}`, description: "View client profile, job history, and notes timeline." };
   }
   if (pathname === "/reports") return { title: "Reports", description: "Operational and financial insights for repair performance." };
+  if (pathname === "/reports-dashboard") return { title: "Reports Dashboard", description: "Admin, operations, and financial summary." };
   if (pathname === "/ai-insights") return { title: "AI Insights", description: "Decision support across repairs, sales, finance, inventory, and operational risk." };
   if (pathname === "/inventory") return { title: "Inventory", description: "Track inventory item stock, reservations, and reorder risk." };
   if (pathname === "/payout-followups") return { title: "Collections & Payouts", description: "Collect client payments, pay external techs, track supplier bills." };

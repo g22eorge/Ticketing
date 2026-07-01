@@ -20,35 +20,15 @@ function DeviceIcon({ type }: { type: string }) {
   switch (type) {
     case "PHONE_ANDROID":
     case "PHONE_IPHONE":
-      return (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className={cls} aria-hidden>
-          <rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/>
-        </svg>
-      );
+      return <svg viewBox="0 0 20 20" fill="currentColor" className={cls} aria-hidden="true"><path d="M10 2a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h4Zm3 14.5a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" /></svg>;
     case "TABLET":
-      return (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className={cls} aria-hidden>
-          <rect x="4" y="2" width="16" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/>
-        </svg>
-      );
+      return <svg viewBox="0 0 20 20" fill="currentColor" className={cls} aria-hidden="true"><path fillRule="evenodd" d="M3 2a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V2Zm5 3.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 .5.5v9a.5.5 0 0 1-.5.5H8.5a.5.5 0 0 1-.5-.5v-9Z" clipRule="evenodd" /></svg>;
     case "WINDOWS_PC":
-      return (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className={cls} aria-hidden>
-          <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
-        </svg>
-      );
+      return <svg viewBox="0 0 20 20" fill="currentColor" className={cls} aria-hidden="true"><path fillRule="evenodd" d="M2 4.5A2.5 2.5 0 0 1 4.5 2h11A2.5 2.5 0 0 1 18 4.5v8A2.5 2.5 0 0 1 15.5 15h-4a1.5 1.5 0 0 0 0 3h4a.5.5 0 0 0 .5-.5v-6a.5.5 0 0 0-.5-.5h-11a.5.5 0 0 0-.5.5v6a.5.5 0 0 0 .5.5h4a1.5 1.5 0 0 0 1.5-1.5v-8ZM8 11a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z" clipRule="evenodd" /></svg>;
     case "MAC":
-      return (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className={cls} aria-hidden>
-          <path d="M20 16V7a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v9m16 0H4m16 0 1.28 2.55A1 1 0 0 1 20.38 20H3.62a1 1 0 0 1-.9-1.45L4 16"/>
-        </svg>
-      );
+      return <svg viewBox="0 0 20 20" fill="currentColor" className={cls} aria-hidden="true"><path fillRule="evenodd" d="M10 2a8 8 0 1 0 0 16 8 8 0 0 0 0-16ZM7 6a1 1 0 1 1 2 0 1 1 0 0 1-2 0Zm3.5 8.5a.5.5 0 0 1 .5-.5h1.5a.5.5 0 0 1 0 1H11v1a.5.5 0 0 1-1 0V14.5a.5.5 0 0 0-.5-.5h-2a.5.5 0 0 1 0-1h2Z" clipRule="evenodd" /></svg>;
     default:
-      return (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className={cls} aria-hidden>
-          <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
-        </svg>
-      );
+      return <svg viewBox="0 0 20 20" fill="currentColor" className={cls} aria-hidden="true"><path fillRule="evenodd" d="M10 1a.75.75 0 0 1 .75.75v1.5a.75.75 0 0 1-1.5 0v-1.5A.75.75 0 0 1 10 1ZM4.496 6.448a.75.75 0 1 1 1.008-.89l.256 2.566a.75.75 0 0 1-1.008.89l-.256-2.566Zm8.008 0a.75.75 0 1 1 1.008-.89l.256 2.566a.75.75 0 0 1-1.008.89l-.256-2.566ZM7.496 10.496a.75.75 0 1 1 1.008-.89l.256 2.566a.75.75 0 0 1-1.008.89l-.256-2.566Zm4.008 0a.75.75 0 1 1 1.008-.89l.256 2.566a.75.75 0 0 1-1.008.89l-.256-2.566ZM7.496 14.544a.75.75 0 1 1 1.008-.89l.256 2.566a.75.75 0 0 1-1.008.89l-.256-2.566Zm4.008 0a.75.75 0 1 1 1.008-.89l.256 2.566a.75.75 0 0 1-1.008.89l-.256-2.566ZM6 8a6 6 0 1 0 8 0A6 6 0 0 0 6 8Zm1.5-2a.5.5 0 0 0 0-1 .5.5 0 0 0 0 1Z" clipRule="evenodd" /></svg>;
   }
 }
 
@@ -324,7 +304,9 @@ export default async function JobCardsPage({
                           title="Open job card PDF"
                           className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] text-[var(--ink-muted)] transition hover:border-[var(--accent)]/40 hover:text-[var(--accent)]"
                         >
-                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                          <svg viewBox="0 0 20 20" fill="currentColor" className="h-3 w-3" aria-hidden="true">
+                            <path fillRule="evenodd" d="M5.75 4A1.75 1.75 0 0 0 4 5.75v7A1.75 1.75 0 0 0 5.75 14.5h8.5A1.75 1.75 0 0 0 16 12.75v-7A1.75 1.75 0 0 0 14.25 4H5.75ZM5 5.75a.25.25 0 0 1 .25-.25h8.5a.25.25 0 0 1 .25.25v7a.25.25 0 0 1-.25.25H5.25a.25.25 0 0 1-.25-.25v-7Zm7.5 6.5a.75.75 0 0 1 0 1.5H6a.75.75 0 0 1 0-1.5h6.5Z" clipRule="evenodd" />
+                          </svg>
                         </a>
 
                         {/* Overflow: convert, share */}
